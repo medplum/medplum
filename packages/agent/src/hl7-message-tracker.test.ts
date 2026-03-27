@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
-import { Hl7Message, ReturnAckCategory, TypedEventTarget } from '@medplum/core';
+import { Hl7Message, ReturnAckCategory, sleep, TypedEventTarget } from '@medplum/core';
 import type { Hl7Connection } from '@medplum/hl7';
 import { Hl7Server } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
@@ -170,7 +170,7 @@ describe('Hl7MessageTracker', () => {
 
       // Wait for microtasks to settle (setPendingMessage is called synchronously
       // once the awaited connect() resolves, which it does immediately here)
-      await new Promise((resolve) => setImmediate(resolve));
+      await sleep(0);
 
       // Verify tracker has the pending message
       expect(tracker.getPendingMessageCount()).toBe(1);
@@ -317,9 +317,9 @@ describe('Hl7MessageTracker', () => {
 
       // Wait for the message to be sent over TCP and registered in the tracker
       while (serverConnections.length < 1) {
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await sleep(10);
       }
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await sleep(50);
       expect(tracker.getPendingMessageCount()).toBe(1);
       expect(pool.size()).toBe(1);
 
@@ -328,7 +328,7 @@ describe('Hl7MessageTracker', () => {
 
       // Wait for the close event to propagate through the client and pool
       while (pool.size() !== 0) {
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await sleep(10);
       }
 
       // Client1 was removed from the pool, but tracker still has the pending message
@@ -385,7 +385,7 @@ describe('Hl7MessageTracker', () => {
       const sendPromise = client.sendAndWait(message, { timeoutMs: 200 }).catch(rejectSpy);
 
       // Wait for the message to be registered in the tracker
-      await new Promise((resolve) => setImmediate(resolve));
+      await sleep(0);
       expect(tracker.getPendingMessageCount()).toBe(1);
 
       // Close the client — with tracker, promise is NOT rejected immediately
@@ -394,7 +394,7 @@ describe('Hl7MessageTracker', () => {
       expect(rejectSpy).not.toHaveBeenCalled();
 
       // Wait for the timeout to fire (> 200ms)
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await sleep(300);
 
       // The timeout should have fired and rejected the promise, even though the client is closed
       await sendPromise;
