@@ -15,7 +15,7 @@ export function AccountsPage(): JSX.Element | null {
 
   const handleSaved = useCallback(() => {
     // Navigate to the same page to force a full re-fetch of the Patient resource
-    navigate(0);
+    navigate(0)?.catch(console.error);
   }, [navigate]);
 
   if (!resource) {
