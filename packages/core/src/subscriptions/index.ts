@@ -611,6 +611,10 @@ export class SubscriptionManager {
       this.maybeEmitDisconnect(entry);
       this.removeCriteriaEntry(entry);
     }
+    // Auto-close the WebSocket when the last entry has been finalized
+    if (entriesToRemove.length > 0 && this.criteriaEntries.size === 0) {
+      this.closeWebSocket();
+    }
   }
 
   private isEntryGettingRemoved(criteriaEntry: CriteriaEntry): boolean {
