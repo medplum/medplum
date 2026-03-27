@@ -1,14 +1,14 @@
 ---
-sidebar_label: State-by-State Licensure
+sidebar_label: Matching Patients to Providers by State-by-State Licensure
 sidebar_position: 12
 tags: [scheduling]
 ---
 
-# State-by-State Licensure for Each Healthcare Service
+# Matching Patients to Providers by State-by-State Licensure
 
 :::info Scheduling operations do not enforce licensure
 
-Use cases like state-by-state licensure, program enrollment, and “which providers may this patient book?” are **outside** Medplum’s scheduling operations. [`$find`](/docs/scheduling/schedule-find) does not take a patient, a license, or a state; it only computes free slots for a **single** [Schedule](/docs/api/fhir/resources/schedule) you already identified.
+Medplum Scheduling is intentionally designed to allow business specific use cases like state-by-state licensure, program enrollment, and “which providers may this patient book?” to be handled **outside** Medplum’s scheduling operations. [`$find`](/docs/scheduling/schedule-find) does not take a patient, a license, or a state; it only computes free slots for a **single** [Schedule](/docs/api/fhir/resources/schedule) you already identified.
 
 **Bake that business logic into which Schedules you pass into `$find`.** Typical flow: run your rules (PractitionerRole search, patient address, compartments, access policy, and so on) to build the list of allowed Schedule resource IDs, then call `$find` once per Schedule you want to offer in the UI (and merge or present results however your product requires).
 
@@ -16,11 +16,13 @@ Use cases like state-by-state licensure, program enrollment, and “which provid
 
 ### Background
 
-A single [Practitioner](/docs/api/fhir/resources/practitioner) may deliver more than one kind of care, modeled as multiple [HealthcareService](/docs/api/fhir/resources/healthcareservice) offerings (for example registered nurse care management and dietitian services). Licensure is usually **per service and per jurisdiction**: the same person might be licensed as an RN in California and Maryland, and as a dietitian in Ohio and Oregon.
+A single [Practitioner](/docs/api/fhir/resources/practitioner) may deliver more than one kind of care service.
+
+For this model, each care service is modeled as a [HealthcareService](/docs/api/fhir/resources/healthcareservice) offering (for example registered nurse care management and dietitian services). Licensure is usually **per service and per jurisdiction**: the same person might be licensed as an RN in California and Maryland, and as a dietitian in Ohio and Oregon.
 
 You still need a clear way to answer *who is allowed to provide this service to this patient in this state?*—but that answer is **input to Schedule selection**, not something `$find` infers for you.
 
-### Model each enrollable service as a PractitionerRole
+### Model each care service that as a PractitionerRole
 
 Use one [PractitionerRole](/docs/api/fhir/resources/practitionerrole) per HealthcareService (or per service line) the practitioner is enrolled to provide. Each role record carries:
 
