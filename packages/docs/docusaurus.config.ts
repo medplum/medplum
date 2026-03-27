@@ -32,6 +32,24 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          {
+            from: '/docs/communications/organizing-communications',
+            to: '/docs/communications/messaging-data-model',
+          },
+          {
+            from: '/docs/communications/task-based-message-response-tracking-and-routing',
+            to: '/docs/communications/message-response-tracking-and-routing',
+          },
+        ],
+      },
+    ],
+  ],
+
   presets: [
     [
       'classic',
@@ -117,7 +135,7 @@ const config: Config = {
           className: 'button button--outline button--primary navbar-btn navbar-btn-outlined',
         },
         {
-          to: 'https://cal.com/medplum/demo',
+          to: 'https://cal.com/team/medplum/30min',
           label: 'Book a Demo',
           position: 'right',
           className: 'button button--primary navbar-btn navbar-btn-filled',

@@ -5,7 +5,7 @@ import iconv from 'iconv-lite';
 import type net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
-import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';
+import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent, Hl7WarningEvent } from './events';
 
 // Export `ReturnAckCategory` for backwards-compat
 export { ReturnAckCategory } from '@medplum/core';
@@ -91,6 +91,8 @@ export class Hl7Connection extends Hl7Base {
     // If the connection from the other side does not close gracefully, but instead we destroy the socket, then the Hl7Connection will not emit close
     // if we listen only for "end"; "close" is always emitted, whether the close is graceful or forceful
     socket.on('close', () => {
+      // Reject any messages that were still pending when the connection was closed externally (e.g. closed by peer)
+      this.drainPendingMessages();
       this.dispatchEvent(new Hl7CloseEvent());
     });
 
@@ -115,7 +117,7 @@ export class Hl7Connection extends Hl7Base {
       const queueItem = this.pendingMessages.get(origMsgCtrlId);
       if (!queueItem) {
         this.dispatchEvent(
-          new Hl7ErrorEvent(
+          new Hl7WarningEvent(
             new OperationOutcomeError({
               resourceType: 'OperationOutcome',
               issue: [
@@ -306,51 +308,62 @@ export class Hl7Connection extends Hl7Base {
     }
     this.socket.end();
     this.socket.destroy();
-    // Before clearing out messages, we should propagate a message to the consumer that we are closing the connection while some messages were still pending a response
-    if (this.pendingMessages.size) {
-      for (const queueItem of this.pendingMessages.values()) {
-        if (queueItem.timer) {
-          clearTimeout(queueItem.timer);
-        }
-        queueItem.reject(
-          new OperationOutcomeError({
-            resourceType: 'OperationOutcome',
-            issue: [
-              {
-                severity: 'warning',
-                code: 'incomplete',
-                details: {
-                  text: 'Message was still pending when connection closed',
-                },
-              },
-            ],
-          })
-        );
-      }
-      this.dispatchEvent(
-        new Hl7ErrorEvent(
-          new OperationOutcomeError({
-            resourceType: 'OperationOutcome',
-            issue: [
-              {
-                severity: 'warning',
-                code: 'incomplete',
-                details: {
-                  text: 'Messages were still pending when connection closed',
-                },
-                diagnostics: `Hl7Connection closed while ${this.pendingMessages.size} messages were pending`,
-              },
-            ],
-          })
-        )
-      );
-      // Clear out any pending messages
-      this.pendingMessages.clear();
-    }
+    // drainPendingMessages is also called by the socket 'close' handler, but we call it here first so
+    // that rejections are delivered before the close event is dispatched when close() is called explicitly.
+    // The socket 'close' handler's call will be a no-op since the map will already be empty.
+    this.drainPendingMessages();
     await new Promise((resolve) => {
       // Register a temporary listener to help resolve the promise once close has been emitted
       this.socket.once('close', resolve);
     });
+  }
+
+  /**
+   * Rejects all pending sendAndWait promises and clears the pending messages map.
+   * Safe to call multiple times — subsequent calls are no-ops once the map is empty.
+   */
+  private drainPendingMessages(): void {
+    if (!this.pendingMessages.size) {
+      return;
+    }
+    const pendingCount = this.pendingMessages.size;
+    for (const queueItem of this.pendingMessages.values()) {
+      if (queueItem.timer) {
+        clearTimeout(queueItem.timer);
+      }
+      queueItem.reject(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'warning',
+              code: 'incomplete',
+              details: {
+                text: 'Message was still pending when connection closed',
+              },
+            },
+          ],
+        })
+      );
+    }
+    this.dispatchEvent(
+      new Hl7ErrorEvent(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'warning',
+              code: 'incomplete',
+              details: {
+                text: 'Messages were still pending when connection closed',
+              },
+              diagnostics: `Hl7Connection closed while ${pendingCount} messages were pending`,
+            },
+          ],
+        })
+      )
+    );
+    this.pendingMessages.clear();
   }
 
   private appendData(data: Buffer): void {

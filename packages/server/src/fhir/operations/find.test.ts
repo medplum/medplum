@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bundle, Extension, Location, Practitioner, Project, Schedule, Slot, Timing } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  CodeableConcept,
+  Extension,
+  Location,
+  Practitioner,
+  Project,
+  Schedule,
+  Slot,
+  Timing,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -126,6 +136,7 @@ describe('Schedule/:id/$find', () => {
     end: Date;
     status: 'busy' | 'free' | 'busy-unavailable';
     schedule: Schedule;
+    serviceType?: CodeableConcept[];
   }): Promise<Slot> {
     return systemRepo.createResource<Slot>({
       resourceType: 'Slot',
@@ -134,6 +145,7 @@ describe('Schedule/:id/$find', () => {
       end: params.end.toISOString(),
       status: params.status,
       schedule: createReference(params.schedule),
+      serviceType: params.serviceType,
     });
   }
 
@@ -260,11 +272,23 @@ describe('Schedule/:id/$find', () => {
     const schedule = await makeSchedule({
       'generic-visit': { availability: fourDayWorkWeek, duration: 20 },
     });
+
+    // Free slots with no service type can be used for any service type
     await makeSlot({
       start: new Date('2025-12-01T09:00:00.000-05:00'),
       end: new Date('2025-12-01T10:00:00.000-05:00'),
       status: 'free',
       schedule,
+    });
+
+    // Free slots with a service type that matches the service type from the scheduling
+    // parameters used can be chosen
+    await makeSlot({
+      start: new Date('2025-12-01T13:00:00.000-05:00'),
+      end: new Date('2025-12-01T14:00:00.000-05:00'),
+      status: 'free',
+      schedule,
+      serviceType: [{ coding: [{ system: 'http://example.com', code: 'generic-visit' }] }],
     });
 
     const response = await request
@@ -289,6 +313,16 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T09:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
           },
         },
         {
@@ -298,6 +332,16 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T10:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
           },
         },
         {
@@ -307,6 +351,16 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T11:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
           },
         },
         {
@@ -316,6 +370,26 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T12:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2025-12-01T13:00:00.000-05:00').toISOString(),
+            end: new Date('2025-12-01T13:20:00.000-05:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+            serviceType: [{ coding: [{ system: 'http://example.com', code: 'generic-visit' }] }],
           },
         },
       ],

@@ -8,7 +8,6 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
-import {} from './repo';
 import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {

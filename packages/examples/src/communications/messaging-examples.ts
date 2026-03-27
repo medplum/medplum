@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { MedplumClient, getReferenceString } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
+import { getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
+import type { Bundle, Communication, Parameters, Slot } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -20,6 +22,8 @@ const readReceiptTaskId = 'example-read-receipt-task-id';
 const latestMessageId = 'latest-message-id';
 const recipientId = 'recipient-practitioner-id';
 const file = new Blob();
+/** Placeholder thread id for participant add/remove examples (use a real header id in your app). */
+const messagingGroupThreadId = 'example-group-thread-id';
 
 // start-block filterActiveThreadsTs
 // Thread headers have no partOf; child messages have partOf set to the header.
@@ -259,26 +263,6 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
-// start-block loadThreadsWithMessagesTs
-// Load thread headers and all their child messages in a single request
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
-});
-// end-block loadThreadsWithMessagesTs
-
-/*
-// start-block loadThreadsWithMessagesCli
-medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
-// end-block loadThreadsWithMessagesCli
-
-// start-block loadThreadsWithMessagesCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinclude=Communication:part-of' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block loadThreadsWithMessagesCurl
-*/
-
 // start-block filterByPatientTs
 // Filter threads to a specific patient
 await medplum.searchResources('Communication', {
@@ -319,6 +303,18 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipie
   -H 'content-type: application/fhir+json'
 // end-block filterMyThreadsCurl
 */
+
+// start-block subscribeThreadMessagesTs
+const threadId = 'example-thread-id';
+const emitter = medplum.subscribeToCriteria(`Communication?part-of=Communication/${threadId}`);
+
+emitter.addEventListener('message', (event) => {
+  const newMessage = event.payload.entry?.find((e) => e.resource?.resourceType === 'Communication')?.resource;
+  if (newMessage) {
+    console.log(newMessage);
+  }
+});
+// end-block subscribeThreadMessagesTs
 
 // start-block poolTasksTs
 // Task-based routing: find unclaimed Tasks in a pool by performer role
@@ -540,5 +536,377 @@ await medplum.patchResource('Task', task.id, [
   },
 ]);
 // end-block dualTaskRerouteTs
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[newTask];
 
-console.log(newTask);
+// start-block oooRerouteTs
+// Bot: reroute Tasks to the pool when the assigned provider is out of office.
+// Uses Schedule $find to check availability at message receive time.
+export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef) {
+    return;
+  }
+
+  const openTasks = await medplum.searchResources('Task', {
+    focus: threadRef,
+    status: 'requested,accepted',
+  });
+
+  if (openTasks.length === 0) {
+    return;
+  }
+
+  const rerouteTask = openTasks[0];
+  if (!rerouteTask.id) {
+    return;
+  }
+  const ownerRef = rerouteTask.owner?.reference;
+  if (!ownerRef) {
+    return;
+  }
+
+  const schedules = await medplum.searchResources('Schedule', {
+    actor: ownerRef,
+  });
+
+  if (schedules.length === 0) {
+    return;
+  }
+
+  const schedule = schedules[0];
+  if (!schedule.id) {
+    return;
+  }
+
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const result: Parameters = await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'start', valueDateTime: now.toISOString() },
+      { name: 'end', valueDateTime: oneHourLater.toISOString() },
+    ],
+  });
+
+  const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
+  const freeSlots = bundle?.entry?.filter((e) => e.resource?.status === 'free') ?? [];
+
+  if (freeSlots.length > 0) {
+    return;
+  }
+
+  // Provider is unavailable — reroute Task back to the pool
+  const threadHeaderId = threadRef.split('/')[1];
+  await medplum.patchResource('Task', rerouteTask.id, [
+    { op: 'remove', path: '/owner' },
+    { op: 'replace', path: '/status', value: 'requested' },
+    {
+      op: 'add',
+      path: '/note/-',
+      value: {
+        text: `Auto-rerouted: ${rerouteTask.owner?.display ?? ownerRef} is currently unavailable`,
+        time: now.toISOString(),
+      },
+    },
+  ]);
+  await medplum.patchResource('Communication', threadHeaderId, [{ op: 'remove', path: '/recipient' }]);
+}
+// end-block oooRerouteTs
+
+// start-block subscriptionOooRerouteTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Reroute Tasks when assigned provider is out of office',
+  criteria: 'Communication?part-of:missing=false&status=in-progress',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-ooo-reroute-bot-id}',
+  },
+});
+// end-block subscriptionOooRerouteTs
+
+// start-block staleThreadRemindersTs
+// Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
+export async function staleThreadRemindersHandler(medplum: MedplumClient, _event: BotEvent): Promise<void> {
+  const staleDays = 3;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - staleDays);
+
+  const staleThreads = await medplum.searchResources('Communication', {
+    'part-of:missing': true,
+    status: 'in-progress',
+    _lastUpdated: `lt${cutoff.toISOString()}`,
+  });
+
+  for (const thread of staleThreads) {
+    if (!thread.subject) {
+      continue;
+    }
+    const existingTasks = await medplum.searchResources('Task', {
+      focus: `Communication/${thread.id}`,
+      code: 'https://medplum.com/task-codes|respond-to-old-message',
+      status: 'requested,accepted',
+    });
+
+    if (existingTasks.length > 0) {
+      continue;
+    }
+
+    await medplum.createResource({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      priority: 'urgent',
+      code: {
+        coding: [
+          {
+            system: 'https://medplum.com/task-codes',
+            code: 'respond-to-old-message',
+            display: 'Respond to old message',
+          },
+        ],
+      },
+      focus: { reference: `Communication/${thread.id}` },
+      for: thread.subject,
+      description: `Thread "${thread.topic?.text ?? 'Untitled'}" has been open for ${staleDays}+ days without a response`,
+      authoredOn: new Date().toISOString(),
+    });
+  }
+}
+// end-block staleThreadRemindersTs
+
+const communicationThread: Partial<Communication>[] = [
+  // start-block communicationGroupedThread
+  {
+    resourceType: 'Communication',
+    id: 'example-thread-header',
+    // Thread header: no partOf or payload
+    // Include the thread creator in recipient so recipient-based inbox search finds threads they started
+    sender: { reference: 'Practitioner/doctor-alice-smith' },
+    recipient: [{ reference: 'Practitioner/doctor-alice-smith' }, { reference: 'Practitioner/doctor-gregory-house' }],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+  },
+
+  // The initial message
+  {
+    resourceType: 'Communication',
+    id: 'example-message-1',
+    payload: [
+      {
+        id: 'example-message-1-payload',
+        contentString: 'The specimen for your patient, Homer Simpson, has been received.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A response directly to `example-message-1` but still referencing the parent communication
+  {
+    resourceType: 'Communication',
+    id: 'example-message-2',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Will the results be ready by the end of the week?',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-1',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A second response
+  {
+    resourceType: 'Communication',
+    id: 'example-message-3',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Yes, we will have them to you by Thursday.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-2',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+  // end-block communicationGroupedThread
+];
+
+console.log(communicationThread);
+
+const categoryExampleCommunications: Communication =
+  // start-block communicationCategories
+  {
+    resourceType: 'Communication',
+    id: 'example-communication',
+    status: 'completed',
+    category: [
+      {
+        text: 'Doctor',
+        coding: [
+          {
+            code: '158965000',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Endocrinology',
+        coding: [
+          {
+            code: '394583002',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Diabetes self-management plan',
+        coding: [
+          {
+            code: '735985000',
+            system: SNOMED,
+          },
+        ],
+      },
+    ],
+  };
+// end-block communicationCategories
+
+console.log(categoryExampleCommunications);
+
+// start-block threadLifecycleCloseHeaderTs
+await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'completed' }]);
+// end-block threadLifecycleCloseHeaderTs
+
+// start-block threadLifecycleReopenHeaderTs
+await medplum.patchResource('Communication', threadHeader.id, [
+  { op: 'replace', path: '/status', value: 'in-progress' },
+]);
+// end-block threadLifecycleReopenHeaderTs
+
+// start-block threadLifecycleGroupThreadTs
+const messagingGroupThread = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  topic: { text: 'Care coordination - Homer Simpson' },
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  recipient: [
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+    { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+    { reference: 'Practitioner/nurse-jackie', display: 'Nurse Jackie' },
+  ],
+});
+console.log(messagingGroupThread);
+// end-block threadLifecycleGroupThreadTs
+
+// start-block threadLifecycleAddParticipantTs
+await medplum.patchResource('Communication', messagingGroupThreadId, [
+  {
+    op: 'add',
+    path: '/recipient/-',
+    value: { reference: 'Practitioner/dr-wilson', display: 'Dr. Wilson' },
+  },
+]);
+// end-block threadLifecycleAddParticipantTs
+
+// start-block threadLifecycleRemoveParticipantTs
+const messagingThreadForParticipants = await medplum.readResource('Communication', messagingGroupThreadId);
+const messagingUpdatedRecipients = messagingThreadForParticipants.recipient?.filter(
+  (r) => r.reference !== 'Practitioner/nurse-jackie'
+);
+await medplum.patchResource('Communication', messagingGroupThreadId, [
+  { op: 'replace', path: '/recipient', value: messagingUpdatedRecipients },
+]);
+// end-block threadLifecycleRemoveParticipantTs
+
+/*
+// start-block messagingParticipantScopedAccessPolicyJson
+{
+  "resourceType": "AccessPolicy",
+  "name": "Messaging - Participant Access",
+  "resource": [
+    {
+      "resourceType": "Communication",
+      "criteria": "Communication?recipient=%profile"
+    },
+    {
+      "resourceType": "Communication",
+      "criteria": "Communication?sender=%profile"
+    }
+  ]
+}
+// end-block messagingParticipantScopedAccessPolicyJson
+
+// start-block messagingSupervisorAccessPolicyJson
+{
+  "resourceType": "AccessPolicy",
+  "name": "Messaging - Supervisor Access",
+  "resource": [
+    {
+      "resourceType": "Communication",
+      "readonly": true
+    },
+    {
+      "resourceType": "Task",
+      "readonly": true
+    }
+  ]
+}
+// end-block messagingSupervisorAccessPolicyJson
+*/

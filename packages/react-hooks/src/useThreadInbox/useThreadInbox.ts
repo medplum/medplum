@@ -42,7 +42,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
   const fetchAllCommunications = useCallback(async (): Promise<void> => {
     const searchParams = new URLSearchParams(query);
-    searchParams.append('identifier:not', 'ai-message-topic');
+    searchParams.append('identifier:not', 'http://medplum.com/ai-message|');
     searchParams.append('part-of:missing', 'true');
     searchParams.append('_has:Communication:part-of:_id:not', 'null');
 

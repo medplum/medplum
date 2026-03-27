@@ -790,7 +790,7 @@ describe('Execute', () => {
       // execute the bot in the appropriate project context
       const project = whichProject === 'own' ? project1 : project2;
       const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
 
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$execute`)

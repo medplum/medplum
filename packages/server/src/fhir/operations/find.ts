@@ -7,7 +7,6 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  EMPTY,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -43,7 +42,7 @@ const findOperation = {
 type FindParameters = {
   start: string;
   end: string;
-  'service-type'?: string;
+  'service-type': string;
   _count?: number;
 };
 
@@ -53,12 +52,12 @@ type FindParameters = {
 // - Each schedulingParameters description is returned at most once
 function filterByServiceTypes(
   schedulingParameters: SchedulingParameters[],
-  serviceTypes: string[]
+  serviceTypeTokens: string[]
 ): [SchedulingParameters, CodeableConcept][] {
   const results: [SchedulingParameters, CodeableConcept][] = [];
   for (const params of schedulingParameters) {
     const serviceType = params.serviceType.find((codeableConcept) =>
-      serviceTypes.some((token) => codeableConceptMatchesToken(codeableConcept, token))
+      serviceTypeTokens.some((token) => codeableConceptMatchesToken(codeableConcept, token))
     );
     if (serviceType) {
       results.push([params, serviceType]);
@@ -82,7 +81,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const { start, end, _count } = params;
 
   // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypes = params['service-type']?.split(',') ?? [];
+  const serviceTypeTokens = params['service-type']?.split(',');
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
@@ -154,7 +153,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-  const matchingSchedulingParameters = filterByServiceTypes(allSchedulingParameters, serviceTypes);
+  const matchingSchedulingParameters = filterByServiceTypes(allSchedulingParameters, serviceTypeTokens);
 
   if (matchingSchedulingParameters.length === 0) {
     throw new OperationOutcomeError(badRequest('No scheduling parameters found for the requested service type(s)'));
@@ -170,7 +169,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         availability,
         slots,
         range,
-        serviceType: serviceType ? [serviceType] : EMPTY,
+        serviceType: [serviceType],
       });
       return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
         resourceType: 'Slot',
@@ -178,7 +177,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         end: end.toISOString(),
         schedule: createReference(schedule),
         status: 'free',
-        ...(serviceType ? { serviceType: [serviceType] } : {}),
+        serviceType: [serviceType],
       }));
     },
     pageSize

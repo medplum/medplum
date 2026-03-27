@@ -55,7 +55,7 @@ OpenTelemetry cannot be configured through the normal `medplum.config.json` file
 Instead, you must add the following environment variables:
 
 ```bash
-export OTLP_TRACES_ENDPOINT="http://localhost:4318/v1/traces"
+export OTLP_TRACE_ENDPOINT="http://localhost:4318/v1/traces"
 export OTLP_METRICS_ENDPOINT="http://localhost:4318/v1/metrics"
 ```
 
@@ -81,7 +81,7 @@ Next, add the following to your Medplum CDK JSON config file:
   "stackName": "MedplumStagingStack",
   // ...
   "environment": {
-    "OTLP_TRACES_ENDPOINT": "http://localhost:4318/v1/traces",
+    "OTLP_TRACE_ENDPOINT": "http://localhost:4318/v1/traces",
     "OTLP_METRICS_ENDPOINT": "http://localhost:4318/v1/metrics"
   },
   // ...
