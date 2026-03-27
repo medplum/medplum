@@ -1377,10 +1377,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
             __version: -1,
           };
 
-          if (resourceType !== 'Binary') {
-            columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
-          }
-
           for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
             this.buildColumn({ resourceType } as Resource, columns, searchParam);
           }
