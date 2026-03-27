@@ -576,14 +576,14 @@ export class SubscriptionManager {
     }
 
     criteriaEntry.refCount -= 1;
-    if (criteriaEntry.refCount > 0) {
-      return;
-    }
 
-    // Record when refCount hit 0 — gcUnrefEntries will finalize after the grace period.
-    // Re-subscribing before then rescues the entry (see addCriteria).
-    criteriaEntry.lastUnrefTime = Date.now();
-    criteriaEntry.generation++;
+    // We know that refCount cannot be less than 0 since we early return above if `isEntryGettingRemoved()` is true
+    if (criteriaEntry.refCount === 0) {
+      // Record when refCount hit 0 — gcUnrefEntries will finalize after the grace period.
+      // Re-subscribing before then rescues the entry (see addCriteria).
+      criteriaEntry.lastUnrefTime = Date.now();
+      criteriaEntry.generation++;
+    }
   }
 
   /**
