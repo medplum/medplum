@@ -1225,4 +1225,38 @@ describe('Super Admin routes', () => {
       );
     });
   });
+
+  test('Refresh membership display names as super admin', async () => {
+    const res = await request(app)
+      .post('/admin/super/refreshmembershipdisplay')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+  });
+
+  test('Refresh membership display names requires super admin', async () => {
+    const res = await request(app)
+      .post('/admin/super/refreshmembershipdisplay')
+      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res.status).toStrictEqual(403);
+  });
+
+  test('Refresh membership display names requires respond-async', async () => {
+    const res = await request(app)
+      .post('/admin/super/refreshmembershipdisplay')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({});
+
+    expect(res.status).toStrictEqual(400);
+  });
 });

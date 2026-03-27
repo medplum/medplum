@@ -10,6 +10,7 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { addCronJobs } from './cron';
 import { addDownloadJobs } from './download';
+import { syncProjectDisplayNames } from './project-display-sync';
 import { addSubscriptionJobs } from './subscription';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
@@ -154,6 +155,16 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
       await addCronJobs(resource, previousVersion, context);
     } catch (err) {
       getLogger().error('Error adding cron jobs', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        err,
+      });
+    }
+
+    try {
+      await syncProjectDisplayNames(resource, previousVersion, context);
+    } catch (err) {
+      getLogger().error('Error syncing project display names', {
         resourceType: resource.resourceType,
         resource: resource.id,
         err,

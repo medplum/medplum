@@ -5,6 +5,7 @@ import {
   accepted,
   allOk,
   badRequest,
+  createReference,
   forbidden,
   getQueryString,
   getResourceTypes,
@@ -12,7 +13,7 @@ import {
   parseSearchRequest,
   validateResourceType,
 } from '@medplum/core';
-import type { ResourceType } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, ResourceType } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
@@ -545,6 +546,43 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
       resourceType: 'Parameters',
       parameter: [{ name: 'outcome', resource: allOk }],
     };
+  });
+});
+
+superAdminRouter.post('/refreshmembershipdisplay', async (req: Request, res: Response) => {
+  requireSuperAdmin();
+  requireAsync(req);
+
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+  await sendAsyncResponse(req, res, async () => {
+    let totalUpdated = 0;
+    const projectCache = new Map<string, { reference: string; display?: string }>();
+
+    await systemRepo.processAllResources<ProjectMembership>(
+      { resourceType: 'ProjectMembership', count: 500 },
+      async (membership) => {
+        const ref = membership.project.reference as string;
+        if (!projectCache.has(ref)) {
+          try {
+            const project = await systemRepo.readReference<Project>(membership.project);
+            projectCache.set(ref, createReference(project));
+          } catch (_err) {
+            return;
+          }
+        }
+
+        const freshRef = projectCache.get(ref);
+        if (freshRef && freshRef.display !== membership.project.display) {
+          await systemRepo.updateResource<ProjectMembership>({
+            ...membership,
+            project: freshRef,
+          });
+          totalUpdated++;
+        }
+      }
+    );
+
+    globalLogger.info('[Super Admin]: Membership display names refreshed', { totalUpdated });
   });
 });
 
