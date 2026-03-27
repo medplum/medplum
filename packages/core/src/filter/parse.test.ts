@@ -237,7 +237,7 @@ describe('_filter Parameter parser', () => {
     expect(result).toBeInstanceOf(FhirFilterComparison);
     expect((result as FhirFilterComparison).operator).toBe(Operator.NOT_EQUALS);
   });
-  
+
   test('parse raw token with leading digits', () => {
     const result = parseFilterParameter('identifier eq 123_abc');
     expect(result).toBeInstanceOf(FhirFilterComparison);
