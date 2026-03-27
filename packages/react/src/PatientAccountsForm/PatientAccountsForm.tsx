@@ -268,6 +268,7 @@ export function PatientAccountsForm(props: PatientAccountsFormProps): JSX.Elemen
         onClose={() => setConfirmModalOpen(false)}
         title="Confirm Account Changes"
         size="md"
+        keepMounted
       >
         <Stack>
           <Text>
