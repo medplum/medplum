@@ -2,121 +2,121 @@
   "bots": [
     {
       "name": "hello-patient",
-      "id": "",
+      "id": "14eb924e-803b-4f70-a8d4-39daa3770b3f",
       "source": "src/hello-patient.ts",
       "dist": "dist/hello-patient.js"
     },
     {
       "name": "patient-intake",
-      "id": "",
+      "id": "2b92d077-b45c-4939-8cae-269de66bdc02",
       "source": "src/patient-intake.ts",
       "dist": "dist/patient-intake.js"
     },
     {
       "name": "create-pdf",
-      "id": "",
+      "id": "986b1051-7786-4bc0-9404-e87232c1ae1c",
       "source": "src/create-pdf.ts",
       "dist": "dist/create-pdf.js"
     },
     {
       "name": "sample-account-setup",
-      "id": "",
+      "id": "6c65c3af-5577-4e5c-8646-4c7b7f3bf6ce",
       "source": "src/sample-account-setup.ts",
       "dist": "dist/sample-account-setup.js"
     },
     {
       "name": "sample-account-staging",
-      "id": "",
+      "id": "258b17c1-e949-48ae-9767-027219b70c0a",
       "source": "src/sample-account-setup.ts",
       "dist": "dist/sample-account-setup.js"
     },
     {
       "name": "hl7-bot",
-      "id": "",
+      "id": "b8d69133-a42a-40de-a404-51a4177ead58",
       "source": "src/hl7-bot.ts",
       "dist": "dist/hl7-bot.js"
     },
     {
       "name": "finalize-report",
-      "id": "",
+      "id": "4155f7bd-3039-4f39-80db-90aab6e7fa8b",
       "source": "src/finalize-report.ts",
       "dist": "dist/finalize-report.js"
     },
     {
       "name": "stripe-create-invoice",
-      "id": "",
+      "id": "58a699b1-1726-4471-b1ef-1ebf936bdcbb",
       "source": "src/stripe-bots/stripe-create-invoice.ts",
       "dist": "dist/stripe-bots/stripe-create-invoice.js"
     },
     {
       "name": "merge-bot",
-      "id": "",
+      "id": "7ca6d669-4977-491f-8cb8-6c20101a4017",
       "source": "src/deduplication/merge-bot.ts",
       "dist": "dist/deduplication/merge-bot.js"
     },
     {
       "name": "patient-deduplication",
-      "id": "",
+      "id": "26692c6e-e8b1-4b51-b6cc-db231fd39e75",
       "source": "src/deduplication/patient-deduplication.ts",
       "dist": "dist/deduplication/patient-deduplication.js"
     },
     {
       "name": "find-matching-patients",
-      "id": "",
+      "id": "129d7ec3-878d-4389-ba28-9ca12d455472",
       "source": "src/deduplication/find-matching-patients.ts",
       "dist": "dist/deduplication/find-matching-patients.js"
     },
     {
       "name": "merge-matching-patients",
-      "id": "",
+      "id": "6a289d74-7384-4b25-b777-d577e5a58565",
       "source": "src/deduplication/merge-matching-patients.ts",
       "dist": "dist/deduplication/merge-matching-patients.js"
     },
     {
       "name": "welcome-patient",
-      "id": "",
+      "id": "90b32474-1725-41f1-9e0f-a1e7707c5e6c",
       "source": "./src/bots-with-shared-library/welcome-patient.ts",
       "dist": "./dist/bots-with-shared-library/welcome-patient.js"
     },
     {
       "name": "goodbye-patient",
-      "id": "",
+      "id": "701ced7b-c417-48ec-b6ad-364168a86bf4",
       "source": "./src/bots-with-shared-library/goodbye-patient.ts",
-      "dist": "./dist/bots-with-shared-library/welcome-patient.js"
+      "dist": "./dist/bots-with-shared-library/goodbye-patient.js"
     },
     {
       "name": "demo-slack-bot",
-      "id": "",
+      "id": "3d32bc37-ae99-47e6-8056-fa46de42a01a",
       "source": "./src/slack-bots/demo-slack-bot.ts",
       "dist": "./dist/slack-bots/demo-slack-bot.js"
     },
     {
       "name": "cms-1500-pdf",
-      "id": "",
+      "id": "3ffd5c9c-f620-4030-ad22-19c9a2a5cda0",
       "source": "src/billing-bots/cms-1500-pdf.ts",
       "dist": "dist/billing-bots/cms-1500-pdf.js"
     },
     {
       "name": "epic-query-patient",
-      "id": "",
+      "id": "57a2dd9f-38a7-46ac-8877-6a6ae4184b7e",
       "source": "src/epic/epic-query-patient.ts",
       "dist": "dist/epic/epic-query-patient.js"
     },
     {
       "name": "metriport-patient-bot",
-      "id": "",
+      "id": "6a77005b-b0e2-4465-9c61-be634ff81d8d",
       "source": "src/metriport-bots/metriport-patient-bot.ts",
       "dist": "dist/metriport-bots/metriport-patient-bot.js"
     },
     {
       "name": "metriport-consolidated-data-webhook",
-      "id": "",
+      "id": "729ac9e1-4a14-4b1b-808a-0f85a49a2df2",
       "source": "src/metriport-bots/metriport-consolidated-data-webhook.ts",
       "dist": "dist/metriport-bots/metriport-consolidated-data-webhook.js"
     },
     {
       "name": "twilio-voice-webhook",
-      "id": "",
+      "id": "8f54d11c-7f77-4d98-aa98-4ffa691f41c5",
       "source": "src/twilio/voice-webhook.ts",
       "dist": "dist/twilio/voice-webhook.js"
     },
