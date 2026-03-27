@@ -1457,30 +1457,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(resourceType, async (conn) => {
           const lastUpdated = new Date();
-          const content = '';
-          const columns: Record<string, any> = {
-            id,
-            lastUpdated,
-            deleted: true,
-            projectId: resource.meta?.project ?? systemResourceProjectId,
-            content,
-            __version: -1,
-          };
-
-          for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
-          }
-
+          const columns = this.buildDeletedResourceRow(resourceType, id, lastUpdated, resource.meta?.project);
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
-
           const versionId = this.generateId();
           await new InsertQuery(resourceType + '_History', [
-            {
-              id,
-              versionId,
-              lastUpdated,
-              content,
-            },
+            { id, versionId, lastUpdated, content: columns['content'] },
           ]).execute(conn);
 
           await this.deleteFromLookupTables(conn, resource);
@@ -1512,6 +1493,28 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       });
       throw err;
     }
+  }
+
+  private buildDeletedResourceRow(
+    resourceType: ResourceType,
+    id: string,
+    lastUpdated: Date,
+    projectId: string | undefined
+  ): Record<string, any> {
+    const columns: Record<string, any> = {
+      id,
+      lastUpdated,
+      deleted: true,
+      projectId: projectId ?? systemResourceProjectId,
+      content: '',
+      __version: -1,
+    };
+
+    for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+      this.buildColumn({ resourceType } as Resource, columns, searchParam);
+    }
+
+    return columns;
   }
 
   async patchResource<T extends Resource>(
@@ -1939,9 +1942,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Syncs a resource from a shard to the global shard.
+   * Syncs a resource from a shard.
    * This is called by the shard sync worker to replicate SyncedResourceTypes.
-   * It performs the database write and cache update but deliberately does NOT
+   * It performs the database write and cache update but does NOT
    * trigger background jobs, binary handling, or audit event logging.
    * @param resource - The resource to sync.
    */
@@ -1949,63 +1952,59 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    // Use ensureInTransaction -> withTransaction which has built-in
-    // serialization retry (2 attempts, exponential backoff).
-    // Unlike writeToDatabase, we use ignoreOnConflict for the history table
-    // since the same version may have already been synced.
     await this.ensureInTransaction(resource.resourceType, async (client) => {
+      // SHARDING - check if the resource already exists with a newer version? How to determine if it's newer?
       await this.writeResource(client, resource);
-      // ignoreOnConflict since the same version may already exist on the global shard from a previous sync.
+
+      // Unlike writeToDatabase, use ignoreOnConflict since the same version may already
+      // exist from a previous sync attempt
       await this.writeResourceVersion(client, resource, { ignoreOnConflict: true });
       await this.writeLookupTables(client, resource, false);
     });
   }
 
+  /**
+   * Syncs a soft-deletion of a resource from a shard.
+   * It performs the database writes but does NOT
+   * trigger background jobs, binary handling, or audit event logging.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @param lastUpdated - The last updated timestamp.
+   * @param projectId - The project ID.
+   * @param versionId - The version ID.
+   */
   async syncDeleteFromShard(
     resourceType: ResourceType,
     id: string,
     lastUpdated: Date,
     projectId: string,
-    compartments: string[],
     versionId: string
   ): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
-    // SHARDING - this code should be shared with the normal delete flow
-    await this.ensureInTransaction(resourceType, async (client) => {
-      const content = '';
-      const columns: Record<string, any> = {
-        id,
-        lastUpdated,
-        deleted: true,
-        projectId,
-        content,
-        __version: -1,
-      };
-
-      if (resourceType !== 'Binary') {
-        columns['compartments'] = compartments;
-      }
-
-      for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
-        this.buildColumn({ resourceType } as Resource, columns, searchParam);
-      }
-
-      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
-      await new InsertQuery(resourceType + '_History', [
-        {
-          id,
-          versionId,
-          lastUpdated,
-          content,
-        },
-      ])
+    await this.deleteCacheEntries(resourceType, [id]);
+    await this.ensureInTransaction(resourceType, async (db) => {
+      const columns = this.buildDeletedResourceRow(resourceType, id, lastUpdated, projectId);
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(db);
+      await new InsertQuery(resourceType + '_History', [{ id, versionId, lastUpdated, content: columns['content'] }])
         .ignoreOnConflict()
-        .execute(client);
+        .execute(db);
+      await this.deleteFromLookupTables(db, { resourceType, id } as Resource);
+    });
+  }
 
-      await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+  async syncExpungeFromShard(resourceType: ResourceType, id: string): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
+    await this.deleteCacheEntries(resourceType, [id]);
+    await this.ensureInTransaction(resourceType, async (db) => {
+      await new DeleteQuery(resourceType).where('id', '=', id).execute(db);
+      await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(db);
+      await this.deleteFromLookupTables(db, { resourceType, id } as Resource);
     });
   }
 

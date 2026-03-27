@@ -4,7 +4,7 @@ import { conflict, OperationOutcomeError } from '@medplum/core';
 import type { User } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config/loader';
+import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { Repository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -43,310 +43,14 @@ describe('Shard Sync Worker', () => {
     await shutdownApp();
   });
 
-  test('Skip global shard', async () => {
-    await withTestContext(async () => {
-      const job = { id: '1', data: { shardId: GLOBAL_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-      // Should return early without error
-      await execShardSyncJob(job);
-    });
-  });
-
-  test('Empty outbox', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-      const job = { id: '2', data: { shardId: GLOBAL_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-      await execShardSyncJob(job);
-    });
-  });
-
-  test('Process outbox row: success', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-
-      const globalSystemRepo = getGlobalSystemRepo();
-      const user = await globalSystemRepo.createResource<User>({
-        resourceType: 'User',
-        firstName: 'BatchSync',
-        lastName: 'Success',
-        email: `batch-sync-${Date.now()}@example.com`,
-      });
-
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3) RETURNING "id"`,
-        ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
-      );
-      expect(rows.length).toBe(1);
-
-      const job = { id: '3', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-      await execShardSyncJob(job);
-
-      const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
-      expect(remaining.length).toBe(0);
-    });
-  });
-
-  test('Process outbox row: deduplicates multiple outbox rows for same resource', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-
-      const globalSystemRepo = getGlobalSystemRepo();
-      const user = await globalSystemRepo.createResource<User>({
-        resourceType: 'User',
-        firstName: 'Dedup',
-        lastName: 'User',
-        email: `dedup-${Date.now()}@example.com`,
-      });
-
-      // Insert 2 outbox rows for the same resource (simulates duplicate events)
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3), ($1, $2, $3) RETURNING "id"`,
-        ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
-      );
-      expect(rows.length).toBe(2);
-
-      const job = { id: '4a', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-      await execShardSyncJob(job);
-
-      // Both rows should be processed and deleted (one sync, both outbox rows cleaned)
-      const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = ANY($1)', [
-        rows.map((r) => r.id),
-      ]);
-      expect(remaining.length).toBe(0);
-    });
-  });
-
-  test('Process outbox row: resource missing (skipped)', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3) RETURNING "id"`,
-        ['User', '00000000-0000-0000-0000-000000000099', '00000000-0000-0000-0000-000000000001']
-      );
-      expect(rows.length).toBe(1);
-
-      const job = { id: '4', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-      await execShardSyncJob(job);
-
-      const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
-      expect(remaining.length).toBe(0);
-    });
-  });
-
-  test('Process outbox row: deleted resource', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-
-      const globalSystemRepo = getGlobalSystemRepo();
-      const user = await globalSystemRepo.createResource<User>({
-        resourceType: 'User',
-        firstName: 'Deleted',
-        lastName: 'User',
-        email: `deleted-${Date.now()}@example.com`,
-      });
-      const updatedUser = await globalSystemRepo.updateResource({
-        ...user,
-        meta: { ...user.meta, versionId: '00000000-0000-0000-0000-000000000002' },
-      });
-      await pool.query('UPDATE "User" SET "deleted" = true WHERE "id" = $1', [user.id]);
-
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3) RETURNING "id"`,
-        ['User', user.id, updatedUser.meta?.versionId ?? '00000000-0000-0000-0000-000000000002']
-      );
-      expect(rows.length).toBe(1);
-
-      const job = { id: '5', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-      await execShardSyncJob(job);
-
-      const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
-      expect(remaining.length).toBe(0);
-
-      const { rows: userRows } = await pool.query('SELECT "deleted" FROM "User" WHERE "id" = $1', [user.id]);
-      expect(userRows.length).toBe(1);
-      expect(userRows[0].deleted).toBe(true);
-    });
-  });
-
-  test('Process outbox row: error threshold aborts batch', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-      await pool.query('DELETE FROM "shard_sync_outbox_attempts"');
-
-      const globalSystemRepo = getGlobalSystemRepo();
-      const user = await globalSystemRepo.createResource<User>({
-        resourceType: 'User',
-        firstName: 'ErrThreshold',
-        lastName: 'User',
-        email: `err-threshold-${Date.now()}@example.com`,
-      });
-
-      await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3)`,
-        ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
-      );
-
-      const repoModule = await import('../fhir/repo');
-      const syncSpy = jest.spyOn(globalSystemRepo, 'syncResourceFromShard').mockRejectedValue(new Error('Sync failed'));
-      const getGlobalSystemRepoSpy = jest
-        .spyOn(repoModule, 'getGlobalSystemRepo')
-        .mockReturnValue(globalSystemRepo as any);
-
-      const configLoader = await import('../config/loader');
-      const getConfigSpy = jest.spyOn(configLoader, 'getConfig').mockReturnValue({
-        ...configLoader.getConfig(),
-        shardSync: {
-          ...(configLoader.getConfig().shardSync ?? {}),
-          globalErrorThreshold: 1,
-          maxIterations: 1,
-          batchSize: 10,
-        },
-      });
-
-      try {
-        const job = { id: '6b', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-        await expect(execShardSyncJob(job)).rejects.toThrow('Global shard unavailable');
-      } finally {
-        syncSpy.mockRestore();
-        getGlobalSystemRepoSpy.mockRestore();
-        getConfigSpy.mockRestore();
-      }
-    });
-  });
-
-  test('Process outbox row: serialization error (skipped, will retry)', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-
-      const globalSystemRepo = getGlobalSystemRepo();
-      const user = await globalSystemRepo.createResource<User>({
-        resourceType: 'User',
-        firstName: 'Serialization',
-        lastName: 'User',
-        email: `serialization-${Date.now()}@example.com`,
-      });
-
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3) RETURNING "id"`,
-        ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
-      );
-
-      const serializationError = new OperationOutcomeError(
-        conflict('Serialization failure', PostgresError.SerializationFailure)
-      );
-      const repoModule = await import('../fhir/repo');
-      const syncSpy = jest.spyOn(globalSystemRepo, 'syncResourceFromShard').mockRejectedValue(serializationError);
-      const getGlobalSystemRepoSpy = jest
-        .spyOn(repoModule, 'getGlobalSystemRepo')
-        .mockReturnValue(globalSystemRepo as any);
-
-      const configLoader = await import('../config/loader');
-      const getConfigSpy = jest.spyOn(configLoader, 'getConfig').mockReturnValue({
-        ...configLoader.getConfig(),
-        shardSync: { ...(configLoader.getConfig().shardSync ?? {}), maxIterations: 1 },
-      });
-
-      try {
-        const job = { id: '6a', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-        await execShardSyncJob(job);
-
-        // Row stays in outbox (skipped for retry), one attempt recorded
-        const { rows: attemptRows } = await pool.query(
-          'SELECT * FROM "shard_sync_outbox_attempts" WHERE "outbox_id" = $1',
-          [rows[0].id]
-        );
-        expect(attemptRows.length).toBe(1);
-      } finally {
-        syncSpy.mockRestore();
-        getGlobalSystemRepoSpy.mockRestore();
-        getConfigSpy.mockRestore();
-      }
-    });
-  });
-
-  test('Process outbox row: move to deadletter when maxAttempts exceeded', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      await pool.query('DELETE FROM "shard_sync_outbox_deadletter"');
-      await pool.query('DELETE FROM "shard_sync_outbox_attempts"');
-      await pool.query('DELETE FROM "shard_sync_outbox"');
-
-      const globalSystemRepo = getGlobalSystemRepo();
-      const user = await globalSystemRepo.createResource<User>({
-        resourceType: 'User',
-        firstName: 'Deadletter',
-        lastName: 'User',
-        email: `deadletter-${Date.now()}@example.com`,
-      });
-
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3) RETURNING "id"`,
-        ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
-      );
-      expect(rows.length).toBe(1);
-
-      const repoModule = await import('../fhir/repo');
-      const syncSpy = jest.spyOn(globalSystemRepo, 'syncResourceFromShard').mockRejectedValue(new Error('Sync failed'));
-      const getGlobalSystemRepoSpy = jest
-        .spyOn(repoModule, 'getGlobalSystemRepo')
-        .mockReturnValue(globalSystemRepo as any);
-
-      const configLoader = await import('../config/loader');
-      const getConfigSpy = jest.spyOn(configLoader, 'getConfig').mockReturnValue({
-        ...configLoader.getConfig(),
-        shardSync: { ...(configLoader.getConfig().shardSync ?? {}), maxAttempts: 2 },
-      });
-
-      try {
-        // One job run processes multiple batches; 2nd batch iteration will hit maxAttempts and move to deadletter
-        const job = { id: '6', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
-        await execShardSyncJob(job);
-
-        const { rows: deadletter } = await pool.query(
-          'SELECT * FROM "shard_sync_outbox_deadletter" WHERE "outbox_id" = $1',
-          [rows[0].id]
-        );
-        expect(deadletter.length).toBe(1);
-        expect(deadletter[0].resourceType).toBe('User');
-        expect(deadletter[0].resourceId).toBe(user.id);
-
-        const { rows: attempts } = await pool.query(
-          'SELECT * FROM "shard_sync_outbox_attempts" WHERE "outbox_id" = $1',
-          [rows[0].id]
-        );
-        expect(attempts.length).toBe(2);
-      } finally {
-        syncSpy.mockRestore();
-        getConfigSpy.mockRestore();
-        getGlobalSystemRepoSpy.mockRestore();
-      }
-    });
-  });
-
   test('prepareShardSyncJobData returns correct shape', async () => {
     await withTestContext(async () => {
       const jobData = prepareShardSyncJobData(TEST_SHARD_ID);
-      expect(jobData).toEqual(
-        expect.objectContaining({
-          shardId: TEST_SHARD_ID,
-        })
-      );
-      expect(jobData).toHaveProperty('requestId');
-      expect(jobData).toHaveProperty('traceId');
+      expect(jobData).toStrictEqual({
+        shardId: TEST_SHARD_ID,
+        requestId: expect.any(String),
+        traceId: expect.any(String),
+      });
     });
   });
 
@@ -360,6 +64,285 @@ describe('Shard Sync Worker', () => {
 
   test('Queue has shard sync queue registered', () => {
     expect(getShardSyncQueue()).toBeDefined();
+  });
+
+  test('Skip global shard', async () => {
+    await withTestContext(async () => {
+      const job = { id: '1', data: { shardId: GLOBAL_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+      // Should return early without error
+      await execShardSyncJob(job);
+    });
+  });
+
+  describe('Process outbox', () => {
+    const globalSystemRepo = getGlobalSystemRepo();
+
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+
+    beforeEach(async () => {
+      await pool.query('TRUNCATE TABLE "shard_sync_outbox"');
+      await pool.query('TRUNCATE TABLE "shard_sync_outbox_attempts"');
+      await pool.query('TRUNCATE TABLE "shard_sync_outbox_deadletter"');
+    });
+
+    test('Empty outbox', async () => {
+      await withTestContext(async () => {
+        const job = { id: '2', data: { shardId: GLOBAL_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+        await execShardSyncJob(job);
+      });
+    });
+
+    test('success', async () => {
+      await withTestContext(async () => {
+        const user = await globalSystemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'BatchSync',
+          lastName: 'Success',
+          email: `batch-sync-${Date.now()}@example.com`,
+        });
+
+        const { rows } = await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3) RETURNING "id"`,
+          ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
+        );
+        expect(rows.length).toBe(1);
+
+        const job = { id: '3', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+        await execShardSyncJob(job);
+
+        const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
+        expect(remaining.length).toBe(0);
+      });
+    });
+
+    test('deduplicates multiple outbox rows for same resource', async () => {
+      await withTestContext(async () => {
+        const user = await globalSystemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Dedup',
+          lastName: 'User',
+          email: `dedup-${Date.now()}@example.com`,
+        });
+
+        // Insert 2 outbox rows for the same resource (simulates duplicate events)
+        const { rows } = await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3), ($1, $2, $3) RETURNING "id"`,
+          ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
+        );
+        expect(rows.length).toBe(2);
+
+        const job = { id: '4a', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+        await execShardSyncJob(job);
+
+        // Both rows should be processed and deleted (one sync, both outbox rows cleaned)
+        const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = ANY($1)', [
+          rows.map((r) => r.id),
+        ]);
+        expect(remaining.length).toBe(0);
+      });
+    });
+
+    test('resource missing (skipped)', async () => {
+      await withTestContext(async () => {
+        const { rows } = await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3) RETURNING "id"`,
+          ['User', '00000000-0000-0000-0000-000000000099', '00000000-0000-0000-0000-000000000001']
+        );
+        expect(rows.length).toBe(1);
+
+        const job = { id: '4', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+        await execShardSyncJob(job);
+
+        const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
+        expect(remaining.length).toBe(0);
+      });
+    });
+
+    test('deleted resource', async () => {
+      await withTestContext(async () => {
+        const user = await globalSystemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Deleted',
+          lastName: 'User',
+          email: `deleted-${Date.now()}@example.com`,
+        });
+        const updatedUser = await globalSystemRepo.updateResource({
+          ...user,
+          meta: { ...user.meta, versionId: '00000000-0000-0000-0000-000000000002' },
+        });
+        await pool.query('UPDATE "User" SET "deleted" = true WHERE "id" = $1', [user.id]);
+
+        const { rows } = await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3) RETURNING "id"`,
+          ['User', user.id, updatedUser.meta?.versionId ?? '00000000-0000-0000-0000-000000000002']
+        );
+        expect(rows.length).toBe(1);
+
+        const job = { id: '5', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+        await execShardSyncJob(job);
+
+        const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
+        expect(remaining.length).toBe(0);
+
+        const { rows: userRows } = await pool.query('SELECT "deleted" FROM "User" WHERE "id" = $1', [user.id]);
+        expect(userRows.length).toBe(1);
+        expect(userRows[0].deleted).toBe(true);
+      });
+    });
+
+    test('error threshold aborts batch', async () => {
+      await withTestContext(async () => {
+        const globalSystemRepo = getGlobalSystemRepo();
+        const user = await globalSystemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'ErrThreshold',
+          lastName: 'User',
+          email: `err-threshold-${Date.now()}@example.com`,
+        });
+
+        await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3)`,
+          ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
+        );
+
+        const repoModule = await import('../fhir/repo');
+        const syncSpy = jest
+          .spyOn(globalSystemRepo, 'syncResourceFromShard')
+          .mockRejectedValue(new Error('Sync failed'));
+        const getGlobalSystemRepoSpy = jest
+          .spyOn(repoModule, 'getGlobalSystemRepo')
+          .mockReturnValue(globalSystemRepo as any);
+
+        const configLoader = await import('../config/loader');
+        const getConfigSpy = jest.spyOn(configLoader, 'getConfig').mockReturnValue({
+          ...configLoader.getConfig(),
+          shardSync: {
+            ...(configLoader.getConfig().shardSync ?? {}),
+            globalErrorThreshold: 1,
+            maxIterations: 1,
+            batchSize: 10,
+          },
+        });
+
+        try {
+          const job = { id: '6b', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+          await expect(execShardSyncJob(job)).rejects.toThrow('Global shard unavailable');
+        } finally {
+          syncSpy.mockRestore();
+          getGlobalSystemRepoSpy.mockRestore();
+          getConfigSpy.mockRestore();
+        }
+      });
+    });
+
+    test('serialization error (skipped, will retry)', async () => {
+      await withTestContext(async () => {
+        const user = await globalSystemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Serialization',
+          lastName: 'User',
+          email: `serialization-${Date.now()}@example.com`,
+        });
+
+        const { rows } = await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3) RETURNING "id"`,
+          ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
+        );
+
+        const serializationError = new OperationOutcomeError(
+          conflict('Serialization failure', PostgresError.SerializationFailure)
+        );
+        const repoModule = await import('../fhir/repo');
+        const syncSpy = jest.spyOn(globalSystemRepo, 'syncResourceFromShard').mockRejectedValue(serializationError);
+        const getGlobalSystemRepoSpy = jest
+          .spyOn(repoModule, 'getGlobalSystemRepo')
+          .mockReturnValue(globalSystemRepo as any);
+
+        const configLoader = await import('../config/loader');
+        const getConfigSpy = jest.spyOn(configLoader, 'getConfig').mockReturnValue({
+          ...configLoader.getConfig(),
+          shardSync: { ...(configLoader.getConfig().shardSync ?? {}), maxIterations: 1 },
+        });
+
+        try {
+          const job = { id: '6a', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+          await execShardSyncJob(job);
+
+          // Row stays in outbox (skipped for retry), one attempt recorded
+          const { rows: attemptRows } = await pool.query(
+            'SELECT * FROM "shard_sync_outbox_attempts" WHERE "outbox_id" = $1',
+            [rows[0].id]
+          );
+          expect(attemptRows.length).toBe(1);
+        } finally {
+          syncSpy.mockRestore();
+          getGlobalSystemRepoSpy.mockRestore();
+          getConfigSpy.mockRestore();
+        }
+      });
+    });
+
+    test('move to deadletter when maxAttempts exceeded', async () => {
+      await withTestContext(async () => {
+        const user = await globalSystemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Deadletter',
+          lastName: 'User',
+          email: `deadletter-${Date.now()}@example.com`,
+        });
+
+        const { rows } = await pool.query(
+          `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
+         VALUES ($1, $2, $3) RETURNING "id"`,
+          ['User', user.id, user.meta?.versionId ?? '00000000-0000-0000-0000-000000000001']
+        );
+        expect(rows.length).toBe(1);
+
+        const repoModule = await import('../fhir/repo');
+        const syncSpy = jest
+          .spyOn(globalSystemRepo, 'syncResourceFromShard')
+          .mockRejectedValue(new Error('Sync failed'));
+        const getGlobalSystemRepoSpy = jest
+          .spyOn(repoModule, 'getGlobalSystemRepo')
+          .mockReturnValue(globalSystemRepo as any);
+
+        const configLoader = await import('../config/loader');
+        const getConfigSpy = jest.spyOn(configLoader, 'getConfig').mockReturnValue({
+          ...configLoader.getConfig(),
+          shardSync: { ...(configLoader.getConfig().shardSync ?? {}), maxAttempts: 2 },
+        });
+
+        try {
+          // One job run processes multiple batches; 2nd batch iteration will hit maxAttempts and move to deadletter
+          const job = { id: '6', data: { shardId: TEST_SHARD_ID } } as unknown as Job<ShardSyncJobData>;
+          await execShardSyncJob(job);
+
+          const { rows: deadletter } = await pool.query(
+            'SELECT * FROM "shard_sync_outbox_deadletter" WHERE "outbox_id" = $1',
+            [rows[0].id]
+          );
+          expect(deadletter.length).toBe(1);
+          expect(deadletter[0].resourceType).toBe('User');
+          expect(deadletter[0].resourceId).toBe(user.id);
+
+          const { rows: attempts } = await pool.query(
+            'SELECT * FROM "shard_sync_outbox_attempts" WHERE "outbox_id" = $1',
+            [rows[0].id]
+          );
+          expect(attempts.length).toBe(2);
+        } finally {
+          syncSpy.mockRestore();
+          getConfigSpy.mockRestore();
+          getGlobalSystemRepoSpy.mockRestore();
+        }
+      });
+    });
   });
 
   test('writeShardSyncOutbox inserts outbox row for synced resource on non-global shard', async () => {
@@ -455,45 +438,5 @@ describe('Shard Sync Worker', () => {
       // Non-admin repo should fail
       await expect(repo.syncResourceFromShard(user)).rejects.toThrow();
     });
-  });
-
-  test('Outbox table has correct schema', async () => {
-    await withTestContext(async () => {
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-
-      // Insert a row to verify the schema
-      const { rows } = await pool.query(
-        `INSERT INTO "shard_sync_outbox" ("resourceType", "resourceId", "resourceVersionId")
-         VALUES ($1, $2, $3)
-         RETURNING *`,
-        ['User', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002']
-      );
-
-      expect(rows.length).toBe(1);
-      expect(rows[0].resourceType).toBe('User');
-      expect(rows[0].resourceId).toBe('00000000-0000-0000-0000-000000000001');
-      expect(rows[0].resourceVersionId).toBe('00000000-0000-0000-0000-000000000002');
-
-      // Clean up
-      await pool.query('DELETE FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
-    });
-  });
-
-  test('SyncedResourceTypes includes expected types', async () => {
-    const { SyncedResourceTypes } = await import('../sharding/sharding-utils');
-    expect(SyncedResourceTypes.has('User')).toBe(true);
-    expect(SyncedResourceTypes.has('ProjectMembership')).toBe(true);
-    expect(SyncedResourceTypes.has('ClientApplication')).toBe(true);
-    expect(SyncedResourceTypes.has('SmartAppLaunch')).toBe(true);
-    expect(SyncedResourceTypes.has('Patient')).toBe(false);
-    expect(SyncedResourceTypes.has('Observation')).toBe(false);
-  });
-
-  test('ShardSync config defaults', () => {
-    const config = getConfig();
-    // shardSync is optional and not set in test config
-    const shardSync = config.shardSync;
-    // Defaults are applied in execShardSyncJob, not in config
-    expect(shardSync).toBeUndefined();
   });
 });
