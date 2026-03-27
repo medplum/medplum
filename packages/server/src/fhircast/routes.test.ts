@@ -866,4 +866,35 @@ describe('FHIRcast routes', () => {
       (publishRes.body.event.event as FhircastEventPayload<'DiagnosticReport-update'>)['context.priorVersionId']
     ).toStrictEqual(versionId);
   });
+
+  test('`DiagnosticReport-update` returns 400 when current context is not a DiagnosticReport', async () => {
+    const topic = randomUUID();
+    const versionId = generateId();
+
+    // Setup a Patient context (no content bundle)
+    await setTopicCurrentContext(project.id, topic, {
+      'context.type': 'Patient',
+      'context.versionId': versionId,
+      context: [{ key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } }],
+    });
+
+    const context = [
+      { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
+      { key: 'patient', reference: { reference: 'Patient/xyz-789' } },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'transaction' } },
+    ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
+
+    const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-update', context, versionId);
+
+    const res = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(payload);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', details: { text: 'No DiagnosticReport currently open for this topic' } }],
+    });
+  });
 });
