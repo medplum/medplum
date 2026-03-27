@@ -13,7 +13,7 @@ import { sleep } from './utils';
 jest.mock('./subscriptions/constants', () => ({
   ...jest.requireActual('./subscriptions/constants'),
   WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
-  PENDING_UNBIND_DELAY_MS: 50,
+  UNREF_GRACE_PERIOD_MS: 50,
 }));
 
 const ONE_HOUR = 60 * 60 * 1000;
@@ -163,7 +163,7 @@ describe('MedplumClient -- Subscriptions', () => {
 
     expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
 
-    // Disconnect is deferred — fires when the cleanup timer finalizes the pending entry
+    // Disconnect is deferred — fires when the GC timer finalizes the unreferenced entry
     const disconnectEvent = await disconnectPromise;
     expect(disconnectEvent?.type).toStrictEqual('disconnect');
     expect(disconnectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);

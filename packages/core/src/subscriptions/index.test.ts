@@ -23,7 +23,7 @@ import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
   WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
-  PENDING_UNBIND_DELAY_MS: 50,
+  UNREF_GRACE_PERIOD_MS: 50,
 }));
 
 const ONE_HOUR = 60 * 60 * 1000;
@@ -467,7 +467,7 @@ describe('SubscriptionManager', () => {
       });
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      // Wait for pending unbind timers to fire and finalize entries
+      // Wait for GC timers to fire and finalize unreferenced entries
       await sleep(100);
 
       console.warn = originalWarn;
@@ -652,7 +652,7 @@ describe('SubscriptionManager', () => {
       });
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      // Wait for pending unbind timers to fire and finalize entries
+      // Wait for GC timers to fire and finalize unreferenced entries
       await sleep(100);
 
       console.warn = originalWarn;
@@ -1469,21 +1469,21 @@ describe('SubscriptionManager', () => {
       const emitter1 = defaultManager.addCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
 
-      // 2. Remove while the first subscribe is still in-flight — entry goes to pendingUnbind
+      // 2. Remove while the first subscribe is still in-flight — refCount drops to 0
       defaultManager.removeCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      // 3. Re-subscribe — restores the pending entry (same emitter, same in-flight subscribe)
+      // 3. Re-subscribe — rescues the entry (same emitter), kicks off a fresh subscribe
       const emitter2 = defaultManager.addCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
       expect(emitter2).toBe(emitter1);
 
-      // 4. Resolve the deferred createResource — entry is NOT stale (was restored),
-      //    so the subscribe chain continues normally
+      // 4. Resolve the deferred createResource — first rebind detects generation mismatch
+      //    and bails, but the second rebind (from step 3) completes normally
       resolveFirstCreate({ id: MOCK_SUBSCRIPTION_ID });
       await sleep(0);
 
-      // The restored entry's subscribe chain completes → sends bind-with-token
+      // The second subscribe chain completes → sends bind-with-token
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
 
       // 5. Send handshake → state transitions to 'active'
@@ -1568,11 +1568,11 @@ describe('SubscriptionManager', () => {
       await sleep(300);
 
       // removeCriteria while refresh is in-flight — the INITIAL_TOKEN will be unbound
-      // when the cleanup timer finalizes the pending entry
+      // when the GC timer finalizes the unreferenced entry
       manager.removeCriteria('Communication');
       await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: INITIAL_TOKEN } });
 
-      // Resolve the deferred $get-ws-binding-token — should detect state='removed' and
+      // Resolve the deferred $get-ws-binding-token — should detect refCount=0 (stale) and
       // bail without binding or unbinding (the token was never bound, so the server has
       // no active entry for it — unbinding is unnecessary)
       resolveRefreshGet({
@@ -1593,7 +1593,7 @@ describe('SubscriptionManager', () => {
       manager.closeWebSocket();
     });
 
-    test('should delay unbind and allow re-subscription to cancel pending unbind', async () => {
+    test('should delay unbind and allow re-subscription to rescue entry during grace period', async () => {
       await wsServer.connected;
 
       const emitter = defaultManager.addCriteria('Communication');
@@ -1605,38 +1605,37 @@ describe('SubscriptionManager', () => {
       sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
       await connectPromise;
 
-      // Remove criteria — entry goes to pendingUnbind, no immediate unbind
+      // Remove criteria — refCount drops to 0, no immediate unbind
       defaultManager.removeCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      // Verify the pendingUnbind map has the entry
-      const pendingUnbind = (defaultManager as any).pendingUnbind as Map<string, number>;
-      expect(pendingUnbind.size).toStrictEqual(1);
+      // Verify the entry is marked for GC (refCount 0 with lastUnrefTime set)
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
+        string,
+        { refCount: number; lastUnrefTime?: number }
+      >;
+      const pendingEntry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
+      expect(pendingEntry).toBeDefined();
+      expect(pendingEntry?.refCount).toStrictEqual(0);
+      expect(pendingEntry?.lastUnrefTime).toBeDefined();
 
-      // Verify the criteriaEntriesByEntryId map still has the entry
-      const entryLookup = (defaultManager as any).criteriaEntriesByEntryId as Map<string, unknown>;
-      expect(entryLookup.size).toStrictEqual(1);
-
-      // Re-subscribe within the delay window — should cancel pending unbind and restore entry
+      // Re-subscribe within the grace period — should rescue the entry
       const restoredEmitter = defaultManager.addCriteria('Communication');
       expect(restoredEmitter).toBe(emitter);
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
-      expect(pendingUnbind.size).toStrictEqual(0);
+      expect(pendingEntry?.refCount).toStrictEqual(1);
+      expect(pendingEntry?.lastUnrefTime).toBeUndefined();
 
-      // Wait past the delay — no unbind should be sent since the pending was cancelled
+      // Wait past the delay — no unbind should be sent since the entry was rescued
       await sleep(100);
 
       // Entry should still be active, no unbind sent
-      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
-        string,
-        { state: CriteriaState; token: string }
-      >;
       const entry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
       expect(entry).toBeDefined();
-      expect(entry?.state).toStrictEqual('active');
+      expect((entry as any)?.state).toStrictEqual('active');
     });
 
-    test('should finalize pending entry after delay expires', async () => {
+    test('should finalize unreferenced entry after grace period expires', async () => {
       await wsServer.connected;
 
       const emitter = defaultManager.addCriteria('Communication');
@@ -1648,21 +1647,15 @@ describe('SubscriptionManager', () => {
       sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
       await connectPromise;
 
-      // Remove criteria — entry goes to pendingUnbind
+      // Remove criteria — refCount drops to 0
       defaultManager.removeCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      // Wait for the pending unbind delay to expire (mocked to 50ms)
+      // Wait for the GC grace period to expire (mocked to 50ms)
       await sleep(100);
 
       // Entry should now be fully removed — unbind sent
       await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
-
-      const pendingUnbind = (defaultManager as any).pendingUnbind as Map<string, number>;
-      expect(pendingUnbind.size).toStrictEqual(0);
-
-      const entryLookup = (defaultManager as any).criteriaEntriesByEntryId as Map<string, unknown>;
-      expect(entryLookup.size).toStrictEqual(0);
 
       const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
       expect(entriesBySubId.has(MOCK_SUBSCRIPTION_ID)).toStrictEqual(false);
