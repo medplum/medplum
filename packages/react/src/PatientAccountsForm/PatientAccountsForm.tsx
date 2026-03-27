@@ -145,9 +145,7 @@ export function PatientAccountsForm(props: PatientAccountsFormProps): JSX.Elemen
         id: NOTIFICATION_ID,
         title: NOTIFICATION_TITLE,
         color: 'green',
-        message: propagate
-          ? 'Account changes saved. Compartment updates are being applied.'
-          : 'Account changes saved.',
+        message: propagate ? 'Account changes saved. Compartment updates are being applied.' : 'Account changes saved.',
         icon: <IconCheck size="1rem" />,
         loading: false,
         autoClose: true,
