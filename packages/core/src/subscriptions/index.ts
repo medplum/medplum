@@ -664,20 +664,6 @@ export class SubscriptionManager {
     return this.getAllCriteriaEmitters().length;
   }
 
-  hasPendingUnbinds(): boolean {
-    for (const mapEntry of this.criteriaEntries.values()) {
-      if (mapEntry.bareCriteria?.refCount === 0) {
-        return true;
-      }
-      for (const entry of mapEntry.criteriaWithProps) {
-        if (entry.refCount === 0) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   getMasterEmitter(): SubscriptionEmitter {
     if (!this.masterSubEmitter) {
       this.masterSubEmitter = new SubscriptionEmitter(...Array.from(this.criteriaEntries.keys()));
