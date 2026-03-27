@@ -19,7 +19,7 @@ export interface HealthieAppointment {
 export async function fetchAppointments(
   healthie: HealthieClient,
   patientId: string,
-  filter: string = 'all'
+  filter: string = 'future'
 ): Promise<HealthieAppointment[]> {
   const allAppointments: HealthieAppointment[] = [];
   let hasMorePages = true;
@@ -92,9 +92,9 @@ export function convertHealthieAppointmentToFhir(
   };
 
   if (appointment.date) {
-    fhirAppointment.start = appointment.date;
+    const startDate = new Date(appointment.date);
+    fhirAppointment.start = startDate.toISOString();
     if (appointment.length) {
-      const startDate = new Date(appointment.date);
       const endDate = new Date(startDate.getTime() + appointment.length * 60 * 1000);
       fhirAppointment.end = endDate.toISOString();
       fhirAppointment.minutesDuration = appointment.length;

@@ -158,6 +158,7 @@ describe('convertHealthieAppointmentToFhir', () => {
     expect(result.status).toBe('fulfilled');
     expect(result.start).toBe('2025-06-15T10:00:00.000Z');
     expect(result.end).toBe('2025-06-15T10:30:00.000Z');
+    expect(new Date(result.start!).toISOString()).toBe(result.start);
     expect(result.minutesDuration).toBe(30);
     expect(result.appointmentType).toEqual({ text: 'Follow-up' });
     expect(result.serviceType).toEqual([{ text: 'Video Call' }]);
@@ -198,6 +199,20 @@ describe('convertHealthieAppointmentToFhir', () => {
 
     expect(result.start).toBe('2025-01-01T09:00:00.000Z');
     expect(result.end).toBe('2025-01-01T10:00:00.000Z');
+    expect(result.minutesDuration).toBe(60);
+  });
+
+  test('normalizes Healthie date format to ISO 8601', () => {
+    const appointment: HealthieAppointment = {
+      id: 'appt-healthie-format',
+      date: '2025-03-26 12:00:00 -0700',
+      length: 60,
+    };
+
+    const result = convertHealthieAppointmentToFhir(appointment, patientRef);
+
+    expect(result.start).toBe('2025-03-26T19:00:00.000Z');
+    expect(result.end).toBe('2025-03-26T20:00:00.000Z');
     expect(result.minutesDuration).toBe(60);
   });
 

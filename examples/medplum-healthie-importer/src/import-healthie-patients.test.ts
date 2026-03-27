@@ -168,6 +168,29 @@ const MOCK_DOCUMENT_RESPONSE = {
   ],
 };
 
+const MOCK_APPOINTMENT_RESPONSE = {
+  appointments: [
+    {
+      id: 'appt-200',
+      date: '2025-06-15T10:00:00.000Z',
+      contact_type: 'Video Call',
+      length: 30,
+      pm_status: 'Occurred',
+      provider: { id: 'prov-1', full_name: 'Dr Smith' },
+      appointment_type: { id: 'type-1', name: 'Follow-up' },
+    },
+    {
+      id: 'appt-201',
+      date: '2025-06-20T14:00:00.000Z',
+      contact_type: 'Phone Call',
+      length: 15,
+      pm_status: 'No-Show',
+      provider: { id: 'prov-1', full_name: 'Dr Smith' },
+      appointment_type: { id: 'type-2', name: 'Check-in' },
+    },
+  ],
+};
+
 describe('fetch-patients handler', () => {
   let medplum: MockClient;
 
@@ -185,7 +208,12 @@ describe('fetch-patients handler', () => {
   //   6. fetchHealthieFormAnswerGroups
   //   7. fetchPolicies
   //   8. fetchDocuments
-  function setupMocks(options?: { withDietitianId?: boolean; withDocuments?: boolean }): void {
+  //   9. fetchAppointments
+  function setupMocks(options?: {
+    withDietitianId?: boolean;
+    withDocuments?: boolean;
+    withAppointments?: boolean;
+  }): void {
     const mockQuery = vi.mocked(HealthieClient.prototype.query);
     mockQuery.mockReset();
 
@@ -208,14 +236,16 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce({ documents: [] });
+    mockQuery.mockResolvedValueOnce({ appointments: [] });
 
-    // Patient 2498842 (has medications and optionally documents)
+    // Patient 2498842 (has medications, optionally documents and appointments)
     mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[1]] });
     mockQuery.mockResolvedValueOnce(MOCK_MEDICATION_RESPONSE);
     mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce(options?.withDocuments ? MOCK_DOCUMENT_RESPONSE : { documents: [] });
+    mockQuery.mockResolvedValueOnce(options?.withAppointments ? MOCK_APPOINTMENT_RESPONSE : { appointments: [] });
 
     // Patient 2501783 (full demographics, optionally with dietitian)
     const patient4Data = options?.withDietitianId
@@ -227,6 +257,7 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce({ documents: [] });
+    mockQuery.mockResolvedValueOnce({ appointments: [] });
   }
 
   beforeAll(() => {
@@ -400,6 +431,31 @@ describe('fetch-patients handler', () => {
     expect(docRef.content[0].attachment.title).toBe('Lab Report.pdf');
   });
 
+  test('syncs appointments as FHIR Appointment resources', async () => {
+    setupMocks({ withAppointments: true });
+
+    await handler(medplum, DEFAULT_EVENT);
+
+    const appt1 = await medplum.searchResources('Appointment', {
+      identifier: 'https://www.gethealthie.com/appointmentId|appt-200',
+    });
+    expect(appt1.length).toBe(1);
+    expect(appt1[0].status).toBe('fulfilled');
+    expect(appt1[0].start).toBe('2025-06-15T10:00:00.000Z');
+    expect(appt1[0].end).toBe('2025-06-15T10:30:00.000Z');
+    expect(appt1[0].minutesDuration).toBe(30);
+    expect(appt1[0].appointmentType?.text).toBe('Follow-up');
+    expect(appt1[0].serviceType?.[0].text).toBe('Video Call');
+    expect(appt1[0].participant).toHaveLength(2);
+
+    const appt2 = await medplum.searchResources('Appointment', {
+      identifier: 'https://www.gethealthie.com/appointmentId|appt-201',
+    });
+    expect(appt2.length).toBe(1);
+    expect(appt2[0].status).toBe('noshow');
+    expect(appt2[0].minutesDuration).toBe(15);
+  });
+
   test('handles missing secrets', async () => {
     const event = {
       input: {},
@@ -458,6 +514,7 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce({ documents: [] });
+    mockQuery.mockResolvedValueOnce({ appointments: [] });
 
     await handler(medplum, DEFAULT_EVENT);
 

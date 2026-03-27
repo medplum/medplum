@@ -15,6 +15,7 @@ import { describe, expect, test } from 'vitest';
 import { HealthieClient } from './client';
 import { fetchAllergySensitivities } from './allergy';
 import { fetchPolicies } from './coverage';
+import { fetchAppointments } from './appointment';
 import { fetchDocuments } from './document';
 import { fetchMedications } from './medication';
 import { fetchOrganizationMembers } from './provider';
@@ -261,6 +262,28 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       expect(doc.id).toBeDefined();
       expect(typeof doc.id).toBe('string');
       console.log(`  First document: id=${doc.id}, name=${doc.display_name}, type=${doc.file_content_type}`);
+    }
+  });
+
+  test('can fetch appointments for a patient', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const appointments = await fetchAppointments(healthieClient, testPatientId);
+
+    expect(Array.isArray(appointments)).toBe(true);
+    console.log(`Found ${appointments.length} appointments for patient ${testPatientId}`);
+
+    if (appointments.length > 0) {
+      const appt = appointments[0];
+      expect(appt.id).toBeDefined();
+      expect(typeof appt.id).toBe('string');
+      console.log(
+        `  First appointment: id=${appt.id}, date=${appt.date}, status=${appt.pm_status}, ` +
+          `type=${appt.appointment_type?.name}, provider=${appt.provider?.full_name}`
+      );
     }
   });
 
