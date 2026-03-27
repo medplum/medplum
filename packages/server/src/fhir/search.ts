@@ -25,7 +25,6 @@ import {
   Operator,
   parseFhirPath,
   parseFilterParameter,
-  parseParameter,
   PropertyType,
   SearchParameterType,
   serverError,
@@ -1191,8 +1190,11 @@ function trySpecialSearchParameter(
         filter
       );
     }
-    case '_filter':
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
+    case '_filter': {
+      const filterExpr = parseFilterParameter(filter.value);
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr);
+    }
+
     default:
       return undefined;
   }
@@ -1640,7 +1642,7 @@ function buildChainedSearch(
     const targetId = param.filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
       code,
-      operator: Operator.EQUALS,
+      operator: param.filter.operator,
       value: `${targetType}/${targetId}`,
     });
   }
@@ -1819,7 +1821,7 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
         if (!searchParam) {
           throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
         }
-        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
+        filter = { code, operator: (modifier as Operator) ?? searchFilter.operator, value: searchFilter.value };
       }
     } else {
       const link = parseChainLink(part, currentResourceType);
