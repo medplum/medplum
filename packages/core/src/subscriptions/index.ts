@@ -344,10 +344,7 @@ export class SubscriptionManager {
   private getAllCriteriaEmitters(): SubscriptionEmitter[] {
     const emitters = [];
     for (const mapEntry of this.criteriaEntries.values()) {
-      if (mapEntry.bareCriteria && mapEntry.bareCriteria.refCount > 0) {
-        emitters.push(mapEntry.bareCriteria.emitter);
-      }
-      for (const entry of mapEntry.criteriaWithProps) {
+      for (const entry of getAllEntries(mapEntry)) {
         if (entry.refCount > 0) {
           emitters.push(entry.emitter);
         }
@@ -427,10 +424,7 @@ export class SubscriptionManager {
     const entriesToRefresh: CriteriaEntry[] = [];
     const entriesToRemove: CriteriaEntry[] = [];
     for (const mapEntry of this.criteriaEntries.values()) {
-      for (const criteriaEntry of [
-        ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
-        ...mapEntry.criteriaWithProps,
-      ]) {
+      for (const criteriaEntry of getAllEntries(mapEntry)) {
         if (criteriaEntry.refCount === 0) {
           entriesToRemove.push(criteriaEntry);
         } else {
@@ -524,10 +518,7 @@ export class SubscriptionManager {
   private checkTokenExpirations(): void {
     const now = Date.now();
     for (const mapEntry of this.criteriaEntries.values()) {
-      for (const criteriaEntry of [
-        ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
-        ...mapEntry.criteriaWithProps,
-      ]) {
+      for (const criteriaEntry of getAllEntries(mapEntry)) {
         if (criteriaEntry.refCount === 0 || !criteriaEntry.tokenExpiry) {
           continue;
         }
@@ -606,10 +597,7 @@ export class SubscriptionManager {
     const now = Date.now();
     const entriesToRemove: CriteriaEntry[] = [];
     for (const mapEntry of this.criteriaEntries.values()) {
-      for (const criteriaEntry of [
-        ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
-        ...mapEntry.criteriaWithProps,
-      ]) {
+      for (const criteriaEntry of getAllEntries(mapEntry)) {
         if (
           criteriaEntry.refCount === 0 &&
           criteriaEntry.lastUnrefTime !== undefined &&
@@ -641,10 +629,7 @@ export class SubscriptionManager {
     // active subscription entries immediately rather than waiting for token expiry.
     if (this.ws.readyState === WebSocket.OPEN) {
       for (const mapEntry of this.criteriaEntries.values()) {
-        for (const entry of [
-          ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
-          ...mapEntry.criteriaWithProps,
-        ]) {
+        for (const entry of getAllEntries(mapEntry)) {
           if (entry.token) {
             this.sendUnbind(entry.token);
           }
@@ -685,6 +670,10 @@ export class SubscriptionManager {
       this.reconnectWebSocket();
     });
   }
+}
+
+function getAllEntries(mapEntry: CriteriaMapEntry): CriteriaEntry[] {
+  return mapEntry.bareCriteria ? [mapEntry.bareCriteria, ...mapEntry.criteriaWithProps] : mapEntry.criteriaWithProps;
 }
 
 export type BackgroundJobInteraction = 'create' | 'update' | 'delete';
