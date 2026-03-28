@@ -219,38 +219,14 @@ Open `terraform.tfvars` and set these values:
 | `cloudtrail_alarm_email` | `""` | Email to subscribe to the CloudTrail alarm SNS topic. After `terraform apply`, AWS sends a confirmation email to this address — **the subscription must be confirmed by clicking the link** before alerts are delivered. |
 | `bot_lambda_role_arn` | `""` | Override ARN for the bot Lambda role. Leave empty to use the role created by this stack |
 
-### Step 2 — Bootstrap remote state (one-time only)
-
-Terraform state must be stored in S3 before the backend can be enabled. Run the bootstrap module once:
-
-```bash
-cd terraform/aws/bootstrap
-terraform init
-terraform apply
-```
-
-Note the S3 bucket name in the output (it will be `medplum-tf-state-<YOUR_ACCOUNT_ID>`).
-
-> **Security note:** Terraform state contains sensitive values in plaintext, including the Redis auth
-> token and RDS password. The bootstrap module creates the S3 bucket with versioning, KMS encryption,
-> and public access blocks. Ensure that only the IAM principals that run `terraform apply` have
-> `s3:GetObject` access to the state bucket, and restrict `dynamodb:GetItem` on the lock table
-> accordingly. Never commit `terraform.tfstate` files to version control.
-
-Then open `terraform/aws/backend.tf`:
-1. Replace `<YOUR_ACCOUNT_ID>` with your actual AWS account ID
-2. Uncomment the `terraform { backend "s3" { ... } }` block
-
-### Step 3 — Initialize
+### Step 2 — Initialize
 
 ```bash
 cd terraform/aws
 terraform init
 ```
 
-If prompted to migrate existing local state to S3, answer **yes**.
-
-### Step 4 — Preview the plan
+### Step 3 — Preview the plan
 
 ```bash
 terraform plan -var-file=terraform.tfvars
@@ -258,7 +234,7 @@ terraform plan -var-file=terraform.tfvars
 
 Review the output carefully. Expect approximately 50–60 resources on a fresh deploy. The plan should show no unexpected destructive changes.
 
-### Step 5 — Apply
+### Step 4 — Apply
 
 ```bash
 terraform apply -var-file=terraform.tfvars
@@ -496,7 +472,5 @@ The S3 buckets are emptied automatically (`force_destroy = true`). Secrets Manag
 | `ssm.tf` | SSM Parameter Store config + Redis/DB secret versions |
 | `ses.tf` | SES domain and email identity |
 | `dns.tf` | Route 53 zone creation (opt-in), NS delegation (opt-in), and DNS records for CloudFront, storage, and SES |
-| `backend.tf` | S3 remote state backend (uncomment after bootstrap) |
 | `outputs.tf` | All Terraform output values |
 | `terraform.tfvars.example` | Copy to `terraform.tfvars` and fill in |
-| `bootstrap/` | One-time module to create the S3 state bucket and DynamoDB lock table |

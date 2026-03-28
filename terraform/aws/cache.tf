@@ -30,10 +30,8 @@ resource "random_password" "redis_auth" {
   length  = 32
   special = false
   # The plaintext value is stored in Terraform state. ElastiCache does not support native Secrets
-  # Manager integration (unlike Aurora), so random_password is the standard approach. Mitigate by:
-  #   1. Restricting s3:GetObject on the state bucket to only the IAM principals that run terraform
-  #   2. Ensuring the state bucket uses KMS encryption (created by the bootstrap module)
-  #   3. Never committing terraform.tfstate to version control (enforced by .gitignore)
+  # Manager integration (unlike Aurora), so random_password is the standard approach.
+  # Never commit terraform.tfstate to version control (enforced by .gitignore).
 }
 
 resource "aws_elasticache_parameter_group" "medplum" {
@@ -79,7 +77,7 @@ resource "random_password" "redis_purpose" {
   length   = 32
   special  = false
   # The plaintext value is stored in Terraform state. See random_password.redis_auth comment
-  # for mitigation guidance (S3 bucket policy, KMS state encryption, .gitignore).
+  # (never commit terraform.tfstate to version control — enforced by .gitignore).
 }
 
 resource "aws_elasticache_parameter_group" "purpose" {

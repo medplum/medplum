@@ -87,7 +87,6 @@ override.tf.json
 
 # Terraform variable files with real deployment values — copy terraform.tfvars.example
 terraform/aws/terraform.tfvars
-terraform/aws/bootstrap/terraform.tfvars
 
 # Ignore CLI configuration files
 .terraformrc
