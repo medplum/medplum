@@ -54,6 +54,9 @@ spec:
 {{- end }}
 
 {{- if and (eq .Values.global.cloudProvider "aws") (eq .Values.ingress.deploy true) }}
+{{- if not .Values.ingress.albArn }}
+{{ fail "ingress.albArn is required for AWS deployments. Set it to the value of `terraform output alb_arn`." }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

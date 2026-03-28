@@ -91,6 +91,24 @@ variable "eks_node_instance_types" {
   default     = ["t3.large"]
 }
 
+variable "eks_node_min_size" {
+  type        = number
+  description = "Minimum number of nodes in the EKS managed node group."
+  default     = 1
+}
+
+variable "eks_node_max_size" {
+  type        = number
+  description = "Maximum number of nodes the Cluster Autoscaler (or manual scaling) can scale up to."
+  default     = 5
+}
+
+variable "eks_node_desired_size" {
+  type        = number
+  description = "Initial desired number of nodes. The Cluster Autoscaler will adjust this at runtime."
+  default     = 2
+}
+
 variable "support_email" {
   type        = string
   description = "Support email address"
@@ -185,6 +203,18 @@ variable "eks_public_access_cidrs" {
   type        = list(string)
   description = "CIDR blocks allowed to reach the EKS public API endpoint. Defaults to open — restrict to your IP or VPN CIDR before production use."
   default     = ["0.0.0.0/0"]
+}
+
+variable "eks_admin_arns" {
+  type        = list(string)
+  description = <<-EOT
+    List of IAM user or role ARNs to grant cluster-admin access to the EKS cluster via
+    EKS Access Entries. The IAM principal that runs terraform apply already receives
+    cluster-admin access automatically (enable_cluster_creator_admin_permissions = true).
+    Add additional operators, CI roles, or team members here.
+    Example: ["arn:aws:iam::123456789012:user/alice", "arn:aws:iam::123456789012:role/ops-role"]
+  EOT
+  default     = []
 }
 
 variable "create_route53_records" {

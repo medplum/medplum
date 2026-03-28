@@ -1,0 +1,17 @@
+# values-aws.yaml — generated from terraform output (medplum-dev-1, ca-central-1)
+# Run: helm install medplum ./charts --namespace medplum --create-namespace --values charts/values-aws.yaml
+
+global:
+  cloudProvider: aws
+  configSource:
+    type: "aws:ca-central-1:/medplum-dev-1/"
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::462446642923:role/medplum-dev-1-server-role"
+
+ingress:
+  deploy: true
+  domain: "api.darren-aws.foomedical.dev"
+  acmCertificateArn: "arn:aws:acm:ca-central-1:462446642923:certificate/dd83efc6-c009-4c36-86c2-fc99346b685d"
+  albArn: "arn:aws:elasticloadbalancing:ca-central-1:462446642923:loadbalancer/app/medplum-dev-1-api-alb/59caee2d27f9f53c"

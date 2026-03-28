@@ -18,12 +18,29 @@ tags = {
 
 # ── Compute ───────────────────────────────────────────────────────────────────
 # eks_node_instance_types = ["t3.large"]  # minimum recommended; use m5.large+ for prod
+# eks_node_min_size       = 1
+# eks_node_max_size       = 5             # upper bound for Cluster Autoscaler
+# eks_node_desired_size   = 2             # initial node count; autoscaler adjusts at runtime
 # eks_public_access_cidrs = ["203.0.113.0/32"]  # restrict before production — default is 0.0.0.0/0
+#
+# IAM principals to grant cluster-admin access via EKS Access Entries.
+# The terraform apply principal already has cluster-admin automatically.
+# Add operators, CI roles, or teammates who need kubectl access:
+# eks_admin_arns = [
+#   "arn:aws:iam::123456789012:user/alice",
+#   "arn:aws:iam::123456789012:role/ci-deploy-role",
+# ]
 
 # ── Database (Aurora PostgreSQL) ──────────────────────────────────────────────
 # db_instance_tier = "db.t3.medium"   # use db.r6g.large or larger for production
 # rds_instances    = 1                # set to 2 for a writer + reader in production
 # postgres_version = "15.4"
+#
+# rds_ssl_reject_unauthorized controls whether the Medplum server verifies the
+# Aurora TLS certificate chain. The server container has no RDS CA bundle, so
+# set this to false (dev/test). For production, bundle the RDS CA cert and set true:
+#   https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+rds_ssl_reject_unauthorized = false
 
 # ── Cache ─────────────────────────────────────────────────────────────────────
 # redis_node_type       = "cache.t3.micro"  # use cache.r6g.large+ for production

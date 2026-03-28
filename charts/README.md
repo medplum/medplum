@@ -64,6 +64,24 @@ You will need these values to fill in the placeholders below:
 | `alb_certificate_arn` | `<ALB_CERTIFICATE_ARN>` |
 | `alb_arn` | `<ALB_ARN>` |
 
+### Configure kubectl
+
+Update your local kubeconfig to point at the new cluster (substitute `<CLUSTER_NAME>` and `<AWS_REGION>` from the table above):
+
+```bash
+aws eks update-kubeconfig \
+  --region <AWS_REGION> \
+  --name <CLUSTER_NAME>
+```
+
+Verify the nodes are ready before proceeding:
+
+```bash
+kubectl get nodes
+# NAME                          STATUS   ROLES    AGE
+# ip-10-52-x-x.ca-central-1... Ready    <none>   2m
+```
+
 ### Install the AWS Load Balancer Controller
 
 The ALB ingress requires the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/) to be running in the cluster. Install it once, substituting values from the Terraform outputs above:
@@ -116,23 +134,6 @@ helm install medplum ./charts \
   --create-namespace \
   --values values-aws.yaml
 ```
-
-### Post-deploy DNS
-
-The ALB DNS name is available immediately after `terraform apply` — no need to wait for the Ingress to be created:
-
-```bash
-terraform output alb_dns_name
-# k8s-medplum-abc123.us-east-1.elb.amazonaws.com
-```
-
-If you are using Route 53 (`create_route53_zone = true` or `create_route53_records = true`), Terraform creates the `api_domain` alias record automatically and no manual step is needed.
-
-If you are managing DNS externally, add this record at your DNS provider:
-
-| Type | Name | Value |
-|---|---|---|
-| `CNAME` | `<API_DOMAIN>` (e.g., `medplum-api.yourcompany.com`) | Value of `alb_dns_name` Terraform output |
 
 ### Deploy the frontend app
 

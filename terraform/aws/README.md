@@ -306,21 +306,25 @@ Terraform creates the S3 bucket for the static frontend, but you must build and 
 
 1. **Set the API URL and build the app** (run from the repo root):
    ```bash
-   cat > packages/app/.env <<EOF
-   MEDPLUM_BASE_URL=https://$(terraform output -raw api_domain)/
-   MEDPLUM_CLIENT_ID=
-   GOOGLE_CLIENT_ID=
-   RECAPTCHA_SITE_KEY=your_recaptcha_site_key_here
-   MEDPLUM_REGISTER_ENABLED=true
-   EOF
+   API_DOMAIN=$(terraform -chdir=terraform/aws output -raw api_domain)
+   STATIC_BUCKET=$(terraform -chdir=terraform/aws output -raw static_storage_name)
+   AWS_REGION=$(terraform -chdir=terraform/aws output -raw region)
 
-   cd packages/app && npm run build
+   cat > packages/app/.env <<EOF
+MEDPLUM_BASE_URL=https://${API_DOMAIN}/
+MEDPLUM_CLIENT_ID=
+GOOGLE_CLIENT_ID=
+RECAPTCHA_SITE_KEY=your_recaptcha_site_key_here
+MEDPLUM_REGISTER_ENABLED=true
+EOF
+
+    cd packages/app && npm run build
    ```
 
 2. **Upload to the static website bucket**:
    ```bash
-   aws s3 sync dist/ s3://$(terraform output -raw static_storage_name)/ \
-     --region $(terraform output -raw region)
+   aws s3 sync dist/ s3://${STATIC_BUCKET}/ \
+     --region ${AWS_REGION}
    ```
 
 3. **Invalidate the CloudFront cache**:

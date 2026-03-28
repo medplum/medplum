@@ -18,15 +18,27 @@ module "eks" {
   # Grant the IAM principal that runs terraform apply cluster-admin access automatically
   enable_cluster_creator_admin_permissions = true
 
+  access_entries = {
+    for arn in var.eks_admin_arns : arn => {
+      principal_arn = arn
+      policy_associations = {
+        admin = {
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
+        }
+      }
+    }
+  }
+
   eks_managed_node_groups = {
     default = {
       name            = "${local.name_prefix}-ng"
       use_name_prefix = true
       capacity_type   = "ON_DEMAND"
 
-      min_size     = 1
-      max_size     = 5
-      desired_size = 2
+      min_size     = var.eks_node_min_size
+      max_size     = var.eks_node_max_size
+      desired_size = var.eks_node_desired_size
 
       instance_types = var.eks_node_instance_types
 

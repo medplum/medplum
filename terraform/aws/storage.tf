@@ -88,10 +88,12 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "static" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.medplum.arn
+      # SSE-S3 (AES256) — CloudFront OAC can serve these without any KMS key policy.
+      # SSE-KMS would require a kms:Decrypt grant for cloudfront.amazonaws.com and
+      # creates a circular Terraform dependency (distribution → bucket → key → distribution).
+      sse_algorithm = "AES256"
     }
-    bucket_key_enabled = true
+    bucket_key_enabled = false
   }
 }
 
