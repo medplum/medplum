@@ -113,47 +113,6 @@ module "aurora" {
 
 # ─── RDS Proxy (optional) ────────────────────────────────────────────────────
 
-resource "aws_iam_role" "rds_proxy" {
-  count = var.rds_proxy_enabled ? 1 : 0
-  name  = "${local.name_prefix}-rds-proxy-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "rds.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy" "rds_proxy" {
-  count = var.rds_proxy_enabled ? 1 : 0
-  name  = "${local.name_prefix}-rds-proxy-policy"
-  role  = aws_iam_role.rds_proxy[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
-        Resource = [module.aurora.cluster_master_user_secret[0].secret_arn]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["kms:Decrypt"]
-        Resource = [aws_kms_key.medplum.arn]
-        Condition = {
-          StringEquals = { "kms:ViaService" = "secretsmanager.${var.region}.amazonaws.com" }
-        }
-      }
-    ]
-  })
-}
-
 resource "aws_security_group" "rds_proxy" {
   count       = var.rds_proxy_enabled ? 1 : 0
   name        = "${local.name_prefix}-rds-proxy-sg"

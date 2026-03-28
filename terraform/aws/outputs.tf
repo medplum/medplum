@@ -137,6 +137,16 @@ output "route53_nameservers" {
   value       = var.create_route53_zone ? aws_route53_zone.managed[0].name_servers : null
 }
 
+output "alb_arn" {
+  description = "ARN of the API Application Load Balancer — pass as ingress.albArn in Helm values"
+  value       = aws_lb.api.arn
+}
+
+output "alb_dns_name" {
+  description = "DNS name of the API Application Load Balancer — use as api_domain and for Route 53 alias records"
+  value       = aws_lb.api.dns_name
+}
+
 output "lb_controller_iam_role_arn" {
   description = "IAM role ARN for the AWS Load Balancer Controller (annotate the kube-system ServiceAccount)"
   value       = aws_iam_role.lb_controller.arn

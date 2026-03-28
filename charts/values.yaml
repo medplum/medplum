@@ -14,6 +14,8 @@ global:
 
 serviceAccount:
   annotations:
+    # AWS: annotate with the server_iam_role_arn Terraform output to enable IRSA
+    # eks.amazonaws.com/role-arn: ""
     # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
     # iam.gke.io/gcp-service-account: ""
     # Set your Azure Managed Identity Client ID for Azure workload identity
@@ -79,3 +81,6 @@ ingress:
   tlsSecretName: ''
   # AWS only: ACM certificate ARN for the ALB HTTPS listener
   acmCertificateArn: ''
+  # AWS only: ARN of the Terraform-provisioned ALB (alb_arn output).
+  # The LB Controller will adopt this ALB instead of creating a new one.
+  albArn: ''

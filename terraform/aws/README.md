@@ -8,6 +8,7 @@ Deploys a production-ready Medplum FHIR server on AWS using EKS (Kubernetes), RD
 |---|---|
 | VPC | Multi-AZ with public, private, database, and cache subnets; VPC flow logs → CloudWatch |
 | EKS cluster | Managed node group, IRSA enabled, Kubernetes 1.31 |
+| ALB | Internet-facing Application Load Balancer; HTTP→HTTPS redirect listener; WAF and ACM cert attached at apply time |
 | Aurora PostgreSQL | Encrypted Aurora cluster, Secrets Manager rotation, multi-AZ in prod |
 | ElastiCache Redis | Encrypted at rest (KMS) and in transit (TLS), auth token |
 | S3 | App binary storage bucket (versioned) + static frontend bucket (CloudFront OAC) + optional dedicated storage bucket |
@@ -211,7 +212,6 @@ Open `terraform.tfvars` and set these values:
 | `storage_ssl_certificate_arn` | `""` | ACM cert for the storage CloudFront (us-east-1). Leave empty to auto-create via Route 53 |
 | `signing_key_id` | `""` | CloudFront public key ID for signed storage URLs. See §3a |
 | `enable_waf` | `true` | Create WAFv2 Web ACLs for app CloudFront, storage CloudFront, and ALB |
-| `waf_alb_arn` | `""` | ALB ARN for the API WAF association. Leave empty on first apply; set once EKS Ingress provisions the LB |
 | `api_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict API access |
 | `app_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict app CloudFront access |
 | `storage_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict storage CloudFront access |
@@ -287,6 +287,8 @@ Key values you will need:
 | `server_iam_role_arn` | Kubernetes ServiceAccount annotation (IRSA) |
 | `lb_controller_iam_role_arn` | AWS Load Balancer Controller IRSA role |
 | `alb_certificate_arn` | ALB listener certificate (passed to Helm) |
+| `alb_arn` | Pass as `ingress.albArn` in Helm values so the LB Controller adopts the Terraform-provisioned ALB |
+| `alb_dns_name` | DNS name of the ALB — use this as the `api_domain` value and for Route 53 alias records |
 | `static_storage_name` | S3 bucket for the frontend static build (sync `dist/` here) |
 | `cdn_hostname` | CloudFront custom domain — add as CNAME in DNS for app domain |
 | `cdn_endpoint` | CloudFront distribution domain (e.g. `d1234.cloudfront.net`) |
@@ -348,6 +350,7 @@ If you are managing DNS externally (Mode C from §6), add these records at your 
 | Type | Name | Value |
 |---|---|---|
 | `CNAME` or `ALIAS` | `<app_domain>` | Value of `cdn_endpoint` output |
+| `CNAME` | `<api_domain>` | Value of `alb_dns_name` output |
 | `TXT` | `_amazonses.<domain>` | Value of `ses_domain_verification_token` output |
 | `CNAME` | `<token1>._domainkey.<domain>` | `<token1>.dkim.amazonses.com` |
 | `CNAME` | `<token2>._domainkey.<domain>` | `<token2>.dkim.amazonses.com` |
@@ -360,17 +363,18 @@ terraform output route53_nameservers
 # Add each of the four values as NS records for <route53_zone_name> at the parent
 ```
 
-After deploying the API server (see Helm deployment below), get the ALB hostname and add the API record:
+After `terraform apply`, the ALB DNS name is immediately available as an output — no need to wait for Helm:
 
 ```bash
-kubectl -n medplum get ingress
-# NAME      CLASS   HOSTS                         ADDRESS                                                   PORTS
-# medplum   alb     api.yourcompany.com            k8s-medplum-abc123.ca-central-1.elb.amazonaws.com         443
+terraform output alb_dns_name
+# k8s-medplum-abc123.ca-central-1.elb.amazonaws.com
 ```
 
 | Type | Name | Value |
 |---|---|---|
-| `CNAME` | `<api_domain>` (e.g., `api.yourcompany.com`) | ALB hostname from the `ADDRESS` column above |
+| `CNAME` | `<api_domain>` (e.g., `api.yourcompany.com`) | Value of `alb_dns_name` output |
+
+> **Note:** When using Route 53 (`create_route53_zone = true` or `create_route53_records = true`), Terraform creates this record automatically — no manual step needed.
 
 > **DNS propagation note:** After adding records, your local machine may still fail to resolve them if your router or ISP has cached a negative (NXDOMAIN) response. To verify the records are correct independently of your local cache, query a public resolver directly:
 > ```bash
@@ -401,12 +405,12 @@ Once the cluster is running and your outputs are collected, follow the Helm depl
 
 Run these steps first, otherwise `terraform apply` on the next deploy will fail:
 
-**1. Uninstall the Helm release** — ensures the ALB is deprovisioned cleanly before Terraform removes the EKS cluster:
+**1. Uninstall the Helm release** — removes the Kubernetes resources (Deployment, Service, Ingress) and causes the LB Controller to clean up the target groups and listener rules it added to the ALB. The ALB shell itself is now owned by Terraform and will be deleted by `terraform destroy`:
 
 ```bash
 helm uninstall medplum --namespace medplum
 kubectl delete namespace medplum
-# wait ~60 seconds for the ALB to be removed
+# wait ~30 seconds for the LB Controller to deregister targets
 ```
 
 **2. Remove the `app` CNAME from Route 53** — CloudFront will create a new distribution with a new domain on the next deploy. If the old CNAME still exists pointing at the old distribution, the new distribution will fail with `CNAMEAlreadyExists`:
@@ -480,8 +484,8 @@ The S3 buckets are emptied automatically (`force_destroy = true`). Secrets Manag
 | `cdn.tf` | CloudFront distribution for app with security response headers policy |
 | `certs.tf` | ACM certificate requests, Route 53 DNS validation records, and certificate validation waits |
 | `security.tf` | KMS key, Secrets Manager secret |
-| `iam.tf` | IRSA roles and policies for server pod and LB controller |
-| `lb_controller.tf` | AWS Load Balancer Controller IAM role and policy |
+| `iam.tf` | IRSA roles and policies for the server pod and AWS Load Balancer Controller |
+| `alb.tf` | Internet-facing ALB, security groups, HTTP→HTTPS redirect and HTTPS listeners |
 | `bot.tf` | Medplum bot Lambda execution role |
 | `waf.tf` | WAFv2 Web ACLs for ALB (regional) and CloudFront distributions (us-east-1) |
 | `cloudtrail.tf` | CloudTrail trail, CloudWatch log group, metric filters, alarms, SNS (opt-in) |

@@ -38,7 +38,7 @@ kubectl -n medplum get pods
 kubectl -n medplum get ingress
 ```
 
-Pods should reach `Running` within a minute or two. The ingress may take an additional 2–3 minutes for the cloud load balancer to provision.
+Pods should reach `Running` within a minute or two. On AWS and Azure the load balancer is pre-provisioned by Terraform — the ingress `ADDRESS` field should populate within 1–2 minutes as the controller registers target groups on the existing load balancer. On GCP the ingress controller provisions the Google Cloud Load Balancer from scratch, which may take 3–5 minutes.
 
 ---
 
@@ -62,6 +62,7 @@ You will need these values to fill in the placeholders below:
 | `server_iam_role_arn` | `<SERVER_IAM_ROLE_ARN>` |
 | `lb_controller_iam_role_arn` | `<LB_CONTROLLER_ROLE_ARN>` |
 | `alb_certificate_arn` | `<ALB_CERTIFICATE_ARN>` |
+| `alb_arn` | `<ALB_ARN>` |
 
 ### Install the AWS Load Balancer Controller
 
@@ -104,6 +105,7 @@ ingress:
   deploy: true
   domain: "<API_DOMAIN>"
   acmCertificateArn: "<ALB_CERTIFICATE_ARN>"
+  albArn: "<ALB_ARN>"
 ```
 
 Deploy:
@@ -117,19 +119,20 @@ helm install medplum ./charts \
 
 ### Post-deploy DNS
 
-After the ingress is created, get the ALB DNS name:
+The ALB DNS name is available immediately after `terraform apply` — no need to wait for the Ingress to be created:
 
 ```bash
-kubectl -n medplum get ingress
-# NAME      CLASS   HOSTS                       ADDRESS                                          PORTS
-# medplum   alb     medplum-api.yourcompany.com k8s-medplum-abc123.us-east-1.elb.amazonaws.com   443
+terraform output alb_dns_name
+# k8s-medplum-abc123.us-east-1.elb.amazonaws.com
 ```
 
-Add a DNS record pointing your API domain at the ALB:
+If you are using Route 53 (`create_route53_zone = true` or `create_route53_records = true`), Terraform creates the `api_domain` alias record automatically and no manual step is needed.
+
+If you are managing DNS externally, add this record at your DNS provider:
 
 | Type | Name | Value |
 |---|---|---|
-| `CNAME` | `<API_DOMAIN>` (e.g., `medplum-api.yourcompany.com`) | ALB hostname from above |
+| `CNAME` | `<API_DOMAIN>` (e.g., `medplum-api.yourcompany.com`) | Value of `alb_dns_name` Terraform output |
 
 ### Deploy the frontend app
 
@@ -157,7 +160,7 @@ Common causes:
 
 ### Ingress `ADDRESS` stays blank
 
-The AWS Load Balancer Controller is responsible for provisioning the ALB. Check its logs:
+The ALB is provisioned by Terraform — the LB Controller's job is to adopt it and register target groups and listener rules. If `ADDRESS` never populates, check the controller logs:
 
 ```bash
 kubectl -n kube-system logs -l app.kubernetes.io/name=aws-load-balancer-controller
@@ -165,10 +168,12 @@ kubectl -n kube-system logs -l app.kubernetes.io/name=aws-load-balancer-controll
 
 Common causes:
 
-| Error in LB controller logs | Fix |
-|---|---|
-| `AccessDenied: not authorized to perform: elasticloadbalancing:DescribeLoadBalancers` | IAM policy uses wrong action prefix — must be `elasticloadbalancing:*`, not `elbv2:*` |
-| `no matches for kind "IngressClass"` | LB controller is not installed or installed in the wrong namespace |
+| Error / symptom | Cause | Fix |
+|---|---|---|
+| `ingress.albArn` not set in values | Controller creates a **new** ALB instead of adopting the Terraform one — or fails if it lacks `CreateLoadBalancer` permission | Set `ingress.albArn` to the value of `terraform output alb_arn` and `helm upgrade` |
+| `InvalidLoadBalancerArn` or `LoadBalancerNotFound` | Wrong or stale ARN supplied | Re-run `terraform output alb_arn` and update `ingress.albArn` |
+| `AccessDenied: not authorized to perform: elasticloadbalancing:DescribeLoadBalancers` | IAM policy uses wrong action prefix | Must be `elasticloadbalancing:*`, not `elbv2:*` — verify `iam.tf` |
+| `no matches for kind "IngressClass"` | LB Controller is not installed or installed in the wrong namespace | Re-run the `helm install aws-load-balancer-controller` step |
 
 ### `kubectl` returns `the server has asked for the client to provide credentials`
 
@@ -272,6 +277,7 @@ helm install medplum ./charts \
 | `ingress.deploy` | `true` | Whether to create an Ingress resource |
 | `ingress.domain` | `""` | Hostname for the ingress rule |
 | `ingress.acmCertificateArn` | `""` | AWS only: ACM cert ARN for the ALB HTTPS listener |
+| `ingress.albArn` | `""` | AWS only: ARN of the Terraform-provisioned ALB (`alb_arn` output). The LB Controller adopts this ALB instead of creating a new one |
 | `ingress.tlsSecretName` | `""` | Azure only: Kubernetes TLS secret name |
 | `serviceAccount.annotations` | `{}` | Workload identity annotations (IRSA, GKE WI, Azure WI) |
 

@@ -665,11 +665,10 @@ resource "aws_wafv2_web_acl_logging_configuration" "api" {
   resource_arn            = aws_wafv2_web_acl.api[0].arn
 }
 
-# Associate the regional WAF with the ALB.
-# The ALB ARN is only known after EKS Ingress is provisioned; supply waf_alb_arn on a second apply.
+# Associate the regional WAF with the Terraform-managed ALB.
 resource "aws_wafv2_web_acl_association" "api" {
-  count = var.enable_waf && var.waf_alb_arn != "" ? 1 : 0
+  count = var.enable_waf ? 1 : 0
 
-  resource_arn = var.waf_alb_arn
+  resource_arn = aws_lb.api.arn
   web_acl_arn  = aws_wafv2_web_acl.api[0].arn
 }

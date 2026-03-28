@@ -11,47 +11,6 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
   tags = var.tags
 }
 
-resource "aws_iam_role" "cloudtrail_cw" {
-  count = var.enable_cloudtrail_alarms ? 1 : 0
-  name  = "${local.name_prefix}-cloudtrail-cw-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Principal = { Service = "cloudtrail.amazonaws.com" }
-        Action    = "sts:AssumeRole"
-      }
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy" "cloudtrail_cw" {
-  count = var.enable_cloudtrail_alarms ? 1 : 0
-  name  = "${local.name_prefix}-cloudtrail-cw-policy"
-  role  = aws_iam_role.cloudtrail_cw[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams",
-        ]
-        Resource = "${aws_cloudwatch_log_group.cloudtrail[0].arn}:*"
-      }
-    ]
-  })
-}
-
 resource "aws_cloudtrail" "medplum" {
   count = var.enable_cloudtrail_alarms ? 1 : 0
   name  = "${local.name_prefix}-trail"

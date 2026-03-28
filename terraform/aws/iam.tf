@@ -193,3 +193,257 @@ resource "aws_iam_role_policy_attachment" "server" {
   role       = aws_iam_role.server.name
   policy_arn = aws_iam_policy.server.arn
 }
+
+# AWS Load Balancer Controller IAM role and policy
+# Enables the controller to provision and manage ALBs for Kubernetes Ingress resources
+
+data "aws_iam_policy_document" "lb_controller_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${module.eks.oidc_provider}:sub"
+      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${module.eks.oidc_provider}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "lb_controller" {
+  name               = "${local.name_prefix}-lb-controller-role"
+  description        = "IRSA role for the AWS Load Balancer Controller (kube-system)"
+  assume_role_policy = data.aws_iam_policy_document.lb_controller_assume_role.json
+
+  tags = var.tags
+}
+
+data "aws_iam_policy_document" "lb_controller_policy" {
+  statement {
+    sid    = "LBControllerFull"
+    effect = "Allow"
+    actions = [
+      "elasticloadbalancing:*",
+      "ec2:AuthorizeSecurityGroupIngress",
+      "ec2:RevokeSecurityGroupIngress",
+      "ec2:CreateSecurityGroup",
+      "ec2:DeleteSecurityGroup",
+      "ec2:DescribeSecurityGroups",
+      "ec2:DescribeSecurityGroupRules",
+      "ec2:CreateTags",
+      "ec2:DeleteTags",
+      "ec2:DescribeTags",
+      "ec2:DescribeInstances",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DescribeSubnets",
+      "ec2:DescribeAvailabilityZones",
+      "ec2:DescribeVpcs",
+      "ec2:DescribeInternetGateways",
+      "ec2:DescribeCoipPools",
+      "ec2:GetCoipPoolUsage",
+      "ec2:GetManagedPrefixListEntries",
+      "ec2:DescribePrefixLists",
+      "ec2:DescribeAddresses",
+      "ec2:DescribeAddressesAttribute",
+      "iam:CreateServiceLinkedRole",
+      "iam:GetServiceLinkedRoleDeletionStatus",
+      "cognito-idp:DescribeUserPoolClient",
+      "wafv2:AssociateWebACL",
+      "wafv2:DisassociateWebACL",
+      "wafv2:GetWebACL",
+      "wafv2:GetWebACLForResource",
+      "waf-regional:GetWebACLForResource",
+      "waf-regional:GetWebACL",
+      "waf-regional:AssociateWebACL",
+      "waf-regional:DisassociateWebACL",
+      "shield:DescribeProtection",
+      "shield:GetSubscriptionState",
+      "shield:DescribeSubscription",
+      "shield:ListProtections",
+      "acm:DescribeCertificate",
+      "acm:ListCertificates",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "lb_controller" {
+  name   = "${local.name_prefix}-lb-controller-policy"
+  policy = data.aws_iam_policy_document.lb_controller_policy.json
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "lb_controller" {
+  role       = aws_iam_role.lb_controller.name
+  policy_arn = aws_iam_policy.lb_controller.arn
+}
+
+# Bot Lambda execution role
+resource "aws_iam_role" "bot_lambda" {
+  name        = "${local.name_prefix}-bot-lambda-role"
+  description = "Execution role for Medplum bot Lambda functions"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "lambda.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "bot_lambda_basic" {
+  role       = aws_iam_role.bot_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# ClamAV Lambda execution role
+resource "aws_iam_role" "clamav_lambda" {
+  count = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
+  name  = "${local.name_prefix}-clamav-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" }, Action = "sts:AssumeRole" }]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "clamav_lambda_vpc" {
+  count      = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
+  role       = aws_iam_role.clamav_lambda[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_role_policy" "clamav_lambda" {
+  count = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
+  name  = "${local.name_prefix}-clamav-lambda-policy"
+  role  = aws_iam_role.clamav_lambda[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "S3Scan"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObjectTagging"]
+        Resource = "${aws_s3_bucket.storage[0].arn}/*"
+      },
+      {
+        Sid       = "EFSAccess"
+        Effect    = "Allow"
+        Action    = ["elasticfilesystem:ClientMount", "elasticfilesystem:ClientWrite", "elasticfilesystem:ClientRootAccess"]
+        Resource  = aws_efs_access_point.clamav[0].arn
+        Condition = { StringEquals = { "elasticfilesystem:AccessPointArn" = aws_efs_access_point.clamav[0].arn } }
+      },
+      {
+        Sid      = "KMSDecrypt"
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource = aws_kms_key.medplum.arn
+      }
+    ]
+  })
+}
+
+# CloudTrail → CloudWatch Logs delivery role
+resource "aws_iam_role" "cloudtrail_cw" {
+  count = var.enable_cloudtrail_alarms ? 1 : 0
+  name  = "${local.name_prefix}-cloudtrail-cw-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "cloudtrail_cw" {
+  count = var.enable_cloudtrail_alarms ? 1 : 0
+  name  = "${local.name_prefix}-cloudtrail-cw-policy"
+  role  = aws_iam_role.cloudtrail_cw[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+        ]
+        Resource = "${aws_cloudwatch_log_group.cloudtrail[0].arn}:*"
+      }
+    ]
+  })
+}
+
+# RDS Proxy execution role
+resource "aws_iam_role" "rds_proxy" {
+  count = var.rds_proxy_enabled ? 1 : 0
+  name  = "${local.name_prefix}-rds-proxy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "rds.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "rds_proxy" {
+  count = var.rds_proxy_enabled ? 1 : 0
+  name  = "${local.name_prefix}-rds-proxy-policy"
+  role  = aws_iam_role.rds_proxy[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [module.aurora.cluster_master_user_secret[0].secret_arn]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = [aws_kms_key.medplum.arn]
+        Condition = {
+          StringEquals = { "kms:ViaService" = "secretsmanager.${var.region}.amazonaws.com" }
+        }
+      }
+    ]
+  })
+}

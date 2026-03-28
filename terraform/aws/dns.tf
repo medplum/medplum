@@ -1,4 +1,4 @@
-# Route 53 — zone creation (opt-in) + DNS records for CloudFront, storage, and SES
+# Route 53 — zone creation (opt-in) + DNS records for CloudFront, storage, SES, and API ALB
 #
 # Three modes are supported:
 #
@@ -14,10 +14,6 @@
 #
 #   3. create_route53_zone = false, create_route53_records = false
 #      No Route 53 operations. Cert ARNs must be provided manually via variables.
-#
-# NOTE — API server record intentionally omitted:
-#   The API ALB hostname is only known after EKS Ingress is provisioned. Add the
-#   CNAME manually, or set waf_alb_arn on a second apply to trigger it.
 
 locals {
   dns_zone_name = var.route53_zone_name != "" ? var.route53_zone_name : local.ses_domain
@@ -109,4 +105,20 @@ resource "aws_route53_record" "ses_dkim" {
   type    = "CNAME"
   ttl     = 600
   records = ["${aws_ses_domain_dkim.medplum.dkim_tokens[count.index]}.dkim.amazonses.com"]
+}
+
+# API ALB alias record — points api_domain at the Terraform-provisioned ALB.
+# aws_lb.zone_id is the ALB's own hosted zone ID (distinct from the CloudFront global zone ID).
+resource "aws_route53_record" "api_alias" {
+  count = local.dns_zone_available ? 1 : 0
+
+  zone_id = local.effective_zone_id
+  name    = var.api_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.api.dns_name
+    zone_id                = aws_lb.api.zone_id
+    evaluate_target_health = true
+  }
 }

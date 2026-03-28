@@ -147,7 +147,7 @@ variable "rds_ssl_reject_unauthorized" {
 
 variable "enable_waf" {
   type        = bool
-  description = "Create WAFv2 Web ACLs and associate them with CloudFront distributions. The regional ALB WAF association requires waf_alb_arn to be set after the load balancer is provisioned."
+  description = "Create WAFv2 Web ACLs and associate them with CloudFront distributions and the API ALB."
   default     = true
 }
 
@@ -166,12 +166,6 @@ variable "app_waf_ip_set_arn" {
 variable "storage_waf_ip_set_arn" {
   type        = string
   description = "ARN of an existing WAFv2 IP set to use for storage CloudFront allow-listing (CLOUDFRONT scope, must be in us-east-1). Leave empty to use default managed rules only."
-  default     = ""
-}
-
-variable "waf_alb_arn" {
-  type        = string
-  description = "ARN of the Application Load Balancer to associate with the API regional WAF. Leave empty on first apply (before the LB exists); set once the LB is provisioned by EKS Ingress."
   default     = ""
 }
 
