@@ -88,6 +88,9 @@ override.tf.json
 # Terraform variable files with real deployment values — copy terraform.tfvars.example
 terraform/aws/terraform.tfvars
 
+# Helm values files with real deployment values — copy charts/values.yaml
+charts/values-aws.yaml
+
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
