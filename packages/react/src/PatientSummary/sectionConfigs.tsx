@@ -133,7 +133,11 @@ export const ProblemListSection: PatientSummarySectionConfig = {
   title: 'Problems',
   searches: [{ key: 'conditions', resourceType: 'Condition', patientParam: 'patient' }],
   component: ({ results, patient, onClickResource }: SectionRenderContext) => (
-    <ProblemList patient={patient} problems={(results['conditions'] as Condition[]) || []} onClickResource={onClickResource} />
+    <ProblemList
+      patient={patient}
+      problems={(results['conditions'] as Condition[]) || []}
+      onClickResource={onClickResource}
+    />
   ),
 };
 
@@ -208,7 +212,9 @@ export const SmokingStatusSection: PatientSummarySectionConfig = {
 export const VitalsSection: PatientSummarySectionConfig = {
   key: 'vitals',
   title: 'Vitals',
-  searches: [{ key: 'observations', resourceType: 'Observation', patientParam: 'subject', query: { category: 'vital-signs' } }],
+  searches: [
+    { key: 'observations', resourceType: 'Observation', patientParam: 'subject', query: { category: 'vital-signs' } },
+  ],
   component: ({ results, patient, onClickResource }: SectionRenderContext) => {
     const observations = (results['observations'] as Observation[]) || [];
     return <Vitals patient={patient} vitals={observations} onClickResource={onClickResource} />;

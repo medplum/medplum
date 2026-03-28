@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhirSearchDescriptor, SectionResults } from '@medplum/react-hooks';
 import type { Patient, Resource } from '@medplum/fhirtypes';
+import type { FhirSearchDescriptor, SectionResults } from '@medplum/react-hooks';
 import type { ComponentType } from 'react';
 
 export type { FhirSearchDescriptor, SectionResults };

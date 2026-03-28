@@ -183,37 +183,42 @@ export function usePatientSummaryData(
 
     // allSettled ensures a single failing search does not block the rest — each section
     // renders with whatever data is available; failed searches produce empty arrays.
-    Promise.allSettled(promises).then((settledResults) => {
-      if (stale) {
-        return;
-      }
-
-      // Route results back to sections using named keys
-      const data: SectionResults[] = sectionSearchMapping.map((mapping) => {
-        const sectionResult: SectionResults = {};
-        for (const { searchIdx, resultKey } of mapping) {
-          const settled = settledResults[searchIdx];
-          sectionResult[resultKey] = settled.status === 'fulfilled' ? (settled.value as Resource[]) : [];
+    Promise.allSettled(promises)
+      .then((settledResults) => {
+        if (stale) {
+          return;
         }
-        return sectionResult;
-      });
 
-      setSectionData(data);
-      setLoading(false);
+        // Route results back to sections using named keys
+        const data: SectionResults[] = sectionSearchMapping.map((mapping) => {
+          const sectionResult: SectionResults = {};
+          for (const { searchIdx, resultKey } of mapping) {
+            const settled = settledResults[searchIdx];
+            sectionResult[resultKey] = settled.status === 'fulfilled' ? (settled.value as Resource[]) : [];
+          }
+          return sectionResult;
+        });
 
-      // Surface the first error so the UI can indicate a partial load failure
-      const failures = settledResults.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
-      if (failures.length > 0) {
-        console.error('Some patient summary searches failed:', failures.map((f) => f.reason));
-        const firstError = failures[0].reason;
-        setError(firstError instanceof Error ? firstError : new Error(String(firstError)));
-      }
-    }).catch((err: unknown) => {
-      if (!stale) {
-        setError(err instanceof Error ? err : new Error(String(err)));
+        setSectionData(data);
         setLoading(false);
-      }
-    });
+
+        // Surface the first error so the UI can indicate a partial load failure
+        const failures = settledResults.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+        if (failures.length > 0) {
+          console.error(
+            'Some patient summary searches failed:',
+            failures.map((f) => f.reason)
+          );
+          const firstError = failures[0].reason;
+          setError(firstError instanceof Error ? firstError : new Error(String(firstError)));
+        }
+      })
+      .catch((err: unknown) => {
+        if (!stale) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setLoading(false);
+        }
+      });
 
     return () => {
       stale = true;
