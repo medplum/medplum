@@ -33,6 +33,8 @@ export interface PatientSummaryData {
 /**
  * Build a deduplication key for a search descriptor.
  * Searches with the same key are executed only once and their results shared.
+ * @param search - The search descriptor to build a key for.
+ * @returns A string key that uniquely identifies the search configuration.
  */
 function buildSearchKey(search: FhirSearchDescriptor): string {
   const param = search.patientParam ?? 'subject';
@@ -62,9 +64,11 @@ function buildSearchKey(search: FhirSearchDescriptor): string {
 /**
  * Build a stable fingerprint from sections' search configurations.
  * Used to avoid re-fetching when sections change by reference but not by content.
+ * @param sections - The section configs to fingerprint.
+ * @returns A string fingerprint representing the search configuration.
  */
 function buildSectionsFingerprint(
-  sections: Array<{ readonly key: string; readonly searches?: FhirSearchDescriptor[] }>
+  sections: { readonly key: string; readonly searches?: FhirSearchDescriptor[] }[]
 ): string {
   return sections
     .map((s) => {
@@ -85,7 +89,7 @@ function buildSectionsFingerprint(
  */
 export function usePatientSummaryData(
   patient: Patient | Reference<Patient>,
-  sections: Array<{ readonly key: string; readonly searches?: FhirSearchDescriptor[] }>
+  sections: { readonly key: string; readonly searches?: FhirSearchDescriptor[] }[]
 ): PatientSummaryData {
   const medplum = useMedplum();
   const [sectionData, setSectionData] = useState<SectionResults[]>([]);
@@ -114,10 +118,10 @@ export function usePatientSummaryData(
     const searchKeyToIndex = new Map<string, number>();
 
     // For each section, for each search, record the deduplication index and result key
-    const sectionSearchMapping: Array<Array<{ searchIdx: number; resultKey: string }>> = [];
+    const sectionSearchMapping: { searchIdx: number; resultKey: string }[][] = [];
 
     for (const section of stableSections) {
-      const mapping: Array<{ searchIdx: number; resultKey: string }> = [];
+      const mapping: { searchIdx: number; resultKey: string }[] = [];
       if (section.searches) {
         for (const search of section.searches) {
           const deduplicationKey = buildSearchKey(search);
@@ -203,6 +207,11 @@ export function usePatientSummaryData(
         console.error('Some patient summary searches failed:', failures.map((f) => f.reason));
         const firstError = failures[0].reason;
         setError(firstError instanceof Error ? firstError : new Error(String(firstError)));
+      }
+    }).catch((err: unknown) => {
+      if (!stale) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
       }
     });
 
