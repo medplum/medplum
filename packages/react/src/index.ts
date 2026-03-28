@@ -79,8 +79,6 @@ export * from './PatientExportForm/PatientExportForm';
 export * from './PatientHeader/PatientHeader';
 export * from './PatientSummary/PatientSummary';
 export type * from './PatientSummary/PatientSummary.types';
-export { usePatientSummaryData } from '@medplum/react-hooks';
-export type { PatientSummaryData } from '@medplum/react-hooks';
 export * from './PatientSummary/Pharmacies';
 export * from './PatientSummary/pharmacy-utils';
 export * from './PatientSummary/PharmacyDialog';
