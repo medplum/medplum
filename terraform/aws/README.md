@@ -311,10 +311,10 @@ EOF
      --region ${AWS_REGION}
    ```
 
-3. **Invalidate the CloudFront cache**:
+3. **Invalidate the CloudFront cache** (run from the repo root):
    ```bash
    DIST_ID=$(aws cloudfront list-distributions \
-     --query "DistributionList.Items[?Aliases.Items[?@=='$(terraform output -raw cdn_hostname)']].Id" \
+     --query "DistributionList.Items[?Aliases.Items[?@=='$(terraform -chdir=terraform/aws output -raw cdn_hostname)']].Id" \
      --output text)
    aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
    ```

@@ -43,8 +43,9 @@ tags = {
 rds_ssl_reject_unauthorized = false
 
 # ── Cache ─────────────────────────────────────────────────────────────────────
-# redis_node_type       = "cache.t3.micro"  # use cache.r6g.large+ for production
-# redis_num_cache_nodes = 1                 # must be >= 2 when environment = "prod"
+# redis_node_type        = "cache.t3.micro"  # use cache.r6g.large+ for production
+# redis_num_cache_nodes  = 1                 # must be >= 2 when environment = "prod"
+# redis_multi_az_enabled = true              # set false only for single-node dev clusters
 
 # ── DNS (Route 53) ────────────────────────────────────────────────────────────
 # Choose ONE of three modes. Setting both create_route53_zone and
@@ -97,12 +98,11 @@ rds_ssl_reject_unauthorized = false
 
 # ── WAF ───────────────────────────────────────────────────────────────────────
 # enable_waf = true  # default true; set to false to skip WAF (not recommended for production)
-# Supply waf_alb_arn on a second apply after the EKS Ingress ALB is provisioned:
-# waf_alb_arn = "arn:aws:elasticloadbalancing:REGION:ACCOUNT:loadbalancer/app/..."
 # Optional IP allowlists (CLOUDFRONT-scoped sets must be in us-east-1):
 # api_waf_ip_set_arn     = ""
 # app_waf_ip_set_arn     = ""
 # storage_waf_ip_set_arn = ""
+# The ALB WAF is attached via ingress.wafAclArn in Helm values (terraform output api_waf_arn).
 
 # ── Helm / LB Controller ALB ──────────────────────────────────────────────────
 # The AWS Load Balancer Controller owns the ALB lifecycle entirely.

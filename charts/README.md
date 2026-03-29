@@ -112,6 +112,29 @@ kubectl get ingress -n medplum medplum \
 
 Set `helm_api_alb_hostname` in `terraform.tfvars` to that value and re-run `terraform apply` to update the Route 53 DNS record.
 
+### Deploy the bot Lambda layer (one-time)
+
+Medplum bots run as AWS Lambda functions and require a shared Lambda layer (`medplum-bot-layer`) to be published in your account before any bot can be deployed or executed. This is a **one-time per-cluster step** — all bots share the same layer.
+
+Check whether the layer already exists:
+
+```bash
+aws lambda list-layer-versions \
+  --layer-name medplum-bot-layer \
+  --region <AWS_REGION>
+```
+
+If the output is empty or returns an error, publish the layer from the repo root:
+
+```bash
+cd /path/to/medplum
+AWS_REGION=<AWS_REGION> bash scripts/deploy-bot-layer.sh
+```
+
+This bundles `packages/bot-layer/` dependencies into a zip and publishes it to Lambda as `medplum-bot-layer`. The command takes 2–3 minutes (npm install is the slow part). On success, AWS returns a `LayerVersionArn` confirming the layer is ready.
+
+> **Bot deployment order:** save code in UI → click **Deploy** (publishes the Lambda function using the layer) → click **Execute** (invokes it). Skipping **Deploy** results in `Function not found` errors.
+
 ### Deploy the frontend app
 
 Frontend deployment (S3 + CloudFront) is covered in [`terraform/aws/README.md`](../terraform/aws/README.md).
