@@ -81,6 +81,8 @@ ingress:
   tlsSecretName: ''
   # AWS only: ACM certificate ARN for the ALB HTTPS listener
   acmCertificateArn: ''
-  # AWS only: ARN of the Terraform-provisioned ALB (alb_arn output).
-  # The LB Controller will adopt this ALB instead of creating a new one.
-  albArn: ''
+  # AWS only: ARN of the regional WAFv2 Web ACL to attach to the LB Controller-managed ALB.
+  # Set to the value of `terraform output api_waf_arn`.
+  # The LB Controller associates the WAF with the ALB it creates via the
+  # alb.ingress.kubernetes.io/wafv2-acl-arn annotation.
+  wafAclArn: ''

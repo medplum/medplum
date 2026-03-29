@@ -107,18 +107,69 @@ resource "aws_route53_record" "ses_dkim" {
   records = ["${aws_ses_domain_dkim.medplum.dkim_tokens[count.index]}.dkim.amazonses.com"]
 }
 
-# API ALB alias record — points api_domain at the Terraform-provisioned ALB.
-# aws_lb.zone_id is the ALB's own hosted zone ID (distinct from the CloudFront global zone ID).
+# API ALB alias record.
+#
+# The AWS Load Balancer Controller creates and owns the ALB for the API.
+# After running `helm install` / `helm upgrade`, retrieve the hostname:
+#
+#   kubectl get ingress -n medplum medplum \
+#     -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+#
+# Set helm_api_alb_hostname in terraform.tfvars to that value and re-run
+# `terraform apply` to point the Route 53 record at the correct ALB.
+
+# ALB canonical hosted zone IDs per region.
+# Source: https://docs.aws.amazon.com/general/latest/gr/elb.html
+locals {
+  alb_zone_ids = {
+    "af-south-1"     = "Z268VQBMOI5EKX"
+    "ap-east-1"      = "Z3DQVH9N71FHZ0"
+    "ap-northeast-1" = "Z14GRHDCWA56QT"
+    "ap-northeast-2" = "ZWKZPGTI48KDX"
+    "ap-northeast-3" = "Z5LXEXXYW11ES"
+    "ap-south-1"     = "ZP97RAFLXTNZK"
+    "ap-south-2"     = "Z0173938T07WNTVAEPZN"
+    "ap-southeast-1" = "Z1LMS91P8CMLE5"
+    "ap-southeast-2" = "Z1GM3OXH4ZPM65"
+    "ap-southeast-3" = "Z08888821HLRG5A9ZRTER"
+    "ap-southeast-4" = "Z09517862IB2WZLPXG76F"
+    "ca-central-1"   = "ZQSVJUPU6J1EY"
+    "ca-west-1"      = "Z06473681YS74MMRMAMGT"
+    "cn-north-1"     = "Z1GDH35T77C1KE"
+    "cn-northwest-1" = "ZM7IZAIOVVDZF"
+    "eu-central-1"   = "Z215JYRZR1TBD5"
+    "eu-central-2"   = "Z06391101F2ZOEP8P5EB3"
+    "eu-north-1"     = "Z23TAZ6LKFMNIO"
+    "eu-south-1"     = "Z3ULH7SSC945YB"
+    "eu-south-2"     = "Z0956581394HF5D5LXGAP"
+    "eu-west-1"      = "Z32O12XQLNTSW2"
+    "eu-west-2"      = "ZHURV8PSTC4K8"
+    "eu-west-3"      = "Z3Q77PNBQS71R4"
+    "il-central-1"   = "Z09170902867EHPV2DABU"
+    "me-central-1"   = "Z08230872XQRWHG2XF6I"
+    "me-south-1"     = "ZS929ML54UICD"
+    "sa-east-1"      = "Z2P70J7HTTTPLU"
+    "us-east-1"      = "Z35SXDOTRQ7X7K"
+    "us-east-2"      = "Z3AADJGX6KTTL2"
+    "us-gov-east-1"  = "Z166TLBEWOO7G0"
+    "us-gov-west-1"  = "Z33AYJ8TM3BH4J"
+    "us-west-1"      = "Z368ELLRRE2KJ0"
+    "us-west-2"      = "Z1H1FL5HABSF5"
+  }
+
+  api_alb_zone_id = local.alb_zone_ids[var.region]
+}
+
 resource "aws_route53_record" "api_alias" {
-  count = local.dns_zone_available ? 1 : 0
+  count = local.dns_zone_available && var.helm_api_alb_hostname != "" ? 1 : 0
 
   zone_id = local.effective_zone_id
   name    = var.api_domain
   type    = "A"
 
   alias {
-    name                   = aws_lb.api.dns_name
-    zone_id                = aws_lb.api.zone_id
+    name                   = var.helm_api_alb_hostname
+    zone_id                = local.api_alb_zone_id
     evaluate_target_health = true
   }
 }

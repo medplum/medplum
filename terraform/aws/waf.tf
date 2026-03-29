@@ -665,10 +665,6 @@ resource "aws_wafv2_web_acl_logging_configuration" "api" {
   resource_arn            = aws_wafv2_web_acl.api[0].arn
 }
 
-# Associate the regional WAF with the Terraform-managed ALB.
-resource "aws_wafv2_web_acl_association" "api" {
-  count = var.enable_waf ? 1 : 0
-
-  resource_arn = aws_lb.api.arn
-  web_acl_arn  = aws_wafv2_web_acl.api[0].arn
-}
+# WAF association is managed by the AWS Load Balancer Controller via the
+# alb.ingress.kubernetes.io/wafv2-acl-arn Ingress annotation.
+# Supply the api_waf_arn Terraform output as ingress.wafAclArn in Helm values.

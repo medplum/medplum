@@ -104,6 +104,17 @@ rds_ssl_reject_unauthorized = false
 # app_waf_ip_set_arn     = ""
 # storage_waf_ip_set_arn = ""
 
+# ── Helm / LB Controller ALB ──────────────────────────────────────────────────
+# The AWS Load Balancer Controller owns the ALB lifecycle entirely.
+# After running `helm install` / `helm upgrade`, retrieve the LBC-assigned hostname:
+#
+#   kubectl get ingress -n medplum medplum \
+#     -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+#
+# Set it here and re-run `terraform apply` to update the api_domain Route 53 record.
+# Leave empty on the first `terraform apply` (before helm install).
+# helm_api_alb_hostname = "k8s-medplum-medplum-XXXXXXXX-XXXXXXXXX.REGION.elb.amazonaws.com"
+
 # ── CloudTrail + Alarms ───────────────────────────────────────────────────────
 # Recommended for production compliance. Creates a CloudTrail trail, CloudWatch
 # metric filters, 10 security alarms, and an SNS topic.

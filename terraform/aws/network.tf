@@ -118,10 +118,6 @@ resource "aws_vpc_endpoint" "s3" {
 # These keep ECR pulls, CloudWatch writes, STS calls, and SSM lookups inside
 # the AWS network. Required to restrict EKS node egress in production.
 
-# ─── Interface VPC endpoints for AWS services ────────────────────────────────
-# These keep ECR pulls, CloudWatch writes, STS calls, and SSM lookups inside
-# the AWS network. Required to restrict EKS node egress in production.
-
 resource "aws_security_group" "eks_nodes" {
   name        = "${local.name_prefix}-eks-nodes-sg"
   description = "Security group for EKS node groups"

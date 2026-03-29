@@ -127,6 +127,11 @@ output "alb_certificate_arn" {
   value       = local.effective_alb_cert_arn
 }
 
+output "helm_ingress_hostname_command" {
+  description = "Run this after `helm install` to get the LB Controller-assigned ALB hostname, then set helm_api_alb_hostname in terraform.tfvars and re-run `terraform apply`"
+  value       = "kubectl get ingress -n medplum medplum -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
+}
+
 output "route53_zone_id" {
   description = "Route 53 hosted zone ID (set when create_route53_zone or create_route53_records is true)"
   value       = local.effective_zone_id
@@ -135,16 +140,6 @@ output "route53_zone_id" {
 output "route53_nameservers" {
   description = "NS records for the managed zone — add these at your registrar or parent DNS provider when create_route53_zone = true and parent_route53_zone_id is not set"
   value       = var.create_route53_zone ? aws_route53_zone.managed[0].name_servers : null
-}
-
-output "alb_arn" {
-  description = "ARN of the API Application Load Balancer — pass as ingress.albArn in Helm values"
-  value       = aws_lb.api.arn
-}
-
-output "alb_dns_name" {
-  description = "DNS name of the API Application Load Balancer — use as api_domain and for Route 53 alias records"
-  value       = aws_lb.api.dns_name
 }
 
 output "lb_controller_iam_role_arn" {

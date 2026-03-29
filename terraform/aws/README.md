@@ -8,7 +8,7 @@ Deploys a production-ready Medplum FHIR server on AWS using EKS (Kubernetes), RD
 |---|---|
 | VPC | Multi-AZ with public, private, database, and cache subnets; VPC flow logs → CloudWatch |
 | EKS cluster | Managed node group, IRSA enabled, Kubernetes 1.31 |
-| ALB | Internet-facing Application Load Balancer; HTTP→HTTPS redirect listener; WAF and ACM cert attached at apply time |
+| ALB | Created and owned by the **AWS Load Balancer Controller** after `helm install` — not pre-created by Terraform. WAF is attached via the `ingress.wafAclArn` Helm value (`alb.ingress.kubernetes.io/wafv2-acl-arn` annotation). |
 | Aurora PostgreSQL | Encrypted Aurora cluster, Secrets Manager rotation, multi-AZ in prod |
 | ElastiCache Redis | Encrypted at rest (KMS) and in transit (TLS), auth token |
 | S3 | App binary storage bucket (versioned) + static frontend bucket (CloudFront OAC) + optional dedicated storage bucket |
@@ -242,6 +242,14 @@ terraform apply -var-file=terraform.tfvars
 
 Type `yes` when prompted. **This takes 15–25 minutes** — EKS cluster creation is the slowest step.
 
+> **Three-phase deployment overview:**
+>
+> | Phase | Command | What happens |
+> |---|---|---|
+> | **Phase 1** | `terraform apply` | Creates EKS, RDS, Redis, S3, CloudFront, IAM, WAF, etc. — **no ALB yet** |
+> | **Phase 2** | `helm install` (see [Deploy Medplum API server](#deploy-medplum-api-server)) | AWS Load Balancer Controller creates the ALB and provisions the Ingress |
+> | **Phase 3** | Set `helm_api_alb_hostname` → `terraform apply` again | Creates the Route 53 DNS record for `api_domain` pointing at the ALB |
+
 ---
 
 ## After Apply
@@ -262,9 +270,9 @@ Key values you will need:
 | `ssm_config_path` | Medplum server config path (e.g. `/medplum-dev-1`) — use as part of: `aws:<region>:<ssm_config_path>/` |
 | `server_iam_role_arn` | Kubernetes ServiceAccount annotation (IRSA) |
 | `lb_controller_iam_role_arn` | AWS Load Balancer Controller IRSA role |
-| `alb_certificate_arn` | ALB listener certificate (passed to Helm) |
-| `alb_arn` | Pass as `ingress.albArn` in Helm values so the LB Controller adopts the Terraform-provisioned ALB |
-| `alb_dns_name` | DNS name of the ALB — use this as the `api_domain` value and for Route 53 alias records |
+| `alb_certificate_arn` | ALB listener certificate (passed to Helm as `ingress.acmCertificateArn`) |
+| `api_waf_arn` | WAF Web ACL ARN — pass as `ingress.wafAclArn` in Helm values so the LB Controller attaches WAF to the ALB it creates |
+| `helm_ingress_hostname_command` | Run this after `helm install` to get the LB Controller ALB hostname, then set `helm_api_alb_hostname` in `terraform.tfvars` and re-run `terraform apply` |
 | `static_storage_name` | S3 bucket for the frontend static build (sync `dist/` here) |
 | `cdn_hostname` | CloudFront custom domain — add as CNAME in DNS for app domain |
 | `cdn_endpoint` | CloudFront distribution domain (e.g. `d1234.cloudfront.net`) |
@@ -294,7 +302,7 @@ RECAPTCHA_SITE_KEY=your_recaptcha_site_key_here
 MEDPLUM_REGISTER_ENABLED=true
 EOF
 
-    cd packages/app && npm run build
+   cd packages/app && npm run build
    ```
 
 2. **Upload to the static website bucket**:
@@ -330,7 +338,7 @@ If you are managing DNS externally (Mode C from §6), add these records at your 
 | Type | Name | Value |
 |---|---|---|
 | `CNAME` or `ALIAS` | `<app_domain>` | Value of `cdn_endpoint` output |
-| `CNAME` | `<api_domain>` | Value of `alb_dns_name` output |
+| `CNAME` | `<api_domain>` | ALB hostname — available only **after** `helm install` (see below) |
 | `TXT` | `_amazonses.<domain>` | Value of `ses_domain_verification_token` output |
 | `CNAME` | `<token1>._domainkey.<domain>` | `<token1>.dkim.amazonses.com` |
 | `CNAME` | `<token2>._domainkey.<domain>` | `<token2>.dkim.amazonses.com` |
@@ -343,18 +351,7 @@ terraform output route53_nameservers
 # Add each of the four values as NS records for <route53_zone_name> at the parent
 ```
 
-After `terraform apply`, the ALB DNS name is immediately available as an output — no need to wait for Helm:
-
-```bash
-terraform output alb_dns_name
-# k8s-medplum-abc123.ca-central-1.elb.amazonaws.com
-```
-
-| Type | Name | Value |
-|---|---|---|
-| `CNAME` | `<api_domain>` (e.g., `api.yourcompany.com`) | Value of `alb_dns_name` output |
-
-> **Note:** When using Route 53 (`create_route53_zone = true` or `create_route53_records = true`), Terraform creates this record automatically — no manual step needed.
+> **Note:** The `api_domain` record can only be added after `helm install` — the ALB hostname is not available until the LB Controller creates the ALB. See the [three-phase deployment overview](#step-4--apply) in Step 4 for the full sequence.
 
 > **DNS propagation note:** After adding records, your local machine may still fail to resolve them if your router or ISP has cached a negative (NXDOMAIN) response. To verify the records are correct independently of your local cache, query a public resolver directly:
 > ```bash
@@ -373,6 +370,8 @@ terraform output alb_dns_name
 
 Once the cluster is running and your outputs are collected, follow the Helm deployment guide in [`charts/README.md`](../../charts/README.md) to deploy the Medplum server. The AWS section there covers installing the AWS Load Balancer Controller and configuring `values.yaml` with the outputs from this module.
 
+> **Phase 3:** After `helm install`, run the command in the `helm_ingress_hostname_command` output to retrieve the ALB hostname, set it as `helm_api_alb_hostname` in `terraform.tfvars`, then re-run `terraform apply` to finalize the Route 53 DNS record for `api_domain`.
+
 ---
 
 ## Destroying the Environment
@@ -385,7 +384,7 @@ Once the cluster is running and your outputs are collected, follow the Helm depl
 
 Run these steps first, otherwise `terraform apply` on the next deploy will fail:
 
-**1. Uninstall the Helm release** — removes the Kubernetes resources (Deployment, Service, Ingress) and causes the LB Controller to clean up the target groups and listener rules it added to the ALB. The ALB shell itself is now owned by Terraform and will be deleted by `terraform destroy`:
+**1. Uninstall the Helm release** — removes the Kubernetes resources (Deployment, Service, Ingress) and causes the LB Controller to clean up the ALB and its associated target groups and listeners. The ALB is owned by the LB Controller (not Terraform) and will be deleted automatically when Helm is uninstalled:
 
 ```bash
 helm uninstall medplum --namespace medplum
@@ -465,9 +464,8 @@ The S3 buckets are emptied automatically (`force_destroy = true`). Secrets Manag
 | `certs.tf` | ACM certificate requests, Route 53 DNS validation records, and certificate validation waits |
 | `security.tf` | KMS key, Secrets Manager secret |
 | `iam.tf` | IRSA roles and policies for the server pod and AWS Load Balancer Controller |
-| `alb.tf` | Internet-facing ALB, security groups, HTTP→HTTPS redirect and HTTPS listeners |
 | `bot.tf` | Medplum bot Lambda execution role |
-| `waf.tf` | WAFv2 Web ACLs for ALB (regional) and CloudFront distributions (us-east-1) |
+| `waf.tf` | WAFv2 Web ACLs for ALB (regional) and CloudFront distributions (us-east-1). The ALB WAF is attached via the `ingress.wafAclArn` Helm value — see [`charts/README.md`](../../charts/README.md) |
 | `cloudtrail.tf` | CloudTrail trail, CloudWatch log group, metric filters, alarms, SNS (opt-in) |
 | `ssm.tf` | SSM Parameter Store config + Redis/DB secret versions |
 | `ses.tf` | SES domain and email identity |

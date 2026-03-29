@@ -437,3 +437,21 @@ variable "rds_auto_minor_version_upgrade" {
     Upgrades are applied during the configured maintenance window.
   EOT
 }
+
+variable "helm_api_alb_hostname" {
+  type        = string
+  default     = ""
+  description = <<-EOT
+    DNS hostname of the ALB created by the AWS Load Balancer Controller after
+    running `helm install`. The LBC always creates its own ALB (the adoption
+    annotation was never implemented upstream). After deploying the Helm chart:
+
+      kubectl get ingress -n medplum medplum \
+        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+    Set this variable to that hostname and re-run `terraform apply` to update
+    the api_domain Route 53 A record.
+
+    Leave empty (default) on the initial `terraform apply` before Helm is deployed.
+  EOT
+}
