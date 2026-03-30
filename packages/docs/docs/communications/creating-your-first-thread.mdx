@@ -23,14 +23,6 @@ The example below is a provider–patient conversation: the patient is `subject`
 - An authenticated `MedplumClient` (see [MedplumClient](/docs/sdk/core.medplumclient) and [Auth](/docs/auth)). If you still need a Medplum project, use [Register](/docs/tutorials/register).
 - Existing [`Patient`](/docs/api/fhir/resources/patient) and [`Practitioner`](/docs/api/fhir/resources/practitioner) resources in that project whose `id` values match the snippet references (or change every `reference` in the code to match your data). Create or import them in the [Medplum App](https://app.medplum.com) or another flow you use for test data. Any reference that does not resolve causes `createResource` to fail with a server error pointing at the bad reference. If that happens, confirm the targets exist using the checks in [Verification](#verification) below.
 
-:::caution Creating threads in the Medplum App
-
-You can create or edit [`Communication`](/docs/api/fhir/resources/communication) resources in the [Medplum App](https://app.medplum.com) if you are still wiring up a client, exploring the thread model, or seeding a small amount of test data. The App talks to the same FHIR API; this is a temporary or internal shortcut, not the authoring experience you ship to end users.
-
-Manual entry requires careful attention to structure: the thread header must have no `payload` and no `partOf`, while every message must include both `payload` and `partOf` pointing at the header. At minimum, set `topic` on the thread header for the conversation title; duplicating `topic` or `category` on every child message is optional and depends on your search and UI needs (see [Messaging Data Model](/docs/communications/messaging-data-model#building-and-structuring-threads)). On the header, list everyone who should see the thread in `recipient` (for this tutorial, the patient and the clinician who started the thread) so inbox-style queries work. [Access policies](/docs/access/access-policies) still control what each login can read or write. Prefer the API walkthrough below for anything beyond quick experiments.
-
-:::
-
 ## Create the Thread Header and Messages
 
 1. Thread header — A [`Communication`](/docs/api/fhir/resources/communication) with no `payload` and no `partOf`. It groups the conversation and carries `topic`, `subject`, participants, and optional `category` when you need tags (see [Messaging Data Model](/docs/communications/messaging-data-model#how-to-tag-or-group-threads)).
