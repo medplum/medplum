@@ -279,8 +279,8 @@ await medplum.readResource('Patient', 'homer-simpson');
 await medplum.readResource('Practitioner', 'doctor-alice-smith');
 // end-block verifyWalkthroughReferencesTs
 
-// start-block createYourFirstThreadWalkthroughTs
-// Create a thread header (no payload, no partOf), then two child messages linked via partOf.
+// start-block createYourFirstThreadHeaderAndFirstMessageTs
+// Thread header (no payload, no partOf) plus the first child message from the clinician.
 // Provider–patient thread: replace Patient and Practitioner references with real ids from your project.
 // Fixed `sent` values match the April 10th topic and sort predictably in examples; use real timestamps in production.
 const createdThreadHeader = await medplum.createResource({
@@ -323,7 +323,15 @@ const walkthroughFirstMessage = await medplum.createResource({
   ],
   sent: '2024-04-10T10:00:00.000Z',
 });
+// end-block createYourFirstThreadHeaderAndFirstMessageTs
+// eslint-disable-next-line no-void
+void createdThreadHeader;
+// eslint-disable-next-line no-void
+void walkthroughFirstMessage;
 
+// start-block createYourFirstThreadReplyFromAnotherUserTs
+// In production this createResource call would run as another user (e.g. patient portal) with their own MedplumClient session.
+// It is shown in the same file so you can try the thread end-to-end; use the same `createdThreadHeader.id` from the step above.
 const walkthroughSecondMessage = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
@@ -340,17 +348,13 @@ const walkthroughSecondMessage = await medplum.createResource({
   ],
   sent: '2024-04-10T10:05:00.000Z',
 });
-// end-block createYourFirstThreadWalkthroughTs
-// eslint-disable-next-line no-void
-void createdThreadHeader;
-// eslint-disable-next-line no-void
-void walkthroughFirstMessage;
+// end-block createYourFirstThreadReplyFromAnotherUserTs
 // eslint-disable-next-line no-void
 void walkthroughSecondMessage;
 
 // start-block createYourFirstThreadReplyInResponseToTs
 // Use when the user explicitly replies to one message (not required for linear chat).
-// Continues createdThreadHeader and walkthroughSecondMessage from the walkthrough above.
+// Continues createdThreadHeader and walkthroughSecondMessage from the header, first message, and patient reply steps above.
 const walkthroughReplyInResponseTo = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
