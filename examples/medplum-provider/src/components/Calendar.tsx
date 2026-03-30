@@ -22,6 +22,8 @@ type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment;
 type SlotEvent = Event & { type: 'slot'; slot: Slot; status: string; start: Date; end: Date };
 type ScheduleEvent = AppointmentEvent | SlotEvent;
 
+const localizer = dayjsLocalizer(dayjs);
+
 export const CalendarToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element => {
   const [firstRender, setFirstRender] = useState(true);
   useEffect(() => {
@@ -66,6 +68,8 @@ export const CalendarToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element
     </Group>
   );
 };
+
+const COMPONENTS = { toolbar: CalendarToolbar };
 
 function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
   return appointments
@@ -191,10 +195,10 @@ export function Calendar(props: {
   return (
     <div data-testid="calendar">
       <ReactBigCalendar
-        components={{ toolbar: CalendarToolbar }}
+        components={COMPONENTS}
         view={view}
         date={date}
-        localizer={dayjsLocalizer(dayjs)}
+        localizer={localizer}
         events={events}
         // Background events don't show in the month view
         backgroundEvents={backgroundEvents}
