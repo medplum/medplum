@@ -743,17 +743,32 @@ class CcdaToFhirConverter {
   }
 
   private processReaction(reactionObs: CcdaObservation): AllergyIntoleranceReaction {
+    const manifestation = this.mapCode(reactionObs.value as CcdaCode) ?? {
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+          valueCode: 'unknown',
+        },
+      ],
+    };
+
     const reaction: AllergyIntoleranceReaction = {
       id: this.mapId(reactionObs.id),
-      manifestation: [this.mapCode(reactionObs.value as CcdaCode)] as CodeableConcept[],
+      manifestation: [manifestation],
       onset: mapCcdaToFhirDateTime(reactionObs.effectiveTime?.[0]?.low?.['@_value']),
     };
 
     this.processSeverity(reactionObs, reaction);
 
     // Add reaction reference
-    if (reaction.manifestation?.[0] && reactionObs.text?.reference?.['@_value']) {
-      reaction.manifestation[0].extension = this.mapTextReference(reactionObs.text);
+    if (reactionObs.text?.reference?.['@_value']) {
+      const textRefExtension = this.mapTextReference(reactionObs.text);
+      if (textRefExtension) {
+        reaction.manifestation[0].extension = [
+          ...(reaction.manifestation[0].extension ?? []),
+          ...textRefExtension,
+        ];
+      }
     }
 
     return reaction;
@@ -844,7 +859,12 @@ class CcdaToFhirConverter {
       });
     }
 
-    for (const translation of code.translation ?? EMPTY) {
+    const translations = Array.isArray(code.translation)
+      ? code.translation
+      : code.translation
+        ? [code.translation]
+        : EMPTY;
+    for (const translation of translations) {
       const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
       const translationCode = translation['@_code'];
       const translationDisplay = translation['@_displayName'];
