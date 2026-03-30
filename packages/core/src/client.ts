@@ -4582,9 +4582,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return;
     }
     this.subscriptionManager.removeCriteria(criteria, subscriptionProps);
-    if (this.subscriptionManager.getCriteriaCount() === 0) {
-      this.subscriptionManager.closeWebSocket();
-    }
   }
 
   /**

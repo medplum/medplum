@@ -340,11 +340,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Use this when you need elevated privileges within request handling.
-   * @param conn - Optional database client.
+   * This reuses the same DB connection, if one exists, to stay within the same transaction.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getSystemRepo(conn?: PoolClient): SystemRepository {
-    return createSystemRepository(this.shardId, conn);
+  getSystemRepo(): SystemRepository {
+    return createSystemRepository(this.shardId, this.conn);
   }
 
   setMode(mode: RepositoryMode): void {
@@ -1377,10 +1377,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
             __version: -1,
           };
 
-          if (resourceType !== 'Binary') {
-            columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
-          }
-
           for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
             this.buildColumn({ resourceType } as Resource, columns, searchParam);
           }
@@ -2143,7 +2139,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         accounts.add(account.reference as string);
       }
     } else {
-      const systemRepo = this.getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const systemRepo = this.getSystemRepo();
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {

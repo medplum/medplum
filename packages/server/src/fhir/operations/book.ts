@@ -94,7 +94,6 @@ function chooseActiveParameters(
 ): SchedulingParameters | undefined {
   const startDate = new Date(proposedSlot.start);
   const endDate = new Date(proposedSlot.end);
-  const serviceType = (proposedSlot.serviceType ?? EMPTY).flatMap((concept) => concept.coding ?? EMPTY);
   return parameters.find((params) => {
     const timeZone = params.timezone ?? actorTimeZone;
     const range = {
@@ -106,7 +105,7 @@ function chooseActiveParameters(
       availability,
       slots: existingSlots,
       range,
-      serviceType,
+      serviceType: proposedSlot.serviceType ?? EMPTY,
     });
     return result.some(
       (interval) => interval.start.getTime() <= range.start.getTime() && interval.end.getTime() >= range.end.getTime()

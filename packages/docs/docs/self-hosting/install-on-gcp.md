@@ -339,9 +339,55 @@ This is the backend API endpoint.
 
 Serve your frontend application through Cloud Storage and the CDN-enabled load balancer.
 
-- **Upload to Cloud Storage:** Use the `deploy-app-gcp.sh` to deploy the frontend static contents to the CDN bucket
-- **Content Delivery via CDN:** The CDN external load balancer serves content from the backend buckets (medplum-static-assets and medplum-user-content) associated with app.yourdomain.com and storage.yourdomain.com. Ensure your content is uploaded to the correct buckets for the CDN to serve.
-- **Update DNS Records (If Necessary):** Ensure that app.yourdomain.com points to the load balancer’s IP address (already configured in step 7).
+:::caution[Build-time configuration]
+
+The Medplum app is a Vite-based single-page application. Environment variables are **baked into the static build output** at compile time — they are not read at runtime. You must set `MEDPLUM_BASE_URL` (and any other variables) **before** building.
+
+:::
+
+### Configure and build the app
+
+From the root of the cloned Medplum repository, create `packages/app/.env` with your deployment values:
+
+```bash
+cat > packages/app/.env << 'EOF'
+# Required: URL of your Medplum API server
+MEDPLUM_BASE_URL=https://api.yourdomain.com/
+
+# Optional: Pre-fill a specific OAuth2 client ID for all logins
+MEDPLUM_CLIENT_ID=
+
+# Optional: Enable Google Sign-In (provide your Google OAuth2 client ID)
+GOOGLE_CLIENT_ID=
+
+# Optional: Enable reCAPTCHA on the sign-in page (provide your reCAPTCHA v3 site key)
+RECAPTCHA_SITE_KEY=
+
+# Optional: Allow new users to self-register (set to "false" to disable)
+MEDPLUM_REGISTER_ENABLED=true
+
+# Optional: Enable AWS Textract integration
+MEDPLUM_AWS_TEXTRACT_ENABLED=false
+EOF
+```
+
+Replace `https://api.yourdomain.com/` with your actual API domain. Then install dependencies and build:
+
+```bash
+npm ci --include dev
+npm run build:fast
+```
+
+### Upload to Cloud Storage
+
+Use the `deploy-app-gcp.sh` script to upload the built static files to the CDN bucket. Replace `medplum-static-assets` with your actual GCS bucket name:
+
+```bash
+APP_BUCKET=medplum-static-assets ./scripts/deploy-app-gcp.sh
+```
+
+- **Content Delivery via CDN:** The CDN external load balancer serves content from the backend buckets (`medplum-static-assets` and `medplum-user-content`) associated with `app.yourdomain.com` and `storage.yourdomain.com`. Ensure your content is uploaded to the correct buckets for the CDN to serve.
+- **Update DNS Records (If Necessary):** Ensure that `app.yourdomain.com` points to the load balancer's IP address (already configured in the [Configure DNS](#configure-dns) step above).
 
 #### Post-Deployment Verification {#post-deployment-verification}
 
