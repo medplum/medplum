@@ -86,7 +86,7 @@ const sidebars: SidebarsConfig = {
       link: { type: 'doc', id: 'careplans/index' },
       items: [
         { type: 'doc', id: 'careplans/tasks/tasks' },
-        { type: 'doc', id: 'careplans/clinical-decision-support',},
+        { type: 'doc', id: 'careplans/clinical-decision-support' },
         { type: 'html', value: '<strong class="menu__link">Referrals</strong>' },
         { type: 'doc', id: 'careplans/referrals/index' },
         { type: 'doc', id: 'careplans/referrals/creation-and-capture' },
