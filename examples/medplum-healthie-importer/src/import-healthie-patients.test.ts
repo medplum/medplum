@@ -168,6 +168,29 @@ const MOCK_DOCUMENT_RESPONSE = {
   ],
 };
 
+const MOCK_ENTRY_RESPONSE = {
+  entries: [
+    {
+      id: 'entry-300',
+      category: 'Weight',
+      metric_stat: 150,
+      created_at: '2025-06-15T10:00:00.000Z',
+      updated_at: '2025-06-15T10:00:00.000Z',
+      description: 'Metric',
+      poster: { id: '2498842' },
+    },
+    {
+      id: 'entry-301',
+      category: 'Glucose [Mass/volume] in Serum or Plasma',
+      metric_stat: 95.5,
+      created_at: '2025-06-15T10:00:00.000Z',
+      updated_at: '2025-06-15T10:00:00.000Z',
+      description: null,
+      poster: { id: '2498842' },
+    },
+  ],
+};
+
 const MOCK_APPOINTMENT_RESPONSE = {
   appointments: [
     {
@@ -213,10 +236,12 @@ describe('fetch-patients handler', () => {
   //   7. fetchPolicies
   //   8. fetchDocuments
   //   9. fetchAppointments
+  //   10. fetchEntries
   function setupMocks(options?: {
     withDietitianId?: boolean;
     withDocuments?: boolean;
     withAppointments?: boolean;
+    withEntries?: boolean;
   }): void {
     const mockQuery = vi.mocked(HealthieClient.prototype.query);
     mockQuery.mockReset();
@@ -241,8 +266,9 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce({ documents: [] });
     mockQuery.mockResolvedValueOnce({ appointments: [] });
+    mockQuery.mockResolvedValueOnce({ entries: [] });
 
-    // Patient 2498842 (has medications, optionally documents and appointments)
+    // Patient 2498842 (has medications, optionally documents, appointments, entries)
     mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[1]] });
     mockQuery.mockResolvedValueOnce(MOCK_MEDICATION_RESPONSE);
     mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
@@ -250,6 +276,7 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce(options?.withDocuments ? MOCK_DOCUMENT_RESPONSE : { documents: [] });
     mockQuery.mockResolvedValueOnce(options?.withAppointments ? MOCK_APPOINTMENT_RESPONSE : { appointments: [] });
+    mockQuery.mockResolvedValueOnce(options?.withEntries ? MOCK_ENTRY_RESPONSE : { entries: [] });
 
     // Patient 2501783 (full demographics, optionally with dietitian)
     const patient4Data = options?.withDietitianId
@@ -262,6 +289,7 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce({ documents: [] });
     mockQuery.mockResolvedValueOnce({ appointments: [] });
+    mockQuery.mockResolvedValueOnce({ entries: [] });
   }
 
   beforeAll(() => {
@@ -484,6 +512,32 @@ describe('fetch-patients handler', () => {
     expect(encounter2.length).toBe(0);
   });
 
+  test('syncs entries as Observation resources', async () => {
+    setupMocks({ withEntries: true });
+
+    await handler(medplum, DEFAULT_EVENT);
+
+    const weightObs = await medplum.searchResources('Observation', {
+      identifier: 'https://www.gethealthie.com/entryId|entry-300',
+    });
+    expect(weightObs.length).toBe(1);
+    expect(weightObs[0].status).toBe('final');
+    expect(weightObs[0].code?.coding?.[0].code).toBe('29463-7');
+    expect(weightObs[0].code?.text).toBe('Weight');
+    expect(weightObs[0].category?.[0].coding?.[0].code).toBe('vital-signs');
+    expect(weightObs[0].valueQuantity?.value).toBe(150);
+    expect(weightObs[0].valueQuantity?.unit).toBe('lbs');
+
+    const glucoseObs = await medplum.searchResources('Observation', {
+      identifier: 'https://www.gethealthie.com/entryId|entry-301',
+    });
+    expect(glucoseObs.length).toBe(1);
+    expect(glucoseObs[0].code?.coding?.[0].code).toBe('2345-7');
+    expect(glucoseObs[0].category?.[0].coding?.[0].code).toBe('laboratory');
+    expect(glucoseObs[0].valueQuantity?.value).toBe(95.5);
+    expect(glucoseObs[0].valueQuantity?.unit).toBe('mg/dL');
+  });
+
   test('handles missing secrets', async () => {
     const event = {
       input: {},
@@ -543,6 +597,7 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
     mockQuery.mockResolvedValueOnce({ documents: [] });
     mockQuery.mockResolvedValueOnce({ appointments: [] });
+    mockQuery.mockResolvedValueOnce({ entries: [] });
 
     await handler(medplum, DEFAULT_EVENT);
 

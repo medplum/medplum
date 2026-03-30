@@ -17,6 +17,7 @@ import { fetchAllergySensitivities } from './allergy';
 import { fetchPolicies } from './coverage';
 import { fetchAppointments } from './appointment';
 import { fetchDocuments } from './document';
+import { fetchEntries } from './observation';
 import { fetchMedications } from './medication';
 import { fetchOrganizationMembers } from './provider';
 import { fetchHealthieFormAnswerGroups } from './questionnaire-response';
@@ -305,6 +306,26 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       );
     } else {
       console.log('No appointments with chart notes found (this is OK)');
+    }
+  });
+
+  test('can fetch entries for a patient', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const entries = await fetchEntries(healthieClient, testPatientId);
+
+    expect(Array.isArray(entries)).toBe(true);
+    console.log(`Found ${entries.length} metric entries for patient ${testPatientId}`);
+
+    if (entries.length > 0) {
+      const entry = entries[0];
+      expect(entry.id).toBeDefined();
+      expect(typeof entry.category).toBe('string');
+      expect(typeof entry.metric_stat).toBe('number');
+      console.log(`  First entry: id=${entry.id}, category=${entry.category}, value=${entry.metric_stat}`);
     }
   });
 

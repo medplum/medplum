@@ -6,11 +6,13 @@ import type { Bundle, Patient, Reference } from '@medplum/fhirtypes';
 import { convertHealthieAllergyToFhir, fetchAllergySensitivities } from './healthie/allergy';
 import { convertHealthieAppointmentToFhir, fetchAppointments } from './healthie/appointment';
 import { convertHealthieAppointmentToEncounter } from './healthie/encounter';
+import { convertHealthieEntryToFhir, fetchEntries } from './healthie/observation';
 import { HealthieClient } from './healthie/client';
 import {
   HEALTHIE_ALLERGY_ID_SYSTEM,
   HEALTHIE_APPOINTMENT_ID_SYSTEM,
   HEALTHIE_ENCOUNTER_ID_SYSTEM,
+  HEALTHIE_ENTRY_ID_SYSTEM,
   HEALTHIE_DOCUMENT_ID_SYSTEM,
   HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,
@@ -101,18 +103,21 @@ export async function processPatient(
       },
     });
 
-    const [medications, allergies, questionnaireResponses, policies, documents, appointments] = await Promise.all([
-      fetchMedications(ctx.healthie, healthiePatient.id),
-      fetchAllergySensitivities(ctx.healthie, healthiePatient.id),
-      fetchHealthieFormAnswerGroups(healthiePatient.id, ctx.healthie),
-      fetchPolicies(ctx.healthie, healthiePatient.id),
-      fetchDocuments(ctx.healthie, healthiePatient.id),
-      fetchAppointments(ctx.healthie, healthiePatient.id, ctx.appointmentFilter),
-    ]);
+    const [medications, allergies, questionnaireResponses, policies, documents, appointments, entries] =
+      await Promise.all([
+        fetchMedications(ctx.healthie, healthiePatient.id),
+        fetchAllergySensitivities(ctx.healthie, healthiePatient.id),
+        fetchHealthieFormAnswerGroups(healthiePatient.id, ctx.healthie),
+        fetchPolicies(ctx.healthie, healthiePatient.id),
+        fetchDocuments(ctx.healthie, healthiePatient.id),
+        fetchAppointments(ctx.healthie, healthiePatient.id, ctx.appointmentFilter),
+        fetchEntries(ctx.healthie, healthiePatient.id),
+      ]);
     console.log(
       `Patient ${healthiePatient.id}: ${medications.length} meds, ${allergies.length} allergies, ` +
         `${questionnaireResponses.length} forms, ${policies.length} policies, ${documents.length} docs, ` +
-        `${appointments.length} appts, ${appointments.filter((a) => a.pm_status?.toLowerCase() === 'occurred').length} encounters`
+        `${appointments.length} appts, ${appointments.filter((a) => a.pm_status?.toLowerCase() === 'occurred').length} encounters, ` +
+        `${entries.length} observations`
     );
 
     for (const medication of medications) {
@@ -209,6 +214,16 @@ export async function processPatient(
         request: {
           method: 'PUT',
           url: `Encounter?identifier=${HEALTHIE_ENCOUNTER_ID_SYSTEM}|${appointment.id}`,
+        },
+      });
+    }
+
+    for (const entry of entries) {
+      patientBundle.entry?.push({
+        resource: convertHealthieEntryToFhir(entry, patientReference),
+        request: {
+          method: 'PUT',
+          url: `Observation?identifier=${HEALTHIE_ENTRY_ID_SYSTEM}|${entry.id}`,
         },
       });
     }
