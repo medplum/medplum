@@ -38,7 +38,9 @@ describe('SpacesPage', () => {
 
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile);
-    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
+    medplum.getProject = vi
+      .fn()
+      .mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
     medplum.searchResources = vi.fn().mockResolvedValue([]);
     medplum.readReference = vi.fn().mockResolvedValue(mockTopic);
   });

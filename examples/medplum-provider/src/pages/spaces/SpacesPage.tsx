@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Center, Paper, Stack, Text, Title } from '@mantine/core';
-import { IconRobotOff } from '@tabler/icons-react';
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
+import { IconRobotOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { SpacesInbox } from '../../components/spaces/SpacesInbox';
