@@ -14,6 +14,8 @@ export interface HealthieAppointment {
   provider?: { id: string; full_name?: string };
   appointment_type?: { id: string; name?: string };
   attendees?: { id: string; full_name?: string }[];
+  connected_chart_note_locked?: boolean;
+  connected_chart_note_string?: string;
 }
 
 export async function fetchAppointments(
@@ -37,6 +39,8 @@ export async function fetchAppointments(
           length
           location
           pm_status
+          connected_chart_note_locked
+          connected_chart_note_string
           provider {
             id
             full_name

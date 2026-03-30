@@ -5,10 +5,12 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Bundle, Patient, Reference } from '@medplum/fhirtypes';
 import { convertHealthieAllergyToFhir, fetchAllergySensitivities } from './healthie/allergy';
 import { convertHealthieAppointmentToFhir, fetchAppointments } from './healthie/appointment';
+import { convertHealthieAppointmentToEncounter } from './healthie/encounter';
 import { HealthieClient } from './healthie/client';
 import {
   HEALTHIE_ALLERGY_ID_SYSTEM,
   HEALTHIE_APPOINTMENT_ID_SYSTEM,
+  HEALTHIE_ENCOUNTER_ID_SYSTEM,
   HEALTHIE_DOCUMENT_ID_SYSTEM,
   HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,
@@ -109,7 +111,8 @@ export async function processPatient(
     ]);
     console.log(
       `Patient ${healthiePatient.id}: ${medications.length} meds, ${allergies.length} allergies, ` +
-        `${questionnaireResponses.length} forms, ${policies.length} policies, ${documents.length} docs, ${appointments.length} appts`
+        `${questionnaireResponses.length} forms, ${policies.length} policies, ${documents.length} docs, ` +
+        `${appointments.length} appts, ${appointments.filter((a) => a.pm_status?.toLowerCase() === 'occurred').length} encounters`
     );
 
     for (const medication of medications) {
@@ -195,6 +198,17 @@ export async function processPatient(
         request: {
           method: 'PUT',
           url: `Appointment?identifier=${HEALTHIE_APPOINTMENT_ID_SYSTEM}|${appointment.id}`,
+        },
+      });
+    }
+
+    const fulfilledAppointments = appointments.filter((a) => a.pm_status?.toLowerCase() === 'occurred');
+    for (const appointment of fulfilledAppointments) {
+      patientBundle.entry?.push({
+        resource: convertHealthieAppointmentToEncounter(appointment, patientReference),
+        request: {
+          method: 'PUT',
+          url: `Encounter?identifier=${HEALTHIE_ENCOUNTER_ID_SYSTEM}|${appointment.id}`,
         },
       });
     }

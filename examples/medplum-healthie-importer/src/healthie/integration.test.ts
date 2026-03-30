@@ -287,6 +287,27 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
     }
   });
 
+  test('appointments include chart note fields', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const appointments = await fetchAppointments(healthieClient, testPatientId);
+    const withChartNote = appointments.find((a) => a.connected_chart_note_string);
+
+    if (withChartNote) {
+      expect(typeof withChartNote.connected_chart_note_string).toBe('string');
+      expect(typeof withChartNote.connected_chart_note_locked).toBe('boolean');
+      console.log(
+        `  Chart note: locked=${withChartNote.connected_chart_note_locked}, ` +
+          `content="${withChartNote.connected_chart_note_string?.substring(0, 50)}..."`
+      );
+    } else {
+      console.log('No appointments with chart notes found (this is OK)');
+    }
+  });
+
   test('can fetch latest clinical update across all resources', async () => {
     if (!testPatientId) {
       console.log('Skipping: No test patient available');

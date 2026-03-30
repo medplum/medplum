@@ -178,6 +178,8 @@ const MOCK_APPOINTMENT_RESPONSE = {
       pm_status: 'Occurred',
       provider: { id: 'prov-1', full_name: 'Dr Smith' },
       appointment_type: { id: 'type-1', name: 'Follow-up' },
+      connected_chart_note_locked: true,
+      connected_chart_note_string: 'Signed',
     },
     {
       id: 'appt-201',
@@ -187,6 +189,8 @@ const MOCK_APPOINTMENT_RESPONSE = {
       pm_status: 'No-Show',
       provider: { id: 'prov-1', full_name: 'Dr Smith' },
       appointment_type: { id: 'type-2', name: 'Check-in' },
+      connected_chart_note_locked: false,
+      connected_chart_note_string: null,
     },
   ],
 };
@@ -454,6 +458,30 @@ describe('fetch-patients handler', () => {
     expect(appt2.length).toBe(1);
     expect(appt2[0].status).toBe('noshow');
     expect(appt2[0].minutesDuration).toBe(15);
+  });
+
+  test('creates Encounters only from fulfilled appointments', async () => {
+    setupMocks({ withAppointments: true });
+
+    await handler(medplum, DEFAULT_EVENT);
+
+    const encounter1 = await medplum.searchResources('Encounter', {
+      identifier: 'https://www.gethealthie.com/encounterId|appt-200',
+    });
+    expect(encounter1.length).toBe(1);
+    expect(encounter1[0].status).toBe('finished');
+    expect(encounter1[0].class.code).toBe('VR');
+    expect(encounter1[0].period?.start).toBe('2025-06-15T10:00:00.000Z');
+    expect(encounter1[0].period?.end).toBe('2025-06-15T10:30:00.000Z');
+    expect(encounter1[0].length?.value).toBe(30);
+    expect(encounter1[0].type?.[0].text).toBe('Follow-up');
+    expect(encounter1[0].text?.status).toBe('additional');
+    expect(encounter1[0].text?.div).toContain('Signed and locked');
+
+    const encounter2 = await medplum.searchResources('Encounter', {
+      identifier: 'https://www.gethealthie.com/encounterId|appt-201',
+    });
+    expect(encounter2.length).toBe(0);
   });
 
   test('handles missing secrets', async () => {
