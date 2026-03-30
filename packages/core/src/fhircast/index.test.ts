@@ -603,14 +603,10 @@ describe('createFhircastMessagePayload', () => {
 
   test('Missing `context.versionId` in `*-update` event', () => {
     expect(() =>
-      createFhircastMessagePayload(
-        'abc-123',
-        'DiagnosticReport-update',
-        [
-          { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
-          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'document' } },
-        ]
-      )
+      createFhircastMessagePayload('abc-123', 'DiagnosticReport-update', [
+        { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
+        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'document' } },
+      ])
     ).toThrow(OperationOutcomeError);
   });
 });

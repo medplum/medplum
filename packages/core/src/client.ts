@@ -4341,11 +4341,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       );
     }
     assertContextVersionOptional(event);
-    return this.post(
-      this.fhircastHubUrl,
-      createFhircastMessagePayload(topic, event, context),
-      ContentType.JSON
-    );
+    return this.post(this.fhircastHubUrl, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**

@@ -63,14 +63,10 @@ export function useSubscription(
   const onWebSocketCloseRef = useRef(options?.onWebSocketClose);
   onWebSocketCloseRef.current = options?.onWebSocketClose;
 
-  const onSubscriptionConnectRef = useRef(
-    options?.onSubscriptionConnect
-  );
+  const onSubscriptionConnectRef = useRef(options?.onSubscriptionConnect);
   onSubscriptionConnectRef.current = options?.onSubscriptionConnect;
 
-  const onSubscriptionDisconnectRef = useRef(
-    options?.onSubscriptionDisconnect
-  );
+  const onSubscriptionDisconnectRef = useRef(options?.onSubscriptionDisconnect);
   onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
 
   const onErrorRef = useRef(options?.onError);
