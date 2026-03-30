@@ -34,6 +34,15 @@ export class Hl7ErrorEvent extends Event {
   }
 }
 
+export class Hl7WarningEvent extends Event {
+  readonly error: Error;
+
+  constructor(error: Error) {
+    super('warning');
+    this.error = error;
+  }
+}
+
 export class Hl7CloseEvent extends Event {
   constructor() {
     super('close');
