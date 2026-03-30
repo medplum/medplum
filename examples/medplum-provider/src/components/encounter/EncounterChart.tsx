@@ -56,10 +56,10 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
     setChargeItems,
   } = useEncounterChart(encounterProp);
 
-  const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
+  const [chartNote, setChartNote] = useState(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
   const [provenances, setProvenances] = useState<Provenance[]>([]);
-  const [chartNoteStatus, setChartNoteStatus] = useState<ChartNoteStatus>(ChartNoteStatus.Unsigned);
+  const [chartNoteStatus, setChartNoteStatus] = useState(ChartNoteStatus.Unsigned);
 
   useEffect(() => {
     if (!encounter) {

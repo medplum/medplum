@@ -117,7 +117,7 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const actionsRef = useRef<PlanDefinitionAction[]>(props.actions);
+  const actionsRef = useRef(props.actions);
   actionsRef.current = props.actions;
 
   function changeAction(changedAction: PlanDefinitionAction): void {

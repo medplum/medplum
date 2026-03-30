@@ -154,7 +154,7 @@ describe('Agent/$fetch-logs', () => {
     expect(res.status).toBe(400);
     const outcome = res.body as OperationOutcome;
 
-    expect(outcome).toMatchObject<OperationOutcome>(
+    expect(outcome).toMatchObject(
       badRequest("Invalid value 'true' provided for integer parameter 'limit'")
     );
   });
@@ -168,7 +168,7 @@ function expectBundleToContainLogsEntry(bundle: Bundle<Parameters>, agent: Agent
       parameter: expect.arrayContaining<ParametersParameter>([
         expect.objectContaining<ParametersParameter>({
           name: 'agent',
-          resource: expect.objectContaining<Agent>(agent),
+          resource: expect.objectContaining(agent),
         }),
         expect.objectContaining<ParametersParameter>({
           name: 'result',

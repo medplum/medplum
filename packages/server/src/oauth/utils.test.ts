@@ -470,7 +470,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -520,7 +520,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login without email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -568,7 +568,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'client',
           user: createReference(client),
@@ -618,7 +618,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
