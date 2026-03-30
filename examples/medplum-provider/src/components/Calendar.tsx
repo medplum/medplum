@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -185,12 +185,23 @@ export function Calendar(props: {
     [onSelectAppointment, onSelectSlot]
   );
 
-  const events = [
-    ...appointmentsToEvents(props.appointments),
-    ...slotsToEvents(props.slots.filter((slot) => SchedulingTransientIdentifier.get(slot))),
-  ];
+  const events = useMemo(
+    () => [
+      ...appointmentsToEvents(props.appointments),
+      ...slotsToEvents(props.slots.filter((slot) => SchedulingTransientIdentifier.get(slot))),
+    ],
+    [props.appointments, props.slots]
+  );
 
-  const backgroundEvents = slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot)));
+  const backgroundEvents = useMemo(
+    () => slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot))),
+    [props.slots]
+  );
+
+  const onNavigate = useCallback((newDate: Date, newView: View) => {
+    setDate(newDate);
+    setView(newView);
+  }, []);
 
   return (
     <div data-testid="calendar">
@@ -202,10 +213,7 @@ export function Calendar(props: {
         events={events}
         // Background events don't show in the month view
         backgroundEvents={backgroundEvents}
-        onNavigate={(newDate: Date, newView: View) => {
-          setDate(newDate);
-          setView(newView);
-        }}
+        onNavigate={onNavigate}
         onRangeChange={handleRangeChange}
         onSelectSlot={props.onSelectInterval}
         onSelectEvent={handleSelectEvent}
