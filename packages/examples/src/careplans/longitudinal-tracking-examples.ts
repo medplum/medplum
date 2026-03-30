@@ -68,10 +68,7 @@ const encounter = await medplum.createResource({
     reference: 'Patient/homer-simpson',
     display: 'Homer Simpson',
   },
-  episodeOfCare: [
-    { reference: 'EpisodeOfCare/diabetes-episode' },
-    { reference: 'EpisodeOfCare/weight-loss-episode' },
-  ],
+  episodeOfCare: [{ reference: 'EpisodeOfCare/diabetes-episode' }, { reference: 'EpisodeOfCare/weight-loss-episode' }],
   period: {
     start: '2024-06-01T09:00:00Z',
     end: '2024-06-01T09:30:00Z',
@@ -168,10 +165,7 @@ console.log(carePlan);
 // end-block createCarePlanTs
 
 // start-block searchEncountersByEpisodeTs
-const encounters = await medplum.searchResources(
-  'Encounter',
-  'episode-of-care=EpisodeOfCare/diabetes-episode'
-);
+const encounters = await medplum.searchResources('Encounter', 'episode-of-care=EpisodeOfCare/diabetes-episode');
 console.log(encounters);
 // end-block searchEncountersByEpisodeTs
 
@@ -208,10 +202,7 @@ curl 'https://api.medplum.com/fhir/R4/CarePlan?patient=Patient/homer-simpson&con
 */
 
 // start-block searchEpisodesByPatientTs
-const episodes = await medplum.searchResources(
-  'EpisodeOfCare',
-  'patient=Patient/homer-simpson&status=active'
-);
+const episodes = await medplum.searchResources('EpisodeOfCare', 'patient=Patient/homer-simpson&status=active');
 console.log(episodes);
 // end-block searchEpisodesByPatientTs
 
