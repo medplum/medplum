@@ -21,6 +21,7 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
+    "@fullcalendar/react": "7.0.0-rc.3",
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
@@ -56,6 +57,7 @@
     "react-router": "7.15.0",
     "recharts": "3.8.1",
     "remark-gfm": "4.0.1",
+    "temporal-polyfill": "0.3.2",
     "typescript": "6.0.3",
     "vite": "8.0.11",
     "vitest": "4.1.5"

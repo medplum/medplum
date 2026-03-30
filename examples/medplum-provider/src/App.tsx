@@ -7,6 +7,7 @@ import {
   IconApps,
   IconBook2,
   IconCalendarEvent,
+  IconCalendarWeek,
   IconClipboardCheck,
   IconMail,
   IconPill,
@@ -54,6 +55,7 @@ import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
+import { SchedulingPage } from './pages/schedule/SchedulingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
@@ -98,6 +100,7 @@ export function App(): JSX.Element | null {
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: `/Calendar/Schedule` },
+                  { icon: <IconCalendarWeek />, label: 'Scheduling', href: `/Scheduling` },
                   {
                     icon: <IconMail />,
                     label: 'Messages',
@@ -229,6 +232,7 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
+              <Route path="/Scheduling" element={<SchedulingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}

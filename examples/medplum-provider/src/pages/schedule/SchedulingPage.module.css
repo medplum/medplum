@@ -1,0 +1,7 @@
+.wideLabel {
+  flex-grow: 1;
+}
+
+.loading {
+  opacity: 60%;
+}
