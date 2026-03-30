@@ -17,6 +17,7 @@ import type {
   Media,
   Patient,
   Practitioner,
+  PractitionerRole,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
@@ -87,6 +88,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const [eligibilityBot, setEligibilityBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const [practitionerRole, setPractitionerRole] = useState<WithId<PractitionerRole> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
@@ -136,6 +139,24 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .then((bot) => setGetEncounterBot(bot ?? null))
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
+
+  useEffect(() => {
+    medplum
+      .searchOne('Bot', { identifier: 'https://www.medplum.com/bots|eligibility' })
+      .then((bot) => setEligibilityBot(bot ?? null))
+      .catch(() => setEligibilityBot(null));
+  }, [medplum]);
+
+  useEffect(() => {
+    if (!practitioner) {
+      setPractitionerRole(null);
+      return;
+    }
+    medplum
+      .searchOne('PractitionerRole', { practitioner: getReferenceString(practitioner) })
+      .then((role) => setPractitionerRole(role ?? null))
+      .catch(() => setPractitionerRole(null));
+  }, [medplum, practitioner]);
 
   const processCandidResponse = useCallback((result: CandidBotResponse): void => {
     const encounterId = result?.fullEncounter?.encounterId;
@@ -476,6 +497,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 encounter={encounter}
                 conditions={conditions}
                 practitioner={practitioner}
+                practitionerRole={practitionerRole}
+                chargeItems={chargeItems}
+                eligibilityBot={eligibilityBot}
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmSubmit}
               />
