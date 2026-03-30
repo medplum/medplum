@@ -605,11 +605,10 @@ describe('createFhircastMessagePayload', () => {
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
-        // @ts-expect-error Missing `context.versionId` for test
         'DiagnosticReport-update',
         [
           { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
-          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'document' } },
         ]
       )
     ).toThrow(OperationOutcomeError);

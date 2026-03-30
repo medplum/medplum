@@ -39,8 +39,8 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const author = useMedplumProfile();
   const task = useResource(initialTask);
-  const [note, setNote] = useState<string>('');
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [note, setNote] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleAddComment = async (): Promise<void> => {
     if (!task) {

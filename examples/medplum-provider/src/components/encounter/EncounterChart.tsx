@@ -38,7 +38,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const { encounter: encounterProp } = props;
   const medplum = useMedplum();
 
-  const [activeTab, setActiveTab] = useState<string>('notes');
+  const [activeTab, setActiveTab] = useState('notes');
   const {
     encounter,
     patient: patientResource,

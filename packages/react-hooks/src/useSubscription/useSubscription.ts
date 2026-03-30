@@ -54,26 +54,26 @@ export function useSubscription(
   const prevCriteriaRef = useRef<string | undefined>(undefined);
   const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>(undefined);
 
-  const callbackRef = useRef<typeof callback>(callback);
+  const callbackRef = useRef(callback);
   callbackRef.current = callback;
 
-  const onWebSocketOpenRef = useRef<UseSubscriptionOptions['onWebSocketOpen']>(options?.onWebSocketOpen);
+  const onWebSocketOpenRef = useRef(options?.onWebSocketOpen);
   onWebSocketOpenRef.current = options?.onWebSocketOpen;
 
-  const onWebSocketCloseRef = useRef<UseSubscriptionOptions['onWebSocketClose']>(options?.onWebSocketClose);
+  const onWebSocketCloseRef = useRef(options?.onWebSocketClose);
   onWebSocketCloseRef.current = options?.onWebSocketClose;
 
-  const onSubscriptionConnectRef = useRef<UseSubscriptionOptions['onSubscriptionConnect']>(
+  const onSubscriptionConnectRef = useRef(
     options?.onSubscriptionConnect
   );
   onSubscriptionConnectRef.current = options?.onSubscriptionConnect;
 
-  const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>(
+  const onSubscriptionDisconnectRef = useRef(
     options?.onSubscriptionDisconnect
   );
   onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
 
-  const onErrorRef = useRef<UseSubscriptionOptions['onError']>(options?.onError);
+  const onErrorRef = useRef(options?.onError);
   onErrorRef.current = options?.onError;
 
   useEffect(() => {

@@ -268,8 +268,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     selectedTests: INITIAL_TESTS,
     testMetadata: INITIAL_TEST_METADATA,
   });
-  const [diagnoses, privateSetDiagnoses] = useState<DiagnosisCodeableConcept[]>(INITIAL_DIAGNOSES);
-  const [billingInformation, setBillingInformation] = useState<BillingInformation>(INITIAL_BILLING_INFORMATION);
+  const [diagnoses, privateSetDiagnoses] = useState(INITIAL_DIAGNOSES);
+  const [billingInformation, setBillingInformation] = useState(INITIAL_BILLING_INFORMATION);
   const [orderNotes, privateSetOrderNotes] = useState<string | undefined>();
 
   const healthGorillaAutocomplete = useMemo(() => {
