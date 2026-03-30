@@ -5,7 +5,7 @@ tags: [communications, messaging, threads, Communication, tutorial]
 keywords: [Communication, thread, partOf, MedplumClient, tutorial]
 ---
 
-import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
+import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -20,8 +20,21 @@ The example below is a provider–patient conversation: the patient is `subject`
 
 ## Prerequisites
 
-- An authenticated `MedplumClient` (see [MedplumClient](/docs/sdk/core.medplumclient) and [Auth](/docs/auth)). If you still need a Medplum project, use [Register](/docs/tutorials/register).
+- An authenticated `MedplumClient`. For a small local script or this exercise, [client credentials](#authenticate-with-client-credentials) below is usually the fastest path. For interactive login, bots, and other flows, see [Auth](/docs/auth) and [`MedplumClient`](/docs/sdk/core.medplumclient). If you still need a Medplum project, use [Register](/docs/tutorials/register).
 - Existing [`Patient`](/docs/api/fhir/resources/patient) and [`Practitioner`](/docs/api/fhir/resources/practitioner) resources in that project whose `id` values match the snippet references (or change every `reference` in the code to match your data). Create or import them in the [Medplum App](https://app.medplum.com) or another flow you use for test data. Any reference that does not resolve causes `createResource` to fail with a server error pointing at the bad reference. If that happens, confirm the targets exist using the checks in [Verification](#verification) below.
+
+### Authenticate With Client Credentials
+
+`MedplumClient` can authenticate in several ways. For machine-to-machine access (typical for a one-off script that creates threads), use OAuth2 client credentials:
+
+1. In the [Medplum App](https://app.medplum.com), open Project Admin → [Clients](https://app.medplum.com/admin/clients) and ensure you have a [`ClientApplication`](/docs/api/fhir/medplum/clientapplication). Create one there if needed (same place you would configure or invite a client for API access). You need the application ID and Secret; see [Client Credentials](/docs/auth/client-credentials) for details and for self-hosted `baseUrl` / token endpoint notes.
+2. Instantiate the client and call [`startClientLogin`](/docs/sdk/core.medplumclient.startclientlogin) before any `createResource` or search calls. Use `import { MedplumClient } from '@medplum/core';` at the top of your script (same as the thread snippets below).
+
+<MedplumCodeBlock language="ts" selectBlocks="creatingFirstThreadClientCredentialsTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Replace the placeholders with the id and secret from the App. In your own repo, prefer reading them from the environment (for example `process.env.MEDPLUM_CLIENT_ID`) so secrets are not committed. The [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) must be allowed to create and read the resources you use (for example [`Communication`](/docs/api/fhir/resources/communication), `Patient`, `Practitioner`) via [access policies](/docs/access/access-policies) on its project membership—otherwise requests will fail with 401/403 before you get to reference errors.
 
 ## Create the Thread Header and Messages
 
@@ -81,6 +94,7 @@ Replace `threadHeader.id` (TypeScript) or `{threadHeaderId}` (CLI/cURL) with you
 ## See Also
 
 - [Communication](/docs/api/fhir/resources/communication) FHIR resource API
+- [Client Credentials](/docs/auth/client-credentials) — OAuth2 client credentials and `ClientApplication` setup
 - [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests) — batch and transaction `Bundle` requests, `executeBatch`
 - [Searching and Querying Threads](/docs/communications/searching-and-querying-threads) — thread lists, filters, `_revinclude`, subscriptions
 - [Sending Messages and Attachments](/docs/communications/sending-messages-and-attachments) — `payload`, files, `Binary`

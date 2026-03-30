@@ -265,6 +265,15 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
+(async (): Promise<void> => {
+  // start-block creatingFirstThreadClientCredentialsTs
+  // Client credentials before FHIR calls; use real id/secret from Project Admin → Clients.
+  const medplum = new MedplumClient({ baseUrl: 'https://api.medplum.com/' });
+  const profile = await medplum.startClientLogin('YOUR_CLIENT_ID', 'YOUR_CLIENT_SECRET');
+  console.log(profile);
+  // end-block creatingFirstThreadClientCredentialsTs
+})().catch(console.error);
+
 // start-block verifyWalkthroughReferencesTs
 await medplum.readResource('Patient', 'homer-simpson');
 await medplum.readResource('Practitioner', 'doctor-alice-smith');
