@@ -137,6 +137,12 @@
       "id": "",
       "source": "src/spaces-bots/fhir-visualizer-bot.ts",
       "dist": "dist/spaces-bots/fhir-visualizer-bot.js"
+    },
+    {
+      "name": "careteam-search",
+      "id": "",
+      "source": "src/careteam-search.ts",
+      "dist": "dist/careteam-search.js"
     }
   ]
 }

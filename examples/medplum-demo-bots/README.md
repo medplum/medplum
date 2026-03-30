@@ -18,6 +18,20 @@ To deploy:
 npx medplum bot deploy send-appointment-reminders
 ```
 
+### CareTeam Composite Search Bot
+Located in `examples/medplum-demo-bots/src/careteam-search.ts`, this bot finds patients by practitioner name + role on the same `CareTeam` participant entry — a constraint FHIR R4 search can't express natively.
+
+- Searches by practitioner name and role code on CareTeam participants
+- Supports optional `role-system` and `status` filters
+- Includes test coverage in `careteam-search.test.ts`
+- Sample data Bundle at `data/careteam-search-sample.json`
+- Full docs at [docs/careteam-search.md](docs/careteam-search.md)
+
+To deploy:
+```bash
+npx medplum bot deploy careteam-search
+```
+
 ## Setup
 
 To set up your bot deployment you will need to do the following:

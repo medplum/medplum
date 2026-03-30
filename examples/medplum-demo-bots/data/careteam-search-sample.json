@@ -1,0 +1,130 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000001",
+      "resource": {
+        "resourceType": "Practitioner",
+        "name": [{ "given": ["Jon"], "family": "Snow" }]
+      },
+      "request": { "method": "POST", "url": "Practitioner" }
+    },
+    {
+      "fullUrl": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000002",
+      "resource": {
+        "resourceType": "Practitioner",
+        "name": [{ "given": ["Jane"], "family": "Doe" }]
+      },
+      "request": { "method": "POST", "url": "Practitioner" }
+    },
+    {
+      "fullUrl": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000003",
+      "resource": {
+        "resourceType": "Practitioner",
+        "name": [{ "given": ["Bob"], "family": "Jones" }]
+      },
+      "request": { "method": "POST", "url": "Practitioner" }
+    },
+    {
+      "fullUrl": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000001",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "given": ["Alpha"], "family": "Patient" }]
+      },
+      "request": { "method": "POST", "url": "Patient" }
+    },
+    {
+      "fullUrl": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000002",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "given": ["Beta"], "family": "Patient" }]
+      },
+      "request": { "method": "POST", "url": "Patient" }
+    },
+    {
+      "fullUrl": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000003",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "given": ["Gamma"], "family": "Patient" }]
+      },
+      "request": { "method": "POST", "url": "Patient" }
+    },
+    {
+      "fullUrl": "urn:uuid:c3c3c3c3-0000-0000-0000-000000000001",
+      "resource": {
+        "resourceType": "CareTeam",
+        "status": "active",
+        "name": "Alpha Care Team",
+        "subject": { "reference": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000001" },
+        "participant": [
+          {
+            "role": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "case-manager" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000001" }
+          },
+          {
+            "role": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "physician" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000002" }
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "CareTeam" }
+    },
+    {
+      "fullUrl": "urn:uuid:c3c3c3c3-0000-0000-0000-000000000002",
+      "resource": {
+        "resourceType": "CareTeam",
+        "status": "active",
+        "name": "Beta Care Team",
+        "subject": { "reference": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000002" },
+        "participant": [
+          {
+            "role": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "case-manager" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000001" }
+          },
+          {
+            "role": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "nurse" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000003" }
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "CareTeam" }
+    },
+    {
+      "fullUrl": "urn:uuid:c3c3c3c3-0000-0000-0000-000000000003",
+      "resource": {
+        "resourceType": "CareTeam",
+        "status": "active",
+        "name": "Gamma Care Team",
+        "subject": { "reference": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000003" },
+        "participant": [
+          {
+            "role": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "physician" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000001" }
+          },
+          {
+            "role": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "case-manager" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000002" }
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "CareTeam" }
+    },
+    {
+      "fullUrl": "urn:uuid:c3c3c3c3-0000-0000-0000-000000000004",
+      "resource": {
+        "resourceType": "CareTeam",
+        "status": "proposed",
+        "name": "Alpha Proposed Care Team",
+        "subject": { "reference": "urn:uuid:b2b2b2b2-0000-0000-0000-000000000001" },
+        "participant": [
+          {
+            "role": [{ "coding": [{ "system": "http://example.com/roles", "code": "case-manager" }] }],
+            "member": { "reference": "urn:uuid:a1a1a1a1-0000-0000-0000-000000000003" }
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "CareTeam" }
+    }
+  ]
+}
