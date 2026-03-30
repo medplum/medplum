@@ -59,6 +59,7 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'html', value: '<strong class="menu__link">Care Navigation</strong>' },
         { type: 'doc', id: 'careplans/tasks/tasks' },
+        { type: 'doc', id: 'careplans/longitudinal-patient-case-tracking' },
         { type: 'doc', id: 'careplans/clinical-decision-support' },
         {
           type: 'html',
