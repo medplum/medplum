@@ -1,6 +1,6 @@
 # CareTeam Composite Search
 
-FHIR R4 has `participant` and `participant-role` search params on CareTeam, but they match independently. Searching `participant=Practitioner/smith&participant-role=case-manager` returns any CareTeam where Smith is *some* participant and *someone* has the case-manager role — they don't have to be the same person.
+FHIR R4 has `participant` and `participant-role` search params on CareTeam, but they match independently. Searching `participant=Practitioner/smith&participant-role=case-manager` returns any CareTeam where Smith is _some_ participant and _someone_ has the case-manager role — they don't have to be the same person.
 
 There's no way to express "Smith is the case manager" in a single FHIR query. This bot handles that.
 
@@ -48,7 +48,7 @@ npx medplum post 'Bot/{bot-id}/$execute' \
 
 ## Sample data
 
-A transaction Bundle at [`data/careteam-search-sample.json`](../data/careteam-search-sample.json) creates 3 Practitioners, 3 Patients, and 4 CareTeams with different participant/role combos. Load it with:
+A transaction Bundle at [`data/careteam-search-sample.json`](../data/careteam-search-sample.json) creates 3 Practitioners, 3 Patients, and 4 CareTeams with different participant/role combos. Load it in the UI or with with:
 
 ```bash
 npx medplum post '' "$(cat data/careteam-search-sample.json)"
