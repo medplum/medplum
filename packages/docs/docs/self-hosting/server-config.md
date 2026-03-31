@@ -354,6 +354,22 @@ The AWS Region identifier.
 **Created by:** `cdk`
 **Default:** `us-east-1`
 
+### sseCustomerKey
+
+Optional base64-encoded 256-bit key for S3 Server-Side Encryption with Customer-Provided Keys (SSE-C). When set, all S3 operations (upload, download, copy, presigned URLs) will use SSE-C encryption with the `AES256` algorithm.
+
+To generate a suitable key:
+
+```bash
+openssl rand -base64 32
+```
+
+:::caution
+You must store this key securely. If the key is lost, all data encrypted with it becomes permanently inaccessible. AWS does not store or manage SSE-C keys.
+:::
+
+**Default:** None
+
 ### accurateCountThreshold
 
 Optional threshold for accurate count queries. The server will always perform an estimate count first (to protect database performance), and an accurate count if the estimate is below this threshold.

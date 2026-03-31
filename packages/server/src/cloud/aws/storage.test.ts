@@ -16,8 +16,9 @@ import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import type { Request } from 'express';
 import type internal from 'stream';
+import { createHash } from 'node:crypto';
 import { Readable } from 'stream';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
 describe('Storage', () => {
@@ -222,6 +223,81 @@ describe('Storage', () => {
       CopySource: 'foo/binary/123/456',
       Bucket: 'foo',
       Key: 'binary/789/012',
+    });
+  });
+
+  describe('SSE-C encryption', () => {
+    const testKey = 'MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE='; // base64 of 32-byte key
+    const expectedMD5 = createHash('md5').update(Buffer.from(testKey, 'base64')).digest('base64');
+
+    beforeEach(() => {
+      getConfig().sseCustomerKey = testKey;
+    });
+
+    afterEach(() => {
+      getConfig().sseCustomerKey = undefined;
+    });
+
+    test('Write file includes SSE-C params', async () => {
+      initBinaryStorage('s3:foo');
+      const storage = getBinaryStorage();
+
+      const binary = { resourceType: 'Binary', id: '123', meta: { versionId: '456' } } as Binary;
+      const req = new Readable();
+      req.push('foo');
+      req.push(null);
+      (req as any).headers = {};
+
+      await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+
+      expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+        Bucket: 'foo',
+        Key: 'binary/123/456',
+        SSECustomerAlgorithm: 'AES256',
+        SSECustomerKey: testKey,
+        SSECustomerKeyMD5: expectedMD5,
+      });
+    });
+
+    test('Read file includes SSE-C params', async () => {
+      initBinaryStorage('s3:foo');
+      const storage = getBinaryStorage();
+
+      const binary = { resourceType: 'Binary', id: '123', meta: { versionId: '456' } } as Binary;
+      const sdkStream = sdkStreamMixin(Readable.from('foo'));
+      mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
+
+      await storage.readBinary(binary);
+
+      expect(mockS3Client).toReceiveCommandWith(GetObjectCommand, {
+        Bucket: 'foo',
+        Key: 'binary/123/456',
+        SSECustomerAlgorithm: 'AES256',
+        SSECustomerKey: testKey,
+        SSECustomerKeyMD5: expectedMD5,
+      });
+    });
+
+    test('Copy file includes SSE-C params for source and destination', async () => {
+      initBinaryStorage('s3:foo');
+      const storage = getBinaryStorage();
+
+      const sourceBinary = { resourceType: 'Binary', id: '123', meta: { versionId: '456' } } as Binary;
+      const destBinary = { resourceType: 'Binary', id: '789', meta: { versionId: '012' } } as Binary;
+
+      await storage.copyBinary(sourceBinary, destBinary);
+
+      expect(mockS3Client).toReceiveCommandWith(CopyObjectCommand, {
+        CopySource: 'foo/binary/123/456',
+        Bucket: 'foo',
+        Key: 'binary/789/012',
+        SSECustomerAlgorithm: 'AES256',
+        SSECustomerKey: testKey,
+        SSECustomerKeyMD5: expectedMD5,
+        CopySourceSSECustomerAlgorithm: 'AES256',
+        CopySourceSSECustomerKey: testKey,
+        CopySourceSSECustomerKeyMD5: expectedMD5,
+      });
     });
   });
 });

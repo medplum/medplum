@@ -64,6 +64,8 @@ export interface MedplumServerConfig {
   maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
+  /** Optional base64-encoded 256-bit key for S3 SSE-C (Server-Side Encryption with Customer-Provided Keys) */
+  sseCustomerKey?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
