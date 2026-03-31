@@ -48,6 +48,7 @@ export class BackEnd extends Construct {
   taskDefinition: ecs.FargateTaskDefinition;
   logGroup?: logs.ILogGroup;
   logDriver: ecs.LogDriver;
+  loggingBucket?: s3.IBucket;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
@@ -558,10 +559,8 @@ export class BackEnd extends Construct {
 
     if (config.loadBalancerLoggingBucket) {
       // Load Balancer logging
-      this.loadBalancer.logAccessLogs(
-        s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
-        config.loadBalancerLoggingPrefix
-      );
+      this.loggingBucket = s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket);
+      this.loadBalancer.logAccessLogs(this.loggingBucket, config.loadBalancerLoggingPrefix);
     }
 
     // HTTPS Listener
@@ -585,16 +584,10 @@ export class BackEnd extends Construct {
         securityGroup: loadBalancerSecurityGroup,
       });
 
-      if (config.loadBalancerLoggingBucket) {
-        // Load Balancer logging
-        this.mtlsLoadBalancer.logAccessLogs(
-          s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
-          config.loadBalancerLoggingPrefix
-        );
+      if (this.loggingBucket) {
+        this.mtlsLoadBalancer.logAccessLogs(this.loggingBucket, config.loadBalancerLoggingPrefix);
       }
 
-      // HTTPS Listener
-      // Forward to the target group
       this.mtlsLoadBalancer.addListener('HttpsListener', {
         port: 443,
         certificates: [
