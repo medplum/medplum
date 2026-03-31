@@ -66,14 +66,14 @@ resource "aws_ssm_parameter" "aws_region" {
 resource "aws_ssm_parameter" "max_json_size" {
   name  = "${local.ssm_prefix}/maxJsonSize"
   type  = "String"
-  value = "1mb"
+  value = var.max_json_size
   tags  = var.tags
 }
 
 resource "aws_ssm_parameter" "max_batch_size" {
   name  = "${local.ssm_prefix}/maxBatchSize"
   type  = "String"
-  value = "50mb"
+  value = var.max_batch_size
   tags  = var.tags
 }
 

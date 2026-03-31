@@ -8,11 +8,6 @@ output "cluster_name" {
   value       = module.eks.cluster_name
 }
 
-output "cluster_id" {
-  description = "EKS cluster name"
-  value       = module.eks.cluster_name
-}
-
 output "region" {
   description = "AWS region where resources are deployed"
   value       = var.region

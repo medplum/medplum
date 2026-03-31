@@ -41,6 +41,42 @@ resource "aws_s3_bucket_public_access_block" "storage" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "storage" {
+  count  = local.storage_cdn_enabled ? 1 : 0
+  bucket = aws_s3_bucket.storage[0].id
+
+  rule {
+    id     = "intelligent-tiering"
+    status = "Enabled"
+    filter {}
+
+    transition {
+      days          = 30
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+
+  rule {
+    id     = "noncurrent-version-expiration"
+    status = "Enabled"
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.environment == "prod" ? 90 : 30
+    }
+  }
+
+  rule {
+    id     = "abort-incomplete-multipart-uploads"
+    status = "Enabled"
+    filter {}
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
 resource "aws_cloudfront_origin_access_control" "storage" {
   count                             = local.storage_cdn_enabled ? 1 : 0
   name                              = "${local.name_prefix}-storage-oac"

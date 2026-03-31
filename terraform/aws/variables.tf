@@ -412,6 +412,18 @@ variable "redact_audit_events" {
   description = "Strip patient names and other human-readable PII from AuditEvent resources before saving or logging. Recommended when save_audit_events or log_audit_events is true."
 }
 
+variable "max_json_size" {
+  type        = string
+  default     = "1mb"
+  description = "Maximum JSON request body size accepted by the Medplum server. Stored in SSM as maxJsonSize."
+}
+
+variable "max_batch_size" {
+  type        = string
+  default     = "50mb"
+  description = "Maximum FHIR batch/transaction body size accepted by the Medplum server. Stored in SSM as maxBatchSize."
+}
+
 variable "workers_config" {
   type        = string
   default     = ""
