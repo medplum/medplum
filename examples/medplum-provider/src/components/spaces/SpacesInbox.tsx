@@ -55,7 +55,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
-  const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);
+  const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();

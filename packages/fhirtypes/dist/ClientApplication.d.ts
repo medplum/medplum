@@ -135,11 +135,6 @@ export interface ClientApplication {
   jwksUri?: string;
 
   /**
-   * @deprecated This field is deprecated. Use redirectUris instead.
-   */
-  redirectUri?: string;
-
-  /**
    * Optional redirect URI array used when redirecting a client back to the
    * client application.
    */
@@ -151,7 +146,10 @@ export interface ClientApplication {
   launchUri?: string;
 
   /**
-   * Optional array of identifier systems to use in SMART launch context. When specified, the resource's identifier with the matching system will be included in the SmartAppLaunch resource's reference and returned to the SMART app in the token response.
+   * Optional array of identifier systems to use in SMART launch context.
+   * When specified, the resource's identifier with the matching system
+   * will be included in the SmartAppLaunch resource's reference and
+   * returned to the SMART app in the token response.
    */
   launchIdentifierSystems?: ClientApplicationLaunchIdentifierSystems[];
 
@@ -189,6 +187,31 @@ export interface ClientApplication {
    * authorization request.
    */
   defaultScope?: string[];
+
+  /**
+   * @deprecated This field is deprecated. Use redirectUris instead.
+   */
+  redirectUri?: string;
+}
+
+/**
+ * Optional array of identifier systems to use in SMART launch context.
+ * When specified, the resource's identifier with the matching system
+ * will be included in the SmartAppLaunch resource's reference and
+ * returned to the SMART app in the token response.
+ */
+export interface ClientApplicationLaunchIdentifierSystems {
+
+  /**
+   * The resource type for which to use the identifier system (e.g.,
+   * 'Patient', 'Encounter').
+   */
+  resourceType: string;
+
+  /**
+   * The identifier system URI to use for the specified resource type.
+   */
+  system: string;
 }
 
 /**
@@ -205,20 +228,4 @@ export interface ClientApplicationSignInForm {
    * Logo for the Log In Form.
    */
   logo?: Attachment;
-}
-
-/**
- * Optional array of identifier systems to use in SMART launch context. When specified, the resource's identifier with the matching system will be included in the SmartAppLaunch resource's reference and returned to the SMART app in the token response.
- */
-export interface ClientApplicationLaunchIdentifierSystems {
-
-  /**
-   * The resource type for which to use the identifier system (e.g., 'Patient', 'Encounter').
-   */
-  resourceType: 'Patient' | 'Encounter';
-
-  /**
-   * The identifier system URI to use for the specified resource type.
-   */
-  system: string;
 }

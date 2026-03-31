@@ -23,7 +23,7 @@ export const TaskDetailsModal = (): JSX.Element => {
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [status, setStatus] = useState<Task['status'] | undefined>();
-  const [note, setNote] = useState<string>('');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     const fetchTask = async (): Promise<void> => {

@@ -10,12 +10,13 @@ import {
   OperationOutcomeError,
   parseJWTPayload,
 } from '@medplum/core';
-import type { ClientApplication, DomainConfiguration, IdentityProvider } from '@medplum/fhirtypes';
+import type { ClientApplication, DomainConfiguration, IdentityProvider, Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
@@ -121,22 +122,25 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
 
   if (login.membership && body.redirectUri && client) {
     // Get the redirect URI from the client application
-    // Note that we're currently allowing partial matches for external auth.
-    // This is generally NOT recommended by the OAuth spec.
-    // However, we need to support it here for backwards compatibility with existing clients.
-    const redirectUri = getClientRedirectUri(client, body.redirectUri, true);
-    if (!redirectUri) {
-      sendOutcome(res, badRequest('Invalid redirect URI'));
-      return;
-    }
-    const exactRedirectUri = getClientRedirectUri(client, redirectUri);
-    if (!exactRedirectUri) {
+    let redirectUri = getClientRedirectUri(client, body.redirectUri);
+
+    if (!redirectUri && (await isDangerousRedirectUriPartialMatchAllowed(client))) {
+      // If projects have the allow-dangerous-redirect setting enabled, then we will allow partial matches for redirect URIs.
+      // This is generally NOT recommended by the OAuth spec.
+      // However, we need to support it here for backwards compatibility with existing clients.
+      redirectUri = getClientRedirectUri(client, body.redirectUri, true);
       getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
         clientId: client.id,
         requestedUri: body.redirectUri,
         partialMatchUri: redirectUri,
       });
     }
+
+    if (!redirectUri) {
+      sendOutcome(res, badRequest('Invalid redirect URI'));
+      return;
+    }
+
     const redirectUrl = new URL(redirectUri);
     redirectUrl.searchParams.set('login', login.id);
     redirectUrl.searchParams.set('code', login.code as string);
@@ -280,4 +284,15 @@ function isValidReturnToUrl(
   } catch {
     return false;
   }
+}
+
+/**
+ * Returns true if the client application allows partial matching of redirect URIs, false otherwise.
+ * @param client - The client application.
+ * @returns True if partial matching is allowed, false otherwise.
+ */
+async function isDangerousRedirectUriPartialMatchAllowed(client: ClientApplication): Promise<boolean> {
+  const systemRepo = getGlobalSystemRepo();
+  const project = await systemRepo.readResource<Project>('Project', client.meta?.project as string);
+  return project.setting?.find((s) => s.name === 'allow-dangerous-redirect')?.valueBoolean === true;
 }
