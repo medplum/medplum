@@ -47,25 +47,15 @@ A patient can have multiple concurrent episodes and care plans. For instance, on
 
 ## How the Resources Fit Together
 
-```mermaid
-flowchart BT
-  patient[Patient]
-  episode[EpisodeOfCare]
-  carePlan[CarePlan]
-  encounter1["Encounter (Visit 1)"]
-  encounter2["Encounter (Visit 2)"]
-  condition[Condition]
-  goal[Goal]
+All resources below reference the Patient. The diagram omits those references to focus on the relationships that matter for longitudinal tracking.
 
-  episode -->|patient| patient
-  carePlan -->|subject| patient
-  encounter1 -->|episodeOfCare| episode
-  encounter2 -->|episodeOfCare| episode
-  encounter1 -->|subject| patient
-  encounter2 -->|subject| patient
-  episode -->|"diagnosis.condition"| condition
-  carePlan -->|addresses| condition
-  carePlan -->|goal| goal
+```mermaid
+flowchart LR
+  encounter1["Encounter (Visit 1)"] -->|episodeOfCare| episode[EpisodeOfCare]
+  encounter2["Encounter (Visit 2)"] -->|episodeOfCare| episode
+  episode -->|"diagnosis.condition"| condition[Condition]
+  carePlan[CarePlan] -->|addresses| condition
+  carePlan -->|goal| goal[Goal]
   carePlan -.->|supportingInfo| episode
 ```
 
@@ -73,8 +63,12 @@ The key relationships are:
 
 - Encounters link to their episode via `Encounter.episodeOfCare`
 - Both EpisodeOfCare and CarePlan reference the same [`Condition`](/docs/api/fhir/resources/condition) resources, creating an implicit link through shared diagnoses
-- `CarePlan.supportingInfo` can explicitly reference the EpisodeOfCare, providing a direct cross-link
+- `CarePlan.supportingInfo` explicitly references the EpisodeOfCare, providing a direct link from plan to episode
 - [`Goal`](/docs/api/fhir/resources/goal) resources are referenced from the CarePlan via `CarePlan.goal`
+
+:::note Navigating between EpisodeOfCare and CarePlan
+The `supportingInfo` link is one-directional: you can follow it from CarePlan to EpisodeOfCare, but there is no field on EpisodeOfCare that points back to a CarePlan. To navigate in the reverse direction (episode to plan), query by the shared Condition: `CarePlan?condition=Condition/{id}`. This is the natural clinical query — "show me all plans addressing this diagnosis" — and works regardless of how many episodes or plans reference that condition.
+:::
 
 ## Creating an Episode of Care
 
@@ -121,12 +115,17 @@ The CarePlan brings together the condition being addressed, the goals to achieve
 
 ## Cross-Linking EpisodeOfCare and CarePlan
 
-The recommended pattern for connecting these resources is:
+FHIR R4 does not provide a direct field on EpisodeOfCare that points to a CarePlan, so the link between them is asymmetric. The recommended pattern uses two complementary strategies:
 
-1. `CarePlan.supportingInfo` directly references the EpisodeOfCare
-2. Both resources reference the same [`Condition`](/docs/api/fhir/resources/condition) resources (`EpisodeOfCare.diagnosis.condition` and `CarePlan.addresses`)
+1. `CarePlan.supportingInfo` directly references the EpisodeOfCare. This gives you an explicit, unambiguous pointer when reading a CarePlan — follow `supportingInfo` to find the episode it belongs to.
+2. Both resources reference the same [`Condition`](/docs/api/fhir/resources/condition) resources (`EpisodeOfCare.diagnosis.condition` and `CarePlan.addresses`). This shared condition serves as the queryable link in the reverse direction: starting from an EpisodeOfCare, read its conditions and then search `CarePlan?condition=Condition/{id}` to find the associated plans.
 
-This dual linkage means you can navigate from either direction: start from the EpisodeOfCare to find related CarePlans through shared conditions, or start from the CarePlan and follow `supportingInfo` to the episode. There is no single "correct" direction — use whichever fits your query pattern.
+| Direction | How to navigate |
+| --- | --- |
+| CarePlan → EpisodeOfCare | Follow `CarePlan.supportingInfo` directly |
+| EpisodeOfCare → CarePlan | Query `CarePlan?condition={shared-condition-id}` |
+
+Together, these two strategies cover both navigation directions. The `supportingInfo` pointer is explicit and fast for single-resource reads; the shared Condition query handles the reverse direction and is the natural clinical question ("what plans address this diagnosis?").
 
 ## Querying Longitudinal Data
 
@@ -182,10 +181,10 @@ List all active care episodes for a patient to see their ongoing cases at a glan
 
 Consider a patient, Homer Simpson, who is managing two ongoing concerns: type 2 diabetes and a weight loss program. Each concern has its own EpisodeOfCare and CarePlan, but some visits address both.
 
+All resources reference Patient: Homer Simpson. Those references are omitted below to keep the diagram focused.
+
 ```mermaid
 flowchart TB
-  patient[Patient: Homer Simpson]
-
   subgraph diabetes ["Diabetes Management"]
     diabetesEpisode[EpisodeOfCare: Diabetes]
     diabetesCondition[Condition: Type 2 Diabetes]
@@ -210,15 +209,9 @@ flowchart TB
     weightPlan -.->|supportingInfo| weightEpisode
   end
 
-  diabetesEpisode -->|patient| patient
-  weightEpisode -->|patient| patient
-  diabetesPlan -->|subject| patient
-  weightPlan -->|subject| patient
-
   encounter1["Encounter: Q2 Check-up"]
   encounter1 -->|episodeOfCare| diabetesEpisode
   encounter1 -->|episodeOfCare| weightEpisode
-  encounter1 -->|subject| patient
 ```
 
 In this setup:
