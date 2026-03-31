@@ -49,42 +49,14 @@ rds_ssl_reject_unauthorized = false
 # redis_multi_az_enabled = true              # set false only for single-node dev clusters
 
 # ── DNS (Route 53) ────────────────────────────────────────────────────────────
-# Choose ONE of three modes. Setting both create_route53_zone and
-# create_route53_records to true is unsupported and will cause unexpected behavior.
-#
-#   A) Create the zone (fresh deployment, zone doesn't exist yet):
-#        create_route53_zone    = true
-#        create_route53_records = false   ← must be false in mode A
-#        route53_zone_name      = "example-aws.example.com"
-#      If the parent zone (example.com) is also in Route 53 in this account,
-#      add its zone ID and Terraform adds the NS delegation record automatically:
-#        parent_route53_zone_id = "Z0123456789EXAMPLE"
-#      Otherwise, run `terraform output route53_nameservers` after apply and add
-#      the four NS records at your registrar or parent DNS provider.
-#
-#   B) Zone already exists in this account:
-#        create_route53_records = true
-#        create_route53_zone    = false   ← must be false in mode B
-#        route53_zone_name      = "example-aws.example.com"
-#
-#   C) DNS managed externally — omit all of the above and supply cert ARNs manually (see below).
-#
-# Uncomment ONE block below:
-#
-# Mode A — create new hosted zone:
-# create_route53_zone    = true
-# create_route53_records = false
-# route53_zone_name      = "example-aws.example.com"
-# parent_route53_zone_id = ""
-#
-# Mode B — use existing hosted zone:
-# create_route53_records = true
-# create_route53_zone    = false
-# route53_zone_name      = "example-aws.example.com"
+# create_route53_zone    = true                        # true: Terraform creates the hosted zone
+# route53_zone_name      = "example-aws.example.com"  # defaults to root domain derived from app_domain
+# create_route53_records = false                       # true: look up existing zone and create records in it (ignored when create_route53_zone = true)
+# parent_route53_zone_id = ""                          # parent zone ID in this account — Terraform auto-adds the NS delegation record; leave empty to add NS records manually
 
 # ACM certificates — leave empty to let Terraform request and validate them automatically
-# via Route 53 DNS (requires one of modes A or B above). Populate these only when reusing
-# existing certificates or when Route 53 is not available (mode C).
+# via Route 53 DNS (requires create_route53_zone or create_route53_records). Populate
+# these only when reusing existing certificates or when Route 53 is not available.
 # ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/APP_CERT_ID"
 # alb_certificate_arn = "arn:aws:acm:REGION:ACCOUNT:certificate/ALB_CERT_ID"
 
