@@ -24,12 +24,18 @@ export function EligibilityDetails({ request, response, loadingResponse }: Eligi
   );
 }
 
+function getServicedDateText(request: CoverageEligibilityRequest): string {
+  if (request.servicedDate) {
+    return formatDate(request.servicedDate);
+  }
+  if (request.servicedPeriod) {
+    return `${formatDate(request.servicedPeriod.start)} – ${formatDate(request.servicedPeriod.end)}`;
+  }
+  return '—';
+}
+
 function RequestSection({ request }: { request: CoverageEligibilityRequest }): JSX.Element {
-  const servicedDate = request.servicedDate
-    ? formatDate(request.servicedDate)
-    : request.servicedPeriod
-      ? `${formatDate(request.servicedPeriod.start)} – ${formatDate(request.servicedPeriod.end)}`
-      : '—';
+  const providerDisplay = request.provider?.display ?? request.provider?.reference ?? '—';
 
   return (
     <Stack gap="md">
@@ -38,14 +44,14 @@ function RequestSection({ request }: { request: CoverageEligibilityRequest }): J
         <Table.Tbody>
           <DetailRow label="Created" value={formatDate(request.created)} />
           <DetailRow label="Purpose" value={request.purpose?.map(formatPurpose).join(', ') ?? '—'} />
-          <DetailRow label="Serviced Date" value={servicedDate} />
+          <DetailRow label="Serviced Date" value={getServicedDateText(request)} />
           {request.provider && (
             <DetailRow
               label="Provider"
               value={
                 <Group gap="xs">
                   <ResourceAvatar value={request.provider} size="xs" />
-                  <Text size="sm">{request.provider.display ?? request.provider.reference ?? '—'}</Text>
+                  <Text size="sm">{providerDisplay}</Text>
                 </Group>
               }
             />
@@ -110,7 +116,6 @@ function ResponseSection({
           )}
         </Table.Tbody>
       </Table>
-
       {firstInsurance?.item && firstInsurance.item.length > 0 && (
         <BenefitsTable items={firstInsurance.item} />
       )}
@@ -118,11 +123,9 @@ function ResponseSection({
   );
 }
 
-function BenefitsTable({
-  items,
-}: {
-  items: NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>;
-}): JSX.Element {
+type BenefitTableItem = NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>;
+
+function BenefitsTable({ items }: { items: BenefitTableItem }): JSX.Element {
   return (
     <Stack gap="xs">
       <Text fw={600} size="sm">
@@ -142,31 +145,38 @@ function BenefitsTable({
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {items.flatMap((item, itemIndex) =>
-              item.benefit && item.benefit.length > 0
-                ? item.benefit.map((benefit, benefitIndex) => (
-                    <Table.Tr key={`${itemIndex}-${benefitIndex}`}>
-                      <Table.Td>{item.category?.text ?? item.category?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{item.network?.text ?? item.network?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{item.unit?.text ?? item.unit?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{item.term?.text ?? item.term?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{benefit.type?.text ?? benefit.type?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{formatBenefitValue(benefit, 'allowed')}</Table.Td>
-                      <Table.Td>{formatBenefitValue(benefit, 'used')}</Table.Td>
-                    </Table.Tr>
-                  ))
-                : [
-                    <Table.Tr key={itemIndex}>
-                      <Table.Td>{item.category?.text ?? item.category?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{item.network?.text ?? item.network?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{item.unit?.text ?? item.unit?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>{item.term?.text ?? item.term?.coding?.[0]?.display ?? '—'}</Table.Td>
-                      <Table.Td>—</Table.Td>
-                      <Table.Td>—</Table.Td>
-                      <Table.Td>—</Table.Td>
-                    </Table.Tr>,
-                  ]
-            )}
+            {items.flatMap((item, itemIndex) => {
+              const category = item.category?.text ?? item.category?.coding?.[0]?.display ?? '—';
+              const network = item.network?.text ?? item.network?.coding?.[0]?.display ?? '—';
+              const unit = item.unit?.text ?? item.unit?.coding?.[0]?.display ?? '—';
+              const term = item.term?.text ?? item.term?.coding?.[0]?.display ?? '—';
+
+              if (!item.benefit || item.benefit.length === 0) {
+                return [
+                  <Table.Tr key={itemIndex}>
+                    <Table.Td>{category}</Table.Td>
+                    <Table.Td>{network}</Table.Td>
+                    <Table.Td>{unit}</Table.Td>
+                    <Table.Td>{term}</Table.Td>
+                    <Table.Td>—</Table.Td>
+                    <Table.Td>—</Table.Td>
+                    <Table.Td>—</Table.Td>
+                  </Table.Tr>,
+                ];
+              }
+
+              return item.benefit.map((benefit, benefitIndex) => (
+                <Table.Tr key={`${itemIndex}-${benefitIndex}`}>
+                  <Table.Td>{category}</Table.Td>
+                  <Table.Td>{network}</Table.Td>
+                  <Table.Td>{unit}</Table.Td>
+                  <Table.Td>{term}</Table.Td>
+                  <Table.Td>{benefit.type?.text ?? benefit.type?.coding?.[0]?.display ?? '—'}</Table.Td>
+                  <Table.Td>{formatBenefitValue(benefit, 'allowed')}</Table.Td>
+                  <Table.Td>{formatBenefitValue(benefit, 'used')}</Table.Td>
+                </Table.Tr>
+              ));
+            })}
           </Table.Tbody>
         </Table>
       </Box>
@@ -174,13 +184,7 @@ function BenefitsTable({
   );
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}): JSX.Element {
+function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.Element {
   return (
     <Table.Tr>
       <Table.Td w={160}>
@@ -189,7 +193,8 @@ function DetailRow({
         </Text>
       </Table.Td>
       <Table.Td>
-        {typeof value === 'string' ? <Text size="sm">{value}</Text> : value}
+        {typeof value === 'string' && <Text size="sm">{value}</Text>}
+        {typeof value !== 'string' && value}
       </Table.Td>
     </Table.Tr>
   );
@@ -199,13 +204,25 @@ type BenefitItem = NonNullable<NonNullable<NonNullable<CoverageEligibilityRespon
 
 function formatBenefitValue(benefit: BenefitItem, prefix: 'allowed' | 'used'): string {
   if (prefix === 'allowed') {
-    if (benefit.allowedUnsignedInt !== undefined) return String(benefit.allowedUnsignedInt);
-    if (benefit.allowedString) return benefit.allowedString;
-    if (benefit.allowedMoney) return formatMoney(benefit.allowedMoney);
+    if (benefit.allowedUnsignedInt !== undefined) {
+      return String(benefit.allowedUnsignedInt);
+    }
+    if (benefit.allowedString) {
+      return benefit.allowedString;
+    }
+    if (benefit.allowedMoney) {
+      return formatMoney(benefit.allowedMoney);
+    }
   } else {
-    if (benefit.usedUnsignedInt !== undefined) return String(benefit.usedUnsignedInt);
-    if (benefit.usedString) return benefit.usedString;
-    if (benefit.usedMoney) return formatMoney(benefit.usedMoney);
+    if (benefit.usedUnsignedInt !== undefined) {
+      return String(benefit.usedUnsignedInt);
+    }
+    if (benefit.usedString) {
+      return benefit.usedString;
+    }
+    if (benefit.usedMoney) {
+      return formatMoney(benefit.usedMoney);
+    }
   }
   return '—';
 }
@@ -216,7 +233,6 @@ function formatMoney(money: { value?: number; currency?: string }): string {
   }
   return '—';
 }
-
 
 function formatOutcome(outcome: string | undefined): string {
   switch (outcome) {
