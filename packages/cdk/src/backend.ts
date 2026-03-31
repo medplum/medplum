@@ -49,10 +49,10 @@ export class BackEnd extends Construct {
   logGroup?: logs.ILogGroup;
   logDriver: ecs.LogDriver;
   loggingBucket?: s3.IBucket;
+  loadBalancerSecurityGroup?: ec2.ISecurityGroup;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
-  targetGroup: elbv2.ApplicationTargetGroup;
   loadBalancer: elbv2.ApplicationLoadBalancer;
   mtlsLoadBalancer?: elbv2.ApplicationLoadBalancer;
   waf: wafv2.CfnWebACL;
@@ -525,24 +525,13 @@ export class BackEnd extends Construct {
     // Add dependencies - make sure Fargate service is created after RDS and Redis
     this.addServiceDependencies(this.fargateService, purposeRedisClusters);
 
-    // Load Balancer Target Group
-    this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
-      vpc: this.vpc,
-      port: config.apiPort,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      healthCheck: {
-        path: '/healthcheck',
-        interval: Duration.seconds(30),
-        timeout: Duration.seconds(3),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 5,
-      },
-      targets: [this.fargateService],
-    });
+    // Load Balancer logging
+    if (config.loadBalancerLoggingBucket) {
+      this.loggingBucket = s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket);
+    }
 
-    let loadBalancerSecurityGroup: ec2.ISecurityGroup | undefined = undefined;
     if (config.loadBalancerSecurityGroupId) {
-      loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+      this.loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
         this,
         'LoadBalancerSecurityGroup',
         config.loadBalancerSecurityGroupId
@@ -550,57 +539,24 @@ export class BackEnd extends Construct {
     }
 
     // Load Balancer
-    this.loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
-      vpc: this.vpc,
-      internetFacing: config.apiInternetFacing !== false, // default true
-      http2Enabled: true,
-      securityGroup: loadBalancerSecurityGroup,
-    });
+    this.loadBalancer = this.createLoadBalancer(
+      '',
+      config.apiPort,
+      config.apiInternetFacing !== false,
+      config.apiSslCertArn,
+      config.loadBalancerLoggingBucket
+    );
 
-    if (config.loadBalancerLoggingBucket) {
-      // Load Balancer logging
-      this.loggingBucket = s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket);
-      this.loadBalancer.logAccessLogs(this.loggingBucket, config.loadBalancerLoggingPrefix);
-    }
-
-    // HTTPS Listener
-    // Forward to the target group
-    this.loadBalancer.addListener('HttpsListener', {
-      port: 443,
-      certificates: [
-        {
-          certificateArn: config.apiSslCertArn,
-        },
-      ],
-      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
-      defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
-    });
-
-    if (config.mtlsDomainName && config.mtlsSslCertArn) {
-      this.mtlsLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'MtlsLoadBalancer', {
-        vpc: this.vpc,
-        internetFacing: config.mtlsInternetFacing !== false, // default true
-        http2Enabled: true,
-        securityGroup: loadBalancerSecurityGroup,
-      });
-
-      if (this.loggingBucket) {
-        this.mtlsLoadBalancer.logAccessLogs(this.loggingBucket, config.loadBalancerLoggingPrefix);
-      }
-
-      this.mtlsLoadBalancer.addListener('HttpsListener', {
-        port: 443,
-        certificates: [
-          {
-            certificateArn: config.mtlsSslCertArn,
-          },
-        ],
-        sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
-        defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
-        mutualAuthentication: {
-          mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH,
-        },
-      });
+    // Optional mTLS Load Balancer
+    if (config.mtlsSslCertArn) {
+      this.mtlsLoadBalancer = this.createLoadBalancer(
+        'Mtls',
+        config.apiPort,
+        config.apiInternetFacing !== false,
+        config.mtlsSslCertArn,
+        config.loadBalancerLoggingBucket,
+        { mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH }
+      );
     }
 
     // WAF
@@ -994,6 +950,60 @@ export class BackEnd extends Construct {
     secrets.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
     return { securityGroup, password, cluster, secrets };
+  }
+
+  /**
+   * Creates an Application Load Balancer with an HTTPS listener and a target group pointing to the Fargate service.
+   * @param namePrefix - Prefix for construct IDs to avoid collisions (e.g., 'Mtls' for the mTLS load balancer).
+   * @param port - The port for the target group health checks and Fargate container (default: config.apiPort).
+   * @param internetFacing - Whether the load balancer is internet-facing (default: config.apiInternetFacing).
+   * @param certificateArn - The ARN of the SSL certificate for the HTTPS listener.
+   * @param loadBalancerLoggingPrefix - Optional prefix for load balancer access log object keys.
+   * @param mutualAuthentication - Optional mutual authentication configuration for the HTTPS listener.
+   * @returns The created Application Load Balancer.
+   */
+  private createLoadBalancer(
+    namePrefix: string,
+    port: number,
+    internetFacing: boolean,
+    certificateArn: string,
+    loadBalancerLoggingPrefix: string | undefined,
+    mutualAuthentication?: elbv2.MutualAuthentication
+  ): elbv2.ApplicationLoadBalancer {
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, `${namePrefix}TargetGroup`, {
+      vpc: this.vpc,
+      port,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      healthCheck: {
+        path: '/healthcheck',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(3),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 5,
+      },
+      targets: [this.fargateService],
+    });
+
+    const loadBalancer = new elbv2.ApplicationLoadBalancer(this, `${namePrefix}LoadBalancer`, {
+      vpc: this.vpc,
+      internetFacing,
+      http2Enabled: true,
+      securityGroup: this.loadBalancerSecurityGroup,
+    });
+
+    if (this.loggingBucket) {
+      loadBalancer.logAccessLogs(this.loggingBucket, loadBalancerLoggingPrefix);
+    }
+
+    loadBalancer.addListener(`${namePrefix}HttpsListener`, {
+      port: 443,
+      certificates: [{ certificateArn }],
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+      mutualAuthentication,
+    });
+
+    return loadBalancer;
   }
 }
 
