@@ -88,4 +88,25 @@ describe('useDebouncedValue', () => {
     });
     expect(result.current[0]).toBe('c'); // queued value applied after cooldown
   });
+
+  test('leading: true resets cooldown after waitMs', () => {
+    const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200, { leading: true }), {
+      initialProps: { value: 'a' },
+    });
+
+    // First burst — leading edge fires 'b' immediately
+    rerender({ value: 'b' });
+    expect(result.current[0]).toBe('b');
+
+    // Let the full cooldown elapse with no further updates
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    // Cooldown should now be reset; the debounced value stays 'b' (no pending update)
+    expect(result.current[0]).toBe('b');
+
+    // Second burst — should also fire on the leading edge, immediately
+    rerender({ value: 'c' });
+    expect(result.current[0]).toBe('c');
+  });
 });
