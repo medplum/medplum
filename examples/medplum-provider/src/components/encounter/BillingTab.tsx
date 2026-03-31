@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Card, Flex, Group, Menu, Skeleton, Stack } from '@mantine/core';
+import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
+import { notifications, showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
@@ -19,7 +19,7 @@ import type {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
+import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -334,18 +334,44 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setClaim(updatedClaim);
       await fetchCandidEncounter();
     } catch (err) {
-      showErrorNotification(err);
+      let errorMessage: string | undefined;
+      try {
+        const parsed = JSON.parse((err as Error).message);
+        errorMessage = parsed?.errorMessage;
+      } catch {
+        // not a JSON error body
+      }
+      if (errorMessage) {
+        notifications.show({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: errorMessage,
+        });
+      } else {
+        showErrorNotification(err);
+      }
     } finally {
       setSubmitting(false);
     }
   }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
 
+  const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
+
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
     <Menu shadow="md" width={200}>
       <Menu.Target>
-        <Button variant="outline" leftSection={<IconDownload size={16} />} disabled={disabled}>
-          Export Claim
-        </Button>
+        <Tooltip label={LOCKED_TOOLTIP} disabled={!disabled}>
+          <Button
+            component="div"
+            variant="outline"
+            leftSection={<IconDownload size={16} />}
+            disabled={disabled}
+            data-disabled={disabled || undefined}
+          >
+            Export Claim
+          </Button>
+        </Tooltip>
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>Export Options</Menu.Label>
@@ -413,15 +439,22 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
           {billingBot && (
+            <Tooltip
+              label={LOCKED_TOOLTIP}
+              disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
+            >
             <Button
+              component="div"
               variant="outline"
               leftSection={<IconSend size={16} />}
               loading={submitting}
-              onClick={submitClaim}
+              onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? submitClaim : undefined}
               disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+              data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
             >
               Submit Claim
             </Button>
+            </Tooltip>
           )}
           {billingBot === null && (
             <Button
