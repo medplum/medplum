@@ -161,6 +161,130 @@ resource "aws_ssm_parameter" "database_proxy_endpoint" {
   tags  = var.tags
 }
 
+resource "aws_ssm_parameter" "recaptcha_site_key" {
+  count = var.recaptcha_site_key != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/recaptchaSiteKey"
+  type  = "String"
+  value = var.recaptcha_site_key
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "recaptcha_secret_key" {
+  count  = var.recaptcha_secret_key != "" ? 1 : 0
+  name   = "${local.ssm_prefix}/recaptchaSecretKey"
+  type   = "SecureString"
+  key_id = aws_kms_key.medplum.arn
+  value  = var.recaptcha_secret_key
+  tags   = var.tags
+}
+
+# ── CloudFront signing key ─────────────────────────────────────────────────────
+
+resource "aws_ssm_parameter" "signing_key" {
+  count  = var.signing_key != "" ? 1 : 0
+  name   = "${local.ssm_prefix}/signingKey"
+  type   = "SecureString"
+  key_id = aws_kms_key.medplum.arn
+  value  = var.signing_key
+  tags   = var.tags
+}
+
+resource "aws_ssm_parameter" "signing_key_passphrase" {
+  count  = var.signing_key_passphrase != "" ? 1 : 0
+  name   = "${local.ssm_prefix}/signingKeyPassphrase"
+  type   = "SecureString"
+  key_id = aws_kms_key.medplum.arn
+  value  = var.signing_key_passphrase
+  tags   = var.tags
+}
+
+# ── Google OAuth ───────────────────────────────────────────────────────────────
+
+resource "aws_ssm_parameter" "google_client_id" {
+  count = var.google_client_id != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/googleClientId"
+  type  = "String"
+  value = var.google_client_id
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "google_client_secret" {
+  count  = var.google_client_secret != "" ? 1 : 0
+  name   = "${local.ssm_prefix}/googleClientSecret"
+  type   = "SecureString"
+  key_id = aws_kms_key.medplum.arn
+  value  = var.google_client_secret
+  tags   = var.tags
+}
+
+# ── Registration & email ───────────────────────────────────────────────────────
+
+resource "aws_ssm_parameter" "register_enabled" {
+  name  = "${local.ssm_prefix}/registerEnabled"
+  type  = "String"
+  value = tostring(var.register_enabled)
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "approved_sender_emails" {
+  count = var.approved_sender_emails != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/approvedSenderEmails"
+  type  = "String"
+  value = var.approved_sender_emails
+  tags  = var.tags
+}
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+
+resource "aws_ssm_parameter" "allowed_origins" {
+  count = var.allowed_origins != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/allowedOrigins"
+  type  = "String"
+  value = var.allowed_origins
+  tags  = var.tags
+}
+
+# ── Logging & audit ───────────────────────────────────────────────────────────
+
+resource "aws_ssm_parameter" "log_level" {
+  name  = "${local.ssm_prefix}/logLevel"
+  type  = "String"
+  value = var.log_level
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "save_audit_events" {
+  count = var.save_audit_events ? 1 : 0
+  name  = "${local.ssm_prefix}/saveAuditEvents"
+  type  = "String"
+  value = "true"
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "log_audit_events" {
+  count = var.log_audit_events ? 1 : 0
+  name  = "${local.ssm_prefix}/logAuditEvents"
+  type  = "String"
+  value = "true"
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "audit_event_log_group" {
+  count = var.audit_event_log_group != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/auditEventLogGroup"
+  type  = "String"
+  value = var.audit_event_log_group
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "redact_audit_events" {
+  count = var.redact_audit_events ? 1 : 0
+  name  = "${local.ssm_prefix}/redactAuditEvents"
+  type  = "String"
+  value = "true"
+  tags  = var.tags
+}
+
 resource "aws_ssm_parameter" "workers" {
   count = var.workers_config != "" ? 1 : 0
   name  = "${local.ssm_prefix}/workers"

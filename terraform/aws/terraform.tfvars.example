@@ -2,6 +2,7 @@
 # terraform.tfvars is excluded from version control (.gitignore) to prevent accidental
 # commit of real credentials. Never commit your actual terraform.tfvars.
 
+# ── Core ──────────────────────────────────────────────────────────────────────
 region             = "us-east-1"
 environment        = "dev"
 deployment_id      = "1"
@@ -16,7 +17,7 @@ tags = {
   environment = "dev"
 }
 
-# ── Compute ───────────────────────────────────────────────────────────────────
+# ── Compute (EKS) ─────────────────────────────────────────────────────────────
 # eks_node_instance_types = ["t3.large"]  # minimum recommended; use m5.large+ for prod
 # eks_node_min_size       = 1
 # eks_node_max_size       = 5             # upper bound for Cluster Autoscaler
@@ -42,7 +43,7 @@ tags = {
 #   https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
 rds_ssl_reject_unauthorized = false
 
-# ── Cache ─────────────────────────────────────────────────────────────────────
+# ── Cache (ElastiCache Redis) ─────────────────────────────────────────────────
 # redis_node_type        = "cache.t3.micro"  # use cache.r6g.large+ for production
 # redis_num_cache_nodes  = 1                 # must be >= 2 when environment = "prod"
 # redis_multi_az_enabled = true              # set false only for single-node dev clusters
@@ -88,12 +89,25 @@ rds_ssl_reject_unauthorized = false
 # alb_certificate_arn = "arn:aws:acm:REGION:ACCOUNT:certificate/ALB_CERT_ID"
 
 # ── Storage CDN (dedicated CloudFront for binary uploads) ─────────────────────
-# Requires a pre-created CloudFront signing key. See README §3a for key generation.
-# The ACM cert for storage_domain is created and validated automatically when
-# Route 53 is available — no need to supply storage_ssl_certificate_arn.
+# Enables a dedicated CloudFront distribution for binary storage (presigned URLs).
+# Requires an RSA signing key — generate one with:
+#   openssl genrsa -aes256 -out cf_signing_key.pem 2048
+#   openssl rsa -pubout -in cf_signing_key.pem -out cf_signing_key_pub.pem
+# Then upload the public key to CloudFront and paste the returned key ID below.
+# See README §3a for full walkthrough.
+#
 # storage_domain = "storage.example-aws.example.com"
 # signing_key_id = "APKA..."
-# Override only to reuse an existing cert:
+#
+# Paste the RSA private key PEM (from cf_signing_key.pem above) as a heredoc:
+# signing_key = <<-EOT
+#   -----BEGIN RSA PRIVATE KEY-----
+#   MIIEowIBAAKCAQEA...
+#   -----END RSA PRIVATE KEY-----
+# EOT
+# signing_key_passphrase = "your-passphrase-here"
+#
+# Override only to reuse an existing ACM cert (leave empty for automatic validation):
 # storage_ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/STORAGE_CERT_ID"
 
 # ── WAF ───────────────────────────────────────────────────────────────────────
@@ -103,6 +117,12 @@ rds_ssl_reject_unauthorized = false
 # app_waf_ip_set_arn     = ""
 # storage_waf_ip_set_arn = ""
 # The ALB WAF is attached via ingress.wafAclArn in Helm values (terraform output api_waf_arn).
+
+# ── CloudTrail + Alarms ───────────────────────────────────────────────────────
+# Recommended for production compliance. Creates a CloudTrail trail, CloudWatch
+# metric filters, 10 security alarms, and an SNS topic.
+# enable_cloudtrail_alarms = true
+# cloudtrail_alarm_email   = "oncall@example.com"
 
 # ── Helm / LB Controller ALB ──────────────────────────────────────────────────
 # The AWS Load Balancer Controller owns the ALB lifecycle entirely.
@@ -115,13 +135,43 @@ rds_ssl_reject_unauthorized = false
 # Leave empty on the first `terraform apply` (before helm install).
 # helm_api_alb_hostname = "k8s-medplum-medplum-XXXXXXXX-XXXXXXXXX.REGION.elb.amazonaws.com"
 
-# ── CloudTrail + Alarms ───────────────────────────────────────────────────────
-# Recommended for production compliance. Creates a CloudTrail trail, CloudWatch
-# metric filters, 10 security alarms, and an SNS topic.
-# enable_cloudtrail_alarms = true
-# cloudtrail_alarm_email   = "oncall@example.com"
-
 # ── Bot Lambda ────────────────────────────────────────────────────────────────
 # Leave empty to use the role created by this stack (default).
 # Override only if you need to reuse a pre-existing bot Lambda execution role.
 # bot_lambda_role_arn = ""
+
+# ══ Medplum server config ═════════════════════════════════════════════════════
+# The variables below are written to AWS SSM Parameter Store and read by the
+# Medplum server at startup. After changing any of these, run:
+#   terraform apply && kubectl rollout restart deployment/medplum -n medplum
+
+# ── Authentication ────────────────────────────────────────────────────────────
+# reCAPTCHA — both keys required together. The site key (public) is also baked
+# into the frontend build via packages/app/.env (RECAPTCHA_SITE_KEY).
+# recaptcha_site_key   = "6LeXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# recaptcha_secret_key = "6LeXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Google Sign-In — create OAuth 2.0 credentials at console.cloud.google.com.
+# The client ID also goes into packages/app/.env (GOOGLE_CLIENT_ID) for the frontend.
+# google_client_id     = "123456789-xxxx.apps.googleusercontent.com"
+# google_client_secret = "GOCSPX-xxxxxxxxxxxxxxxxxxxx"
+
+# ── Registration ──────────────────────────────────────────────────────────────
+# register_enabled = true   # set false to disable the /register endpoint in production
+
+# ── Email (AWS SES) ───────────────────────────────────────────────────────────
+# Comma-separated list of approved sender addresses for SES.
+# Leave empty to allow any verified SES identity.
+# approved_sender_emails = "noreply@example.com,support@example.com"
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Comma-separated additional origins beyond appBaseUrl (which is always allowed).
+# Only needed if you have custom apps or tools that call the API from a different origin.
+# allowed_origins = "https://my-custom-app.example.com,https://storybook.example.com"
+
+# ── Logging & audit ───────────────────────────────────────────────────────────
+# log_level         = "INFO"    # NONE | ERROR | WARN | INFO | DEBUG
+# save_audit_events = true      # persist AuditEvent resources to the database
+# log_audit_events  = true      # stream AuditEvents to CloudWatch
+# audit_event_log_group = "/medplum/prod/audit"  # CloudWatch log group name
+# redact_audit_events   = true  # strip patient names/PII from stored AuditEvents

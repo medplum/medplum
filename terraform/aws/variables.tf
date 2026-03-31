@@ -305,6 +305,113 @@ variable "rds_proxy_enabled" {
   description = "Create an RDS Proxy in front of the Aurora cluster for connection pooling."
 }
 
+variable "recaptcha_site_key" {
+  type        = string
+  default     = ""
+  description = "Google reCAPTCHA v2 site key (public). Stored in SSM as recaptchaSiteKey. Leave empty to omit."
+}
+
+variable "recaptcha_secret_key" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "Google reCAPTCHA v2 secret key (private). Stored in SSM as a SecureString. Leave empty to omit."
+}
+
+# ── CloudFront signing key ─────────────────────────────────────────────────────
+
+variable "signing_key" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = <<-EOT
+    PEM-encoded RSA private key used by the Medplum server to generate signed
+    CloudFront URLs for binary storage. Required when storage_domain is set.
+    Generate with: openssl genrsa -aes256 -out cf_signing_key.pem 2048
+    Upload the public key to CloudFront and set signing_key_id to the resulting key ID.
+  EOT
+}
+
+variable "signing_key_passphrase" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "Passphrase protecting the signing_key PEM. Required when signing_key is set."
+}
+
+# ── Google OAuth ───────────────────────────────────────────────────────────────
+
+variable "google_client_id" {
+  type        = string
+  default     = ""
+  description = "Google OAuth 2.0 client ID for Google Sign-In. Leave empty to disable Google authentication."
+}
+
+variable "google_client_secret" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "Google OAuth 2.0 client secret. Stored as a SecureString. Leave empty to disable Google authentication."
+}
+
+# ── Registration & email ───────────────────────────────────────────────────────
+
+variable "register_enabled" {
+  type        = bool
+  default     = true
+  description = "Whether new user self-registration is enabled on this server. Set to false to disable the /register endpoint."
+}
+
+variable "approved_sender_emails" {
+  type        = string
+  default     = ""
+  description = "Comma-separated list of approved sender email addresses for AWS SES. Leave empty to allow any verified SES identity."
+}
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+
+variable "allowed_origins" {
+  type        = string
+  default     = ""
+  description = "Comma-separated list of additional CORS allowed origins beyond appBaseUrl (e.g. custom apps, Storybook). Leave empty to allow only appBaseUrl."
+}
+
+# ── Logging & audit ───────────────────────────────────────────────────────────
+
+variable "log_level" {
+  type    = string
+  default = "INFO"
+  validation {
+    condition     = contains(["NONE", "ERROR", "WARN", "INFO", "DEBUG"], var.log_level)
+    error_message = "log_level must be one of: NONE, ERROR, WARN, INFO, DEBUG."
+  }
+  description = "Server log verbosity. Use INFO for production, DEBUG for troubleshooting."
+}
+
+variable "save_audit_events" {
+  type        = bool
+  default     = false
+  description = "Save AuditEvent resources to the database for all auth and FHIR operations. Recommended for production compliance."
+}
+
+variable "log_audit_events" {
+  type        = bool
+  default     = false
+  description = "Write AuditEvent resources to the logger (CloudWatch) for all auth and FHIR operations."
+}
+
+variable "audit_event_log_group" {
+  type        = string
+  default     = ""
+  description = "AWS CloudWatch Log Group name for AuditEvent logs. Only applies when log_audit_events is true. Leave empty to use the default server log group."
+}
+
+variable "redact_audit_events" {
+  type        = bool
+  default     = false
+  description = "Strip patient names and other human-readable PII from AuditEvent resources before saving or logging. Recommended when save_audit_events or log_audit_events is true."
+}
+
 variable "workers_config" {
   type        = string
   default     = ""
