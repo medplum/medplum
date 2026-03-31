@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type {
+  Bot,
   ChargeItem,
   ChargeItemDefinition,
   Claim,
@@ -300,10 +301,8 @@ describe('BillingTab', () => {
 
   test('shows missing diagnosis notification when submitting without conditions', async () => {
     const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
-    vi.spyOn(medplum, 'searchOne').mockImplementation(async (resourceType: string) => {
-      if (resourceType === 'Bot') return mockBot as any;
-      return undefined;
-    });
+    vi.spyOn(medplum, 'searchOne')
+      .mockResolvedValueOnce(mockBot as WithId<Bot>)
 
     const user = userEvent.setup();
 
@@ -332,10 +331,11 @@ describe('BillingTab', () => {
 
   test('submits claim successfully when bot and conditions exist', async () => {
     const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
-    vi.spyOn(medplum, 'searchOne').mockImplementation(async (resourceType: string) => {
-      if (resourceType === 'Bot') return mockBot as any;
-      return undefined;
-    });
+    vi.spyOn(medplum, 'searchOne')
+      .mockResolvedValueOnce(mockBot as WithId<Bot>)
+      .mockResolvedValueOnce(mockBot as WithId<Bot>)
+      .mockResolvedValueOnce(mockBot as WithId<Bot>)
+      .mockResolvedValue(undefined);
 
     const mockCondition = {
       resourceType: 'Condition' as const,

@@ -103,6 +103,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'communications/sending-messages-and-attachments' },
         { type: 'doc', id: 'communications/read-receipts-and-message-status' },
         { type: 'doc', id: 'communications/messaging-automations' },
+        { type: 'doc', id: 'communications/external-messaging-integration-patterns' },
         { type: 'doc', id: 'communications/async-encounters/async-encounters' },
       ],
     },
