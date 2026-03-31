@@ -17,12 +17,12 @@ export interface ResourceTypeInputProps {
 }
 
 export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
-  const [resourceType, setResourceType] = useState<string | undefined>(props.defaultValue);
+  const [resourceType, setResourceType] = useState(props.defaultValue);
   const onChange = props.onChange;
 
   const setResourceTypeWrapper = useCallback(
     (newResourceType: string | undefined) => {
-      setResourceType(newResourceType);
+      setResourceType(newResourceType as ResourceType);
       if (onChange) {
         onChange(newResourceType as ResourceType);
       }

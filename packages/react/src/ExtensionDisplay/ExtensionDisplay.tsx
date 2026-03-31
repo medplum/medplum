@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ElementType, InternalTypeSchema } from '@medplum/core';
+import type { ElementType } from '@medplum/core';
 import { getDataType, isPopulated, isProfileLoaded, tryGetProfile } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -25,7 +25,7 @@ export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | nu
 
   const medplum = useMedplum();
   const ctx = useContext(ElementsContext);
-  const [typeSchema, setTypeSchema] = useState<InternalTypeSchema>(getDataType('Extension'));
+  const [typeSchema, setTypeSchema] = useState(getDataType('Extension'));
   const profileUrl: string | undefined = useMemo(() => {
     if (!isPopulated(elementDefinitionType?.profile)) {
       return undefined;

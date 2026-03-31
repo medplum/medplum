@@ -20,7 +20,7 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
-  const [project, setProject] = useState<Project | undefined>(medplum.getProject());
+  const [project, setProject] = useState(medplum.getProject());
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [emailSent, setEmailSent] = useState(false);

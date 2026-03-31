@@ -483,7 +483,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
       delete resource.meta.lastUpdated;
     }
 
-    return this.updateResource<T>(resource);
+    return this.updateResource(resource);
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {

@@ -18,7 +18,7 @@ export interface ResourceBlameProps {
 
 export function ResourceBlame(props: ResourceBlameProps): JSX.Element | null {
   const medplum = useMedplum();
-  const [value, setValue] = useState<Bundle | undefined>(props.history);
+  const [value, setValue] = useState(props.history);
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {

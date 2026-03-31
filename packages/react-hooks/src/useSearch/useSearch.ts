@@ -73,7 +73,7 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
   options?: SearchOptions
 ): [SearchReturnType | undefined, boolean, OperationOutcome | undefined] {
   const medplum = useMedplum();
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<SearchReturnType>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 

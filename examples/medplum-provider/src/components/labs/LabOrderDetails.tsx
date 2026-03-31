@@ -51,11 +51,11 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const requester = useResource(order.requester);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState<boolean>(false);
+  const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
-  const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState<boolean>(false);
+  const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
-  const [loadingQuestionnaire, setLoadingQuestionnaire] = useState<boolean>(false);
+  const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
     order.status !== 'completed' ? 'progress' : 'report'
   );
