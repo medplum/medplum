@@ -38,6 +38,10 @@ export interface MedplumSourceInfraConfig {
   storageBucketName: ValueOrExternalSecret<string>;
   storageDomainName: ValueOrExternalSecret<string>;
   storageSslCertArn: ValueOrExternalSecret<string>;
+  mtlsDomainName?: ValueOrExternalSecret<string>;
+  mtlsSslCertArn?: ValueOrExternalSecret<string>;
+  mtlsInternetFacing?: ValueOrExternalSecret<boolean>;
+  mtlsWafIpSetArn?: ValueOrExternalSecret<string>;
   signingKeyId: ValueOrExternalSecret<string>;
   storagePublicKey: ValueOrExternalSecret<string>;
   storageWafIpSetArn: ValueOrExternalSecret<string>;
@@ -207,6 +211,10 @@ export interface MedplumInfraConfig {
   storageWafIpSetArn?: string;
   storageLoggingBucket?: string;
   storageLoggingPrefix?: string;
+  mtlsDomainName?: string;
+  mtlsSslCertArn?: string;
+  mtlsInternetFacing?: boolean;
+  mtlsWafIpSetArn?: string;
   baseUrl: string;
   maxAzs: number;
   rdsInstances: number;

@@ -53,9 +53,11 @@ export class BackEnd extends Construct {
   fargateService: ecs.FargateService;
   targetGroup: elbv2.ApplicationTargetGroup;
   loadBalancer: elbv2.ApplicationLoadBalancer;
+  mtlsLoadBalancer?: elbv2.ApplicationLoadBalancer;
   waf: wafv2.CfnWebACL;
   wafAssociation: wafv2.CfnWebACLAssociation;
   dnsRecord?: route53.ARecord;
+  mtlsDnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
   databaseSecretsParameter: ssm.StringParameter;
   databaseProxyEndpointParameter?: ssm.StringParameter;
@@ -573,10 +575,40 @@ export class BackEnd extends Construct {
       ],
       sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
-      mutualAuthentication: {
-        mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH,
-      },
     });
+
+    if (config.mtlsDomainName && config.mtlsSslCertArn) {
+      this.mtlsLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'MtlsLoadBalancer', {
+        vpc: this.vpc,
+        internetFacing: config.mtlsInternetFacing !== false, // default true
+        http2Enabled: true,
+        securityGroup: loadBalancerSecurityGroup,
+      });
+
+      if (config.loadBalancerLoggingBucket) {
+        // Load Balancer logging
+        this.mtlsLoadBalancer.logAccessLogs(
+          s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
+          config.loadBalancerLoggingPrefix
+        );
+      }
+
+      // HTTPS Listener
+      // Forward to the target group
+      this.mtlsLoadBalancer.addListener('HttpsListener', {
+        port: 443,
+        certificates: [
+          {
+            certificateArn: config.mtlsSslCertArn,
+          },
+        ],
+        sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+        defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
+        mutualAuthentication: {
+          mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH,
+        },
+      });
+    }
 
     // WAF
     this.waf = buildWaf(
@@ -648,6 +680,14 @@ export class BackEnd extends Construct {
         target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.loadBalancer)),
         zone: zone,
       });
+
+      if (this.mtlsLoadBalancer) {
+        this.mtlsDnsRecord = new route53.ARecord(this, 'MtlsLoadBalancerAliasRecord', {
+          recordName: config.mtlsDomainName,
+          target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.mtlsLoadBalancer)),
+          zone: zone,
+        });
+      }
     }
 
     // SSM Parameters
