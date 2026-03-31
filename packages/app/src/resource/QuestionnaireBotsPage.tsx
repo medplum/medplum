@@ -29,7 +29,7 @@ export function QuestionnaireBotsPage(): JSX.Element {
   const [supportedInteraction, setSupportedInteraction] = useState<'create' | 'update' | 'delete' | undefined>(
     'create'
   );
-  const [updated, setUpdated] = useState<number>(0);
+  const [updated, setUpdated] = useState(0);
   const subscriptions = medplum
     .searchResources('Subscription', 'status=active&_count=100')
     .read()

@@ -23,7 +23,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
     props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const prevThreadId = usePrevious<string | undefined>(thread?.id);
+  const prevThreadId = usePrevious(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
 
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);

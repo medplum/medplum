@@ -347,7 +347,7 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
 
-      const patient2 = await systemRepo.updateResource<Patient>({
+      const patient2 = await systemRepo.updateResource({
         ...(patient1 as Patient),
       });
 
@@ -566,7 +566,7 @@ describe('FHIR Repo', () => {
       expect((rest as Patient).id).toBeUndefined();
 
       try {
-        await systemRepo.updateResource<Patient>(rest);
+        await systemRepo.updateResource(rest);
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
@@ -1012,7 +1012,7 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      const profile = await repo.createResource<StructureDefinition>({
+      const profile = await repo.createResource({
         ...usCorePatientProfile,
         url: 'urn:uuid:' + randomUUID(),
       });
@@ -1099,7 +1099,7 @@ describe('FHIR Repo', () => {
       assert(commLang.binding.strength === 'extensible');
       commLang.binding.strength = 'required';
 
-      profile = await repo.createResource<StructureDefinition>({
+      profile = await repo.createResource({
         ...modifiedPatientProfile,
         url: 'urn:uuid:' + randomUUID(),
       });
@@ -1390,7 +1390,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow(/did not match any resources/);
+      await expect(systemRepo.createResource(patient)).rejects.toThrow(/did not match any resources/);
     }));
 
   test('Conditional reference resolution multiple matches', async () =>
@@ -1411,7 +1411,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+      await expect(systemRepo.createResource(patient)).rejects.toThrow();
     }));
 
   test('Conditional reference replaced before validation', async () =>
@@ -1421,7 +1421,7 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         identifier: [{ value: mrn }],
       };
-      await systemRepo.createResource<Patient>(patient);
+      await systemRepo.createResource(patient);
 
       const serviceRequest = {
         resourceType: 'ServiceRequest',
@@ -1715,7 +1715,7 @@ describe('FHIR Repo', () => {
 
       await repo.withTransaction(async (client) => {
         const querySpy = jest.spyOn(client, 'query');
-        await repo.createResource<Patient>(patient);
+        await repo.createResource(patient);
         const calls = querySpy.mock.calls;
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);

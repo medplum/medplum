@@ -47,7 +47,7 @@
     "@medplum/fhirtypes": "5.1.5",
     "@medplum/mock": "5.1.5",
     "@types/node": "22.19.15",
-    "vitest": "4.1.0"
+    "vitest": "4.1.2"
   },
   "peerDependencies": {
     "@medplum/core": "5.1.5",

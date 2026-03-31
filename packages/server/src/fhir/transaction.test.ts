@@ -75,7 +75,7 @@ describe('FHIR Repo Transactions', () => {
 
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
-          await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+          await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
         })
       ).rejects.toMatchObject(
         new OperationOutcomeError({
@@ -198,7 +198,7 @@ describe('FHIR Repo Transactions', () => {
 
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
-            await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+            await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
           })
         ).rejects.toMatchObject(
           new OperationOutcomeError({

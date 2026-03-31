@@ -132,7 +132,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     filterDialogVisible: false,
   });
 
-  const stateRef = useRef<SearchControlState>(state);
+  const stateRef = useRef(state);
   stateRef.current = state;
 
   const total = memoizedSearch.total ?? 'accurate';

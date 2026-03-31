@@ -46,7 +46,7 @@ describe('GraphQL', () => {
       });
 
       // Create a profile picture
-      binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
+      binary = await aliceRepo.createResource({ resourceType: 'Binary' } as Binary);
 
       // Creat a simple patient
       patient = await aliceRepo.createResource<Patient>({

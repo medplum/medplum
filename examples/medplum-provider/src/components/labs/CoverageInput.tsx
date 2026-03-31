@@ -19,7 +19,7 @@ export type CoverageInputProps = {
 };
 export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Element {
   const { getActivePatientCoverages, updateBillingInformation, state } = useHealthGorillaLabOrderContext();
-  const [coverages, setCoverages] = useState<PatientCoverages>(INITIAL_COVERAGES);
+  const [coverages, setCoverages] = useState(INITIAL_COVERAGES);
   const disabled = state.billingInformation.billTo !== 'insurance';
 
   useEffect(() => {
