@@ -116,9 +116,7 @@ function ResponseSection({
           )}
         </Table.Tbody>
       </Table>
-      {firstInsurance?.item && firstInsurance.item.length > 0 && (
-        <BenefitsTable items={firstInsurance.item} />
-      )}
+      {firstInsurance?.item && firstInsurance.item.length > 0 && <BenefitsTable items={firstInsurance.item} />}
     </Stack>
   );
 }
@@ -200,7 +198,9 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.E
   );
 }
 
-type BenefitItem = NonNullable<NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>[number]['benefit']>[number];
+type BenefitItem = NonNullable<
+  NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>[number]['benefit']
+>[number];
 
 function formatBenefitValue(benefit: BenefitItem, prefix: 'allowed' | 'used'): string {
   if (prefix === 'allowed') {
