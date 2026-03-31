@@ -439,21 +439,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
           {billingBot && (
-            <Tooltip
-              label={LOCKED_TOOLTIP}
-              disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
-            >
-            <Button
-              component="div"
-              variant="outline"
-              leftSection={<IconSend size={16} />}
-              loading={submitting}
-              onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? submitClaim : undefined}
-              disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
-              data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
-            >
-              Submit Claim
-            </Button>
+            <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
+              <Button
+                component="div"
+                variant="outline"
+                leftSection={<IconSend size={16} />}
+                loading={submitting}
+                onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? submitClaim : undefined}
+                disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
+              >
+                Submit Claim
+              </Button>
             </Tooltip>
           )}
           {billingBot === null && (
