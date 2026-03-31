@@ -1,0 +1,249 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Divider, Group, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
+import { formatDate } from '@medplum/core';
+import type { CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
+import { ResourceAvatar } from '@medplum/react';
+import type { JSX, ReactNode } from 'react';
+
+interface EligibilityDetailsProps {
+  request: CoverageEligibilityRequest;
+  response: CoverageEligibilityResponse | undefined;
+  loadingResponse: boolean;
+}
+
+export function EligibilityDetails({ request, response, loadingResponse }: EligibilityDetailsProps): JSX.Element {
+  return (
+    <ScrollArea h="100%">
+      <Stack gap="xl" p="xl">
+        <RequestSection request={request} />
+        <Divider />
+        <ResponseSection response={response} loading={loadingResponse} />
+      </Stack>
+    </ScrollArea>
+  );
+}
+
+function RequestSection({ request }: { request: CoverageEligibilityRequest }): JSX.Element {
+  const servicedDate = request.servicedDate
+    ? formatDate(request.servicedDate)
+    : request.servicedPeriod
+      ? `${formatDate(request.servicedPeriod.start)} – ${formatDate(request.servicedPeriod.end)}`
+      : '—';
+
+  return (
+    <Stack gap="md">
+      <Title order={5}>Eligibility Request</Title>
+      <Table>
+        <Table.Tbody>
+          <DetailRow label="Created" value={formatDate(request.created)} />
+          <DetailRow label="Purpose" value={request.purpose?.map(formatPurpose).join(', ') ?? '—'} />
+          <DetailRow label="Serviced Date" value={servicedDate} />
+          {request.provider && (
+            <DetailRow
+              label="Provider"
+              value={
+                <Group gap="xs">
+                  <ResourceAvatar value={request.provider} size="xs" />
+                  <Text size="sm">{request.provider.display ?? request.provider.reference ?? '—'}</Text>
+                </Group>
+              }
+            />
+          )}
+          <DetailRow label="Insurer" value={request.insurer?.display ?? request.insurer?.reference ?? '—'} />
+        </Table.Tbody>
+      </Table>
+    </Stack>
+  );
+}
+
+function ResponseSection({
+  response,
+  loading,
+}: {
+  response: CoverageEligibilityResponse | undefined;
+  loading: boolean;
+}): JSX.Element {
+  if (loading) {
+    return (
+      <Stack gap="md">
+        <Title order={5}>Eligibility Response</Title>
+        <Stack gap="xs">
+          <Skeleton height={14} width="60%" />
+          <Skeleton height={14} width="80%" />
+          <Skeleton height={14} width="50%" />
+        </Stack>
+      </Stack>
+    );
+  }
+
+  if (!response) {
+    return (
+      <Stack gap="md">
+        <Title order={5}>Eligibility Response</Title>
+        <Text size="sm" c="dimmed">
+          No response received yet.
+        </Text>
+      </Stack>
+    );
+  }
+
+  const firstInsurance = response.insurance?.[0];
+
+  return (
+    <Stack gap="md">
+      <Title order={5}>Eligibility Response</Title>
+      <Table>
+        <Table.Tbody>
+          <DetailRow label="Outcome" value={formatOutcome(response.outcome)} />
+          {response.disposition && <DetailRow label="Disposition" value={response.disposition} />}
+          <DetailRow label="Insurer" value={response.insurer?.display ?? response.insurer?.reference ?? '—'} />
+          <DetailRow label="Created" value={formatDate(response.created)} />
+          {firstInsurance?.inforce !== undefined && (
+            <DetailRow label="Coverage In Force" value={firstInsurance.inforce ? 'Yes' : 'No'} />
+          )}
+          {firstInsurance?.benefitPeriod && (
+            <DetailRow
+              label="Benefit Period"
+              value={`${formatDate(firstInsurance.benefitPeriod.start)} – ${formatDate(firstInsurance.benefitPeriod.end)}`}
+            />
+          )}
+        </Table.Tbody>
+      </Table>
+
+      {firstInsurance?.item && firstInsurance.item.length > 0 && (
+        <BenefitsTable items={firstInsurance.item} />
+      )}
+    </Stack>
+  );
+}
+
+function BenefitsTable({
+  items,
+}: {
+  items: NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>;
+}): JSX.Element {
+  return (
+    <Stack gap="xs">
+      <Text fw={600} size="sm">
+        Benefits
+      </Text>
+      <Box style={{ overflowX: 'auto' }}>
+        <Table striped withTableBorder withColumnBorders fz="sm">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Category</Table.Th>
+              <Table.Th>Network</Table.Th>
+              <Table.Th>Unit</Table.Th>
+              <Table.Th>Term</Table.Th>
+              <Table.Th>Type</Table.Th>
+              <Table.Th>Allowed</Table.Th>
+              <Table.Th>Used</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {items.flatMap((item, itemIndex) =>
+              item.benefit && item.benefit.length > 0
+                ? item.benefit.map((benefit, benefitIndex) => (
+                    <Table.Tr key={`${itemIndex}-${benefitIndex}`}>
+                      <Table.Td>{item.category?.text ?? item.category?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{item.network?.text ?? item.network?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{item.unit?.text ?? item.unit?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{item.term?.text ?? item.term?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{benefit.type?.text ?? benefit.type?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{formatBenefitValue(benefit, 'allowed')}</Table.Td>
+                      <Table.Td>{formatBenefitValue(benefit, 'used')}</Table.Td>
+                    </Table.Tr>
+                  ))
+                : [
+                    <Table.Tr key={itemIndex}>
+                      <Table.Td>{item.category?.text ?? item.category?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{item.network?.text ?? item.network?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{item.unit?.text ?? item.unit?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>{item.term?.text ?? item.term?.coding?.[0]?.display ?? '—'}</Table.Td>
+                      <Table.Td>—</Table.Td>
+                      <Table.Td>—</Table.Td>
+                      <Table.Td>—</Table.Td>
+                    </Table.Tr>,
+                  ]
+            )}
+          </Table.Tbody>
+        </Table>
+      </Box>
+    </Stack>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}): JSX.Element {
+  return (
+    <Table.Tr>
+      <Table.Td w={160}>
+        <Text size="sm" c="dimmed" fw={500}>
+          {label}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        {typeof value === 'string' ? <Text size="sm">{value}</Text> : value}
+      </Table.Td>
+    </Table.Tr>
+  );
+}
+
+type BenefitItem = NonNullable<NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>[number]['benefit']>[number];
+
+function formatBenefitValue(benefit: BenefitItem, prefix: 'allowed' | 'used'): string {
+  if (prefix === 'allowed') {
+    if (benefit.allowedUnsignedInt !== undefined) return String(benefit.allowedUnsignedInt);
+    if (benefit.allowedString) return benefit.allowedString;
+    if (benefit.allowedMoney) return formatMoney(benefit.allowedMoney);
+  } else {
+    if (benefit.usedUnsignedInt !== undefined) return String(benefit.usedUnsignedInt);
+    if (benefit.usedString) return benefit.usedString;
+    if (benefit.usedMoney) return formatMoney(benefit.usedMoney);
+  }
+  return '—';
+}
+
+function formatMoney(money: { value?: number; currency?: string }): string {
+  if (money.value !== undefined) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: money.currency ?? 'USD' }).format(money.value);
+  }
+  return '—';
+}
+
+
+function formatOutcome(outcome: string | undefined): string {
+  switch (outcome) {
+    case 'complete':
+      return 'Complete';
+    case 'error':
+      return 'Error';
+    case 'partial':
+      return 'Partial';
+    case 'queued':
+      return 'Queued';
+    default:
+      return outcome ?? 'Unknown';
+  }
+}
+
+function formatPurpose(purpose: string): string {
+  switch (purpose) {
+    case 'auth-requirements':
+      return 'Auth Requirements';
+    case 'benefits':
+      return 'Benefits';
+    case 'discovery':
+      return 'Discovery';
+    case 'validation':
+      return 'Validation';
+    default:
+      return purpose;
+  }
+}
