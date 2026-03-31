@@ -51,7 +51,9 @@ export function CoveragePage(): JSX.Element {
 
   // Load PractitionerRole for current profile
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      return;
+    }
     medplum
       .searchOne('PractitionerRole', { practitioner: getReferenceString(profile) })
       .then((role) => setPractitionerRole(role ?? null))
@@ -60,7 +62,9 @@ export function CoveragePage(): JSX.Element {
 
   // Fetch Coverage resource
   useEffect(() => {
-    if (!coverageId) return;
+    if (!coverageId) {
+      return;
+    }
     setCoverageLoading(true);
     medplum
       .readResource('Coverage', coverageId)
@@ -71,7 +75,9 @@ export function CoveragePage(): JSX.Element {
 
   // Fetch CoverageEligibilityRequests for this patient, filter by coverage
   const fetchRequests = useCallback(async (): Promise<void> => {
-    if (!patientId || !coverageId) return;
+    if (!patientId || !coverageId) {
+      return;
+    }
     setRequestsLoading(true);
     try {
       const all = await medplum.searchResources(
@@ -203,15 +209,14 @@ export function CoveragePage(): JSX.Element {
             {/* Coverage summary */}
             <Paper>
               <Box p="md">
-                {coverageLoading ? (
-                  <CoverageSkeleton />
-                ) : coverage ? (
+                {coverageLoading && <CoverageSkeleton />}
+                {!coverageLoading && coverage && (
                   <CoverageSummary
                     coverage={coverage}
                     checking={checkingEligibility}
                     onCheckEligibility={handleCheckEligibility}
                   />
-                ) : null}
+                )}
               </Box>
             </Paper>
 
