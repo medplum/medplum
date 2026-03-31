@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
-import { evalFhirPathTyped, getSearchParameterDetails, isEmpty, toTypedValue } from '@medplum/core';
+import { evalFhirPathTyped, getSearchParameterDetails, isEmpty, Operator, toTypedValue } from '@medplum/core';
 import type { Period, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, Condition } from './sql';
+import { Column, ColumnType, Condition, Negation } from './sql';
 
 export function buildRangeColumns(
   searchParam: SearchParameter,
@@ -155,14 +155,26 @@ export function buildRangeColumnsSearchFilter(
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
   }
 
+  const column = new Column(tableName, impl.rangeColumnName);
   switch (filter.operator) {
+    case Operator.EQUALS:
+      return new Condition(column, 'RANGE_OVERLAPS', periodRangeString);
+    case Operator.NOT:
+    case Operator.NOT_EQUALS:
+      return new Negation(new Condition(column, 'RANGE_OVERLAPS', periodRangeString));
+    case Operator.LESS_THAN:
+      return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end})`, ColumnType.TSTZRANGE);
+    case Operator.LESS_THAN_OR_EQUALS:
+      return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end}]`, ColumnType.TSTZRANGE);
+    case Operator.GREATER_THAN:
+      return new Condition(column, 'RANGE_OVERLAPS', `(${period.start},)`, ColumnType.TSTZRANGE);
+    case Operator.GREATER_THAN_OR_EQUALS:
+      return new Condition(column, 'RANGE_OVERLAPS', `[${period.start},)`, ColumnType.TSTZRANGE);
+    case Operator.STARTS_AFTER:
+      return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', periodRangeString, ColumnType.TSTZRANGE);
+    case Operator.ENDS_BEFORE:
+      return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', periodRangeString, ColumnType.TSTZRANGE);
     default:
-    // TODO
+      throw new Error(`Unknown FHIR operator: ${filter.operator}`);
   }
-
-  return new Condition(
-    impl.rangeColumnName,
-    'ARRAY_OVERLAPS',
-    formatDateTimeRange({ type: 'dateTime', value: filter.value })
-  );
 }
