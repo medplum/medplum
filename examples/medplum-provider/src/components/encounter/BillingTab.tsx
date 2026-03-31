@@ -329,44 +329,47 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
   };
 
-  const submitClaim = useCallback(async (claimOverride?: WithId<Claim>): Promise<void> => {
-    const claimToSubmit = claimOverride ?? claim;
-    if (!claimToSubmit) {
-      return;
-    }
+  const submitClaim = useCallback(
+    async (claimOverride?: WithId<Claim>): Promise<void> => {
+      const claimToSubmit = claimOverride ?? claim;
+      if (!claimToSubmit) {
+        return;
+      }
 
-    const currentConditions = conditionsRef.current;
-    if (!currentConditions || currentConditions.length === 0) {
-      showNotification({
-        title: 'Missing Diagnosis',
-        message: 'Please add at least one diagnosis before submitting a claim',
-        color: 'red',
-      });
-      return;
-    }
+      const currentConditions = conditionsRef.current;
+      if (!currentConditions || currentConditions.length === 0) {
+        showNotification({
+          title: 'Missing Diagnosis',
+          message: 'Please add at least one diagnosis before submitting a claim',
+          color: 'red',
+        });
+        return;
+      }
 
-    if (!billingBot) {
-      return;
-    }
+      if (!billingBot) {
+        return;
+      }
 
-    setSubmitting(true);
-    debouncedUpdateClaim.cancel();
-    try {
-      const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
-      showNotification({
-        title: 'Claim Submitted',
-        message: result?.message || 'Claim successfully submitted to Candid Health',
-        color: 'green',
-      });
-      const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
-      setClaim(updatedClaim);
-      await fetchCandidEncounter();
-    } catch (err) {
-      showErrorNotification(err);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
+      setSubmitting(true);
+      debouncedUpdateClaim.cancel();
+      try {
+        const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
+        showNotification({
+          title: 'Claim Submitted',
+          message: result?.message || 'Claim successfully submitted to Candid Health',
+          color: 'green',
+        });
+        const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
+        setClaim(updatedClaim);
+        await fetchCandidEncounter();
+      } catch (err) {
+        showErrorNotification(err);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
+  );
 
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
     <Menu shadow="md" width={200}>

@@ -301,8 +301,7 @@ describe('BillingTab', () => {
 
   test('shows missing diagnosis notification when submitting without conditions', async () => {
     const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
-    vi.spyOn(medplum, 'searchOne')
-      .mockResolvedValueOnce(mockBot as WithId<Bot>)
+    vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(mockBot as WithId<Bot>);
 
     const user = userEvent.setup();
 

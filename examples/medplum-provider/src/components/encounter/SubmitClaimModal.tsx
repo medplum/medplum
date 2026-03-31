@@ -1,6 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Popover, Stack, Text } from '@mantine/core';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Checkbox,
+  Divider,
+  Grid,
+  Group,
+  Modal,
+  Popover,
+  Stack,
+  Text,
+} from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName } from '@medplum/core';
 import type {
@@ -82,17 +96,25 @@ const EligibilityResult = ({ coverage, result }: EligibilityResultProps): JSX.El
   return (
     <Alert color={alertColor} p="sm">
       <Group justify="space-between" mb={insurance || result.disposition ? 6 : 0}>
-        <Text size="sm" fw={600}>{getPayerName(coverage)}</Text>
+        <Text size="sm" fw={600}>
+          {getPayerName(coverage)}
+        </Text>
         {!isError && (
           <Badge color={insurance?.inforce ? 'green' : 'orange'} size="sm">
             {insurance?.inforce ? 'Active' : 'Inactive'}
           </Badge>
         )}
-        {isError && <Badge color="red" size="sm">Error</Badge>}
+        {isError && (
+          <Badge color="red" size="sm">
+            Error
+          </Badge>
+        )}
       </Group>
 
       {isError && errorText && (
-        <Text size="xs" c="dimmed">{errorText}</Text>
+        <Text size="xs" c="dimmed">
+          {errorText}
+        </Text>
       )}
 
       {!isError && result.disposition && (
@@ -103,7 +125,8 @@ const EligibilityResult = ({ coverage, result }: EligibilityResultProps): JSX.El
 
       {!isError && insurance?.benefitPeriod && (
         <Text size="xs" c="dimmed">
-          Benefit period: {formatBenefitDate(insurance.benefitPeriod.start)} – {formatBenefitDate(insurance.benefitPeriod.end)}
+          Benefit period: {formatBenefitDate(insurance.benefitPeriod.start)} –{' '}
+          {formatBenefitDate(insurance.benefitPeriod.end)}
         </Text>
       )}
 
@@ -111,31 +134,37 @@ const EligibilityResult = ({ coverage, result }: EligibilityResultProps): JSX.El
         <Grid gutter="xs" mt={6}>
           {deductible?.benefit?.[0] && (
             <Grid.Col span={4}>
-              <Text size="xs" c="dimmed">Deductible</Text>
+              <Text size="xs" c="dimmed">
+                Deductible
+              </Text>
               <Text size="xs" fw={600}>
                 {deductible.benefit[0].allowedMoney
                   ? `$${deductible.benefit[0].allowedMoney.value}`
-                  : deductible.benefit[0].allowedString ?? '—'}
+                  : (deductible.benefit[0].allowedString ?? '—')}
               </Text>
             </Grid.Col>
           )}
           {copay?.benefit?.[0] && (
             <Grid.Col span={4}>
-              <Text size="xs" c="dimmed">Copay</Text>
+              <Text size="xs" c="dimmed">
+                Copay
+              </Text>
               <Text size="xs" fw={600}>
                 {copay.benefit[0].allowedMoney
                   ? `$${copay.benefit[0].allowedMoney.value}`
-                  : copay.benefit[0].allowedString ?? '—'}
+                  : (copay.benefit[0].allowedString ?? '—')}
               </Text>
             </Grid.Col>
           )}
           {oopMax?.benefit?.[0] && (
             <Grid.Col span={4}>
-              <Text size="xs" c="dimmed">OOP Max</Text>
+              <Text size="xs" c="dimmed">
+                OOP Max
+              </Text>
               <Text size="xs" fw={600}>
                 {oopMax.benefit[0].allowedMoney
                   ? `$${oopMax.benefit[0].allowedMoney.value}`
-                  : oopMax.benefit[0].allowedString ?? '—'}
+                  : (oopMax.benefit[0].allowedString ?? '—')}
               </Text>
             </Grid.Col>
           )}
@@ -163,7 +192,9 @@ const CoverageCard = ({ coverage, selected, error, onToggle }: CoverageCardProps
   return (
     <Card withBorder p="xs" style={{ borderColor, borderWidth: 2 }}>
       <Group justify="space-between" mb={6}>
-        <Text size="xs" tt="uppercase" fw={600} c={error ? 'red' : 'dimmed'}>Coverage</Text>
+        <Text size="xs" tt="uppercase" fw={600} c={error ? 'red' : 'dimmed'}>
+          Coverage
+        </Text>
         <Group gap="xs">
           {error && (
             <Popover width={280} position="bottom-end" withArrow shadow="md">
@@ -173,7 +204,9 @@ const CoverageCard = ({ coverage, selected, error, onToggle }: CoverageCardProps
                 </Badge>
               </Popover.Target>
               <Popover.Dropdown>
-                <Text size="sm" c="red">{error}</Text>
+                <Text size="sm" c="red">
+                  {error}
+                </Text>
               </Popover.Dropdown>
             </Popover>
           )}
@@ -182,20 +215,36 @@ const CoverageCard = ({ coverage, selected, error, onToggle }: CoverageCardProps
       </Group>
       <Grid gutter="xs">
         <Grid.Col span={6}>
-          <Text size="sm" c="dimmed">Payer</Text>
-          <Text size="md" fw={700}>{getPayerName(coverage)}</Text>
+          <Text size="sm" c="dimmed">
+            Payer
+          </Text>
+          <Text size="md" fw={700}>
+            {getPayerName(coverage)}
+          </Text>
         </Grid.Col>
         <Grid.Col span={6}>
-          <Text size="sm" c="dimmed">Member ID</Text>
-          <Text size="md" fw={700}>{getMemberId(coverage)}</Text>
+          <Text size="sm" c="dimmed">
+            Member ID
+          </Text>
+          <Text size="md" fw={700}>
+            {getMemberId(coverage)}
+          </Text>
         </Grid.Col>
         <Grid.Col span={6}>
-          <Text size="sm" c="dimmed">Group number</Text>
-          <Text size="md" fw={700}>{getGroupNumber(coverage)}</Text>
+          <Text size="sm" c="dimmed">
+            Group number
+          </Text>
+          <Text size="md" fw={700}>
+            {getGroupNumber(coverage)}
+          </Text>
         </Grid.Col>
         <Grid.Col span={6}>
-          <Text size="sm" c="dimmed">Subscriber</Text>
-          <Text size="md" fw={700}>{getSubscriberName(coverage)}</Text>
+          <Text size="sm" c="dimmed">
+            Subscriber
+          </Text>
+          <Text size="md" fw={700}>
+            {getSubscriberName(coverage)}
+          </Text>
         </Grid.Col>
       </Grid>
     </Card>
@@ -331,7 +380,9 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
 
   return (
     <Stack gap="xl">
-      <Text size="sm" c="dimmed">{patientName}</Text>
+      <Text size="sm" c="dimmed">
+        {patientName}
+      </Text>
       <Box>
         <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={8}>
           Billing Type
@@ -420,12 +471,20 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
 
       <Grid gutter="lg">
         <Grid.Col span={6}>
-          <Text size="xs" c="dimmed" mb={4}>Diagnosis</Text>
-          <Text size="sm" fw={600}>{diagnosisText}</Text>
+          <Text size="xs" c="dimmed" mb={4}>
+            Diagnosis
+          </Text>
+          <Text size="sm" fw={600}>
+            {diagnosisText}
+          </Text>
         </Grid.Col>
         <Grid.Col span={6}>
-          <Text size="xs" c="dimmed" mb={4}>Practitioner</Text>
-          <Text size="sm" fw={600}>{practitionerName}</Text>
+          <Text size="xs" c="dimmed" mb={4}>
+            Practitioner
+          </Text>
+          <Text size="sm" fw={600}>
+            {practitionerName}
+          </Text>
         </Grid.Col>
       </Grid>
 
@@ -441,11 +500,7 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
             Check eligibility
           </Button>
         ) : (
-          <Button
-            size="md"
-            variant="outline"
-            onClick={() => window.open('https://www.medplum.com/contact', '_blank')}
-          >
+          <Button size="md" variant="outline" onClick={() => window.open('https://www.medplum.com/contact', '_blank')}>
             Request insurance eligibility support
           </Button>
         )}
@@ -480,14 +535,28 @@ export interface SubmitClaimModalProps {
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
-  const { opened, submitting, coverages, selectedCoverage, patient, conditions, chargeItems, practitioner, practitionerRole, eligibilityBot, onClose, onConfirm } =
-    props;
+  const {
+    opened,
+    submitting,
+    coverages,
+    selectedCoverage,
+    patient,
+    conditions,
+    chargeItems,
+    practitioner,
+    practitionerRole,
+    eligibilityBot,
+    onClose,
+    onConfirm,
+  } = props;
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
   const insuranceCoverages = coverages.filter((c) => !isSelfPayCoverage(c));
   const selfPayValue = selfPayCoverage?.id ?? SELF_PAY_VALUE;
   const initialBillingType: BillingType =
-    insuranceCoverages.length > 0 && selectedCoverage && !isSelfPayCoverage(selectedCoverage) ? 'insurance' : 'self-pay';
+    insuranceCoverages.length > 0 && selectedCoverage && !isSelfPayCoverage(selectedCoverage)
+      ? 'insurance'
+      : 'self-pay';
 
   return (
     <Modal opened={opened} onClose={onClose} centered size="lg" padding="xl" title="Review before submitting claim">
