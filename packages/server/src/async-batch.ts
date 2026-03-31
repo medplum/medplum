@@ -34,7 +34,7 @@ export function asyncBatchHandler(
       );
     }
 
-    const exec = new AsyncJobExecutor(repo);
+    const exec = new AsyncJobExecutor(repo.getSystemRepo());
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
       await queueBatchProcessing(bundle, asyncJob);
