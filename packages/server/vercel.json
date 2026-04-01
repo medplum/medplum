@@ -1,17 +1,14 @@
 {
-  "version": 2,
-  "buildCommand": "turbo run build",
-  "outputDirectory": "dist",
-  "builds": [
-    {
-      "src": "dist/index.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60,
+      "includeFiles": "dist/**"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "dist/index.js"
+      "source": "/(.*)",
+      "destination": "/api"
     }
   ]
 }
