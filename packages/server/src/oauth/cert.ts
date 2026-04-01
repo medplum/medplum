@@ -97,8 +97,12 @@ function validateSelfSignedCert(clientCert: X509Certificate, trustedCerts: X509C
     throw new Error('Self-signed certificate is not in the trusted certificate list');
   }
 
-  // Verify self-signature (important!)
-  if (!clientCert.verify(clientCert.publicKey)) {
+  // Verify self-signature
+  try {
+    if (!clientCert.verify(clientCert.publicKey)) {
+      throw new Error('Self-signed certificate has invalid signature');
+    }
+  } catch {
     throw new Error('Self-signed certificate has invalid signature');
   }
 }
