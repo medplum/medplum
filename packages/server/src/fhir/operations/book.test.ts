@@ -38,6 +38,22 @@ function isSlot(obj: Resource): obj is Slot {
   return obj.resourceType === 'Slot';
 }
 
+const threeDayAvailability: SchedulingParametersExtensionExtension = {
+  url: 'availability.r4',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'tue' },
+        { url: 'daysOfWeek', valueCode: 'wed' },
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'availableStartTime', valueTime: '09:00:00' },
+        { url: 'availableEndTime', valueTime: '17:00:00' },
+      ],
+    },
+  ],
+};
+
 describe('Appointment/$book', () => {
   let project: TestProjectResult<{ withAccessToken: true }>;
   let practitioner1: Practitioner;
@@ -59,18 +75,6 @@ describe('Appointment/$book', () => {
 
   const officeVisit: CodeableConcept = {
     coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
-  };
-
-  const threeDayAvailability: SchedulingParametersExtensionExtension = {
-    url: 'availability',
-    valueTiming: {
-      repeat: {
-        dayOfWeek: ['tue', 'wed', 'thu'],
-        timeOfDay: ['09:00:00'],
-        duration: 8,
-        durationUnit: 'h',
-      },
-    },
   };
 
   function makeSchedulingExtension(opts?: {
@@ -710,17 +714,7 @@ describe('Appointment/$book', () => {
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
-              {
-                url: 'availability',
-                valueTiming: {
-                  repeat: {
-                    dayOfWeek: ['tue', 'wed', 'thu'],
-                    timeOfDay: ['09:00:00'],
-                    duration: 8,
-                    durationUnit: 'h',
-                  },
-                },
-              },
+              threeDayAvailability,
               {
                 url: 'duration',
                 valueDuration: { value: 60, unit: 'min' },
@@ -774,17 +768,7 @@ describe('Appointment/$book', () => {
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'wed', 'thu'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
+            threeDayAvailability,
             {
               url: 'duration',
               valueDuration: { value: 60, unit: 'min' },
@@ -894,17 +878,7 @@ describe('Appointment/$book', () => {
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'wed', 'thu'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
+            threeDayAvailability,
             {
               url: 'duration',
               valueDuration: { value: 30, unit: 'min' },
@@ -1219,12 +1193,7 @@ describe('Appointment/$book', () => {
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
-              {
-                url: 'availability',
-                valueTiming: {
-                  repeat: { dayOfWeek: ['tue', 'wed', 'thu'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
-                },
-              },
+              threeDayAvailability,
               { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
               { url: 'serviceType', valueCodeableConcept: serviceType },
             ],
@@ -1345,17 +1314,7 @@ describe('Appointment/$book', () => {
               url: 'serviceType',
               valueCodeableConcept: initialVisit,
             },
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'wed', 'thu'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
+            threeDayAvailability,
             {
               url: 'duration',
               valueDuration: { value: 60, unit: 'min' },
@@ -1425,17 +1384,7 @@ describe('scheduling flow integration test', () => {
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'wed', 'thu'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
+            threeDayAvailability,
             {
               url: 'duration',
               valueDuration: { value: 35, unit: 'min' },

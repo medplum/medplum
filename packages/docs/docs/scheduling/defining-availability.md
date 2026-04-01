@@ -49,8 +49,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 | Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
 | ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
-| `availability`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + duration)                                                                                           | Time is implicitly available by default (unless blocked by Slots or other constraints) |
-| `availability.r4`   | Nested extension                                            | Schedule only                       | Optional                                        | Like `availability`, but uses FHIR R5-style start/end time pairs. See [below](#availabilityr4-extension) for details.                                                                | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `availability.r4`   | Nested extension                                            | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time). See [below](#availabilityr4-extension) for details                                       | Time is implicitly available by default (unless blocked by Slots or other constraints) |
 | `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified        | Uses the timezone defined on the Schedule's actor reference                            |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
 | `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires prep time before start to also be free                                                                                                                                      | No prep time required                                                                  |
@@ -106,19 +105,6 @@ All scheduling constraints are managed through a single consolidated extension: 
         }
       ]
     },
-
-    // Deprecated recurring availability format from early alpha scheduling design (Schedule only)
-    // {
-    //   "url": "availability",
-    //   "valueTiming": {
-    //     "repeat": {
-    //       "dayOfWeek": ["mon", "wed", "fri"],
-    //       "timeOfDay": ["09:00:00"],  // Interpreted in America/Los_Angeles time zone
-    //       "duration": 8,
-    //       "durationUnit": "h"
-    //     }
-    //   }
-    // },
 
     // Buffer time before appointment
     {
@@ -241,13 +227,7 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
 
 ### `availability.r4` Extension
 
-`availability.r4` is mirrors the FHIR R5 [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.
-
-The original alpha design used a `Timing` with a duration window, but this extension uses explicit start/end time pairs — identical to `HealthcareService.availableTime` — making it easier to match HealthcareService descriptions and to migrate to FHIR R5/R6 in the future.
-
-Both formats are currently accepted on the same `SchedulingParameters` extension and their windows are combined.
-
-The extension is encoded using nested R4 extensions (since R4 has no native `Availability` type):
+The `availability.r4` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
 
 | Sub-extension         | Type          | Description                                    |
 | --------------------- | ------------- | ---------------------------------------------- |
@@ -382,15 +362,18 @@ Here is an example Schedule that overrides the availability for a specific servi
           }
         },
         {
-          "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["tue", "thu"],
-              "timeOfDay": ["09:00:00"],
-              "duration": 4,
-              "durationUnit": "h"
+          "url": "availability.r4",
+          "extension": [
+            {
+              "url": "availableTime",
+              "extension": [
+                { "url": "daysOfWeek", "valueCode": "tue" },
+                { "url": "daysOfWeek", "valueCode": "thu" },
+                { "url": "availableStartTime", "valueTime": "09:00:00" },
+                { "url": "availableEndTime", "valueTime": "13:00:00" }
+              ]
             }
-          }
+          ]
         }
       ]
     }
@@ -472,7 +455,7 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 - `timezone` is only available on Schedule resources, not HealthcareService
 - The time zone value should be an IANA time zone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
-- When `timezone` is specified, all time values in both `availability` and `availability.r4` entries are interpreted in that time zone
+- When `timezone` is specified, all Time values in the `availability` extension are interpreted in that time zone
 
 Here is an example of a Schedule with multiple service types, each with its own time zone:
 
@@ -503,15 +486,19 @@ Here is an example of a Schedule with multiple service types, each with its own 
           }
         },
         {
-          "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["mon", "tue", "wed"],
-              "timeOfDay": ["11:00:00"],  // Interpreted in America/Los_Angeles
-              "duration": 4,
-              "durationUnit": "h"
+          "url": "availability.r4",
+          "extension": [
+            {
+              "url": "availableTime",
+              "extension": [
+                { "url": "daysOfWeek", "valueCode": "mon" },
+                { "url": "daysOfWeek", "valueCode": "tue" },
+                { "url": "daysOfWeek", "valueCode": "wed" },
+                { "url": "availableStartTime", "valueTime": "11:00:00" }, // Interpreted in America/Los_Angeles
+                { "url": "availableEndTime", "valueTime": "15:00:00" } // Interpreted in America/Los_Angeles
+              ]
             }
-          }
+          ]
         }
       ]
     },
@@ -536,15 +523,19 @@ Here is an example of a Schedule with multiple service types, each with its own 
           }
         },
         {
-          "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["mon", "tue", "wed"],
-              "timeOfDay": ["09:00:00"],  // Interpreted in America/New_York
-              "duration": 8,
-              "durationUnit": "h"
+          "url": "availability.r4",
+          "extension": [
+            {
+              "url": "availableTime",
+              "extension": [
+                { "url": "daysOfWeek", "valueCode": "mon" },
+                { "url": "daysOfWeek", "valueCode": "tue" },
+                { "url": "daysOfWeek", "valueCode": "wed" },
+                { "url": "availableStartTime", "valueTime": "09:00:00" }, // Interpreted in America/New_York
+                { "url": "availableEndTime", "valueTime": "17:00:00" } // Interpreted in America/New_York
+              ]
             }
-          }
+          ]
         }
       ]
     }
@@ -781,15 +772,18 @@ This Schedule shows how to configure default availability for all services (Mon-
           }
         },
         {
-          "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["tue", "thu"],
-              "timeOfDay": ["09:00:00"],
-              "duration": 4,
-              "durationUnit": "h"
+          "url": "availability.r4",
+          "extension": [
+            {
+              "url": "availableTime",
+              "extension": [
+                { "url": "daysOfWeek", "valueCode": "tue" },
+                { "url": "daysOfWeek", "valueCode": "thu" },
+                { "url": "availableStartTime", "valueTime": "09:00:00" },
+                { "url": "availableEndTime", "valueTime": "13:00:00" }
+              ]
             }
-          }
+          ]
         }
       ]
     }
@@ -911,15 +905,18 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
         }
       },
       {
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["tue", "thu"],
-            "timeOfDay": ["08:00:00"],
-            "duration": 8,
-            "durationUnit": "h"
+        "url": "availability.r4",
+        "extension": [
+          {
+            "url": "availableTime",
+            "extension": [
+              { "url": "daysOfWeek", "valueCode": "tue" },
+              { "url": "daysOfWeek", "valueCode": "thu" },
+              { "url": "availableStartTime", "valueTime": "08:00:00" },
+              { "url": "availableEndTime", "valueTime": "16:00:00" }
+            ]
           }
-        }
+        ]
       }
     ]
   }]
@@ -953,15 +950,21 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
         }
       },
       {
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["07:00:00"],
-            "duration": 12,
-            "durationUnit": "h"
+        "url": "availability.r4",
+        "extension": [
+          {
+            "url": "availableTime",
+            "extension": [
+              { "url": "daysOfWeek", "valueCode": "mon" },
+              { "url": "daysOfWeek", "valueCode": "tue" },
+              { "url": "daysOfWeek", "valueCode": "wed" },
+              { "url": "daysOfWeek", "valueCode": "thu" },
+              { "url": "daysOfWeek", "valueCode": "fri" },
+              { "url": "availableStartTime", "valueTime": "07:00:00" },
+              { "url": "availableEndTime", "valueTime": "19:00:00" }
+            ]
           }
-        }
+        ]
       }
     ]
   }]
@@ -1004,15 +1007,21 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
         }
       },
       {
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["07:00:00"],
-            "duration": 10,
-            "durationUnit": "h"
+        "url": "availability.r4",
+        "extension": [
+          {
+            "url": "availableTime",
+            "extension": [
+              { "url": "daysOfWeek", "valueCode": "mon" },
+              { "url": "daysOfWeek", "valueCode": "tue" },
+              { "url": "daysOfWeek", "valueCode": "wed" },
+              { "url": "daysOfWeek", "valueCode": "thu" },
+              { "url": "daysOfWeek", "valueCode": "fri" },
+              { "url": "availableStartTime", "valueTime": "07:00:00" },
+              { "url": "availableEndTime", "valueTime": "17:00:00" }
+            ]
           }
-        }
+        ]
       }
     ]
   }]

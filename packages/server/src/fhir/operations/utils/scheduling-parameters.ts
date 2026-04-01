@@ -58,17 +58,6 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'serviceType'; valueCodeableConcept: CodeableConcept }
   | { url: 'timezone'; valueCode: string }
   | {
-      url: 'availability';
-      valueTiming: {
-        repeat: {
-          dayOfWeek: DayOfWeek[];
-          timeOfDay: WallClockTime[];
-          duration: number;
-          durationUnit: 'h' | 'min' | 'd' | 'wk';
-        };
-      };
-    }
-  | {
       url: 'availability.r4';
       extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
     };
@@ -114,14 +103,6 @@ function durationToMinutes(duration: Duration): number {
     default:
       throw new Error(`Got unhandled unit "${unit}"`);
   }
-}
-
-function addMinutesToTime(time: WallClockTime, minutes: number): WallClockTime {
-  const [h, m, s] = time.split(':').map(Number);
-  const totalMinutes = h * 60 + m + minutes;
-  const endH = Math.floor(totalMinutes / 60) % 24;
-  const endM = totalMinutes % 60;
-  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:${String(s).padStart(2, '0')}` as WallClockTime;
 }
 
 function atMostOne<T>(arr: T[], attribute: string, _resourceType: string): T | undefined {
@@ -285,31 +266,16 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
       resource.resourceType
     );
 
-    // `availability` and `availability.r4` are required in Schedule (at least one of them),
-    // and neither is allowed in HealthcareService (where we read from availableTime instead).
-    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
-    const rawAvailabilityR4 = extension.extension.filter((ext) => ext.url === 'availability.r4');
+    // `availability.r4` is required in Schedule, and not allowed in
+    // HealthcareService (where we read from availableTime instead).
+    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability.r4');
     if (resource.resourceType === 'Schedule') {
-      atLeastOne([...rawAvailability, ...rawAvailabilityR4], 'availability', resource.resourceType);
+      atLeastOne(rawAvailability, 'availability.r4', resource.resourceType);
     } else {
-      exactlyZero(rawAvailability, 'availability', resource.resourceType);
-      exactlyZero(rawAvailabilityR4, 'availability.r4', resource.resourceType);
+      exactlyZero(rawAvailability, 'availability.r4', resource.resourceType);
     }
 
-    const availability = resourceParameters.availability ?? [
-      ...rawAvailability.flatMap((ext) => {
-        const durationMins = durationToMinutes({
-          value: ext.valueTiming.repeat.duration,
-          unit: ext.valueTiming.repeat.durationUnit,
-        });
-        return ext.valueTiming.repeat.timeOfDay.map((startTime) => ({
-          dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
-          availableStartTime: startTime,
-          availableEndTime: addMinutesToTime(startTime, durationMins),
-        }));
-      }),
-      ...rawAvailabilityR4.flatMap(extractAvailabilityR4),
-    ];
+    const availability = resourceParameters.availability ?? rawAvailability.flatMap(extractAvailabilityR4);
 
     const bufferBefore = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferBefore'),

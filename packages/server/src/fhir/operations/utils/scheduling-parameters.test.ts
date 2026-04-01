@@ -30,15 +30,17 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             // availability is required to have at least one entry
             {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['mon'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
+              url: 'availability.r4',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'mon' },
+                    { url: 'availableStartTime', valueTime: '09:00:00' },
+                    { url: 'availableEndTime', valueTime: '17:00:00' },
+                  ],
                 },
-              },
+              ],
             },
           ],
         },
@@ -89,26 +91,31 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             { url: 'timezone', valueCode: 'America/Phoenix' },
             {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['mon'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
+              url: 'availability.r4',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'mon' },
+                    { url: 'availableStartTime', valueTime: '09:00:00' },
+                    { url: 'availableEndTime', valueTime: '17:00:00' },
+                  ],
                 },
-              },
+              ],
             },
             {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'thu'],
-                  timeOfDay: ['12:00:00'],
-                  duration: 90,
-                  durationUnit: 'min',
+              url: 'availability.r4',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'tue' },
+                    { url: 'daysOfWeek', valueCode: 'thu' },
+                    { url: 'availableStartTime', valueTime: '12:00:00' },
+                    { url: 'availableEndTime', valueTime: '13:30:00' },
+                  ],
                 },
-              },
+              ],
             },
           ],
         },
@@ -295,50 +302,6 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([{ availability: [] }]);
     });
 
-    test('availability.r4 and availability (Timing) both contribute windows', () => {
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        meta: { project: project.id },
-        actor: [createReference(practitioner)],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-              {
-                url: 'availability',
-                valueTiming: {
-                  repeat: { dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
-                },
-              },
-              {
-                url: 'availability.r4',
-                extension: [
-                  {
-                    url: 'availableTime',
-                    extension: [
-                      { url: 'daysOfWeek', valueCode: 'fri' },
-                      { url: 'availableStartTime', valueTime: '13:00:00' },
-                      { url: 'availableEndTime', valueTime: '17:00:00' },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
-        {
-          availability: [
-            { dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
-            { dayOfWeek: ['fri'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
-          ],
-        },
-      ]);
-    });
-
     test('"availability.r4" is not allowed in HealthcareService extension', () => {
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
@@ -385,7 +348,7 @@ describe('parseSchedulingParametersExtensions', () => {
     };
 
     expect(() => parseSchedulingParametersExtensions(schedule)).toThrow(
-      "Required scheduling parameter attribute 'availability' is missing"
+      "Required scheduling parameter attribute 'availability.r4' is missing"
     );
   });
 
@@ -399,15 +362,18 @@ describe('parseSchedulingParametersExtensions', () => {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
             {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'thu'],
-                  timeOfDay: ['12:00:00'],
-                  duration: 90,
-                  durationUnit: 'min',
+              url: 'availability.r4',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'tue' },
+                    { url: 'daysOfWeek', valueCode: 'thu' },
+                    { url: 'availableStartTime', valueTime: '12:00:00' },
+                    { url: 'availableEndTime', valueTime: '13:30:00' },
+                  ],
                 },
-              },
+              ],
             },
           ],
         },
@@ -434,15 +400,18 @@ describe('parseSchedulingParametersExtensions', () => {
               { url: attribute, valueDuration: { unit: 'min', value: 10 } },
               { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
               {
-                url: 'availability',
-                valueTiming: {
-                  repeat: {
-                    dayOfWeek: ['tue', 'thu'],
-                    timeOfDay: ['12:00:00'],
-                    duration: 90,
-                    durationUnit: 'min',
+                url: 'availability.r4',
+                extension: [
+                  {
+                    url: 'availableTime',
+                    extension: [
+                      { url: 'daysOfWeek', valueCode: 'tue' },
+                      { url: 'daysOfWeek', valueCode: 'thu' },
+                      { url: 'availableStartTime', valueTime: '12:00:00' },
+                      { url: 'availableEndTime', valueTime: '13:30:00' },
+                    ],
                   },
-                },
+                ],
               },
             ],
           },
@@ -467,15 +436,18 @@ describe('parseSchedulingParametersExtensions', () => {
           extension: [
             { url: 'duration', valueDuration: { unit, value: 1 } },
             {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'thu'],
-                  timeOfDay: ['12:00:00'],
-                  duration: 90,
-                  durationUnit: 'min',
+              url: 'availability.r4',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'tue' },
+                    { url: 'daysOfWeek', valueCode: 'thu' },
+                    { url: 'availableStartTime', valueTime: '12:00:00' },
+                    { url: 'availableEndTime', valueTime: '13:30:00' },
+                  ],
                 },
-              },
+              ],
             },
           ],
         },
@@ -615,7 +587,7 @@ describe('parseSchedulingParametersExtensions', () => {
       ]);
     });
 
-    test('"availability" is not allowed in HealthcareService extension', () => {
+    test('"availability.r4" is not allowed in HealthcareService extension', () => {
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
         extension: [
@@ -624,15 +596,17 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               durationExt,
               {
-                url: 'availability',
-                valueTiming: {
-                  repeat: {
-                    dayOfWeek: ['mon'],
-                    timeOfDay: ['09:00:00'],
-                    duration: 8,
-                    durationUnit: 'h',
+                url: 'availability.r4',
+                extension: [
+                  {
+                    url: 'availableTime',
+                    extension: [
+                      { url: 'daysOfWeek', valueCode: 'mon' },
+                      { url: 'availableStartTime', valueTime: '09:00:00' },
+                      { url: 'availableEndTime', valueTime: '17:00:00' },
+                    ],
                   },
-                },
+                ],
               },
             ],
           },
@@ -640,7 +614,7 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
-        "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
+        "Scheduling parameter attribute 'availability.r4' is not allowed on HealthcareService"
       );
     });
 
@@ -668,15 +642,17 @@ describe('chooseSchedulingParameters', () => {
 
   // Reusable availability extension for Schedule resources (required on Schedule, not on HealthcareService)
   const mondayAvailability = {
-    url: 'availability',
-    valueTiming: {
-      repeat: {
-        dayOfWeek: ['mon' as const],
-        timeOfDay: ['09:00:00' as const],
-        duration: 8,
-        durationUnit: 'h' as const,
+    url: 'availability.r4',
+    extension: [
+      {
+        url: 'availableTime',
+        extension: [
+          { url: 'daysOfWeek', valueCode: 'mon' },
+          { url: 'availableStartTime', valueTime: '09:00:00' },
+          { url: 'availableEndTime', valueTime: '17:00:00' },
+        ],
       },
-    },
+    ],
   };
 
   function makeSchedule(extensions?: Schedule['extension']): Schedule {
