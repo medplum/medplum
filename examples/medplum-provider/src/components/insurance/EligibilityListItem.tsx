@@ -6,8 +6,8 @@ import type { CoverageEligibilityRequest } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { formatPurpose } from './utils';
 import classes from './EligibilityListItem.module.css';
+import { formatPurpose } from './utils';
 
 interface EligibilityListItemProps {
   request: CoverageEligibilityRequest;
@@ -37,4 +37,3 @@ export function EligibilityListItem({ request, isSelected, href }: EligibilityLi
     </MedplumLink>
   );
 }
-
