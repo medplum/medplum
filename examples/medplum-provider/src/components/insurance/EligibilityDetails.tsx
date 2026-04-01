@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Divider, Group, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
+import { Box, Divider, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { formatDate, formatMoney, formatPeriod } from '@medplum/core';
-import type { CoverageEligibilityRequest, CoverageEligibilityResponse, CoverageEligibilityResponseInsuranceItemBenefit } from '@medplum/fhirtypes';
-import { ResourceAvatar } from '@medplum/react';
+import type { CoverageEligibilityRequest, CoverageEligibilityResponse, CoverageEligibilityResponseInsurance, CoverageEligibilityResponseInsuranceItemBenefit } from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
 
 interface EligibilityDetailsProps {
@@ -35,8 +34,6 @@ function getServicedDateText(request: CoverageEligibilityRequest): string {
 }
 
 function RequestSection({ request }: { request: CoverageEligibilityRequest }): JSX.Element {
-  const providerDisplay = request.provider?.display ?? request.provider?.reference ?? '—';
-
   return (
     <Stack gap="md">
       <Title order={5}>Eligibility Request</Title>
@@ -45,17 +42,6 @@ function RequestSection({ request }: { request: CoverageEligibilityRequest }): J
           <DetailRow label="Created" value={formatDate(request.created)} />
           <DetailRow label="Purpose" value={request.purpose?.map(formatPurpose).join(', ') ?? '—'} />
           <DetailRow label="Serviced Date" value={getServicedDateText(request)} />
-          {request.provider && (
-            <DetailRow
-              label="Provider"
-              value={
-                <Group gap="xs">
-                  <ResourceAvatar value={request.provider} size="xs" />
-                  <Text size="sm">{providerDisplay}</Text>
-                </Group>
-              }
-            />
-          )}
           <DetailRow label="Insurer" value={request.insurer?.display ?? request.insurer?.reference ?? '—'} />
         </Table.Tbody>
       </Table>
@@ -94,8 +80,6 @@ function ResponseSection({
     );
   }
 
-  const firstInsurance = response.insurance?.[0];
-
   return (
     <Stack gap="md">
       <Title order={5}>Eligibility Response</Title>
@@ -105,20 +89,42 @@ function ResponseSection({
           {response.disposition && <DetailRow label="Disposition" value={response.disposition} />}
           <DetailRow label="Insurer" value={response.insurer?.display ?? response.insurer?.reference ?? '—'} />
           <DetailRow label="Created" value={formatDate(response.created)} />
-          {firstInsurance?.inforce !== undefined && (
-            <DetailRow label="Coverage In Force" value={firstInsurance.inforce ? 'Yes' : 'No'} />
+        </Table.Tbody>
+      </Table>
+      {response.insurance?.map((insurance, index) => (
+        <InsuranceSection key={index} insurance={insurance} index={index} total={response.insurance?.length ?? 1} />
+      ))}
+    </Stack>
+  );
+}
+
+function InsuranceSection({
+  insurance,
+  index,
+  total,
+}: {
+  insurance: CoverageEligibilityResponseInsurance;
+  index: number;
+  total: number;
+}): JSX.Element {
+  return (
+    <Stack gap="md">
+      {total > 1 && (
+        <Text fw={600} size="sm">
+          Coverage {index + 1}
+        </Text>
+      )}
+      <Table>
+        <Table.Tbody>
+          {insurance.inforce !== undefined && (
+            <DetailRow label="Coverage In Force" value={insurance.inforce ? 'Yes' : 'No'} />
           )}
-          {firstInsurance?.benefitPeriod && (
-            <DetailRow
-              label="Benefit Period"
-              value={formatPeriod(firstInsurance.benefitPeriod)}
-            />
+          {insurance.benefitPeriod && (
+            <DetailRow label="Benefit Period" value={formatPeriod(insurance.benefitPeriod)} />
           )}
         </Table.Tbody>
       </Table>
-      {firstInsurance?.item && firstInsurance.item.length > 0 && (
-        <BenefitsTable items={firstInsurance.item} />
-      )}
+      {insurance.item && insurance.item.length > 0 && <BenefitsTable items={insurance.item} />}
     </Stack>
   );
 }
