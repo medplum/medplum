@@ -255,12 +255,8 @@ Open `terraform.tfvars` and set these values:
 | `rds_instances` | `1` | Number of Aurora cluster instances. Use `2` for writer + reader in production |
 | `redis_node_type` | `cache.t3.micro` | Use `cache.r6g.large` or higher for production |
 | `redis_num_cache_nodes` | `1` | Must be `>= 2` when `environment = "prod"` |
-| `create_route53_zone` | `false` | Create the Route 53 hosted zone. Use for fresh deployments. See §6 |
-| `create_route53_records` | `false` | Look up an existing zone and create DNS records in it. See §6 |
-| `route53_zone_name` | `""` | Hosted zone name. Defaults to the root domain (e.g. `yourcompany.com`). **Override if your zone is a subdomain** (e.g. `staging.yourcompany.com`) |
-| `parent_route53_zone_id` | `""` | Zone ID of the parent Route 53 zone to add the NS delegation record. Only used when `create_route53_zone = true` |
-| `ssl_certificate_arn` | `""` | ACM cert for app CloudFront (must be in us-east-1). Leave empty to auto-create via Route 53 |
-| `alb_certificate_arn` | `""` | ACM cert for the ALB (must be in deployment region). Leave empty to auto-create via Route 53 |
+| `ssl_certificate_arn` | `""` | ACM cert for app CloudFront (must be in us-east-1) |
+| `alb_certificate_arn` | `""` | ACM cert for the ALB (must be in deployment region) |
 | `storage_domain` | `""` | Domain for the dedicated binary storage CDN. Leave empty to disable |
 | `storage_ssl_certificate_arn` | `""` | ACM cert for the storage CloudFront (us-east-1). Leave empty to auto-create via Route 53 |
 | `signing_key_id` | `""` | CloudFront public key ID for signed storage URLs. See §3a |
@@ -295,14 +291,6 @@ terraform apply -var-file=terraform.tfvars
 
 Type `yes` when prompted. **This takes 15–25 minutes** — EKS cluster creation is the slowest step.
 
-> **Three-phase deployment overview:**
->
-> | Phase | Command | What happens |
-> |---|---|---|
-> | **Phase 1** | `terraform apply` | Creates EKS, RDS, Redis, S3, CloudFront, IAM, WAF, etc. — **no ALB yet** |
-> | **Phase 2** | `helm install` (see [Deploy Medplum API server](#deploy-medplum-api-server)) | AWS Load Balancer Controller creates the ALB and provisions the Ingress |
-> | **Phase 3** | Set `helm_api_alb_hostname` → `terraform apply` again | Creates the Route 53 DNS record for `api_domain` pointing at the ALB |
-
 ---
 
 ## After Apply
@@ -325,14 +313,11 @@ Key values you will need:
 | `lb_controller_iam_role_arn` | AWS Load Balancer Controller IRSA role |
 | `alb_certificate_arn` | ALB listener certificate (passed to Helm as `ingress.acmCertificateArn`) |
 | `api_waf_arn` | WAF Web ACL ARN — pass as `ingress.wafAclArn` in Helm values so the LB Controller attaches WAF to the ALB it creates |
-| `helm_ingress_hostname_command` | Run this after `helm install` to get the LB Controller ALB hostname, then set `helm_api_alb_hostname` in `terraform.tfvars` and re-run `terraform apply` |
 | `static_storage_name` | S3 bucket for the frontend static build (sync `dist/` here) |
-| `cdn_hostname` | CloudFront custom domain — add as CNAME in DNS for app domain |
-| `cdn_endpoint` | CloudFront distribution domain (e.g. `d1234.cloudfront.net`) |
-| `route53_zone_id` | Zone ID of the managed or looked-up Route 53 zone |
-| `route53_nameservers` | Four NS values to add at your registrar (only set when `create_route53_zone = true`) |
-| `ses_domain_verification_token` | DNS TXT record for SES domain verification |
-| `ses_dkim_tokens` | Three DNS CNAME records for DKIM |
+| `cdn_hostname` | CloudFront custom domain for the app (e.g. `app.example.com`) |
+| `cdn_domain_name` | Raw CloudFront distribution domain (e.g. `d1234.cloudfront.net`) — pass as `dns.cloudFrontDomain` in Helm values |
+| `ses_verification_token` | DNS TXT record value for SES domain verification — pass as `dns.sesVerificationToken` in Helm values |
+| `ses_dkim_tokens` | Three DKIM token strings — pass as `dns.sesDkimTokens` in Helm values |
 
 ### Deploy the static frontend to S3
 
@@ -384,27 +369,18 @@ aws eks update-kubeconfig \
 kubectl get nodes   # should show 2 Ready nodes after 1–2 minutes
 ```
 
-### Add DNS records (if `create_route53_zone = false` and `create_route53_records = false`)
+### Add DNS records (external DNS management only)
 
-If you are managing DNS externally (Mode C from §6), add these records at your DNS provider:
+If you are managing DNS externally instead of using external-dns via the Helm chart, add these records manually at your DNS provider after `helm install`:
 
 | Type | Name | Value |
 |---|---|---|
-| `CNAME` or `ALIAS` | `<app_domain>` | Value of `cdn_endpoint` output |
-| `CNAME` | `<api_domain>` | ALB hostname — available only **after** `helm install` (see below) |
-| `TXT` | `_amazonses.<domain>` | Value of `ses_domain_verification_token` output |
+| `CNAME` or `ALIAS` | `<app_domain>` | Value of `cdn_domain_name` output |
+| `CNAME` | `<api_domain>` | ALB hostname — available only **after** `helm install` (`kubectl get ingress -n medplum medplum -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'`) |
+| `TXT` | `_amazonses.<domain>` | Value of `ses_verification_token` output |
 | `CNAME` | `<token1>._domainkey.<domain>` | `<token1>.dkim.amazonses.com` |
 | `CNAME` | `<token2>._domainkey.<domain>` | `<token2>.dkim.amazonses.com` |
 | `CNAME` | `<token3>._domainkey.<domain>` | `<token3>.dkim.amazonses.com` |
-
-If you created the zone via `create_route53_zone = true` but left `parent_route53_zone_id` empty, you also need to add the NS delegation records at the parent zone or registrar:
-
-```bash
-terraform output route53_nameservers
-# Add each of the four values as NS records for <route53_zone_name> at the parent
-```
-
-> **Note:** The `api_domain` record can only be added after `helm install` — the ALB hostname is not available until the LB Controller creates the ALB. See the [three-phase deployment overview](#step-4--apply) in Step 4 for the full sequence.
 
 > **DNS propagation note:** After adding records, your local machine may still fail to resolve them if your router or ISP has cached a negative (NXDOMAIN) response. To verify the records are correct independently of your local cache, query a public resolver directly:
 > ```bash
@@ -422,8 +398,6 @@ terraform output route53_nameservers
 ### Deploy Medplum API server
 
 Once the cluster is running and your outputs are collected, follow the Helm deployment guide in [`charts/README.md`](../../charts/README.md) to deploy the Medplum server. The AWS section there covers installing the AWS Load Balancer Controller and configuring `values.yaml` with the outputs from this module.
-
-> **Phase 3:** After `helm install`, run the command in the `helm_ingress_hostname_command` output to retrieve the ALB hostname, set it as `helm_api_alb_hostname` in `terraform.tfvars`, then re-run `terraform apply` to finalize the Route 53 DNS record for `api_domain`.
 
 ---
 
@@ -448,7 +422,7 @@ kubectl delete namespace medplum
 **2. Remove the `app` CNAME from Route 53** — CloudFront will create a new distribution with a new domain on the next deploy. If the old CNAME still exists pointing at the old distribution, the new distribution will fail with `CNAMEAlreadyExists`:
 
 ```bash
-APP_CNAME=$(terraform output -raw cdn_endpoint)
+APP_CNAME=$(terraform output -raw cdn_domain_name)
 HOSTED_ZONE_ID=<YOUR_HOSTED_ZONE_ID>
 
 aws route53 change-resource-record-sets \

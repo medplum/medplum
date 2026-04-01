@@ -183,7 +183,7 @@ helm install external-dns external-dns/external-dns \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<EXTERNAL_DNS_ROLE_ARN>
 ```
 
-Where `<DEPLOYMENT_ID>` is your `environment`-`deployment_id` string (e.g. `medplum-dev-1`, matching the `environment` and `deployment_id` variables in `terraform.tfvars`). This is used as the TXT ownership prefix so multiple clusters don't fight over the same records. It does not come from `terraform output` — read it directly from your `terraform.tfvars`.
+Where `<DEPLOYMENT_ID>` is your `name_prefix` — `medplum-<environment>-<deployment_id>` (e.g. `medplum-dev-1` for `environment = "dev"` and `deployment_id = "1"` in `terraform.tfvars`). This is used as the TXT ownership prefix so multiple clusters don't fight over the same records. It does not come from `terraform output` — derive it directly from your `terraform.tfvars`.
 
 Wait for the CRD to register before proceeding:
 

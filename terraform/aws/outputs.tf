@@ -86,11 +86,6 @@ output "static_storage_url" {
   value       = aws_s3_bucket.static.bucket_regional_domain_name
 }
 
-output "cdn_endpoint" {
-  description = "CloudFront distribution domain"
-  value       = aws_cloudfront_distribution.medplum.domain_name
-}
-
 output "cdn_domain_name" {
   description = "Raw CloudFront distribution domain — pass as dns.cloudFrontDomain in Helm values"
   value       = aws_cloudfront_distribution.medplum.domain_name
@@ -127,11 +122,6 @@ output "alb_certificate_arn" {
   value       = var.alb_certificate_arn
 }
 
-output "helm_ingress_hostname_command" {
-  description = "Run this after `helm install` to get the ALB hostname assigned by the LB Controller"
-  value       = "kubectl get ingress -n medplum medplum -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
-}
-
 output "lb_controller_iam_role_arn" {
   description = "IAM role ARN for the AWS Load Balancer Controller (annotate the kube-system ServiceAccount)"
   value       = aws_iam_role.lb_controller.arn
@@ -150,11 +140,6 @@ output "bot_lambda_role_arn" {
 output "storage_bucket_name" {
   description = "S3 binary storage bucket name (only set when storage CDN is enabled)"
   value       = local.storage_cdn_enabled ? aws_s3_bucket.storage[0].id : null
-}
-
-output "storage_cdn_endpoint" {
-  description = "Storage CloudFront distribution domain (only set when storage CDN is enabled)"
-  value       = local.storage_cdn_enabled ? aws_cloudfront_distribution.storage[0].domain_name : null
 }
 
 output "storage_cdn_domain_name" {

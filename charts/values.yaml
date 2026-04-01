@@ -88,8 +88,10 @@ ingress:
   wafAclArn: ''
 
 # DNS management via external-dns (AWS only).
-# When enabled, installs external-dns as a sub-chart and creates Route 53 records
-# for the ALB (via Ingress annotation), CloudFront distributions, and SES verification.
+# When enabled, creates DNSEndpoint CRD resources that are picked up by the
+# external-dns standalone release (installed separately — see charts/README.md).
+# Manages Route 53 records for CloudFront distributions and SES verification.
+# The ALB record is handled automatically by external-dns watching the Ingress.
 #
 # Populate dns.* values from terraform outputs:
 #   dns.cloudFrontDomain   ← terraform output cdn_domain_name
