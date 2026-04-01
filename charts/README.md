@@ -116,54 +116,9 @@ Pods reach `Running` in 1–2 minutes; the ALB takes 2–3 minutes to provision.
 
 external-dns must be installed as a **standalone release** before upgrading the medplum chart. This ensures the `DNSEndpoint` CRD is registered in the cluster before the medplum chart tries to create `DNSEndpoint` resources.
 
-**Prerequisites:** the Route 53 hosted zone must already exist and the ACM certificates must be issued before running `terraform apply`.
+**Prerequisites:** the Route 53 hosted zone must already exist (created during Terraform setup — see [`terraform/aws/README.md §6`](../terraform/aws/README.md#6-dns-setup)) and the ACM certificates must be issued before running `terraform apply`. You will need the hosted zone ID for `dns.zoneId` below.
 
-**Step 1 — Create the Route 53 hosted zone**
-
-Terraform does not create the hosted zone. Create it once with the AWS CLI:
-
-```bash
-# Create the zone (e.g. for a subdomain deployment)
-ZONE_ID=$(aws route53 create-hosted-zone \
-  --name <YOUR_ZONE_NAME> \
-  --caller-reference "medplum-$(date +%s)" \
-  --query 'HostedZone.Id' --output text | cut -d/ -f3)
-
-echo "Zone ID: $ZONE_ID"   # save this — you'll need it for dns.zoneId
-
-# Get the 4 NS records assigned to your new zone
-aws route53 list-resource-record-sets \
-  --hosted-zone-id $ZONE_ID \
-  --query "ResourceRecordSets[?Type=='NS'].ResourceRecords[].Value" \
-  --output text
-```
-
-If `<YOUR_ZONE_NAME>` is a subdomain (e.g. `staging.example.com`) and the parent zone (`example.com`) is also in Route 53 in this account, add NS delegation so traffic resolves correctly. Replace `<PARENT_ZONE_ID>` and the four NS values with your actual values:
-
-```bash
-aws route53 change-resource-record-sets \
-  --hosted-zone-id <PARENT_ZONE_ID> \
-  --change-batch '{
-    "Changes": [{
-      "Action": "UPSERT",
-      "ResourceRecordSet": {
-        "Name": "<YOUR_ZONE_NAME>.",
-        "Type": "NS",
-        "TTL": 300,
-        "ResourceRecords": [
-          {"Value": "ns-XXX.awsdns-XX.com."},
-          {"Value": "ns-XXX.awsdns-XX.co.uk."},
-          {"Value": "ns-XXX.awsdns-XX.net."},
-          {"Value": "ns-XXX.awsdns-XX.org."}
-        ]
-      }
-    }]
-  }'
-```
-
-If the parent zone is managed externally (Cloudflare, GoDaddy, etc.), add the four NS records there instead.
-
-**Step 2 — Install external-dns standalone**
+**Step 1 — Install external-dns standalone**
 
 > **Important:** you must pass both `--source ingress` and `--source crd`. Without `--source crd`, external-dns will only process Ingress resources and silently ignore the `DNSEndpoint` objects the medplum chart creates for CloudFront and SES records.
 
@@ -191,11 +146,11 @@ Wait for the CRD to register before proceeding:
 kubectl wait --for condition=established crd/dnsendpoints.externaldns.k8s.io --timeout=60s
 ```
 
-**Step 3 — Populate `dns.*` values from `terraform output`**
+**Step 2 — Populate `dns.*` values from `terraform output`**
 
 | Terraform output | Helm value |
 |---|---|
-| `external_dns_iam_role_arn` | `dns.iamRoleArn` (used in Step 2 above) |
+| `external_dns_iam_role_arn` | `dns.iamRoleArn` (used in Step 1 above) |
 | `app_domain` | `dns.appDomain` |
 | `cdn_domain_name` | `dns.cloudFrontDomain` |
 | `storage_domain` | `dns.storageDomain` (when storage CDN enabled) |
@@ -208,7 +163,7 @@ Add to your `values-aws.yaml`:
 ```yaml
 dns:
   enabled: true
-  zoneId: "<ZONE_ID from Step 1>"
+  zoneId: "<ZONE_ID>"             # from terraform/aws/README.md §6
   iamRoleArn: "<external_dns_iam_role_arn>"
   appDomain: "<app_domain>"             # terraform output app_domain
   cloudFrontDomain: "<cdn_domain_name>" # terraform output cdn_domain_name
@@ -221,7 +176,7 @@ dns:
   # storageCdnDomain: "<storage_cdn_domain_name>" # terraform output storage_cdn_domain_name
 ```
 
-**Step 4 — Install or upgrade medplum**
+**Step 3 — Install or upgrade medplum**
 
 ```bash
 helm upgrade medplum ./charts -n medplum --values values-aws.yaml
@@ -233,7 +188,7 @@ external-dns reconciles all Route 53 records within ~30 seconds. Verify:
 kubectl -n kube-system logs -l app.kubernetes.io/name=external-dns | tail -20
 ```
 
-If the logs show `All records are already up to date` but your DNS records are missing, external-dns was installed without `--source crd`. Re-run the `helm upgrade external-dns` command in Step 2 with both sources set, then wait for the next reconcile cycle.
+If the logs show `All records are already up to date` but your DNS records are missing, external-dns was installed without `--source crd`. Re-run the `helm upgrade external-dns` command in Step 1 with both sources set, then wait for the next reconcile cycle.
 
 ### Deploy the bot Lambda layer (one-time)
 

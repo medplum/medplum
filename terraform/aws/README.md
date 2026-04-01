@@ -138,9 +138,9 @@ Release any unassociated EIPs to free up capacity, or [request a quota increase]
 
 ### 6. DNS setup
 
-DNS record management has moved to the Helm chart via **external-dns**. Terraform no longer creates or manages any Route 53 records.
+DNS record management is handled by the Helm chart via **external-dns**. Terraform no longer creates or manages any Route 53 records.
 
-**The Route 53 hosted zone must be created before running `terraform apply`.** Terraform cannot create it for you. Run:
+**The Route 53 hosted zone must be created before running `terraform apply`.** Run:
 
 ```bash
 ZONE_ID=$(aws route53 create-hosted-zone \
@@ -148,10 +148,39 @@ ZONE_ID=$(aws route53 create-hosted-zone \
   --caller-reference "medplum-$(date +%s)" \
   --query 'HostedZone.Id' --output text | cut -d/ -f3)
 
-echo "Zone ID: $ZONE_ID"
+echo "Zone ID: $ZONE_ID"   # save this — you'll need it for dns.zoneId in Helm values
+
+# Get the 4 NS records assigned to your new zone
+aws route53 list-resource-record-sets \
+  --hosted-zone-id $ZONE_ID \
+  --query "ResourceRecordSets[?Type=='NS'].ResourceRecords[].Value" \
+  --output text
 ```
 
-If the zone is a subdomain, also add an NS delegation record in the parent zone — see [`charts/README.md §DNS setup Step 1`](../../charts/README.md#dns-setup-with-external-dns-aws) for the exact commands.
+If `<YOUR_ZONE_NAME>` is a subdomain (e.g. `staging.example.com`) and the parent zone (`example.com`) is also in Route 53 in this account, add NS delegation so traffic resolves correctly:
+
+```bash
+aws route53 change-resource-record-sets \
+  --hosted-zone-id <PARENT_ZONE_ID> \
+  --change-batch '{
+    "Changes": [{
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "<YOUR_ZONE_NAME>.",
+        "Type": "NS",
+        "TTL": 300,
+        "ResourceRecords": [
+          {"Value": "ns-XXX.awsdns-XX.com."},
+          {"Value": "ns-XXX.awsdns-XX.co.uk."},
+          {"Value": "ns-XXX.awsdns-XX.net."},
+          {"Value": "ns-XXX.awsdns-XX.org."}
+        ]
+      }
+    }]
+  }'
+```
+
+If the parent zone is managed externally (Cloudflare, GoDaddy, etc.), add the four NS records there instead.
 
 Once `terraform apply` has run, collect these outputs and pass them to the Helm chart's `dns.*` values:
 
