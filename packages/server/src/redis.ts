@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import type { MedplumServerConfig } from './config/types';
 import { getLogger } from './logger';
 
