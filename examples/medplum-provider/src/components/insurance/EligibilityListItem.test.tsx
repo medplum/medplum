@@ -10,7 +10,11 @@ import { EligibilityListItem } from './EligibilityListItem';
 
 const medplum = new MockClient();
 
-function setup(request: CoverageEligibilityRequest, isSelected = false, href = '/test-href'): ReturnType<typeof render> {
+function setup(
+  request: CoverageEligibilityRequest,
+  isSelected = false,
+  href = '/test-href'
+): ReturnType<typeof render> {
   return render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
