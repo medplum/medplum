@@ -10,6 +10,6 @@ This section covers how to model, design, and automate intake workflows in Medpl
 
 - [**Intake Data Model**](/docs/intake/intake-data-model) — The FHIR resources created during intake, how they relate to each other, and which US Core profiles apply
 - [**Intake Questionnaires: Design and Extraction**](/docs/intake/intake-questionnaires) — How to structure intake questionnaires so their responses can be reliably transformed into FHIR resources, using either SDC extraction or Bot-based processing
-- [**What Happens After Intake**](/docs/intake/post-intake-automation) — Triggering processing with Subscriptions, post-intake workflows, and optional PlanDefinition-based orchestration
+- [**Post Intake Automation**](/docs/intake/post-intake-automation) — Triggering processing with Subscriptions, post-intake workflows, and optional PlanDefinition-based orchestration
 
 For a working reference app, see the [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo).
