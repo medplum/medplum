@@ -859,11 +859,12 @@ class CcdaToFhirConverter {
       });
     }
 
-    const translations = Array.isArray(code.translation)
-      ? code.translation
-      : code.translation
-        ? [code.translation]
-        : EMPTY;
+    let translations: CcdaCode[] = [];
+    if (Array.isArray(code.translation)) {
+      translations = code.translation;
+    } else if (code.translation) {
+      translations = [code.translation];
+    }
     for (const translation of translations) {
       const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
       const translationCode = translation['@_code'];
