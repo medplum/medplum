@@ -254,4 +254,3 @@ function formatOutcome(outcome: string | undefined): string {
       return outcome ?? 'Unknown';
   }
 }
-
