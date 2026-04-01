@@ -262,9 +262,10 @@ class CcdaToFhirConverter {
       // Has root → deterministic UUID v5 from root:extension
       const idWithRoot = ids?.find((id) => id['@_root']);
       if (idWithRoot) {
-        const input = idWithRoot['@_extension']
-          ? `${idWithRoot['@_root']}:${idWithRoot['@_extension']}`
-          : (idWithRoot['@_root'] as string);
+        let input = idWithRoot['@_root'] as string;
+        if (idWithRoot['@_extension']) {
+          input = `${idWithRoot['@_root']}:${idWithRoot['@_extension']}`;
+        }
         return uuidv5(input, NIL);
       }
 
