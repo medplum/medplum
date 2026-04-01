@@ -71,14 +71,18 @@ function configureRedisForVercel() {
  * Caches the app instance for warm Vercel function invocations.
  */
 async function getApp() {
+  // Return cached app if already initialized
   if (expressApp) {
     return expressApp;
   }
 
+  // If initialization is in progress, wait for it
   if (initAppPromise) {
-    return initAppPromise;
+    await initAppPromise;
+    return expressApp;
   }
 
+  // Start initialization
   initAppPromise = (async () => {
     // Dynamic import from the bundled dist/ folder
     const { initApp } = await import('../dist/app.js');
@@ -97,12 +101,16 @@ async function getApp() {
 
     const config = await loadConfig(configSource);
 
-    expressApp = express();
-    await initApp(expressApp, config);
-    return expressApp;
+    // Create Express app and initialize Medplum
+    const app = express();
+    await initApp(app, config);
+    
+    // Cache the initialized app
+    expressApp = app;
   })();
 
-  return initAppPromise;
+  await initAppPromise;
+  return expressApp;
 }
 
 /**
