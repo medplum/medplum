@@ -78,67 +78,9 @@ Confirm the right account is active:
 aws sts get-caller-identity
 ```
 
-### 3. ACM certificates (required)
+### 3. DNS setup
 
-All three ACM certificates must be pre-created before running `terraform apply`. Terraform no longer manages DNS or certificate validation — both are handled by the Helm chart via external-dns.
-
-| Certificate | Region | Covers | Variable |
-|---|---|---|---|
-| App (CloudFront) | **us-east-1** (CloudFront requirement) | `app_domain` | `ssl_certificate_arn` |
-| ALB | Your deployment region | `api_domain` | `alb_certificate_arn` |
-| Storage (optional) | **us-east-1** | `storage_domain` | `storage_ssl_certificate_arn` |
-
-To request a certificate:
-1. Open [AWS Certificate Manager](https://console.aws.amazon.com/acm/home) in the correct region
-2. Request a public certificate for the relevant domain with **DNS validation**
-3. Add the CNAME validation record at your DNS provider
-4. Wait for the status to show **Issued**
-5. Copy the ARN into `terraform.tfvars`
-
-### 3a. Generate a CloudFront signing key (required when `storage_domain` is set)
-
-The dedicated storage CloudFront uses **trusted key groups** to enforce signed URLs on binary content. You must generate an RSA key pair and upload the public key to CloudFront before `terraform apply`.
-
-```bash
-# Generate a 2048-bit RSA key pair
-openssl genrsa -out cf_signing_key.pem 2048
-openssl rsa -pubout -in cf_signing_key.pem -out cf_signing_key_pub.pem
-
-# Upload the public key to CloudFront (in us-east-1)
-aws cloudfront create-public-key \
-  --public-key-config "CallerReference=$(uuidgen),Name=medplum-storage-signing-key,EncodedKey=$(cat cf_signing_key_pub.pem)" \
-  --region us-east-1 \
-  --query 'PublicKey.Id' --output text
-```
-
-Copy the output key ID and set it as `signing_key_id` in `terraform.tfvars`. Store the private key and passphrase securely — you will need them to configure Medplum server's `signingKey` and `signingKeyPassphrase` settings.
-
-### 4. Verify your sending domain in SES (if not already done)
-
-Terraform will create SES identity resources and output the verification tokens, but AWS SES also needs to be out of the **sandbox** before it can send to arbitrary addresses.
-
-- If this is a new AWS account, [request SES production access](https://console.aws.amazon.com/ses/home#/account) before deploying
-- If you only need to send to verified addresses (fine for dev/test), you can skip this — the sandbox restriction only affects sending to unverified recipients
-
-### 5. Check your Elastic IP quota
-
-Each NAT gateway requires one Elastic IP (EIP). This module creates one NAT gateway per availability zone (2 by default), consuming 2 EIPs. The default AWS quota is **5 EIPs per region**, so if you are already near the limit the apply will fail with `AddressLimitExceeded`.
-
-Check your current usage before deploying:
-
-```bash
-aws ec2 describe-addresses --region <your-region> \
-  --query 'Addresses[*].{IP:PublicIp,AssociationId:AssociationId}' \
-  --output table
-```
-
-Release any unassociated EIPs to free up capacity, or [request a quota increase](https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas) for `EC2-VPC Elastic IPs` before running `terraform apply`.
-
-> **Tip:** Regions you haven't heavily used (e.g. `ca-central-1`) typically have all 5 EIPs available. `us-east-1` is commonly exhausted on shared/dev accounts.
-
-### 6. DNS setup
-
-DNS record management is handled by the Helm chart via **external-dns**. Terraform no longer creates or manages any Route 53 records.
+DNS record management is handled by the Helm chart via **external-dns**.
 
 **The Route 53 hosted zone must be created before running `terraform apply`.** Run:
 
@@ -193,6 +135,64 @@ Once `terraform apply` has run, collect these outputs and pass them to the Helm 
 | `external_dns_iam_role_arn` | `dns.iamRoleArn` |
 
 See [`charts/README.md`](../../charts/README.md) for the full external-dns install and medplum chart wiring.
+
+### 4. ACM certificates (required)
+
+All three ACM certificates must be **created and fully validated** before running `terraform apply`. Terraform does not request or validate certificates — you must complete the DNS validation steps below and wait for each certificate's status to show **Issued** in ACM before proceeding.
+
+| Certificate | Region | Covers | Variable |
+|---|---|---|---|
+| App (CloudFront) | **us-east-1** (CloudFront requirement) | `app_domain` | `ssl_certificate_arn` |
+| ALB | Your deployment region | `api_domain` | `alb_certificate_arn` |
+| Storage (optional) | **us-east-1** | `storage_domain` | `storage_ssl_certificate_arn` |
+
+To request a certificate:
+1. Open [AWS Certificate Manager](https://console.aws.amazon.com/acm/home) in the correct region
+2. Request a public certificate for the relevant domain with **DNS validation**
+3. Add the CNAME validation record at your DNS provider — if you created a Route 53 hosted zone in Step 3, add it there
+4. Wait for the status to show **Issued**
+5. Copy the ARN into `terraform.tfvars`
+
+### 4a. Generate a CloudFront signing key (required when `storage_domain` is set)
+
+The dedicated storage CloudFront uses **trusted key groups** to enforce signed URLs on binary content. You must generate an RSA key pair and upload the public key to CloudFront before `terraform apply`.
+
+```bash
+# Generate a 2048-bit RSA key pair
+openssl genrsa -out cf_signing_key.pem 2048
+openssl rsa -pubout -in cf_signing_key.pem -out cf_signing_key_pub.pem
+
+# Upload the public key to CloudFront (in us-east-1)
+aws cloudfront create-public-key \
+  --public-key-config "CallerReference=$(uuidgen),Name=medplum-storage-signing-key,EncodedKey=$(cat cf_signing_key_pub.pem)" \
+  --region us-east-1 \
+  --query 'PublicKey.Id' --output text
+```
+
+Copy the output key ID and set it as `signing_key_id` in `terraform.tfvars`. Store the private key and passphrase securely — you will need them to configure Medplum server's `signingKey` and `signingKeyPassphrase` settings.
+
+### 5. Verify your sending domain in SES (if not already done)
+
+Terraform will create SES identity resources and output the verification tokens, but AWS SES also needs to be out of the **sandbox** before it can send to arbitrary addresses.
+
+- If this is a new AWS account, [request SES production access](https://console.aws.amazon.com/ses/home#/account) before deploying
+- If you only need to send to verified addresses (fine for dev/test), you can skip this — the sandbox restriction only affects sending to unverified recipients
+
+### 6. Check your Elastic IP quota
+
+Each NAT gateway requires one Elastic IP (EIP). This module creates one NAT gateway per availability zone (2 by default), consuming 2 EIPs. The default AWS quota is **5 EIPs per region**, so if you are already near the limit the apply will fail with `AddressLimitExceeded`.
+
+Check your current usage before deploying:
+
+```bash
+aws ec2 describe-addresses --region <your-region> \
+  --query 'Addresses[*].{IP:PublicIp,AssociationId:AssociationId}' \
+  --output table
+```
+
+Release any unassociated EIPs to free up capacity, or [request a quota increase](https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas) for `EC2-VPC Elastic IPs` before running `terraform apply`.
+
+> **Tip:** Regions you haven't heavily used (e.g. `ca-central-1`) typically have all 5 EIPs available. `us-east-1` is commonly exhausted on shared/dev accounts.
 
 ---
 
@@ -508,8 +508,9 @@ The S3 buckets are emptied automatically (`force_destroy = true`). Secrets Manag
 | File | Purpose |
 |---|---|
 | `versions.tf` | Terraform and provider version constraints; `aws.us_east_1` provider alias for CloudFront WAFs |
-| `locals.tf` | Computed local values (`name_prefix`, `ssm_prefix`, `ses_domain`, `storage_cdn_enabled`, `effective_zone_id`, cert management locals) |
+| `locals.tf` | Computed local values (`name_prefix`, `ssm_prefix`, `ses_domain`, `storage_cdn_enabled`, `effective_bot_lambda_role_arn`, `rds_pg_major_version`, `rds_storage_type`) |
 | `variables.tf` | All input variable declarations |
+| `backend.tf` | Remote state S3 bucket (versioned, KMS-encrypted) + DynamoDB lock table (opt-in bootstrap) |
 | `network.tf` | VPC, subnets, NAT gateway, VPC flow logs |
 | `kubernetes.tf` | EKS cluster and managed node group |
 | `database.tf` | Aurora PostgreSQL cluster, subnet group, security group, EKS node security group |
@@ -517,14 +518,11 @@ The S3 buckets are emptied automatically (`force_destroy = true`). Secrets Manag
 | `storage.tf` | S3 buckets (app storage + static frontend) |
 | `storage_cdn.tf` | Dedicated binary storage S3 + CloudFront + OAC + key group (opt-in) |
 | `cdn.tf` | CloudFront distribution for app with security response headers policy |
-| `certs.tf` | ACM certificate requests, Route 53 DNS validation records, and certificate validation waits |
-| `security.tf` | KMS key, Secrets Manager secret |
-| `iam.tf` | IRSA roles and policies for the server pod and AWS Load Balancer Controller |
-| `bot.tf` | Medplum bot Lambda execution role |
+| `kms.tf` | KMS CMK + alias (used by Aurora, Redis, Secrets Manager, S3); Secrets Manager secret |
+| `iam.tf` | IRSA roles and policies for the server pod, AWS Load Balancer Controller, external-dns, and bot Lambda execution role |
 | `waf.tf` | WAFv2 Web ACLs for ALB (regional) and CloudFront distributions (us-east-1). The ALB WAF is attached via the `ingress.wafAclArn` Helm value — see [`charts/README.md`](../../charts/README.md) |
 | `cloudtrail.tf` | CloudTrail trail, CloudWatch log group, metric filters, alarms, SNS (opt-in) |
 | `ssm.tf` | SSM Parameter Store config + Redis/DB secret versions |
 | `ses.tf` | SES domain and email identity |
-| `dns.tf` | Route 53 zone creation (opt-in), NS delegation (opt-in), and DNS records for CloudFront, storage, and SES |
 | `outputs.tf` | All Terraform output values |
 | `terraform.tfvars.example` | Copy to `terraform.tfvars` and fill in |
