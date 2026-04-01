@@ -84,9 +84,11 @@ async function getApp() {
 
   // Start initialization
   initAppPromise = (async () => {
-    // Dynamic import from the bundled dist/ folder
-    const { initApp } = await import('../dist/app.js');
-    const { loadConfig } = await import('../dist/config/loader.js');
+    // Dynamic import from the bundled dist/index.js
+    // IMPORTANT: Both initApp and loadConfig must come from the SAME bundle
+    // to share the same cachedConfig variable. Importing from separate bundles
+    // causes "Config not loaded" errors because each bundle has its own module scope.
+    const { initApp, loadConfig } = await import('../dist/index.js');
 
     // Configure Redis for Vercel/Upstash (handles both REDIS_URL and manual MEDPLUM_REDIS_* vars)
     configureRedisForVercel();
