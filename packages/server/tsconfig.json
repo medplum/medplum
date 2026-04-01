@@ -4,8 +4,7 @@
     "types": ["jest", "node"],
     "lib": ["esnext", "dom"],
     "composite": true,
-    "rootDir": "src",
-    "outDir": "dist"
+    "rootDir": "src"
   },
   "references": [
     { "path": "../core" },

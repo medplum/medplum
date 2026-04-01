@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
-import { initApp, shutdownApp } from './app.js';
-import { loadConfig } from './config/loader.js';
-import { globalLogger } from './logger.js';
-import { getServerVersion } from './util/version.js';
+import { initApp, shutdownApp } from './app';
+import { loadConfig } from './config/loader';
+import { globalLogger } from './logger';
+import { getServerVersion } from './util/version';
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
