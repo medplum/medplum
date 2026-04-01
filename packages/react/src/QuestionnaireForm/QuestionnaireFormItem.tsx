@@ -272,19 +272,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isCheckboxChoice(item)) {
-        formComponent = (
-          <QuestionnaireCheckboxInput
-            name={inputId}
-            item={item}
-            required={props.required ?? item.required}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
-      } else if (isMultiSelectChoice(item) && !isDropdownChoice(item)) {
-        // If multi-select is requested without an explicit drop-down control, prefer checkboxes over radio buttons.
+      if (isCheckboxChoice(item) || (isMultiSelectChoice(item) && !isDropdownChoice(item))) {
         formComponent = (
           <QuestionnaireCheckboxInput
             name={inputId}
