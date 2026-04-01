@@ -9,6 +9,7 @@ import type {
   CoverageEligibilityResponseInsuranceItemBenefit,
 } from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
+import { formatPurpose } from './utils';
 
 interface EligibilityDetailsProps {
   request: CoverageEligibilityRequest;
@@ -254,17 +255,3 @@ function formatOutcome(outcome: string | undefined): string {
   }
 }
 
-function formatPurpose(purpose: string): string {
-  switch (purpose) {
-    case 'auth-requirements':
-      return 'Auth Requirements';
-    case 'benefits':
-      return 'Benefits';
-    case 'discovery':
-      return 'Discovery';
-    case 'validation':
-      return 'Validation';
-    default:
-      return purpose;
-  }
-}

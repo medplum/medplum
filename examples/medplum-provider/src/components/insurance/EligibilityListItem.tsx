@@ -6,6 +6,7 @@ import type { CoverageEligibilityRequest } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { formatPurpose } from './utils';
 import classes from './EligibilityListItem.module.css';
 
 interface EligibilityListItemProps {
@@ -37,17 +38,3 @@ export function EligibilityListItem({ request, isSelected, href }: EligibilityLi
   );
 }
 
-function formatPurpose(purpose: string): string {
-  switch (purpose) {
-    case 'auth-requirements':
-      return 'Auth Requirements';
-    case 'benefits':
-      return 'Benefits';
-    case 'discovery':
-      return 'Discovery';
-    case 'validation':
-      return 'Validation';
-    default:
-      return purpose;
-  }
-}
