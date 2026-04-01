@@ -100,7 +100,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "30.3.0",
-    "@medplum/fhirtypes": "5.1.6",
+    "@medplum/fhirtypes": "^5.1.6",
     "@types/bcrypt": "6.0.0",
     "@types/body-parser": "1.19.6",
     "@types/bytes": "3.1.5",
@@ -124,7 +124,7 @@
     "mailparser": "3.9.6",
     "openapi3-ts": "4.5.0",
     "set-cookie-parser": "3.1.0",
-    "supertest": "7.2.2",
+    "supertest": "^7.2.2",
     "superwstest": "2.1.1"
   },
   "engines": {

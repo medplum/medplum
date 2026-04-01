@@ -8,7 +8,7 @@ import {
   projectAdminResourceTypes,
   protectedResourceTypes,
 } from '@medplum/core';
-import type Redis from 'ioredis';
+import type { Redis } from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { AuthState } from '../oauth/middleware';
