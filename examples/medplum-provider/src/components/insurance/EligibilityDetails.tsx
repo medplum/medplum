@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Divider, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { formatDate, formatMoney, formatPeriod } from '@medplum/core';
-import type { CoverageEligibilityRequest, CoverageEligibilityResponse, CoverageEligibilityResponseInsurance, CoverageEligibilityResponseInsuranceItemBenefit } from '@medplum/fhirtypes';
+import type {
+  CoverageEligibilityRequest,
+  CoverageEligibilityResponse,
+  CoverageEligibilityResponseInsurance,
+  CoverageEligibilityResponseInsuranceItemBenefit,
+} from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
 
 interface EligibilityDetailsProps {
@@ -206,7 +211,10 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.E
   );
 }
 
-function formatBenefitValue(benefit: CoverageEligibilityResponseInsuranceItemBenefit, prefix: 'allowed' | 'used'): string {
+function formatBenefitValue(
+  benefit: CoverageEligibilityResponseInsuranceItemBenefit,
+  prefix: 'allowed' | 'used'
+): string {
   if (prefix === 'allowed') {
     if (benefit.allowedUnsignedInt !== undefined) {
       return benefit.allowedUnsignedInt.toLocaleString();
