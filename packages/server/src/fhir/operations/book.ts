@@ -67,6 +67,18 @@ function assertAllMatch<T>(objects: T[], msg: string): T {
   return first;
 }
 
+function serviceTypeTokens(slots: Slot[]): string[] {
+  const tokenSet = new Set<string>();
+  for (const slot of slots) {
+    for (const concept of slot.serviceType ?? EMPTY) {
+      for (const coding of concept.coding ?? EMPTY) {
+        tokenSet.add(`${coding.system ?? ''}|${coding.code ?? ''}`);
+      }
+    }
+  }
+  return [...tokenSet.values()];
+}
+
 function chooseActiveParameters(
   proposedSlot: Slot,
   parameters: SchedulingParameters[],
@@ -147,14 +159,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
   // Collect all unique service type codes across all proposed slots, then fetch
   // matching HealthcareService resources in a single query.
-  const allServiceTypes = [
-    ...new Set(
-      proposedSlots
-        .flatMap((slot) => slot.serviceType ?? EMPTY)
-        .flatMap((concept) => concept.coding ?? EMPTY)
-        .map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`)
-    ),
-  ];
+  const allServiceTypes = serviceTypeTokens(proposedSlots);
+
   const healthcareServices: HealthcareService[] =
     allServiceTypes.length > 0
       ? await ctx.repo.searchResources<HealthcareService>({
@@ -169,7 +175,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     async () => {
       await Promise.all(
         proposedSlots.map(async (proposedSlot, index) => {
-          const schedule = schedules.find((s) => `Schedule/${s.id}` === getReferenceString(proposedSlot.schedule));
+          const scheduleRefString = getReferenceString(proposedSlot.schedule);
+          const schedule = schedules.find((s) => `Schedule/${s.id}` === scheduleRefString);
           invariant(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
@@ -181,12 +188,9 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             );
           }
 
-          const slotServiceTypes = (proposedSlot.serviceType ?? EMPTY)
-            .flatMap((concept) => concept.coding ?? EMPTY)
-            .map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`);
+          const slotServiceTypes = serviceTypeTokens([proposedSlot]);
 
-          const durationMinutes =
-            (new Date(proposedSlot.end).getTime() - new Date(proposedSlot.start).getTime()) / 60000;
+          const durationMinutes = (Date.parse(proposedSlot.end) - Date.parse(proposedSlot.start)) / 60000;
 
           const parameters = chooseSchedulingParameters(schedule, healthcareServices, slotServiceTypes)
             .map(([params]) => params)

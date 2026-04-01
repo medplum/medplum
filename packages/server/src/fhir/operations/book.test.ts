@@ -1276,6 +1276,15 @@ describe('Appointment/$book', () => {
           ],
         });
       expect(response30.status).toEqual(400);
+      expect(response30.body).toHaveProperty('issue', [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: 'No matching scheduling parameters found',
+          },
+        },
+      ]);
     });
   });
 
