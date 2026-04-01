@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Divider, Group, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
-import { formatDate } from '@medplum/core';
-import type { CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
+import { formatDate, formatMoney, formatPeriod } from '@medplum/core';
+import type { CoverageEligibilityRequest, CoverageEligibilityResponse, CoverageEligibilityResponseInsuranceItemBenefit } from '@medplum/fhirtypes';
 import { ResourceAvatar } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 
@@ -29,7 +29,7 @@ function getServicedDateText(request: CoverageEligibilityRequest): string {
     return formatDate(request.servicedDate);
   }
   if (request.servicedPeriod) {
-    return `${formatDate(request.servicedPeriod.start)} – ${formatDate(request.servicedPeriod.end)}`;
+    return formatPeriod(request.servicedPeriod);
   }
   return '—';
 }
@@ -111,7 +111,7 @@ function ResponseSection({
           {firstInsurance?.benefitPeriod && (
             <DetailRow
               label="Benefit Period"
-              value={`${formatDate(firstInsurance.benefitPeriod.start)} – ${formatDate(firstInsurance.benefitPeriod.end)}`}
+              value={formatPeriod(firstInsurance.benefitPeriod)}
             />
           )}
         </Table.Tbody>
@@ -200,12 +200,10 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.E
   );
 }
 
-type BenefitItem = NonNullable<NonNullable<NonNullable<CoverageEligibilityResponse['insurance']>[number]['item']>[number]['benefit']>[number];
-
-function formatBenefitValue(benefit: BenefitItem, prefix: 'allowed' | 'used'): string {
+function formatBenefitValue(benefit: CoverageEligibilityResponseInsuranceItemBenefit, prefix: 'allowed' | 'used'): string {
   if (prefix === 'allowed') {
     if (benefit.allowedUnsignedInt !== undefined) {
-      return String(benefit.allowedUnsignedInt);
+      return benefit.allowedUnsignedInt.toLocaleString();
     }
     if (benefit.allowedString) {
       return benefit.allowedString;
@@ -215,7 +213,7 @@ function formatBenefitValue(benefit: BenefitItem, prefix: 'allowed' | 'used'): s
     }
   } else {
     if (benefit.usedUnsignedInt !== undefined) {
-      return String(benefit.usedUnsignedInt);
+      return benefit.usedUnsignedInt.toLocaleString();
     }
     if (benefit.usedString) {
       return benefit.usedString;
@@ -223,13 +221,6 @@ function formatBenefitValue(benefit: BenefitItem, prefix: 'allowed' | 'used'): s
     if (benefit.usedMoney) {
       return formatMoney(benefit.usedMoney);
     }
-  }
-  return '—';
-}
-
-function formatMoney(money: { value?: number; currency?: string }): string {
-  if (money.value !== undefined) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: money.currency ?? 'USD' }).format(money.value);
   }
   return '—';
 }
