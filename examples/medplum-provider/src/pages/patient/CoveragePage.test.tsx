@@ -92,9 +92,7 @@ describe('CoveragePage', () => {
       await waitFor(() => expect(screen.getByText(/SUB-001/)).toBeInTheDocument());
       await waitFor(() => expect(screen.getByText('active')).toBeInTheDocument());
       await waitFor(() => expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeInTheDocument());
-   
     });
-
   });
 
   describe('eligibility request list', () => {
@@ -127,9 +125,7 @@ describe('CoveragePage', () => {
   describe('right panel', () => {
     test('shows prompt to select a check when no request is selected', async () => {
       setup(medplum);
-      await waitFor(() =>
-        expect(screen.getByText('Select an eligibility check to view details.')).toBeInTheDocument()
-      );
+      await waitFor(() => expect(screen.getByText('Select an eligibility check to view details.')).toBeInTheDocument());
     });
   });
 
@@ -152,7 +148,7 @@ describe('CoveragePage', () => {
 
     test('shows error notification when no PractitionerRole found', async () => {
       vi.spyOn(medplum, 'searchOne')
-        .mockResolvedValueOnce(mockBot)   // Bot lookup
+        .mockResolvedValueOnce(mockBot) // Bot lookup
         .mockResolvedValueOnce(undefined); // PractitionerRole lookup
       setup(medplum);
 
