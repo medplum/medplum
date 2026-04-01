@@ -17,6 +17,7 @@ import { EligibilityDetails } from '../../components/insurance/EligibilityDetail
 import { EligibilityListItem } from '../../components/insurance/EligibilityListItem';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './CoveragePage.module.css';
+import { showNotification } from '@mantine/notifications';
 
 export function CoveragePage(): JSX.Element {
   const { patientId, coverageId, requestId } = useParams();
@@ -150,7 +151,7 @@ export function CoveragePage(): JSX.Element {
       showErrorNotification(new Error('No PractitionerRole found for the assigned practitioner.'));
       return;
     }
-    if (!coverage || !patientId || !coverageId) {
+    if (!coverage || !patientId) {
       return;
     }
     setCheckingEligibility(true);
@@ -177,7 +178,11 @@ export function CoveragePage(): JSX.Element {
           // not a JSON error body
         }
         if (errorMessage) {
-          showErrorNotification(new Error(errorMessage));
+          showNotification({
+            color: 'red',
+            title: 'Error',
+            message: errorMessage,
+          });
         } else {
           showErrorNotification(err);
         }
