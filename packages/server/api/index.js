@@ -96,8 +96,13 @@ async function getApp() {
     // You can also combine sources: "env" or "file:config.json,env" for file + env overlay
     const configSource = process.env.MEDPLUM_CONFIG_SOURCE || 'env';
 
-    // Override heartbeat settings for serverless (doesn't work well with cold starts)
+    // Override settings for serverless environment
+    // Heartbeat doesn't work well with cold starts
     process.env.MEDPLUM_HEARTBEAT_ENABLED ??= 'false';
+    
+    // Disable automatic migrations - in serverless, multiple instances can start concurrently
+    // and compete for the migration lock. Run migrations separately via CLI before deploying.
+    process.env.MEDPLUM_DATABASE_RUN_MIGRATIONS ??= 'false';
 
     const config = await loadConfig(configSource);
 
