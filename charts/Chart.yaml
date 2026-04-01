@@ -16,7 +16,6 @@ keywords:
 home: https://www.medplum.com
 sources:
   - https://github.com/medplum/medplum
-documentation: https://www.medplum.com/docs
 icon: https://www.medplum.com/img/logo.svg
 maintainers:
   - name: Medplum Team
@@ -25,11 +24,6 @@ maintainers:
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: 'true'
-# Optional dependencies would go here
-# dependencies:
-#   - name: cert-manager
-#     version: "^1.0.0"
-#     repository: https://charts.jetstack.io
-#     condition: certificates.useCertManager
-#     tags:
-#       - optional
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://www.medplum.com/docs

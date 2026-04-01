@@ -48,17 +48,19 @@ rds_ssl_reject_unauthorized = false
 # redis_num_cache_nodes  = 1                 # must be >= 2 when environment = "prod"
 # redis_multi_az_enabled = true              # set false only for single-node dev clusters
 
-# ── DNS (Route 53) ────────────────────────────────────────────────────────────
-# create_route53_zone    = true                        # true: Terraform creates the hosted zone
-# route53_zone_name      = "example-aws.example.com"  # defaults to root domain derived from app_domain
-# create_route53_records = false                       # true: look up existing zone and create records in it (ignored when create_route53_zone = true)
-# parent_route53_zone_id = ""                          # parent zone ID in this account — Terraform auto-adds the NS delegation record; leave empty to add NS records manually
-
-# ACM certificates — leave empty to let Terraform request and validate them automatically
-# via Route 53 DNS (requires create_route53_zone or create_route53_records). Populate
-# these only when reusing existing certificates or when Route 53 is not available.
-# ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/APP_CERT_ID"
-# alb_certificate_arn = "arn:aws:acm:REGION:ACCOUNT:certificate/ALB_CERT_ID"
+# ── ACM certificates (required) ───────────────────────────────────────────────
+# All three ACM certificates must be pre-created and provided as ARNs.
+# DNS setup is handled by the Helm chart via external-dns — see charts/README.md.
+#
+# App cert: covers app_domain, must be in us-east-1 (CloudFront requirement).
+# ALB cert: covers api_domain, must be in your deployment region.
+# Storage cert: covers storage_domain, must be in us-east-1. Required when storage_domain is set.
+#
+# To create a certificate: open AWS Certificate Manager → Request a public certificate →
+# enter the domain name → DNS validation → add the CNAME record at your DNS provider →
+# wait for status "Issued" → copy the ARN.
+ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/APP_CERT_ID"
+alb_certificate_arn = "arn:aws:acm:REGION:ACCOUNT:certificate/ALB_CERT_ID"
 
 # ── Storage CDN (dedicated CloudFront for binary uploads) ─────────────────────
 # Enables a dedicated CloudFront distribution for binary storage (presigned URLs).
@@ -79,7 +81,6 @@ rds_ssl_reject_unauthorized = false
 # EOT
 # signing_key_passphrase = "your-passphrase-here"
 #
-# Override only to reuse an existing ACM cert (leave empty for automatic validation):
 # storage_ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/STORAGE_CERT_ID"
 
 # ── WAF ───────────────────────────────────────────────────────────────────────
@@ -95,17 +96,6 @@ rds_ssl_reject_unauthorized = false
 # metric filters, 10 security alarms, and an SNS topic.
 # enable_cloudtrail_alarms = true
 # cloudtrail_alarm_email   = "oncall@example.com"
-
-# ── Helm / LB Controller ALB ──────────────────────────────────────────────────
-# The AWS Load Balancer Controller owns the ALB lifecycle entirely.
-# After running `helm install` / `helm upgrade`, retrieve the LBC-assigned hostname:
-#
-#   kubectl get ingress -n medplum medplum \
-#     -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-#
-# Set it here and re-run `terraform apply` to update the api_domain Route 53 record.
-# Leave empty on the first `terraform apply` (before helm install).
-# helm_api_alb_hostname = "k8s-medplum-medplum-XXXXXXXX-XXXXXXXXX.REGION.elb.amazonaws.com"
 
 # ── Bot Lambda ────────────────────────────────────────────────────────────────
 # Leave empty to use the role created by this stack (default).

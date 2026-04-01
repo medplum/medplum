@@ -92,7 +92,7 @@ resource "aws_cloudfront_cache_policy" "api_proxy" {
 resource "aws_cloudfront_distribution" "medplum" {
   enabled             = true
   default_root_object = "index.html"
-  aliases             = local.effective_app_cert_arn != "" ? [var.app_domain] : []
+  aliases    = [var.app_domain]
   web_acl_id          = var.enable_waf ? aws_wafv2_web_acl.app[0].arn : null
 
   origin {
@@ -146,10 +146,10 @@ resource "aws_cloudfront_distribution" "medplum" {
   }
 
   viewer_certificate {
-    acm_certificate_arn            = local.effective_app_cert_arn != "" ? local.effective_app_cert_arn : null
-    ssl_support_method             = local.effective_app_cert_arn != "" ? "sni-only" : null
-    minimum_protocol_version       = local.effective_app_cert_arn != "" ? "TLSv1.2_2021" : "TLSv1"
-    cloudfront_default_certificate = local.effective_app_cert_arn == "" ? true : false
+    acm_certificate_arn      = var.ssl_certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+    cloudfront_default_certificate = false
   }
 
   # SPA routing: redirect S3 403/404s to index.html so React Router handles the path

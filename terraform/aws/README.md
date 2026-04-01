@@ -17,9 +17,8 @@ Deploys a production-ready Medplum FHIR server on AWS using EKS (Kubernetes), RD
 | KMS | Single CMK for Aurora, Redis, Secrets Manager, SSM |
 | Secrets Manager | Redis credentials secret, DB connection secret |
 | SSM Parameter Store | All Medplum server config parameters, auto-populated |
-| IAM | IRSA role for the server pod (SSM, S3, SES, Lambda); bot Lambda execution role; LB controller role |
-| SES | Domain identity + DKIM for outbound email |
-| Route 53 (optional) | Hosted zone creation (opt-in), DNS records for CloudFront, storage CDN, and SES, and ACM cert DNS validation — opt-in via `create_route53_zone` or `create_route53_records` |
+| IAM | IRSA role for the server pod (SSM, S3, SES, Lambda); bot Lambda execution role; LB controller role; external-dns role |
+| SES | Domain identity + DKIM for outbound email (verification records created by external-dns via Helm) |
 | CloudTrail (optional) | Trail + 10 CloudWatch metric filters + alarms + SNS — opt-in via `enable_cloudtrail_alarms` |
 | Terraform state | S3 bucket (versioned, KMS-encrypted) + DynamoDB lock table — opt-in via bootstrap workflow |
 
@@ -79,11 +78,9 @@ Confirm the right account is active:
 aws sts get-caller-identity
 ```
 
-### 3. ACM certificates
+### 3. ACM certificates (required)
 
-**If your DNS is in Route 53 in this account (recommended):** skip this step entirely. Terraform requests, validates, and waits for all three ACM certificates automatically — app, ALB, and storage — using DNS validation records written to your hosted zone. No console interaction required.
-
-**If your DNS is managed externally** (Cloudflare, GoDaddy, another Route 53 account, etc.): you must request the certificates manually and supply the resulting ARNs as `ssl_certificate_arn`, `alb_certificate_arn`, and optionally `storage_ssl_certificate_arn` in `terraform.tfvars`. The requirements are:
+All three ACM certificates must be pre-created before running `terraform apply`. Terraform no longer manages DNS or certificate validation — both are handled by the Helm chart via external-dns.
 
 | Certificate | Region | Covers | Variable |
 |---|---|---|---|
@@ -91,7 +88,12 @@ aws sts get-caller-identity
 | ALB | Your deployment region | `api_domain` | `alb_certificate_arn` |
 | Storage (optional) | **us-east-1** | `storage_domain` | `storage_ssl_certificate_arn` |
 
-To request manually: open [AWS Certificate Manager](https://console.aws.amazon.com/acm/home), request a public certificate for the relevant domain with **DNS validation**, add the CNAME validation record at your DNS provider, and copy the ARN once the status shows **Issued**.
+To request a certificate:
+1. Open [AWS Certificate Manager](https://console.aws.amazon.com/acm/home) in the correct region
+2. Request a public certificate for the relevant domain with **DNS validation**
+3. Add the CNAME validation record at your DNS provider
+4. Wait for the status to show **Issued**
+5. Copy the ARN into `terraform.tfvars`
 
 ### 3a. Generate a CloudFront signing key (required when `storage_domain` is set)
 
@@ -134,39 +136,34 @@ Release any unassociated EIPs to free up capacity, or [request a quota increase]
 
 > **Tip:** Regions you haven't heavily used (e.g. `ca-central-1`) typically have all 5 EIPs available. `us-east-1` is commonly exhausted on shared/dev accounts.
 
-### 6. Decide on your DNS and Route 53 setup
+### 6. DNS setup
 
-There are three modes — pick one and set the corresponding variables in `terraform.tfvars`:
+DNS record management has moved to the Helm chart via **external-dns**. Terraform no longer creates or manages any Route 53 records.
 
-**Mode A — create the hosted zone (fresh deployment, zone doesn't exist yet)**
+**The Route 53 hosted zone must be created before running `terraform apply`.** Terraform cannot create it for you. Run:
 
-```hcl
-create_route53_zone    = true
-create_route53_records = false
-route53_zone_name      = "example-aws.yourcompany.com"
+```bash
+ZONE_ID=$(aws route53 create-hosted-zone \
+  --name <YOUR_ZONE_NAME> \
+  --caller-reference "medplum-$(date +%s)" \
+  --query 'HostedZone.Id' --output text | cut -d/ -f3)
+
+echo "Zone ID: $ZONE_ID"
 ```
 
-Terraform creates the zone, writes all DNS and cert validation records into it, and waits for cert issuance. If the parent zone (`yourcompany.com`) is also in Route 53 in this account, also set `parent_route53_zone_id` to that zone's ID and Terraform adds the NS delegation record automatically:
+If the zone is a subdomain, also add an NS delegation record in the parent zone — see [`charts/README.md §DNS setup Step 1`](../../charts/README.md#dns-setup-with-external-dns-aws) for the exact commands.
 
-```hcl
-parent_route53_zone_id = "Z0123456789EXAMPLE"
-```
+Once `terraform apply` has run, collect these outputs and pass them to the Helm chart's `dns.*` values:
 
-If the parent is managed externally, leave `parent_route53_zone_id` empty. After apply, run `terraform output route53_nameservers` and add the four NS records at your registrar or parent DNS provider.
+| Output | Purpose |
+|---|---|
+| `cdn_domain_name` | `dns.cloudFrontDomain` |
+| `storage_cdn_domain_name` | `dns.storageCdnDomain` (when storage CDN enabled) |
+| `ses_verification_token` | `dns.sesVerificationToken` |
+| `ses_dkim_tokens` | `dns.sesDkimTokens` |
+| `external_dns_iam_role_arn` | `dns.iamRoleArn` |
 
-**Mode B — hosted zone already exists in this account**
-
-```hcl
-create_route53_records = true
-create_route53_zone    = false
-route53_zone_name      = "example-aws.yourcompany.com"
-```
-
-Terraform looks up the existing zone by name and creates all DNS records in it (including cert validation). No manual DNS steps required.
-
-**Mode C — DNS managed externally (Cloudflare, GoDaddy, another Route 53 account, etc.)**
-
-Leave both `create_route53_zone` and `create_route53_records` as `false` (the default). Supply `ssl_certificate_arn` and `alb_certificate_arn` manually (see §3 above). After apply, Terraform outputs the exact DNS records you need to add at your provider.
+See [`charts/README.md`](../../charts/README.md) for the full external-dns install and medplum chart wiring.
 
 ---
 

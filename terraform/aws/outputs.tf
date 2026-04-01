@@ -91,6 +91,11 @@ output "cdn_endpoint" {
   value       = aws_cloudfront_distribution.medplum.domain_name
 }
 
+output "cdn_domain_name" {
+  description = "Raw CloudFront distribution domain — pass as dns.cloudFrontDomain in Helm values"
+  value       = aws_cloudfront_distribution.medplum.domain_name
+}
+
 output "cdn_hostname" {
   description = "CloudFront custom domain"
   value       = var.app_domain
@@ -106,40 +111,35 @@ output "server_iam_role_arn" {
   value       = aws_iam_role.server.arn
 }
 
-output "ses_domain_verification_token" {
-  description = "Add this as a TXT record at _amazonses.<domain> to verify your SES domain"
+output "ses_verification_token" {
+  description = "Add this as a TXT record at _amazonses.<domain> to verify your SES domain. Pass as dns.sesVerificationToken in Helm values when dns.enabled = true."
   value       = aws_ses_domain_identity.medplum.verification_token
   sensitive   = false
 }
 
 output "ses_dkim_tokens" {
-  description = "Add these as CNAME records in DNS to enable DKIM: <token>._domainkey.<domain> → <token>.dkim.amazonses.com"
+  description = "Add these as CNAME records to enable DKIM: <token>._domainkey.<domain> → <token>.dkim.amazonses.com. Pass as dns.sesDkimTokens in Helm values when dns.enabled = true."
   value       = aws_ses_domain_dkim.medplum.dkim_tokens
 }
 
 output "alb_certificate_arn" {
-  description = "ACM certificate ARN for the ALB (provided override or TF-created)"
-  value       = local.effective_alb_cert_arn
+  description = "ACM certificate ARN for the ALB"
+  value       = var.alb_certificate_arn
 }
 
 output "helm_ingress_hostname_command" {
-  description = "Run this after `helm install` to get the LB Controller-assigned ALB hostname, then set helm_api_alb_hostname in terraform.tfvars and re-run `terraform apply`"
+  description = "Run this after `helm install` to get the ALB hostname assigned by the LB Controller"
   value       = "kubectl get ingress -n medplum medplum -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
-}
-
-output "route53_zone_id" {
-  description = "Route 53 hosted zone ID (set when create_route53_zone or create_route53_records is true)"
-  value       = local.effective_zone_id
-}
-
-output "route53_nameservers" {
-  description = "NS records for the managed zone — add these at your registrar or parent DNS provider when create_route53_zone = true and parent_route53_zone_id is not set"
-  value       = var.create_route53_zone ? aws_route53_zone.managed[0].name_servers : null
 }
 
 output "lb_controller_iam_role_arn" {
   description = "IAM role ARN for the AWS Load Balancer Controller (annotate the kube-system ServiceAccount)"
   value       = aws_iam_role.lb_controller.arn
+}
+
+output "external_dns_iam_role_arn" {
+  description = "IAM role ARN for external-dns (annotate the kube-system external-dns ServiceAccount). Pass as dns.iamRoleArn in Helm values."
+  value       = aws_iam_role.external_dns.arn
 }
 
 output "bot_lambda_role_arn" {
@@ -157,8 +157,23 @@ output "storage_cdn_endpoint" {
   value       = local.storage_cdn_enabled ? aws_cloudfront_distribution.storage[0].domain_name : null
 }
 
+output "storage_cdn_domain_name" {
+  description = "Raw storage CloudFront distribution domain — pass as dns.storageCdnDomain in Helm values when storage CDN is enabled"
+  value       = local.storage_cdn_enabled ? aws_cloudfront_distribution.storage[0].domain_name : null
+}
+
 output "storage_cdn_hostname" {
   description = "Storage CloudFront custom domain (only set when storage CDN is enabled)"
+  value       = local.storage_cdn_enabled ? var.storage_domain : null
+}
+
+output "app_domain" {
+  description = "App CloudFront custom domain — pass as dns.appDomain in Helm values"
+  value       = var.app_domain
+}
+
+output "storage_domain" {
+  description = "Storage CloudFront custom domain (only set when storage CDN is enabled) — pass as dns.storageDomain in Helm values"
   value       = local.storage_cdn_enabled ? var.storage_domain : null
 }
 

@@ -30,7 +30,14 @@ You will need these values to fill in the placeholders below:
 | `server_iam_role_arn` | `<SERVER_IAM_ROLE_ARN>` |
 | `lb_controller_iam_role_arn` | `<LB_CONTROLLER_ROLE_ARN>` |
 | `alb_certificate_arn` | `<ALB_CERTIFICATE_ARN>` |
-| `api_waf_arn` | `<API_WAF_ARN>` |
+| `api_waf_arn` | `<API_WAF_ARN>` (null when `enable_waf = false`) |
+| `external_dns_iam_role_arn` | `<EXTERNAL_DNS_ROLE_ARN>` (when `dns.enabled = true`) |
+| `app_domain` | `<APP_DOMAIN>` — used as `dns.appDomain` |
+| `cdn_domain_name` | `<CDN_DOMAIN_NAME>` — used as `dns.cloudFrontDomain` |
+| `ses_verification_token` | `<SES_VERIFICATION_TOKEN>` — used as `dns.sesVerificationToken` |
+| `ses_dkim_tokens` | list of 3 tokens — used as `dns.sesDkimTokens` |
+| `storage_cdn_domain_name` | `<STORAGE_CDN_DOMAIN_NAME>` — used as `dns.storageCdnDomain` (null when no storage CDN) |
+| `storage_domain` | `<STORAGE_DOMAIN>` — used as `dns.storageDomain` (null when no storage CDN) |
 
 ### Configure kubectl
 
@@ -103,14 +110,130 @@ helm install medplum ./charts \
   --values values-aws.yaml
 ```
 
-Pods reach `Running` in 1–2 minutes; the ALB takes 2–3 minutes to provision. Once `kubectl -n medplum get ingress` shows an `ADDRESS`, get the hostname:
+Pods reach `Running` in 1–2 minutes; the ALB takes 2–3 minutes to provision. Once `kubectl -n medplum get ingress` shows an `ADDRESS`, DNS is automatically updated by external-dns if `dns.enabled = true`.
+
+### DNS setup with external-dns (AWS)
+
+external-dns must be installed as a **standalone release** before upgrading the medplum chart. This ensures the `DNSEndpoint` CRD is registered in the cluster before the medplum chart tries to create `DNSEndpoint` resources.
+
+**Prerequisites:** the Route 53 hosted zone must already exist and the ACM certificates must be issued before running `terraform apply`.
+
+**Step 1 — Create the Route 53 hosted zone**
+
+Terraform does not create the hosted zone. Create it once with the AWS CLI:
 
 ```bash
-kubectl get ingress -n medplum medplum \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+# Create the zone (e.g. for a subdomain deployment)
+ZONE_ID=$(aws route53 create-hosted-zone \
+  --name <YOUR_ZONE_NAME> \
+  --caller-reference "medplum-$(date +%s)" \
+  --query 'HostedZone.Id' --output text | cut -d/ -f3)
+
+echo "Zone ID: $ZONE_ID"   # save this — you'll need it for dns.zoneId
+
+# Get the 4 NS records assigned to your new zone
+aws route53 list-resource-record-sets \
+  --hosted-zone-id $ZONE_ID \
+  --query "ResourceRecordSets[?Type=='NS'].ResourceRecords[].Value" \
+  --output text
 ```
 
-Set `helm_api_alb_hostname` in `terraform.tfvars` to that value and re-run `terraform apply` to update the Route 53 DNS record.
+If `<YOUR_ZONE_NAME>` is a subdomain (e.g. `staging.example.com`) and the parent zone (`example.com`) is also in Route 53 in this account, add NS delegation so traffic resolves correctly. Replace `<PARENT_ZONE_ID>` and the four NS values with your actual values:
+
+```bash
+aws route53 change-resource-record-sets \
+  --hosted-zone-id <PARENT_ZONE_ID> \
+  --change-batch '{
+    "Changes": [{
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "<YOUR_ZONE_NAME>.",
+        "Type": "NS",
+        "TTL": 300,
+        "ResourceRecords": [
+          {"Value": "ns-XXX.awsdns-XX.com."},
+          {"Value": "ns-XXX.awsdns-XX.co.uk."},
+          {"Value": "ns-XXX.awsdns-XX.net."},
+          {"Value": "ns-XXX.awsdns-XX.org."}
+        ]
+      }
+    }]
+  }'
+```
+
+If the parent zone is managed externally (Cloudflare, GoDaddy, etc.), add the four NS records there instead.
+
+**Step 2 — Install external-dns standalone**
+
+> **Important:** you must pass both `--source ingress` and `--source crd`. Without `--source crd`, external-dns will only process Ingress resources and silently ignore the `DNSEndpoint` objects the medplum chart creates for CloudFront and SES records.
+
+```bash
+helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+helm repo update
+
+helm install external-dns external-dns/external-dns \
+  --namespace kube-system \
+  --set provider.name=aws \
+  --set "domainFilters[0]=<YOUR_ZONE_NAME>" \
+  --set policy=sync \
+  --set registry=txt \
+  --set txtOwnerId=<DEPLOYMENT_ID> \
+  --set "sources[0]=ingress" \
+  --set "sources[1]=crd" \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<EXTERNAL_DNS_ROLE_ARN>
+```
+
+Where `<DEPLOYMENT_ID>` is your `environment`-`deployment_id` string (e.g. `medplum-dev-1`, matching the `environment` and `deployment_id` variables in `terraform.tfvars`). This is used as the TXT ownership prefix so multiple clusters don't fight over the same records. It does not come from `terraform output` — read it directly from your `terraform.tfvars`.
+
+Wait for the CRD to register before proceeding:
+
+```bash
+kubectl wait --for condition=established crd/dnsendpoints.externaldns.k8s.io --timeout=60s
+```
+
+**Step 3 — Populate `dns.*` values from `terraform output`**
+
+| Terraform output | Helm value |
+|---|---|
+| `external_dns_iam_role_arn` | `dns.iamRoleArn` (used in Step 2 above) |
+| `app_domain` | `dns.appDomain` |
+| `cdn_domain_name` | `dns.cloudFrontDomain` |
+| `storage_domain` | `dns.storageDomain` (when storage CDN enabled) |
+| `storage_cdn_domain_name` | `dns.storageCdnDomain` (when storage CDN enabled) |
+| `ses_verification_token` | `dns.sesVerificationToken` |
+| `ses_dkim_tokens` | `dns.sesDkimTokens` |
+
+Add to your `values-aws.yaml`:
+
+```yaml
+dns:
+  enabled: true
+  zoneId: "<ZONE_ID from Step 1>"
+  iamRoleArn: "<external_dns_iam_role_arn>"
+  appDomain: "<app_domain>"             # terraform output app_domain
+  cloudFrontDomain: "<cdn_domain_name>" # terraform output cdn_domain_name
+  sesVerificationToken: "<ses_verification_token>"
+  sesDkimTokens:
+    - "<token1>"   # terraform output ses_dkim_tokens (index 0)
+    - "<token2>"   # terraform output ses_dkim_tokens (index 1)
+    - "<token3>"   # terraform output ses_dkim_tokens (index 2)
+  # storageDomain: "<storage_domain>"             # terraform output storage_domain
+  # storageCdnDomain: "<storage_cdn_domain_name>" # terraform output storage_cdn_domain_name
+```
+
+**Step 4 — Install or upgrade medplum**
+
+```bash
+helm upgrade medplum ./charts -n medplum --values values-aws.yaml
+```
+
+external-dns reconciles all Route 53 records within ~30 seconds. Verify:
+
+```bash
+kubectl -n kube-system logs -l app.kubernetes.io/name=external-dns | tail -20
+```
+
+If the logs show `All records are already up to date` but your DNS records are missing, external-dns was installed without `--source crd`. Re-run the `helm upgrade external-dns` command in Step 2 with both sources set, then wait for the next reconcile cycle.
 
 ### Deploy the bot Lambda layer (one-time)
 
@@ -174,6 +297,27 @@ Common causes:
 | `AccessDenied: not authorized to perform: elasticloadbalancing:CreateLoadBalancer` | IAM policy is missing `elasticloadbalancing:*` | Verify `iam.tf` grants the LB Controller role the required permissions |
 | `AccessDenied: not authorized to perform: elasticloadbalancing:DescribeLoadBalancers` | IAM policy uses wrong action prefix | Must be `elasticloadbalancing:*`, not `elbv2:*` — verify `iam.tf` |
 | `no matches for kind "IngressClass"` | LB Controller is not installed or installed in the wrong namespace | Re-run the `helm install aws-load-balancer-controller` step |
+
+### DNS records not appearing / external-dns logs say "All records are already up to date"
+
+external-dns was installed without the `--source crd` flag, so it watches only Ingress objects and silently ignores `DNSEndpoint` custom resources. The ALB alias record will exist, but CloudFront, SES, and DKIM records will not be created.
+
+Fix by upgrading the external-dns release with both sources:
+
+```bash
+helm upgrade external-dns external-dns/external-dns \
+  --namespace kube-system \
+  --reuse-values \
+  --set "sources[0]=ingress" \
+  --set "sources[1]=crd"
+```
+
+Then wait ~30 seconds for the next reconcile cycle and verify:
+
+```bash
+kubectl -n kube-system logs -l app.kubernetes.io/name=external-dns | tail -20
+kubectl get dnsendpoints -A
+```
 
 ### `kubectl` returns `the server has asked for the client to provide credentials`
 

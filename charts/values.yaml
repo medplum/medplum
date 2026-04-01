@@ -86,3 +86,34 @@ ingress:
   # The LB Controller associates the WAF with the ALB it creates via the
   # alb.ingress.kubernetes.io/wafv2-acl-arn annotation.
   wafAclArn: ''
+
+# DNS management via external-dns (AWS only).
+# When enabled, installs external-dns as a sub-chart and creates Route 53 records
+# for the ALB (via Ingress annotation), CloudFront distributions, and SES verification.
+#
+# Populate dns.* values from terraform outputs:
+#   dns.cloudFrontDomain   ← terraform output cdn_domain_name
+#   dns.storageCdnDomain   ← terraform output storage_cdn_domain_name
+#   dns.sesVerificationToken ← terraform output ses_verification_token
+#   dns.sesDkimTokens      ← terraform output ses_dkim_tokens
+#   dns.iamRoleArn         ← terraform output external_dns_iam_role_arn
+dns:
+  enabled: false
+  provider: aws
+  # Route 53 hosted zone ID that external-dns will manage records in
+  zoneId: ''
+  # IRSA role ARN for external-dns (external_dns_iam_role_arn terraform output).
+  # Used when installing external-dns standalone — see charts/README.md.
+  iamRoleArn: ''
+  # App domain — must match ingress.domain
+  appDomain: ''
+  # Raw CloudFront distribution domain (cdn_domain_name terraform output)
+  cloudFrontDomain: ''
+  # Storage CDN domain (storage_domain terraform variable) — leave empty when storage CDN is disabled
+  storageDomain: ''
+  # Raw storage CloudFront distribution domain (storage_cdn_domain_name terraform output)
+  storageCdnDomain: ''
+  # SES domain verification token (ses_verification_token terraform output)
+  sesVerificationToken: ''
+  # SES DKIM tokens — list of 3 strings (ses_dkim_tokens terraform output)
+  sesDkimTokens: []

@@ -396,7 +396,76 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
   })
 }
 
+# external-dns IRSA role — grants Route 53 record management for the helm dns sub-chart
+
+data "aws_iam_policy_document" "external_dns_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${module.eks.oidc_provider}:sub"
+      values   = ["system:serviceaccount:kube-system:external-dns"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${module.eks.oidc_provider}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "external_dns" {
+  name               = "${local.name_prefix}-external-dns-role"
+  description        = "IRSA role for external-dns (kube-system) - Route 53 record management"
+  assume_role_policy = data.aws_iam_policy_document.external_dns_assume_role.json
+
+  tags = var.tags
+}
+
+data "aws_iam_policy_document" "external_dns_policy" {
+  statement {
+    sid    = "ChangeRecordSets"
+    effect = "Allow"
+    actions = [
+      "route53:ChangeResourceRecordSets",
+      "route53:ListResourceRecordSets",
+    ]
+    resources = ["arn:aws:route53:::hostedzone/*"]
+  }
+
+  statement {
+    sid    = "ListZones"
+    effect = "Allow"
+    actions = [
+      "route53:ListHostedZones",
+      "route53:ListHostedZonesByName",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "external_dns" {
+  name   = "${local.name_prefix}-external-dns-policy"
+  policy = data.aws_iam_policy_document.external_dns_policy.json
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "external_dns" {
+  role       = aws_iam_role.external_dns.name
+  policy_arn = aws_iam_policy.external_dns.arn
+}
+
 # RDS Proxy execution role
+
 resource "aws_iam_role" "rds_proxy" {
   count = var.rds_proxy_enabled ? 1 : 0
   name  = "${local.name_prefix}-rds-proxy-role"

@@ -22,14 +22,22 @@ variable "api_domain" {
 
 variable "ssl_certificate_arn" {
   type        = string
-  description = "ACM certificate ARN for the app CloudFront distribution (must be in us-east-1). Leave empty to let Terraform request and validate the certificate automatically when Route 53 is available."
-  default     = ""
+  description = "ACM certificate ARN for the app CloudFront distribution (must be in us-east-1)."
+
+  validation {
+    condition     = can(regex("^arn:aws:acm:", var.ssl_certificate_arn))
+    error_message = "ssl_certificate_arn must be a valid ACM ARN (arn:aws:acm:...)."
+  }
 }
 
 variable "alb_certificate_arn" {
   type        = string
-  description = "ACM certificate ARN for the ALB (must be in the deployment region). Leave empty to let Terraform request and validate the certificate automatically when Route 53 is available."
-  default     = ""
+  description = "ACM certificate ARN for the ALB (must be in the deployment region)."
+
+  validation {
+    condition     = can(regex("^arn:aws:acm:", var.alb_certificate_arn))
+    error_message = "alb_certificate_arn must be a valid ACM ARN (arn:aws:acm:...)."
+  }
 }
 
 variable "environment" {
@@ -131,7 +139,6 @@ variable "storage_ssl_certificate_arn" {
   description = "ACM certificate ARN for the storage CloudFront distribution (must be in us-east-1, covering storage_domain). Required when storage_domain is set."
   default     = ""
 }
-
 variable "signing_key_id" {
   type        = string
   description = "CloudFront public key ID for signed storage URLs. Generate the RSA key pair externally (see README), upload the public key to CloudFront, and supply the resulting key ID here. Required when storage_domain is set."
@@ -215,34 +222,6 @@ variable "eks_admin_arns" {
     Example: ["arn:aws:iam::123456789012:user/alice", "arn:aws:iam::123456789012:role/ops-role"]
   EOT
   default     = []
-}
-
-variable "create_route53_records" {
-  type        = bool
-  description = "Set to true if the hosted zone for route53_zone_name already exists in Route 53 in this account. Terraform will look it up by name and create DNS records in it."
-  default     = false
-}
-
-variable "route53_zone_name" {
-  type        = string
-  description = <<-EOT
-    Name of the Route 53 hosted zone to use for DNS records and cert validation.
-    Defaults to the root domain derived from app_domain (last two segments, e.g. "example.com").
-    Override when your hosted zone is a subdomain, e.g. "staging.example.com".
-  EOT
-  default     = ""
-}
-
-variable "create_route53_zone" {
-  type        = bool
-  description = "Create the Route 53 hosted zone for route53_zone_name. Use this for new deployments where the zone does not yet exist. Set parent_route53_zone_id to auto-add the NS delegation record."
-  default     = false
-}
-
-variable "parent_route53_zone_id" {
-  type        = string
-  description = "Zone ID of the parent Route 53 hosted zone to add the NS delegation record in (only used when create_route53_zone = true). Leave empty to skip automatic NS delegation and add the records manually."
-  default     = ""
 }
 
 # ── Deployment invariant checks ───────────────────────────────────────────────
@@ -527,20 +506,3 @@ variable "rds_auto_minor_version_upgrade" {
   EOT
 }
 
-variable "helm_api_alb_hostname" {
-  type        = string
-  default     = ""
-  description = <<-EOT
-    DNS hostname of the ALB created by the AWS Load Balancer Controller after
-    running `helm install`. The LBC always creates its own ALB (the adoption
-    annotation was never implemented upstream). After deploying the Helm chart:
-
-      kubectl get ingress -n medplum medplum \
-        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-
-    Set this variable to that hostname and re-run `terraform apply` to update
-    the api_domain Route 53 A record.
-
-    Leave empty (default) on the initial `terraform apply` before Helm is deployed.
-  EOT
-}

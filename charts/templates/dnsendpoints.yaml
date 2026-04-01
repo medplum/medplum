@@ -1,0 +1,76 @@
+{{- if and .Values.dns.enabled (eq .Values.global.cloudProvider "aws") }}
+{{- include "medplum.validateDns" . }}
+{{- if and .Values.dns.appDomain .Values.dns.cloudFrontDomain }}
+# CloudFront alias record for the app domain
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: {{ include "medplum.fullname" . }}-app-cf
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    - dnsName: {{ .Values.dns.appDomain | quote }}
+      recordType: CNAME
+      targets:
+        - {{ .Values.dns.cloudFrontDomain | quote }}
+      recordTTL: 300
+---
+{{- end }}
+{{- if and .Values.dns.storageDomain .Values.dns.storageCdnDomain }}
+# CloudFront alias record for the storage CDN domain
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: {{ include "medplum.fullname" . }}-storage-cf
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    - dnsName: {{ .Values.dns.storageDomain | quote }}
+      recordType: CNAME
+      targets:
+        - {{ .Values.dns.storageCdnDomain | quote }}
+      recordTTL: 300
+---
+{{- end }}
+{{- if .Values.dns.sesVerificationToken }}
+# SES domain verification TXT record
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: {{ include "medplum.fullname" . }}-ses-txt
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    - dnsName: "_amazonses.{{ .Values.dns.appDomain }}"
+      recordType: TXT
+      targets:
+        - {{ .Values.dns.sesVerificationToken | quote }}
+      recordTTL: 600
+---
+{{- end }}
+{{- if .Values.dns.sesDkimTokens }}
+# SES DKIM CNAME records (3 tokens)
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: {{ include "medplum.fullname" . }}-ses-dkim
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    {{- range .Values.dns.sesDkimTokens }}
+    - dnsName: "{{ . }}._domainkey.{{ $.Values.dns.appDomain }}"
+      recordType: CNAME
+      targets:
+        - "{{ . }}.dkim.amazonses.com"
+      recordTTL: 600
+    {{- end }}
+{{- end }}
+{{- end }}

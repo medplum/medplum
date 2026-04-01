@@ -207,7 +207,7 @@ resource "aws_cloudfront_distribution" "storage" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = local.effective_storage_cert_arn
+    acm_certificate_arn      = var.storage_ssl_certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
@@ -228,7 +228,5 @@ resource "aws_cloudfront_distribution" "storage" {
   }
 
   tags = var.tags
-
-  depends_on = [aws_acm_certificate_validation.storage]
 }
 
