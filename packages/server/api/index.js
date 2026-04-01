@@ -33,33 +33,36 @@ let initAppPromise = null;
 let expressApp = null;
 
 /**
- * Parse Upstash/Vercel KV Redis URL and set MEDPLUM_REDIS_* environment variables.
- * Vercel's Upstash integration provides REDIS_URL or KV_URL in the format:
- *   rediss://default:<password>@<host>:<port>
+ * Configure Redis for Vercel/Upstash environment.
+ * 
+ * Handles two scenarios:
+ * 1. Vercel's Upstash integration provides REDIS_URL or KV_URL - parses and sets MEDPLUM_REDIS_* vars
+ * 2. Manual MEDPLUM_REDIS_* vars are set - ensures TLS is enabled for Upstash hosts
  *
  * Medplum expects individual MEDPLUM_REDIS_HOST, MEDPLUM_REDIS_PORT, MEDPLUM_REDIS_PASSWORD vars.
  */
-function configureRedisFromUrl() {
+function configureRedisForVercel() {
   const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
-  if (!redisUrl) {
-    return; // No URL provided, assume individual vars are set
+  
+  // If REDIS_URL is provided, parse it into individual MEDPLUM vars
+  if (redisUrl) {
+    try {
+      const url = new URL(redisUrl);
+      
+      // Set individual MEDPLUM_REDIS_* vars if not already set
+      process.env.MEDPLUM_REDIS_HOST ??= url.hostname;
+      process.env.MEDPLUM_REDIS_PORT ??= url.port || '6379';
+      process.env.MEDPLUM_REDIS_PASSWORD ??= decodeURIComponent(url.password);
+    } catch (e) {
+      console.error('[Medplum] Failed to parse REDIS_URL:', e.message);
+    }
   }
 
-  try {
-    const url = new URL(redisUrl);
-    
-    // Set individual MEDPLUM_REDIS_* vars if not already set
-    process.env.MEDPLUM_REDIS_HOST ??= url.hostname;
-    process.env.MEDPLUM_REDIS_PORT ??= url.port || '6379';
-    process.env.MEDPLUM_REDIS_PASSWORD ??= decodeURIComponent(url.password);
-    
-    // Upstash requires TLS (rediss:// protocol)
-    if (url.protocol === 'rediss:') {
-      // Enable TLS for ioredis - we need to pass this as JSON config
-      process.env.MEDPLUM_REDIS_TLS ??= JSON.stringify({ rejectUnauthorized: false });
-    }
-  } catch (e) {
-    console.error('[Medplum] Failed to parse REDIS_URL:', e.message);
+  // Enable TLS for Upstash hosts (they require TLS/SSL connections)
+  // Upstash hostnames contain "upstash.io"
+  const redisHost = process.env.MEDPLUM_REDIS_HOST || '';
+  if (redisHost.includes('upstash.io') && !process.env.MEDPLUM_REDIS_TLS) {
+    process.env.MEDPLUM_REDIS_TLS = JSON.stringify({});
   }
 }
 
@@ -81,8 +84,8 @@ async function getApp() {
     const { initApp } = await import('../dist/app.js');
     const { loadConfig } = await import('../dist/config/loader.js');
 
-    // Parse Vercel's Upstash/KV Redis URL into MEDPLUM_REDIS_* env vars
-    configureRedisFromUrl();
+    // Configure Redis for Vercel/Upstash (handles both REDIS_URL and manual MEDPLUM_REDIS_* vars)
+    configureRedisForVercel();
 
     // Load config using the built-in env config loader
     // This reads all MEDPLUM_* environment variables and applies defaults
