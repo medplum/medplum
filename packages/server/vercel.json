@@ -1,8 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "cd ../.. && npx turbo run build --filter=@medplum/server",
+  "framework": null,
   "installCommand": "npm install --prefix=../..",
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": ".",
   "functions": {
     "api/index.js": {
       "maxDuration": 60,

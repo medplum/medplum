@@ -16,6 +16,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run clean && tsc && node build.mjs",
+    "vercel-build": "cd ../.. && npx turbo run build --filter=@medplum/server",
     "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
     "dev": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts",
