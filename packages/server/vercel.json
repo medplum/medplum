@@ -7,7 +7,7 @@
   "outputDirectory": ".",
   "functions": {
     "api/index.js": {
-      "maxDuration": 60,
+      "maxDuration": 300,
       "memory": 1024,
       "includeFiles": "{dist/**,../definitions/dist/**}"
     }
