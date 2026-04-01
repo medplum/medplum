@@ -202,3 +202,23 @@ output "rds_proxy_endpoint" {
   description = "RDS Proxy endpoint (null when rds_proxy_enabled = false)"
   value       = var.rds_proxy_enabled ? aws_db_proxy.medplum[0].endpoint : null
 }
+
+output "tfstate_bucket_name" {
+  description = "S3 bucket name for Terraform remote state"
+  value       = aws_s3_bucket.tfstate.id
+}
+
+output "tfstate_bucket_arn" {
+  description = "S3 bucket ARN for Terraform remote state"
+  value       = aws_s3_bucket.tfstate.arn
+}
+
+output "tfstate_kms_key_id" {
+  description = "KMS key ARN used to encrypt the Terraform state bucket — use as kms_key_id in the S3 backend block"
+  value       = aws_kms_key.medplum.arn
+}
+
+output "tfstate_lock_table_name" {
+  description = "DynamoDB table name for Terraform state locking"
+  value       = aws_dynamodb_table.tfstate_lock.name
+}

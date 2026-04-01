@@ -314,56 +314,6 @@ resource "aws_iam_role_policy_attachment" "bot_lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# ClamAV Lambda execution role
-resource "aws_iam_role" "clamav_lambda" {
-  count = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
-  name  = "${local.name_prefix}-clamav-lambda-role"
-
-  assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
-    Statement = [{ Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" }, Action = "sts:AssumeRole" }]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "clamav_lambda_vpc" {
-  count      = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
-  role       = aws_iam_role.clamav_lambda[0].name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
-resource "aws_iam_role_policy" "clamav_lambda" {
-  count = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
-  name  = "${local.name_prefix}-clamav-lambda-policy"
-  role  = aws_iam_role.clamav_lambda[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "S3Scan"
-        Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:PutObjectTagging"]
-        Resource = "${aws_s3_bucket.storage[0].arn}/*"
-      },
-      {
-        Sid       = "EFSAccess"
-        Effect    = "Allow"
-        Action    = ["elasticfilesystem:ClientMount", "elasticfilesystem:ClientWrite", "elasticfilesystem:ClientRootAccess"]
-        Resource  = aws_efs_access_point.clamav[0].arn
-        Condition = { StringEquals = { "elasticfilesystem:AccessPointArn" = aws_efs_access_point.clamav[0].arn } }
-      },
-      {
-        Sid      = "KMSDecrypt"
-        Effect   = "Allow"
-        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = aws_kms_key.medplum.arn
-      }
-    ]
-  })
-}
-
 # CloudTrail → CloudWatch Logs delivery role
 resource "aws_iam_role" "cloudtrail_cw" {
   count = var.enable_cloudtrail_alarms ? 1 : 0

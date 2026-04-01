@@ -232,14 +232,3 @@ resource "aws_cloudfront_distribution" "storage" {
   depends_on = [aws_acm_certificate_validation.storage]
 }
 
-resource "aws_s3_bucket_notification" "clamav_storage" {
-  count  = var.clamscan_enabled && local.storage_cdn_enabled ? 1 : 0
-  bucket = aws_s3_bucket.storage[0].id
-
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.clamav[0].arn
-    events              = ["s3:ObjectCreated:*"]
-  }
-
-  depends_on = [aws_lambda_permission.clamav_s3]
-}
