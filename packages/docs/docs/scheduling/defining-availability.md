@@ -49,7 +49,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 | Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
 | ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
-| `availability.r4`   | Nested extension                                            | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time). See [below](#availabilityr4-extension) for details                                       | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `availability`      | Nested extension                                            | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time). See [below](#availability-extension) for details                                         | Time is implicitly available by default (unless blocked by Slots or other constraints) |
 | `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified        | Uses the timezone defined on the Schedule's actor reference                            |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
 | `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires prep time before start to also be free                                                                                                                                      | No prep time required                                                                  |
@@ -91,7 +91,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 
     // Recurring availability (Schedule only)
     {
-      "url": "availability.r4",
+      "url": "availability",
       "extension": [
         {
           "url": "availableTime",
@@ -203,7 +203,7 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
         }
       },
       {
-        "url": "availability.r4",
+        "url": "availability",
         "extension": [
           {
             "url": "availableTime",
@@ -225,9 +225,9 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
 }
 ```
 
-### `availability.r4` Extension
+### `availability` Extension
 
-The `availability.r4` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
+The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
 
 | Sub-extension         | Type          | Description                                    |
 | --------------------- | ------------- | ---------------------------------------------- |
@@ -257,7 +257,7 @@ The `availability.r4` sub-extension mirrors the FHIR R5+ [`Availability`](https:
         "valueDuration": {"value": 1, "unit": "h"}
       },
       {
-        "url": "availability.r4",
+        "url": "availability",
         "extension": [
           {
             "url": "availableTime",
@@ -362,7 +362,7 @@ Here is an example Schedule that overrides the availability for a specific servi
           }
         },
         {
-          "url": "availability.r4",
+          "url": "availability",
           "extension": [
             {
               "url": "availableTime",
@@ -486,7 +486,7 @@ Here is an example of a Schedule with multiple service types, each with its own 
           }
         },
         {
-          "url": "availability.r4",
+          "url": "availability",
           "extension": [
             {
               "url": "availableTime",
@@ -523,7 +523,7 @@ Here is an example of a Schedule with multiple service types, each with its own 
           }
         },
         {
-          "url": "availability.r4",
+          "url": "availability",
           "extension": [
             {
               "url": "availableTime",
@@ -772,7 +772,7 @@ This Schedule shows how to configure default availability for all services (Mon-
           }
         },
         {
-          "url": "availability.r4",
+          "url": "availability",
           "extension": [
             {
               "url": "availableTime",
@@ -905,7 +905,7 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
         }
       },
       {
-        "url": "availability.r4",
+        "url": "availability",
         "extension": [
           {
             "url": "availableTime",
@@ -950,7 +950,7 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
         }
       },
       {
-        "url": "availability.r4",
+        "url": "availability",
         "extension": [
           {
             "url": "availableTime",
@@ -1007,7 +1007,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
         }
       },
       {
-        "url": "availability.r4",
+        "url": "availability",
         "extension": [
           {
             "url": "availableTime",

@@ -30,7 +30,7 @@ type HardDuration = {
 // zone, as seen in the FHIR `time` type. Segments may be zero padded.
 type WallClockTime = `${number}:${number}:${number}`;
 
-// Nested extension types for `availability.r4`, encoding the R5 `Availability` datatype
+// Nested extension types for `availability`, encoding the R5 `Availability` datatype
 // in valid R4 extension form. Note: `daysOfWeek` repeats once per day value.
 type AvailabilityR4AvailableTime = {
   url: 'availableTime';
@@ -58,7 +58,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'serviceType'; valueCodeableConcept: CodeableConcept }
   | { url: 'timezone'; valueCode: string }
   | {
-      url: 'availability.r4';
+      url: 'availability';
       extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
     };
 
@@ -193,10 +193,10 @@ export function chooseSchedulingParameters(
   return [];
 }
 
-// Convert a single availability.r4 extension into SchedulingParametersAvailability entries.
+// Convert a single availability extension into SchedulingParametersAvailability entries.
 // notAvailableTime sub-extensions are ignored for now.
 function extractAvailabilityR4(ext: {
-  url: 'availability.r4';
+  url: 'availability';
   extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
 }): SchedulingParametersAvailability[] {
   return ext.extension
@@ -266,13 +266,13 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
       resource.resourceType
     );
 
-    // `availability.r4` is required in Schedule, and not allowed in
+    // `availability` is required in Schedule, and not allowed in
     // HealthcareService (where we read from availableTime instead).
-    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability.r4');
+    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
     if (resource.resourceType === 'Schedule') {
-      atLeastOne(rawAvailability, 'availability.r4', resource.resourceType);
+      atLeastOne(rawAvailability, 'availability', resource.resourceType);
     } else {
-      exactlyZero(rawAvailability, 'availability.r4', resource.resourceType);
+      exactlyZero(rawAvailability, 'availability', resource.resourceType);
     }
 
     const availability = resourceParameters.availability ?? rawAvailability.flatMap(extractAvailabilityR4);

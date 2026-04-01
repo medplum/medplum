@@ -30,7 +30,7 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             // availability is required to have at least one entry
             {
-              url: 'availability.r4',
+              url: 'availability',
               extension: [
                 {
                   url: 'availableTime',
@@ -91,7 +91,7 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             { url: 'timezone', valueCode: 'America/Phoenix' },
             {
-              url: 'availability.r4',
+              url: 'availability',
               extension: [
                 {
                   url: 'availableTime',
@@ -104,7 +104,7 @@ describe('parseSchedulingParametersExtensions', () => {
               ],
             },
             {
-              url: 'availability.r4',
+              url: 'availability',
               extension: [
                 {
                   url: 'availableTime',
@@ -150,7 +150,7 @@ describe('parseSchedulingParametersExtensions', () => {
     ]);
   });
 
-  describe('with availability.r4 extension', () => {
+  describe('with availability extension', () => {
     test('basic start/end time pair parses to correct availability', () => {
       const schedule: Schedule = {
         resourceType: 'Schedule',
@@ -162,7 +162,7 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               { url: 'duration', valueDuration: { unit: 'h', value: 1 } },
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -199,7 +199,7 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -243,7 +243,7 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -284,7 +284,7 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -302,7 +302,7 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([{ availability: [] }]);
     });
 
-    test('"availability.r4" is not allowed in HealthcareService extension', () => {
+    test('"availability" is not allowed in HealthcareService extension', () => {
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
         extension: [
@@ -311,7 +311,7 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -329,7 +329,7 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
-        "Scheduling parameter attribute 'availability.r4' is not allowed on HealthcareService"
+        "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
       );
     });
   });
@@ -348,7 +348,7 @@ describe('parseSchedulingParametersExtensions', () => {
     };
 
     expect(() => parseSchedulingParametersExtensions(schedule)).toThrow(
-      "Required scheduling parameter attribute 'availability.r4' is missing"
+      "Required scheduling parameter attribute 'availability' is missing"
     );
   });
 
@@ -362,7 +362,7 @@ describe('parseSchedulingParametersExtensions', () => {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
             {
-              url: 'availability.r4',
+              url: 'availability',
               extension: [
                 {
                   url: 'availableTime',
@@ -400,7 +400,7 @@ describe('parseSchedulingParametersExtensions', () => {
               { url: attribute, valueDuration: { unit: 'min', value: 10 } },
               { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -436,7 +436,7 @@ describe('parseSchedulingParametersExtensions', () => {
           extension: [
             { url: 'duration', valueDuration: { unit, value: 1 } },
             {
-              url: 'availability.r4',
+              url: 'availability',
               extension: [
                 {
                   url: 'availableTime',
@@ -587,7 +587,7 @@ describe('parseSchedulingParametersExtensions', () => {
       ]);
     });
 
-    test('"availability.r4" is not allowed in HealthcareService extension', () => {
+    test('"availability" is not allowed in HealthcareService extension', () => {
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
         extension: [
@@ -596,7 +596,7 @@ describe('parseSchedulingParametersExtensions', () => {
             extension: [
               durationExt,
               {
-                url: 'availability.r4',
+                url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
@@ -614,7 +614,7 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
-        "Scheduling parameter attribute 'availability.r4' is not allowed on HealthcareService"
+        "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
       );
     });
 
@@ -642,7 +642,7 @@ describe('chooseSchedulingParameters', () => {
 
   // Reusable availability extension for Schedule resources (required on Schedule, not on HealthcareService)
   const mondayAvailability = {
-    url: 'availability.r4',
+    url: 'availability',
     extension: [
       {
         url: 'availableTime',

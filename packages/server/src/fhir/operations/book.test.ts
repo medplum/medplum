@@ -39,7 +39,7 @@ function isSlot(obj: Resource): obj is Slot {
 }
 
 const threeDayAvailability: SchedulingParametersExtensionExtension = {
-  url: 'availability.r4',
+  url: 'availability',
   extension: [
     {
       url: 'availableTime',

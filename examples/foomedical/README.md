@@ -105,7 +105,7 @@ The "Get Care" page is configured to search for availability with service-type "
           }
         },
         {
-          "url": "availability.r4",
+          "url": "availability",
           "extension": [
             {
               "url": "availableTime",

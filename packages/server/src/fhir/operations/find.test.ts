@@ -35,7 +35,7 @@ type AvailabilityOptions = {
 };
 
 const fourDayWorkWeek = {
-  url: 'availability.r4',
+  url: 'availability',
   extension: [
     {
       url: 'availableTime',
@@ -63,7 +63,7 @@ const fourDayWorkWeek = {
 } satisfies SchedulingParametersExtensionExtension;
 
 const twoDaySchedule = {
-  url: 'availability.r4',
+  url: 'availability',
   extension: [
     {
       url: 'availableTime',
@@ -78,7 +78,7 @@ const twoDaySchedule = {
 } satisfies SchedulingParametersExtensionExtension;
 
 const fridayOnly = {
-  url: 'availability.r4',
+  url: 'availability',
   extension: [
     {
       url: 'availableTime',
