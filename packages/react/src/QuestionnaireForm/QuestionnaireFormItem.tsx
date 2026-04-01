@@ -283,6 +283,18 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
+      } else if (isMultiSelectChoice(item) && !isDropdownChoice(item)) {
+        // If multi-select is requested without an explicit drop-down control, prefer checkboxes over radio buttons.
+        formComponent = (
+          <QuestionnaireCheckboxInput
+            name={inputId}
+            item={item}
+            required={props.required ?? item.required}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
+          />
+        );
       } else if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
         // defaults answervalueset items to dropdown and everything else to radio button
         formComponent = (
