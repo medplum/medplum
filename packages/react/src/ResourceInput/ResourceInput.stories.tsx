@@ -24,6 +24,12 @@ export const Patients = (): JSX.Element => (
   </Document>
 );
 
+export const MultiSelect = (): JSX.Element => (
+  <Document>
+    <ResourceInput maxValues={3} name="foo" resourceType="Patient" />
+  </Document>
+);
+
 export const Disabled = (): JSX.Element => (
   <Document>
     <ResourceInput disabled name="foo" resourceType="Patient" defaultValue={createReference(HomerSimpson)} />

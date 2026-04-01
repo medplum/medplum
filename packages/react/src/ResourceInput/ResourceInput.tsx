@@ -87,9 +87,11 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
+  readonly onChanges?: (values: T[]) => void;
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
+  readonly maxValues?: number
 }
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
@@ -107,6 +109,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   const defaultValue = useResource(props.defaultValue, setOutcome);
   const ItemComponent = props.itemComponent ?? DefaultItemComponent;
   const onChange = props.onChange;
+  const onChanges = props.onChanges;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<T[]> => {
@@ -128,8 +131,12 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       if (onChange) {
         onChange(newResources[0]);
       }
+
+      if (onChanges) {
+        onChanges(newResources);
+      }
     },
-    [onChange]
+    [onChange, onChanges]
   );
 
   if (isPopulated(props.defaultValue) && !outcome && !defaultValue) {
@@ -149,7 +156,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       itemComponent={ItemComponent}
       defaultValue={defaultValue}
       placeholder={props.placeholder}
-      maxValues={1}
+      maxValues={props.maxValues ?? 1}
       toOption={toOption}
       loadOptions={loadValues}
       onChange={handleChange}
