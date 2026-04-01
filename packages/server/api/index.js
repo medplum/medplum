@@ -48,7 +48,7 @@ async function getApp() {
   initAppPromise = (async () => {
     // Dynamic import from the bundled dist/ folder
     const { initApp } = await import('../dist/app.js');
-    const { loadConfig } = await import('../dist/loader.js');
+    const { loadConfig } = await import('../dist/config/loader.js');
 
     // Load config using the built-in env config loader
     // This reads all MEDPLUM_* environment variables and applies defaults
