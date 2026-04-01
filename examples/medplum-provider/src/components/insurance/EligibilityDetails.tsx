@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Divider, Group, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { formatDate, formatMoney, formatPeriod } from '@medplum/core';
-import type { CoverageEligibilityRequest, CoverageEligibilityResponse, CoverageEligibilityResponseInsuranceItemBenefit } from '@medplum/fhirtypes';
+import type {
+  CoverageEligibilityRequest,
+  CoverageEligibilityResponse,
+  CoverageEligibilityResponseInsuranceItemBenefit,
+} from '@medplum/fhirtypes';
 import { ResourceAvatar } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 
@@ -109,16 +113,11 @@ function ResponseSection({
             <DetailRow label="Coverage In Force" value={firstInsurance.inforce ? 'Yes' : 'No'} />
           )}
           {firstInsurance?.benefitPeriod && (
-            <DetailRow
-              label="Benefit Period"
-              value={formatPeriod(firstInsurance.benefitPeriod)}
-            />
+            <DetailRow label="Benefit Period" value={formatPeriod(firstInsurance.benefitPeriod)} />
           )}
         </Table.Tbody>
       </Table>
-      {firstInsurance?.item && firstInsurance.item.length > 0 && (
-        <BenefitsTable items={firstInsurance.item} />
-      )}
+      {firstInsurance?.item && firstInsurance.item.length > 0 && <BenefitsTable items={firstInsurance.item} />}
     </Stack>
   );
 }
@@ -200,7 +199,10 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.E
   );
 }
 
-function formatBenefitValue(benefit: CoverageEligibilityResponseInsuranceItemBenefit, prefix: 'allowed' | 'used'): string {
+function formatBenefitValue(
+  benefit: CoverageEligibilityResponseInsuranceItemBenefit,
+  prefix: 'allowed' | 'used'
+): string {
   if (prefix === 'allowed') {
     if (benefit.allowedUnsignedInt !== undefined) {
       return benefit.allowedUnsignedInt.toLocaleString();
