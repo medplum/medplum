@@ -408,6 +408,94 @@ describe('External', () => {
     expect(tokenResponse.body.profile.display).toBe('External User');
   });
 
+  test('Block partial redirect URI match', async () => {
+    const subjectAuthClient = await withTestContext(async () => {
+      // Create a new client application with external subject auth
+      const client = await createClient(systemRepo, {
+        project,
+        name: 'Subject Auth Client',
+        redirectUri,
+      });
+
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...client,
+        identityProvider: {
+          ...identityProvider,
+          useSubject: true,
+        },
+      });
+
+      return client;
+    });
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({
+        redirectUri: redirectUri + '/extra',
+        clientId: subjectAuthClient.id,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens('', externalId),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
+  });
+
+  test('Block redirect URI with different host', async () => {
+    const subjectAuthClient = await withTestContext(async () => {
+      // Create a new client application with external subject auth
+      const client = await createClient(systemRepo, {
+        project,
+        name: 'Subject Auth Client',
+        redirectUri,
+      });
+
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...client,
+        identityProvider: {
+          ...identityProvider,
+          useSubject: true,
+        },
+      });
+
+      return client;
+    });
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({
+        redirectUri: redirectUri + '.evil.com',
+        clientId: subjectAuthClient.id,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens('', externalId),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
+  });
+
   test('Missing subject', async () => {
     const subjectAuthClient = await withTestContext(async () => {
       // Create a new client application with external subject auth

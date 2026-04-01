@@ -142,12 +142,12 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject(manifest);
     // Should be called with latest
     expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
-    await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
@@ -172,12 +172,12 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject(manifest);
     // Should be called with version
     expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`));
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
-    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });

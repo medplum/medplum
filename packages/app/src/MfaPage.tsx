@@ -14,7 +14,7 @@ export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>();
   const [enrolled, setEnrolled] = useState<boolean | undefined>(undefined);
-  const [disabling, setDisabling] = useState<boolean>(false);
+  const [disabling, setDisabling] = useState(false);
 
   const fetchStatus = useCallback(() => {
     medplum

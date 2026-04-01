@@ -80,13 +80,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
-  const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
+  const [selected, setSelected] = useState(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
   const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
-  const searchRef = useRef<string>(search);
+  const searchRef = useRef(search);
   searchRef.current = search;
 
   const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>(undefined);
@@ -101,7 +101,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const autoSubmitRef = useRef<boolean>(autoSubmit);
   autoSubmitRef.current = autoSubmit;
 
-  const optionsRef = useRef<AsyncAutocompleteOption<T>[]>(options);
+  const optionsRef = useRef(options);
   optionsRef.current = options;
 
   const handleTimer = useCallback((): void => {
