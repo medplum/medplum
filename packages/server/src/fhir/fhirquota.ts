@@ -3,7 +3,7 @@
 import type { Logger } from '@medplum/core';
 import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
 import type { Response } from 'express';
-import type Redis from 'ioredis';
+import type { Redis } from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import type { AuthState } from '../oauth/middleware';
 

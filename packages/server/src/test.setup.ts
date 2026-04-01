@@ -14,7 +14,7 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import type { Express } from 'express';
-import type Redis from 'ioredis';
+import type { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { setDefaultResultOrder } from 'node:dns';
 import type internal from 'node:stream';
