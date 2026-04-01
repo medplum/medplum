@@ -1,20 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Badge,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core';
+import { Badge, Box, Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack, Text, Title } from '@mantine/core';
 import { createReference, formatDate, getReferenceString } from '@medplum/core';
-import type { Bot, Coverage, CoverageEligibilityRequest, CoverageEligibilityResponse, PractitionerRole } from '@medplum/fhirtypes';
+import type {
+  Bot,
+  Coverage,
+  CoverageEligibilityRequest,
+  CoverageEligibilityResponse,
+  PractitionerRole,
+} from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -92,9 +86,7 @@ export function CoveragePage(): JSX.Element {
 
       const filtered = all.filter((req) =>
         req.insurance?.some(
-          (ins) =>
-            ins.coverage?.reference === `Coverage/${coverageId}` ||
-            ins.coverage?.reference === coverageId
+          (ins) => ins.coverage?.reference === `Coverage/${coverageId}` || ins.coverage?.reference === coverageId
         )
       );
 
@@ -191,7 +183,9 @@ export function CoveragePage(): JSX.Element {
         }
       }
       await fetchRequests();
-      navigate(`/Patient/${patientId}/Coverage/${coverageId}/CoverageEligibilityRequest/${savedRequest.id}`)?.catch(console.error);
+      navigate(`/Patient/${patientId}/Coverage/${coverageId}/CoverageEligibilityRequest/${savedRequest.id}`)?.catch(
+        console.error
+      );
     } finally {
       setCheckingEligibility(false);
     }
@@ -236,11 +230,7 @@ export function CoveragePage(): JSX.Element {
                 {!requestsLoading &&
                   requests.map((req, index) => (
                     <React.Fragment key={req.id}>
-                      <EligibilityListItem
-                        request={req}
-                        isSelected={req.id === requestId}
-                        href={getRequestHref(req)}
-                      />
+                      <EligibilityListItem request={req} isSelected={req.id === requestId} href={getRequestHref(req)} />
                       {index < requests.length - 1 && (
                         <Box px="0.5rem">
                           <Divider />
@@ -284,10 +274,7 @@ interface CoverageSummaryProps {
 }
 
 function CoverageSummary({ coverage, checking, onCheckEligibility }: CoverageSummaryProps): JSX.Element {
-  const payorName =
-    coverage.payor?.[0]?.display ??
-    coverage.payor?.[0]?.reference ??
-    'Unknown Payor';
+  const payorName = coverage.payor?.[0]?.display ?? coverage.payor?.[0]?.reference ?? 'Unknown Payor';
 
   const planName =
     coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan')?.name ??
@@ -317,7 +304,9 @@ function CoverageSummary({ coverage, checking, onCheckEligibility }: CoverageSum
       )}
       {subscriberId && (
         <Text size="sm">
-          <Text span fw={500}>ID: </Text>
+          <Text span fw={500}>
+            ID:{' '}
+          </Text>
           {subscriberId}
         </Text>
       )}
