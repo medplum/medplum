@@ -21,6 +21,7 @@ Deploys a production-ready Medplum FHIR server on AWS using EKS (Kubernetes), RD
 | SES | Domain identity + DKIM for outbound email |
 | Route 53 (optional) | Hosted zone creation (opt-in), DNS records for CloudFront, storage CDN, and SES, and ACM cert DNS validation — opt-in via `create_route53_zone` or `create_route53_records` |
 | CloudTrail (optional) | Trail + 10 CloudWatch metric filters + alarms + SNS — opt-in via `enable_cloudtrail_alarms` |
+| Terraform state | S3 bucket (versioned, KMS-encrypted) + DynamoDB lock table — opt-in via bootstrap workflow |
 
 ---
 
@@ -170,6 +171,61 @@ Leave both `create_route53_zone` and `create_route53_records` as `false` (the de
 ---
 
 ## Setup
+
+### Step 0 — Bootstrap remote state (recommended)
+
+Terraform state is stored locally by default. For team use or durable deployments you should migrate it to S3 + DynamoDB. This module provisions both resources in `backend.tf`; because they must exist *before* the S3 backend can be configured, bootstrap is a two-phase process.
+
+**Phase 1 — create the state backend resources with local state**
+
+```bash
+terraform init
+terraform apply \
+  -target=aws_kms_key.medplum \
+  -target=aws_kms_alias.medplum \
+  -target=aws_s3_bucket.tfstate \
+  -target=aws_s3_bucket_versioning.tfstate \
+  -target=aws_s3_bucket_server_side_encryption_configuration.tfstate \
+  -target=aws_s3_bucket_public_access_block.tfstate \
+  -target=aws_s3_bucket_lifecycle_configuration.tfstate \
+  -target=aws_dynamodb_table.tfstate_lock
+```
+
+Capture the output values you will need:
+
+```bash
+terraform output tfstate_bucket_name    # e.g. medplum-dev-1-tfstate-123456789012
+terraform output tfstate_kms_key_id     # arn:aws:kms:...
+terraform output tfstate_lock_table_name # medplum-dev-1-tfstate-lock
+```
+
+**Phase 2 — add the backend block and migrate**
+
+Add the following block inside the existing `terraform {}` block in `versions.tf` (fill in the values from above):
+
+```hcl
+backend "s3" {
+  bucket         = "medplum-dev-1-tfstate-123456789012"
+  key            = "terraform.tfstate"
+  region         = "us-east-1"   # your deployment region
+  encrypt        = true
+  kms_key_id     = "arn:aws:kms:..."
+  dynamodb_table = "medplum-dev-1-tfstate-lock"
+}
+```
+
+Then migrate the existing local state to S3:
+
+```bash
+terraform init -migrate-state
+# Type "yes" when prompted
+```
+
+All subsequent `terraform init` / `plan` / `apply` commands will use S3 state automatically.
+
+> **Note:** The S3 bucket and DynamoDB table both have `prevent_destroy = true` so `terraform destroy` will refuse to delete them. Remove that lifecycle guard manually if you ever need to tear down the state backend itself.
+
+---
 
 ### Step 1 — Copy and fill in your variables
 
