@@ -7,7 +7,7 @@
 import esbuild from 'esbuild';
 
 const options = {
-  entryPoints: ['./src/index.ts', './src/otel/instrumentation.ts'],
+  entryPoints: ['./src/index.ts', './src/app.ts', './src/config/loader.ts', './src/otel/instrumentation.ts'],
   bundle: true,
   platform: 'node',
   loader: { '.ts': 'ts' },
