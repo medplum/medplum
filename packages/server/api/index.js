@@ -26,20 +26,6 @@
  */
 
 import express from 'express';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { existsSync, readdirSync } from 'fs';
-
-// Debug: Log directory structure
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-console.log('[v0] api/index.js location:', __filename);
-console.log('[v0] __dirname:', __dirname);
-console.log('[v0] Parent directory contents:', readdirSync(join(__dirname, '..')));
-console.log('[v0] dist exists:', existsSync(join(__dirname, '..', 'dist')));
-if (existsSync(join(__dirname, '..', 'dist'))) {
-  console.log('[v0] dist contents:', readdirSync(join(__dirname, '..', 'dist')));
-}
 
 // Import from the bundled dist/ folder (created by esbuild)
 // This avoids the ESM extensionless import issues since esbuild bundles everything
