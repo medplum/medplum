@@ -29,7 +29,7 @@ flowchart LR
 
 ### Setting Up the Subscription
 
-Create a Subscription that matches your intake questionnaire. Use the `questionnaire` search parameter to scope the Subscription to a specific form, so it doesn't fire for every QuestionnaireResponse in your system:
+Create a Subscription that matches your intake questionnaire. Use the `questionnaire` search parameter to scope the Subscription to a specific form, so it doesn't fire for every QuestionnaireResponse in your system. Use a **create-only** subscription (Medplum extension below) so the Bot is not invoked again when the same response is updated — for example after linking `subject` to a newly created Patient.
 
 ```json
 {
@@ -40,13 +40,21 @@ Create a Subscription that matches your intake questionnaire. Use the `questionn
   "channel": {
     "type": "rest-hook",
     "endpoint": "Bot/your-intake-bot-id"
-  }
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "create"
+    }
+  ]
 }
 ```
 
 :::tip Avoid Infinite Loops
 
 If your Bot updates the QuestionnaireResponse (e.g., to set `subject` after creating the Patient), use a **create-only** Subscription to avoid re-triggering. The intake demo Bot does exactly this — it creates the Patient, then updates the QuestionnaireResponse to link `subject` to the new Patient. Because the Subscription only fires on creation, the update doesn't re-trigger the Bot.
+
+For more interaction options, see [Subscription extensions](/docs/subscriptions/subscription-extensions#subscriptions-for-create-only-or-update-only-events).
 
 :::
 
