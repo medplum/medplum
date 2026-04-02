@@ -34,7 +34,7 @@ graph TD
 ```
 
 - **[Defining availability at the actor level](/docs/scheduling/defining-availability#actor-level-availability)** — When a provider, location, or device is available via Schedule.
-- **[Defining availability at the service level](/docs/scheduling/defining-availability#service-level-availability)** — Default duration, buffers, and alignment per appointment type via ActivityDefinition.
+- **[Defining availability at the service level](/docs/scheduling/defining-availability#service-level-availability)** — Default duration, buffers, and alignment per appointment type via HealthcareService.
 
 ---
 
@@ -67,7 +67,7 @@ Once a desired slot has been found, the appointment booking process can be handl
 | [`Schedule`](/docs/api/fhir/resources/schedule) | Represents a provider's, room's, or device's availability. Each Schedule belongs to exactly one actor. |
 | [`Slot`](/docs/api/fhir/resources/slot) | A specific time block on a Schedule. Only exists in the datastore for booked or blocked time — free slots are computed on demand. |
 | [`Appointment`](/docs/api/fhir/resources/appointment) | A confirmed booking linking one or more Slots to a patient and provider. |
-| [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) | Defines default scheduling parameters (duration, buffers, alignment) for a service type, shared across multiple providers. |
+| [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) | Defines default scheduling parameters (duration, buffers, alignment) for a service type, shared across multiple providers. |
 
 
 ## Medplum Scheduling FHIR Model Design Decisions
