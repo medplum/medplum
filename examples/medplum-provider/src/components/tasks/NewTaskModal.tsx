@@ -28,12 +28,12 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [intent, setIntent] = useState<string>('order');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [intent, setIntent] = useState('order');
 
   const [status, setStatus] = useState<Task['status']>('draft');
-  const [priority, setPriority] = useState<string>('routine');
+  const [priority, setPriority] = useState('routine');
   const [assignee, setAssignee] = useState<Reference<Practitioner> | undefined>();
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [taskPatient, setTaskPatient] = useState<Reference<Patient> | undefined>();
@@ -41,7 +41,7 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
   const [taskCode, setTaskCode] = useState<CodeableConcept | undefined>();
   const [performerType, setPerformerType] = useState<CodeableConcept | undefined>();
 
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (): Promise<void> => {
     if (!title.trim()) {

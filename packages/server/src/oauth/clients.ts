@@ -66,12 +66,24 @@ export function getClientRedirectUri(
     if (uri === requestedUri) {
       return uri;
     }
-    if (allowPartial && requestedUri.startsWith(uri)) {
+    if (allowPartial && isAllowedPartialRedirectUri(uri, requestedUri)) {
       // This should be removed once all clients are migrated.
       return requestedUri;
     }
   }
   return undefined;
+}
+
+function isAllowedPartialRedirectUri(actualUri: string, requestedUri: string): boolean {
+  // This is a temporary workaround to allow partial matching of redirect URIs for legacy clients.
+  // It should be removed once all clients are migrated to use exact redirect URIs.
+  try {
+    const actualUrl = new URL(actualUri);
+    const requestedUrl = new URL(requestedUri);
+    return actualUrl.origin === requestedUrl.origin && requestedUrl.pathname.startsWith(actualUrl.pathname);
+  } catch {
+    return false;
+  }
 }
 
 /**

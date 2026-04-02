@@ -90,9 +90,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [candidClaimAmount, setCandidClaimAmount] = useState<number | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
   const [backgroundChecking, setBackgroundChecking] = useState(false);
-  const conditionsRef = useRef<Condition[]>(conditions);
+  const conditionsRef = useRef(conditions);
   conditionsRef.current = conditions;
-  const claimRef = useRef<WithId<Claim> | undefined>(claim);
+  const claimRef = useRef(claim);
   claimRef.current = claim;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);

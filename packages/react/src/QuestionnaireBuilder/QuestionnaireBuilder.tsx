@@ -123,7 +123,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  const itemRef = useRef<T>(props.item);
+  const itemRef = useRef(props.item);
   itemRef.current = props.item;
 
   function onClick(e: SyntheticEvent): void {

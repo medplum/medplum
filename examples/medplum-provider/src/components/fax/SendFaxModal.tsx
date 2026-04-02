@@ -30,7 +30,7 @@ export function SendFaxModal({
   const [recipientOrg, setRecipientOrg] = useState<Organization | undefined>(undefined);
   const [recipientName, setRecipientName] = useState('');
   const [faxNumber, setFaxNumber] = useState('');
-  const [patient, setPatient] = useState<Reference<Patient> | undefined>(defaultPatient);
+  const [patient, setPatient] = useState(defaultPatient);
   const [subject, setSubject] = useState('');
   const [coverNote, setCoverNote] = useState('');
   const [file, setFile] = useState<File | null>(null);

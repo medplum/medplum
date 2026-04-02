@@ -1,10 +1,13 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "esnext",
+    "composite": true,
+    "rootDir": "src",
     "outDir": "dist/types",
+    "types": ["jest", "node", "vite/client"],
+    "lib": ["esnext", "dom"],
     "noEmit": false,
     "emitDeclarationOnly": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.json"]
 }
