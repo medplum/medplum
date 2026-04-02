@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Box, Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, formatDate, getReferenceString } from '@medplum/core';
+import { createReference, formatPeriod, getReferenceString } from '@medplum/core';
 import type {
   Coverage,
   CoverageEligibilityRequest,
@@ -272,9 +272,7 @@ function CoverageSummary({ coverage, checking, onCheckEligibility }: CoverageSum
 
   const subscriberId = coverage.subscriberId ?? coverage.identifier?.[0]?.value;
 
-  const periodText = coverage.period
-    ? `${formatDate(coverage.period.start)} – ${formatDate(coverage.period.end)}`
-    : undefined;
+  const periodText = coverage.period ? formatPeriod(coverage.period) : undefined;
 
   return (
     <Stack gap={4}>
