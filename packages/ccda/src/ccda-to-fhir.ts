@@ -764,10 +764,7 @@ class CcdaToFhirConverter {
     if (reactionObs.text?.reference?.['@_value']) {
       const textRefExtension = this.mapTextReference(reactionObs.text);
       if (textRefExtension) {
-        reaction.manifestation[0].extension = [
-          ...(reaction.manifestation[0].extension ?? []),
-          ...textRefExtension,
-        ];
+        reaction.manifestation[0].extension = [...(reaction.manifestation[0].extension ?? []), ...textRefExtension];
       }
     }
 
