@@ -8,7 +8,6 @@ import type {
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
   Organization,
-  PractitionerRole,
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useSearchOne } from '@medplum/react';
@@ -30,7 +29,6 @@ export function CoveragePage(): JSX.Element {
   const [eligibilityBot, _eligibilityBotLoading] = useSearchOne('Bot', {
     identifier: 'https://www.medplum.com/bots|eligibility',
   });
-  const [practitionerRole, setPractitionerRole] = useState<PractitionerRole | null>();
   const [coverage, setCoverage] = useState<Coverage>();
   const [coverageLoading, setCoverageLoading] = useState(true);
   const [requests, setRequests] = useState<CoverageEligibilityRequest[]>([]);
@@ -39,17 +37,11 @@ export function CoveragePage(): JSX.Element {
   const [response, setResponse] = useState<CoverageEligibilityResponse>();
   const [responseLoading, setResponseLoading] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
-
-  // Load PractitionerRole for current profile
-  useEffect(() => {
-    if (!profile) {
-      return;
-    }
-    medplum
-      .searchOne('PractitionerRole', { practitioner: getReferenceString(profile) })
-      .then((role) => setPractitionerRole(role ?? null))
-      .catch(() => setPractitionerRole(null));
-  }, [medplum, profile]);
+  const [practitionerRole, _practitionerRoleLoading] = useSearchOne(
+    'PractitionerRole', 
+    profile ? { practitioner: getReferenceString(profile) } : undefined,
+    { enabled: !!profile }
+  );
 
   // Fetch Coverage resource
   useEffect(() => {
