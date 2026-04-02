@@ -11,7 +11,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, HealthcareService, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, HealthcareService, OperationDefinition, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import { findSlotTimes } from './utils/find';
@@ -45,18 +45,15 @@ type FindParameters = {
   _count?: number;
 };
 
-/**
- * Handles HTTP requests for the Schedule $find operation.
- *
- * Endpoints:
- *   [fhir base]/Schedule/[id]/$find
- *
- * @param req - The FHIR request.
- * @returns The FHIR response.
- */
-export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
+// Internal implementation of $find logic
+async function handler(params: {
+  schedule: Reference<Schedule> & { reference: string };
+  healthcareService: Reference<HealthcareService> & { reference: string };
+  start: string;
+  end: string;
+  _count?: number;
+}): Promise<Slot[]> {
   const ctx = getAuthenticatedContext();
-  const params = parseInputParameters<FindParameters>(findOperation, req);
   const { start, end, _count } = params;
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
@@ -80,7 +77,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   const [schedule, existingSlots, healthcareService] = await Promise.all([
-    ctx.repo.readResource<Schedule>('Schedule', req.params.id),
+    ctx.repo.readReference(params.schedule),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
 
@@ -90,7 +87,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         {
           code: 'schedule',
           operator: Operator.EQUALS,
-          value: `Schedule/${req.params.id}`,
+          value: params.schedule.reference,
         },
 
         {
@@ -109,7 +106,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
-    ctx.repo.readReference<HealthcareService>({ reference: params['service-type-reference'] }).catch((err) => {
+    ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));
       }
@@ -155,7 +152,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
 
   const serviceType = toCodeableReferenceLike(healthcareService);
 
-  const resultSlots = findSlotTimes(schedulingParameters, availability, { maxCount: pageSize }).map(
+  return findSlotTimes(schedulingParameters, availability, { maxCount: pageSize }).map(
     ({ start, end }) =>
       ({
         resourceType: 'Slot',
@@ -166,7 +163,26 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         serviceType,
       }) satisfies Slot
   );
+}
 
+/**
+ * Handles HTTP requests for the Schedule $find operation.
+ *
+ * Endpoints:
+ *   [fhir base]/Schedule/[id]/$find
+ *
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
+ */
+export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
+  const params = parseInputParameters<FindParameters>(findOperation, req);
+  const resultSlots = await handler({
+    start: params.start,
+    end: params.end,
+    _count: params._count,
+    schedule: { reference: `Schedule/${req.params.id}` },
+    healthcareService: { reference: params['service-type-reference'] },
+  });
   const bundle: Bundle<Slot> = {
     resourceType: 'Bundle',
     type: 'searchset',
