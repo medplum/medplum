@@ -272,40 +272,24 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isCheckboxChoice(item) || (isMultiSelectChoice(item) && !isDropdownChoice(item))) {
-        formComponent = (
-          <QuestionnaireCheckboxInput
-            name={inputId}
-            item={item}
-            required={props.required ?? item.required}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
-      } else if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
-        // defaults answervalueset items to dropdown and everything else to radio button
-        formComponent = (
-          <QuestionnaireDropdownInput
-            name={inputId}
-            item={item}
-            required={props.required ?? item.required}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
-      } else {
-        formComponent = (
-          <QuestionnaireRadioButtonInput
-            name={inputId}
-            item={item}
-            required={props.required ?? item.required}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
+      {
+        const { widget, multiselect } = resolveChoiceControl(item);
+        const sharedProps = {
+          name: inputId,
+          item,
+          required: props.required ?? item.required,
+          initial,
+          response,
+          multiselect,
+          onChangeAnswer,
+        };
+        if (widget === 'check-box') {
+          formComponent = <QuestionnaireCheckboxInput {...sharedProps} />;
+        } else if (widget === 'drop-down') {
+          formComponent = <QuestionnaireDropdownInput {...sharedProps} />;
+        } else {
+          formComponent = <QuestionnaireRadioButtonInput {...sharedProps} />;
+        }
       }
       break;
     default:
@@ -328,13 +312,14 @@ interface QuestionnaireChoiceInputProps {
   readonly name: string;
   readonly item: QuestionnaireItem;
   readonly initial: QuestionnaireItemInitial | undefined;
+  readonly multiselect?: boolean;
   readonly required: boolean | undefined;
   readonly response?: QuestionnaireResponseItem;
   readonly onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer[]) => void;
 }
 
 function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, required, initial, onChangeAnswer, response } = props;
+  const { name, item, required, initial, onChangeAnswer, response, multiselect } = props;
 
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
@@ -343,7 +328,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
   const initialValue = getItemInitialValue(initial);
   const defaultValue = getCurrentAnswer(response) ?? initialValue;
   const currentAnswer = getCurrentMultiSelectAnswer(response);
-  const isMultiSelect = item.repeats || isMultiSelectChoice(item);
+  const isMultiSelect = item.repeats || multiselect;
 
   if (item.answerValueSet) {
     return (
@@ -695,28 +680,46 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
 
-type ChoiceType = 'check-box' | 'drop-down' | 'radio-button' | 'multi-select' | undefined;
+type ChoiceControl = {
+  widget: 'drop-down' | 'radio-button' | 'check-box';
+  multiselect: boolean;
+};
 
-function hasChoiceType(item: QuestionnaireItem, type: ChoiceType): boolean {
-  return !!item.extension?.some(
-    (e) => e.url === QUESTIONNAIRE_ITEM_CONTROL_URL && e.valueCodeableConcept?.coding?.[0]?.code === type
-  );
-}
+const choiceTypes: ChoiceControl['widget'][] = ['drop-down', 'radio-button', 'check-box'];
 
-function isDropdownChoice(item: QuestionnaireItem): boolean {
-  return hasChoiceType(item, 'drop-down');
-}
+/**
+ * Determines the choice control type (dropdown, radio button, or checkbox) based on the questionnaire item properties and extensions.
+ * @param item - The questionnaire item to evaluate.
+ * @returns The resolved choice control type and whether it is multi-select.
+ */
+function resolveChoiceControl(item: QuestionnaireItem): ChoiceControl {
+  let widget: ChoiceControl['widget'] = 'radio-button';
+  let multiselect = false;
 
-function isCheckboxChoice(item: QuestionnaireItem): boolean {
-  return hasChoiceType(item, 'check-box');
-}
+  if (item.answerValueSet) {
+    // Preserve existing behavior of using dropdown for answerValueSet,
+    // since it can contain many options and radio buttons don't work well in that case
+    widget = 'drop-down';
+  }
 
-function isRadiobuttonChoice(item: QuestionnaireItem): boolean {
-  return hasChoiceType(item, 'radio-button');
-}
+  for (const ext of item.extension ?? []) {
+    if (ext.url !== QUESTIONNAIRE_ITEM_CONTROL_URL) {
+      continue;
+    }
+    const code = ext.valueCodeableConcept?.coding?.[0]?.code;
+    if (choiceTypes.includes(code as ChoiceControl['widget'])) {
+      widget = code as ChoiceControl['widget'];
+    }
+    if (code === 'multi-select') {
+      multiselect = true;
+    }
+  }
 
-function isMultiSelectChoice(item: QuestionnaireItem): boolean {
-  return hasChoiceType(item, 'multi-select');
+  if (widget === 'radio-button' && multiselect) {
+    widget = 'check-box';
+  }
+
+  return { widget, multiselect };
 }
 
 interface FormattedData {
