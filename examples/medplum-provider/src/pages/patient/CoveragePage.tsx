@@ -162,16 +162,12 @@ export function CoveragePage(): JSX.Element {
         try {
           const parsed = JSON.parse((err as Error).message);
           errorMessage = parsed?.errorMessage;
-        } catch {
-          // not a JSON error body
-        }
-        if (errorMessage) {
           showNotification({
             color: 'red',
             title: 'Error',
             message: errorMessage,
           });
-        } else {
+        } catch {
           showErrorNotification(err);
         }
       }
