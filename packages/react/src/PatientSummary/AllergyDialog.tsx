@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
-import type { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import type { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
@@ -23,8 +23,8 @@ const PATIENT_ALLERGY_PROFILE = HTTP_HL7_ORG + '/fhir/us/core/StructureDefinitio
 
 export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
   const { patient, encounter, allergy, onSubmit } = props;
-  const [code, setCode] = useState<CodeableConcept | undefined>(allergy?.code);
-  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>(allergy?.clinicalStatus);
+  const [code, setCode] = useState(allergy?.code);
+  const [clinicalStatus, setClinicalStatus] = useState(allergy?.clinicalStatus);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {

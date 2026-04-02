@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Many identifiers below exist only for documentation extraction (MedplumCodeBlock selectBlocks).
+// They are marked with `void` so TypeScript noUnusedLocals stays satisfied.
 
 // start-block imports
 import type { BotEvent } from '@medplum/core';
-import { getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
-import type { Bundle, Communication, Parameters, Slot } from '@medplum/fhirtypes';
+import { ContentType, formatHumanName, getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
+import type { Bundle, Communication, Parameters, Patient, Slot } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -136,6 +139,7 @@ if (readStateBlock?.extension) {
 
 // start-block createReadReceiptTaskTs
 // Option C: Create a read-receipt Task when a message is sent (e.g. in a Bot)
+// Task.code is required; https://medplum.com/task-codes is a docs convention (not a hosted CodeSystem). Use a URI you own in production, or keep this string project-wide for consistency with the examples below.
 const readReceiptTask = await medplum.createResource({
   resourceType: 'Task',
   status: 'requested',
@@ -262,6 +266,110 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
   -H 'content-type: application/fhir+json'
 // end-block queryMessagesInThreadCurl
 */
+
+(async (): Promise<void> => {
+  // start-block creatingFirstThreadClientCredentialsTs
+  // Client credentials before FHIR calls; use real id/secret from Project Admin → Clients.
+  const medplum = new MedplumClient({ baseUrl: 'https://api.medplum.com/' });
+  const profile = await medplum.startClientLogin('YOUR_CLIENT_ID', 'YOUR_CLIENT_SECRET');
+  console.log(profile);
+  // end-block creatingFirstThreadClientCredentialsTs
+})().catch(console.error);
+
+// start-block verifyWalkthroughReferencesTs
+await medplum.readResource('Patient', 'homer-simpson');
+await medplum.readResource('Practitioner', 'doctor-alice-smith');
+// end-block verifyWalkthroughReferencesTs
+
+// start-block createYourFirstThreadHeaderAndFirstMessageTs
+// Thread header (no payload, no partOf) plus the first child message from the clinician.
+// Provider–patient thread: replace Patient and Practitioner references with real ids from your project.
+// Fixed `sent` values match the April 10th topic and sort predictably in examples; use real timestamps in production.
+const createdThreadHeader = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  // Thread header lists every participant in recipient (including the sender) so inbox-style queries work; see Messaging Data Model.
+  recipient: [
+    { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  ],
+  // Optional in FHIR; included here so the header aligns with message times when demonstrating _sort=sent.
+  sent: '2024-04-10T09:00:00.000Z',
+});
+
+const walkthroughFirstMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+  payload: [
+    {
+      contentString:
+        'Hi Homer — we received your lab specimen and processing has started. We will message you here when results are ready.',
+    },
+  ],
+  sent: '2024-04-10T10:00:00.000Z',
+});
+// end-block createYourFirstThreadHeaderAndFirstMessageTs
+// eslint-disable-next-line no-void
+void createdThreadHeader;
+// eslint-disable-next-line no-void
+void walkthroughFirstMessage;
+
+// start-block createYourFirstThreadReplyFromAnotherUserTs
+// In production this createResource call would run as another user (e.g. patient portal) with their own MedplumClient session.
+// It is shown in the same file so you can try the thread end-to-end; use the same `createdThreadHeader.id` from the step above.
+const walkthroughSecondMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  sender: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  recipient: [{ reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' }],
+  payload: [
+    {
+      contentString: 'Thanks — will the results be ready by the end of the week?',
+    },
+  ],
+  sent: '2024-04-10T10:05:00.000Z',
+});
+// end-block createYourFirstThreadReplyFromAnotherUserTs
+// eslint-disable-next-line no-void
+void walkthroughSecondMessage;
+
+// start-block createYourFirstThreadReplyInResponseToTs
+// Use when the user explicitly replies to one message (not required for linear chat).
+// Continues createdThreadHeader and walkthroughSecondMessage from the header, first message, and patient reply steps above.
+const walkthroughReplyInResponseTo = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+  payload: [{ contentString: 'Yes — we expect your results by Thursday. We will notify you here.' }],
+  sent: '2024-04-10T10:15:00.000Z',
+  inResponseTo: [{ reference: `Communication/${walkthroughSecondMessage.id}` }],
+});
+// end-block createYourFirstThreadReplyInResponseToTs
+// eslint-disable-next-line no-void
+void walkthroughReplyInResponseTo;
 
 // start-block filterByPatientTs
 // Filter threads to a specific patient
@@ -627,6 +735,282 @@ await medplum.createResource({
   },
 });
 // end-block subscriptionOooRerouteTs
+
+// start-block externalNotifyOnMessageBotTs
+// Bot: bridge a new in-app child Communication to SMS, email, push, etc. (Twilio, SendGrid, Firebase, …).
+export async function externalNotifyOnMessageHandler(
+  medplum: MedplumClient,
+  event: BotEvent<Communication>
+): Promise<void> {
+  const communication = event.input;
+  const messageText = communication.payload?.[0]?.contentString;
+  const recipientRef = communication.recipient?.[0]?.reference;
+  if (!recipientRef) {
+    return;
+  }
+
+  const recipient = await medplum.readReference({ reference: recipientRef });
+  let contact: string | undefined;
+  if (recipient.resourceType === 'Patient') {
+    const patient = recipient as Patient;
+    contact =
+      patient.telecom?.find((t) => t.system === 'phone' && t.value)?.value ??
+      patient.telecom?.find((t) => t.system === 'email' && t.value)?.value;
+  }
+  // Send via Twilio, SendGrid, etc. using `contact` and `messageText`
+  console.log(`Sending notification to ${contact ?? recipientRef}: ${messageText}`);
+}
+// end-block externalNotifyOnMessageBotTs
+
+// start-block externalNotifyExecuteTs
+// After persisting the child Communication, call $execute so Twilio/SendGrid errors surface to the caller (see Bot $execute docs).
+const outboundNotifyMessageId = 'emr-message-001';
+const childMessageForNotify = await medplum.createResourceIfNoneExist(
+  {
+    resourceType: 'Communication',
+    status: 'in-progress',
+    identifier: [{ system: 'http://example.com/emr-message', value: outboundNotifyMessageId }],
+    partOf: [{ reference: 'Communication/thread-header-id' }],
+    recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+    payload: [{ contentString: 'Your lab results are ready.' }],
+    sent: new Date().toISOString(),
+  },
+  `identifier=http://example.com/emr-message|${outboundNotifyMessageId}`
+);
+
+await medplum.executeBot('{your-external-notify-bot-id}', childMessageForNotify, ContentType.FHIR_JSON);
+// end-block externalNotifyExecuteTs
+
+// start-block inboundSmsConditionalSenderTs
+// Inbound webhook: resolve Patient by phone at write time; set partOf using a thread-matching strategy below.
+const inboundSmsWebhook = {
+  fromPhoneNumber: '+15551234567',
+  messageText: 'Thanks — I will review them',
+  providerMessageId: 'SMxxxxxxxx',
+};
+
+await medplum.createResourceIfNoneExist(
+  {
+    resourceType: 'Communication',
+    status: 'in-progress',
+    identifier: [{ system: 'http://example.com/sms-webhook-message', value: inboundSmsWebhook.providerMessageId }],
+    sender: {
+      reference: `Patient?phone=${inboundSmsWebhook.fromPhoneNumber}`,
+    },
+    payload: [{ contentString: inboundSmsWebhook.messageText }],
+    sent: new Date().toISOString(),
+    medium: [
+      {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+            code: 'SMSWRIT',
+            display: 'SMS',
+          },
+        ],
+      },
+    ],
+    // partOf — see thread matching strategies below
+  },
+  `identifier=http://example.com/sms-webhook-message|${inboundSmsWebhook.providerMessageId}`
+);
+// end-block inboundSmsConditionalSenderTs
+
+// start-block createThreadWithExternalIdTs
+// Strategy 1 setup: thread header with external conversation id (must match conditional partOf below).
+const exampleTwilioConversationSid = 'CHxxxxxxxx';
+const threadHeaderIdentifierQuery = `identifier=https://twilio.com|${exampleTwilioConversationSid}`;
+const threadHeaderWithExternalId = await medplum.upsertResource(
+  {
+    resourceType: 'Communication',
+    status: 'in-progress',
+    identifier: [{ system: 'https://twilio.com', value: exampleTwilioConversationSid }],
+    topic: { text: 'SMS conversation' },
+    subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+    sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+    recipient: [
+      { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+      { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+    ],
+    medium: [
+      {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+            code: 'SMSWRIT',
+            display: 'SMS',
+          },
+        ],
+      },
+    ],
+  },
+  threadHeaderIdentifierQuery
+);
+console.log(threadHeaderWithExternalId);
+// end-block createThreadWithExternalIdTs
+
+// start-block inboundSmsWithExternalThreadIdTs
+// Strategy 1: match thread via identifier on the header (e.g. Twilio Conversation SID, email thread id).
+const inboundSmsWithConversation = {
+  fromPhoneNumber: '+15551234567',
+  messageText: 'Thanks — I will review them',
+  conversationSid: 'CHxxxxxxxx',
+  providerMessageId: 'SMxxxxxxxx',
+};
+
+await medplum.createResourceIfNoneExist(
+  {
+    resourceType: 'Communication',
+    status: 'in-progress',
+    identifier: [
+      { system: 'http://example.com/sms-webhook-message', value: inboundSmsWithConversation.providerMessageId },
+    ],
+    partOf: [
+      {
+        reference: `Communication?identifier=https://twilio.com|${inboundSmsWithConversation.conversationSid}`,
+      },
+    ],
+    sender: {
+      reference: `Patient?phone=${inboundSmsWithConversation.fromPhoneNumber}`,
+    },
+    payload: [{ contentString: inboundSmsWithConversation.messageText }],
+    sent: new Date().toISOString(),
+    medium: [
+      {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+            code: 'SMSWRIT',
+            display: 'SMS',
+          },
+        ],
+      },
+    ],
+  },
+  `identifier=http://example.com/sms-webhook-message|${inboundSmsWithConversation.providerMessageId}`
+);
+// end-block inboundSmsWithExternalThreadIdTs
+
+// start-block inboundSmsActiveThreadLookupBotTs
+// Strategy 2: stateless SMS — resolve Patient, then attach to most recent open thread or create one.
+export async function inboundSmsActiveThreadLookupHandler(medplum: MedplumClient, event: BotEvent): Promise<void> {
+  const webhookData = event.input as Record<string, string>;
+
+  const patient = await medplum.searchOne('Patient', {
+    phone: webhookData.fromPhoneNumber,
+  });
+
+  if (!patient?.id) {
+    return;
+  }
+
+  const activeThreads = await medplum.searchResources('Communication', {
+    'part-of:missing': true,
+    subject: `Patient/${patient.id}`,
+    'status:not': 'completed,entered-in-error,stopped,unknown',
+    _sort: '-_lastUpdated',
+    _count: '1',
+  });
+
+  let threadId: string | undefined;
+  if (activeThreads.length > 0) {
+    threadId = activeThreads[0].id;
+  } else {
+    const newThread = await medplum.createResource({
+      resourceType: 'Communication',
+      status: 'in-progress',
+      topic: {
+        text: `SMS conversation with ${formatHumanName(patient.name?.[0]) || 'Patient'}`,
+      },
+      subject: { reference: `Patient/${patient.id}` },
+    });
+    threadId = newThread.id;
+  }
+
+  if (!threadId) {
+    return;
+  }
+
+  await medplum.createResourceIfNoneExist(
+    {
+      resourceType: 'Communication',
+      status: 'in-progress',
+      identifier: [{ system: 'http://example.com/sms-webhook-message', value: webhookData.providerMessageId }],
+      partOf: [{ reference: `Communication/${threadId}` }],
+      sender: { reference: `Patient/${patient.id}` },
+      payload: [{ contentString: webhookData.messageText }],
+      sent: new Date().toISOString(),
+      medium: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+              code: 'SMSWRIT',
+              display: 'SMS',
+            },
+          ],
+        },
+      ],
+    },
+    `identifier=http://example.com/sms-webhook-message|${webhookData.providerMessageId}`
+  );
+}
+// end-block inboundSmsActiveThreadLookupBotTs
+
+// start-block roundTripReplyBotTs
+// Bot: when a provider sends an in-app reply, mirror it to SMS if the thread is tagged for SMS (medium on header).
+export async function roundTripReplyBotHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef) {
+    return;
+  }
+
+  const threadHeader = await medplum.readReference({ reference: threadRef });
+  if (threadHeader.resourceType !== 'Communication') {
+    return;
+  }
+  const header = threadHeader as Communication;
+  const threadUsesSms = header.medium?.some((m) => m.coding?.some((c) => c.code === 'SMSWRIT'));
+  if (!threadUsesSms) {
+    return;
+  }
+
+  const patientRef = header.subject?.reference;
+  if (!patientRef) {
+    return;
+  }
+  const subject = await medplum.readReference({ reference: patientRef });
+  if (subject.resourceType !== 'Patient') {
+    return;
+  }
+  const patient = subject as Patient;
+  const phone = patient.telecom?.find((t) => t.system === 'phone' && t.value)?.value;
+  const body = message.payload?.[0]?.contentString;
+  // Send via Twilio (or your SMS provider) using `phone` and `body`
+  console.log(`Round-trip SMS to ${phone ?? patientRef}: ${body}`);
+}
+// end-block roundTripReplyBotTs
+
+// start-block roundTripReplyExecuteTs
+// Provider flow: persist the in-app reply, then $execute the round-trip bot with that Communication as input.
+const roundTripMessageId = 'app-composed-reply-001';
+const providerReplyMessage = await medplum.createResourceIfNoneExist(
+  {
+    resourceType: 'Communication',
+    status: 'in-progress',
+    identifier: [{ system: 'http://example.com/app-composed-message', value: roundTripMessageId }],
+    partOf: [{ reference: 'Communication/thread-header-with-sms-medium' }],
+    sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+    recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+    payload: [{ contentString: 'We can schedule a follow-up if you have questions.' }],
+    sent: new Date().toISOString(),
+  },
+  `identifier=http://example.com/app-composed-message|${roundTripMessageId}`
+);
+
+await medplum.executeBot('{your-round-trip-bot-id}', providerReplyMessage, ContentType.FHIR_JSON);
+// end-block roundTripReplyExecuteTs
 
 // start-block staleThreadRemindersTs
 // Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.

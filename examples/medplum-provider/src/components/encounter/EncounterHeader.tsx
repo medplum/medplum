@@ -30,7 +30,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     onSign,
   } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
-  const [activeTab, setActiveTab] = useState<string>('notes');
+  const [activeTab, setActiveTab] = useState('notes');
   const [confirmOpened, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
   const [signOpened, { open: openSign, close: closeSign }] = useDisclosure(false);
 

@@ -14,7 +14,7 @@ export interface DoseSpotIFrameOptions {
 export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | undefined {
   const medplum = useMedplum();
   const { patientId, onPatientSyncSuccess, onIframeSuccess, onError } = options;
-  const initializingRef = useRef<boolean>(false);
+  const initializingRef = useRef(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
   const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);

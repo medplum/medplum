@@ -513,7 +513,7 @@ export class BackEnd extends Construct {
       desiredCount: config.desiredServerCount,
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
-      minHealthyPercent: 50, // 50% is the default; make it explicit
+      minHealthyPercent: 100, // 50% is the default
     });
 
     // Add autoscaling
@@ -885,7 +885,7 @@ export class BackEnd extends Construct {
       desiredCount: service.desiredCount,
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
-      minHealthyPercent: 50,
+      minHealthyPercent: 100, // 50% is the default
     });
 
     // Add dependencies - same as primary service

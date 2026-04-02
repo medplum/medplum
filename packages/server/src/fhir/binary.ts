@@ -71,7 +71,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
       //   except for the special case where the content is actually a Binary resource.
       // """
       const resource = body as Binary;
-      const binary = await (create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
+      const binary = await (create ? repo.createResource(resource) : repo.updateResource(resource));
       await sendFhirResponse(req, res, create ? created : allOk, binary);
       return;
     }
@@ -151,7 +151,7 @@ export async function uploadBinaryData(
     contentType: options?.contentType ?? DEFAULT_CONTENT_TYPE,
     securityContext: options?.securityContext ? { reference: options.securityContext } : undefined,
   };
-  const binary = await (options?.id ? repo.updateResource<Binary>(resource) : repo.createResource<Binary>(resource));
+  const binary = await (options?.id ? repo.updateResource(resource) : repo.createResource(resource));
 
   const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
   await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);

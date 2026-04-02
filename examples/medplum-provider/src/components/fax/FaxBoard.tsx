@@ -49,7 +49,7 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
   const [sendModalOpened, setSendModalOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
-  const faxQueryRef = useRef<string>('');
+  const faxQueryRef = useRef('');
 
   // Clear the list when switching tabs so the skeleton shows
   useEffect(() => {

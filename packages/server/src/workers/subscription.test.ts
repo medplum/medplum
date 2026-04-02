@@ -527,7 +527,7 @@ describe('Subscription Worker', () => {
   // Skip test
   test.skip('Ignore subscriptions with missing criteria', () =>
     withTestContext(async () => {
-      const subscription = await repo.createResource<Subscription>({
+      const subscription = await repo.createResource({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',

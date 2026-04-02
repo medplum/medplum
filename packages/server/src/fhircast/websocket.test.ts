@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CurrentContext, FhircastMessagePayload, WithId } from '@medplum/core';
+import type { FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -9,7 +9,7 @@ import {
   getReferenceString,
   serializeFhircastSubscriptionRequest,
 } from '@medplum/core';
-import type { DiagnosticReport, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Observation, Patient } from '@medplum/fhirtypes';
 import type { Express } from 'express';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -585,7 +585,7 @@ describe('FHIRcast WebSocket', () => {
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
             expect(res2.status).toBe(400);
-            expect(res2.body).toMatchObject<OperationOutcome>(
+            expect(res2.body).toMatchObject(
               badRequest('Cannot delete a resource that is part of the original open context')
             );
             expect(res2.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
@@ -632,9 +632,7 @@ describe('FHIRcast WebSocket', () => {
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
             expect(res3.status).toBe(400);
-            expect(res3.body).toMatchObject<OperationOutcome>(
-              badRequest('Cannot delete resource not currently in the content bundle')
-            );
+            expect(res3.body).toMatchObject(badRequest('Cannot delete resource not currently in the content bundle'));
             expect(res2.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
           })
           .exec(async () => {
@@ -751,7 +749,7 @@ describe('FHIRcast WebSocket', () => {
               .set('Authorization', 'Bearer ' + accessToken);
 
             expect(res2.status).toEqual(200);
-            expect(res2.body).toMatchObject<CurrentContext<''>>({ context: [], 'context.type': '' });
+            expect(res2.body).toMatchObject({ context: [], 'context.type': '' });
           })
           .close()
           .expectClosed();
