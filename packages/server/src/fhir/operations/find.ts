@@ -6,18 +6,24 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  isDefined,
   isNotFound,
+  isResource,
   OperationOutcomeError,
   Operator,
+  resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, HealthcareService, OperationDefinition, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { flatMapMax } from '../../util/array';
+import { addMinutes } from '../../util/date';
+import { invariant } from '../../util/invariant';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
-import { findSlotTimes } from './utils/find';
+import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
-import { chooseSchedulingParameters } from './utils/scheduling-parameters';
+import { chooseSchedulingParameterGroup, extractCommonParameters } from './utils/scheduling-parameters';
 
 const scheduleFindOperation = {
   resourceType: 'OperationDefinition',
@@ -47,12 +53,12 @@ type ScheduleFindParameters = {
 
 // Internal implementation of $find logic
 async function handler(params: {
-  schedule: Reference<Schedule> & { reference: string };
+  schedules: (Reference<Schedule> & { reference: string })[];
   healthcareService: Reference<HealthcareService> & { reference: string };
   start: string;
   end: string;
   _count?: number;
-}): Promise<Slot[]> {
+}): Promise<Slot[][]> {
   const ctx = getAuthenticatedContext();
   const { start, end, _count } = params;
 
@@ -76,8 +82,8 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedule, existingSlots, healthcareService] = await Promise.all([
-    ctx.repo.readReference(params.schedule),
+  const [schedules, existingSlots, healthcareService] = await Promise.all([
+    ctx.repo.readReferences(params.schedules),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
 
@@ -87,7 +93,7 @@ async function handler(params: {
         {
           code: 'schedule',
           operator: Operator.EQUALS,
-          value: params.schedule.reference,
+          value: params.schedules.map((ref) => ref.reference).join(','),
         },
 
         {
@@ -114,9 +120,34 @@ async function handler(params: {
     }),
   ]);
 
-  if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
-    throw new OperationOutcomeError(badRequest('Schedule is not scheduleable for requested service type'));
+  if (!schedules.every((schedule) => isResource(schedule))) {
+    const idx = schedules.findIndex((schedule) => !isResource(schedule));
+    throw new OperationOutcomeError(badRequest('Loading schedule failed', `schedule[${idx}]`));
   }
+
+  const parameterGroup = chooseSchedulingParameterGroup(schedules, healthcareService);
+
+  schedules.forEach((schedule, idx) => {
+    if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
+      throw new OperationOutcomeError(
+        badRequest('Schedule is not scheduleable for requested service type', `Parameters.schedule[${idx}]`)
+      );
+    }
+
+    if (schedule.actor.length !== 1) {
+      throw new OperationOutcomeError(
+        badRequest('$find only supported on schedules with exactly one actor', `Parameters.schedule[${idx}]`)
+      );
+    }
+
+    if (!parameterGroup.get(schedule)) {
+      throw new OperationOutcomeError(
+        badRequest('No SchedulingParameters found on Schedule or HealthcareService', `Parameters.schedule[${idx}]`)
+      );
+    }
+  });
+
+  const commonParameters = extractCommonParameters([...parameterGroup.values()].filter(isDefined));
 
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.
@@ -124,45 +155,103 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
   }
 
-  if (schedule.actor.length !== 1) {
-    throw new OperationOutcomeError(badRequest('$find only supported on schedules with exactly one actor'));
+  const actors = await ctx.repo.readReferences(schedules.map((schedule) => schedule.actor[0]));
+  if (!actors.every((actor) => isResource(actor))) {
+    const idx = actors.findIndex((actor) => !isResource(actor));
+    throw new OperationOutcomeError(badRequest('Loading schedule.actor failed', `Parameters.schedule[${idx}]`));
   }
-  const actor = await ctx.repo.readReference(schedule.actor[0]);
-  const actorTimeZone = getTimeZone(actor);
-  if (!actorTimeZone) {
-    throw new OperationOutcomeError(
-      badRequest('No timezone specified', `Schedule.actor[0].extension(${TimezoneExtensionURI})`)
-    );
-  }
-
-  const schedulingParameters = chooseSchedulingParameters(schedule, healthcareService);
-  if (!schedulingParameters) {
-    throw new OperationOutcomeError(badRequest('SchedulingParameters not present on Schedule or HealthcareService'));
-  }
-
-  const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
-
-  let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
-  availability = applyExistingSlots({
-    availability,
-    slots: existingSlots,
-    range,
-    serviceType: healthcareService.type,
-  });
 
   const serviceType = toCodeableReferenceLike(healthcareService);
 
-  return findSlotTimes(schedulingParameters, availability, { maxCount: pageSize }).map(
-    ({ start, end }) =>
-      ({
-        resourceType: 'Slot',
-        start: start.toISOString(),
-        end: end.toISOString(),
-        schedule: createReference(schedule),
-        status: 'free',
-        serviceType,
-      }) satisfies Slot
+  const allAvailability = schedules.map((schedule, idx) => {
+    const schedulingParameters = parameterGroup.get(schedule);
+    invariant(schedulingParameters);
+    const actor = actors[idx];
+    const actorTimeZone = getTimeZone(actor);
+    const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
+    if (!activeTimeZone) {
+      throw new OperationOutcomeError(
+        badRequest('No timezone specified', `Parameters.schedule[${idx}].actor[0].extension(${TimezoneExtensionURI})`)
+      );
+    }
+
+    const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+    let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
+    availability = applyExistingSlots({
+      availability,
+      slots: scheduleSlots,
+      range,
+      serviceType: healthcareService.type,
+    });
+
+    // Trim off bufferBefore/bufferAfter from availability
+    availability = availability.map((interval) => ({
+      start: addMinutes(interval.start, schedulingParameters.bufferBefore),
+      end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+    }));
+
+    return availability;
+  });
+
+  const intersectingAvailability = allAvailability.reduce((acc, val) => overlappingIntervals(acc, val));
+  const intervals = flatMapMax(
+    intersectingAvailability,
+    (interval, _idx, maxCount) =>
+      findAlignedSlotTimes(interval, {
+        offsetMinutes: commonParameters.alignmentOffset,
+        durationMinutes: commonParameters.duration,
+        alignment: commonParameters.alignmentInterval,
+        maxCount,
+      }),
+    pageSize
   );
+
+  return intervals.map((interval) => {
+    return schedules.flatMap((schedule) => {
+      const parameters = parameterGroup.get(schedule);
+      invariant(parameters);
+
+      const start = interval.start.toISOString();
+      const end = interval.end.toISOString();
+
+      const slots: Slot[] = [
+        {
+          resourceType: 'Slot',
+          start,
+          end,
+          schedule: createReference(schedule),
+          status: 'busy',
+          serviceType,
+        },
+      ];
+
+      if (parameters.bufferBefore) {
+        slots.push({
+          resourceType: 'Slot',
+          start: addMinutes(interval.start, -1 * parameters.bufferBefore).toISOString(),
+          end: start,
+          schedule: createReference(schedule),
+          status: 'busy-unavailable',
+          serviceType,
+          comment: 'buffer before appointment',
+        });
+      }
+
+      if (parameters.bufferAfter) {
+        slots.push({
+          resourceType: 'Slot',
+          start: end,
+          end: addMinutes(interval.end, parameters.bufferAfter).toISOString(),
+          schedule: createReference(schedule),
+          status: 'busy-unavailable',
+          serviceType,
+          comment: 'buffer after appointment',
+        });
+      }
+
+      return slots;
+    });
+  });
 }
 
 /**
@@ -176,17 +265,28 @@ async function handler(params: {
  */
 export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ScheduleFindParameters>(scheduleFindOperation, req);
-  const resultSlots = await handler({
+  const proposedSlots = await handler({
     start: params.start,
     end: params.end,
     _count: params._count,
-    schedule: { reference: `Schedule/${req.params.id}` },
+    schedules: [{ reference: `Schedule/${req.params.id}` }],
     healthcareService: { reference: params['service-type-reference'] },
   });
+
+  const entry = proposedSlots.map((slots) => {
+    // We passed in a single schedule, so each resulting slot should have
+    // a single "busy" slot.
+    const slot = slots.find((s) => s.status === 'busy');
+    invariant(slot);
+    // In the single schedule $find, we show the potential slots as "free", as they represent
+    // bookable time rather than a proposed set of resources to create during booking.
+    return { resource: { ...slot, status: 'free' as const } };
+  });
+
   const bundle: Bundle<Slot> = {
     resourceType: 'Bundle',
     type: 'searchset',
-    entry: resultSlots.map((slot) => ({ resource: slot })),
+    entry,
   };
 
   return [allOk, buildOutputParameters(scheduleFindOperation, bundle)];
