@@ -8,7 +8,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { useDebouncedValue } from '../useDebouncedValue/useDebouncedValue';
 
 type SearchFn = 'search' | 'searchOne' | 'searchResources';
-export type SearchOptions = { debounceMs?: number };
+export type SearchOptions = { debounceMs?: number; enabled?: boolean };
 
 const DEFAULT_DEBOUNCE_MS = 250;
 
@@ -73,7 +73,7 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
   options?: SearchOptions
 ): [SearchReturnType | undefined, boolean, OperationOutcome | undefined] {
   const medplum = useMedplum();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SearchReturnType>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
@@ -88,10 +88,17 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
     [searchKey]
   );
 
+  const enabled = options?.enabled ?? true;
   const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
   const [debouncedSearchValue] = useDebouncedValue(searchValue, debounceMs, { leading: true });
 
   useEffect(() => {
+    if (!enabled) {
+      return () => {};
+    }
+
+    setLoading(true);
+
     let active = true;
     medplum[searchFn](debouncedSearchValue.resourceType, debouncedSearchValue.query)
       .then((res) => {
@@ -112,7 +119,7 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
     return () => {
       active = false;
     };
-  }, [medplum, searchFn, debouncedSearchValue]);
+  }, [medplum, searchFn, debouncedSearchValue, enabled]);
 
   return [result, loading, outcome];
 }
