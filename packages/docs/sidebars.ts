@@ -39,7 +39,7 @@ const sidebars: SidebarsConfig = {
       type: 'html',
       value: '<strong>Clinical Workflows</strong>',
       className: 'sidebar-title',
-    }, 
+    },
     {
       type: 'category',
       label: 'Intake & Registration',
