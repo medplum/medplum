@@ -25,7 +25,9 @@ export function CoveragePage(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
-  const [eligibilityBot, _eligibilityBotLoading] = useSearchOne('Bot', { identifier: 'https://www.medplum.com/bots|eligibility' });
+  const [eligibilityBot, _eligibilityBotLoading] = useSearchOne('Bot', {
+    identifier: 'https://www.medplum.com/bots|eligibility',
+  });
   const [practitionerRole, setPractitionerRole] = useState<PractitionerRole | null>();
   const [coverage, setCoverage] = useState<Coverage>();
   const [coverageLoading, setCoverageLoading] = useState(true);
