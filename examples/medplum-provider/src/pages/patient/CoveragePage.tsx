@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Box, Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack, Text, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { createReference, formatDate, getReferenceString } from '@medplum/core';
 import type {
   Coverage,
@@ -17,7 +18,6 @@ import { EligibilityDetails } from '../../components/insurance/EligibilityDetail
 import { EligibilityListItem } from '../../components/insurance/EligibilityListItem';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './CoveragePage.module.css';
-import { showNotification } from '@mantine/notifications';
 
 export function CoveragePage(): JSX.Element {
   const { patientId, coverageId, requestId } = useParams();
