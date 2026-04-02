@@ -102,9 +102,9 @@ async function getApp() {
     // Heartbeat doesn't work well with cold starts
     process.env.MEDPLUM_HEARTBEAT_ENABLED ??= 'false';
     
-    // Disable automatic migrations - in serverless, multiple instances can start concurrently
-    // and compete for the migration lock. Run migrations separately via CLI before deploying.
-    process.env.MEDPLUM_DATABASE_RUN_MIGRATIONS ??= 'false';
+    // Database migrations: Set MEDPLUM_DATABASE_RUN_MIGRATIONS=true to run migrations on startup.
+    // Note: In serverless with high concurrency, multiple cold starts may compete for the migration lock.
+    // For production, consider running migrations separately via CLI before deploying, then set to false.
 
     const config = await loadConfig(configSource);
 
