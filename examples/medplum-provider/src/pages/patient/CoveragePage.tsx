@@ -7,7 +7,9 @@ import type {
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
+  Organization,
   PractitionerRole,
+  Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useSearchOne } from '@medplum/react';
 import type { JSX } from 'react';
@@ -154,7 +156,7 @@ export function CoveragePage(): JSX.Element {
         purpose: ['benefits'],
         created: new Date().toISOString(),
         patient: { reference: `Patient/${patientId}` },
-        insurer: coverage.payor?.[0] as { reference: string; display?: string },
+        insurer: coverage.payor?.[0] as Reference<Organization>,
         provider: practitionerRole.organization,
         insurance: [{ focal: true, coverage: createReference(coverage) }],
       };
