@@ -93,7 +93,9 @@ When a patient has a visit related to an ongoing care episode, link the [`Encoun
 
 <MedplumCodeBlock language="ts" selectBlocks="createEncounterTs">{ExampleCode}</MedplumCodeBlock>
 
-In this example, the encounter is linked to both a diabetes episode and a weight loss episode, reflecting that both concerns were addressed during the same visit.
+In this example, the encounter is linked to both a diabetes episode and a weight loss episode, reflecting that both concerns were addressed during the same visit. 
+
+You are not limited to encounters that already took place. Link future visits to an episode by creating encounters in advance and pointing 'Encounter.episodeOfCare' at the 'EpisodeOfCare'. Use 'Encounter.status' (for example planned) to record that the encounter is scheduled or not yet started, in line with FHIR’s encounter lifecycle.
 
 ## Creating a Care Plan with Goals
 
