@@ -84,9 +84,11 @@ async function getApp() {
 
   // Start initialization
   initAppPromise = (async () => {
-    // Dynamic import from the bundled dist/ folder
-    const { initApp } = await import('../dist/app.js');
-    const { loadConfig } = await import('../dist/config/loader.js');
+    // Dynamic import from the bundled dist/index.js
+    // IMPORTANT: Both initApp and loadConfig must come from the SAME bundle
+    // to share the same cachedConfig variable. Importing from separate bundles
+    // causes "Config not loaded" errors because each bundle has its own module scope.
+    const { initApp, loadConfig } = await import('../dist/index.js');
 
     // Configure Redis for Vercel/Upstash (handles both REDIS_URL and manual MEDPLUM_REDIS_* vars)
     configureRedisForVercel();
@@ -96,8 +98,13 @@ async function getApp() {
     // You can also combine sources: "env" or "file:config.json,env" for file + env overlay
     const configSource = process.env.MEDPLUM_CONFIG_SOURCE || 'env';
 
-    // Override heartbeat settings for serverless (doesn't work well with cold starts)
+    // Override settings for serverless environment
+    // Heartbeat doesn't work well with cold starts
     process.env.MEDPLUM_HEARTBEAT_ENABLED ??= 'false';
+    
+    // Database migrations: Set MEDPLUM_DATABASE_RUN_MIGRATIONS=true to run migrations on startup.
+    // Note: In serverless with high concurrency, multiple cold starts may compete for the migration lock.
+    // For production, consider running migrations separately via CLI before deploying, then set to false.
 
     const config = await loadConfig(configSource);
 

@@ -6,6 +6,9 @@ import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
 import { globalLogger } from './logger';
 import { getServerVersion } from './util/version';
+
+// Re-export for Vercel serverless deployment
+export { initApp, loadConfig };
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
