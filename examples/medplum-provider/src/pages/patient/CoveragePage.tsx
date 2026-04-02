@@ -38,7 +38,7 @@ export function CoveragePage(): JSX.Element {
   const [responseLoading, setResponseLoading] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   const [practitionerRole, _practitionerRoleLoading] = useSearchOne(
-    'PractitionerRole', 
+    'PractitionerRole',
     profile ? { practitioner: getReferenceString(profile) } : undefined,
     { enabled: !!profile }
   );
