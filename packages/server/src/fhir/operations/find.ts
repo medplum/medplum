@@ -19,7 +19,7 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
 import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
-const findOperation = {
+const scheduleFindOperation = {
   resourceType: 'OperationDefinition',
   name: 'find',
   status: 'active',
@@ -38,7 +38,7 @@ const findOperation = {
   ],
 } as const satisfies OperationDefinition;
 
-type FindParameters = {
+type ScheduleFindParameters = {
   start: string;
   end: string;
   'service-type-reference': string;
@@ -175,7 +175,7 @@ async function handler(params: {
  * @returns The FHIR response.
  */
 export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
-  const params = parseInputParameters<FindParameters>(findOperation, req);
+  const params = parseInputParameters<ScheduleFindParameters>(scheduleFindOperation, req);
   const resultSlots = await handler({
     start: params.start,
     end: params.end,
@@ -189,5 +189,5 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     entry: resultSlots.map((slot) => ({ resource: slot })),
   };
 
-  return [allOk, buildOutputParameters(findOperation, bundle)];
+  return [allOk, buildOutputParameters(scheduleFindOperation, bundle)];
 }
