@@ -45,7 +45,7 @@ export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encou
   const encounterResource = useResource(encounter);
   const patientReference = encounterResource?.subject as Reference<Patient> | undefined;
   const patientResource = useResource(patientReference);
-  const [encounterState, setEncounter] = useState<WithId<Encounter> | undefined>(encounterResource);
+  const [encounterState, setEncounter] = useState(encounterResource);
   const [claim, setClaim] = useState<WithId<Claim> | undefined>();
   const [practitioner, setPractitioner] = useState<WithId<Practitioner> | undefined>();
   const [tasks, setTasks] = useState<WithId<Task>[]>([]);

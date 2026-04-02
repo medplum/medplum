@@ -273,7 +273,7 @@ describe('Get WebSocket binding token', () => {
       project: { features: ['websocket-subscriptions'] },
     });
 
-    const createdSub = await repo.createResource<Subscription>({
+    const createdSub = await repo.createResource({
       resourceType: 'Subscription',
       reason: 'test',
       status: 'active',

@@ -1,10 +1,18 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "rootDir": "src",
     "outDir": "dist",
-    "paths": {
-      "*": ["./src/@types/*"]
-    }
+    "module": "preserve",
+    "types": ["jest", "node"],
+    "lib": ["esnext", "dom"]
   },
+  "references": [
+    { "path": "../core" },
+    { "path": "../definitions" },
+    { "path": "../fhirtypes" },
+    { "path": "../hl7" },
+    { "path": "../mock" }
+  ],
   "include": ["src/**/*.ts"]
 }

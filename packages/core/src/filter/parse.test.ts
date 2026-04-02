@@ -232,6 +232,12 @@ describe('_filter Parameter parser', () => {
     expect(() => parseFilterParameter('name ew ali')).toThrow('Invalid operator: ew');
   });
 
+  test('Reverse chained search', () => {
+    const result = parseFilterParameter(`_has:Observation:patient:_id ne ''`);
+    expect(result).toBeInstanceOf(FhirFilterComparison);
+    expect((result as FhirFilterComparison).operator).toBe(Operator.NOT_EQUALS);
+  });
+
   test('parse raw token with leading digits', () => {
     const result = parseFilterParameter('identifier eq 123_abc');
     expect(result).toBeInstanceOf(FhirFilterComparison);

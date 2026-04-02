@@ -27,7 +27,7 @@ export function UploadDataPage(): JSX.Element {
   const profile = useMedplumProfile();
   const { dataType } = useParams();
   const navigate = useNavigate();
-  const [pageDisabled, setPageDisabled] = useState<boolean>(false);
+  const [pageDisabled, setPageDisabled] = useState(false);
 
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
 

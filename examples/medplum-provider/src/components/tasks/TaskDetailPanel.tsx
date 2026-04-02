@@ -23,7 +23,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const medplum = useMedplum();
   const resolvedTask = useResource(taskProp);
   const [task, setTask] = useState<Task | undefined>(resolvedTask);
-  const [activeTab, setActiveTab] = useState<string>('properties');
+  const [activeTab, setActiveTab] = useState('properties');
 
   useEffect(() => {
     if (resolvedTask) {

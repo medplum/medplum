@@ -23,7 +23,7 @@ describe('DICOM', () => {
 
     bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
-    endpoint = await medplum.createResource<Endpoint>({
+    endpoint = await medplum.createResource({
       resourceType: 'Endpoint',
       address: 'dicom://0.0.0.0:8104',
     } as Endpoint);
@@ -47,7 +47,7 @@ describe('DICOM', () => {
       });
     });
 
-    const agent = await medplum.createResource<Agent>({
+    const agent = await medplum.createResource({
       resourceType: 'Agent',
       channel: [
         {

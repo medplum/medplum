@@ -37,12 +37,12 @@ export function WsSubStatsWidget(): JSX.Element {
   const [projects, setProjects] = useState<WsSubProjectStats[] | undefined>();
   const [loading, setLoading] = useState(false);
   const [opened, { open, close }] = useDisclosure(false);
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
-  const [expandedResourceTypes, setExpandedResourceTypes] = useState<Set<string>>(new Set());
+  const [expandedProjects, setExpandedProjects] = useState(new Set());
+  const [expandedResourceTypes, setExpandedResourceTypes] = useState(new Set());
   // Cache of per-project detail stats (resource types + criteria), keyed by projectId
-  const [projectDetails, setProjectDetails] = useState<Map<string, WsSubResourceTypeDetailStats[]>>(new Map());
+  const [projectDetails, setProjectDetails] = useState(new Map<string, WsSubResourceTypeDetailStats[]>());
   // Per-project loading state, keyed by projectId
-  const [loadingProjectDetails, setLoadingProjectDetails] = useState<Map<string, boolean>>(new Map());
+  const [loadingProjectDetails, setLoadingProjectDetails] = useState(new Map<string, boolean>());
 
   function fetchStats(): void {
     setLoading(true);
