@@ -588,7 +588,51 @@ const defaultQuestionnaire: Questionnaire = {
               system: 'http://loinc.org',
             },
           ],
-          answerValueSet: 'http://example.com/pregnancy-status',
+          answerOption: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '77386006',
+                display: 'Pregnant',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '60001007',
+                display: 'Not pregnant',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '102874004',
+                display: 'Possible pregnancy',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor',
+                code: 'UNK',
+                display: 'Unknown',
+              },
+            },
+          ],
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/questionnaire-item-control',
+                    code: 'drop-down',
+                    display: 'Drop down',
+                  },
+                ],
+                text: 'Drop down',
+              },
+            },
+          ],
         },
         {
           linkId: 'estimated-delivery-date',

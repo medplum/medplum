@@ -40,7 +40,6 @@ Medplum's tenancy model can be further segmented using access policies. Access p
 
 - [Projects Documentation](/docs/access/projects) - Technical details on project-based isolation
 - [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy) - Implementation guide for organization-level multi-tenancy
-- [Multi-Tenant Decision Guide](/solutions/compliance-security/multi-tenant-decision-guide) - Operational guide for choosing your tenanting model
 - [Security Overview](/security) - Comprehensive security documentation
 - [Compliance Overview](/docs/compliance) - Detailed compliance information
 - [MSO Demo Application](https://github.com/medplum/medplum-mso-demo) - Example implementation of organization-level multi-tenancy

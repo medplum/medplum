@@ -10,6 +10,12 @@ import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
 import { sendHandshakeBundle } from './subscriptions/test-utils';
 import { sleep } from './utils';
 
+jest.mock('./subscriptions/constants', () => ({
+  ...jest.requireActual('./subscriptions/constants'),
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+  UNREF_GRACE_PERIOD_MS: 50,
+}));
+
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 
@@ -148,15 +154,21 @@ describe('MedplumClient -- Subscriptions', () => {
     expect(connectEvent?.type).toStrictEqual('connect');
     expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
-    const disconnectEvent = await new Promise<SubscriptionEventMap['disconnect']>((resolve) => {
+    // Set up disconnect listener before unsubscribing
+    const disconnectPromise = new Promise<SubscriptionEventMap['disconnect']>((resolve) => {
       emitter.addEventListener('disconnect', (event) => {
         resolve(event);
       });
-      expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
     });
+
+    expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
+
+    // Disconnect is deferred — fires when the GC timer finalizes the unreferenced entry
+    const disconnectEvent = await disconnectPromise;
     expect(disconnectEvent?.type).toStrictEqual('disconnect');
     expect(disconnectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
+    // Second unsubscribe should warn since the entry was already removed
     expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
     expect(console.warn).toHaveBeenCalledTimes(1);
   });

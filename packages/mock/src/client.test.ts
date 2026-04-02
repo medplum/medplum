@@ -604,7 +604,7 @@ describe('MockClient', () => {
   test('Preserve history', async () => {
     const client = new MockClient();
 
-    const resource1 = await client.createResource<ServiceRequest>({
+    const resource1 = await client.createResource({
       resourceType: 'ServiceRequest',
       orderDetail: [{ text: 'foo' }],
     } as ServiceRequest);

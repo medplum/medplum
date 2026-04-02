@@ -369,11 +369,55 @@ Note: "." is the `./path-to-your-helm-chart.` The `values.yaml` is in the same d
 
 ### Deploy the frontend (App) {#deploy-the-frontend-(app)}
 
-Serve your frontend application through Cloud Storage and the CDN-enabled load balancer.
+Serve your frontend application through Azure CDN and the blob storage account.
 
-- **Upload to CDN storage account:**  
-  Use the `deploy-app-azure.sh` to deploy the frontend static contents to the CDN storage account
-  **Important**: ensure that you have built the APP code with the proper API domain.
+:::caution[Build-time configuration]
+
+The Medplum app is a Vite-based single-page application. Environment variables are **baked into the static build output** at compile time — they are not read at runtime. You must set `MEDPLUM_BASE_URL` (and any other variables) **before** building.
+
+:::
+
+#### Configure and build the app
+
+From the root of the cloned Medplum repository, create `packages/app/.env` with your deployment values:
+
+```bash
+cat > packages/app/.env << 'EOF'
+# Required: URL of your Medplum API server
+MEDPLUM_BASE_URL=https://api.yourdomain.com/
+
+# Optional: Pre-fill a specific OAuth2 client ID for all logins
+MEDPLUM_CLIENT_ID=
+
+# Optional: Enable Google Sign-In (provide your Google OAuth2 client ID)
+GOOGLE_CLIENT_ID=
+
+# Optional: Enable reCAPTCHA on the sign-in page (provide your reCAPTCHA v3 site key)
+RECAPTCHA_SITE_KEY=
+
+# Optional: Allow new users to self-register (set to "false" to disable)
+MEDPLUM_REGISTER_ENABLED=true
+
+# Optional: Enable AWS Textract integration
+MEDPLUM_AWS_TEXTRACT_ENABLED=false
+EOF
+```
+
+Replace `https://api.yourdomain.com/` with your actual API domain. Then install dependencies and build:
+
+```bash
+npm ci --include dev
+npm run build:fast
+```
+
+#### Upload to CDN storage account
+
+Use the `deploy-app-azure.sh` script to upload the built static files to the CDN storage account. Replace `medplumapp` with your actual Azure Storage account name (available from the Terraform output):
+
+```bash
+STORAGE_ACCOUNT=medplumapp ./scripts/deploy-app-azure.sh
+```
+
 
 ### Clean Up Resources (Optional) {#clean-up-resources-(optional)}
 

@@ -24,9 +24,9 @@ function setLine(address: Address, index: number, str: string): Address {
 export type AddressInputProps = ComplexTypeInputProps<Address>;
 
 export function AddressInput(props: AddressInputProps): JSX.Element {
-  const [value, setValue] = useState<Address>(props.defaultValue || {});
+  const [value, setValue] = useState(props.defaultValue || {});
 
-  const valueRef = useRef<Address>(value);
+  const valueRef = useRef(value);
   valueRef.current = value;
 
   const { getExtendedProps } = useContext(ElementsContext);

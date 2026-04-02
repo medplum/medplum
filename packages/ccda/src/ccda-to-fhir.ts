@@ -752,7 +752,7 @@ class CcdaToFhirConverter {
     this.processSeverity(reactionObs, reaction);
 
     // Add reaction reference
-    if (reaction.manifestation && reaction.manifestation.length > 0 && reactionObs.text?.reference?.['@_value']) {
+    if (reaction.manifestation?.[0] && reactionObs.text?.reference?.['@_value']) {
       reaction.manifestation[0].extension = this.mapTextReference(reactionObs.text);
     }
 
