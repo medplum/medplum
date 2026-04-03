@@ -10,6 +10,7 @@ import {
   Operator,
   parseSearchRequest,
   SNOMED,
+  UCUM,
 } from '@medplum/core';
 import type {
   ActivityDefinition,
@@ -3734,6 +3735,39 @@ describe('project-scoped Repository', () => {
 
       expect(result2.entry).toHaveLength(1);
       expect(result2.entry?.[0].resource?.id).toStrictEqual(patient.id);
+    }));
+
+  test('reverse chain with prefix modifier', async () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        birthDate: '2000-01-01',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        effectiveDateTime: '2000-01-01',
+        status: 'final',
+        code: { text: 'Temp.' },
+        subject: createReference(patient),
+        valueQuantity: { value: 101, code: '[degF]', system: UCUM },
+      });
+
+      const result = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_has:Observation:subject:value-quantity',
+            operator: Operator.EQUALS,
+            value: 'gt100',
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Lookup table exact match with comma disjunction', () =>

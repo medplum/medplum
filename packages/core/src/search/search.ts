@@ -111,6 +111,10 @@ const MODIFIER_OPERATORS: Record<string, Operator> = {
   missing: Operator.MISSING,
   identifier: Operator.IDENTIFIER,
   iterate: Operator.ITERATE,
+
+  // Allow equality prefixes for use with _filter
+  eq: Operator.EQUALS,
+  ne: Operator.NOT_EQUALS,
 };
 
 /**
@@ -363,7 +367,7 @@ export function parseParameter(searchParam: SearchParameter, modifier: string, v
           badRequest(`Invalid format for ${searchParam.type} search parameter: ${value}`)
         );
       }
-      return { code: searchParam.code, operator: parseModifier(modifier), value };
+      return { code: searchParam.code, operator: parseModifier(modifier) ?? Operator.EQUALS, value };
 
     default:
       throw new Error('Unrecognized search parameter type: ' + searchParam.type);
@@ -395,8 +399,8 @@ function parsePrefix(input: string, defaultOperator: Operator): { operator: Oper
   return { operator: defaultOperator, value: input };
 }
 
-function parseModifier(modifier: string): Operator {
-  return MODIFIER_OPERATORS[modifier] ?? Operator.EQUALS;
+function parseModifier(modifier: string): Operator | undefined {
+  return MODIFIER_OPERATORS[modifier];
 }
 
 function parseIncludeTarget(input: string): IncludeTarget {

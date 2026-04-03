@@ -25,6 +25,7 @@ import {
   Operator,
   parseFhirPath,
   parseFilterParameter,
+  parseParameter,
   PropertyType,
   SearchParameterType,
   serverError,
@@ -1821,7 +1822,7 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
         if (!searchParam) {
           throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
         }
-        filter = { code, operator: (modifier as Operator) ?? searchFilter.operator, value: searchFilter.value };
+        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
       }
     } else {
       const link = parseChainLink(part, currentResourceType);
