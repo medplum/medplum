@@ -1,18 +1,72 @@
-# Multi-Brand Architecture
+# Multi-Brand & Multi-Tenant Architecture
 
 ## Overview
 
-The MEDrecord ecosystem consists of multiple independent brands, each serving different healthcare use cases while sharing common infrastructure. This architecture leverages Medplum's native multi-tenant capabilities to ensure complete data isolation between brands and organizations.
+The MEDrecord ecosystem uses a **Brand + Tenant** model where:
+- **Brand** = Shared application codebase (HealthTalk, Coachi, MedSafe)
+- **Tenant** = Healthcare institution with its own Medplum Project (complete data isolation)
 
-### Brand vs Organization vs Project
+This ensures NEN 7510 / AVG compliance with full data separation between healthcare institutions.
 
-Understanding the hierarchy is critical for correct implementation:
+### Hierarchy
 
 | Level | Medplum Concept | MEDrecord Usage | Example |
 |-------|-----------------|-----------------|---------|
-| **Brand** | Project | Independent application with its own domain, branding, and Medplum Project | HealthTalk, Coachi, MedSafe |
-| **Tenant** | Organization | Customer/clinic within a brand, uses `meta.compartment` for data isolation | Clinic Amsterdam, Hospital Rotterdam |
-| **User** | ProjectMembership | User access scoped to specific Organizations via `access.parameter` | Dr. Smith at Clinic Amsterdam |
+| **Brand** | App codebase | Shared Next.js app with branding | HealthTalk, Coachi, MedSafe |
+| **Tenant** | **Project** | Healthcare institution - complete data isolation | Ziekenhuis Amsterdam, Huisarts Rotterdam |
+| **User** | ProjectMembership | User within a tenant | Dr. Smith at Ziekenhuis Amsterdam |
+
+### Why Tenant = Project (Not Organization)
+
+| Concern | Organization-based | Project-based (Our Choice) |
+|---------|-------------------|---------------------------|
+| **Data Isolation** | Soft (AccessPolicy) | Hard (native Medplum) |
+| **NEN 7510 Compliance** | Risk - shared DB | Compliant - separate data |
+| **Breach Containment** | All tenants exposed | Only 1 tenant affected |
+| **Audit Logs** | Mixed per-tenant | Clean per-tenant |
+| **Scaling** | Single project limits | Independent scaling |
+
+### Architecture Diagram
+
+```
+Brand: HealthTalk (shared codebase)
+├── mrd/apps/healthtalk/              <- Deployed once per tenant
+│
+├── Tenant: healthtalk-ziekenhuis-a   <- Medplum Project
+│   ├── All Patient data
+│   ├── All QuestionnaireResponses
+│   ├── Tenant-specific config
+│   └── AccessPolicies
+│
+├── Tenant: healthtalk-huisarts-b     <- Medplum Project
+│   └── Completely isolated data
+│
+└── Tenant: healthtalk-ggz-c          <- Medplum Project
+    └── Completely isolated data
+
+Brand: Coachi (shared codebase)
+├── mrd/apps/coachi/
+│
+├── Tenant: coachi-praktijk-x         <- Medplum Project
+└── Tenant: coachi-instelling-y       <- Medplum Project
+```
+
+### Gateway Multi-Tenant Integration
+
+The Gateway provides the `tenant_id` (Medplum Project ID) on every authenticated request:
+
+```typescript
+// Gateway response includes tenant context
+{
+  "auth": {
+    "user_id": "user-uuid",
+    "tenant_id": "healthtalk-ziekenhuis-a",  // Medplum Project ID
+    "brand": "healthtalk"
+  }
+}
+```
+
+All API routes MUST verify `tenant_id` from Gateway and scope queries accordingly.
 
 ## Package Structure
 
@@ -104,21 +158,33 @@ Within each brand, Organizations represent tenants (clinics, hospitals, departme
 
 ## Environment Configuration
 
-Each brand requires specific environment variables:
+Each tenant deployment requires specific environment variables:
 
 ```bash
-# Brand identification
-NEXT_PUBLIC_BRAND=coachi
-NEXT_PUBLIC_BRAND_NAME="Coachi"
+# Brand identification (determines UI theme)
+NEXT_PUBLIC_BRAND=healthtalk
+NEXT_PUBLIC_BRAND_NAME="HealthTalk"
 
-# Gateway (shared across all brands)
+# Gateway (shared across all tenants)
 GATEWAY_URL=https://auth-test-b2c.healthtalk.ai
 
-# Medplum Project (brand-specific)
-MEDPLUM_PROJECT_ID=coachi-prod
-MEDPLUM_CLIENT_ID=xxx
-MEDPLUM_CLIENT_SECRET=xxx  # Server-side only, never expose to client
+# Tenant-specific Medplum Project
+MEDPLUM_PROJECT_ID=healthtalk-ziekenhuis-a    # Tenant ID from Gateway
+MEDPLUM_CLIENT_ID=xxx                          # Per-tenant client
+MEDPLUM_CLIENT_SECRET=xxx                      # Server-side only
 ```
+
+### Deployment Model
+
+Each tenant gets its own Vercel deployment of the brand app:
+
+| Tenant | Domain | Medplum Project | Brand |
+|--------|--------|-----------------|-------|
+| Ziekenhuis A | `ziekenhuis-a.healthtalk.ai` | `healthtalk-ziekenhuis-a` | healthtalk |
+| Huisarts B | `huisarts-b.healthtalk.ai` | `healthtalk-huisarts-b` | healthtalk |
+| Praktijk X | `praktijk-x.coachi.ai` | `coachi-praktijk-x` | coachi |
+
+Alternative: Single deployment with runtime tenant resolution from Gateway.
 
 ## Security Requirements
 
@@ -138,9 +204,18 @@ To create a new brand application:
 1. **Copy the template** from an existing brand in `mrd/apps/` folder
 2. **Update package.json** with new brand name (`@mrd/newbrand`)
 3. **Create brand theme** in `mrd/packages/ui/src/themes/newbrand.css`
-4. **Configure Medplum Project.setting** with brand settings (see below)
-5. **Customize `.agents/`** folder with brand-specific MDX overrides
-6. **Create Medplum Project** for the brand with appropriate AccessPolicies
+4. **Customize `.agents/`** folder with brand-specific MDX overrides
+
+## Onboarding a New Tenant
+
+To onboard a new healthcare institution:
+
+1. **Create Medplum Project** for the tenant (e.g., `healthtalk-ziekenhuis-nieuw`)
+2. **Configure Project.setting** with tenant-specific branding overrides
+3. **Set up AccessPolicies** for the tenant's user roles
+4. **Create Vercel deployment** with tenant-specific env vars (or configure runtime resolution)
+5. **Configure Gateway** to recognize the new `tenant_id`
+6. **Copy template Questionnaires** from brand template project if needed
 
 ### Project.setting for Runtime Branding
 

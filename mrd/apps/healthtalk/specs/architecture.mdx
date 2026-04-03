@@ -116,6 +116,58 @@ HealthTalk (Vercel)          Notification Gateway              Providers
 
 **Deployment:** The gateway is a separate Vercel project (`gateway.healthtalk.ai`), same infrastructure, completely isolated. Its own env vars, its own domain, its own deploy pipeline.
 
+---
+
+## Multi-Tenant Model
+
+HealthTalk uses a **Tenant = Medplum Project** model for complete data isolation between healthcare institutions.
+
+### Tenant Resolution
+
+The Gateway provides `tenant_id` on every authenticated request:
+
+```typescript
+// Gateway auth response
+{
+  "auth": {
+    "user_id": "practitioner-uuid",
+    "tenant_id": "healthtalk-ziekenhuis-a",  // Medplum Project ID
+    "brand": "healthtalk",
+    "roles": ["practitioner", "admin"]
+  }
+}
+```
+
+### API Route Pattern
+
+Every API route MUST verify tenant context from Gateway:
+
+```typescript
+// app/api/tasks/route.ts
+export async function GET(request: Request) {
+  const auth = await verifyGatewayAuth(request);
+  
+  // tenant_id IS the Medplum Project - all queries are automatically scoped
+  const medplum = getMedplumClient(auth.tenant_id);
+  
+  const tasks = await medplum.searchResources('Task', {
+    status: 'requested',
+    // No need for tenant filter - Project isolation handles it
+  });
+  
+  return Response.json(tasks);
+}
+```
+
+### Deployment Options
+
+| Model | Description | Use Case |
+|-------|-------------|----------|
+| **Per-tenant deployment** | Each tenant has own Vercel deployment | Large institutions, custom domains |
+| **Shared deployment** | Single deployment, runtime tenant resolution | Smaller tenants, cost efficiency |
+
+See [Multi-Brand Architecture](/mrd/docs/architecture/multi-brand.mdx) for full details.
+
 ### Task-First Lifecycle
 
 A `QuestionnaireProvisioningTask` must be created before anything else happens. It is the single source of truth for the lifecycle of every questionnaire assignment. The `QuestionnaireResponse` is an output of the Task, not a standalone object.
