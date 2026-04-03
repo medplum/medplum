@@ -1,0 +1,210 @@
+---
+sidebar_position: 6
+---
+
+# Admin Portal Deployment
+
+This guide covers deploying the MEDrecord Admin Portal (`mrd/apps/admin/`) to Vercel. The admin portal provides a branded alternative to the default Medplum app interface.
+
+## Overview
+
+The admin portal is a Next.js application that:
+
+- Replaces the Medplum logo with MEDrecord/brand-specific logos
+- Reads branding configuration from Medplum `Project.setting`
+- Provides a UI to configure per-project branding
+- Remains completely sync-safe with upstream Medplum
+
+```mermaid
+graph TB
+    subgraph "Deployment Architecture"
+        ADMIN["mrd/apps/admin/<br/>Next.js App"]
+        VERCEL["Vercel Platform"]
+        MEDPLUM["Medplum API<br/>medplum.healthtalk.ai"]
+        DOMAIN["Custom Domain<br/>admin.healthtalk.ai"]
+    end
+    
+    ADMIN --> VERCEL
+    VERCEL --> DOMAIN
+    DOMAIN --> MEDPLUM
+```
+
+## Prerequisites
+
+1. Access to the MEDrecord/medplum repository
+2. Vercel account with team access
+3. Medplum server running (e.g., `medplum.healthtalk.ai`)
+4. Medplum Client ID for the admin application
+
+## Deployment Steps
+
+### Step 1: Create Vercel Project
+
+```bash
+# From repository root
+cd mrd/apps/admin
+
+# Link to Vercel (or use Vercel dashboard)
+vercel link
+```
+
+Or via Vercel Dashboard:
+
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import the `MEDrecord/medplum` repository
+3. Set **Root Directory** to `mrd/apps/admin`
+4. Framework Preset: **Next.js**
+
+### Step 2: Configure Environment Variables
+
+Set these environment variables in Vercel Dashboard → Project Settings → Environment Variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_MEDPLUM_BASE_URL` | Medplum API URL | `https://medplum.healthtalk.ai` |
+| `NEXT_PUBLIC_MEDPLUM_CLIENT_ID` | OAuth Client ID | `your-client-id` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth (optional) | `xxx.apps.googleusercontent.com` |
+| `MEDPLUM_CLIENT_SECRET` | Server-side secret | `your-client-secret` |
+
+### Step 3: Configure Custom Domain
+
+1. Go to Vercel Dashboard → Project → Settings → Domains
+2. Add your domain: `admin.healthtalk.ai`
+3. Configure DNS:
+   - Add CNAME record pointing to `cname.vercel-dns.com`
+   - Or use Vercel nameservers for automatic SSL
+
+### Step 4: Deploy
+
+```bash
+# Production deployment
+vercel --prod
+
+# Or push to main branch for automatic deployment
+git push origin main
+```
+
+## Medplum Configuration
+
+### Create OAuth Client
+
+In Medplum Admin (or via API):
+
+1. Navigate to Admin → Clients
+2. Create new Client Application:
+   - **Name**: MEDrecord Admin Portal
+   - **Redirect URI**: `https://admin.healthtalk.ai/`
+   - **Launch URI**: `https://admin.healthtalk.ai/`
+
+### Configure Project Branding
+
+Add these settings to your Medplum Project via the Admin Portal UI or API:
+
+```json
+{
+  "resourceType": "Project",
+  "setting": [
+    { "name": "brand.id", "valueString": "healthtalk" },
+    { "name": "brand.name", "valueString": "HealthTalk" },
+    { "name": "brand.primaryColor", "valueString": "oklch(0.55 0.2 250)" },
+    { "name": "brand.logoUrl", "valueString": "https://cdn.healthtalk.ai/logo.svg" }
+  ]
+}
+```
+
+| Setting | Description | Format |
+|---------|-------------|--------|
+| `brand.id` | Brand identifier | `healthtalk`, `coachi`, `medsafe`, `medrecord` |
+| `brand.name` | Display name | Any string |
+| `brand.primaryColor` | Primary UI color | OKLCH format: `oklch(L C H)` |
+| `brand.accentColor` | Accent color | OKLCH format |
+| `brand.logoUrl` | Logo URL | HTTPS URL to SVG/PNG |
+
+## Multi-Brand Deployment
+
+For multiple brands, deploy separate instances:
+
+| Brand | Vercel Project | Domain | Root Directory |
+|-------|---------------|--------|----------------|
+| HealthTalk | `mrd-admin-healthtalk` | `admin.healthtalk.ai` | `mrd/apps/admin` |
+| Coachi | `mrd-admin-coachi` | `admin.coachi.ai` | `mrd/apps/admin` |
+| MedSafe | `mrd-admin-medsafe` | `admin.medsafe.ai` | `mrd/apps/admin` |
+
+Each deployment reads branding from its connected Medplum Project.
+
+## CI/CD Configuration
+
+### GitHub Actions (Optional)
+
+Create `.github/workflows/deploy-admin.yml`:
+
+```yaml
+name: Deploy Admin Portal
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mrd/apps/admin/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: mrd/apps/admin
+```
+
+### Vercel.json (Optional)
+
+Create `mrd/apps/admin/vercel.json` for custom configuration:
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["iad1"]
+}
+```
+
+## Troubleshooting
+
+### Build Errors
+
+1. Ensure all dependencies are in `package.json`
+2. Check that `@mrd/ui` is accessible (may need to publish or use relative imports)
+3. Verify TypeScript paths in `tsconfig.json`
+
+### Authentication Issues
+
+1. Verify `NEXT_PUBLIC_MEDPLUM_CLIENT_ID` is correct
+2. Check redirect URI matches exactly in Medplum Client settings
+3. Ensure CORS is configured on Medplum server
+
+### Branding Not Loading
+
+1. Check `Project.setting` values in Medplum
+2. Verify user has access to the Project
+3. Check browser console for API errors
+
+## Sync Safety
+
+This deployment is **100% sync-safe** with upstream Medplum:
+
+- All code lives in `mrd/` namespace
+- `packages/app/` (Medplum's admin) remains untouched
+- Upstream merges will never conflict with this deployment
+
+## Related Documentation
+
+- [Upstream Sync Strategy](/docs/architecture/upstream-sync)
+- [Multi-Brand Architecture](/docs/architecture/multi-brand)
+- [Design System](/docs/architecture/design-system)
