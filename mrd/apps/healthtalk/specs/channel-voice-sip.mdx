@@ -1,0 +1,106 @@
+# Channel F — Voice (Landline via Teams SIP)
+
+## Who This Channel Is For
+
+Patients who have only a landline phone — no smartphone, no WhatsApp, no email. Common among elderly GGz patients. The ElevenLabs voice agent calls the patient's landline number through the GGz organisation's existing Microsoft Teams telephony infrastructure.
+
+---
+
+## Core Principle
+
+HealthTalk does **not** introduce a new SIP provider or new phone numbers. The GGz organisation already has Microsoft Teams with PSTN connectivity — via Direct Routing or Operator Connect. They already have an SBC, Dutch numbers, and a carrier relationship. HealthTalk connects ElevenLabs to that **existing Teams SBC** as a SIP endpoint. The call routes outbound through Teams → PSTN → patient landline.
+
+```
+HealthTalk (Vercel)
+      │  trigger outbound call
+      ▼
+ElevenLabs Conversational AI
+      │  SIP outbound: sip:{patient_number}@{org_sbc_fqdn}
+      ▼
+Organisation's Teams SBC            ← already exists, no new hardware
+      │  Teams Direct Routing / Operator Connect
+      │  existing carrier (KPN, T-Mobile NL, etc.)
+      ▼
+Patient landline
+```
+
+Everything that normally goes via Teams for outbound PSTN calls — caller ID, number presentation, PSTN carrier — continues to apply. From the patient's perspective, the call comes from the organisation's known phone number.
+
+---
+
+## ElevenLabs SIP Configuration
+
+ElevenLabs connects to the organisation's SBC as if it were any other SIP trunk consumer. In the ElevenLabs dashboard:
+
+1. Navigate to Telephony → Phone Numbers → Import from SIP trunk
+2. Configure the SBC FQDN (e.g. `sbc.ggzoostbrabant.nl`)
+3. Authentication: digest (username/password) or ACL (source IP allowlist)
+4. Media encryption: SRTP (match the SBC policy)
+5. Codecs: G711 (8 kHz) or G722 (16 kHz) — must match what the SBC offers
+
+ElevenLabs SIP endpoint (inbound from SBC): `sip.rtc.elevenlabs.io`  
+Static IP version (if the SBC requires IP allowlisting): `sip-static.rtc.elevenlabs.io`
+
+---
+
+## Per-Organisation Configuration
+
+Each GGz organisation that uses HealthTalk has its own Teams tenant and its own SBC. The SIP connection is therefore configured **per organisation** in HealthTalk's tenant settings — not once globally.
+
+```typescript
+interface OrganisationSipConfig {
+  tenantId: string;
+  sbcFqdn: string;             // e.g. "sbc.ggzoostbrabant.nl"
+  sbcPort: number;             // typically 5061 (TLS)
+  authUsername: string;
+  authPassword: string;        // stored encrypted
+  mediaEncryption: 'required' | 'allowed' | 'disabled';
+  callerIdNumber: string;      // E.164 — the number shown on patient's caller ID
+  elevenLabsPhoneNumberId: string; // the imported number ID in ElevenLabs
+}
+```
+
+---
+
+## What the SBC Administrator Needs to Do
+
+On the organisation's side, the Teams/SBC administrator needs to:
+
+1. **Allow ElevenLabs IPs** — add `sip-static.rtc.elevenlabs.io` IP block to the SBC allowlist (or configure digest auth)
+2. **Create an outbound route** — voice route in Teams that allows calls from ElevenLabs to reach the PSTN
+3. **Assign a caller ID** — a Teams phone number that will present as the clinic's number on outbound calls
+4. **Open firewall ports** — SIP signalling: port 5061 (TLS); RTP media: ports 10000–20000 UDP
+
+This is a one-time setup per organisation. The Teams/SBC admin does not need to touch HealthTalk — HealthTalk's admin enters the SBC details into the HealthTalk organisation settings.
+
+---
+
+## Landline-Specific Agent Behaviour
+
+The voice agent for landline calls is identical to the mobile agent with two differences:
+
+### 1. Opening Line
+
+Dutch telecom law requires automated outbound calls to identify themselves:
+
+```
+"Goedemiddag. U spreekt met de geautomatiseerde assistent van
+ [organisation name]. Dit is een automatisch gesprek.
+ Ik bel u namens uw behandelaar over een vragenlijst.
+ [continue with questionnaire intro]"
+```
+
+### 2. No Digital Fallback
+
+The landline patient cannot tap a link. If the patient disconnects mid-questionnaire, the partial answers are saved and the clinician is notified. No automatic retry to the same number within 24 hours.
+
+---
+
+## Answering Machine Detection
+
+ElevenLabs supports answering machine detection (AMD) on SIP calls. If an answering machine is detected:
+
+- No message is left (PHI risk on shared answerphones)
+- Task `businessStatus` → `voicemail-detected`
+- Retry once after 2 hours
+- After second failure → `delivery-failed`, clinician receives alert in Teams and in-app

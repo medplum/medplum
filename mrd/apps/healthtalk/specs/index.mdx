@@ -1,0 +1,85 @@
+# HealthTalk Patient Questionnaire Module
+
+Technical & Functional Specification — v3.0
+
+**Product:** HealthTalk  
+**Version:** 3.0 — Final pre-development  
+**Date:** April 2026  
+**Status:** Ready for Development  
+**Infrastructure:** Self-hosted MedPlum (FHIR R4) · Vercel · Twilio · ElevenLabs · LOINC FHIR API
+
+---
+
+## Documentation Structure
+
+| Document | Description |
+|----------|-------------|
+| [Architecture Overview](./architecture.mdx) | System architecture, FHIR version landscape, resource map |
+| [FHIR Resources](./fhir-resources.mdx) | Task lifecycle, Appointment flow, resource profiles |
+| [Notification Gateway](./notification-gateway.mdx) | Gateway architecture, channel selection, per-org config |
+| [Channels Overview](./channels-overview.mdx) | All delivery channels overview and selection logic |
+| [Channel: Web Form](./channel-web-form.mdx) | Magic link web form |
+| [Channel: WhatsApp](./channel-whatsapp.mdx) | WhatsApp interactive |
+| [Channel: Voice Mobile](./channel-voice-mobile.mdx) | ElevenLabs voice (mobile) |
+| [Channel: Voice SIP](./channel-voice-sip.mdx) | Teams/SBC landline |
+| [Channel: Email](./channel-email.mdx) | Email channel |
+| [Channel: SMS](./channel-sms.mdx) | SMS channel |
+| [Channel: Teams](./channel-teams.mdx) | Teams clinician notifications |
+| [Scoring](./scoring.mdx) | Score calculation, MedPlum Bot, severity bands |
+| [Clinician Interface](./clinician-interface.mdx) | Scheduling UI, task queue, response viewing |
+| [API Routes](./api-routes.mdx) | Vercel routes, MedPlum webhooks, gateway endpoints |
+| [Questionnaire Builder](./questionnaire-builder.mdx) | Builder integration, LOINC import, patient language layer |
+| [Security & Compliance](./security-compliance.mdx) | JWT security, webhook validation, NEN 7510, AVG/GDPR |
+| [Environment Variables](./environment-variables.mdx) | All env vars for HealthTalk and Gateway projects |
+| [Testing Strategy](./testing.mdx) | Sandbox environments, E2E test scenarios |
+| [Implementation Checklist](./implementation-checklist.mdx) | Pre-development tasks and dependencies |
+| [Open Questions](./open-questions.mdx) | Decisions pending before/during development |
+| [Roadmap](./roadmap.mdx) | Future integrations (Patient Records, Cal.com) |
+
+---
+
+## Core Design Decisions
+
+1. **Task-first:** Every questionnaire assignment is anchored by a `QuestionnaireProvisioningTask`. Nothing happens without one.
+
+2. **Two questionnaire variants:** With score (PHQ-9, GAD-7 etc.) or without score (intake forms, check-ins). The only structural difference is the presence of `calculatedExpression` items.
+
+3. **MedPlum SDK throughout:** No custom form engine. `<QuestionnaireBuilder />` and `<QuestionnaireForm />` from `@medplum/react` are embedded directly.
+
+4. **Patient Language Layer:** Clinical terminology (LOINC/SNOMED/ICD) stays in the FHIR record. Patients only ever see plain-language text, managed in the builder.
+
+5. **Gateway-first delivery:** All channel integrations live behind a Notification Gateway. HealthTalk never imports Twilio, ElevenLabs, or Postmark SDKs directly.
+
+6. **Six delivery channels:** Web form, WhatsApp interactive, Voice agent (mobile + landline), Email, SMS. All write to the same `QuestionnaireResponse`.
+
+---
+
+## What This Is Not
+
+- This is not a general patient portal.
+- This is not a real-time chat system.
+- This is not a replacement for the existing session note template system — questionnaires are a second template type within the same Sjablonen module.
+
+---
+
+## Implementation Phases
+
+| Phase | Components | Dependencies |
+|-------|------------|--------------|
+| **0. Infrastructure** | Gateway Vercel project, Upstash Redis, env vars | - |
+| **1. FHIR Foundation** | Task profile, Questionnaire extensions, MedPlum subscriptions | MedPlum dev project |
+| **2. Builder** | Embed `<QuestionnaireBuilder />`, score toggle, LOINC import | LOINC account |
+| **3. Web Channel** | Magic link JWT, `<QuestionnaireForm />` wrapper | - |
+| **4. Gateway Core** | Notify endpoint, channel selection, status callbacks | Twilio, Postmark |
+| **5. WhatsApp** | Interactive flow, session state (Redis), webhook handlers | Twilio WhatsApp |
+| **6. Voice** | ElevenLabs agent, Tool calls, mobile + SIP | ElevenLabs BAA |
+| **7. Clinician UI** | Task queue, completion view, Teams notifications | Teams webhook |
+| **8. Testing** | E2E scenarios, sandbox environments | - |
+
+---
+
+## Quick Links
+
+- [Pre-Development Checklist](./implementation-checklist.mdx) — Start here
+- [Environment Variables](./environment-variables.mdx) — Full configuration reference
+- [API Routes](./api-routes.mdx) — All endpoints

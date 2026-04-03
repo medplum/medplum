@@ -1,0 +1,78 @@
+# Channel G — Microsoft Teams (Clinician Notifications)
+
+## Purpose
+
+Teams is **not a patient-facing channel**. It is an internal notification channel for clinicians. When a questionnaire is completed (or fails to complete), the relevant clinician receives a Teams notification with the key information and direct action links.
+
+The Microsoft 365 MCP server is already connected to HealthTalk's infrastructure. Teams notifications use the Microsoft Teams webhook or Adaptive Card approach.
+
+---
+
+## Notification on Completion
+
+When `Task.status → completed`, in addition to the in-app notification, a Teams Adaptive Card is sent to the clinician:
+
+```
+┌─────────────────────────────────────────────────┐
+│ 🟢 Questionnaire completed                      │
+│                                                 │
+│ Patient:      Jan de Vries                      │
+│ Instrument:   PHQ-9                             │
+│ Score:        14  —  Moderate                   │
+│ Appointment:  10 Apr 2026  10:00                │
+│ Submitted:    09:32 via WhatsApp                │
+│                                                 │
+│  [View full response]    [Open patient record]  │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## Alert on Non-Completion at T-0
+
+When the appointment starts and the questionnaire is still open:
+
+```
+┌─────────────────────────────────────────────────┐
+│ ⚠️  Questionnaire not completed                 │
+│                                                 │
+│ Patient:      Jan de Vries                      │
+│ Instrument:   GAD-7                             │
+│ Status:       In progress (opened 08:15)        │
+│ Appointment:  Starting now                      │
+│                                                 │
+│  [Send reminder]    [Cancel questionnaire]      │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## Implementation via Microsoft Graph / Teams Webhook
+
+```typescript
+// POST to Teams incoming webhook URL (configured per clinician or team channel)
+// Or via Microsoft Graph: POST /v1.0/teams/{teamId}/channels/{channelId}/messages
+
+const card = {
+  type: "message",
+  attachments: [{
+    contentType: "application/vnd.microsoft.card.adaptive",
+    content: buildAdaptiveCard({
+      patientName, instrumentTitle, score, severity,
+      appointmentTime, submittedAt, channel, taskId
+    })
+  }]
+};
+
+await fetch(process.env.TEAMS_WEBHOOK_URL, {
+  method: 'POST',
+  body: JSON.stringify(card),
+  headers: { 'Content-Type': 'application/json' }
+});
+```
+
+---
+
+## Teams Task Queue (Future)
+
+In a future phase, the clinician's questionnaire task queue (currently in-app only) can be surfaced as a Teams tab or a personal app within Teams. This uses the same MedPlum data, presented in a Teams-native interface. No spec decision required now — the data model supports it.

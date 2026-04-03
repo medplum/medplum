@@ -1,0 +1,71 @@
+# Channel D — Email
+
+## Why Email
+
+Many GGz patients — especially older individuals or those in more intensive care — do not actively use WhatsApp but do have email. Email provides a lower-friction fallback and is simpler to implement than WhatsApp (just a link, no interactive mode required).
+
+---
+
+## How It Works
+
+Email delivers a magic link to the patient's registered email address. The link opens the web form (Channel A — `<QuestionnaireForm />`). There is no email-specific interactive mode; the voice option can be triggered from the web form itself.
+
+---
+
+## Email Service
+
+Use a transactional email provider (Postmark recommended for reliability and deliverability). Store credentials as Vercel env vars:
+
+```env
+EMAIL_PROVIDER=postmark
+POSTMARK_API_KEY=***
+EMAIL_FROM=noreply@healthtalk.ai
+EMAIL_FROM_NAME=HealthTalk
+```
+
+---
+
+## Email Template
+
+```
+Subject: Questionnaire before your appointment on [date]
+
+────────────────────────────────────────
+  HealthTalk logo
+
+  Hello [first name],
+
+  Your clinician [name] has sent you a questionnaire
+  to complete before your appointment on [date] at [time].
+
+  Questionnaire: [title]
+  Estimated time: [X] minutes
+
+  [Complete questionnaire →]     ← large button
+
+  This link is valid until [appointment datetime].
+
+  Would you prefer to speak with our assistant instead?
+  Reply to this email with "CALL ME" and we will arrange
+  a call.
+
+  HealthTalk · healthtalk.ai
+  Questions? Contact your care provider directly.
+────────────────────────────────────────
+```
+
+---
+
+## "CALL ME" Reply Handling
+
+A Postmark inbound webhook listens for replies containing "CALL ME" (case-insensitive). On receipt:
+
+1. Vercel identifies the Task from the email thread ID
+2. Triggers ElevenLabs outbound call (same as Channel C)
+3. Sends confirmation: *"We will call you shortly on [phone number]."*
+
+---
+
+## Email Fallback on WhatsApp Failure
+
+If Twilio reports a WhatsApp delivery failure (webhook status `failed` after retries) and the patient has a registered email address, HealthTalk automatically falls back to email delivery. Task `businessStatus` updated to `email-fallback`.

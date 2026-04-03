@@ -1,0 +1,74 @@
+# Security & Compliance
+
+## Security
+
+### Magic Link Security
+
+- JWT signed with `MAGIC_LINK_SECRET` (HS256)
+- Scope restricted to a single `QuestionnaireResponse`
+- TTL = appointment start time (never longer than 72 hours)
+- All access logged as `AuditEvent` including IP address
+- Expired tokens return generic "no longer available" message — no data exposed
+
+### MedPlum Subscription Webhook Validation
+
+All incoming MedPlum subscription webhooks are validated against a shared secret:
+
+```typescript
+const authHeader = req.headers.get('Authorization');
+if (authHeader !== `Bearer ${process.env.MEDPLUM_SUBSCRIPTION_SECRET}`) {
+  return new Response('Unauthorized', { status: 401 });
+}
+```
+
+### Twilio Webhook Signature Validation
+
+Every incoming Twilio webhook (WhatsApp replies, delivery status) must be validated:
+
+```typescript
+import twilio from 'twilio';
+
+const isValid = twilio.validateRequest(
+  process.env.TWILIO_AUTH_TOKEN!,
+  req.headers.get('X-Twilio-Signature')!,
+  webhookUrl,
+  formParams
+);
+if (!isValid) return new Response('Forbidden', { status: 403 });
+```
+
+### ElevenLabs Tool Call Authentication
+
+ElevenLabs Tool calls (webhooks to Vercel) are authenticated with a shared secret in the `X-ElevenLabs-Secret` header. Configured in the ElevenLabs agent settings and verified on every Tool call endpoint.
+
+### Rate Limiting
+
+Patient-facing endpoints (`/api/questionnaire/whatsapp-reply`, `/api/questionnaire/voice-answer`) are rate-limited using Vercel's built-in rate limiting or Upstash Redis:
+
+- Max 60 requests per patient per hour
+- 429 response with `Retry-After` header
+
+### No PHI in Transit to Third Parties
+
+| Service | What it receives | What it does NOT receive |
+|---------|------------------|--------------------------|
+| Twilio | Phone number + message text (patient-language only) | Clinical codes, diagnoses, scores |
+| ElevenLabs | Audio + plain-text question/answer strings | PHI, clinical codes, names |
+| LOINC API | LOINC code (admin only, build time) | Patient data of any kind |
+| Postmark | Email address + templated HTML | Free-text clinical content |
+
+---
+
+## Compliance
+
+| Requirement | Implementation |
+|-------------|----------------|
+| **FHIR R4 + nl-core** | All resources conform to `nictiz.fhir.nl.r4.nl-core` |
+| **zib2024 migration** | Track `Nictiz-R4-zib2024`; adopt on formal publication |
+| **MedMij afsprakenstelsel** | `QuestionnaireProvisioningTask` pattern; align to R4 MedMij IG on publication |
+| **NEN 7510** | `AuditEvent` on every Task transition; `Communication` log for every message sent |
+| **AVG / GDPR** | Patient consent at onboarding; STOP reply cancels Task; no PHI in WhatsApp/call/email metadata |
+| **Data sovereignty** | All FHIR data on self-hosted MedPlum; no patient data sent to Twilio/ElevenLabs/Postmark beyond minimum |
+| **ElevenLabs BAA** | Enterprise plan + Business Associate Agreement required before go-live |
+| **LOINC copyright** | Required field in builder; enforced before publish |
+| **PGO interoperability** | Completed `QuestionnaireResponse` exportable to Coachi via MedMij R4 transaction |

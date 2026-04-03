@@ -1,0 +1,49 @@
+# Delivery Channels
+
+## Channel Overview
+
+| # | Channel | Delivery | Completion | Best for |
+|---|---------|----------|------------|----------|
+| A | [Web Form](./web-form.mdx) | Link (any channel) | Browser (`<QuestionnaireForm />`) | Universal — works on any device |
+| B | [WhatsApp](./whatsapp.mdx) | Twilio WhatsApp | Reply in chat per question | Patients who prefer WhatsApp |
+| C | [Voice Mobile](./voice-mobile.mdx) | ElevenLabs + Twilio | Spoken conversation | Accessibility, low digital literacy |
+| D | [Email](./email.mdx) | Postmark | Browser (= Channel A) | Patients without WhatsApp |
+| E | [SMS](./sms.mdx) | Twilio SMS | Browser (= Channel A) | Mobile, no WhatsApp |
+| F | [Voice SIP](./voice-sip.mdx) | ElevenLabs + org SBC | Spoken conversation | Elderly patients, landline only |
+| G | [Teams](./teams.mdx) | MS Graph / webhook | — | Clinician notifications only |
+
+All patient-facing channels write to the same `QuestionnaireResponse`. Channel G is clinician-internal only.
+
+---
+
+## Channel Selection
+
+When the gateway receives a notification request with `channel = "auto"`, it selects the best channel based on:
+
+1. Patient preferred channel (if set in FHIR extension)
+2. Available contact information
+3. Organisation configuration
+
+### Selection Priority
+
+```
+Mobile number with WhatsApp?  → WhatsApp (Channel B)
+Mobile number, no WhatsApp?   → SMS (Channel E)
+Email known?                  → Email (Channel D)
+Landline + org has SIP config? → Voice SIP (Channel F)
+Mobile, no WhatsApp, no email → Voice mobile (Channel C)
+None available?               → Error, alert clinician
+```
+
+### Fallback Chain
+
+If primary delivery fails:
+
+```
+WhatsApp fail → Email (if known) → SMS (if mobile known) → alert clinician
+Email fail    → SMS (if known)   → alert clinician
+SMS fail      → alert clinician
+Voice fail    → alert clinician (no automatic voice retry on same number)
+```
+
+All fallback attempts are logged as separate `Communication` resources in MedPlum.

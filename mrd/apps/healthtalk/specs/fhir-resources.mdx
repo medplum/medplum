@@ -1,0 +1,150 @@
+# FHIR Resources
+
+## QuestionnaireProvisioningTask
+
+### Why a Task is Mandatory
+
+A `QuestionnaireProvisioningTask` must be created before anything else happens. It is the single source of truth for the lifecycle of every questionnaire assignment. The `QuestionnaireResponse` is an output of the Task, not a standalone object.
+
+- The Task exists even if delivery fails
+- The clinician dashboard is a Task queue, not a QR list
+- Reminders, escalations, and cancellations operate on the Task
+- MedPlum Subscriptions fire on Task status changes
+
+### State Machine
+
+```
+requested → accepted → in-progress → completed
+                                   → failed
+     └──────────────────────────────→ cancelled (clinician, any time before completed)
+     └──────────────────────────────→ failed    (delivery failure)
+```
+
+| `status` | `businessStatus` | Set by | Meaning |
+|----------|------------------|--------|---------|
+| `requested` | `pending-send` | HealthTalk | Task created, message not yet sent |
+| `accepted` | `message-sent` | HealthTalk | Delivery confirmed by Twilio/email provider |
+| `accepted` | `channel-chosen` | Patient | Patient tapped a channel option |
+| `accepted` | `link-opened` | Web form | Patient opened the magic link |
+| `in-progress` | `partially-completed` | Any channel | Patient has answered ≥1 question |
+| `completed` | `score-calculated` | MedPlum Bot | Submitted + scores written |
+| `completed` | `reviewed` | Clinician | Clinician has opened the response |
+| `cancelled` | — | Clinician | Disposed before completion |
+| `failed` | `delivery-failed` | Twilio/email webhook | Delivery failure after retries |
+
+### Full Resource Example
+
+```json
+{
+  "resourceType": "Task",
+  "meta": {
+    "profile": ["http://nictiz.nl/fhir/StructureDefinition/nl-core-Task"]
+  },
+  "status": "requested",
+  "businessStatus": {
+    "coding": [{
+      "system": "https://healthtalk.ai/fhir/CodeSystem/task-business-status",
+      "code": "pending-send"
+    }]
+  },
+  "intent": "order",
+  "code": {
+    "coding": [{
+      "system": "http://loinc.org",
+      "code": "74468-0",
+      "display": "Questionnaire form definition Document"
+    }]
+  },
+  "for": { "reference": "Patient/patient-id", "type": "Patient" },
+  "requester": { "reference": "Practitioner/clinician-id", "type": "Practitioner" },
+  "owner": { "reference": "Patient/patient-id", "type": "Patient" },
+  "restriction": {
+    "period": { "end": "2026-04-10T10:00:00+02:00" }
+  },
+  "input": [
+    {
+      "type": { "coding": [{ "system": "http://nictiz.nl/fhir/CodeSystem/vl-task-input", "code": "questionnaire" }] },
+      "valueReference": { "reference": "Questionnaire/phq9-v2", "type": "Questionnaire" }
+    },
+    {
+      "type": { "coding": [{ "system": "http://nictiz.nl/fhir/CodeSystem/vl-task-input", "code": "appointment" }] },
+      "valueReference": { "reference": "Appointment/appointment-id", "type": "Appointment" }
+    }
+  ],
+  "output": []
+}
+```
+
+When the patient starts, add to `output`:
+
+```json
+"output": [{
+  "type": { "coding": [{ "system": "http://nictiz.nl/fhir/CodeSystem/vl-task-output", "code": "questionnaire-response" }] },
+  "valueReference": { "reference": "QuestionnaireResponse/qr-id" }
+}]
+```
+
+---
+
+## Appointment-Triggered Flow
+
+### Clinician Attaches Questionnaires at Scheduling
+
+When a clinician schedules an appointment, they select one or more questionnaires and a send timing. This is stored as a HealthTalk extension on the `Appointment` resource.
+
+```json
+{
+  "resourceType": "Appointment",
+  "meta": { "profile": ["http://nictiz.nl/fhir/StructureDefinition/nl-core-Appointment"] },
+  "status": "booked",
+  "start": "2026-04-10T10:00:00+02:00",
+  "participant": [
+    { "actor": { "reference": "Patient/patient-id", "type": "Patient" }, "status": "accepted" },
+    { "actor": { "reference": "Practitioner/clinician-id", "type": "Practitioner" }, "status": "accepted" }
+  ],
+  "extension": [{
+    "url": "https://healthtalk.ai/fhir/StructureDefinition/appointment-questionnaires",
+    "extension": [
+      { "url": "questionnaire", "valueReference": { "reference": "Questionnaire/phq9-v2" } },
+      { "url": "sendBefore", "valueDuration": { "value": 24, "unit": "h" } }
+    ]
+  }]
+}
+```
+
+### Cron Timeline
+
+| Time | Action |
+|------|--------|
+| T-24h | Cron fires. Creates Task. Sends channel-choice message to patient. |
+| T-6h | If Task not completed: sends reminder via same channel. |
+| T-0 | If Task still not completed: clinician receives in-app alert. |
+| T+0 | Appointment passes. Task TTL expires. Magic link deactivated. |
+
+### Timing Configuration
+
+| Setting | Default | Configurable by |
+|---------|---------|-----------------|
+| Send before appointment | 24 hours | Clinician per appointment |
+| Reminder if open | 6 hours before | Practice admin |
+| Magic link TTL | Until appointment start | Fixed (cannot exceed appointment start) |
+| Clinician alert at T-0 | Always | Not configurable — always fires |
+
+### Appointment Cancellation Handling
+
+If an appointment is cancelled after the Task was created:
+
+- Task status → `cancelled`
+- Patient receives a cancellation message: *"Your appointment on [date] has been cancelled. The questionnaire is no longer needed."*
+- Magic link immediately deactivated
+- Any partial `QuestionnaireResponse` → status `stopped`
+- `AuditEvent` written for compliance
+
+### Ad-hoc Sending (Outside Appointment)
+
+Clinicians can also trigger a questionnaire send manually from the patient record, without an appointment. In this case:
+
+- No `Appointment` reference on the Task input
+- TTL is set manually (default: 72 hours)
+- Same channel-choice flow applies
+- Same Task lifecycle applies

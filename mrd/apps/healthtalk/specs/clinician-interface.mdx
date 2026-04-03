@@ -1,0 +1,77 @@
+# Clinician Interface
+
+## Scheduling — Attach Questionnaires to Appointment
+
+```
+┌──────────────────────────────────────────────────────┐
+│ New appointment                                      │
+│                                                      │
+│ Patient:    [Jan de Vries]                           │
+│ Date/time:  [10 April 2026  10:00]                   │
+│ Clinician:  [Dr. Smit]                               │
+│                                                      │
+│ ── Questionnaires ─────────────────────────────────  │
+│   [+ Add questionnaire]                              │
+│   PHQ-9  [×]   Send  [24 hours]  before              │
+│   GAD-7  [×]   Send  [24 hours]  before              │
+│                                                      │
+│   ☐ Suppress auto-send  (walk-in / crisis)           │
+└──────────────────────────────────────────────────────┘
+```
+
+The "Suppress auto-send" checkbox prevents the cron from triggering for this appointment. The clinician can still send manually from the patient record.
+
+---
+
+## Appointment Day View — Task Status
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ Jan de Vries — 10 Apr 10:00                              │
+│                                                          │
+│  ✅ PHQ-9    Score: 14  Moderate    Submitted 09:32      │
+│             [View answers]                               │
+│                                                          │
+│  ⏳ GAD-7    In progress — reminder sent at 04:00        │
+│             [View partial]  [Remind]  [Cancel]           │
+│                                                          │
+│  ⚠️  Note: GAD-7 not yet complete                       │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Viewing a Completed Response
+
+- Scores and severity displayed prominently at top
+- All raw answers below, with patient-language text shown (not clinical codes)
+- Calculated items visually marked as "Calculated — read only"
+- Timestamps: when sent, when opened, when submitted, which channel used
+- Export to PDF available (`$document` operation on MedPlum)
+
+---
+
+## Partial Responses
+
+If `Task.status = in-progress`, the clinician can view answers submitted so far. This is read-only and labelled "Partial response — questionnaire not yet complete."
+
+---
+
+## Patient Questionnaire History
+
+From the patient record, clinicians can see all previous `QuestionnaireResponse` resources for that patient, sorted by date. For scored questionnaires (PHQ-9, GAD-7), a simple trend line shows score over time. This is a read-only view driven by a MedPlum search:
+
+```
+GET /fhir/R4/QuestionnaireResponse?subject=Patient/id&questionnaire=Questionnaire/phq9-v2&_sort=-authored
+```
+
+---
+
+## Ad-hoc Questionnaire Send (No Appointment)
+
+From the patient record, clinicians can trigger a questionnaire send independently of an appointment:
+
+- Select questionnaire
+- Set TTL (default 72 hours)
+- Choose channel (or use patient preference)
+- Task is created without an `Appointment` reference

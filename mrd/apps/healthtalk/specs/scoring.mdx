@@ -1,0 +1,82 @@
+# Score Calculation
+
+## Two Questionnaire Variants
+
+| Variant | Builder toggle | After completion |
+|---------|----------------|------------------|
+| Without score | Score: Off | `QuestionnaireResponse` stored only |
+| With score | Score: On | `QuestionnaireResponse` + `Observation` written by MedPlum Bot |
+
+---
+
+## MedPlum Bot
+
+Triggered by `QuestionnaireResponse?status=completed`. Reads the questionnaire's score band configuration from a HealthTalk extension on the `Questionnaire` resource.
+
+```typescript
+export async function handler(medplum: MedplumClient, event: BotEvent) {
+  const qr = event.input as QuestionnaireResponse;
+  const questionnaire = await medplum.readReference(qr.questionnaire!);
+
+  // Check if scoring is enabled
+  const scoringConfig = getScoringConfig(questionnaire);
+  if (!scoringConfig) return; // no score variant — exit
+
+  const total = scoringConfig.items.reduce((sum, linkId) => {
+    const item = qr.item?.find(i => i.linkId === linkId);
+    return sum + (item?.answer?.[0]?.valueInteger ?? 0);
+  }, 0);
+
+  const severity = scoringConfig.bands.find(b => total <= b.max)?.label ?? 'Unknown';
+
+  await medplum.createResource({
+    resourceType: 'Observation',
+    status: 'final',
+    code: {
+      coding: [{ system: 'http://loinc.org', code: scoringConfig.loincCode }]
+    },
+    subject: qr.subject,
+    valueInteger: total,
+    interpretation: [{ text: severity }],
+    derivedFrom: [{ reference: `QuestionnaireResponse/${qr.id}` }],
+    effectiveDateTime: new Date().toISOString()
+  });
+}
+```
+
+---
+
+## Score Bands Configuration (on Questionnaire Resource)
+
+```json
+{
+  "url": "https://healthtalk.ai/fhir/StructureDefinition/scoring-config",
+  "extension": [
+    { "url": "enabled", "valueBoolean": true },
+    { "url": "loincCode", "valueString": "44261-6" },
+    { "url": "scoreItems", "valueString": "q1,q2,q3,q4,q5,q6,q7,q8,q9" },
+    { "url": "band", "extension": [
+      { "url": "max", "valueInteger": 4 },
+      { "url": "label", "valueString": "Minimal" }
+    ]},
+    { "url": "band", "extension": [
+      { "url": "max", "valueInteger": 9 },
+      { "url": "label", "valueString": "Mild" }
+    ]}
+  ]
+}
+```
+
+---
+
+## Questionnaire Catalogue
+
+| Instrument | LOINC | Score range | Severity bands | Type |
+|------------|-------|-------------|----------------|------|
+| PHQ-9 | 44249-1 | 0–27 | 5 bands | With score |
+| GAD-7 | 69737-5 | 0–21 | 4 bands | With score |
+| PHQ-2 | 55757-9 | 0–6 | 2 bands | With score |
+| PCL-5 (PTSD) | 67671-2 | 0–80 | 3 bands | With score |
+| AUDIT (alcohol) | 75626-2 | 0–40 | 4 bands | With score |
+| NIKA | internal | Sub-scales | Per domain | With score |
+| Custom intake | internal | — | — | Without score |

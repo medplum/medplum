@@ -1,0 +1,85 @@
+# Open Questions
+
+These questions must be resolved before or during development.
+
+---
+
+## 1. Patient Language Text Quality Control
+
+**Question:** Who reviews patient-language question text before publish? Is there a mandatory clinical review step, or is the authoring clinician responsible?
+
+**Impact:** Builder workflow, publish permissions
+
+---
+
+## 2. Multiple Questionnaires per Appointment
+
+**Question:** If a clinician attaches PHQ-9 and GAD-7 to one appointment, are they sent as one message or two separate messages? Does the patient complete them sequentially or can they choose order?
+
+**Impact:** Task creation logic, patient UX
+
+---
+
+## 3. Clinician Override of Auto-Send
+
+**Question:** The spec includes a "Suppress auto-send" checkbox. Confirm whether this is per-appointment or per-patient (e.g. patient in crisis should never receive automated messages).
+
+**Impact:** Appointment UI, patient record flag
+
+---
+
+## 4. Score Visibility to Patient
+
+**Question:** After completing a scored questionnaire, should the patient see their own score? Or is it clinician-only? This has clinical implications (especially for high suicide risk scores).
+
+**Impact:** Form completion page, clinical policy
+
+---
+
+## 5. Answer Amendment
+
+**Question:** Can a patient change an answer after submission? If yes, how is the `QuestionnaireResponse` amended and how is the previous version preserved for audit?
+
+**Impact:** FHIR versioning, audit trail
+
+---
+
+## 6. MedMij R4 Questionnaire IG
+
+**Question:** Monitor `informatiestandaarden.nictiz.nl` for the formal R4 questionnaire profile publication. Update profile URL on release; no structural changes expected.
+
+**Impact:** Profile URL in Task resources
+
+---
+
+## 7. zib2024 Breaking Changes
+
+**Question:** Confirm with Nictiz whether zib2024 introduces breaking changes to the Task or Questionnaire profiles vs zib2020.
+
+**Impact:** Future migration scope
+
+---
+
+## 8. Builder Role Permissions
+
+**Question:** Which HealthTalk roles can create and publish questionnaires? Is there a separation between "draft" and "publish" permissions?
+
+**Impact:** RBAC configuration
+
+---
+
+## 9. Coachi Integration Timing
+
+**Question:** When should completed `QuestionnaireResponse` resources be forwarded to the patient's Coachi PGO? Immediately on completion, or at end of care episode?
+
+**Impact:** PGO sync workflow
+
+---
+
+## 10. LOINC API Fallback
+
+**Question:** If `fhir.loinc.org` is unreachable during a builder import attempt, what should the builder show?
+
+**Suggestion:** Cache the last successful fetch per instrument code in MedPlum with a `lastFetchedAt` timestamp.
+
+**Impact:** Builder error handling
