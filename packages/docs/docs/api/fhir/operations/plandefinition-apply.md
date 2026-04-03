@@ -125,11 +125,40 @@ The `$apply` operation processes the PlanDefinition and:
 
 ### Task Extensions
 
-Medplum supports custom extensions on ActivityDefinitions for Task configuration:
+Medplum supports custom extensions on `ActivityDefinition` resources to dynamically assign Task parameters when `$apply` is run. 
 
-- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task owner and performerType using FHIRPath expressions
+- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task `owner` and `performerType` using FHIRPath expressions based on the `$apply` parameters (e.g., `%patient`, `%practitioner`, `%organization`).
+
+**Example ActivityDefinition with Task Extensions:**
+
+```json
+{
+  "resourceType": "ActivityDefinition",
+  "status": "active",
+  "extension": [{
+    "url": "https://medplum.com/fhir/StructureDefinition/task-elements",
+    "extension": [
+      {
+        "url": "owner",
+        "valueExpression": {
+          "language": "text/fhirpath",
+          "expression": "%practitioner"
+        }
+      },
+      {
+        "url": "performerType",
+        "valueCodeableConcept": {
+          "coding": [{ "system": "http://snomed.info/sct", "code": "158965000", "display": "Medical practitioner" }]
+        }
+      }
+    ]
+  }]
+}
+```
 
 ## Example PlanDefinition
+
+At its most basic level, a `PlanDefinition` is a list of sequential tasks. The `$apply` operation converts these actions into a `RequestGroup` and individual `Task` resources.
 
 ```json
 {
@@ -155,8 +184,11 @@ Medplum supports custom extensions on ActivityDefinitions for Task configuration
 }
 ```
 
+For more advanced examples of modeling workflows (including hierarchical actions, conditional logic, timing dependencies, and dynamic values), see our guide on [Authoring Clinical Protocols](/docs/careplans/protocols).
+
 ## Related Documentation
 
+- [Authoring Clinical Protocols](/docs/careplans/protocols) - Advanced workflow modeling with PlanDefinition
 - [CarePlans](/docs/careplans) - Working with care plans in Medplum
 - [Task Management](/docs/careplans/tasks) - Managing tasks and workflows
 - [FHIR PlanDefinition](https://hl7.org/fhir/plandefinition.html) - FHIR specification
