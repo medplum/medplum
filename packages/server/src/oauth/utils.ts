@@ -366,6 +366,8 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
     filters,
   });
 
+  memberships = memberships.filter((m) => m.active !== false);
+
   const profileType = login.profileType;
   if (profileType) {
     memberships = memberships.filter((m) => m.profile?.reference?.startsWith(profileType));
