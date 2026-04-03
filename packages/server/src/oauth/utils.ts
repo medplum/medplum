@@ -349,6 +349,11 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
       operator: Operator.EQUALS,
       value: login.user.reference,
     },
+    {
+      code: 'active',
+      operator: Operator.NOT,
+      value: 'false',
+    },
   ];
 
   if (login.project?.reference) {
@@ -365,8 +370,6 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
     count: 100,
     filters,
   });
-
-  memberships = memberships.filter((m) => m.active !== false);
 
   const profileType = login.profileType;
   if (profileType) {
