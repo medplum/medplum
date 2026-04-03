@@ -1,0 +1,65 @@
+# Open Questions
+
+Decisions pending before or during development of the HealthTalk Patient Questionnaire Module.
+
+---
+
+## Product Decisions
+
+### 1. Patient Language Text Quality Control
+
+Who reviews patient-language question text before publish? Is there a mandatory clinical review step, or is the authoring clinician responsible?
+
+### 2. Multiple Questionnaires Per Appointment
+
+If a clinician attaches PHQ-9 and GAD-7 to one appointment, are they sent as one message or two separate messages? Does the patient complete them sequentially or can they choose order?
+
+### 3. Clinician Override of Auto-Send
+
+The spec includes a "Suppress auto-send" checkbox. Confirm whether this is per-appointment or per-patient (e.g. patient in crisis should never receive automated messages).
+
+### 4. Score Visibility to Patient
+
+After completing a scored questionnaire, should the patient see their own score? Or is it clinician-only? This has clinical implications (especially for high suicide risk scores).
+
+### 5. Answer Amendment
+
+Can a patient change an answer after submission? If yes, how is the `QuestionnaireResponse` amended and how is the previous version preserved for audit?
+
+---
+
+## Technical Decisions
+
+### 6. MedMij R4 Questionnaire IG
+
+Monitor `informatiestandaarden.nictiz.nl` for the formal R4 questionnaire profile publication. Update profile URL on release; no structural changes expected.
+
+### 7. zib2024 Breaking Changes
+
+Confirm with Nictiz whether zib2024 introduces breaking changes to the Task or Questionnaire profiles vs zib2020.
+
+### 8. LOINC API Fallback
+
+If `fhir.loinc.org` is unreachable during a builder import attempt, what should the builder show? Suggest: cache the last successful fetch per instrument code in MedPlum with a `lastFetchedAt` timestamp.
+
+---
+
+## Permissions & Access
+
+### 9. Builder Role Permissions
+
+Which HealthTalk roles can create and publish questionnaires? Is there a separation between "draft" and "publish" permissions?
+
+---
+
+## Integration Timing
+
+### 10. Coachi Integration Timing
+
+When should completed `QuestionnaireResponse` resources be forwarded to the patient's Coachi PGO? Immediately on completion, or at end of care episode?
+
+---
+
+## Notes
+
+> Note on "hot dog" — this term came up in the product discussion as a reference to the patient records screen. Clarify internally whether this refers to a specific existing module name, a planned EPD integration, or the new records screen. The architecture is agnostic to that answer.

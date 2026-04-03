@@ -1,0 +1,159 @@
+---
+title: Patient Language Layer
+section: 18
+---
+
+# Patient Language Layer
+
+## Problem
+
+LOINC and clinical questionnaires use formal medical language. Patients need conversational, accessible text.
+
+## Solution
+
+Each Questionnaire item has two text representations:
+
+| Field | Stored In | Used By |
+|-------|-----------|---------|
+| Clinical text | `item.text` | Clinician UI, FHIR export, reporting |
+| Patient text | `item.extension[patient-text]` | Web form, WhatsApp, Voice, Email |
+
+## Extension Definition
+
+```json
+{
+  "url": "https://healthtalk.ai/fhir/StructureDefinition/patient-text",
+  "valueString": "Hoe vaak had u de afgelopen 2 weken weinig interesse of plezier in activiteiten?"
+}
+```
+
+## Example: PHQ-9 Question 1
+
+| Version | Text |
+|---------|------|
+| LOINC (clinical) | "Little interest or pleasure in doing things" |
+| Patient (Dutch) | "Hoe vaak had u de afgelopen 2 weken weinig interesse of plezier in activiteiten?" |
+| Patient (English) | "Over the past 2 weeks, how often have you had little interest or pleasure in doing things?" |
+
+## Multi-Language Support
+
+Patient text is stored per language using FHIR's translation extension:
+
+```json
+{
+  "url": "https://healthtalk.ai/fhir/StructureDefinition/patient-text",
+  "extension": [
+    {
+      "url": "lang",
+      "valueCode": "nl"
+    },
+    {
+      "url": "text",
+      "valueString": "Hoe vaak had u de afgelopen 2 weken..."
+    }
+  ]
+}
+```
+
+## Channel Usage
+
+### Web Form
+
+```typescript
+function getItemText(item: QuestionnaireItem, lang: string): string {
+  const patientText = item.extension?.find(
+    e => e.url === 'https://healthtalk.ai/fhir/StructureDefinition/patient-text'
+  );
+  
+  if (patientText?.extension) {
+    const translation = patientText.extension.find(
+      e => e.url === 'lang' && e.valueCode === lang
+    );
+    if (translation) {
+      return patientText.extension.find(e => e.url === 'text')?.valueString;
+    }
+  }
+  
+  // Fallback to clinical text
+  return item.text;
+}
+```
+
+### Voice (ElevenLabs)
+
+The voice agent receives patient text in the Tool response:
+
+```json
+{
+  "question_index": 1,
+  "question_text": "Hoe vaak had u de afgelopen 2 weken weinig interesse of plezier in activiteiten?",
+  "answer_options": [
+    { "code": "0", "text": "Helemaal niet" },
+    { "code": "1", "text": "Meerdere dagen" },
+    { "code": "2", "text": "Meer dan de helft van de dagen" },
+    { "code": "3", "text": "Bijna elke dag" }
+  ]
+}
+```
+
+### WhatsApp
+
+Interactive button messages use patient text:
+
+```
+Vraag 1 van 9:
+
+Hoe vaak had u de afgelopen 2 weken weinig interesse of plezier in activiteiten?
+
+[Helemaal niet]
+[Meerdere dagen]
+[Meer dan de helft]
+[Bijna elke dag]
+```
+
+## Builder Integration
+
+In the Questionnaire Builder, both fields are editable:
+
+```
+Question 1:
+
+Clinical text (LOINC):
+[Little interest or pleasure in doing things          ]
+
+Patient text (Nederlands):
+[Hoe vaak had u de afgelopen 2 weken weinig interesse...]
+
+Patient text (English):
+[Over the past 2 weeks, how often have you had little...]
+```
+
+## Answer Options
+
+Answer options also support patient-friendly text:
+
+```json
+{
+  "valueCoding": {
+    "code": "0",
+    "display": "Not at all",
+    "extension": [{
+      "url": "https://healthtalk.ai/fhir/StructureDefinition/patient-text",
+      "valueString": "Helemaal niet"
+    }]
+  }
+}
+```
+
+## Voice Interpretation
+
+For voice channels, patient answers in natural speech. The LLM interprets:
+
+| Patient says | Mapped to |
+|--------------|-----------|
+| "Nee, helemaal niet" | code: 0 |
+| "Ja, een paar keer" | code: 1 |
+| "Best vaak eigenlijk" | code: 2 |
+| "Elke dag wel" | code: 3 |
+
+See [Voice Mobile](./channels/voice-mobile.mdx) for interpretation flow.

@@ -1,0 +1,140 @@
+---
+title: Environment Variables
+section: 22
+---
+
+# Environment Variables
+
+All secrets are stored in Vercel Environment Variables. Never commit secrets to the repository.
+
+## HealthTalk App (app.healthtalk.ai)
+
+### MedPlum
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MEDPLUM_BASE_URL` | MedPlum server URL | `https://medplum.healthtalk.ai` |
+| `MEDPLUM_CLIENT_ID` | OAuth client ID | `healthtalk-app` |
+| `MEDPLUM_CLIENT_SECRET` | OAuth client secret | `secret_...` |
+| `MEDPLUM_PROJECT_ID` | Project identifier | `proj_...` |
+
+### Security
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MAGIC_LINK_SECRET` | JWT signing secret (32+ chars) | `hs256_secret_...` |
+| `SUBSCRIPTION_SECRET` | MedPlum webhook auth | `sub_secret_...` |
+| `GATEWAY_API_KEY` | Auth for gateway calls | `gw_key_...` |
+
+### Gateway Connection
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `GATEWAY_URL` | Notification gateway URL | `https://gateway.healthtalk.ai` |
+
+### Microsoft Teams
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `TEAMS_WEBHOOK_URL` | Clinician notification webhook | `https://outlook.office.com/webhook/...` |
+
+---
+
+## Notification Gateway (gateway.healthtalk.ai)
+
+### MedPlum
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MEDPLUM_BASE_URL` | MedPlum server URL | `https://medplum.healthtalk.ai` |
+| `MEDPLUM_CLIENT_ID` | OAuth client ID | `healthtalk-gateway` |
+| `MEDPLUM_CLIENT_SECRET` | OAuth client secret | `secret_...` |
+
+### Twilio
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `TWILIO_ACCOUNT_SID` | Twilio account SID | `AC...` |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token | `auth_...` |
+| `TWILIO_PHONE_NUMBER` | SMS/Voice sender | `+31201234567` |
+| `TWILIO_WHATSAPP_NUMBER` | WhatsApp sender | `+31207654321` |
+| `TWILIO_WEBHOOK_SECRET` | Webhook validation | `whsec_...` |
+
+### ElevenLabs
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ELEVENLABS_API_KEY` | ElevenLabs API key | `el_...` |
+| `ELEVENLABS_AGENT_ID` | Conversational agent ID | `agent_...` |
+| `ELEVENLABS_WEBHOOK_SECRET` | Webhook validation | `el_whsec_...` |
+
+### Postmark
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `POSTMARK_SERVER_TOKEN` | Postmark API token | `pm_...` |
+| `POSTMARK_FROM_EMAIL` | Sender email | `noreply@healthtalk.ai` |
+| `POSTMARK_WEBHOOK_SECRET` | Webhook validation | `pm_whsec_...` |
+
+### Upstash Redis
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `UPSTASH_REDIS_REST_URL` | Redis REST URL | `https://...upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | Redis auth token | `AX...` |
+
+### Security
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `GATEWAY_API_KEY` | Inbound auth from HealthTalk | `gw_key_...` |
+| `HEALTHTALK_CALLBACK_URL` | Status callback URL | `https://app.healthtalk.ai/api/gateway/status` |
+
+---
+
+## Voice SIP (Optional)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SIP_DOMAIN` | SBC domain | `sbc.healthtalk.ai` |
+| `SIP_USERNAME` | SIP auth user | `healthtalk` |
+| `SIP_PASSWORD` | SIP auth password | `sip_...` |
+| `TEAMS_TENANT_ID` | Azure AD tenant | `tenant_...` |
+
+---
+
+## LOINC (Builder)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `LOINC_USERNAME` | LOINC FHIR API user | `user@example.com` |
+| `LOINC_PASSWORD` | LOINC FHIR API password | `loinc_...` |
+
+---
+
+## Environment Setup
+
+### Local Development
+
+```bash
+# Copy example file
+cp .env.example .env.local
+
+# Fill in values from Vercel dashboard or 1Password
+```
+
+### Vercel Deployment
+
+1. Go to Vercel Project Settings > Environment Variables
+2. Add all required variables for Production, Preview, Development
+3. Use Vercel CLI for bulk import: `vercel env pull .env.local`
+
+### Secret Rotation
+
+When rotating secrets:
+
+1. Add new secret with different name (e.g., `TWILIO_AUTH_TOKEN_V2`)
+2. Deploy with both old and new
+3. Update external services to use new secret
+4. Remove old secret
+5. Rename new secret to original name
