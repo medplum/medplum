@@ -33,6 +33,7 @@ import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotifica
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
+import { CoveragePage } from './pages/patient/CoveragePage';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
@@ -191,6 +192,8 @@ export function App(): JSX.Element | null {
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path="Coverage/:coverageId" element={<CoveragePage />} />
+                <Route path="Coverage/:coverageId/CoverageEligibilityRequest/:requestId" element={<CoveragePage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
                   <Route path="" element={<ResourceDetailPage />} />
