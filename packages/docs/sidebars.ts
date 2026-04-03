@@ -432,6 +432,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/disaster-recovery' },
         { type: 'doc', id: 'self-hosting/load-testing' },
         { type: 'doc', id: 'self-hosting/presigned-urls' },
+        { type: 'doc', id: 'self-hosting/gin-index-performance' },
       ],
     },
     {
