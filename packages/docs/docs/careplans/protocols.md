@@ -1,17 +1,17 @@
 ---
-
-## sidebar_position: 1
+sidebar_position: 1
+---
 
 # Authoring Clinical Protocols
 
-In FHIR, care workflows and clinical protocols are primarily modeled using the `**PlanDefinition**` resource. 
+In FHIR, care workflows and clinical protocols are primarily modeled using the **`PlanDefinition`** resource.
 
-While a `CarePlan` represents a concrete plan for a *specific patient*, a `PlanDefinition` represents the abstract protocol that can be applied to *any patient*. 
+While a `CarePlan` represents a concrete plan for a *specific patient*, a `PlanDefinition` represents the abstract protocol that can be applied to *any patient*.
 
-At its core, a `PlanDefinition` contains a list of `**action*`* elements, where each action represents a specific step in the workflow. The `action` element is extremely expressive and allows for incredibly rich workflow logic.
+At its core, a `PlanDefinition` contains a list of **`action`** elements, where each action represents a specific step in the workflow. The `action` element is extremely expressive and allows for incredibly rich workflow logic.
 
 :::info Note on Medplum Support
-The FHIR standard allows for very complex workflow modeling, including hierarchical actions, conditional logic, and dynamic values. While you can author and store these complex `PlanDefinition` resources in Medplum today, the Medplum `[$apply` operation](/docs/api/fhir/operations/plandefinition-apply) currently implements a focused subset of these capabilities (primarily generating sequential Tasks and resolving ActivityDefinitions). Full execution support for hierarchical and conditional logic is under active development.
+The FHIR standard allows for very complex workflow modeling, including hierarchical actions, conditional logic, and dynamic values. While you can author and store these complex `PlanDefinition` resources in Medplum today, the Medplum [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply) currently implements a focused subset of these capabilities (primarily generating sequential Tasks and resolving ActivityDefinitions). Full execution support for hierarchical and conditional logic is under active development.
 :::
 
 ## Basic Sequential Tasks
@@ -42,7 +42,7 @@ Instead of defining all task details inline, actions often reference standalone,
 
 ### ActivityDefinition
 
-An `[ActivityDefinition](/docs/api/fhir/resources/activitydefinition)` is a template for a specific clinical act, such as ordering a lab test, prescribing a medication, or performing a procedure.
+An [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) is a template for a specific clinical act, such as ordering a lab test, prescribing a medication, or performing a procedure.
 
 When an action references an `ActivityDefinition`, the protocol inherits its properties. Furthermore, the `ActivityDefinition.kind` element tells the system what type of resource to generate when the protocol is executed:
 
@@ -64,7 +64,7 @@ When an action references an `ActivityDefinition`, the protocol inherits its pro
 
 ### Questionnaire
 
-If an action requires collecting structured data from a patient or provider, it can reference a `[Questionnaire](/docs/api/fhir/resources/questionnaire)`. When executed, the system generates a `Task` whose `input` references the Questionnaire, signaling to your application that this specific form needs to be completed to fulfill the task.
+If an action requires collecting structured data from a patient or provider, it can reference a [`Questionnaire`](/docs/api/fhir/resources/questionnaire). When executed, the system generates a `Task` whose `input` references the Questionnaire, signaling to your application that this specific form needs to be completed to fulfill the task.
 
 ```json
 {
@@ -177,7 +177,7 @@ You can dynamically inject values into the resulting resources based on the cont
 
 ## Executing Protocols
 
-To actually start a workflow for a specific patient, you instantiate the `PlanDefinition` using the `[$apply` operation](/docs/api/fhir/operations/plandefinition-apply). 
+To actually start a workflow for a specific patient, you instantiate the `PlanDefinition` using the [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply). 
 
 When you invoke the `$apply` operation, Medplum processes the PlanDefinition and:
 

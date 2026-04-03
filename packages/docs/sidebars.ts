@@ -96,6 +96,7 @@ const sidebars: SidebarsConfig = {
       label: 'Care Coordination',
       link: { type: 'doc', id: 'careplans/index' },
       items: [
+        { type: 'doc', id: 'careplans/protocols' },
         { type: 'doc', id: 'careplans/tasks/tasks' },
         { type: 'doc', id: 'careplans/longitudinal-patient-case-tracking' },
         { type: 'doc', id: 'careplans/clinical-decision-support' },
