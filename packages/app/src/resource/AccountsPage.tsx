@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Anchor } from '@mantine/core';
+import { Alert } from '@mantine/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, PatientAccountsForm, useResource } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
@@ -24,14 +24,6 @@ export function AccountsPage(): JSX.Element | null {
 
   return (
     <Document maw={700}>
-      <Anchor
-        href="https://www.medplum.com/docs/access/multi-tenant-access-policy"
-        target="_blank"
-        rel="noopener noreferrer"
-        size="sm"
-      >
-        Learn more about multi-tenant access control
-      </Anchor>
       {resource.resourceType === 'Patient' ? (
         <PatientAccountsForm patient={resource} onSaved={handleSaved} />
       ) : (
