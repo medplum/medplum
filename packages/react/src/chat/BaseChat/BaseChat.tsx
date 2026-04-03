@@ -269,11 +269,11 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
 
-  const communicationsRef = useRef<Communication[]>(communications);
+  const communicationsRef = useRef(communications);
   communicationsRef.current = communications;
-  const prevCommunicationsRef = useRef<Communication[]>(communications);
+  const prevCommunicationsRef = useRef(communications);
 
-  const scrollToBottomRef = useRef<boolean>(true);
+  const scrollToBottomRef = useRef(true);
 
   useEffect(() => {
     if (communications !== prevCommunicationsRef.current) {

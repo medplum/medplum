@@ -3,7 +3,7 @@
 import { Button, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -43,7 +43,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
 
   const medplum = useMedplum();
 
-  const [serviceType, setServiceType] = useState<CodeableConcept | undefined>(
+  const [serviceType, setServiceType] = useState(
     // If there is exactly one option, select it immediately instead of forcing user
     // to select it
     serviceTypes.length === 1 ? serviceTypes[0].codeableConcept : undefined

@@ -23,8 +23,8 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   const [patient, setPatient] = useState<Patient | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
-  const [start, setStart] = useState<Date | undefined>(appointmentSlot?.start);
-  const [end, setEnd] = useState<Date | undefined>(appointmentSlot?.end);
+  const [start, setStart] = useState(appointmentSlot?.start);
+  const [end, setEnd] = useState(appointmentSlot?.end);
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
   const navigate = useNavigate();

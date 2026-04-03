@@ -60009,6 +60009,10 @@
             "$ref": "#/definitions/string"
           },
           "type": "array"
+        },
+        "certificateTrustStore": {
+          "description": "Optional PEM-formatted certificates that are allowed to authenticate to this service via mutual TLS. Supports both Certificate Authorities (CAs) and self-signed certificates. Multiple certificates can be included.",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,

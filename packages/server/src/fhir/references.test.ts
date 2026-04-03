@@ -236,7 +236,7 @@ describe('Reference checks', () => {
         ],
       };
 
-      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+      await expect(repo.createResource(patient)).resolves.toBeDefined();
     }));
 
   test('Check references with reference placeholder', () =>
@@ -285,8 +285,8 @@ describe('Reference checks', () => {
         ],
       };
 
-      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
-      await expect(repo.createResource<Questionnaire>(questionnaire)).resolves.toBeDefined();
+      await expect(repo.createResource(patient)).resolves.toBeDefined();
+      await expect(repo.createResource(questionnaire)).resolves.toBeDefined();
     }));
 
   test('Resources with identical references', () => {

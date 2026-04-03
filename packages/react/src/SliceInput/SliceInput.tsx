@@ -25,7 +25,7 @@ export interface SliceInputProps extends BaseInputProps {
 
 export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property } = props;
-  const [values, setValues] = useState<any[]>(props.defaultValue);
+  const [values, setValues] = useState(props.defaultValue);
 
   const sliceElements = slice.typeSchema?.elements ?? slice.elements;
 
