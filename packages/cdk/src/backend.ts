@@ -48,14 +48,15 @@ export class BackEnd extends Construct {
   taskDefinition: ecs.FargateTaskDefinition;
   logGroup?: logs.ILogGroup;
   logDriver: ecs.LogDriver;
+  loggingBucket?: s3.IBucket;
+  loadBalancerSecurityGroup?: ec2.ISecurityGroup;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
-  targetGroup: elbv2.ApplicationTargetGroup;
   loadBalancer: elbv2.ApplicationLoadBalancer;
-  waf: wafv2.CfnWebACL;
-  wafAssociation: wafv2.CfnWebACLAssociation;
+  mtlsLoadBalancer?: elbv2.ApplicationLoadBalancer;
   dnsRecord?: route53.ARecord;
+  mtlsDnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
   databaseSecretsParameter: ssm.StringParameter;
   databaseProxyEndpointParameter?: ssm.StringParameter;
@@ -522,24 +523,13 @@ export class BackEnd extends Construct {
     // Add dependencies - make sure Fargate service is created after RDS and Redis
     this.addServiceDependencies(this.fargateService, purposeRedisClusters);
 
-    // Load Balancer Target Group
-    this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
-      vpc: this.vpc,
-      port: config.apiPort,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      healthCheck: {
-        path: '/healthcheck',
-        interval: Duration.seconds(30),
-        timeout: Duration.seconds(3),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 5,
-      },
-      targets: [this.fargateService],
-    });
+    // Load Balancer logging
+    if (config.loadBalancerLoggingBucket) {
+      this.loggingBucket = s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket);
+    }
 
-    let loadBalancerSecurityGroup: ec2.ISecurityGroup | undefined = undefined;
     if (config.loadBalancerSecurityGroupId) {
-      loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+      this.loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
         this,
         'LoadBalancerSecurityGroup',
         config.loadBalancerSecurityGroupId
@@ -547,50 +537,33 @@ export class BackEnd extends Construct {
     }
 
     // Load Balancer
-    this.loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
-      vpc: this.vpc,
-      internetFacing: config.apiInternetFacing !== false, // default true
-      http2Enabled: true,
-      securityGroup: loadBalancerSecurityGroup,
-    });
-
-    if (config.loadBalancerLoggingBucket) {
-      // Load Balancer logging
-      this.loadBalancer.logAccessLogs(
-        s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
-        config.loadBalancerLoggingPrefix
-      );
-    }
-
-    // HTTPS Listener
-    // Forward to the target group
-    this.loadBalancer.addListener('HttpsListener', {
-      port: 443,
-      certificates: [
-        {
-          certificateArn: config.apiSslCertArn,
-        },
-      ],
-      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
-      defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
-    });
-
-    // WAF
-    this.waf = buildWaf(
-      this,
-      'BackEndWAF',
-      `${config.stackName}-BackEndWAF`,
-      'REGIONAL',
+    this.loadBalancer = this.createLoadBalancer(
+      config.stackName,
+      '',
+      config.apiPort,
+      config.apiInternetFacing !== false,
+      config.apiSslCertArn,
+      config.loadBalancerLoggingBucket,
       config.apiWafIpSetArn,
       config.wafLogGroupName,
       config.wafLogGroupCreate
     );
 
-    // Create an association between the load balancer and the WAF
-    this.wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
-      resourceArn: this.loadBalancer.loadBalancerArn,
-      webAclArn: this.waf.attrArn,
-    });
+    // Optional mTLS Load Balancer
+    if (config.mtlsSslCertArn) {
+      this.mtlsLoadBalancer = this.createLoadBalancer(
+        config.stackName,
+        'Mtls',
+        config.apiPort,
+        config.mtlsInternetFacing !== false,
+        config.mtlsSslCertArn,
+        config.loadBalancerLoggingBucket,
+        config.mtlsWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate,
+        { mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH }
+      );
+    }
 
     if (this.rdsCluster) {
       // Grant RDS access to the fargate group
@@ -645,6 +618,14 @@ export class BackEnd extends Construct {
         target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.loadBalancer)),
         zone: zone,
       });
+
+      if (this.mtlsLoadBalancer) {
+        this.mtlsDnsRecord = new route53.ARecord(this, 'MtlsLoadBalancerAliasRecord', {
+          recordName: config.mtlsDomainName,
+          target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.mtlsLoadBalancer)),
+          zone: zone,
+        });
+      }
     }
 
     // SSM Parameters
@@ -958,6 +939,86 @@ export class BackEnd extends Construct {
     secrets.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
     return { securityGroup, password, cluster, secrets };
+  }
+
+  /**
+   * Creates an Application Load Balancer with an HTTPS listener and a target group pointing to the Fargate service.
+   * @param stackName - The name of the stack, used for naming the WAF.
+   * @param namePrefix - Prefix for construct IDs to avoid collisions (e.g., 'Mtls' for the mTLS load balancer).
+   * @param port - The port for the target group health checks and Fargate container (default: config.apiPort).
+   * @param internetFacing - Whether the load balancer is internet-facing (default: config.apiInternetFacing).
+   * @param certificateArn - The ARN of the SSL certificate for the HTTPS listener.
+   * @param loadBalancerLoggingPrefix - Optional prefix for load balancer access log object keys.
+   * @param wafIpSetArn - Optional WAF IP set ARN.
+   * @param wafLogGroupName - Optional WAF log group name.
+   * @param wafLogGroupCreate - Optional WAF log group create flag.
+   * @param mutualAuthentication - Optional mutual authentication configuration for the HTTPS listener.
+   * @returns The created Application Load Balancer.
+   */
+  private createLoadBalancer(
+    stackName: string,
+    namePrefix: string,
+    port: number,
+    internetFacing: boolean,
+    certificateArn: string,
+    loadBalancerLoggingPrefix: string | undefined,
+    wafIpSetArn: string | undefined,
+    wafLogGroupName: string | undefined,
+    wafLogGroupCreate: boolean | undefined,
+    mutualAuthentication?: elbv2.MutualAuthentication
+  ): elbv2.ApplicationLoadBalancer {
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, `${namePrefix}TargetGroup`, {
+      vpc: this.vpc,
+      port,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      healthCheck: {
+        path: '/healthcheck',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(3),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 5,
+      },
+      targets: [this.fargateService],
+    });
+
+    const loadBalancer = new elbv2.ApplicationLoadBalancer(this, `${namePrefix}LoadBalancer`, {
+      vpc: this.vpc,
+      internetFacing,
+      http2Enabled: true,
+      securityGroup: this.loadBalancerSecurityGroup,
+    });
+
+    if (this.loggingBucket) {
+      loadBalancer.logAccessLogs(this.loggingBucket, loadBalancerLoggingPrefix);
+    }
+
+    loadBalancer.addListener(`${namePrefix}HttpsListener`, {
+      port: 443,
+      certificates: [{ certificateArn }],
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+      mutualAuthentication,
+    });
+
+    // WAF
+    const waf = buildWaf(
+      this,
+      `${namePrefix}BackEndWAF`,
+      `${stackName}-${namePrefix}BackEndWAF`,
+      'REGIONAL',
+      wafIpSetArn,
+      wafLogGroupName,
+      wafLogGroupCreate
+    );
+
+    // Create an association between the load balancer and the WAF
+    const wafAssociation = new wafv2.CfnWebACLAssociation(this, `${namePrefix}LoadBalancerAssociation`, {
+      resourceArn: loadBalancer.loadBalancerArn,
+      webAclArn: waf.attrArn,
+    });
+    assert.ok(wafAssociation, 'Failed to create WAF association');
+
+    return loadBalancer;
   }
 }
 
