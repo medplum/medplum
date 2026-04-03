@@ -8,6 +8,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { getActiveSubsKey } from '../../pubsub';
 import type { WsSubStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
 
@@ -52,7 +53,7 @@ describe('$get-ws-sub-stats', () => {
     const projectId = randomUUID();
 
     await redis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+      getActiveSubsKey(projectId, 'Observation'),
       'Subscription/sub1',
       'Observation?code=85354-9',
       'Subscription/sub2',
@@ -60,11 +61,7 @@ describe('$get-ws-sub-stats', () => {
       'Subscription/sub3',
       'Observation?status=final'
     );
-    await redis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Patient`,
-      'Subscription/sub4',
-      'Patient?name=Alice'
-    );
+    await redis.hset(getActiveSubsKey(projectId, 'Patient'), 'Subscription/sub4', 'Patient?name=Alice');
 
     try {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
@@ -95,43 +92,43 @@ describe('$get-ws-sub-stats', () => {
       expect(patientType).toBeDefined();
       expect(patientType?.count).toBe(1);
     } finally {
-      await redis.del(
-        `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
-        `medplum:subscriptions:r4:project:${projectId}:active:Patient`
-      );
+      await redis.del(getActiveSubsKey(projectId, 'Observation'), getActiveSubsKey(projectId, 'Patient'));
     }
   });
 
   test('parseActiveSubKey', () => {
     const projectId = randomUUID();
 
-    expect(parseActiveSubKey(`medplum:subscriptions:r4:project:${projectId}:active:Observation`)).toEqual({
+    expect(parseActiveSubKey(getActiveSubsKey(projectId, 'Observation'))).toEqual({
       projectId,
       resourceType: 'Observation',
     });
 
-    expect(parseActiveSubKey(`medplum:subscriptions:r4:project:${projectId}:active:DocumentReference`)).toEqual({
+    expect(parseActiveSubKey(getActiveSubsKey(projectId, 'DocumentReference'))).toEqual({
       projectId,
       resourceType: 'DocumentReference',
     });
 
     expect(parseActiveSubKey('invalid:key')).toBeUndefined();
     expect(parseActiveSubKey('medplum:subscriptions:r4:project:no-active-part')).toBeUndefined();
-    // Legacy pre-release key format — must be filtered out
-    expect(parseActiveSubKey(`medplum:subscriptions:r4:project:${projectId}:active:v2`)).toBeUndefined();
   });
 
-  test('Ignores legacy v2 keys in stats', async () => {
+  test('Ignores legacy keys without v2 segment in stats', async () => {
     const redis = getPubSubRedis();
     const projectId = randomUUID();
 
     await redis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+      getActiveSubsKey(projectId, 'Observation'),
       'Subscription/sub1',
       'Observation?code=85354-9'
     );
-    // Legacy key that should not appear in stats
-    await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub2', 'Observation');
+    // Legacy key formats that should not appear in stats
+    await redis.hset(
+      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+      'Subscription/sub2',
+      'Observation'
+    );
+    await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub3', 'Observation');
 
     try {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
@@ -147,10 +144,11 @@ describe('$get-ws-sub-stats', () => {
 
       const project = stats.projects.find((p) => p.projectId === projectId);
       expect(project).toBeDefined();
+      // Only the v2-format key should be counted
       expect(project?.subscriptionCount).toBe(1);
-      expect(project?.resourceTypes.every((rt) => rt.resourceType !== 'v2')).toBe(true);
     } finally {
       await redis.del(
+        getActiveSubsKey(projectId, 'Observation'),
         `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
         `medplum:subscriptions:r4:project:${projectId}:active:v2`
       );

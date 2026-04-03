@@ -4,6 +4,7 @@ import { allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
+import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import type { WsSubCriteriaStats, WsSubProjectDetailStats, WsSubResourceTypeDetailStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
@@ -46,7 +47,7 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
   }
 
   const redis = getPubSubRedis();
-  const pattern = `medplum:subscriptions:r4:project:${projectId}:active:*`;
+  const pattern = getActiveSubsKey(projectId, '*');
   const resourceTypeMap = new Map<string, Map<string, number>>();
 
   let cursor = '0';
