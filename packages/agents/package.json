@@ -1,0 +1,28 @@
+{
+  "name": "@mrd/agents",
+  "version": "0.1.0",
+  "description": "Base agent definitions for MEDrecord ecosystem (MDX-based compliance, instincts, skills, standards)",
+  "type": "module",
+  "exports": {
+    "./compliance/*": "./compliance/*",
+    "./instincts/*": "./instincts/*",
+    "./skills/*": "./skills/*",
+    "./standards/*": "./standards/*",
+    "./config.yaml": "./config.yaml"
+  },
+  "files": [
+    "compliance",
+    "instincts",
+    "skills",
+    "standards",
+    "config.yaml"
+  ],
+  "keywords": [
+    "medrecord",
+    "agents",
+    "compliance",
+    "mdx",
+    "healthcare"
+  ],
+  "license": "Apache-2.0"
+}

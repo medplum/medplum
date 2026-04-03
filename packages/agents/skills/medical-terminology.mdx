@@ -1,0 +1,84 @@
+---
+id: medical-terminology
+version: 1.0.0
+category: skills
+status: active
+triggers:
+  - text-processing
+  - clinical-notes
+  - search
+dependencies: []
+priority: medium
+---
+
+# Medical Terminology
+
+## Purpose
+
+This skill enables understanding and processing of medical terminology,
+abbreviations, and clinical language.
+
+## Capabilities
+
+### Abbreviation Expansion
+
+Common medical abbreviations and their meanings:
+
+| Abbreviation | Full Term | Context |
+|--------------|-----------|---------|
+| PRN | Pro re nata (as needed) | Medication |
+| BID | Twice daily | Medication |
+| TID | Three times daily | Medication |
+| QID | Four times daily | Medication |
+| PO | Per os (by mouth) | Route |
+| IV | Intravenous | Route |
+| IM | Intramuscular | Route |
+| SC/SQ | Subcutaneous | Route |
+| Dx | Diagnosis | Clinical |
+| Hx | History | Clinical |
+| Rx | Prescription | Clinical |
+| Tx | Treatment | Clinical |
+
+### Terminology Systems
+
+Support for standard medical terminology systems:
+
+- **SNOMED CT** - Clinical terms and concepts
+- **ICD-10** - Diagnosis codes
+- **LOINC** - Laboratory and clinical observations
+- **RxNorm** - Medications and drugs
+- **CPT** - Procedures and services
+
+### Language Processing
+
+```typescript
+interface TerminologyResult {
+  original: string;
+  normalized: string;
+  system: 'SNOMED' | 'ICD10' | 'LOINC' | 'RxNorm';
+  code: string;
+  display: string;
+  confidence: number;
+}
+```
+
+## Usage Examples
+
+### Clinical Note Processing
+
+```typescript
+const result = await agent.processText(
+  "Patient presents with SOB and chest pain. Dx: acute MI. Rx: aspirin PO."
+);
+
+// Output:
+// - SOB → Shortness of breath (SNOMED: 267036007)
+// - MI → Myocardial infarction (ICD-10: I21)
+// - aspirin → Aspirin (RxNorm: 1191)
+```
+
+## Limitations
+
+- Context-dependent abbreviations require clinical context
+- Regional variations in terminology
+- Evolving medical language

@@ -1,0 +1,97 @@
+---
+id: hl7-fhir-r4
+version: 4.0.1
+category: standards
+status: active
+triggers:
+  - data-model
+  - api-design
+  - interoperability
+dependencies: []
+priority: critical
+---
+
+# HL7 FHIR R4
+
+## Overview
+
+Fast Healthcare Interoperability Resources (FHIR) R4 is the primary data
+standard for all MEDrecord ecosystem applications.
+
+**Version:** R4 (4.0.1)
+**Publisher:** HL7 International
+**Specification:** https://hl7.org/fhir/R4/
+
+## Core Principles
+
+### Resources
+
+FHIR represents healthcare data as "Resources" - discrete units of data
+with a defined structure:
+
+- Each resource has a type (Patient, Observation, etc.)
+- Resources have a unique ID
+- Resources can reference other resources
+- All resources share common metadata
+
+### RESTful API
+
+FHIR defines a RESTful API pattern:
+
+| Operation | HTTP Method | URL Pattern |
+|-----------|-------------|-------------|
+| Create | POST | `/[type]` |
+| Read | GET | `/[type]/[id]` |
+| Update | PUT | `/[type]/[id]` |
+| Delete | DELETE | `/[type]/[id]` |
+| Search | GET | `/[type]?[params]` |
+| History | GET | `/[type]/[id]/_history` |
+
+### Data Types
+
+Common FHIR data types:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `string` | Unicode text | "John Doe" |
+| `boolean` | true/false | true |
+| `integer` | Whole numbers | 42 |
+| `decimal` | Decimal numbers | 3.14 |
+| `date` | Date (no time) | "2024-01-15" |
+| `dateTime` | Date and time | "2024-01-15T10:30:00Z" |
+| `code` | Coded value | "active" |
+| `Coding` | Code with system | `{ system, code, display }` |
+| `CodeableConcept` | Multiple codings | `{ coding[], text }` |
+| `Reference` | Link to resource | `{ reference: "Patient/123" }` |
+
+## MEDrecord Usage
+
+### Required Profiles
+
+All MEDrecord applications MUST support:
+
+- US Core Patient
+- US Core Practitioner
+- US Core Organization
+- US Core Encounter
+- US Core Condition
+- US Core Observation
+
+### Extensions
+
+MEDrecord-specific extensions:
+
+```typescript
+interface MEDrecordExtensions {
+  'http://medrecord.nl/fhir/tenant': Reference; // Organization tenant
+  'http://medrecord.nl/fhir/brand': string;     // Brand identifier
+}
+```
+
+## Validation
+
+All resources are validated against:
+
+1. Base FHIR R4 StructureDefinitions
+2. US Core profiles
+3. MEDrecord custom profiles

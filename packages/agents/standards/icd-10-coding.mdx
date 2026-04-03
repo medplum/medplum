@@ -1,0 +1,88 @@
+---
+id: icd-10-coding
+version: "2024"
+category: standards
+status: active
+triggers:
+  - diagnosis
+  - condition
+  - billing
+dependencies: []
+priority: high
+---
+
+# ICD-10 Coding
+
+## Overview
+
+International Classification of Diseases, 10th Revision (ICD-10) is the
+standard coding system for diagnoses and health conditions.
+
+**Version:** ICD-10-CM 2024
+**Publisher:** WHO / CMS
+**System URI:** `http://hl7.org/fhir/sid/icd-10-cm`
+
+## Code Structure
+
+ICD-10 codes follow a hierarchical structure:
+
+```
+A00.0
+│││ └── Extension (4th+ characters)
+││└──── Category (3rd character)
+│└───── Block (2nd character)
+└────── Chapter (1st character)
+```
+
+### Chapters
+
+| Chapter | Range | Category |
+|---------|-------|----------|
+| I | A00-B99 | Infectious diseases |
+| II | C00-D49 | Neoplasms |
+| III | D50-D89 | Blood diseases |
+| IV | E00-E89 | Endocrine/metabolic |
+| V | F01-F99 | Mental disorders |
+| VI | G00-G99 | Nervous system |
+| VII | H00-H59 | Eye and adnexa |
+| VIII | H60-H95 | Ear and mastoid |
+| IX | I00-I99 | Circulatory system |
+| X | J00-J99 | Respiratory system |
+| XI | K00-K95 | Digestive system |
+| XII | L00-L99 | Skin diseases |
+| XIII | M00-M99 | Musculoskeletal |
+| XIV | N00-N99 | Genitourinary |
+| XV | O00-O9A | Pregnancy |
+| XVI | P00-P96 | Perinatal conditions |
+| XVII | Q00-Q99 | Congenital malformations |
+| XVIII | R00-R99 | Symptoms, signs |
+| XIX | S00-T88 | Injury, poisoning |
+| XX | V00-Y99 | External causes |
+| XXI | Z00-Z99 | Health services factors |
+
+## FHIR Mapping
+
+ICD-10 codes are used in FHIR `Condition` resources:
+
+```json
+{
+  "resourceType": "Condition",
+  "code": {
+    "coding": [
+      {
+        "system": "http://hl7.org/fhir/sid/icd-10-cm",
+        "code": "I21.0",
+        "display": "ST elevation (STEMI) myocardial infarction of anterior wall"
+      }
+    ]
+  }
+}
+```
+
+## Coding Guidelines
+
+1. **Specificity** - Code to the highest level of specificity
+2. **Primary diagnosis** - List the main condition first
+3. **Manifestations** - Code underlying disease before manifestation
+4. **Combination codes** - Use single code when available
+5. **Sequencing** - Follow official coding guidelines

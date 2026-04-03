@@ -1,0 +1,92 @@
+---
+id: fhir-resource-mapping
+version: 1.0.0
+category: skills
+status: active
+triggers:
+  - data-import
+  - data-export
+  - integration
+dependencies:
+  - hl7-fhir-r4
+  - medical-terminology
+priority: high
+---
+
+# FHIR Resource Mapping
+
+## Purpose
+
+This skill enables mapping of healthcare data to and from FHIR R4 resources,
+ensuring interoperability with other healthcare systems.
+
+## Supported Resources
+
+### Clinical Resources
+
+| Resource | Use Case | Key Elements |
+|----------|----------|--------------|
+| Patient | Demographics | name, birthDate, identifier, address |
+| Practitioner | Provider info | name, identifier, qualification |
+| Encounter | Visits | status, class, period, participant |
+| Condition | Diagnoses | code, subject, clinicalStatus |
+| Observation | Lab results, vitals | code, value, status, effectiveDateTime |
+| MedicationRequest | Prescriptions | medication, dosageInstruction, status |
+| AllergyIntolerance | Allergies | code, patient, clinicalStatus |
+
+### Administrative Resources
+
+| Resource | Use Case | Key Elements |
+|----------|----------|--------------|
+| Organization | Tenants, clinics | name, identifier, type |
+| Location | Facilities | name, address, type |
+| Schedule | Availability | actor, planningHorizon |
+| Appointment | Bookings | status, participant, start, end |
+
+## Mapping Patterns
+
+### Inbound Mapping (External → FHIR)
+
+```typescript
+interface MappingRule {
+  source: string;           // JSONPath to source field
+  target: string;           // FHIRPath to target element
+  transform?: string;       // Optional transformation
+  required: boolean;
+}
+
+const patientMapping: MappingRule[] = [
+  { source: '$.firstName', target: 'Patient.name.given', required: true },
+  { source: '$.lastName', target: 'Patient.name.family', required: true },
+  { source: '$.dob', target: 'Patient.birthDate', transform: 'date', required: true },
+  { source: '$.ssn', target: 'Patient.identifier[system=SSN]', required: false },
+];
+```
+
+### Outbound Mapping (FHIR → External)
+
+```typescript
+const exportMapping = {
+  patientId: 'Patient.id',
+  fullName: 'Patient.name.text',
+  dateOfBirth: 'Patient.birthDate',
+  primaryPhone: "Patient.telecom.where(system='phone').first().value",
+};
+```
+
+## Validation
+
+All mappings are validated against:
+
+1. FHIR R4 resource definitions
+2. US Core profiles (when applicable)
+3. Custom MEDrecord profiles
+
+## Error Handling
+
+| Error Type | Action | Severity |
+|------------|--------|----------|
+| Required field missing | Reject mapping | Error |
+| Invalid code system | Log warning, use text | Warning |
+| Type mismatch | Attempt coercion, log | Warning |
+| Unknown field | Ignore, log | Info |

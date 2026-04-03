@@ -1,0 +1,184 @@
+---
+sidebar_position: 2
+---
+
+# Design System
+
+## Overview
+
+The `@mrd/ui` package provides a shared design system for all MEDrecord ecosystem
+brands. It uses Tailwind CSS v4 with OKLCH color space for modern, accessible design.
+
+## Installation
+
+```bash
+# In your brand app package.json
+{
+  "dependencies": {
+    "@mrd/ui": "workspace:*"
+  }
+}
+```
+
+## Usage
+
+### Import Base Styles
+
+```tsx
+// app/layout.tsx
+import '@mrd/ui/globals.css';
+import '@mrd/ui/themes/coachi.css'; // Brand-specific theme
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+### Use Utility Function
+
+```tsx
+import { cn } from '@mrd/ui/lib/utils';
+
+function Button({ className, ...props }) {
+  return (
+    <button
+      className={cn('bg-primary text-primary-foreground rounded-lg px-4 py-2', className)}
+      {...props}
+    />
+  );
+}
+```
+
+## Design Tokens
+
+### Color System
+
+All colors use the OKLCH color space for perceptual uniformity:
+
+| Token | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| `--background` | `oklch(1 0 0)` | `oklch(0.145 0 0)` | Page background |
+| `--foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Primary text |
+| `--primary` | Brand-specific | Brand-specific | Primary actions |
+| `--secondary` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Secondary elements |
+| `--muted` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Muted backgrounds |
+| `--accent` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Accent elements |
+| `--destructive` | `oklch(0.577 0.245 27)` | `oklch(0.396 0.141 26)` | Error states |
+
+### Brand Colors
+
+Each brand has a distinct primary color:
+
+| Brand | Hue | Light Primary | Dark Primary |
+|-------|-----|---------------|--------------|
+| HealthTalk | 250 (Blue) | `oklch(0.55 0.2 250)` | `oklch(0.65 0.18 250)` |
+| Coachi | 145 (Green) | `oklch(0.55 0.18 145)` | `oklch(0.65 0.16 145)` |
+| MedSafe | 185 (Teal) | `oklch(0.55 0.15 185)` | `oklch(0.65 0.14 185)` |
+| MEDrecord | 270 (Indigo) | `oklch(0.5 0.2 270)` | `oklch(0.6 0.18 270)` |
+| HelpDoc | 45 (Orange) | `oklch(0.65 0.2 45)` | `oklch(0.7 0.18 45)` |
+
+### Border Radius
+
+```css
+--radius: 0.625rem;        /* Base radius */
+--radius-sm: calc(var(--radius) - 4px);
+--radius-md: calc(var(--radius) - 2px);
+--radius-lg: var(--radius);
+--radius-xl: calc(var(--radius) + 4px);
+```
+
+### Typography
+
+```css
+--font-sans: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif;
+--font-mono: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, monospace;
+```
+
+## Theme Customization
+
+### Creating a New Brand Theme
+
+Create `packages/ui/src/themes/{brand}.css`:
+
+```css
+/* =============================================================================
+   NEWBRAND BRAND THEME
+   Primary: [Color] - [Description]
+   ============================================================================= */
+
+:root {
+  /* Primary - NewBrand [Color] */
+  --primary: oklch(0.55 0.18 [hue]);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Accent */
+  --accent: oklch(0.92 0.05 [hue]);
+  --accent-foreground: oklch(0.25 0.1 [hue]);
+
+  /* Sidebar Primary */
+  --sidebar-primary: oklch(0.55 0.18 [hue]);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  /* Primary - NewBrand [Color] (Dark Mode) */
+  --primary: oklch(0.65 0.16 [hue]);
+  --primary-foreground: oklch(0.15 0 0);
+
+  /* Accent */
+  --accent: oklch(0.3 0.1 [hue]);
+  --accent-foreground: oklch(0.9 0.05 [hue]);
+
+  /* Sidebar Primary */
+  --sidebar-primary: oklch(0.65 0.16 [hue]);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+}
+```
+
+## Tailwind CSS v4
+
+The design system uses Tailwind CSS v4 with the `@theme inline` directive:
+
+```css
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --color-primary: var(--primary);
+  /* ... other mappings */
+}
+```
+
+This maps CSS custom properties to Tailwind utility classes automatically.
+
+## Accessibility
+
+### Color Contrast
+
+All color combinations meet WCAG 2.1 AA standards:
+
+- Normal text: minimum 4.5:1 contrast ratio
+- Large text: minimum 3:1 contrast ratio
+- UI components: minimum 3:1 contrast ratio
+
+### Dark Mode
+
+Dark mode is activated via the `.dark` class on a parent element:
+
+```tsx
+<html className="dark">
+  {/* Dark mode active */}
+</html>
+```
+
+## Related Documentation
+
+- [Multi-Brand Architecture](/docs/architecture/multi-brand)
+- [Creating a New Brand](/docs/architecture/multi-brand#creating-a-new-brand)

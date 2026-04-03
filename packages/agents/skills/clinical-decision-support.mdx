@@ -1,0 +1,97 @@
+---
+id: clinical-decision-support
+version: 1.0.0
+category: skills
+status: active
+triggers:
+  - prescription
+  - diagnosis
+  - treatment-plan
+dependencies:
+  - medical-terminology
+  - patient-safety-first
+priority: high
+---
+
+# Clinical Decision Support
+
+## Purpose
+
+This skill provides evidence-based clinical decision support, including
+drug interaction checking, allergy alerts, and guideline recommendations.
+
+## Capabilities
+
+### Drug Interaction Checking
+
+```typescript
+interface DrugInteraction {
+  drug1: MedicationReference;
+  drug2: MedicationReference;
+  severity: 'contraindicated' | 'severe' | 'moderate' | 'minor';
+  description: string;
+  recommendation: string;
+  evidence: string[];
+}
+```
+
+**Severity Levels:**
+
+| Level | Action | UI Indicator |
+|-------|--------|--------------|
+| Contraindicated | Block prescription | Red, requires override |
+| Severe | Require confirmation | Orange, prominent warning |
+| Moderate | Display warning | Yellow, inline warning |
+| Minor | Informational | Gray, tooltip |
+
+### Allergy Alerts
+
+Cross-reference patient allergies with:
+
+- Prescribed medications
+- Medication ingredients
+- Drug classes (cross-reactivity)
+- Food interactions
+
+### Dosage Validation
+
+Check prescribed dosages against:
+
+- Age-appropriate ranges
+- Weight-based calculations
+- Renal/hepatic adjustments
+- Maximum daily doses
+
+## Integration
+
+### CDS Hooks
+
+Support for HL7 CDS Hooks specification:
+
+- `patient-view` - When patient chart is opened
+- `order-select` - When medication is selected
+- `order-sign` - Before order is signed
+
+### Response Format
+
+```typescript
+interface CDSResponse {
+  cards: Array<{
+    summary: string;
+    detail?: string;
+    indicator: 'info' | 'warning' | 'critical';
+    source: { label: string; url?: string };
+    suggestions?: Array<{
+      label: string;
+      actions: CDSAction[];
+    }>;
+  }>;
+}
+```
+
+## Limitations
+
+- Recommendations are supportive, not prescriptive
+- Always requires clinical judgment
+- May not include latest research
+- Regional guidelines may differ

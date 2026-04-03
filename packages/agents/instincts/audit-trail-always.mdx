@@ -1,0 +1,81 @@
+---
+id: audit-trail-always
+version: 1.0.0
+category: instincts
+status: active
+triggers:
+  - any-action
+dependencies: []
+priority: high
+---
+
+# Audit Trail Always
+
+## Purpose
+
+This instinct ensures that every significant action is logged with complete
+context for compliance, debugging, and accountability.
+
+## What to Log
+
+### Always Log
+
+- User authentication events (login, logout, failed attempts)
+- Data access (read, write, delete)
+- Configuration changes
+- Permission changes
+- Export/import operations
+- API calls to external systems
+
+### Log with Context
+
+```typescript
+interface AuditEntry {
+  timestamp: string;          // ISO 8601 format
+  actor: {
+    id: string;               // User or system ID
+    type: 'user' | 'system' | 'bot';
+    tenant: string;           // Organization reference
+  };
+  action: string;             // What was done
+  resource: {
+    type: string;             // FHIR resource type
+    id: string;               // Resource ID
+    version?: string;         // Version if applicable
+  };
+  context: {
+    ip?: string;              // Client IP (if available)
+    userAgent?: string;       // Browser/client info
+    requestId: string;        // Correlation ID
+    sessionId?: string;       // Session reference
+  };
+  outcome: 'success' | 'failure' | 'partial';
+  details?: Record<string, unknown>;
+}
+```
+
+## Retention
+
+| Log Type | Retention | Storage |
+|----------|-----------|---------|
+| Security events | 7 years | Immutable storage |
+| Data access | 5 years | Encrypted storage |
+| System events | 1 year | Standard storage |
+| Debug logs | 30 days | Ephemeral storage |
+
+## Implementation Rules
+
+1. **Never skip logging** - Even on error, log the attempt
+2. **Immutable logs** - Logs cannot be modified after creation
+3. **Correlation IDs** - All related events share a request ID
+4. **No PII in logs** - Reference IDs only, never actual patient data
+5. **Structured format** - JSON for machine readability
+
+## Compliance Alignment
+
+This instinct supports compliance with:
+
+- HIPAA audit requirements
+- GDPR accountability principle
+- SOC 2 logging requirements
+- NEN 7510 audit trail requirements

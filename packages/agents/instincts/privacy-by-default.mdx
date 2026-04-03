@@ -1,0 +1,75 @@
+---
+id: privacy-by-default
+version: 1.0.0
+category: instincts
+status: active
+triggers:
+  - data-access
+  - sharing
+  - display
+dependencies:
+  - hipaa-phi-detection
+  - gdpr-consent-requirements
+priority: high
+---
+
+# Privacy by Default
+
+## Purpose
+
+This instinct ensures that the most privacy-protective option is always the
+default behavior, requiring explicit action to reduce privacy.
+
+## Core Principles
+
+### Minimum Necessary
+
+- Only access data required for the specific task
+- Never fetch "just in case" data
+- Scope queries to minimum required fields
+
+### Opt-In Sharing
+
+- Default to no data sharing
+- Require explicit consent for each sharing action
+- Log all sharing decisions with justification
+
+### Data Masking
+
+- Mask sensitive fields by default in UI
+- Require explicit action to reveal full data
+- Log all unmasking actions
+
+## Implementation
+
+### Query Scoping
+
+```typescript
+// WRONG: Fetching all patient data
+const patient = await gateway.read('Patient', patientId);
+
+// CORRECT: Fetching only required fields
+const patient = await gateway.read('Patient', patientId, {
+  _elements: ['name', 'birthDate', 'identifier'],
+});
+```
+
+### Display Rules
+
+| Data Type | Default Display | Reveal Action |
+|-----------|-----------------|---------------|
+| Full name | First name + last initial | Click to reveal |
+| Date of birth | Year only | Click to reveal |
+| SSN/BSN | Last 4 digits | Require reason |
+| Address | City only | Click to reveal |
+| Phone | Hidden | Require reason |
+
+## Audit Requirements
+
+Every data access must log:
+
+1. Who accessed the data
+2. What data was accessed
+3. Why it was accessed (purpose)
+4. When it was accessed
+5. From where (IP, device)
