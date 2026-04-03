@@ -22,7 +22,7 @@ For this model, each care service is modeled as a [HealthcareService](/docs/api/
 
 You still need a clear way to answer *who is allowed to provide this service to this patient in this state?*—but that answer is **input to Schedule selection**, not something `$find` infers for you.
 
-### Model each care service that as a PractitionerRole
+### Model each care service as a PractitionerRole
 
 Use one [PractitionerRole](/docs/api/fhir/resources/practitionerrole) per HealthcareService (or per service line) the practitioner is enrolled to provide. Each role record carries:
 
