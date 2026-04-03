@@ -1,0 +1,254 @@
+# Multi-Brand Architecture
+
+## Overview
+
+The MEDrecord ecosystem consists of multiple independent brands, each serving different healthcare use cases while sharing common infrastructure. This architecture leverages Medplum's native multi-tenant capabilities to ensure complete data isolation between brands and organizations.
+
+### Brand vs Organization vs Project
+
+Understanding the hierarchy is critical for correct implementation:
+
+| Level | Medplum Concept | MEDrecord Usage | Example |
+|-------|-----------------|-----------------|---------|
+| **Brand** | Project | Independent application with its own domain, branding, and Medplum Project | HealthTalk, Coachi, MedSafe |
+| **Tenant** | Organization | Customer/clinic within a brand, uses `meta.compartment` for data isolation | Clinic Amsterdam, Hospital Rotterdam |
+| **User** | ProjectMembership | User access scoped to specific Organizations via `access.parameter` | Dr. Smith at Clinic Amsterdam |
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+flowchart TB
+    subgraph MEDrecord["MEDrecord Ecosystem"]
+        subgraph Shared["Shared Infrastructure"]
+            UI["@mrd/ui<br/>Design System"]
+            GW["@mrd/gateway-client<br/>API Client"]
+            AG["@mrd/agents<br/>Base MDX Agents"]
+        end
+        
+        subgraph Brands["Brand Applications"]
+            HT["@mrd/healthtalk<br/>Project: healthtalk-prod"]
+            CO["@mrd/coachi<br/>Project: coachi-prod"]
+            MS["@mrd/medsafe<br/>Project: medsafe-prod"]
+            MR["@mrd/medrecord<br/>Project: medrecord-prod"]
+            HD["@mrd/helpdoc<br/>Project: helpdoc-prod"]
+        end
+        
+        subgraph Gateway["Gateway Layer"]
+            GWS["auth-test-b2c.healthtalk.ai<br/>Authentication & Routing"]
+        end
+    end
+    
+    UI --> HT
+    UI --> CO
+    UI --> MS
+    UI --> MR
+    UI --> HD
+    
+    GW --> HT
+    GW --> CO
+    GW --> MS
+    GW --> MR
+    GW --> HD
+    
+    AG --> HT
+    AG --> CO
+    AG --> MS
+    AG --> MR
+    AG --> HD
+    
+    HT --> GWS
+    CO --> GWS
+    MS --> GWS
+    MR --> GWS
+    HD --> GWS
+    
+    style Shared fill:#e1f5ff
+    style Brands fill:#e8f5e9
+    style Gateway fill:#fff4e1
+```
+
+## Package Structure
+
+### Shared Packages (Brand-Agnostic)
+
+```
+packages/
+├── ui/                              # @mrd/ui
+│   ├── src/
+│   │   ├── globals.css              # Base design tokens
+│   │   ├── themes/
+│   │   │   ├── healthtalk.css       # Brand-specific colors
+│   │   │   ├── coachi.css
+│   │   │   ├── medsafe.css
+│   │   │   ├── medrecord.css
+│   │   │   └── helpdoc.css
+│   │   ├── components/              # shadcn/ui components
+│   │   └── lib/
+│   │       └── utils.ts             # cn() helper, utilities
+│   └── package.json
+│
+├── gateway-client/                  # @mrd/gateway-client
+│   ├── src/
+│   │   ├── client.ts                # Server-side fetch wrapper
+│   │   ├── auth.ts                  # Authentication utilities
+│   │   └── types.ts                 # Shared API types
+│   └── package.json
+│
+└── agents/                          # @mrd/agents
+    ├── compliance/
+    │   └── *.mdx
+    ├── instincts/
+    │   └── *.mdx
+    ├── skills/
+    │   └── *.mdx
+    ├── standards/
+    │   └── *.mdx
+    ├── config.yaml
+    └── package.json
+```
+
+### Brand Packages (Per-Application)
+
+Each brand follows the same template structure:
+
+```
+packages/healthtalk/                 # @mrd/healthtalk
+├── app/
+│   ├── layout.tsx                   # Imports @mrd/ui + brand theme
+│   ├── page.tsx
+│   └── api/                         # Server-side route handlers
+│       └── [...]/route.ts
+├── .agents/                         # Brand-specific agent overrides
+│   ├── compliance/
+│   │   └── *.mdx
+│   ├── instincts/
+│   │   └── *.mdx
+│   ├── skills/
+│   │   └── *.mdx
+│   ├── standards/
+│   │   └── *.mdx
+│   └── config.yaml                  # extends: "@mrd/agents"
+├── next.config.ts
+├── tailwind.config.ts
+├── .env.local                       # Brand-specific environment
+└── package.json
+```
+
+## Medplum Integration
+
+### Project-Level Isolation (Brands)
+
+Each brand operates within its own Medplum Project. This provides:
+
+- **Complete data isolation** between brands
+- **Independent configuration** (AccessPolicies, Bots, Subscriptions)
+- **Separate FHIR endpoints** per brand
+
+### Organization-Level Multi-Tenancy (Within Brands)
+
+Within each brand, Organizations represent tenants (clinics, hospitals, departments). This uses Medplum's native multi-tenant access control:
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+flowchart TB
+    subgraph Project["Medplum Project: coachi-prod"]
+        subgraph Orgs["Organizations (Tenants)"]
+            O1["Organization/clinic-amsterdam"]
+            O2["Organization/hospital-rotterdam"]
+        end
+        
+        subgraph Users["Users"]
+            U1["Practitioner/dr-smith"]
+            U2["Practitioner/nurse-janssen"]
+        end
+        
+        subgraph Data["Patient Data"]
+            P1["Patient/patient-1<br/>meta.compartment → clinic-amsterdam"]
+            P2["Patient/patient-2<br/>meta.compartment → clinic-amsterdam"]
+            P3["Patient/patient-3<br/>meta.compartment → hospital-rotterdam"]
+        end
+        
+        subgraph PM["ProjectMemberships"]
+            PM1["Dr. Smith<br/>access.parameter → clinic-amsterdam"]
+            PM2["Nurse Janssen<br/>access.parameter → clinic-amsterdam, hospital-rotterdam"]
+        end
+    end
+    
+    U1 --> PM1
+    U2 --> PM2
+    
+    PM1 --> O1
+    PM2 --> O1
+    PM2 --> O2
+    
+    O1 --> P1
+    O1 --> P2
+    O2 --> P3
+    
+    style Orgs fill:#e1f5ff
+    style Users fill:#e8f5e9
+    style Data fill:#fff4e1
+    style PM fill:#fce4ec
+```
+
+## Gateway Flow
+
+All brand applications communicate through the HealthTalk Gateway for authentication and API routing:
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+sequenceDiagram
+    participant App as Brand App (Coachi)
+    participant GW as Gateway
+    participant MP as Medplum Project
+    
+    App->>GW: Request with brand token
+    GW->>GW: Authenticate (B2C)
+    GW->>GW: Determine brand from domain/token
+    GW->>GW: Extract tenant (Organization) from ProjectMembership
+    GW->>MP: Forward to coachi-prod with auth context
+    MP->>MP: AccessPolicy enforces tenant scope
+    MP-->>GW: Tenant-scoped response
+    GW-->>App: Response
+```
+
+## Environment Configuration
+
+Each brand requires specific environment variables:
+
+```bash
+# Brand identification
+NEXT_PUBLIC_BRAND=coachi
+NEXT_PUBLIC_BRAND_NAME="Coachi"
+
+# Gateway (shared across all brands)
+GATEWAY_URL=https://auth-test-b2c.healthtalk.ai
+
+# Medplum Project (brand-specific)
+MEDPLUM_PROJECT_ID=coachi-prod
+MEDPLUM_CLIENT_ID=xxx
+MEDPLUM_CLIENT_SECRET=xxx  # Server-side only, never expose to client
+```
+
+## Security Requirements
+
+All brand applications MUST follow these security patterns:
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Server-side only backend operations | Use Next.js Server Components, Server Actions, Route Handlers |
+| No direct client-to-Medplum calls | All requests go through Gateway via `@mrd/gateway-client` |
+| Tenant-scoped queries | Every request verified with `auth.id` from Gateway |
+| No secrets in client code | Environment variables without `NEXT_PUBLIC_` prefix |
+
+## Creating a New Brand
+
+To create a new brand application:
+
+1. **Copy the template** from an existing brand package
+2. **Update package.json** with new brand name (`@mrd/newbrand`)
+3. **Create brand theme** in `@mrd/ui/themes/newbrand.css`
+4. **Configure environment** with brand-specific Medplum Project
+5. **Customize `.agents/`** folder with brand-specific MDX overrides
+6. **Create Medplum Project** for the brand with appropriate AccessPolicies
+
+See [Agent Configuration](/docs/architecture/agent-configuration) for details on customizing agent behavior per brand.
