@@ -1,0 +1,34 @@
+# MedSafe Agent Configuration
+# Extends base @mrd/agents definitions with brand-specific customizations
+
+extends: "@mrd/agents"
+
+brand: medsafe
+name: "MedSafe"
+description: "Medication safety and management platform"
+
+# Brand-specific agent settings
+settings:
+  language: en
+  region: eu
+  timezone: Europe/Amsterdam
+
+# Enable all base compliance rules
+compliance:
+  enabled: true
+  
+# Enable all base instincts
+instincts:
+  enabled: true
+
+# Brand-specific skills (extend base)
+skills:
+  enabled: true
+  additional:
+    - medication-safety
+    - drug-interactions
+    - prescription-validation
+
+# Standards compliance
+standards:
+  enabled: true

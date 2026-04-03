@@ -104,31 +104,55 @@ packages/
     └── package.json
 ```
 
-### Brand Packages (Per-Application)
+### Brand Applications (Production Apps)
 
-Each brand follows the same template structure:
+Brand applications live in the `apps/` workspace, separate from shared packages:
 
 ```
-packages/healthtalk/                 # @mrd/healthtalk
-├── app/
-│   ├── layout.tsx                   # Imports @mrd/ui + brand theme
-│   ├── page.tsx
-│   └── api/                         # Server-side route handlers
-│       └── [...]/route.ts
-├── .agents/                         # Brand-specific agent overrides
-│   ├── compliance/
-│   │   └── *.mdx
-│   ├── instincts/
-│   │   └── *.mdx
-│   ├── skills/
-│   │   └── *.mdx
-│   ├── standards/
-│   │   └── *.mdx
-│   └── config.yaml                  # extends: "@mrd/agents"
-├── next.config.ts
-├── tailwind.config.ts
-├── .env.local                       # Brand-specific environment
-└── package.json
+apps/
+├── healthtalk/                      # @mrd/healthtalk
+│   ├── app/
+│   │   ├── layout.tsx               # Imports @mrd/ui + brand theme
+│   │   ├── page.tsx
+│   │   └── api/                     # Server-side route handlers
+│   │       └── [...]/route.ts
+│   ├── .agents/                     # Brand-specific agent overrides
+│   │   ├── compliance/
+│   │   │   └── *.mdx
+│   │   ├── instincts/
+│   │   │   └── *.mdx
+│   │   ├── skills/
+│   │   │   └── *.mdx
+│   │   ├── standards/
+│   │   │   └── *.mdx
+│   │   └── config.yaml              # extends: "@mrd/agents"
+│   ├── next.config.ts
+│   ├── tsconfig.json
+│   ├── .env.local                   # Brand-specific environment
+│   └── package.json
+│
+├── coachi/                          # @mrd/coachi
+│   └── ...                          # Same structure
+│
+├── medsafe/                         # @mrd/medsafe
+│   └── ...                          # Same structure
+│
+└── medrecord/                       # @mrd/medrecord
+    └── ...                          # Same structure
+```
+
+### Workspace Configuration
+
+The root `package.json` defines three workspaces:
+
+```json
+{
+  "workspaces": [
+    "packages/*",   // Shared libraries (@mrd/ui, @mrd/agents)
+    "examples/*",   // Medplum demo applications
+    "apps/*"        // Production brand applications
+  ]
+}
 ```
 
 ## Medplum Integration
@@ -242,9 +266,9 @@ All brand applications MUST follow these security patterns:
 
 To create a new brand application:
 
-1. **Copy the template** from an existing brand package
+1. **Copy the template** from an existing brand in `apps/` folder
 2. **Update package.json** with new brand name (`@mrd/newbrand`)
-3. **Create brand theme** in `@mrd/ui/themes/newbrand.css`
+3. **Create brand theme** in `packages/ui/src/themes/newbrand.css`
 4. **Configure environment** with brand-specific Medplum Project
 5. **Customize `.agents/`** folder with brand-specific MDX overrides
 6. **Create Medplum Project** for the brand with appropriate AccessPolicies
