@@ -8,6 +8,8 @@ Medplum implements the FHIR [`$apply` operation](https://hl7.org/fhir/plandefini
 
 The `$apply` operation converts a PlanDefinition into a set of actionable resources for a specific patient. It creates a CarePlan containing a RequestGroup with Tasks based on the actions defined in the PlanDefinition.
 
+For a detailed explanation of how Medplum processes PlanDefinitions, resolves ActivityDefinitions, and handles custom Task extensions, see our guide on [Authoring Clinical Protocols](/docs/careplans/protocols).
+
 ## Use Cases
 
 - **Care Protocols**: Apply standardized care protocols to patients
@@ -101,58 +103,6 @@ The operation returns a CarePlan resource that references a RequestGroup contain
       }
     }
   ]
-}
-```
-
-## Behavior
-
-The `$apply` operation processes the PlanDefinition and:
-
-1. **Creates Tasks** for each action in the PlanDefinition
-2. **Resolves ActivityDefinitions** - If an action references an ActivityDefinition, it creates appropriate resources:
-   - `ServiceRequest` for ActivityDefinitions with `kind: ServiceRequest`
-   - Tasks with Questionnaire inputs for Questionnaire definitions
-3. **Creates a RequestGroup** containing all the generated actions
-4. **Creates a CarePlan** that wraps the RequestGroup
-
-### Action Definition Processing
-
-| Definition Type      | Generated Resources                          |
-| -------------------- | -------------------------------------------- |
-| `Questionnaire`      | Task with Questionnaire input reference      |
-| `ActivityDefinition` | Task + ServiceRequest (if kind is ServiceRequest) |
-| None                 | Task only                                    |
-
-### Task Extensions
-
-Medplum supports custom extensions on `ActivityDefinition` resources to dynamically assign Task parameters when `$apply` is run. 
-
-- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task `owner` and `performerType` using FHIRPath expressions based on the `$apply` parameters (e.g., `%patient`, `%practitioner`, `%organization`).
-
-**Example ActivityDefinition with Task Extensions:**
-
-```json
-{
-  "resourceType": "ActivityDefinition",
-  "status": "active",
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/task-elements",
-    "extension": [
-      {
-        "url": "owner",
-        "valueExpression": {
-          "language": "text/fhirpath",
-          "expression": "%practitioner"
-        }
-      },
-      {
-        "url": "performerType",
-        "valueCodeableConcept": {
-          "coding": [{ "system": "http://snomed.info/sct", "code": "158965000", "display": "Medical practitioner" }]
-        }
-      }
-    ]
-  }]
 }
 ```
 
