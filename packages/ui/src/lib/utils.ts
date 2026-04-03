@@ -30,7 +30,6 @@ export const BRANDS = {
   coachi: { id: 'coachi', name: 'Coachi', theme: 'coachi' },
   medsafe: { id: 'medsafe', name: 'MedSafe', theme: 'medsafe' },
   medrecord: { id: 'medrecord', name: 'MEDrecord', theme: 'medrecord' },
-  helpdoc: { id: 'helpdoc', name: 'HelpDoc', theme: 'helpdoc' },
 } as const satisfies Record<string, BrandConfig>;
 
 export type BrandId = keyof typeof BRANDS;

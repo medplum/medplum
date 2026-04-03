@@ -33,7 +33,6 @@ flowchart TB
             CO["@mrd/coachi<br/>Project: coachi-prod"]
             MS["@mrd/medsafe<br/>Project: medsafe-prod"]
             MR["@mrd/medrecord<br/>Project: medrecord-prod"]
-            HD["@mrd/helpdoc<br/>Project: helpdoc-prod"]
         end
         
         subgraph Gateway["Gateway Layer"]
@@ -45,25 +44,21 @@ flowchart TB
     UI --> CO
     UI --> MS
     UI --> MR
-    UI --> HD
     
     GW --> HT
     GW --> CO
     GW --> MS
     GW --> MR
-    GW --> HD
     
     AG --> HT
     AG --> CO
     AG --> MS
     AG --> MR
-    AG --> HD
     
     HT --> GWS
     CO --> GWS
     MS --> GWS
     MR --> GWS
-    HD --> GWS
     
     style Shared fill:#e1f5ff
     style Brands fill:#e8f5e9
@@ -83,8 +78,7 @@ packages/
 │   │   │   ├── healthtalk.css       # Brand-specific colors
 │   │   │   ├── coachi.css
 │   │   │   ├── medsafe.css
-│   │   │   ├── medrecord.css
-│   │   │   └── helpdoc.css
+│   │   │   └── medrecord.css
 │   │   ├── components/              # shadcn/ui components
 │   │   └── lib/
 │   │       └── utils.ts             # cn() helper, utilities
