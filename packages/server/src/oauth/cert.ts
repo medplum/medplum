@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { normalizeErrorString } from '@medplum/core';
 import { X509Certificate } from 'node:crypto';
+import { getLogger } from '../logger';
 
 /**
  * Validates the client certificate received via ALB passthrough.
@@ -128,5 +129,6 @@ function validateCaSignedCert(clientCert: X509Certificate, trustedCerts: X509Cer
       lastError = normalizeErrorString(err);
     }
   }
-  throw new Error(`Certificate validation failed: ${lastError ?? 'No matching CA found'}`);
+  getLogger().warn(`Certificate validation failed for ${clientCert.subject}. Last error: ${lastError}`);
+  throw new Error('Certificate validation failed: No matching CA found');
 }
