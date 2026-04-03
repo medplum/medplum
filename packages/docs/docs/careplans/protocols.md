@@ -1,18 +1,11 @@
----
-sidebar_position: 1
----
 
-# Authoring Clinical Protocols
+# Clinical Protocols
 
 In FHIR, care workflows and clinical protocols are primarily modeled using the **`PlanDefinition`** resource.
 
 While a `CarePlan` represents a concrete plan for a *specific patient*, a `PlanDefinition` represents the abstract protocol that can be applied to *any patient*.
 
 At its core, a `PlanDefinition` contains a list of **`action`** elements, where each action represents a specific step in the workflow. The `action` element is extremely expressive and allows for incredibly rich workflow logic.
-
-:::info Note on Medplum Support
-The FHIR standard allows for very complex workflow modeling, including hierarchical actions, conditional logic, and dynamic values. While you can author and store these complex `PlanDefinition` resources in Medplum today, the Medplum [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply) currently implements a focused subset of these capabilities (primarily generating sequential Tasks and resolving ActivityDefinitions). Full execution support for hierarchical and conditional logic is under active development.
-:::
 
 ## Basic Sequential Tasks
 
@@ -49,16 +42,35 @@ When an action references an `ActivityDefinition`, the protocol inherits its pro
 - If `kind` is set to `ServiceRequest`, executing the protocol will generate a draft `ServiceRequest` resource (copying over the `code`, `intent`, etc.) alongside the `Task`, and link them together.
 - If `kind` is set to `Task` (or left blank), it will simply generate a `Task`.
 
-```json
+```js
+// The PlanDefinition represents the overall protocol
 {
   "resourceType": "PlanDefinition",
   "status": "active",
   "action": [
     {
       "title": "Order HbA1c Test",
+      // This canonical URL links the action to the ActivityDefinition below
       "definitionCanonical": "http://example.org/ActivityDefinition/hba1c-order"
     }
   ]
+}
+
+// The ActivityDefinition is a reusable template for the specific lab order
+{
+  "resourceType": "ActivityDefinition",
+  "url": "http://example.org/ActivityDefinition/hba1c-order",
+  "status": "active",
+  "kind": "ServiceRequest",
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "4548-4",
+        "display": "HbA1c"
+      }
+    ]
+  }
 }
 ```
 
@@ -186,6 +198,11 @@ When you invoke the `$apply` operation, Medplum processes the PlanDefinition and
 3. **Creates a RequestGroup** containing all the generated actions.
 4. **Creates a CarePlan** that wraps the RequestGroup.
 
+:::info Note on Medplum Support
+The FHIR standard allows for very complex workflow modeling, including hierarchical actions, conditional logic, and dynamic values. While you can author and store these complex `PlanDefinition` resources in Medplum today, the Medplum [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply) currently implements a focused subset of these capabilities (primarily generating sequential Tasks and resolving ActivityDefinitions). Full execution support for hierarchical and conditional logic is under active development.
+:::
+
+
 ### Action Definition Processing
 
 
@@ -226,6 +243,28 @@ Medplum supports custom extensions on `ActivityDefinition` resources to dynamica
       }
     ]
   }]
+}
+```
+
+When the protocol is applied, Medplum evaluates these expressions to generate a concrete `Task` resource with the resolved values.
+
+```js {6,7,12-13}
+{
+  "resourceType": "Task",
+  "status": "requested",
+  "intent": "order",
+  "for": { "reference": "Patient/example" },
+  // The owner is resolved from the %practitioner FHIRPath expression
+  "owner": { "reference": "Practitioner/dr-alice-smith" },
+  // The performerType is resolved from the valueCodeableConcept in the extension
+  "performerType": [
+    {
+      "coding": [
+        // The coding is resolved from the extension's valueCodeableConcept
+        { "system": "http://snomed.info/sct", "code": "158965000", "display": "Medical practitioner" }
+      ]
+    }
+  ]
 }
 ```
 
