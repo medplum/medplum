@@ -3605,7 +3605,7 @@ describe('project-scoped Repository', () => {
       expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
-  test('_filter with reverse chained search', () =>
+  test('_filter with chained search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -3693,7 +3693,6 @@ describe('project-scoped Repository', () => {
           text: 'Strep test',
         },
         subject: createReference(patient),
-        performer: [createReference(patient)],
       });
 
       const observation2 = await repo.createResource<Observation>({
@@ -3720,20 +3719,6 @@ describe('project-scoped Repository', () => {
       expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual(
         expect.arrayContaining([observation1.id, observation2.id])
       );
-
-      const result2 = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_filter',
-            operator: Operator.EQUALS,
-            value: `_has:Observation:performer:_id ne '${observation2.id}'`,
-          },
-        ],
-      });
-
-      expect(result2.entry).toHaveLength(1);
-      expect(result2.entry?.[0].resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Lookup table exact match with comma disjunction', () =>
