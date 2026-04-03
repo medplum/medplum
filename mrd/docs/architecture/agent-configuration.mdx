@@ -1,7 +1,3 @@
----
-sidebar_position: 3
----
-
 # Agent Configuration
 
 ## Overview
@@ -17,10 +13,10 @@ Agent configuration uses MDX files to define compliance rules, behavioral instin
 
 ### Base Agent Definitions
 
-Shared across all brands in `packages/agents/`:
+Shared across all brands in `mrd/packages/agents/`:
 
 ```
-packages/agents/
+mrd/packages/agents/
 ├── compliance/
 │   ├── hipaa-phi-detection.mdx
 │   ├── gdpr-consent-requirements.mdx
@@ -46,7 +42,7 @@ packages/agents/
 Each brand can override or extend base definitions in `.agents/`:
 
 ```
-packages/coachi/.agents/
+mrd/apps/coachi/.agents/
 ├── compliance/
 │   └── coaching-specific-consent.mdx    # Brand-specific rule
 ├── instincts/
@@ -81,79 +77,11 @@ priority: critical                   # critical | high | medium | low
 ---
 ```
 
-### Content Structure
-
-```mdx
----
-id: hipaa-phi-detection
-version: 1.2.0
-category: compliance
-status: active
-triggers:
-  - patient-data
-  - export
----
-
-# HIPAA PHI Detection
-
-## Purpose
-
-This compliance rule ensures that Protected Health Information (PHI) is properly
-identified and handled according to HIPAA regulations.
-
-## Detection Patterns
-
-The following data elements are considered PHI:
-
-- Patient names
-- Geographic data smaller than state
-- Dates (except year) related to an individual
-- Phone numbers, fax numbers, email addresses
-- Social Security numbers
-- Medical record numbers
-- Health plan beneficiary numbers
-- Account numbers
-- Certificate/license numbers
-- Vehicle identifiers and serial numbers
-- Device identifiers and serial numbers
-- Web URLs
-- IP addresses
-- Biometric identifiers
-- Full-face photographs
-- Any other unique identifying number or code
-
-## Implementation
-
-<ComplianceChecklist
-  items={[
-    { rule: "Scan all outbound data for PHI patterns", required: true },
-    { rule: "Log PHI access attempts", required: true },
-    { rule: "Encrypt PHI in transit and at rest", required: true },
-    { rule: "Implement minimum necessary principle", required: true },
-  ]}
-/>
-
-## Exceptions
-
-PHI may be shared without patient authorization for:
-
-1. Treatment purposes
-2. Payment operations
-3. Healthcare operations
-4. Public health activities
-5. Law enforcement (with proper documentation)
-
-## Related Standards
-
-- [GDPR Consent Requirements](/docs/agents/compliance/gdpr-consent-requirements)
-- [Data Retention Policy](/docs/agents/compliance/data-retention-policy)
-```
-
 ## Configuration YAML
 
 ### Base Configuration
 
-`packages/agents/config.yaml`:
+`mrd/packages/agents/config.yaml`:
 
 ```yaml
 # Base agent configuration for all brands
@@ -192,7 +120,7 @@ enabled:
 
 ### Brand Configuration
 
-`packages/coachi/.agents/config.yaml`:
+`mrd/apps/coachi/.agents/config.yaml`:
 
 ```yaml
 # Coachi-specific agent configuration
@@ -266,32 +194,6 @@ Reference standards and specifications the agent follows.
 
 ## Inheritance Model
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    subgraph Base["@mrd/agents (Base)"]
-        BC["compliance/*.mdx"]
-        BI["instincts/*.mdx"]
-        BS["skills/*.mdx"]
-        BST["standards/*.mdx"]
-    end
-    
-    subgraph Coachi["@mrd/coachi/.agents (Brand Override)"]
-        CC["compliance/*.mdx<br/>+ coaching-specific-consent"]
-        CI["instincts/*.mdx<br/>+ motivational-tone"]
-        CS["skills/*.mdx<br/>+ wellness-coaching"]
-        CST["standards/*.mdx"]
-    end
-    
-    BC --> CC
-    BI --> CI
-    BS --> CS
-    BST --> CST
-    
-    style Base fill:#e1f5ff
-    style Coachi fill:#e8f5e9
-```
-
 The inheritance follows these rules:
 
 1. **Base definitions** are loaded first from `@mrd/agents`
@@ -300,28 +202,10 @@ The inheritance follows these rules:
 4. **New ID** in brand folder adds to available agents
 5. **Disabled list** in config.yaml removes agents from availability
 
-## Integration with Applications
-
-Brand applications load agent configuration at runtime:
-
-```typescript
-// packages/coachi/lib/agents.ts
-import { loadAgentConfig } from '@mrd/agents';
-
-export const agentConfig = loadAgentConfig({
-  base: '@mrd/agents',
-  brand: './.agents',
-});
-
-// Access specific agents
-const complianceRules = agentConfig.getCategory('compliance');
-const activeSkills = agentConfig.getEnabled('skills');
-```
-
 ## Best Practices
 
-1. **Keep base agents generic** — Brand-specific logic belongs in `.agents/` overrides
-2. **Version all changes** — Update version in frontmatter for audit trail
-3. **Document triggers clearly** — Explicit triggers prevent unexpected activation
-4. **Use dependencies** — Declare dependencies to ensure correct loading order
-5. **Test inheritance** — Verify brand overrides work as expected before deployment
+1. **Keep base agents generic** - Brand-specific logic belongs in `.agents/` overrides
+2. **Version all changes** - Update version in frontmatter for audit trail
+3. **Document triggers clearly** - Explicit triggers prevent unexpected activation
+4. **Use dependencies** - Declare dependencies to ensure correct loading order
+5. **Test inheritance** - Verify brand overrides work as expected before deployment
