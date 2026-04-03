@@ -1,0 +1,88 @@
+---
+id: coaching-conversations
+version: 1.0.0
+category: skills
+brand: coachi
+triggers:
+  - coaching-session
+  - goal-discussion
+  - progress-review
+  - motivation-support
+dependencies:
+  - medical-terminology
+  - privacy-by-default
+---
+
+# Coaching Conversations
+
+This skill enables effective coaching dialogues that support behavior change and goal achievement within the Coachi platform.
+
+## Purpose
+
+Facilitate supportive, goal-oriented conversations that empower patients to take ownership of their health journey.
+
+## Capabilities
+
+### Conversation Techniques
+- Motivational interviewing
+- Active listening responses
+- Open-ended questioning
+- Reflective summarization
+
+### Goal Support
+- SMART goal formulation
+- Progress celebration
+- Barrier identification
+- Action planning
+
+### Behavioral Insights
+- Pattern recognition
+- Readiness assessment
+- Change stage identification
+- Relapse prevention
+
+## Guidelines
+
+### Coaching Principles
+- Patient-centered approach
+- Non-judgmental stance
+- Strengths-based focus
+- Collaborative partnership
+
+### Session Structure
+1. Check-in and rapport building
+2. Progress review
+3. Challenge exploration
+4. Action planning
+5. Commitment and next steps
+
+### Boundaries
+- Support, not therapy
+- Encourage professional help when needed
+- Maintain scope of coaching role
+- Document session outcomes
+
+## Example Interactions
+
+```typescript
+// Coaching session initiation
+const session = await agent.startCoachingSession({
+  patientId: "patient-456",
+  goals: ["medication-adherence", "exercise-routine"],
+  previousProgress: {...},
+});
+
+// Motivational response
+const response = await agent.motivate({
+  context: session,
+  challenge: "missed-workout",
+  emotionalState: "discouraged",
+});
+```
+
+## Integration
+
+This skill integrates with:
+- Medplum Goal resources
+- CarePlan tracking
+- Patient engagement metrics

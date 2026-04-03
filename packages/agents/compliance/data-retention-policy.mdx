@@ -1,0 +1,65 @@
+---
+id: data-retention-policy
+version: 1.0.0
+category: compliance
+status: active
+triggers:
+  - storage
+  - deletion
+  - archival
+dependencies:
+  - audit-trail-always
+priority: high
+---
+
+# Data Retention Policy
+
+## Purpose
+
+This compliance rule defines retention periods for different data categories
+and ensures proper data lifecycle management.
+
+## Retention Periods
+
+| Data Category | Retention Period | Legal Basis |
+|---------------|------------------|-------------|
+| Medical records | 10 years after last treatment | Medical regulations |
+| Audit logs | 7 years | Compliance requirements |
+| Session data | 24 hours after logout | Security best practice |
+| Consent records | Duration of relationship + 5 years | GDPR requirement |
+| Communication logs | 3 years | Business requirement |
+
+## Deletion Requirements
+
+### Secure Deletion
+
+- Use cryptographic erasure where possible
+- Overwrite data with random bytes
+- Remove from all backup systems
+- Document deletion with audit trail
+
+### Exceptions
+
+Data may be retained beyond standard periods for:
+
+1. Active legal proceedings
+2. Regulatory investigations
+3. Ongoing medical treatment
+4. Explicit user request (with valid basis)
+
+## Implementation
+
+```typescript
+interface RetentionPolicy {
+  category: string;
+  retentionDays: number;
+  legalBasis: string;
+  deletionMethod: 'soft' | 'hard' | 'cryptographic';
+}
+```
+
+## Audit Requirements
+
+- Monthly review of data approaching retention limits
+- Quarterly compliance reports
+- Annual policy review and update

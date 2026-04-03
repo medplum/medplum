@@ -1,0 +1,31 @@
+# HealthTalk Agent Configuration
+# This configuration extends the base @mrd/agents definitions
+
+extends: "@mrd/agents"
+
+brand: healthtalk
+name: "HealthTalk"
+description: "Intelligent healthcare communication platform"
+
+# Brand-specific overrides
+overrides:
+  compliance: []
+  instincts: []
+  skills: []
+  standards: []
+
+# Brand-specific additions
+additions:
+  skills:
+    - patient-communication
+    - appointment-scheduling
+    - care-team-messaging
+
+# Disabled base agents (if any)
+disabled: []
+
+# Environment-specific settings
+settings:
+  medplum_project: "healthtalk-prod"
+  gateway_url: "https://auth-test-b2c.healthtalk.ai"
+  default_locale: "en-US"

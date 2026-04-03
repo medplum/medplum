@@ -1,0 +1,108 @@
+---
+id: snomed-ct-terminology
+version: "2024-01"
+category: standards
+status: active
+triggers:
+  - clinical-terms
+  - documentation
+  - interoperability
+dependencies: []
+priority: high
+---
+
+# SNOMED CT Terminology
+
+## Overview
+
+Systematized Nomenclature of Medicine - Clinical Terms (SNOMED CT) is a
+comprehensive clinical terminology for healthcare documentation.
+
+**Version:** January 2024 International Edition
+**Publisher:** SNOMED International
+**System URI:** `http://snomed.info/sct`
+
+## Concept Model
+
+SNOMED CT concepts are organized hierarchically:
+
+### Top-Level Hierarchies
+
+| SCTID | Hierarchy | Description |
+|-------|-----------|-------------|
+| 404684003 | Clinical finding | Diagnoses, symptoms |
+| 71388002 | Procedure | Medical procedures |
+| 373873005 | Pharmaceutical product | Medications |
+| 123037004 | Body structure | Anatomy |
+| 410607006 | Organism | Pathogens |
+| 105590001 | Substance | Chemical substances |
+| 260787004 | Physical object | Medical devices |
+| 362981000 | Qualifier value | Modifiers |
+| 419891008 | Record artifact | Documentation |
+
+## Concept Structure
+
+```typescript
+interface SNOMEDConcept {
+  conceptId: string;         // Unique identifier (SCTID)
+  fullySpecifiedName: string; // Unambiguous name
+  preferredTerm: string;     // Common clinical name
+  relationships: Array<{
+    typeId: string;          // Relationship type
+    destinationId: string;   // Target concept
+  }>;
+}
+```
+
+## FHIR Usage
+
+SNOMED CT is used in multiple FHIR resources:
+
+### Condition (Clinical Finding)
+
+```json
+{
+  "code": {
+    "coding": [{
+      "system": "http://snomed.info/sct",
+      "code": "22298006",
+      "display": "Myocardial infarction"
+    }]
+  }
+}
+```
+
+### Procedure
+
+```json
+{
+  "code": {
+    "coding": [{
+      "system": "http://snomed.info/sct",
+      "code": "80146002",
+      "display": "Excision of appendix"
+    }]
+  }
+}
+```
+
+## Expression Constraint Language (ECL)
+
+Query SNOMED CT using ECL:
+
+```
+// All types of diabetes
+< 73211009 |Diabetes mellitus|
+
+// Procedures on the heart
+< 71388002 |Procedure| : 363704007 |Procedure site| = << 80891009 |Heart|
+
+// Clinical findings with associated morphology
+< 404684003 |Clinical finding| : 116676008 |Associated morphology| = *
+```
+
+## MEDrecord Implementation
+
+- Use SNOMED CT for clinical documentation
+- Map to ICD-10 for billing/reporting
+- Store both codes in CodeableConcept

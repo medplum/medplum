@@ -1,0 +1,32 @@
+/* =============================================================================
+   MEDRECORD BRAND THEME
+   Primary: Indigo - Medical records and data platform
+   ============================================================================= */
+
+:root {
+  /* Primary - MEDrecord Indigo */
+  --primary: oklch(0.5 0.2 270);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Accent - Lighter indigo */
+  --accent: oklch(0.92 0.05 270);
+  --accent-foreground: oklch(0.25 0.1 270);
+
+  /* Sidebar Primary */
+  --sidebar-primary: oklch(0.5 0.2 270);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  /* Primary - MEDrecord Indigo (Dark Mode) */
+  --primary: oklch(0.6 0.18 270);
+  --primary-foreground: oklch(0.15 0 0);
+
+  /* Accent - Darker indigo */
+  --accent: oklch(0.3 0.1 270);
+  --accent-foreground: oklch(0.9 0.05 270);
+
+  /* Sidebar Primary */
+  --sidebar-primary: oklch(0.6 0.18 270);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+}

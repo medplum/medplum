@@ -1,0 +1,32 @@
+# Coachi Agent Configuration
+# This configuration extends the base @mrd/agents definitions
+
+extends: "@mrd/agents"
+
+brand: coachi
+name: "Coachi"
+description: "Intelligent coaching and care coordination platform"
+
+# Brand-specific overrides
+overrides:
+  compliance: []
+  instincts: []
+  skills: []
+  standards: []
+
+# Brand-specific additions
+additions:
+  skills:
+    - coaching-conversations
+    - goal-tracking
+    - progress-monitoring
+    - motivational-interviewing
+
+# Disabled base agents (if any)
+disabled: []
+
+# Environment-specific settings
+settings:
+  medplum_project: "coachi-prod"
+  gateway_url: "https://auth-test-b2c.healthtalk.ai"
+  default_locale: "en-US"

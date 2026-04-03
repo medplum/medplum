@@ -1,0 +1,32 @@
+/* =============================================================================
+   COACHI BRAND THEME
+   Primary: Green - Wellness and coaching platform
+   ============================================================================= */
+
+:root {
+  /* Primary - Coachi Green */
+  --primary: oklch(0.55 0.18 145);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Accent - Lighter green */
+  --accent: oklch(0.92 0.05 145);
+  --accent-foreground: oklch(0.25 0.1 145);
+
+  /* Sidebar Primary */
+  --sidebar-primary: oklch(0.55 0.18 145);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  /* Primary - Coachi Green (Dark Mode) */
+  --primary: oklch(0.65 0.16 145);
+  --primary-foreground: oklch(0.15 0 0);
+
+  /* Accent - Darker green */
+  --accent: oklch(0.3 0.1 145);
+  --accent-foreground: oklch(0.9 0.05 145);
+
+  /* Sidebar Primary */
+  --sidebar-primary: oklch(0.65 0.16 145);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+}

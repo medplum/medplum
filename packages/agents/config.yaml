@@ -1,0 +1,41 @@
+# =============================================================================
+# BASE AGENT CONFIGURATION
+# Shared across all MEDrecord ecosystem brands
+# =============================================================================
+
+version: "1.0.0"
+name: "@mrd/agents"
+
+# Default settings for all agent categories
+defaults:
+  compliance:
+    enforcement: strict
+    audit: true
+  instincts:
+    priority: high
+  skills:
+    enabled: true
+  standards:
+    validation: required
+
+# Enabled agents per category
+enabled:
+  compliance:
+    - hipaa-phi-detection
+    - gdpr-consent-requirements
+    - data-retention-policy
+
+  instincts:
+    - patient-safety-first
+    - privacy-by-default
+    - audit-trail-always
+
+  skills:
+    - medical-terminology
+    - fhir-resource-mapping
+    - clinical-decision-support
+
+  standards:
+    - hl7-fhir-r4
+    - icd-10-coding
+    - snomed-ct-terminology
