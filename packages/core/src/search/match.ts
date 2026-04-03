@@ -46,9 +46,6 @@ const searchExprCache = new LRUCache<FhirPathAtom>(1000);
  * @returns True if the resource satisfies the search filter.
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
-  if (filter.code === '_project') {
-    return matchesProjectFilter(resource, filter);
-  }
   const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
   if (!searchParam) {
     return false;
@@ -229,22 +226,4 @@ function matchesDateValue(resourceValue: Period, operator: Operator, filterValue
 
 function isNegated(operator: Operator): boolean {
   return operator === Operator.NOT_EQUALS || operator === Operator.NOT;
-}
-
-function matchesProjectFilter(resource: Resource, filter: Filter): boolean {
-  const projectId = resource.meta?.project;
-  if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-    const exists = projectId !== undefined;
-    const desired =
-      (filter.operator === Operator.MISSING && filter.value === 'false') ||
-      (filter.operator === Operator.PRESENT && filter.value === 'true');
-    return desired === exists;
-  }
-  const negated = isNegated(filter.operator);
-  for (const filterValue of splitSearchOnComma(filter.value)) {
-    if (projectId === filterValue) {
-      return !negated;
-    }
-  }
-  return negated;
 }
