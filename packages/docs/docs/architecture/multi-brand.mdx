@@ -33,7 +33,6 @@ flowchart TB
             CO["@mrd/coachi<br/>Project: coachi-prod"]
             MS["@mrd/medsafe<br/>Project: medsafe-prod"]
             MR["@mrd/medrecord<br/>Project: medrecord-prod"]
-            HD["@mrd/helpdoc<br/>Project: helpdoc-prod"]
         end
         
         subgraph Gateway["Gateway Layer"]
@@ -45,25 +44,21 @@ flowchart TB
     UI --> CO
     UI --> MS
     UI --> MR
-    UI --> HD
     
     GW --> HT
     GW --> CO
     GW --> MS
     GW --> MR
-    GW --> HD
     
     AG --> HT
     AG --> CO
     AG --> MS
     AG --> MR
-    AG --> HD
     
     HT --> GWS
     CO --> GWS
     MS --> GWS
     MR --> GWS
-    HD --> GWS
     
     style Shared fill:#e1f5ff
     style Brands fill:#e8f5e9
@@ -72,69 +67,91 @@ flowchart TB
 
 ## Package Structure
 
+All MEDrecord code lives in the `mrd/` folder to enable safe upstream Medplum sync. See [Upstream Sync Strategy](/docs/architecture/upstream-sync) for details.
+
 ### Shared Packages (Brand-Agnostic)
 
 ```
-packages/
-├── ui/                              # @mrd/ui
-│   ├── src/
-│   │   ├── globals.css              # Base design tokens
-│   │   ├── themes/
-│   │   │   ├── healthtalk.css       # Brand-specific colors
-│   │   │   ├── coachi.css
-│   │   │   ├── medsafe.css
-│   │   │   ├── medrecord.css
-│   │   │   └── helpdoc.css
-│   │   ├── components/              # shadcn/ui components
-│   │   └── lib/
-│   │       └── utils.ts             # cn() helper, utilities
-│   └── package.json
-│
-├── gateway-client/                  # @mrd/gateway-client
-│   ├── src/
-│   │   ├── client.ts                # Server-side fetch wrapper
-│   │   ├── auth.ts                  # Authentication utilities
-│   │   └── types.ts                 # Shared API types
-│   └── package.json
-│
-└── agents/                          # @mrd/agents
-    ├── compliance/
-    │   └── *.mdx
-    ├── instincts/
-    │   └── *.mdx
-    ├── skills/
-    │   └── *.mdx
-    ├── standards/
-    │   └── *.mdx
-    ├── config.yaml
-    └── package.json
+mrd/
+├── packages/
+│   ├── ui/                          # @mrd/ui
+│   │   ├── src/
+│   │   │   ├── globals.css          # Base design tokens
+│   │   │   ├── themes/
+│   │   │   │   ├── healthtalk.css   # Brand-specific colors
+│   │   │   │   ├── coachi.css
+│   │   │   │   ├── medsafe.css
+│   │   │   │   └── medrecord.css
+│   │   │   ├── components/          # shadcn/ui components
+│   │   │   └── lib/
+│   │   │       ├── utils.ts         # cn() helper, utilities
+│   │   │       └── project-theme.ts # Runtime branding from Project.setting
+│   │   └── package.json
+│   │
+│   └── agents/                      # @mrd/agents
+│       ├── compliance/
+│       │   └── *.mdx
+│       ├── instincts/
+│       │   └── *.mdx
+│       ├── skills/
+│       │   └── *.mdx
+│       ├── standards/
+│       │   └── *.mdx
+│       ├── config.yaml
+│       └── package.json
 ```
 
-### Brand Packages (Per-Application)
+### Brand Applications (Production Apps)
 
-Each brand follows the same template structure:
+Brand applications live in `mrd/apps/`:
 
 ```
-packages/healthtalk/                 # @mrd/healthtalk
-├── app/
-│   ├── layout.tsx                   # Imports @mrd/ui + brand theme
-│   ├── page.tsx
-│   └── api/                         # Server-side route handlers
-│       └── [...]/route.ts
-├── .agents/                         # Brand-specific agent overrides
-│   ├── compliance/
-│   │   └── *.mdx
-│   ├── instincts/
-│   │   └── *.mdx
-│   ├── skills/
-│   │   └── *.mdx
-│   ├── standards/
-│   │   └── *.mdx
-│   └── config.yaml                  # extends: "@mrd/agents"
-├── next.config.ts
-├── tailwind.config.ts
-├── .env.local                       # Brand-specific environment
-└── package.json
+mrd/
+└── apps/
+    ├── healthtalk/                  # @mrd/healthtalk
+│   ├── app/
+│   │   ├── layout.tsx               # Imports @mrd/ui + brand theme
+│   │   ├── page.tsx
+│   │   └── api/                     # Server-side route handlers
+│   │       └── [...]/route.ts
+│   ├── .agents/                     # Brand-specific agent overrides
+│   │   ├── compliance/
+│   │   │   └── *.mdx
+│   │   ├── instincts/
+│   │   │   └── *.mdx
+│   │   ├── skills/
+│   │   │   └── *.mdx
+│   │   ├── standards/
+│   │   │   └── *.mdx
+│   │   └── config.yaml              # extends: "@mrd/agents"
+│   ├── next.config.ts
+│   ├── tsconfig.json
+│   ├── .env.local                   # Brand-specific environment
+│   └── package.json
+│
+├── coachi/                          # @mrd/coachi
+│   └── ...                          # Same structure
+│
+├── medsafe/                         # @mrd/medsafe
+│   └── ...                          # Same structure
+│
+└── medrecord/                       # @mrd/medrecord
+    └── ...                          # Same structure
+```
+
+### Workspace Configuration
+
+The root `package.json` defines workspaces for both Medplum upstream and MEDrecord:
+
+```json
+{
+  "workspaces": [
+    "packages/*",      // Medplum upstream packages - DO NOT MODIFY
+    "examples/*",      // Medplum demo applications - DO NOT MODIFY
+    "mrd/packages/*",  // MEDrecord shared libraries
+    "mrd/apps/*"       // MEDrecord brand applications
+  ]
+}
 ```
 
 ## Medplum Integration
@@ -248,11 +265,26 @@ All brand applications MUST follow these security patterns:
 
 To create a new brand application:
 
-1. **Copy the template** from an existing brand package
+1. **Copy the template** from an existing brand in `mrd/apps/` folder
 2. **Update package.json** with new brand name (`@mrd/newbrand`)
-3. **Create brand theme** in `@mrd/ui/themes/newbrand.css`
-4. **Configure environment** with brand-specific Medplum Project
+3. **Create brand theme** in `mrd/packages/ui/src/themes/newbrand.css`
+4. **Configure Medplum Project.setting** with brand settings (see below)
 5. **Customize `.agents/`** folder with brand-specific MDX overrides
 6. **Create Medplum Project** for the brand with appropriate AccessPolicies
+
+### Project.setting for Runtime Branding
+
+Brand configuration can be stored in the Medplum Project.setting for runtime theming:
+
+| Setting Key | Description | Example |
+|-------------|-------------|---------|
+| `brand.id` | Brand identifier | `coachi` |
+| `brand.name` | Display name | `Coachi` |
+| `brand.primaryColor` | Primary color (OKLCH) | `oklch(0.55 0.18 145)` |
+| `brand.accentColor` | Accent color | `oklch(0.92 0.05 145)` |
+| `brand.logoUrl` | Logo URL | `https://...` |
+| `brand.features` | Enabled features (comma-separated) | `chat,video,scheduling` |
+
+Use `getProjectTheme()` from `@mrd/ui` to load these settings at runtime.
 
 See [Agent Configuration](/docs/architecture/agent-configuration) for details on customizing agent behavior per brand.

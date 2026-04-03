@@ -23,7 +23,6 @@ flowchart TB
         CO["Coachi"]
         MS["MedSafe"]
         MR["MEDrecord"]
-        HD["HelpDoc"]
     end
     
     subgraph Gateway["Gateway Layer"]
@@ -38,14 +37,12 @@ flowchart TB
         MP2["coachi-prod"]
         MP3["medsafe-prod"]
         MP4["medrecord-prod"]
-        MP5["helpdoc-prod"]
     end
     
     HT --> GW
     CO --> GW
     MS --> GW
     MR --> GW
-    HD --> GW
     
     GW --> AUTH
     AUTH --> ROUTE
@@ -55,7 +52,6 @@ flowchart TB
     TENANT --> MP2
     TENANT --> MP3
     TENANT --> MP4
-    TENANT --> MP5
     
     style Clients fill:#e8f5e9
     style Gateway fill:#fff4e1

@@ -2,10 +2,11 @@
 
 This section covers the MEDrecord ecosystem architecture for building multi-brand healthcare applications on top of Medplum.
 
-The architecture enables multiple independent brands (HealthTalk, Coachi, MedSafe, MEDrecord, HelpDoc) to share infrastructure while maintaining complete data isolation through Medplum's native multi-tenant capabilities.
+The architecture enables multiple independent brands (HealthTalk, Coachi, MedSafe, MEDrecord) to share infrastructure while maintaining complete data isolation through Medplum's native multi-tenant capabilities.
 
 ## Key Concepts
 
+- [Upstream Sync Strategy](/docs/architecture/upstream-sync) — How to safely sync with upstream Medplum while preserving MEDrecord customizations
 - [Multi-Brand Architecture](/docs/architecture/multi-brand) — How to structure multiple brand applications with shared infrastructure
 - [Design System](/docs/architecture/design-system) — Shared UI components and design tokens using Tailwind CSS v4
 - [Agent Configuration](/docs/architecture/agent-configuration) — MDX-based agent definitions for compliance, skills, and standards
@@ -15,8 +16,10 @@ The architecture enables multiple independent brands (HealthTalk, Coachi, MedSaf
 
 | Principle | Description |
 |-----------|-------------|
+| **Upstream Safe** | All MEDrecord code lives in `mrd/` namespace, allowing safe upstream Medplum sync |
 | **Brand Isolation** | Each brand gets its own Medplum Project with complete data isolation |
-| **Shared Infrastructure** | Design system (`@mrd/ui`), gateway client (`@mrd/gateway-client`), and base agent definitions (`@mrd/agents`) are shared |
+| **Shared Infrastructure** | Design system (`@mrd/ui`) and base agent definitions (`@mrd/agents`) in `mrd/packages/` |
 | **Multi-Tenant per Brand** | Organizations within each brand use Medplum's native multi-tenant access control |
 | **Server-Side Only** | All backend operations run exclusively on the server (Next.js Server Components/Actions/Route Handlers) |
 | **Design Consistency** | All brands use Tailwind CSS v4 with OKLCH colors and shadcn/ui components |
+| **Runtime Branding** | Brand settings loaded from Medplum Project.setting at runtime |
