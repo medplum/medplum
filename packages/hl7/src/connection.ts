@@ -30,6 +30,7 @@ export interface SendAndWaitOptions {
 
 export interface Hl7ConnectionOptions {
   messagesPerMin?: number;
+  gracefulCloseTimeoutMs?: number;
 }
 
 /**
@@ -41,6 +42,7 @@ export interface Hl7ConnectionOptions {
 export type EnhancedMode = 'standard' | 'aaMode' | undefined;
 
 export const DEFAULT_ENCODING = 'utf-8';
+export const GRACEFUL_CLOSE_TIMEOUT_MS = 5000;
 const ONE_MINUTE = 60 * 1000;
 
 export class Hl7Connection extends Hl7Base {
@@ -48,11 +50,13 @@ export class Hl7Connection extends Hl7Base {
   encoding: string;
   enhancedMode: EnhancedMode = undefined;
   private messagesPerMin: number | undefined = undefined;
+  private gracefulCloseTimeoutMs: number;
   private chunks: Buffer[] = [];
   private readonly pendingMessages: Map<string, Hl7MessageQueueItem> = new Map<string, Hl7MessageQueueItem>();
   private readonly responseQueue: Hl7MessageEvent[] = [];
   private lastMessageDispatchedTime = 0;
   private responseQueueProcessing = false;
+  private closing = false;
 
   constructor(
     socket: net.Socket,
@@ -66,8 +70,28 @@ export class Hl7Connection extends Hl7Base {
     this.encoding = encoding;
     this.enhancedMode = enhancedMode;
     this.messagesPerMin = options.messagesPerMin;
+    this.gracefulCloseTimeoutMs = options.gracefulCloseTimeoutMs ?? GRACEFUL_CLOSE_TIMEOUT_MS;
 
     socket.on('data', (data: Buffer) => {
+      if (this.closing) {
+        this.dispatchEvent(
+          new Hl7WarningEvent(
+            new OperationOutcomeError({
+              resourceType: 'OperationOutcome',
+              issue: [
+                {
+                  severity: 'warning',
+                  code: 'transient',
+                  details: {
+                    text: 'Data received after close was initiated',
+                  },
+                },
+              ],
+            })
+          )
+        );
+        return;
+      }
       try {
         this.appendData(data);
         const messages = this.parseMessages();
@@ -306,15 +330,21 @@ export class Hl7Connection extends Hl7Base {
     if (this.isClosed()) {
       return;
     }
+    this.closing = true;
     this.socket.end();
-    this.socket.destroy();
     // drainPendingMessages is also called by the socket 'close' handler, but we call it here first so
     // that rejections are delivered before the close event is dispatched when close() is called explicitly.
     // The socket 'close' handler's call will be a no-op since the map will already be empty.
     this.drainPendingMessages();
-    await new Promise((resolve) => {
-      // Register a temporary listener to help resolve the promise once close has been emitted
-      this.socket.once('close', resolve);
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        this.socket.destroy();
+      }, this.gracefulCloseTimeoutMs);
+
+      this.socket.once('close', () => {
+        clearTimeout(timer);
+        resolve();
+      });
     });
   }
 
