@@ -1,0 +1,151 @@
+# Multi-Tenant Architecture
+
+## Overview
+
+MEDrecord uses a **Tenant = Medplum Project** model for complete data isolation between healthcare institutions. This ensures NEN 7510 / AVG compliance with full data separation.
+
+## Terminology
+
+| Term | Definition | Example |
+|------|------------|---------|
+| **Tenant** | Healthcare institution with its own Medplum Project | Ziekenhuis Amsterdam, Huisarts Rotterdam |
+| **Brand** | Shared application codebase with theming | HealthTalk, Coachi, MedSafe |
+| **User** | ProjectMembership within a tenant | Dr. Smith at Ziekenhuis Amsterdam |
+
+## Why Tenant = Project (Not Organization)
+
+| Concern | Organization-based | Project-based (Our Choice) |
+|---------|-------------------|---------------------------|
+| **Data Isolation** | Soft (AccessPolicy) | Hard (native Medplum) |
+| **NEN 7510 Compliance** | Risk - shared DB | Compliant - separate data |
+| **Breach Containment** | All tenants exposed | Only 1 tenant affected |
+| **Audit Logs** | Mixed per-tenant | Clean per-tenant |
+| **Scaling** | Single project limits | Independent scaling |
+
+## Architecture
+
+```
+Brand: HealthTalk (shared codebase)
+├── mrd/apps/healthtalk/              <- Deployed once per tenant
+│
+├── Tenant: healthtalk-ziekenhuis-a   <- Medplum Project
+│   ├── All Patient data
+│   ├── All QuestionnaireResponses
+│   ├── Tenant-specific config
+│   └── AccessPolicies
+│
+├── Tenant: healthtalk-huisarts-b     <- Medplum Project
+│   └── Completely isolated data
+│
+└── Tenant: healthtalk-ggz-c          <- Medplum Project
+    └── Completely isolated data
+```
+
+## Gateway Integration
+
+The Gateway provides `tenant_id` (Medplum Project ID) on every authenticated request:
+
+```typescript
+// Gateway auth response
+{
+  "auth": {
+    "user_id": "user-uuid",
+    "tenant_id": "healthtalk-ziekenhuis-a",  // Medplum Project ID
+    "brand": "healthtalk",
+    "roles": ["practitioner", "admin"]
+  }
+}
+```
+
+## API Route Pattern
+
+Every API route MUST verify tenant context from Gateway:
+
+```typescript
+// app/api/tasks/route.ts
+import { verifyGatewayAuth, getMedplumClient } from '@/lib/auth';
+
+export async function GET(request: Request) {
+  // 1. Verify auth and get tenant_id from Gateway
+  const auth = await verifyGatewayAuth(request);
+  
+  // 2. tenant_id IS the Medplum Project - queries are automatically scoped
+  const medplum = getMedplumClient(auth.tenant_id);
+  
+  // 3. All data is isolated to this tenant's Project
+  const tasks = await medplum.searchResources('Task', {
+    status: 'requested',
+    // No tenant filter needed - Project isolation handles it
+  });
+  
+  return Response.json(tasks);
+}
+```
+
+## Deployment Models
+
+| Model | Description | Use Case |
+|-------|-------------|----------|
+| **Per-tenant deployment** | Each tenant has own Vercel deployment | Large institutions, custom domains |
+| **Shared deployment** | Single deployment, runtime tenant resolution | Smaller tenants, cost efficiency |
+
+### Per-Tenant Deployment
+
+Each tenant gets its own Vercel deployment:
+
+| Tenant | Domain | Medplum Project |
+|--------|--------|-----------------|
+| Ziekenhuis A | `ziekenhuis-a.healthtalk.ai` | `healthtalk-ziekenhuis-a` |
+| Huisarts B | `huisarts-b.healthtalk.ai` | `healthtalk-huisarts-b` |
+
+Environment variables per deployment:
+
+```bash
+MEDPLUM_PROJECT_ID=healthtalk-ziekenhuis-a
+MEDPLUM_CLIENT_ID=xxx
+MEDPLUM_CLIENT_SECRET=xxx
+```
+
+### Shared Deployment (Runtime Resolution)
+
+Single deployment resolves tenant from Gateway at runtime:
+
+```typescript
+// lib/auth.ts
+export async function getMedplumClient(request: Request) {
+  const auth = await verifyGatewayAuth(request);
+  
+  // Get tenant-specific credentials from secure store
+  const credentials = await getTenantCredentials(auth.tenant_id);
+  
+  return new MedplumClient({
+    baseUrl: process.env.MEDPLUM_BASE_URL,
+    clientId: credentials.clientId,
+    clientSecret: credentials.clientSecret,
+  });
+}
+```
+
+## Onboarding a New Tenant
+
+1. **Create Medplum Project** for the tenant (e.g., `healthtalk-ziekenhuis-nieuw`)
+2. **Configure Project.setting** with tenant-specific branding overrides
+3. **Set up AccessPolicies** for the tenant's user roles
+4. **Register in Gateway** to recognize the new `tenant_id`
+5. **Create Vercel deployment** (or add to shared deployment config)
+6. **Copy template Questionnaires** from brand template project if needed
+
+## Security Requirements
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Tenant isolation | Every request scoped to `tenant_id` from Gateway |
+| No cross-tenant access | Medplum Project boundaries enforce this |
+| Server-side only | All Medplum calls via Server Components / Route Handlers |
+| Audit trail | Per-tenant AuditEvent logs in each Project |
+
+## Related Documentation
+
+- [Multi-Brand Architecture](./multi-brand.mdx) - Brand theming and shared codebase
+- [Gateway Integration](./gateway-integration.mdx) - Authentication and tenant resolution
+- [Security & Compliance](./design-system.mdx) - NEN 7510 / AVG compliance patterns
