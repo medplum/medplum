@@ -1,0 +1,49 @@
+/* =============================================================================
+   MEDRECORD ADMIN THEME
+   Default branding for MEDrecord Admin Portal
+   This can be overridden per-project via Project.setting
+   ============================================================================= */
+
+:root {
+  /* MEDrecord Primary - Indigo */
+  --primary: oklch(0.5 0.2 270);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Accent */
+  --accent: oklch(0.92 0.05 270);
+  --accent-foreground: oklch(0.25 0.1 270);
+
+  /* Sidebar */
+  --sidebar-primary: oklch(0.5 0.2 270);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  /* MEDrecord Primary - Indigo (Dark Mode) */
+  --primary: oklch(0.6 0.18 270);
+  --primary-foreground: oklch(0.15 0 0);
+
+  /* Accent - Darker */
+  --accent: oklch(0.3 0.1 270);
+  --accent-foreground: oklch(0.9 0.05 270);
+
+  /* Sidebar */
+  --sidebar-primary: oklch(0.6 0.18 270);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+}
+
+/* Brand-specific overrides loaded dynamically via Project.setting */
+[data-brand="healthtalk"] {
+  --primary: oklch(0.55 0.2 250);
+  --sidebar-primary: oklch(0.55 0.2 250);
+}
+
+[data-brand="coachi"] {
+  --primary: oklch(0.55 0.18 145);
+  --sidebar-primary: oklch(0.55 0.18 145);
+}
+
+[data-brand="medsafe"] {
+  --primary: oklch(0.55 0.15 185);
+  --sidebar-primary: oklch(0.55 0.15 185);
+}
