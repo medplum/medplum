@@ -6,11 +6,19 @@ import { IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { MemberTable } from './MembersTable';
 
+const profileTypeOptions = [
+  { label: 'All', value: 'Patient,Practitioner,RelatedPerson' },
+  { label: 'Practitioner', value: 'Practitioner' },
+  { label: 'Patient', value: 'Patient' },
+  { label: 'RelatedPerson', value: 'RelatedPerson' },
+];
+
 export function UsersPage(): JSX.Element {
   return (
     <>
       <Title>ProjectMemberships by User and Profile Type</Title>
       <MemberTable
+        profileTypeOptions={profileTypeOptions}
         fields={['user', 'profile', 'profile-type', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
         toolbarLeft={
           <Button

@@ -23,8 +23,9 @@ export class AsyncJobExecutor {
     this.resource = resource;
   }
 
-  async init(url: string): Promise<WithId<AsyncJob>> {
+  async init(url: string, params?: Partial<AsyncJob>): Promise<WithId<AsyncJob>> {
     this.resource ??= await this.repo.createResource<AsyncJob>({
+      ...params,
       resourceType: 'AsyncJob',
       status: 'accepted',
       request: url,
