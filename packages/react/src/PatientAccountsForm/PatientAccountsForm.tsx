@@ -46,7 +46,7 @@ export function PatientAccountsForm(props: PatientAccountsFormProps): JSX.Elemen
 
   const originalAccounts = useMemo<Reference[]>(() => extractAccountReferences(patient.meta) ?? [], [patient.meta]);
 
-  const [pendingAccounts, setPendingAccounts] = useState<Reference[]>(originalAccounts);
+  const [pendingAccounts, setPendingAccounts] = useState(originalAccounts);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [propagate, setPropagate] = useState(true);
   const [saving, setSaving] = useState(false);
