@@ -10,6 +10,7 @@ import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
 import { publish } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getEndpointEventsKey } from './utils';
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -71,7 +72,11 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   const topicEndpoint = (request.url as string).split('/').filter(Boolean)[2];
   const endpointTopicKey = `medplum:fhircast:endpoint:${topicEndpoint}:topic`;
 
-  const projectAndTopic = await getCacheRedis().get(endpointTopicKey);
+  const [projectAndTopic, events] = await Promise.all([
+    getCacheRedis().get(endpointTopicKey),
+    getCacheRedis().get(getEndpointEventsKey(topicEndpoint)),
+  ]);
+
   if (!projectAndTopic) {
     globalLogger.error(`[FHIRcast]: No topic associated with the endpoint '${topicEndpoint}'`);
     // Close the socket since this endpoint is not valid
@@ -113,8 +118,12 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       fhircastMessagesReceived++;
-      const message = JSON.parse((data as Buffer).toString('utf8'));
-      globalLogger.debug('message', message);
+      try {
+        const message = JSON.parse((data as Buffer).toString('utf8'));
+        globalLogger.debug('message', message);
+      } catch (err) {
+        globalLogger.error('[FHIRcast]: Failed to parse message from subscriber', { error: err });
+      }
     })
   );
 
@@ -134,18 +143,14 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
     redisSubscriber.disconnect();
   });
 
-  // Send initial connection verification
-  // TODO: Fill in these properties
+  // Send initial connection verification per the FHIRcast spec
+  // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-4-Subscribing.html#subscription-confirmation
   socket.send(
     JSON.stringify({
-      'hub.callback': '',
-      'hub.channel': '',
-      'hub.events': '',
-      'hub.lease_seconds': 3600,
       'hub.mode': 'subscribe',
-      'hub.secret': '',
-      'hub.subscriber': '',
       'hub.topic': topic,
+      'hub.events': events ?? '',
+      'hub.lease_seconds': 3600,
     }),
     { binary: false }
   );

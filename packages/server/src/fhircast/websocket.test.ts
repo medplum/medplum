@@ -71,8 +71,16 @@ describe('FHIRcast WebSocket', () => {
         await request(server)
           .ws(pathname)
           .expectJson((obj) => {
-            // Connection verification message
+            // Connection verification message — must only contain WebSocket-relevant fields
+            expect(obj['hub.mode']).toBe('subscribe');
             expect(obj['hub.topic']).toBe(topic);
+            expect(obj['hub.events']).toBe('Patient-open');
+            expect(obj['hub.lease_seconds']).toBe(3600);
+            // Webhook-specific fields must not be present
+            expect(obj['hub.callback']).toBeUndefined();
+            expect(obj['hub.channel']).toBeUndefined();
+            expect(obj['hub.secret']).toBeUndefined();
+            expect(obj['hub.subscriber']).toBeUndefined();
           })
           .exec(async () => {
             const res2 = await request(server)
@@ -213,7 +221,9 @@ describe('FHIRcast WebSocket', () => {
           .ws(pathname)
           .expectJson((obj) => {
             // Connection verification message
+            expect(obj['hub.mode']).toBe('subscribe');
             expect(obj['hub.topic']).toBe(topic);
+            expect(obj['hub.events']).toBe('DiagnosticReport-open,DiagnosticReport-close,DiagnosticReport-update');
           })
           .exec(async () => {
             // Initial DiagnosticReport-open of Report 1
@@ -774,6 +784,61 @@ describe('FHIRcast WebSocket', () => {
           })
           .expectClosed();
       }));
+
+    test('Malformed JSON from subscriber does not crash connection', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const patient = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        const endpoint = res1.body['hub.channel.endpoint'];
+        const pathname = new URL(endpoint).pathname;
+
+        // Verify that sending malformed JSON does not crash the connection.
+        // After sending invalid data the server should still deliver a valid event.
+        await request(server)
+          .ws(pathname)
+          .expectJson((obj) => {
+            expect(obj['hub.mode']).toBe('subscribe');
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .send('this is not valid JSON')
+          .exec(async () => {
+            // Publish a real event — the server must still be alive to fan it out
+            const res2 = await request(server)
+              .post(`/fhircast/STU3/${topic}`)
+              .set('Content-Type', ContentType.JSON)
+              .set('Authorization', 'Bearer ' + accessToken)
+              .send({
+                timestamp: new Date().toISOString(),
+                id: randomUUID(),
+                event: {
+                  'hub.topic': topic,
+                  'hub.event': 'Patient-open',
+                  context: [{ key: 'patient', resource: { resourceType: 'Patient', id: patient } }],
+                },
+              });
+            expect(res2.status).toBe(202);
+          })
+          .expectJson((obj) => {
+            // If we receive this event the connection survived the malformed message
+            expect(obj.event['hub.event']).toBe('Patient-open');
+          })
+          .close()
+          .expectClosed();
+      }));
   });
 
   describe('Heartbeat', () => {
@@ -823,7 +888,9 @@ describe('FHIRcast WebSocket', () => {
           .ws(pathname)
           .expectJson((obj) => {
             // Connection verification message
+            expect(obj['hub.mode']).toBe('subscribe');
             expect(obj['hub.topic']).toBe(topic);
+            expect(obj['hub.events']).toBe('Patient-open');
           })
           .expectJson((obj) => {
             expect(obj).toMatchObject({
@@ -866,7 +933,9 @@ describe('FHIRcast WebSocket', () => {
           .ws(pathname)
           .expectJson((obj) => {
             // Connection verification message
+            expect(obj['hub.mode']).toBe('subscribe');
             expect(obj['hub.topic']).toBe(topic);
+            expect(obj['hub.events']).toBe('Patient-open');
           })
           .expectJson((obj) => {
             // Event message
@@ -879,7 +948,9 @@ describe('FHIRcast WebSocket', () => {
               .ws(pathname)
               .expectJson((obj) => {
                 // Connection verification message
+                expect(obj['hub.mode']).toBe('subscribe');
                 expect(obj['hub.topic']).toBe(topic);
+                expect(obj['hub.events']).toBe('Patient-open');
               })
               .expectJson((obj) => {
                 // Event message
