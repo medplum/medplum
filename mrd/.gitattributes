@@ -1,0 +1,24 @@
+# MEDrecord Git Attributes
+# =========================
+# This file ensures proper handling of MEDrecord-specific files during upstream sync
+
+# Keep our workspace configuration during upstream merges
+# The root package.json will need manual conflict resolution for workspaces array
+# but all other MEDrecord content is in mrd/ and won't conflict
+
+# Mark MEDrecord files as ours during merge conflicts
+mrd/** merge=ours
+
+# Ensure consistent line endings for MDX files
+mrd/**/*.mdx text eol=lf
+
+# Ensure consistent line endings for TypeScript
+mrd/**/*.ts text eol=lf
+mrd/**/*.tsx text eol=lf
+
+# Ensure consistent line endings for CSS
+mrd/**/*.css text eol=lf
+
+# Ensure consistent line endings for YAML
+mrd/**/*.yaml text eol=lf
+mrd/**/*.yml text eol=lf

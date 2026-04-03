@@ -67,50 +67,48 @@ flowchart TB
 
 ## Package Structure
 
+All MEDrecord code lives in the `mrd/` folder to enable safe upstream Medplum sync. See [Upstream Sync Strategy](/docs/architecture/upstream-sync) for details.
+
 ### Shared Packages (Brand-Agnostic)
 
 ```
-packages/
-├── ui/                              # @mrd/ui
-│   ├── src/
-│   │   ├── globals.css              # Base design tokens
-│   │   ├── themes/
-│   │   │   ├── healthtalk.css       # Brand-specific colors
-│   │   │   ├── coachi.css
-│   │   │   ├── medsafe.css
-│   │   │   └── medrecord.css
-│   │   ├── components/              # shadcn/ui components
-│   │   └── lib/
-│   │       └── utils.ts             # cn() helper, utilities
-│   └── package.json
-│
-├── gateway-client/                  # @mrd/gateway-client
-│   ├── src/
-│   │   ├── client.ts                # Server-side fetch wrapper
-│   │   ├── auth.ts                  # Authentication utilities
-│   │   └── types.ts                 # Shared API types
-│   └── package.json
-│
-└── agents/                          # @mrd/agents
-    ├── compliance/
-    │   └── *.mdx
-    ├── instincts/
-    │   └── *.mdx
-    ├── skills/
-    │   └── *.mdx
-    ├── standards/
-    │   └── *.mdx
-    ├── config.yaml
-    └── package.json
+mrd/
+├── packages/
+│   ├── ui/                          # @mrd/ui
+│   │   ├── src/
+│   │   │   ├── globals.css          # Base design tokens
+│   │   │   ├── themes/
+│   │   │   │   ├── healthtalk.css   # Brand-specific colors
+│   │   │   │   ├── coachi.css
+│   │   │   │   ├── medsafe.css
+│   │   │   │   └── medrecord.css
+│   │   │   ├── components/          # shadcn/ui components
+│   │   │   └── lib/
+│   │   │       ├── utils.ts         # cn() helper, utilities
+│   │   │       └── project-theme.ts # Runtime branding from Project.setting
+│   │   └── package.json
+│   │
+│   └── agents/                      # @mrd/agents
+│       ├── compliance/
+│       │   └── *.mdx
+│       ├── instincts/
+│       │   └── *.mdx
+│       ├── skills/
+│       │   └── *.mdx
+│       ├── standards/
+│       │   └── *.mdx
+│       ├── config.yaml
+│       └── package.json
 ```
 
 ### Brand Applications (Production Apps)
 
-Brand applications live in the `apps/` workspace, separate from shared packages:
+Brand applications live in `mrd/apps/`:
 
 ```
-apps/
-├── healthtalk/                      # @mrd/healthtalk
+mrd/
+└── apps/
+    ├── healthtalk/                  # @mrd/healthtalk
 │   ├── app/
 │   │   ├── layout.tsx               # Imports @mrd/ui + brand theme
 │   │   ├── page.tsx
@@ -143,14 +141,15 @@ apps/
 
 ### Workspace Configuration
 
-The root `package.json` defines three workspaces:
+The root `package.json` defines workspaces for both Medplum upstream and MEDrecord:
 
 ```json
 {
   "workspaces": [
-    "packages/*",   // Shared libraries (@mrd/ui, @mrd/agents)
-    "examples/*",   // Medplum demo applications
-    "apps/*"        // Production brand applications
+    "packages/*",      // Medplum upstream packages - DO NOT MODIFY
+    "examples/*",      // Medplum demo applications - DO NOT MODIFY
+    "mrd/packages/*",  // MEDrecord shared libraries
+    "mrd/apps/*"       // MEDrecord brand applications
   ]
 }
 ```
@@ -266,11 +265,26 @@ All brand applications MUST follow these security patterns:
 
 To create a new brand application:
 
-1. **Copy the template** from an existing brand in `apps/` folder
+1. **Copy the template** from an existing brand in `mrd/apps/` folder
 2. **Update package.json** with new brand name (`@mrd/newbrand`)
-3. **Create brand theme** in `packages/ui/src/themes/newbrand.css`
-4. **Configure environment** with brand-specific Medplum Project
+3. **Create brand theme** in `mrd/packages/ui/src/themes/newbrand.css`
+4. **Configure Medplum Project.setting** with brand settings (see below)
 5. **Customize `.agents/`** folder with brand-specific MDX overrides
 6. **Create Medplum Project** for the brand with appropriate AccessPolicies
+
+### Project.setting for Runtime Branding
+
+Brand configuration can be stored in the Medplum Project.setting for runtime theming:
+
+| Setting Key | Description | Example |
+|-------------|-------------|---------|
+| `brand.id` | Brand identifier | `coachi` |
+| `brand.name` | Display name | `Coachi` |
+| `brand.primaryColor` | Primary color (OKLCH) | `oklch(0.55 0.18 145)` |
+| `brand.accentColor` | Accent color | `oklch(0.92 0.05 145)` |
+| `brand.logoUrl` | Logo URL | `https://...` |
+| `brand.features` | Enabled features (comma-separated) | `chat,video,scheduling` |
+
+Use `getProjectTheme()` from `@mrd/ui` to load these settings at runtime.
 
 See [Agent Configuration](/docs/architecture/agent-configuration) for details on customizing agent behavior per brand.

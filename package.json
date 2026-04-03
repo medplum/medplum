@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "examples/*",
-    "apps/*"
+    "mrd/packages/*",
+    "mrd/apps/*"
   ],
   "scripts": {
     "build": "turbo run build --filter=!@medplum/docs --filter=!./examples/*",
@@ -16,7 +17,7 @@
     "lint": "turbo run lint --filter=!@medplum/docs",
     "lint:fix": "turbo run lint:fix --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
-    "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
+    "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\" \"mrd/packages/*/package.json\" \"mrd/apps/*/package.json\"",
     "test": "turbo run test --filter=!@medplum/docs"
   },
   "prettier": {

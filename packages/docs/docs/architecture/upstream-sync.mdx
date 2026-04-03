@@ -1,0 +1,181 @@
+---
+sidebar_position: 0
+---
+
+# Upstream Sync Strategy
+
+## Overview
+
+MEDrecord maintains a fork of the Medplum open-source project. This document describes the architecture that enables safe syncing with upstream Medplum while preserving all MEDrecord customizations.
+
+## The Problem
+
+When syncing with upstream Medplum, any files we add to standard Medplum folders (`packages/`, `examples/`) risk:
+
+1. **Collision** - Medplum adds a package with the same name
+2. **Overwrite** - Merge conflicts during upstream sync
+3. **Deletion** - Upstream changes remove our modifications
+
+## The Solution: `mrd/` Namespace
+
+All MEDrecord-specific code lives in a dedicated `mrd/` folder at the repository root:
+
+```
+medplum/                         # Repository root
+│
+├── packages/                    # Medplum upstream - DO NOT MODIFY
+│   ├── core/                    # @medplum/core
+│   ├── react/                   # @medplum/react
+│   ├── fhirtypes/               # @medplum/fhirtypes
+│   ├── server/                  # @medplum/server
+│   └── ...                      # Other Medplum packages
+│
+├── examples/                    # Medplum upstream - DO NOT MODIFY
+│   └── ...                      # Medplum example apps
+│
+├── mrd/                         # MEDrecord namespace - SAFE TO MODIFY
+│   ├── packages/                # Shared MEDrecord libraries
+│   │   ├── ui/                  # @mrd/ui (design system)
+│   │   └── agents/              # @mrd/agents (base agent MDX)
+│   │
+│   ├── apps/                    # Brand applications
+│   │   ├── healthtalk/          # HealthTalk app
+│   │   ├── coachi/              # Coachi app
+│   │   ├── medsafe/             # MedSafe app
+│   │   └── medrecord/           # MEDrecord app
+│   │
+│   └── docs/                    # MEDrecord-specific documentation
+│
+├── scripts/                     # Medplum scripts
+├── terraform/                   # Medplum infrastructure
+└── package.json                 # Workspace configuration
+```
+
+## Workspace Configuration
+
+The root `package.json` includes both Medplum and MEDrecord workspaces:
+
+```json
+{
+  "workspaces": [
+    "packages/*",        // Medplum upstream packages
+    "examples/*",        // Medplum upstream examples
+    "mrd/packages/*",    // MEDrecord shared libraries
+    "mrd/apps/*"         // MEDrecord brand applications
+  ]
+}
+```
+
+## Git Sync Workflow
+
+### Branch Strategy
+
+```
+upstream/main (Medplum official)
+       │
+       ▼
+medplum/develop ◄── Pull upstream changes here
+       │
+       ▼
+mrd/develop ◄────── MEDrecord development branch
+       │
+       ├── mrd/feature/healthtalk-v2
+       ├── mrd/feature/coachi-agents
+       └── mrd/feature/medsafe-launch
+```
+
+### Sync Process
+
+1. **Fetch upstream changes**
+   ```bash
+   git fetch upstream main
+   ```
+
+2. **Merge into medplum/develop**
+   ```bash
+   git checkout medplum/develop
+   git merge upstream/main
+   ```
+
+3. **Merge into mrd/develop**
+   ```bash
+   git checkout mrd/develop
+   git merge medplum/develop
+   ```
+
+4. **Resolve conflicts** (typically only in `package.json` workspaces)
+
+### What Gets Synced
+
+| Folder | Source | Sync Direction |
+|--------|--------|----------------|
+| `packages/*` | Medplum | Upstream → MEDrecord |
+| `examples/*` | Medplum | Upstream → MEDrecord |
+| `mrd/*` | MEDrecord | Never touched by upstream |
+| `scripts/` | Medplum | Upstream → MEDrecord |
+| `terraform/` | Medplum | Upstream → MEDrecord |
+
+## Package Naming Convention
+
+| Scope | Prefix | Example |
+|-------|--------|---------|
+| Medplum packages | `@medplum/` | `@medplum/core`, `@medplum/react` |
+| MEDrecord packages | `@mrd/` | `@mrd/ui`, `@mrd/agents` |
+| Brand apps | `@mrd/` | `@mrd/healthtalk`, `@mrd/coachi` |
+
+## Dependencies Between Namespaces
+
+MEDrecord packages can depend on Medplum packages:
+
+```json
+// mrd/apps/healthtalk/package.json
+{
+  "dependencies": {
+    "@medplum/core": "5.1.6",
+    "@medplum/react": "5.1.6",
+    "@mrd/ui": "0.1.0",
+    "@mrd/agents": "0.1.0"
+  }
+}
+```
+
+Medplum packages should NEVER depend on MEDrecord packages.
+
+## Conflict Resolution
+
+### Expected Conflicts
+
+The only expected conflict during upstream sync is in `package.json` workspaces:
+
+```json
+// Upstream
+"workspaces": ["packages/*", "examples/*"]
+
+// MEDrecord
+"workspaces": ["packages/*", "examples/*", "mrd/packages/*", "mrd/apps/*"]
+```
+
+### Resolution
+
+Always keep the MEDrecord version that includes `mrd/*` workspaces.
+
+### .gitattributes
+
+Add merge strategy for `package.json`:
+
+```gitattributes
+package.json merge=ours
+```
+
+## Security Considerations
+
+1. **Never modify upstream packages** - All Medplum packages remain untouched
+2. **Audit upstream changes** - Review security-sensitive changes before merging
+3. **Test after sync** - Run full test suite after upstream merge
+4. **Pin versions** - Use exact versions for `@medplum/*` dependencies
+
+## See Also
+
+- [Multi-Brand Architecture](/docs/architecture/multi-brand) - Brand app structure
+- [Gateway Integration](/docs/architecture/gateway-integration) - API routing
+- [Agent Configuration](/docs/architecture/agent-configuration) - MDX agent system
