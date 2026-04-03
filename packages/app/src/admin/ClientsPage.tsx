@@ -3,14 +3,14 @@
 import { Group, Title } from '@mantine/core';
 import { MedplumLink } from '@medplum/react';
 import type { JSX } from 'react';
-import { ResourceMemberTable } from './ResourceMemberTable';
+import { MemberTable } from './MembersTable';
 
 export function ClientsPage(): JSX.Element {
   return (
     <>
-      <Title>ProjectMemberships for ClientApplications</Title>
-      <ResourceMemberTable
-        resourceType="ClientApplication"
+      <Title>Client Applications</Title>
+      <MemberTable
+        profileTypeOptions={[{ label: 'ClientApplication', value: 'ClientApplication' }]}
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
       />
       <Group justify="flex-end">
