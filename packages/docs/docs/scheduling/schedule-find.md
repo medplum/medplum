@@ -217,7 +217,7 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Schedule is not scheduleable for requested service type" } }]
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Schedule is not schedulable for requested service type" } }]
 }
 ```
 ## Related
