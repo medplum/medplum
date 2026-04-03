@@ -9,7 +9,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Range } from '../../types/scheduling';
-import { createEncounter } from '../../utils/encounter';
+import { createAppointment, createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './CreateVisit.module.css';
 
@@ -23,8 +23,8 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   const [patient, setPatient] = useState<Patient | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
-  const [start, setStart] = useState<Date | undefined>(appointmentSlot?.start);
-  const [end, setEnd] = useState<Date | undefined>(appointmentSlot?.end);
+  const [start, setStart] = useState(appointmentSlot?.start);
+  const [end, setEnd] = useState(appointmentSlot?.end);
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
   const navigate = useNavigate();
@@ -65,15 +65,8 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
     }
     setIsLoading(true);
     try {
-      const encounter = await createEncounter(
-        medplum,
-        start,
-        end,
-        encounterClass,
-        patient,
-        planDefinitionData,
-        schedule
-      );
+      const appointment = await createAppointment(medplum, start, end, patient, schedule);
+      const encounter = await createEncounter(medplum, encounterClass, patient, planDefinitionData, appointment);
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Visit created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {

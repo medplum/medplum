@@ -10,7 +10,7 @@ import { MedplumLink } from '../../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './ChatListItem.module.css';
 
-interface ChatListItemProps {
+export interface ChatListItemProps {
   topic: Communication;
   lastCommunication: Communication | undefined;
   isSelected: boolean;

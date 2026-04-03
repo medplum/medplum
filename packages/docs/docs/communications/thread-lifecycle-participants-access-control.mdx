@@ -1,0 +1,152 @@
+---
+sidebar_position: 2
+title: Thread Lifecycle, Participants, and Access Control
+tags: [communications, messaging, threads, Communication, access control]
+keywords: [Communication, recipient, sender, status, AccessPolicy, participants, thread]
+---
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Thread Lifecycle, Participants, and Access Control
+
+This guide explains how thread header [`Communication.status`](/docs/api/fhir/resources/communication) models open versus closed threads, how to manage participants on the header with [`recipient`](/docs/api/fhir/resources/communication), and how FHIR [access policies](/docs/access/access-policies) align with who should see a thread.
+
+For the underlying thread versus message shape, see [Messaging Data Model](/docs/communications/messaging-data-model).
+
+## Thread Status
+
+The `status` field on a thread header controls whether the thread is active or closed. This is independent from `status` on individual messages, which reflects draft, sent, retracted, and similar states.
+
+```mermaid
+flowchart LR
+    InProgress["in-progress — thread is active"] -->|"close thread"| Completed["completed — conversation resolved"]
+    Completed -->|"reopen"| InProgress
+    InProgress -->|"error"| EnteredInError["entered-in-error — created by mistake"]
+```
+
+| Level | `status` meaning | Common values |
+| --- | --- | --- |
+| Thread header | Is the conversation open or closed? | `in-progress` (active), `completed` (closed), `entered-in-error` |
+| Individual message | Message lifecycle | `preparation` (draft), `in-progress` (sent), `entered-in-error` (retracted or similar) |
+
+For the full lifecycle including read tracking, see [Communication Lifecycle](/docs/communications/messaging-data-model#communication-lifecycle).
+
+### Close a Thread
+
+<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleCloseHeaderTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+To filter for only active threads when querying, see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads).
+
+### Reopen a Closed Thread
+
+<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleReopenHeaderTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::caution
+
+Closing a thread header does not automatically change the `status` of child messages; they are independent. A closed thread can still contain unread messages if you track read state separately (for example with Tasks). Decide in your UI whether to show those messages or filter by header status.
+
+:::
+
+## Managing Participants
+
+Threads support multiple participants through the `recipient` array on the thread header. You can create group threads and add or remove participants over time.
+
+### Create a Group Thread
+
+Set `sender` to the thread creator and list all participants (including the creator) in `recipient`. For why this convention matters, see the [thread header `sender` / `recipient` recommendation](/docs/communications/messaging-data-model#building-and-structuring-threads).
+
+<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleGroupThreadTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+### Add a Participant
+
+Use a JSON Patch to append to the `recipient` array:
+
+<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleAddParticipantTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+### Remove a Participant
+
+Replace the `recipient` array without the removed person. Read the current header, filter, then patch:
+
+<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleRemoveParticipantTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::caution
+
+Adding or removing recipients on the thread header does not retroactively change recipients on existing child messages. When sending new messages in the thread, use the thread header's current recipient list so the conversation stays consistent.
+
+If your access policies scope visibility to `Communication?recipient=%profile`, a removed participant may lose access to the thread header but can still read child messages where they were originally listed as a `recipient`. If full revocation is required, update child messages too or use a different access control approach (for example compartment-based policies).
+
+:::
+
+:::tip
+
+The read-then-replace pattern for removing participants can race if several users edit the list at once. For production, use the resource's `meta.versionId` with an `If-Match` header to detect conflicts, or use `medplum.updateResource()` for version-aware updates.
+
+:::
+
+## Access Control
+
+`recipient` and `sender` on [`Communication`](/docs/api/fhir/resources/communication) describe who should see a thread. [Access policies](/docs/access/access-policies) on the Medplum project enforce who can read and write those resources.
+
+### Participant-Scoped Access
+
+For typical messaging, restrict Communication reads so users only see threads where they appear as a `recipient` or `sender`. Configure that with an access policy on the project, not only in application code.
+
+The example below uses two `resource` entries for Communication — one scoped to `recipient` and one to `sender`. Medplum ORs multiple entries of the same resource type, so the user sees Communications where they are a recipient or a sender:
+
+<MedplumCodeBlock language="json" selectBlocks="messagingParticipantScopedAccessPolicyJson">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::note
+
+`AccessPolicy` `criteria` uses Medplum's search subset (only `:not` and `:missing` modifiers; no chained searches). Multiple `resource` entries of the same type are ORed. See [Access Policies](/docs/access/access-policies) for the full set of supported patterns before relying on criteria in production.
+
+:::
+
+### Admin and Supervisor Access
+
+Supervisors, compliance staff, or support roles often need to see all threads even when they are not participants. Use a separate access policy (or role) that grants broader Communication read access:
+
+<MedplumCodeBlock language="json" selectBlocks="messagingSupervisorAccessPolicyJson">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Assign that policy to admin users as appropriate. The example above is read-only: supervisors can view threads but not send or change status unless you set `readonly` differently.
+
+### Complex Access Patterns
+
+Multi-tenant messaging, role-based visibility, compartment rules, and cross-organization threads need careful policy design. See [Access Policies](/docs/access/access-policies) or contact [hello@medplum.com](mailto:hello@medplum.com) for guidance.
+
+:::tip
+
+Test access policies early with two test users in different roles. Sign in as each and confirm thread visibility matches expectations. Policy mistakes are much harder to debug once real patient data is in the project.
+
+:::
+
+## In Your UI
+
+Show thread status visually in the thread list — for example labels or icons to distinguish active (`in-progress`) from closed (`completed`) threads. When a thread is closed, consider disabling the compose area so users don't accidentally send into a resolved conversation.
+
+Render the participant list from the header's `recipient` array. Update it dynamically when participants are added or removed. Show the sender/creator so users know who started the conversation.
+
+When you add a participant, verify they can actually query the thread: an updated `recipient` alone does not grant access if the new user's access policies don't cover the Communication. The thread will not appear in their searches until the policy matches. Testing this with two user accounts in different roles (see the tip above) is the most reliable way to catch policy gaps.
+
+## See Also
+
+- [Messaging Data Model](/docs/communications/messaging-data-model) — thread headers, messages, and key elements
+- [Searching and Querying Threads](/docs/communications/searching-and-querying-threads) — queries and filters
+- [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing) — Tasks as the source of truth for assignment when you use routing
+- [Access Policies](/docs/access/access-policies) — criteria, compartments, and parameterized policies
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API
+- [Task](/docs/api/fhir/resources/task) FHIR resource API

@@ -25,7 +25,7 @@ import { ResourceInput } from '../../ResourceInput/ResourceInput';
  * @param onSubmit - Callback fired with the created Communication resource after successful submission.
  * @param allowPatientSelection - When true, the patient field is an editable search input. When false (default), the field is pre-filled from `subject` and disabled. Use true for provider-facing contexts, false for patient-facing apps.
  */
-interface NewTopicDialogProps {
+export interface NewTopicDialogProps {
   subject: Reference<Patient> | Patient | undefined;
   opened: boolean;
   onClose: () => void;
@@ -40,7 +40,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
 
   const [topic, setTopic] = useState('');
-  const [practitioners, setPractitioners] = useState<Reference<Practitioner>[]>(
+  const [practitioners, setPractitioners] = useState(
     profile?.resourceType === 'Practitioner' ? [createReference(profile) as Reference<Practitioner>] : []
   );
   const [patient, setPatient] = useState<Reference<Patient> | undefined>(

@@ -32,4 +32,9 @@ describe('QuantityDisplay', () => {
     render(<QuantityDisplay value={{ value: 50, unit: '%' }} />);
     expect(screen.getByText('50%')).toBeInTheDocument();
   });
+
+  test('Renders with precision', () => {
+    render(<QuantityDisplay value={{ value: 1.5, unit: 'mg' }} precision={2} />);
+    expect(screen.getByText('1.50 mg')).toBeInTheDocument();
+  });
 });

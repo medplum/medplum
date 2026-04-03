@@ -122,6 +122,24 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  */
 export async function createProject(
   projectName: string,
+  admin: User
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile: WithId<ProfileResource>;
+  membership: WithId<ProjectMembership>;
+}>;
+export async function createProject(
+  projectName: string,
+  admin?: User
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
+}>;
+export async function createProject(
+  projectName: string,
   admin?: User
 ): Promise<{
   project: WithId<Project>;

@@ -114,7 +114,7 @@ describe('Search parser', () => {
     ['notarealvalue', {}],
   ])('Parse _summary=%s', (value, expected) => {
     const resourceType = 'Patient';
-    expect(parseSearchRequest(resourceType, { _summary: value })).toMatchObject<SearchRequest>({
+    expect(parseSearchRequest(resourceType, { _summary: value })).toMatchObject({
       resourceType,
       ...expected,
     });

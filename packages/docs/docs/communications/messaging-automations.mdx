@@ -1,0 +1,116 @@
+---
+sidebar_position: 9
+title: Messaging Automations
+tags: [communications, messaging, bots, subscriptions]
+keywords: [bot, subscription, task, auto-complete, reminder, cron, ooo, reroute, schedule]
+---
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Messaging Automations
+
+:::note Prerequisites
+
+The patterns on this page use **Medplum Bots** — an [advanced feature](/docs/bots/bot-basics) that is disabled by default on many projects — and **FHIR Subscriptions**. Recurring automations also use **cron-scheduled Bots** ([Cron Jobs for Bots](/docs/bots/bot-cron-job)). Confirm Bots are enabled for your project and that you can create Bots and Subscriptions (typically as a Project administrator).
+
+:::
+
+Medplum [Bots](/docs/bots/bot-basics) and [FHIR Subscriptions](/docs/subscriptions) let you automate messaging workflows without manual intervention, while still giving you full control over your business logic. There are two main design patterns:
+
+- **Real-time automations** — A Bot triggered by a [Subscription](/docs/subscriptions) on [`Communication`](/docs/api/fhir/resources/communication) when a message is sent. This page walks through **out-of-office rerouting**: checking provider availability at message time and returning work to a pool when the assignee is unavailable. Other common real-time patterns include creating or completing [Tasks](/docs/api/fhir/resources/task) when messages arrive; you can apply the same Subscription shape and tailor the Bot logic.
+- **Recurring automations** — A Bot running on a [cron schedule](/docs/bots/bot-cron-job). The Bot periodically scans existing resources to find conditions that need action (e.g., threads with no response for N days).
+
+Both patterns let you encode your own rules — who gets a Task, what SLA thresholds to enforce, when to escalate — while keeping the automation infrastructure out of your application code.
+
+## Real-Time Automations
+
+A real-time automation uses a [Subscription](/docs/subscriptions) on `Communication` to trigger a [Bot](/docs/bots/bot-basics) whenever a message is sent in a thread. Because the Bot runs at message creation time, it can inspect the current state of the system: who sent the message, which [Task](/docs/api/fhir/resources/task) (if any) is focused on the thread, and whether the assigned provider is available.
+
+### Example: OOO rerouting
+
+When a message arrives for a provider who is currently out of office, a Bot can automatically reroute the [Task](/docs/api/fhir/resources/task) back to the provider pool so another team member can pick it up.
+
+The Bot uses the Medplum [scheduling model](/docs/scheduling) to determine availability. It looks up the assigned provider's [Schedule](/docs/api/fhir/resources/schedule) and calls [`$find`](/docs/scheduling/schedule-find) for the current time window. If no free slots are returned — whether because of explicit time blocks (vacation, holidays) or because the provider has no [availability](/docs/scheduling/defining-availability) defined for the current day — the Task is rerouted to the pool.
+
+```mermaid
+flowchart LR
+    Sub["Subscription<br/>(new message)"] --> Bot["Bot:<br/>$find on Schedule"]
+    Bot --> Reroute["Reroute Task<br/>if no free slots"]
+```
+
+#### Bot Code
+
+<MedplumCodeBlock language="ts" selectBlocks="oooRerouteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::tip
+This example reroutes to the `performerType` pool. You could instead reroute to a specific coverage provider by setting `Task.owner` to that provider's reference. You can also customize the availability check — for instance, querying a different `serviceType` or adjusting the time window.
+:::
+
+#### Deploy and Subscribe
+
+1. Create a Bot resource in the Medplum App (Project Admin → Bots → New). See [Deploying Bots](/docs/bots/bot-basics#deploying-a-bot) for full steps.
+2. Create a [Subscription](/docs/api/fhir/resources/subscription) that triggers the Bot for new child messages:
+
+<MedplumCodeBlock language="ts" selectBlocks="subscriptionOooRerouteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+The criteria `part-of:missing=false` limits the Subscription to child messages (which have `partOf`), not thread headers. `status=in-progress` avoids firing on retracted messages (`entered-in-error`) or drafts (`preparation`) — it targets newly sent messages.
+
+#### Verify
+
+1. Configure a provider Schedule with no free slots for the current window (or an explicit OOO block).
+2. Ensure an open Task for the thread is owned by that provider, then send a new child message in the thread so the Subscription runs.
+3. Confirm the Task has `owner` removed, `status` back to `requested`, and an auto-reroute note; optionally confirm thread `recipient` was cleared as in the example.
+
+## Recurring Automations
+
+A recurring automation uses a [cron-triggered Bot](/docs/bots/bot-cron-job) to periodically scan existing resources and take action on conditions that have developed over time. This pattern is well suited for SLA enforcement, reminders, and cleanup tasks where the trigger is the passage of time rather than a specific event.
+
+### Example: Stale Thread Reminders
+
+A cron-triggered Bot can periodically scan for threads without timely responses and create reminder Tasks for your queue or follow-up workflows.
+
+```mermaid
+flowchart LR
+    Cron["Cron schedule<br/>(e.g. daily)"] --> Bot["Bot:<br/>Find stale threads"]
+    Bot --> CreateTask["Create reminder Task<br/>per eligible thread"]
+```
+
+#### Bot Code
+
+<MedplumCodeBlock language="ts" selectBlocks="staleThreadRemindersTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+The 3-day threshold is configurable — adjust based on your response time expectations per thread category and urgency.
+
+#### Deploy
+
+Deploy the Bot and configure it to run on a cron schedule (e.g., once per hour, once per day). See [Cron Jobs for Bots](/docs/bots/bot-cron-job).
+
+## Analytics and SLA Tracking
+
+FHIR search is designed for clinical data lookups, not aggregate analytics. Metrics like response time, SLA compliance, and escalation rates are best calculated by exporting Task data to your analytics platform (e.g. BigQuery, Snowflake, Redshift).
+
+Key data points available on each Task:
+
+- `Task.authoredOn` — when the Task was created
+- `Task.status` and status change timestamps — track time-to-claim and time-to-complete
+- `Task.owner` — who handled it
+- `Task.priority` — urgency level at creation and any subsequent changes
+- `Task.focus` — which thread the Task is about
+
+To surface urgency in your UI without building SLA infrastructure, use `Task.priority` (`routine`, `urgent`, `asap`, `stat`) to drive visual indicators like color coding and sort order in your task queue.
+
+## See Also
+
+- [Messaging Data Model](/docs/communications/messaging-data-model) — thread headers, `partOf`, and how messages relate
+- [Defining Availability](/docs/scheduling/defining-availability) — how to configure provider schedules and time blocks
+- [Schedule $find](/docs/scheduling/schedule-find) — checking provider availability
+- [Bots](/docs/bots/bot-basics) and [Subscriptions](/docs/subscriptions)
+- [Cron Jobs for Bots](/docs/bots/bot-cron-job) — scheduling Bots on a timer
+- [Task](/docs/api/fhir/resources/task) and [Communication](/docs/api/fhir/resources/communication) FHIR resource API

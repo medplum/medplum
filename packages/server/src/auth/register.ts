@@ -75,7 +75,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     {
       ...login,
-      membership: createReference(membership as WithId<ProjectMembership>),
+      membership: createReference(membership),
     },
     createReference(profile as ProfileResource),
     { accessLifetime: client.accessTokenLifetime, refreshLifetime: client.refreshTokenLifetime }
@@ -86,8 +86,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership: membership as WithId<ProjectMembership>,
-    profile: profile as WithId<ProfileResource>,
+    membership: membership,
+    profile: profile,
     client,
   };
 }

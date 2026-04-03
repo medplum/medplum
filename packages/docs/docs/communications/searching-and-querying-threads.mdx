@@ -1,0 +1,180 @@
+---
+sidebar_position: 3
+title: Searching and Querying Threads
+tags: [communications, messaging, search, Communication]
+keywords: [Communication, part-of, thread, search, subscription]
+---
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Searching and Querying Threads
+
+How you populate `sender` and `recipient` on the thread header affects these queries. For recommended modeling (including listing the thread creator in `recipient`), see [Building and Structuring Threads](/docs/communications/messaging-data-model#building-and-structuring-threads).
+
+## Search Query Cheat Sheet
+
+| Goal                        | Query                                                        | Notes                                         |
+| --------------------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| All threads                 | `Communication?part-of:missing=true`                         | Returns only thread headers                   |
+| Messages in a thread        | `Communication?part-of=Communication/{id}&_sort=sent`        | Sorted chronologically                        |
+| Threads for a patient       | Add `&subject=Patient/{id}` to any query above               | Filter by patient context                     |
+| Threads I participate in    | Add `&recipient=Practitioner/{id}`                           | Header must list the creator in `recipient`; see [note below](#filter-by-current-user) and [modeling tip](/docs/communications/messaging-data-model#building-and-structuring-threads) |
+| Active threads only         | Add `&status:not=completed,entered-in-error,stopped,unknown` | Exclude closed threads                        |
+
+## Query for All Threads
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="queryAllThreadsTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="queryAllThreadsCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="queryAllThreadsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+The `:missing` modifier finds Communication resources that have no `partOf` reference — these are thread headers. Adding `status:not=completed` filters to only active threads. Sorting by `-_lastUpdated` (descending) puts the most recently active threads first.
+
+## Query for Messages in a Thread
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="queryMessagesInThreadTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+This retrieves all child messages for a given thread header, sorted chronologically by the `sent` timestamp.
+
+:::caution About `_revinclude` with thread headers
+
+You may encounter examples that use `Communication?part-of:missing=true&_revinclude=Communication:part-of` to return every thread header and every child message in one search response. That pattern tends to **over-fetch**: the bundle grows with the total number of messages across all matched threads and is **expensive** for the server. For typical UIs, load thread headers first, then run a separate query per thread (as above), using pagination where appropriate.
+
+:::
+
+## Add Filters
+
+Filter threads by patient:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="filterByPatientTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="filterByPatientCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="filterByPatientCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### Filter by Current User {#filter-by-current-user}
+
+To show threads the current user participates in, filter by `recipient`:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="filterMyThreadsTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="filterMyThreadsCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="filterMyThreadsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+This works when thread headers list all participants — including the thread creator — in `recipient`. The Medplum [`ThreadInbox`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadInbox/ThreadInbox.tsx) component follows this convention: when a new thread is created, the sender is added to `recipient` alongside other participants, so a `recipient`-based query returns threads the user started _and_ threads they were added to.
+
+:::note
+
+FHIR search does not support a single query for `recipient OR sender`. If your thread headers don't follow the convention above, run two searches (`recipient=Practitioner/{id}` and `sender=Practitioner/{id}`) and merge results client-side.
+
+:::
+
+For how to model thread headers so this works, see the [thread header `sender` / `recipient` recommendation](/docs/communications/messaging-data-model#building-and-structuring-threads) on the messaging data model page.
+
+For other items to filter on, see the [Communication Search Parameters](/docs/api/fhir/resources/communication#search-parameters).
+
+## In Your UI
+
+### Rendering Thread Lists
+
+The thread list query (`part-of:missing=true`) returns thread headers. Display `topic.text` as the thread title, `recipient` as participants, and `subject` as the patient context. Sort by `_lastUpdated` (descending) to show most recently active threads first.
+
+For the message detail view, query with `part-of=Communication/{id}&_sort=sent` and render each message's `payload`, `sender`, and `sent` timestamp.
+
+### Live Updates
+
+To receive new messages in real time, subscribe to Communications in the current thread. WebSocket subscriptions may need to be enabled for your project (for example, the `websocket-subscriptions` feature). The subscription criteria for a specific thread:
+
+```
+Communication?part-of=Communication/{threadId}
+```
+
+When a notification arrives, append the new message to your local state. The notification `Bundle` contains a `SubscriptionStatus` entry and the new `Communication` — find it by `resourceType` rather than by position:
+
+<MedplumCodeBlock language="ts" selectBlocks="subscribeThreadMessagesTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+If using `@medplum/react`, the [useSubscription](/docs/react/use-subscription) hook handles connection management:
+
+```tsx
+useSubscription(
+  `Communication?part-of=Communication/${id}`,
+  (bundle: Bundle) => {
+    const newMessage = bundle.entry?.find(
+      (e) => e.resource?.resourceType === 'Communication'
+    )?.resource as Communication | undefined;
+    if (newMessage) {
+      // Show a toast or in-app notification for the new message
+      setMessages((prev) => [...prev, newMessage]);
+    }
+  }
+);
+```
+
+See the [useSubscription](/docs/react/use-subscription) documentation for WebSocket connection setup and reconnection handling.
+
+If using `@medplum/react`, the [medplum-chat-demo](https://github.com/medplum/medplum-chat-demo) provides working implementations of thread list and message detail views. The [BaseChat component](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/BaseChat/BaseChat.tsx) renders message lists with built-in attachment handling.
+
+## See Also
+
+- [Messaging Data Model](/docs/communications/messaging-data-model) — thread headers, messages, and `Communication` elements
+- [Thread Lifecycle, Participants, and Access Control](/docs/communications/thread-lifecycle-participants-access-control) — thread status, managing participants, and access policies
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API

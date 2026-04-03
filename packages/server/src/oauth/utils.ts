@@ -20,6 +20,7 @@ import {
 } from '@medplum/core';
 import type {
   AccessPolicy,
+  Bot,
   ClientApplication,
   IdentityProvider,
   Login,
@@ -43,7 +44,7 @@ import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
-import type { SystemRepository } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
@@ -59,7 +60,8 @@ import {
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
-import type { AuthState } from './middleware';
+import type { AuthenticationResult, AuthState } from './middleware';
+import { isExtendedMode } from './middleware';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -213,7 +215,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   }
 
   if (memberships.length === 1 || request.forceUseFirstMembership) {
-    return setLoginMembership(login, memberships[0].id);
+    return setLoginMembership(login, memberships[0]);
   } else {
     return login;
   }
@@ -400,10 +402,13 @@ export function getClientApplicationMembership(
  * Most users will only have one membership, so this happens immediately after login.
  * Some users have multiple memberships, so this happens after choosing a profile.
  * @param login - The login before the membership is set.
- * @param membershipId - The membership to set.
+ * @param membership - The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(login: WithId<Login>, membershipId: string): Promise<WithId<Login>> {
+export async function setLoginMembership(
+  login: WithId<Login>,
+  membership: WithId<ProjectMembership>
+): Promise<WithId<Login>> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -416,14 +421,6 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
     throw new OperationOutcomeError(badRequest('Login profile already set'));
   }
 
-  // Find the membership for the user
-  const globalSystemRepo = getGlobalSystemRepo();
-  let membership = undefined;
-  try {
-    membership = await globalSystemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  } catch {
-    throw new OperationOutcomeError(badRequest('Profile not found'));
-  }
   if (membership.user?.reference !== login.user?.reference) {
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
@@ -433,8 +430,9 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
   }
 
   // Get the project
+  const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);
-  const projectSystemRepo = getProjectSystemRepo(project);
+  const projectSystemRepo = await getProjectSystemRepo(project);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
@@ -491,7 +489,7 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource<Login>(updatedLogin);
+  return globalSystemRepo.updateResource(updatedLogin);
 }
 
 /**
@@ -918,11 +916,12 @@ export async function verifyMultipleMatchingException(
 export async function getLoginForAccessToken(
   req: Request | undefined,
   accessToken: string
-): Promise<AuthState | undefined> {
+): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
   const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
   if (externalAuthState) {
-    return externalAuthState;
+    const repo = await getRepoForLogin(externalAuthState);
+    return { authState: externalAuthState, repo };
   }
 
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
@@ -950,11 +949,8 @@ export async function getLoginForAccessToken(
     return undefined;
   }
   const project = await globalSystemRepo.readReference<Project>(membership.project);
-  const systemRepo = getProjectSystemRepo(project);
-  const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const authState = { login, project, membership, userConfig, accessToken };
-  await tryAddOnBehalfOf(req, authState);
-  return authState;
+  const systemRepo = await getProjectSystemRepo(project);
+  return makeAuthResult(systemRepo, req, login, project, membership, { accessToken });
 }
 
 /**
@@ -964,7 +960,10 @@ export async function getLoginForAccessToken(
  * @param token - The basic auth token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForBasicAuth(req: IncomingMessage, token: string): Promise<AuthState | undefined> {
+export async function getLoginForBasicAuth(
+  req: IncomingMessage,
+  token: string
+): Promise<AuthenticationResult | undefined> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
@@ -995,19 +994,50 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     authMethod: 'client',
     authTime: new Date().toISOString(),
   };
-  const userConfig = await getUserConfiguration(systemRepo, project, membership);
 
-  const authState: AuthState = { login, project, membership, userConfig };
-  await tryAddOnBehalfOf(req, authState);
-  return authState;
+  return makeAuthResult(systemRepo, req, login, project, membership, { profile: client });
+}
+
+async function makeAuthResult(
+  systemRepo: Repository,
+  req: Request | IncomingMessage | undefined,
+  login: Login,
+  project: WithId<Project>,
+  membership: WithId<ProjectMembership>,
+  opts?: {
+    profile?: WithId<ProfileResource | Bot | ClientApplication>;
+    accessToken?: string;
+  }
+): Promise<AuthenticationResult> {
+  const extendedMode = req ? isExtendedMode(req) : true;
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const authState: AuthState = {
+    login,
+    project,
+    membership,
+    userConfig,
+    accessToken: opts?.accessToken,
+    profile: opts?.profile,
+  };
+  let repo = await getRepoForLogin(authState, extendedMode);
+  await tryAddOnBehalfOf(repo, req, authState);
+  if (authState.onBehalfOf) {
+    repo = await getRepoForLogin(authState, extendedMode);
+  }
+  return { authState, repo };
 }
 
 /**
  * Tries to add the "on behalf of" user to the auth state.
+ * @param repo - The user's FHIR repository.
  * @param req - The incoming HTTP request.
  * @param authState - The existing auth state.
  */
-async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: AuthState): Promise<void> {
+async function tryAddOnBehalfOf(
+  repo: Repository,
+  req: IncomingMessage | undefined,
+  authState: AuthState
+): Promise<void> {
   const onBehalfOfHeader = req?.headers?.['x-medplum-on-behalf-of'];
   if (!onBehalfOfHeader || !isString(onBehalfOfHeader)) {
     return;
@@ -1019,12 +1049,10 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
 
   let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
 
-  const adminRepo = await getRepoForLogin(authState);
-
   if (onBehalfOfHeader.startsWith('ProjectMembership/')) {
-    onBehalfOfMembership = await adminRepo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+    onBehalfOfMembership = await repo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
   } else {
-    onBehalfOfMembership = await adminRepo.searchOne({
+    onBehalfOfMembership = await repo.searchOne({
       resourceType: 'ProjectMembership',
       filters: [
         { code: 'profile', operator: Operator.EQUALS, value: onBehalfOfHeader },
@@ -1036,7 +1064,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
     }
   }
 
-  const onBehalfOf = await adminRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  const onBehalfOf = await repo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
 }

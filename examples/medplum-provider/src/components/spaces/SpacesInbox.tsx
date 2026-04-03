@@ -1,12 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Avatar, Box, Button, CloseButton, Group, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core';
+import {
+  ActionIcon,
+  Avatar,
+  Box,
+  CloseButton,
+  Code,
+  Group,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  ThemeIcon,
+} from '@mantine/core';
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
+  IconArrowLeft,
   IconCode,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconList,
   IconPlus,
   IconRobot,
 } from '@tabler/icons-react';
@@ -41,15 +55,57 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
-  const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);
+  const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
+  const [selectedResources, setSelectedResources] = useState<string[] | undefined>();
+  const [resourceFromComponent, setResourceFromComponent] = useState(false);
   const [streamingContent, setStreamingContent] = useState<string | undefined>();
-  const [componentPreview, setComponentPreview] = useState<{ code: string } | undefined>();
+  const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
+  const [componentPanelOpen, setComponentPanelOpen] = useState(false);
+  const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
+  const [panelWidth, setPanelWidth] = useState<number>(() => window.innerWidth * 0.5);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
+  const componentStreamOpenedRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartWidthRef = useRef(0);
+
+  const handleDragStart = (e: React.MouseEvent): void => {
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartWidthRef.current = panelWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (moveEvent: MouseEvent): void => {
+      if (!isDraggingRef.current) {
+        return;
+      }
+      const delta = dragStartXRef.current - moveEvent.clientX;
+      const containerWidth = chatContainerRef.current?.parentElement?.offsetWidth ?? window.innerWidth;
+      const newWidth = Math.min(
+        Math.max(dragStartWidthRef.current + delta, containerWidth * 0.5),
+        containerWidth * 0.75
+      );
+      setPanelWidth(newWidth);
+    };
+
+    const onMouseUp = (): void => {
+      isDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -72,7 +128,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           setCurrentTopicId(topicId);
           setHasStarted(true);
           setSelectedResource(undefined);
+          setSelectedResources(undefined);
           setComponentPreview(undefined);
+          setStreamingComponentCode(undefined);
+          setComponentPanelOpen(false);
         } catch (error) {
           showErrorNotification(error);
         } finally {
@@ -87,6 +146,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(false);
       setCurrentTopicId(undefined);
       setSelectedResource(undefined);
+      setSelectedResources(undefined);
       setComponentPreview(undefined);
     }
   }, [topic, medplum]);
@@ -129,7 +189,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setCurrentTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
+      setSelectedResources(undefined);
       setComponentPreview(undefined);
+      setStreamingComponentCode(undefined);
+      setComponentPanelOpen(false);
     } catch (error) {
       showErrorNotification(error);
     } finally {
@@ -155,9 +218,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setInput('');
     setCurrentFhirRequest(undefined);
     setStreamingContent(undefined);
+    setComponentPreview(undefined);
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
+    componentStreamOpenedRef.current = false;
 
     try {
       const result = await processMessage({
@@ -176,16 +241,37 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           setStreamingContent((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
+        onComponentStreamChunk: (chunk) => {
+          if (!componentStreamOpenedRef.current) {
+            setSelectedResource(undefined);
+            setSelectedResources(undefined);
+            setComponentPanelOpen(true);
+            componentStreamOpenedRef.current = true;
+          }
+          setStreamingComponentCode((prev) => (prev ?? '') + chunk);
+          setCurrentFhirRequest(undefined);
+        },
       });
       setStreamingContent(undefined);
+      setStreamingComponentCode(undefined);
       setMessages(result.updatedMessages);
+      if (result.assistantMessage.componentCode) {
+        setComponentPreview({
+          code: result.assistantMessage.componentCode,
+          resources: result.assistantMessage.resources,
+        });
+        setSelectedResource(undefined);
+        setComponentPanelOpen(true);
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setMessages([...currentMessages, { role: 'assistant', content: `Error: ${errorMessage}` }]);
     } finally {
       isSendingRef.current = false;
       setStreamingContent(undefined);
+      setStreamingComponentCode(undefined);
       setLoading(false);
+      // componentPanelOpen intentionally left as-is so the panel stays open after streaming
     }
   };
 
@@ -194,11 +280,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       e.preventDefault();
       handleSend().catch((error) => showErrorNotification(error));
     }
-  };
-
-  const handleViewComponent = (code: string): void => {
-    setSelectedResource(undefined);
-    setComponentPreview({ code });
   };
 
   const visibleMessages = messages.filter(
@@ -226,7 +307,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       </Box>
 
       {/* Main Chat Area */}
-      <div className={classes.chatContainer}>
+      <div ref={chatContainerRef} className={classes.chatContainer}>
         <div className={classes.chatHeader}>
           <div>
             {!sidebarOpen && (
@@ -276,37 +357,76 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         {message.role === 'user' ? 'You' : 'AI Assistant'}
                       </Text>
                     </Group>
-                    <div className={classes.messageContent}>
-                      <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
-                    </div>
-                    {message.resources && message.resources.length > 0 && (
-                      <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
-                        {message.resources.map((resourceRef, idx) => (
-                          <ResourceBox
-                            key={idx}
-                            resourceReference={resourceRef}
-                            onClick={(ref) => {
-                              setComponentPreview(undefined);
-                              setSelectedResource(ref);
-                            }}
-                          />
-                        ))}
-                      </Stack>
+                    {message.content && (
+                      <div className={classes.messageContent}>
+                        <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                      </div>
                     )}
                     {message.componentCode && (
-                      <Button
-                        variant="light"
-                        size="xs"
-                        leftSection={<IconCode size={14} />}
-                        mt="sm"
-                        onClick={() => {
-                          if (message.componentCode) {
-                            handleViewComponent(message.componentCode);
-                          }
-                        }}
-                      >
-                        View Component
-                      </Button>
+                      <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
+                        <Paper
+                          withBorder
+                          p="sm"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            setSelectedResource(undefined);
+                            setSelectedResources(undefined);
+                            setComponentPreview({
+                              code: message.componentCode as string,
+                              resources: message.resources,
+                            });
+                            setComponentPanelOpen(true);
+                          }}
+                        >
+                          <Group gap="sm" wrap="nowrap">
+                            <ThemeIcon size="lg" variant="light" color="violet">
+                              <IconCode size={20} />
+                            </ThemeIcon>
+                            <Text size="sm" fw={600} c="violet.7">
+                              View Component
+                            </Text>
+                          </Group>
+                        </Paper>
+                      </Stack>
+                    )}
+                    {message.resources && message.resources.length > 0 && !message.componentCode && (
+                      <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
+                        {message.resources.length <= 2 ? (
+                          message.resources.map((resourceRef, idx) => (
+                            <ResourceBox
+                              key={idx}
+                              resourceReference={resourceRef}
+                              onClick={(ref) => {
+                                setComponentPanelOpen(false);
+                                setResourceFromComponent(false);
+                                setSelectedResources(undefined);
+                                setSelectedResource(ref);
+                              }}
+                            />
+                          ))
+                        ) : (
+                          <Paper
+                            withBorder
+                            p="sm"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              setComponentPanelOpen(false);
+                              setSelectedResource(undefined);
+                              setResourceFromComponent(false);
+                              setSelectedResources(message.resources);
+                            }}
+                          >
+                            <Group gap="sm" wrap="nowrap">
+                              <ThemeIcon size="lg" variant="light" color="violet">
+                                <IconList size={20} />
+                              </ThemeIcon>
+                              <Text size="sm" fw={600} c="violet.7">
+                                {message.resources.length} results
+                              </Text>
+                            </Group>
+                          </Paper>
+                        )}
+                      </Stack>
                     )}
                   </div>
                 ))}
@@ -321,14 +441,40 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                       </Text>
                     </Group>
                     <div className={classes.messageContent}>
-                      {streamingContent ? (
-                        <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>
-                      ) : (
+                      {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
+                      {!streamingContent && currentFhirRequest && (
                         <Text size="sm" c="dimmed" fs="italic">
-                          {currentFhirRequest ? `Executing ${currentFhirRequest}...` : 'Thinking...'}
+                          Executing {currentFhirRequest}...
+                        </Text>
+                      )}
+                      {!streamingContent && !currentFhirRequest && streamingComponentCode === undefined && (
+                        <Text size="sm" c="dimmed" fs="italic">
+                          Thinking...
                         </Text>
                       )}
                     </div>
+                    {streamingComponentCode !== undefined && (
+                      <Stack gap="xs" mt="sm" w={300}>
+                        <Paper
+                          withBorder
+                          p="sm"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            setSelectedResource(undefined);
+                            setComponentPanelOpen(true);
+                          }}
+                        >
+                          <Group gap="sm" wrap="nowrap">
+                            <ThemeIcon size="lg" variant="light" color="violet">
+                              <IconCode size={20} />
+                            </ThemeIcon>
+                            <Text size="sm" fw={600} c="violet.7">
+                              Generating component...
+                            </Text>
+                          </Group>
+                        </Paper>
+                      </Stack>
+                    )}
                   </div>
                 )}
               </Stack>
@@ -352,14 +498,57 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         </div>
       </div>
 
-      {/* Resource Panel */}
-      {selectedResource && (
-        <div className={classes.resourcePanel}>
+      {/* Resource List Panel */}
+      {selectedResources && !selectedResource && <div className={classes.dragHandle} onMouseDown={handleDragStart} />}
+      {selectedResources && !selectedResource && (
+        <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
             <Text fw={600} size="sm">
-              Resource Details
+              Results ({selectedResources.length})
             </Text>
-            <CloseButton onClick={() => setSelectedResource(undefined)} />
+            <CloseButton onClick={() => setSelectedResources(undefined)} />
+          </div>
+          <ScrollArea style={{ flex: 1 }} p="md">
+            <Stack gap="xs">
+              {selectedResources.map((ref, idx) => (
+                <ResourceBox key={idx} resourceReference={ref} onClick={(r) => setSelectedResource(r)} />
+              ))}
+            </Stack>
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* Resource Panel */}
+      {selectedResource && <div className={classes.dragHandle} onMouseDown={handleDragStart} />}
+      {selectedResource && (
+        <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
+          <div className={classes.resourceHeader}>
+            <Group gap="xs">
+              {(resourceFromComponent || selectedResources) && (
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedResource(undefined);
+                    if (resourceFromComponent) {
+                      setComponentPanelOpen(true);
+                    }
+                  }}
+                >
+                  <IconArrowLeft size={16} />
+                </ActionIcon>
+              )}
+              <Text fw={600} size="sm">
+                Resource Details
+              </Text>
+            </Group>
+            <CloseButton
+              onClick={() => {
+                setSelectedResource(undefined);
+                setSelectedResources(undefined);
+              }}
+            />
           </div>
           <ScrollArea style={{ flex: 1 }} p="md">
             <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
@@ -368,16 +557,34 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       )}
 
       {/* Component Preview Panel */}
-      {componentPreview && (
-        <div className={classes.resourcePanel}>
+      {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
+        <div className={classes.dragHandle} onMouseDown={handleDragStart} />
+      )}
+      {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
+        <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
             <Text fw={600} size="sm">
               Component Preview
             </Text>
-            <CloseButton onClick={() => setComponentPreview(undefined)} />
+            <CloseButton onClick={() => setComponentPanelOpen(false)} />
           </div>
           <ScrollArea style={{ flex: 1 }} p="md">
-            <ComponentPreview code={componentPreview.code} />
+            {streamingComponentCode !== undefined && (
+              <Code block style={{ whiteSpace: 'pre-wrap' }}>
+                {streamingComponentCode || ' '}
+              </Code>
+            )}
+            {streamingComponentCode === undefined && componentPreview && (
+              <ComponentPreview
+                code={componentPreview.code}
+                resources={componentPreview.resources}
+                onResourceClick={(ref) => {
+                  setComponentPanelOpen(false);
+                  setResourceFromComponent(true);
+                  setSelectedResource(ref);
+                }}
+              />
+            )}
           </ScrollArea>
         </div>
       )}

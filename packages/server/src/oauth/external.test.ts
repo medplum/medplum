@@ -49,7 +49,7 @@ describe('External auth', () => {
       firstName: 'Test',
       lastName: 'Person',
     });
-    systemRepo = getProjectSystemRepo(project);
+    systemRepo = await getProjectSystemRepo(project);
 
     // Add NPI identifier to the practitioner
     practitioner = await systemRepo.updateResource<ProfileResource>({

@@ -5,16 +5,18 @@ import type { Resource } from '@medplum/fhirtypes';
 import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
-import { addCronJobs, initCronWorker } from './cron';
-import { addDownloadJobs, initDownloadWorker } from './download';
+import { initCronWorker } from './cron';
+import { addDispatchJobs, initDispatchWorker } from './dispatch';
+import { initDownloadWorker } from './download';
 import { initPostDeployMigrationWorker } from './post-deploy-migration';
 import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
-import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
+import { initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
 import { queueRegistry } from './utils';
 
 const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
+  { name: 'dispatch', init: initDispatchWorker },
   { name: 'subscription', init: initSubscriptionWorker },
   { name: 'download', init: initDownloadWorker },
   { name: 'cron', init: initCronWorker },
@@ -60,29 +62,9 @@ export async function addBackgroundJobs(
   context: BackgroundJobContext
 ): Promise<void> {
   try {
-    await addSubscriptionJobs(resource, previousVersion, context);
+    await addDispatchJobs(resource, previousVersion, context);
   } catch (err) {
-    getLogger().error('Error adding subscription jobs', {
-      resourceType: resource.resourceType,
-      resource: resource.id,
-      err,
-    });
-  }
-
-  try {
-    await addDownloadJobs(resource, previousVersion, context);
-  } catch (err) {
-    getLogger().error('Error adding download jobs', {
-      resourceType: resource.resourceType,
-      resource: resource.id,
-      err,
-    });
-  }
-
-  try {
-    await addCronJobs(resource, previousVersion, context);
-  } catch (err) {
-    getLogger().error('Error adding cron jobs', {
+    getLogger().error('Error adding dispatch jobs', {
       resourceType: resource.resourceType,
       resource: resource.id,
       err,

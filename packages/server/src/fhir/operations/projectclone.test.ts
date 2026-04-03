@@ -201,7 +201,7 @@ describe('Project clone', () => {
       .send({ name: newProjectName });
     expect(res.status).toBe(201);
 
-    const systemRepo = getProjectSystemRepo(project);
+    const systemRepo = await getProjectSystemRepo(project);
     const ClientApplicationBundle = await systemRepo.search({
       resourceType: 'ClientApplication',
       filters: [{ code: '_project', operator: Operator.EQUALS, value: res.body.id }],

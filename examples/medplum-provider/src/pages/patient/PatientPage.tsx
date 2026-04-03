@@ -3,9 +3,16 @@
 import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, OperationOutcomeAlert, PatientSummary, useMedplum } from '@medplum/react';
+import {
+  createPharmaciesSection,
+  Document,
+  getDefaultSections,
+  OperationOutcomeAlert,
+  PatientSummary,
+  useMedplum,
+} from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Location } from 'react-router';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
@@ -70,6 +77,14 @@ export function PatientPage(): JSX.Element {
     setIsLabsModalOpen(false);
   }, []);
 
+  const sections = useMemo(
+    () =>
+      getDefaultSections(() => setIsLabsModalOpen(true)).map((s) =>
+        s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
+      ),
+    [setIsLabsModalOpen]
+  );
+
   if (outcome && !isOk(outcome)) {
     return (
       <Document>
@@ -97,10 +112,7 @@ export function PatientPage(): JSX.Element {
               onClickResource={(resource) =>
                 navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
               }
-              onRequestLabs={() => {
-                setIsLabsModalOpen(true);
-              }}
-              pharmacyDialogComponent={DoseSpotPharmacyDialog}
+              sections={sections}
             />
           </ScrollArea>
         </div>

@@ -67,10 +67,10 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       }
       const valueSet = await medplum.valueSetExpand(
         {
+          count: 10,
           ...expandParams,
           url: binding,
           filter: input,
-          count: 10,
         },
         { signal }
       );

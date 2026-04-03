@@ -49,7 +49,8 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
+import type { ActiveSubscriptionEntry } from '../pubsub';
+import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
@@ -416,7 +417,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = getProjectSystemRepo(projectId);
+  const systemRepo = await getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -435,11 +436,22 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
   });
 
   const redisOnlySubRefStrs: string[] = [];
+  const expiredSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
   const entries = await getActiveSubscriptions(projectId, resource.resourceType);
+
   if (Object.keys(entries).length) {
     const cachedCriteriaEvalMap = new Map<string, boolean>();
     const wsEvalStartTime = Date.now();
-    for (const [ref, criteria] of Object.entries(entries)) {
+
+    for (const [ref, entry] of Object.entries(entries)) {
+      const { criteria, expiration } = entry;
+      // Expiration comes directly from the JWT, so it's in seconds
+      // If it's less than Date.now(), add this subscription entry to the expired list
+      if (expiration * 1000 < Date.now()) {
+        expiredSubEntries[ref] = entry;
+        continue;
+      }
+
       try {
         const cached = cachedCriteriaEvalMap.get(criteria);
         let matches: boolean;
@@ -464,6 +476,11 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       numSubscriptions: Object.keys(entries).length,
       evalDurationMs: Date.now() - wsEvalStartTime,
     });
+  }
+
+  // We should clean up all expired sub entries ASAP
+  if (Object.keys(expiredSubEntries).length) {
+    await cleanupActiveSubs(projectId, expiredSubEntries);
   }
 
   if (redisOnlySubRefStrs.length) {
@@ -652,7 +669,7 @@ async function sendRestHook(
   let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
-    systemRepo = getProjectSystemRepo(subscription.meta.project);
+    systemRepo = await getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }

@@ -38,7 +38,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -92,7 +92,7 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -200,7 +200,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -246,7 +246,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ github.event_name != 'merge_group' && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:
@@ -302,7 +302,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -402,7 +402,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
