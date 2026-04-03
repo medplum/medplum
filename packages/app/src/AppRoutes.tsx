@@ -30,6 +30,7 @@ import { MfaPage } from './MfaPage';
 import { OAuthPage } from './OAuthPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
+import { AccountsPage } from './resource/AccountsPage';
 import { ApplyPage } from './resource/ApplyPage';
 import { AppsPage } from './resource/AppsPage';
 import { AuditEventPage } from './resource/AuditEventPage';
@@ -143,6 +144,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="tools" element={<ToolsPage />} />
           <Route path="payload" element={<CommunicationPayloadPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
           <Route path="export" element={<ExportPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />

@@ -75,6 +75,7 @@ export * from './NoteDisplay/NoteDisplay';
 export * from './NotificationIcon/NotificationIcon';
 export * from './OperationOutcomeAlert/OperationOutcomeAlert';
 export * from './Panel/Panel';
+export * from './PatientAccountsForm/PatientAccountsForm';
 export * from './PatientExportForm/PatientExportForm';
 export * from './PatientHeader/PatientHeader';
 export * from './PatientSummary/PatientSummary';
