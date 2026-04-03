@@ -34,7 +34,6 @@ export const registerHandler = async (req: Request, res: Response): Promise<void
 
   res.status(201).json({
     client_id: standardClient.id,
-    client_secret: standardClient.secret,
     client_id_issued_at: Math.floor(Date.now() / 1000),
     redirect_uris: getClientRedirectUris(standardClient),
   });

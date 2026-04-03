@@ -129,7 +129,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     globalLogger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(PREFERRED_ALG);
     const jwk = await exportJWK(keyResult.privateKey);
-    const createResult = await systemRepo.createResource<JsonWebKey>({
+    const createResult = await systemRepo.createResource({
       resourceType: 'JsonWebKey',
       active: true,
       alg: PREFERRED_ALG,

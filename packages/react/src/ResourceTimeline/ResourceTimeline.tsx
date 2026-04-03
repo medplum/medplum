@@ -61,7 +61,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const [countToShow, setCountToShow] = useState(10);
   const loadTimelineResources = props.loadTimelineResources;
 
-  const itemsRef = useRef<Resource[]>(items);
+  const itemsRef = useRef(items);
   itemsRef.current = items;
 
   /**

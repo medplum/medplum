@@ -6,11 +6,18 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
+import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import type { PresignedUrlOptions } from '../../storage/base';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
+
+interface SseCParams {
+  SSECustomerAlgorithm: string;
+  SSECustomerKey: string;
+  SSECustomerKeyMD5: string;
+}
 
 /**
  * The S3Storage class stores binary data in an AWS S3 bucket.
@@ -19,11 +26,21 @@ import type { BinarySource } from '../../storage/types';
 export class S3Storage extends BaseBinaryStorage {
   private readonly client: S3Client;
   readonly bucket: string;
+  private readonly sseC: SseCParams | undefined;
 
   constructor(bucket: string) {
     super();
-    this.client = new S3Client({ region: getConfig().awsRegion });
+    const config = getConfig();
+    this.client = new S3Client({ region: config.awsRegion });
     this.bucket = bucket;
+
+    if (config.sseCustomerKey) {
+      this.sseC = {
+        SSECustomerAlgorithm: 'AES256',
+        SSECustomerKey: config.sseCustomerKey,
+        SSECustomerKeyMD5: createHash('md5').update(Buffer.from(config.sseCustomerKey, 'base64')).digest('base64'),
+      };
+    }
   }
 
   /**
@@ -60,6 +77,7 @@ export class S3Storage extends BaseBinaryStorage {
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
         Body: stream,
+        ...this.sseC,
       },
       client: this.client,
       queueSize: 3,
@@ -73,6 +91,7 @@ export class S3Storage extends BaseBinaryStorage {
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: key,
+        ...this.sseC,
       })
     );
     return output.Body as Readable;
@@ -84,6 +103,12 @@ export class S3Storage extends BaseBinaryStorage {
         CopySource: `${this.bucket}/${sourceKey}`,
         Bucket: this.bucket,
         Key: destinationKey,
+        ...this.sseC,
+        ...(this.sseC && {
+          CopySourceSSECustomerAlgorithm: this.sseC.SSECustomerAlgorithm,
+          CopySourceSSECustomerKey: this.sseC.SSECustomerKey,
+          CopySourceSSECustomerKeyMD5: this.sseC.SSECustomerKeyMD5,
+        }),
       })
     );
   }
@@ -104,8 +129,8 @@ export class S3Storage extends BaseBinaryStorage {
     if (!config.signingKey || !config.signingKeyId || opts?.upload) {
       const Key = this.getKey(binary);
       const cmd = opts?.upload
-        ? new PutObjectCommand({ Bucket: this.bucket, Key })
-        : new GetObjectCommand({ Bucket: this.bucket, Key });
+        ? new PutObjectCommand({ Bucket: this.bucket, Key, ...this.sseC })
+        : new GetObjectCommand({ Bucket: this.bucket, Key, ...this.sseC });
       return s3GetSignedUrl(this.client, cmd, { expiresIn: 3600 });
     }
 

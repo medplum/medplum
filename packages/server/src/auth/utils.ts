@@ -40,7 +40,7 @@ export async function createProfile(
     telecom = [{ system: 'email', use: 'work', value: email }];
   }
 
-  const result = await systemRepo.createResource<ProfileResource>({
+  const result = await systemRepo.createResource({
     resourceType,
     meta: {
       project: project.id,
