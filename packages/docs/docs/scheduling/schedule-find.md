@@ -7,7 +7,7 @@ sidebar_position: 2
 
 :::info Alpha
 
-The `$find` operation is currently in alpha. It supports only Schedules with a single actor and does not yet use `ActivityDefinition` default service type parameters.
+The `$find` operation is currently in alpha. It supports only Schedules with a single actor.
 
 :::
 

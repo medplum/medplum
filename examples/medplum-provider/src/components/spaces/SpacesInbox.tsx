@@ -65,10 +65,47 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
   const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
+  const [panelWidth, setPanelWidth] = useState<number>(() => window.innerWidth * 0.5);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
   const componentStreamOpenedRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartWidthRef = useRef(0);
+
+  const handleDragStart = (e: React.MouseEvent): void => {
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartWidthRef.current = panelWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (moveEvent: MouseEvent): void => {
+      if (!isDraggingRef.current) {
+        return;
+      }
+      const delta = dragStartXRef.current - moveEvent.clientX;
+      const containerWidth = chatContainerRef.current?.parentElement?.offsetWidth ?? window.innerWidth;
+      const newWidth = Math.min(
+        Math.max(dragStartWidthRef.current + delta, containerWidth * 0.5),
+        containerWidth * 0.75
+      );
+      setPanelWidth(newWidth);
+    };
+
+    const onMouseUp = (): void => {
+      isDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -181,6 +218,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setInput('');
     setCurrentFhirRequest(undefined);
     setStreamingContent(undefined);
+    setComponentPreview(undefined);
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
@@ -206,6 +244,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         onComponentStreamChunk: (chunk) => {
           if (!componentStreamOpenedRef.current) {
             setSelectedResource(undefined);
+            setSelectedResources(undefined);
             setComponentPanelOpen(true);
             componentStreamOpenedRef.current = true;
           }
@@ -268,7 +307,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       </Box>
 
       {/* Main Chat Area */}
-      <div className={classes.chatContainer}>
+      <div ref={chatContainerRef} className={classes.chatContainer}>
         <div className={classes.chatHeader}>
           <div>
             {!sidebarOpen && (
@@ -460,8 +499,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       </div>
 
       {/* Resource List Panel */}
+      {selectedResources && !selectedResource && <div className={classes.dragHandle} onMouseDown={handleDragStart} />}
       {selectedResources && !selectedResource && (
-        <div className={classes.resourcePanel}>
+        <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
             <Text fw={600} size="sm">
               Results ({selectedResources.length})
@@ -479,8 +519,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       )}
 
       {/* Resource Panel */}
+      {selectedResource && <div className={classes.dragHandle} onMouseDown={handleDragStart} />}
       {selectedResource && (
-        <div className={classes.resourcePanel}>
+        <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
             <Group gap="xs">
               {(resourceFromComponent || selectedResources) && (
@@ -517,7 +558,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
 
       {/* Component Preview Panel */}
       {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
-        <div className={classes.resourcePanel}>
+        <div className={classes.dragHandle} onMouseDown={handleDragStart} />
+      )}
+      {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
+        <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
             <Text fw={600} size="sm">
               Component Preview

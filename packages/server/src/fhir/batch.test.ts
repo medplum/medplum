@@ -1564,8 +1564,7 @@ describe('Batch and Transaction processing', () => {
 
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
-
-    await waitForAsyncJob(res.header['content-location'], app, accessToken);
+    expect(asyncJob.meta?.project).toStrictEqual(project.id);
 
     expect(asyncJob.output).toMatchObject<Parameters>({
       resourceType: 'Parameters',
