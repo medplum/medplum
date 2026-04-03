@@ -1,0 +1,135 @@
+# API Routes
+
+## Principle
+
+HealthTalk Vercel routes do **not** import or call Twilio, ElevenLabs, Postmark, or any SIP library. All delivery operations go through the Notification Gateway. Vercel routes handle:
+
+- Scheduling logic (cron, appointment triggers)
+- FHIR operations in MedPlum
+- Gateway status callbacks
+- Builder operations
+- Clinician UI actions
+
+---
+
+## HealthTalk API Routes (app.healthtalk.ai)
+
+### Appointment & Scheduling
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/appointment/save` | POST | Save nl-core Appointment + queue questionnaire sends |
+| `/api/appointment/info` | GET | ElevenLabs Tool (via gateway) — fetch appointment details |
+
+### Questionnaire Lifecycle
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/questionnaire/assign` | POST | Cron: create Task in MedPlum, call gateway `/notify` |
+| `/api/questionnaire/remind` | POST | Cron T-6h: call gateway `/notify` with type=reminder |
+| `/api/questionnaire/cancel` | PATCH | Clinician cancels Task in MedPlum |
+| `/api/questionnaire/adhoc` | POST | Ad-hoc send from patient record: create Task, call gateway |
+| `/api/questionnaire/complete` | POST | ElevenLabs Tool or web form: set QR + Task completed |
+
+### Gateway Status Callback
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/gateway/status` | POST | Gateway reports delivery result → update Task businessStatus in MedPlum |
+
+### Voice Agent Tools
+
+These routes are called by the gateway, not by ElevenLabs directly:
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/questionnaire/agent/items` | GET | Return item list for this Task (patient-language text) |
+| `/api/questionnaire/voice-answer` | POST | Patch one answer into QuestionnaireResponse |
+| `/api/questionnaire/interpret-answer` | POST | LLM maps free speech to answer option |
+
+### MedPlum Subscription Webhooks
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/questionnaire/completed` | POST | MedPlum fires when Task completed → notify clinician (in-app + Teams) |
+| `/api/questionnaire/cancelled` | POST | MedPlum fires when Task cancelled |
+
+### Builder
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/builder/questionnaire/:id/publish` | POST | Set Questionnaire.status = active in MedPlum |
+| `/api/builder/questionnaire/:id/version` | POST | New draft from published version |
+| `/api/builder/loinc/import` | GET | Proxy fetch from fhir.loinc.org |
+
+---
+
+## Notification Gateway API Routes (gateway.healthtalk.ai)
+
+The gateway is a separate Vercel project. These are its internal routes.
+
+### Inbound from HealthTalk
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/notify` | POST | Trigger notification — channel selection + dispatch |
+| `/health` | GET | Health check |
+
+### Inbound Provider Webhooks
+
+All provider callbacks land here, not at HealthTalk:
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/webhooks/twilio/whatsapp` | POST | Twilio: WhatsApp message received (patient reply) |
+| `/webhooks/twilio/whatsapp-status` | POST | Twilio: delivery status for WhatsApp message |
+| `/webhooks/twilio/sms-status` | POST | Twilio: delivery status for SMS |
+| `/webhooks/twilio/voice-status` | POST | Twilio: outbound call status (answered, no-answer etc.) |
+| `/webhooks/elevenlabs/call-status` | POST | ElevenLabs: call started, ended, AMD result |
+| `/webhooks/postmark/delivery` | POST | Postmark: email delivered, bounced, spam |
+| `/webhooks/postmark/inbound` | POST | Postmark: patient replied "CALL ME" |
+
+All webhooks are signature-validated before processing. All delivery events are normalised into a standard internal status and forwarded to HealthTalk via `/api/gateway/status`.
+
+### Internal Adapter Dispatch
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/adapters/whatsapp/send` | POST | Internal — WhatsApp adapter dispatch |
+| `/adapters/email/send` | POST | Internal — Email adapter dispatch |
+| `/adapters/sms/send` | POST | Internal — SMS adapter dispatch |
+| `/adapters/voice-mobile/call` | POST | Internal — Twilio + ElevenLabs mobile call |
+| `/adapters/voice-sip/call` | POST | Internal — ElevenLabs SIP call to org SBC |
+| `/adapters/whatsapp/next-question` | POST | Internal — send next WhatsApp question |
+
+---
+
+## MedPlum Subscriptions
+
+```json
+[
+  {
+    "resourceType": "Subscription",
+    "status": "active",
+    "criteria": "Task?code=74468-0&status=completed",
+    "channel": {
+      "type": "rest-hook",
+      "endpoint": "https://app.healthtalk.ai/api/questionnaire/completed",
+      "payload": "application/fhir+json",
+      "header": ["Authorization: Bearer {subscription-secret}"]
+    }
+  },
+  {
+    "resourceType": "Subscription",
+    "status": "active",
+    "criteria": "Task?code=74468-0&status=cancelled",
+    "channel": {
+      "type": "rest-hook",
+      "endpoint": "https://app.healthtalk.ai/api/questionnaire/cancelled",
+      "header": ["Authorization: Bearer {subscription-secret}"]
+    }
+  }
+]
+```
+
+Vercel validates the `Authorization` header on all MedPlum subscription webhooks.

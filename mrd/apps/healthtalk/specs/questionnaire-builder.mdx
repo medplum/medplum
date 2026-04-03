@@ -1,0 +1,233 @@
+# Questionnaire Builder
+
+## Integration with Existing Template System
+
+The questionnaire module is not a separate navigation item. It is a second template type within the existing Sjablonen module. The shared shell (name, categories, language, draft/publish flow, visibility) is identical for both types. Only the second tab differs.
+
+| Element | Note template (existing) | Questionnaire (new) |
+|---------|--------------------------|---------------------|
+| Template details tab | Name · AI guidelines · Categories · Language | Identical — no changes |
+| Second tab | "Sections" — AI guidelines + output format | "Questions" — MedPlum `<QuestionnaireBuilder />` |
+| Save as draft | ✅ | ✅ identical |
+| Save and publish | ✅ | ✅ identical |
+| Categories | Shared list | Shared |
+| Visibility | Me / Team / Org | Identical |
+
+### Required Changes to Existing Codebase
+
+1. A `type` field on the template model (`note-template` | `questionnaire`)
+2. A filter bar on the Sjablonen list: "All | Note templates | Questionnaires"
+3. Conditional second tab: if `type = questionnaire` → render `<QuestionnaireBuilder />`
+
+---
+
+## MedPlum SDK — Reuse Existing Components
+
+```typescript
+import { QuestionnaireBuilder, QuestionnaireForm } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
+
+function QuestionsTab({ questionnaireId }: { questionnaireId: string }) {
+  const medplum = useMedplum();
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire>();
+
+  return (
+    <QuestionnaireBuilder
+      questionnaire={questionnaire}
+      onSubmit={async (q) => { await medplum.updateResource(q); }}
+    />
+  );
+}
+```
+
+Patient-side rendering uses `<QuestionnaireForm />` — same component, no extra work.
+
+---
+
+## Template Type Selection
+
+When creating a new template, one extra step before the form:
+
+```
+What type of template do you want to create?
+
+  ┌──────────────────────┐   ┌──────────────────────┐
+  │  Note template       │   │  Questionnaire        │
+  │  AI sections for     │   │  FHIR questionnaire   │
+  │  session notes       │   │  for patients         │
+  └──────────────────────┘   └──────────────────────┘
+```
+
+---
+
+## Score Toggle
+
+Within the questionnaire type, there is one toggle in the template details tab:
+
+```
+Score calculation
+○ Off   ● On
+
+[On] reveals:
+  Score items (calculated, read-only)
+  Severity bands:  [0–4   Minimal       ]
+                   [5–9   Mild          ]
+                   [10–14 Moderate      ]
+                   [+ Add band]
+```
+
+| | Without score | With score |
+|---|---------------|------------|
+| FHIR | `Questionnaire` | `Questionnaire` + `calculatedExpression` items |
+| After submission | `QuestionnaireResponse` stored | `QuestionnaireResponse` + `Observation` |
+| Clinician view | Answers only | Answers + score + severity label |
+| Examples | Intake form, anamnesis | PHQ-9, GAD-7, PCL-5 |
+
+---
+
+## LOINC Import
+
+### Scope — Manual, One-Off
+
+LOINC import is a manual process for authorised admin users inside the builder. It is not an automated pipeline.
+
+1. Admin enters a LOINC code
+2. HealthTalk fetches the raw FHIR `Questionnaire` from `fhir.loinc.org` (server-side)
+3. Resource opens in `<QuestionnaireBuilder />` as a new draft
+4. Admin manually adds patient-language text, score rules, Dutch translations
+5. Admin publishes
+
+No automated transformation. All post-import editing is manual.
+
+### LOINC FHIR Service
+
+| Property | Value |
+|----------|-------|
+| Base URL | `https://fhir.loinc.org` |
+| FHIR version | R4 |
+| Authentication | Basic Auth — free account at loinc.org |
+| Maturity | **BETA** — do not call at patient runtime |
+
+**Critical rule:** The LOINC API is only ever called by admins inside the builder. A LOINC outage must never affect patient-facing questionnaire delivery. All questionnaires are stored in self-hosted MedPlum after import.
+
+### Import Endpoint
+
+```typescript
+// GET /api/builder/loinc/import?code=69737-5
+// Server-side only — credentials never reach the browser
+
+export async function GET(req: Request) {
+  const code = new URL(req.url).searchParams.get('code');
+  const res = await fetch(
+    `https://fhir.loinc.org/Questionnaire/?url=http://loinc.org/q/${code}`,
+    { headers: { Authorization: 'Basic ' + btoa(`${process.env.LOINC_USERNAME}:${process.env.LOINC_PASSWORD}`) } }
+  );
+  if (!res.ok) return Response.json({ error: 'LOINC fetch failed' }, { status: 502 });
+  const bundle = await res.json();
+  const q = bundle.entry?.[0]?.resource;
+  if (!q) return Response.json({ error: 'Not found' }, { status: 404 });
+  delete q.id;
+  q.status = 'draft';
+  return Response.json(q);
+}
+```
+
+### LOINC Copyright Requirement
+
+Every questionnaire derived from LOINC must include in `Questionnaire.copyright`:
+
+```
+This content from LOINC® is copyright © 1995 Regenstrief Institute, Inc.
+and the LOINC Committee, and available at no cost under the license at
+http://loinc.org/terms-of-use
+```
+
+This is a required field in the builder for LOINC-sourced questionnaires. Publish is blocked without it.
+
+### Known GGz Instrument Codes
+
+| Instrument | LOINC |
+|------------|-------|
+| PHQ-9 | `44249-1` |
+| GAD-7 | `69737-5` |
+| PHQ-2 | `55757-9` |
+| PCL-5 (PTSD) | `67671-2` |
+| Columbia Suicide Severity | `89209-1` |
+| AUDIT (alcohol) | `75626-2` |
+
+---
+
+## Patient Language Layer
+
+### The Problem
+
+Clinical terminology (LOINC, SNOMED, ICD) is written for clinicians. Questions like *"Patient has obesity"* or *"Suicidal ideation present"* are:
+
+- Third-person statements, not questions — unanswerable
+- Incomprehensible or alarming to patients out of context
+- Unusable by the voice agent (cannot read clinical codes aloud)
+
+### Solution — Mandatory Patient Text Field per Item
+
+Every question item in the builder has two text fields. Publish is blocked until all items have patient text for all active languages.
+
+| Field | Purpose | Stored in |
+|-------|---------|-----------|
+| Clinical text | LOINC/SNOMED/ICD source term | `item.text` + `item.code` |
+| Patient text | Plain language, first person, per language | HealthTalk extension |
+
+The web form and voice agent always use the patient text. Clinical text is for the FHIR record and score linkage only.
+
+### Builder UX — Side by Side
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Question 1                          [LOINC 44250-9]   [⚙️]  │
+│                                                              │
+│ Clinical text  (read-only after import)                      │
+│ "Little interest or pleasure in doing things"                │
+│                                                              │
+│  [NL]  [EN]  [+ Language]                                    │
+│                                                              │
+│ Patient text  ★ required                                     │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ Have you had little interest or pleasure in things      │ │
+│ │ you normally enjoy over the past two weeks?             │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ Answer options:                        [NL]  [EN]  [+ Lang]  │
+│  LA6568-5  →  [Not at all         ]  (0)                     │
+│  LA6569-3  →  [Several days       ]  (1)                     │
+│  LA6570-1  →  [More than half     ]  (2)                     │
+│  LA6571-9  →  [Nearly every day   ]  (3)                     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### FHIR Structure
+
+```json
+{
+  "linkId": "q1",
+  "text": "Little interest or pleasure in doing things",
+  "code": [{ "system": "http://loinc.org", "code": "44250-9" }],
+  "type": "choice",
+  "extension": [
+    {
+      "url": "https://healthtalk.ai/fhir/StructureDefinition/patient-question",
+      "extension": [
+        { "url": "language", "valueCode": "nl-NL" },
+        { "url": "text", "valueString": "Heeft u de afgelopen twee weken weinig zin gehad in dingen die u normaal leuk vindt?" }
+      ]
+    },
+    {
+      "url": "https://healthtalk.ai/fhir/StructureDefinition/patient-question",
+      "extension": [
+        { "url": "language", "valueCode": "en" },
+        { "url": "text", "valueString": "Over the past two weeks, have you had little interest or pleasure in doing things?" }
+      ]
+    }
+  ]
+}
+```
+
+`QuestionnaireResponse` always stores the LOINC code — never patient text. Clinical interoperability is fully preserved.

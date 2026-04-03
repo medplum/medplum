@@ -1,0 +1,143 @@
+# Channel C — Voice Agent (ElevenLabs)
+
+## Why ElevenLabs
+
+ElevenLabs Conversational AI 2.0 provides:
+
+- Real-time two-way voice
+- Sub-100ms latency
+- 70+ languages including Dutch
+- Native Twilio telephony integration
+- Outbound calling
+- Tool calls (webhooks mid-conversation to write answers to MedPlum)
+
+HeyGen is a video creation platform and is not suitable for real-time patient conversation.
+
+---
+
+## Agent Reads the FHIR Questionnaire JSON
+
+The agent does not hardcode any questionnaire. At the start of every call it fetches the full `Questionnaire` resource via a Tool call and parses the item structure.
+
+The agent respects the following FHIR properties per item:
+
+| Property | Agent behaviour |
+|----------|-----------------|
+| `item.required = true` | Mandatory — agent does not accept "I don't know" or "skip". Rephrases and asks again. |
+| `item.required = false` | Optional — agent announces it can be skipped |
+| `item.enableWhen` | Agent only asks if condition is met based on previous answers |
+| `item.type` | Determines how the agent asks and interprets |
+| `item.repeats = true` | Agent asks if there are additional answers after the first |
+| `item.maxLength` | Agent keeps string answers within length |
+| `patient-question` extension | Agent always uses this text, never `item.text` |
+| `patient-answer` extension | Agent reads these labels, never LOINC display values |
+
+---
+
+## Required vs Optional
+
+### Required Questions
+
+Agent rephrases when patient gives an evasive answer:
+
+```
+Agent:   "Have you had little interest or pleasure in things
+          you normally enjoy over the past two weeks?"
+Patient: "I'm not really sure"
+Agent:   "I understand it can be hard to say. Please choose
+          the answer that feels most right: not at all,
+          several days, more than half the days, or nearly
+          every day."
+```
+
+### Optional Questions
+
+```
+Agent:   "The next question is optional — you can skip it
+          if you prefer. [question text]"
+Patient: "I'd rather not answer that"
+Agent:   "No problem, I'll skip that one."
+         → item left blank in QuestionnaireResponse
+```
+
+---
+
+## Behaviour per Question Type
+
+| `item.type` | Agent approach |
+|-------------|----------------|
+| `choice` | Ask → free speech → LLM interpret → confirm |
+| `boolean` | Yes/No — no interpretation step needed |
+| `integer` | Expect a number; if patient says "a few times" → ask for a count |
+| `quantity` | Measurement + unit |
+| `string` | Transcribe free speech verbatim |
+| `display` | Read aloud as instruction, no answer expected |
+| `group` | Announce section: *"Now the questions about [group name]"* |
+
+---
+
+## Quantity Items — Weight, Height, Measurements
+
+`item.type = "quantity"` items use the `questionnaire-unit` extension (UCUM code) to specify the expected unit.
+
+| Measurement | UCUM | Agent asks |
+|-------------|------|------------|
+| Weight | `kg` | "What is your weight in kilograms?" |
+| Height | `cm` | "What is your height in centimetres?" |
+| BMI | `kg/m2` | Calculated — agent asks weight and height separately |
+| Blood pressure | `mm[Hg]` | "What is your blood pressure? For example, 120 over 80." |
+
+### Unit Ambiguity Handling
+
+```
+Agent:   "What is your weight in kilograms?"
+Patient: "About 160"
+Agent:   "160 kilograms — is that right, or did you mean pounds?"
+Patient: "No, pounds"
+Agent:   "160 pounds is about 73 kilograms.
+          May I save 73 kilograms?"
+Patient: "Yes"
+→ save: valueQuantity { value: 72.6, unit: "kg",
+          system: "http://unitsofmeasure.org", code: "kg" }
+```
+
+Unit conversion runs server-side in the Tool call. The `QuestionnaireResponse` always stores the UCUM unit.
+
+---
+
+## System Prompt
+
+```
+You are a care assistant from HealthTalk.
+You are helping a patient complete a questionnaire before their
+appointment. Your name is "HealthTalk Assistant".
+
+Rules:
+- Fetch the questionnaire at the start using get_questionnaire.
+- Ask all required questions (required=true). Do not accept
+  "I don't know" — rephrase and ask again.
+- Announce optional questions as skippable.
+- Silently skip enableWhen questions whose conditions are not met.
+- Always use the patient-question extension text. Never use
+  item.text (clinical terminology).
+- Confirm every answer before saving via save_answer.
+- Keep a friendly, calm tone. No medical jargon.
+- If the patient says they are struggling, acknowledge this warmly
+  and say their clinician will discuss it at the appointment.
+  Then continue with the next question.
+- Never diagnose, interpret scores, or give clinical opinions.
+```
+
+---
+
+## Tool Calls
+
+| Tool | Endpoint | Purpose |
+|------|----------|---------|
+| `get_questionnaire` | `GET /api/questionnaire/agent/items` | Fetch item list for this Task |
+| `save_answer` | `POST /api/questionnaire/voice-answer` | Patch one answer into QuestionnaireResponse |
+| `complete_questionnaire` | `POST /api/questionnaire/complete` | Set QR + Task to completed |
+| `get_appointment_info` | `GET /api/appointment/info` | Fetch appointment date/time and clinician name |
+| `interpret_answer` | `POST /api/questionnaire/interpret-answer` | LLM maps free speech to nearest answer option |
+
+**No PHI is sent to ElevenLabs servers.** All data operations go via Vercel → MedPlum. ElevenLabs only handles audio and plain-text question/answer strings.

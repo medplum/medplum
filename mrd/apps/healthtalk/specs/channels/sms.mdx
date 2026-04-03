@@ -1,0 +1,35 @@
+# Channel E — SMS
+
+## How It Works
+
+SMS delivers a magic link to the patient's mobile number. The link opens the web form (Channel A). No interactive mode — SMS is link-only. This is the right channel for patients who have a mobile phone but do not use WhatsApp.
+
+Twilio handles SMS via the same account as WhatsApp. No additional setup needed beyond enabling the SMS capability on the Twilio number.
+
+---
+
+## SMS Template
+
+```
+HealthTalk: [Questionnaire title] before your appointment
+on [date]. Complete here: [magic link]
+Reply STOP to opt out.
+```
+
+Character limit: 160 characters for a single SMS. The magic link shortener (`forms.healthtalk.ai/q/`) keeps the link short. If the composed message exceeds 160 characters, Twilio automatically segments it.
+
+---
+
+## Delivery
+
+```typescript
+await client.messages.create({
+  from: process.env.TWILIO_SMS_NUMBER,   // separate number from WhatsApp sender
+  to: patientMobileE164,
+  body: smsBody
+});
+```
+
+Use a dedicated Twilio number for SMS (separate from the WhatsApp Business sender). Responses to the SMS are not processed — if the patient replies, a Twilio webhook logs it as a `Communication` resource and sends: *"Thank you. To fill in your questionnaire, please use the link in our previous message."*
+
+STOP reply handling is identical to WhatsApp.

@@ -1,0 +1,195 @@
+---
+title: Notification Gateway
+section: 7
+---
+
+# Notification Gateway
+
+The Notification Gateway is a separate Vercel project (`gateway.healthtalk.ai`) that handles all outbound patient communications and provider integrations.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      NOTIFICATION GATEWAY                                │
+│                    gateway.healthtalk.ai                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                     POST /api/notify                             │   │
+│  │  - Receives Task reference from MedPlum subscription            │   │
+│  │  - Resolves Patient, Questionnaire, channel preference          │   │
+│  │  - Routes to appropriate channel handler                        │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│       ┌──────────────────────┼──────────────────────┐                  │
+│       ▼                      ▼                      ▼                  │
+│  ┌─────────┐           ┌─────────┐           ┌─────────┐              │
+│  │ Channel │           │ Channel │           │ Channel │              │
+│  │ Router  │           │ State   │           │ Retry   │              │
+│  │         │           │ (Redis) │           │ Queue   │              │
+│  └────┬────┘           └─────────┘           └─────────┘              │
+│       │                                                                │
+│       ├────────┬────────┬────────┬────────┬────────┐                  │
+│       ▼        ▼        ▼        ▼        ▼        ▼                  │
+│  ┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐        │
+│  │  Web   ││WhatsApp││ Voice  ││ Email  ││  SMS   ││ Teams  │        │
+│  │Handler ││Handler ││Handler ││Handler ││Handler ││Handler │        │
+│  └────────┘└────────┘└────────┘└────────┘└────────┘└────────┘        │
+│       │        │        │        │        │        │                  │
+└───────┼────────┼────────┼────────┼────────┼────────┼──────────────────┘
+        │        │        │        │        │        │
+        ▼        ▼        ▼        ▼        ▼        ▼
+   ┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐
+   │ JWT    ││ Twilio ││Eleven  ││Postmark││ Twilio ││ Teams  │
+   │ Token  ││WhatsApp││ Labs   ││        ││  SMS   ││Webhook │
+   └────────┘└────────┘└────────┘└────────┘└────────┘└────────┘
+```
+
+## API Endpoints
+
+### POST /api/notify
+
+Entry point for all notifications. Called by MedPlum subscription.
+
+```typescript
+interface NotifyRequest {
+  taskId: string;
+  action: 'send' | 'remind' | 'cancel';
+}
+
+interface NotifyResponse {
+  success: boolean;
+  channel: string;
+  messageId?: string;
+  error?: string;
+}
+```
+
+### POST /api/webhook/twilio
+
+Handles Twilio status callbacks and incoming messages.
+
+```typescript
+// Incoming WhatsApp message
+interface TwilioWebhook {
+  From: string;        // whatsapp:+31612345678
+  Body: string;        // User response
+  MessageSid: string;
+}
+```
+
+### POST /api/webhook/elevenlabs
+
+Handles ElevenLabs conversation events.
+
+```typescript
+interface ElevenLabsWebhook {
+  type: 'call.started' | 'call.ended' | 'tool.call';
+  call_id: string;
+  data: Record<string, unknown>;
+}
+```
+
+### POST /api/callback/status
+
+Universal status callback for updating Task status.
+
+```typescript
+interface StatusCallback {
+  taskId: string;
+  status: 'sent' | 'delivered' | 'read' | 'completed' | 'failed';
+  channel: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+```
+
+## Channel Selection Logic
+
+```typescript
+async function selectChannel(task: Task, patient: Patient): Promise<Channel> {
+  // 1. Check explicit preference in Task.input
+  const preference = getTaskInput(task, 'delivery-channel');
+  if (preference) {
+    return validateChannel(preference, patient);
+  }
+
+  // 2. Check patient communication preferences
+  const patientPref = patient.telecom?.find(t => 
+    t.extension?.some(e => e.url === 'preferred-channel')
+  );
+  if (patientPref) {
+    return validateChannel(patientPref.value, patient);
+  }
+
+  // 3. Default waterfall
+  if (hasValidWhatsApp(patient)) return 'whatsapp';
+  if (hasValidMobile(patient)) return 'sms';
+  if (hasValidEmail(patient)) return 'email';
+  
+  throw new Error('No valid contact method found');
+}
+```
+
+## State Management (Redis)
+
+### WhatsApp Session
+
+```typescript
+interface WhatsAppSession {
+  taskId: string;
+  questionnaireId: string;
+  currentItemIndex: number;
+  answers: Record<string, string>;
+  startedAt: string;
+  lastActivityAt: string;
+}
+
+// Key: whatsapp:session:{phoneNumber}
+// TTL: 24 hours
+```
+
+### Rate Limiting
+
+```typescript
+// Key: ratelimit:{channel}:{identifier}
+// Using sliding window algorithm
+// Limits:
+// - WhatsApp: 3 messages per 24h per number
+// - SMS: 5 messages per 24h per number
+// - Email: 10 messages per 24h per address
+// - Voice: 2 calls per 24h per number
+```
+
+## Retry Strategy
+
+| Attempt | Delay | Action |
+|---------|-------|--------|
+| 1 | Immediate | Send via preferred channel |
+| 2 | +1 hour | Retry same channel |
+| 3 | +24 hours | Fallback to next channel |
+| 4 | +48 hours | Final attempt, alert clinician |
+| 5 | - | Mark Task as failed |
+
+## Error Handling
+
+```typescript
+enum NotificationError {
+  INVALID_PHONE = 'invalid_phone_number',
+  RATE_LIMITED = 'rate_limit_exceeded',
+  PROVIDER_ERROR = 'provider_error',
+  PATIENT_BLOCKED = 'patient_blocked_channel',
+  EXPIRED = 'task_expired',
+}
+
+// All errors logged to Communication resource
+// Critical errors trigger clinician alert via Teams
+```
+
+## Security
+
+- All endpoints require `x-medplum-signature` header (webhook verification)
+- Patient contact info never logged
+- All requests over HTTPS
+- Redis data encrypted at rest (Upstash)

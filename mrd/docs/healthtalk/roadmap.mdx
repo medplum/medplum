@@ -1,0 +1,100 @@
+# Roadmap — Future Integrations
+
+These items are out of scope for the current development sprint but are confirmed direction. They are documented here so the current architecture does not block them.
+
+---
+
+## Patient Records Screen — Full MedMij ZIB Integration
+
+HealthTalk will build a dedicated patient records screen that surfaces the full set of Dutch MedMij ZIBs (Zorginformatiebouwstenen) as structured clinical data. The questionnaire module is designed to feed directly into this — `QuestionnaireResponse` and `Observation` resources are already stored in MedPlum using nl-core profiles, which is the same foundation the patient records screen will use.
+
+### When the Patient Records Screen Is Built
+
+- Completed questionnaire responses will appear as structured entries in the patient record, not as a separate module
+- Scored questionnaires (PHQ-9, GAD-7 etc.) will surface their `Observation` resources alongside other clinical observations in the record
+- The ROM trend view (score over time) is a natural component of the records screen rather than a standalone feature
+- All ZIBs used will be from `nictiz.fhir.nl.r4.nl-core` — the same package already in use
+
+### ZIBs Relevant to the Questionnaire Module
+
+| ZIB | FHIR R4 resource | Already in use |
+|-----|------------------|----------------|
+| Vragenlijst (Questionnaire) | `Questionnaire` + `QuestionnaireResponse` | Yes |
+| MeetUitslag (Observation) | `Observation` | Yes (scores) |
+| Contact (Encounter) | `Encounter` | Future (link QR to session) |
+| Patient | `Patient` (nl-core-Patient) | Yes |
+| Zorgverlener (Practitioner) | `Practitioner` (nl-core-Practitioner) | Yes |
+| Behandeling (CarePlan) | `CarePlan` | Future |
+
+**Architectural note:** No changes to the questionnaire module are required for this integration. The FHIR resources are already structured correctly. The patient records screen reads from MedPlum — the data is already there.
+
+---
+
+## Cal.com — Open Source Calendaring
+
+HealthTalk will adopt **Cal.com** (open source) as its calendaring system for appointment scheduling and attendance tracking. Cal.com replaces or extends the current manual appointment creation in HealthTalk.
+
+### What Cal.com Handles
+
+- Appointment booking (clinician availability, patient self-booking)
+- Rescheduling and cancellation
+- Attendance confirmation (did the patient show up?)
+- Calendar integrations (Google Calendar, Outlook)
+
+### Why This Matters for the Questionnaire Module
+
+The current questionnaire trigger is based on a FHIR `Appointment` resource in MedPlum. With Cal.com as the scheduling system, appointments originate outside MedPlum. A sync layer is needed.
+
+### Integration Architecture
+
+```
+Cal.com                          MedPlum (FHIR)
+   │                                  │
+   │  booking.created webhook         │
+   └──────────────────────────────────►
+                                      │  Create FHIR Appointment resource
+                                      │  with questionnaire extension
+                                      │
+                                      │  Cron fires at T-X
+                                      │  → Create Task
+                                      │  → Send questionnaire to patient
+   │                                  │
+   │  booking.attended webhook        │
+   └──────────────────────────────────►
+                                      │  Update Appointment.status = fulfilled
+                                      │  Link to session notes / QR
+   │                                  │
+   │  booking.cancelled webhook       │
+   └──────────────────────────────────►
+                                      │  Update Appointment.status = cancelled
+                                      │  Cancel pending Task
+```
+
+### New Vercel Route Needed
+
+```typescript
+// POST /api/cal/webhook
+// Validates Cal.com webhook signature
+// Handles: BOOKING_CREATED, BOOKING_CANCELLED, BOOKING_RESCHEDULED,
+//          BOOKING_ATTENDED, BOOKING_NO_SHOW
+
+export async function POST(req: Request) {
+  // 1. Validate Cal.com signature
+  // 2. Parse event type
+  // 3. Map Cal.com booking → FHIR Appointment
+  // 4. Write/update Appointment in MedPlum
+  // 5. On cancellation: cancel pending Tasks
+}
+```
+
+### No Changes to Questionnaire Module Required
+
+The questionnaire module only cares about the FHIR `Appointment` resource. Whether that resource originates from HealthTalk's native UI or from a Cal.com webhook is irrelevant — the downstream flow is identical.
+
+---
+
+## Other Future Considerations
+
+- **Teams tab / personal app** — Surface the questionnaire task queue inside Teams (data already available via MedPlum)
+- **Multi-language expansion** — Builder already supports multiple languages; extend to additional locales as needed
+- **Batch questionnaire sends** — Bulk send for research cohorts (requires new UI, same Task flow)

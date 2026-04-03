@@ -1,0 +1,126 @@
+# Architecture Overview
+
+## System Architecture
+
+```
+Clinician schedules Appointment in HealthTalk
+        │
+        ▼
+Appointment resource created in MedPlum
+  └── HealthTalk extension: questionnaire(s) + sendBefore timing
+        │
+        ▼
+Vercel cron (T-X before appointment)
+  └── Creates QuestionnaireProvisioningTask in MedPlum
+  └── POST gateway.healthtalk.ai/notify  ← one call, that's all
+        │
+        ▼
+  Notification Gateway  ──── per-org config ────► selects adapter + channel
+        │
+        ├── WhatsApp adapter    → Twilio WhatsApp
+        ├── Email adapter       → Postmark
+        ├── SMS adapter         → Twilio SMS
+        ├── Voice mobile        → ElevenLabs + Twilio
+        └── Voice SIP           → ElevenLabs + org Teams SBC
+                 (Direct Routing | Operator Connect | Calling Plan | standalone)
+        │
+        ▼
+  Patient receives message, chooses how to complete
+        │
+        ├── Taps web link     → MedPlum <QuestionnaireForm />
+        ├── Replies WhatsApp  → Gateway webhook → next question
+        └── Speaks to agent   → ElevenLabs ←→ Gateway tools → MedPlum
+        │
+        ▼
+  QuestionnaireResponse status: completed
+        │
+        ▼
+  MedPlum Subscription → Vercel webhook
+  MedPlum Bot calculates scores → Observation resource
+  Clinician notified (in-app + Teams Adaptive Card)
+```
+
+---
+
+## FHIR Version Landscape
+
+There is no "FHIR STU4". The correct version sequence is: **STU3 → R4 → R4B → R5 → R6**.
+
+| FHIR version | Dutch ZIB release | Status for HealthTalk |
+|--------------|-------------------|----------------------|
+| STU3 | zib2017 | Legacy — phased out by Nictiz. Do not use for new builds. |
+| **R4** | **zib2020 (`nl-core`)** | Implement now |
+| **R4** | **zib2024 (`nl-core`)** | Published Oct 2024 — use for new `Questionnaire` resources |
+| R5 | — | Skip — official HL7 NL advice |
+| R6 | — | Future only |
+
+**Active package:** `nictiz.fhir.nl.r4.nl-core` (pin to `0.12.0-beta.1`)  
+**Track for migration:** `nictiz.fhir.nl.r4.zib2024`
+
+> The MedMij `QuestionnaireProvisioningTask` profile was formally published in STU3. For R4, HealthTalk uses the `nl-core-Task` base profile. When Nictiz publishes the formal R4 questionnaire IG, update the profile URL only — no structural changes required.
+
+---
+
+## FHIR Resource Map
+
+| Resource | Profile | Purpose |
+|----------|---------|---------|
+| `Task` | `nl-core-Task` | QuestionnaireProvisioningTask — mandatory lifecycle owner |
+| `Questionnaire` | Base R4 + SDC extensions | Instrument definition |
+| `QuestionnaireResponse` | Base R4 | Patient answers |
+| `Observation` | `nl-core-Observation` | Computed scores, linked to `QuestionnaireResponse` |
+| `Patient` | `nl-core-Patient` | Subject |
+| `Practitioner` | `nl-core-Practitioner` | Requesting clinician |
+| `Appointment` | `nl-core-Appointment` | Trigger — carries questionnaire assignment + timing extension |
+| `Communication` | `nl-core-Communication` | Audit log of every message sent (WhatsApp, email, SMS) |
+| `AuditEvent` | Base R4 | NEN 7510 — every Task status transition |
+
+---
+
+## Key Architectural Principles
+
+### Gateway-First Delivery
+
+All channel integrations live **behind a Notification Gateway**, not in the HealthTalk Vercel frontend. HealthTalk (Vercel) calls a single internal endpoint. The gateway owns:
+
+- Every provider credential
+- Every delivery adapter
+- All retry logic
+- All fallback routing
+- All status normalisation back to MedPlum
+
+```
+HealthTalk (Vercel)          Notification Gateway              Providers
+      │                      gateway.healthtalk.ai
+      │  POST /notify        ┌──────────────────────┐
+      │  { patientId,        │  Channel selector    │
+      │    taskId,           │  Per-org config      │──► WhatsApp (Twilio)
+      │    channel: 'auto' } │  Retry + fallback    │──► Email (Postmark)
+      └─────────────────────►│  Status normaliser   │──► SMS (Twilio)
+                             │  Audit → MedPlum     │──► Voice mobile (ElevenLabs+Twilio)
+                             │                      │──► Voice SIP (ElevenLabs+SBC)
+                             └──────────────────────┘
+
+      HealthTalk never imports Twilio, ElevenLabs, or Postmark SDKs.
+      All provider webhooks land at the gateway, not at Vercel.
+```
+
+**Benefits:**
+
+- HealthTalk frontend is not coupled to any provider
+- New channels are added to the gateway — zero frontend changes
+- All credentials in one place with one security boundary
+- Retry, fallback, and audit logic written once
+- Each adapter is independently testable
+- Provider can be swapped without touching HealthTalk
+
+**Deployment:** The gateway is a separate Vercel project (`gateway.healthtalk.ai`), same infrastructure, completely isolated. Its own env vars, its own domain, its own deploy pipeline.
+
+### Task-First Lifecycle
+
+A `QuestionnaireProvisioningTask` must be created before anything else happens. It is the single source of truth for the lifecycle of every questionnaire assignment. The `QuestionnaireResponse` is an output of the Task, not a standalone object.
+
+- The Task exists even if delivery fails
+- The clinician dashboard is a Task queue, not a QR list
+- Reminders, escalations, and cancellations operate on the Task
+- MedPlum Subscriptions fire on Task status changes

@@ -1,0 +1,53 @@
+# Channel A — Web Form (Magic Link)
+
+## How It Works
+
+A time-limited, tokenised URL grants read/write access to the patient's specific `QuestionnaireResponse` only. No login required.
+
+```
+https://forms.healthtalk.ai/q/{jwt-token}
+```
+
+The form is rendered by MedPlum's `<QuestionnaireForm />` React component, wrapped in a HealthTalk-branded shell.
+
+---
+
+## Magic Link JWT Spec
+
+| Claim | Value |
+|-------|-------|
+| `sub` | `Patient/{id}` |
+| `scope` | `QuestionnaireResponse/{id}:write Questionnaire/{id}:read` |
+| `exp` | Appointment start time (Unix timestamp) |
+| `iss` | `https://healthtalk.ai` |
+| `task` | `Task/{id}` |
+
+Signed with HS256 using `MAGIC_LINK_SECRET` (Vercel env var). Verified on every request to the patient form API routes.
+
+---
+
+## Expiry Handling
+
+When a patient opens an expired link:
+
+```
+This questionnaire is no longer available.
+Your appointment was on [date].
+
+If you have questions, please contact your care provider.
+```
+
+No data is shown. The page does not reveal that a questionnaire existed.
+
+---
+
+## Link Sharing Risk
+
+Magic links grant access to a specific `QuestionnaireResponse` only — no other patient data is accessible. If a link is forwarded, the worst case is someone else submitting answers for the patient.
+
+### Mitigations
+
+- Short TTL (expires at appointment start)
+- Single `QuestionnaireResponse` scope only
+- All submissions logged with `AuditEvent` including IP address
+- Clinicians can cancel/void a suspicious submission

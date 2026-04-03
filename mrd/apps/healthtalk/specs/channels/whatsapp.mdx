@@ -1,0 +1,137 @@
+# Channel B — WhatsApp Interactive
+
+## How It Works
+
+When the patient chooses "Answer via WhatsApp", Twilio sends questions one at a time as WhatsApp messages. The patient answers each question before the next is sent. The same `Questionnaire` JSON is used as for the web form — `item.required`, `item.enableWhen`, and patient-language extensions are all respected.
+
+---
+
+## Message Formats per Question Type
+
+Twilio WhatsApp Business supports:
+
+- **Quick Reply buttons** — max 3 buttons (boolean, short choice)
+- **List messages** — max 10 items (Likert scales with 4+ options)
+- **Free text** — patient types a reply (integer, string, quantity)
+
+| `item.type` | WhatsApp format |
+|-------------|-----------------|
+| `boolean` | Quick Reply: [Yes] [No] |
+| `choice` ≤ 3 options | Quick Reply buttons |
+| `choice` 4–10 options | List message |
+| `integer` | Free text — prompt: "Please type a number" |
+| `quantity` | Free text — prompt includes unit: "Please type your weight in kg" |
+| `string` | Free text |
+| `display` | Plain message, no reply expected |
+
+---
+
+## Required vs Optional Questions
+
+### Required (`item.required: true`)
+
+```
+Question 1 of 9  ★ Required
+
+Have you had little interest or pleasure in things you
+normally enjoy, over the past two weeks?
+
+┌────────────────────────┐
+│ Choose an answer       │
+├────────────────────────┤
+│ Not at all             │
+│ Several days           │
+│ More than half days    │
+│ Nearly every day       │
+└────────────────────────┘
+```
+
+### Optional (`item.required: false`)
+
+```
+Question 7 of 9  (optional — you may skip this)
+
+[question text]
+
+[Choose answer ▾]    [Skip]
+```
+
+---
+
+## EnableWhen — Conditional Questions
+
+If `item.enableWhen` conditions are not met based on previous answers, the question is silently skipped. No message is sent to the patient; Vercel moves to the next eligible item automatically.
+
+---
+
+## Session State
+
+WhatsApp interactive requires persistent session state between messages. Each patient session is stored in Redis (Upstash on Vercel) keyed by `taskId`:
+
+```typescript
+interface WhatsAppSession {
+  taskId: string;
+  questionnaireResponseId: string;
+  currentItemIndex: number;
+  answers: Record<string, FHIRAnswer>;
+  startedAt: string;
+  expiresAt: string;  // = appointment start time
+}
+```
+
+Key: `wa-session:{taskId}`, TTL = appointment start time.
+
+---
+
+## Error Handling
+
+### Invalid Answer on Choice Question
+
+```
+I didn't understand that. Please choose from the list,
+or type the number:
+1 Not at all
+2 Several days
+3 More than half the days
+4 Nearly every day
+```
+
+### After Three Invalid Attempts
+
+```
+I'm having trouble processing your answer. You can
+complete the questionnaire via this link instead:
+[magic link]
+
+Or tap below if you'd like us to call you:
+[Call me]
+```
+
+### STOP Reply from Patient
+
+```
+You have been unsubscribed from questionnaire messages.
+Your care provider will be notified.
+```
+
+Task status → `cancelled`, `Communication` resource created with opt-out noted.
+
+---
+
+## Webhook Handler
+
+```typescript
+// POST /api/questionnaire/whatsapp-reply
+// Twilio sends: From, Body, taskId (in session lookup)
+
+export async function POST(req: Request) {
+  // 1. Verify Twilio webhook signature (see Security)
+  // 2. Load session from Redis
+  // 3. Validate answer against current item type + answerOptions
+  // 4. On valid answer: PATCH QuestionnaireResponse in MedPlum
+  // 5. Evaluate enableWhen for next item(s)
+  // 6. Send next question or completion message
+  // 7. On last item: set QR status = completed, Task = completed
+  // 8. Update Redis session
+}
+```
