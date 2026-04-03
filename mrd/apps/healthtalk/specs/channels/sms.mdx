@@ -1,0 +1,129 @@
+---
+title: "Channel E: SMS"
+section: 11
+---
+
+# Channel E: SMS (Twilio)
+
+## Overview
+
+SMS delivery sends a short message with a magic link. This is a simple fallback channel for patients without WhatsApp or email, or when other channels fail.
+
+## Flow
+
+```
+1. Task created with channel = "sms"
+2. Gateway generates magic link
+3. Gateway sends SMS via Twilio
+4. Patient receives SMS
+5. Patient clicks magic link
+6. Web form opens (Channel A)
+7. Patient completes questionnaire
+8. Task marked complete
+```
+
+## Message Templates
+
+### Initial Message
+
+```
+HealthTalk: Uw zorgverlener vraagt u een vragenlijst in te vullen.
+Open: {magic_link_url}
+Geldig tot: {deadline}
+```
+
+Character count: ~120 (fits in 1 SMS segment)
+
+### Reminder
+
+```
+Herinnering: Vragenlijst nog niet ingevuld.
+Open: {magic_link_url}
+Deadline: morgen
+```
+
+## Twilio Integration
+
+```typescript
+// lib/sms/send.ts
+import twilio from 'twilio';
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+export async function sendQuestionnaireSMS(
+  to: string,
+  magicLinkUrl: string,
+  deadline: Date
+) {
+  return client.messages.create({
+    to,
+    from: process.env.TWILIO_SMS_NUMBER,
+    body: `HealthTalk: Uw zorgverlener vraagt u een vragenlijst in te vullen.\nOpen: ${magicLinkUrl}\nGeldig tot: ${formatDate(deadline, 'nl')}`,
+    statusCallback: `${process.env.GATEWAY_URL}/webhooks/twilio/sms-status`,
+  });
+}
+```
+
+## Link Shortening
+
+Magic links are shortened for SMS to reduce character count:
+
+```typescript
+// Original: https://app.healthtalk.ai/q/eyJhbGciOiJIUzI1...
+// Shortened: https://ht.ai/q/abc123
+
+async function shortenLink(longUrl: string): Promise<string> {
+  const shortCode = generateShortCode();
+  await redis.setex(`link:${shortCode}`, 259200, longUrl); // 72h TTL
+  return `https://ht.ai/q/${shortCode}`;
+}
+```
+
+## Status Tracking
+
+| Twilio Status | Action |
+|---------------|--------|
+| queued | Log |
+| sent | Log |
+| delivered | Update Task businessStatus |
+| failed | Retry or mark failed |
+| undelivered | Mark failed, alert |
+
+## Opt-Out Handling
+
+If patient replies "STOP":
+
+1. Add to opt-out list
+2. Cancel Task
+3. Create Communication resource noting opt-out
+4. Notify clinician
+
+```typescript
+// Handle inbound SMS
+if (body.trim().toUpperCase() === 'STOP') {
+  await addToOptOutList(from);
+  await cancelTask(taskId);
+  await notifyClinician(taskId, 'Patient opted out via SMS');
+}
+```
+
+## Rate Limiting
+
+- Max 3 SMS per patient per day
+- Max 1 SMS per task (initial) + 2 reminders
+- Respect carrier rate limits
+
+## Cost Considerations
+
+SMS is charged per segment (~160 characters). Keep messages short:
+
+| Message Type | Segments | Cost (NL) |
+|--------------|----------|-----------|
+| Initial | 1 | ~€0.07 |
+| Reminder | 1 | ~€0.07 |
+| Long URL | 2 | ~€0.14 |
+
+Use link shortening to stay within 1 segment.

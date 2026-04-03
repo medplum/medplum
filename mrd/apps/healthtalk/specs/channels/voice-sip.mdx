@@ -1,0 +1,198 @@
+---
+title: "Channel F: Voice SIP (Teams)"
+section: 10
+---
+
+# Channel F: Voice SIP (ElevenLabs + Teams)
+
+## Overview
+
+Voice SIP enables AI-powered questionnaire calls through enterprise telephony systems, specifically Microsoft Teams Direct Routing. This channel is for organizations with existing Teams Phone infrastructure.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    VOICE SIP FLOW                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐    SIP INVITE    ┌─────────────┐          │
+│  │ ElevenLabs  │ ───────────────► │    SBC      │          │
+│  │   Agent     │                  │  (org SBC)  │          │
+│  └─────────────┘                  └──────┬──────┘          │
+│                                          │                  │
+│                                   PSTN / Teams              │
+│                                          │                  │
+│                                   ┌──────▼──────┐          │
+│                                   │   Patient   │          │
+│                                   │   Phone     │          │
+│                                   └─────────────┘          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Prerequisites
+
+1. **ElevenLabs Enterprise** with SIP connector
+2. **Microsoft Teams Phone System** licence
+3. **Session Border Controller (SBC)** — certified for Teams Direct Routing
+4. **SIP trunk** between ElevenLabs and SBC
+5. **PSTN connectivity** via Teams
+
+## Configuration
+
+### ElevenLabs Agent SIP Settings
+
+```json
+{
+  "agent_id": "agent-nl-sip",
+  "telephony": {
+    "type": "sip",
+    "sip_uri": "sip:healthtalk@sbc.example.com",
+    "authentication": {
+      "username": "healthtalk",
+      "password": "${SIP_PASSWORD}"
+    },
+    "outbound_proxy": "sbc.example.com:5061",
+    "transport": "tls"
+  }
+}
+```
+
+### SBC Configuration (Generic)
+
+```
+# Outbound route for ElevenLabs
+Route: healthtalk-ai
+  Source: 10.0.0.100 (ElevenLabs IP)
+  Destination: PSTN / Teams
+  Caller ID: +31201234567 (organization DID)
+  
+# Inbound route (if needed)
+Route: inbound-to-elevenlabs
+  Source: PSTN
+  DID: +31201234567
+  Destination: elevenlabs-agent.sip.elevenlabs.io
+```
+
+## Call Flow
+
+```
+1. Task created with channel = "voice-sip"
+2. Gateway requests call via ElevenLabs API
+3. ElevenLabs sends SIP INVITE to SBC
+4. SBC routes to Teams / PSTN
+5. Patient phone rings
+6. Patient answers
+7. ElevenLabs agent conducts questionnaire
+8. Call ends
+9. Gateway receives completion webhook
+10. QuestionnaireResponse created
+11. Task marked complete
+```
+
+## Initiate Call
+
+```typescript
+// lib/voice/initiate-sip-call.ts
+export async function initiateSipCall(
+  patientPhone: string,
+  taskId: string,
+  agentId: string
+) {
+  const response = await fetch('https://api.elevenlabs.io/v1/convai/conversation', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.ELEVENLABS_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      agent_id: agentId,
+      conversation_config: {
+        telephony: {
+          type: 'sip_outbound',
+          to: `sip:${patientPhone}@sbc.example.com`,
+          from: `sip:healthtalk@sbc.example.com`,
+        },
+        metadata: {
+          taskId,
+        },
+      },
+    }),
+  });
+  
+  return response.json();
+}
+```
+
+## Teams Direct Routing Setup
+
+### Requirements
+
+| Component | Requirement |
+|-----------|-------------|
+| Microsoft 365 | E3/E5 or standalone Teams Phone |
+| SBC | Teams-certified (AudioCodes, Ribbon, etc.) |
+| Domain | Verified in Azure AD |
+| Certificates | Valid TLS certificate for SBC |
+| DNS | SRV records for federation |
+
+### PowerShell Configuration
+
+```powershell
+# Add SBC to Teams
+New-CsOnlinePSTNGateway -Fqdn sbc.example.com -SipSignalingPort 5061 -MaxConcurrentSessions 100
+
+# Create voice routing policy
+New-CsOnlineVoiceRoutingPolicy -Identity "HealthTalk-Outbound" -OnlinePstnUsages "NL-Outbound"
+
+# Assign to resource account
+Grant-CsOnlineVoiceRoutingPolicy -Identity healthtalk@example.com -PolicyName "HealthTalk-Outbound"
+```
+
+## Caller ID
+
+Outbound calls show the organization's DID, not an anonymous number:
+
+```
+Incoming call: +31 20 123 4567
+Display: "Zorginstelling XYZ"
+```
+
+Configure in SBC outbound route headers.
+
+## Error Handling
+
+| Scenario | Action |
+|----------|--------|
+| SBC unavailable | Fallback to Twilio mobile |
+| SIP 486 (Busy) | Retry in 30 minutes |
+| SIP 480 (Unavailable) | Retry in 1 hour |
+| SIP 603 (Decline) | Mark as declined, notify clinician |
+| No answer (408) | Try voicemail or retry later |
+
+## Monitoring
+
+### SBC Health Check
+
+```typescript
+// Periodic SBC availability check
+async function checkSbcHealth() {
+  const response = await fetch(`https://${SBC_DOMAIN}/health`, {
+    method: 'OPTIONS',
+  });
+  
+  if (!response.ok) {
+    await alertOnCall('SBC health check failed');
+  }
+}
+```
+
+### Call Quality Metrics
+
+| Metric | Threshold | Alert |
+|--------|-----------|-------|
+| MOS (Mean Opinion Score) | < 3.5 | Warning |
+| Packet loss | > 1% | Warning |
+| Jitter | > 30ms | Warning |
+| Call setup time | > 5s | Warning |
