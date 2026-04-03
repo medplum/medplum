@@ -205,6 +205,12 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         type: 'uri',
         expression: resourceType + '.meta.profile',
       } as SearchParameter,
+      _project: {
+        base: [resourceType],
+        code: '_project',
+        type: 'reference',
+        expression: resourceType + '.meta.project',
+      } as SearchParameter,
       _security: {
         base: [resourceType],
         code: '_security',
