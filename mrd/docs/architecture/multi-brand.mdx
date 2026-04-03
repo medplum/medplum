@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Multi-Brand Architecture
 
 ## Overview
@@ -18,56 +14,9 @@ Understanding the hierarchy is critical for correct implementation:
 | **Tenant** | Organization | Customer/clinic within a brand, uses `meta.compartment` for data isolation | Clinic Amsterdam, Hospital Rotterdam |
 | **User** | ProjectMembership | User access scoped to specific Organizations via `access.parameter` | Dr. Smith at Clinic Amsterdam |
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    subgraph MEDrecord["MEDrecord Ecosystem"]
-        subgraph Shared["Shared Infrastructure"]
-            UI["@mrd/ui<br/>Design System"]
-            GW["@mrd/gateway-client<br/>API Client"]
-            AG["@mrd/agents<br/>Base MDX Agents"]
-        end
-        
-        subgraph Brands["Brand Applications"]
-            HT["@mrd/healthtalk<br/>Project: healthtalk-prod"]
-            CO["@mrd/coachi<br/>Project: coachi-prod"]
-            MS["@mrd/medsafe<br/>Project: medsafe-prod"]
-            MR["@mrd/medrecord<br/>Project: medrecord-prod"]
-        end
-        
-        subgraph Gateway["Gateway Layer"]
-            GWS["auth-test-b2c.healthtalk.ai<br/>Authentication & Routing"]
-        end
-    end
-    
-    UI --> HT
-    UI --> CO
-    UI --> MS
-    UI --> MR
-    
-    GW --> HT
-    GW --> CO
-    GW --> MS
-    GW --> MR
-    
-    AG --> HT
-    AG --> CO
-    AG --> MS
-    AG --> MR
-    
-    HT --> GWS
-    CO --> GWS
-    MS --> GWS
-    MR --> GWS
-    
-    style Shared fill:#e1f5ff
-    style Brands fill:#e8f5e9
-    style Gateway fill:#fff4e1
-```
-
 ## Package Structure
 
-All MEDrecord code lives in the `mrd/` folder to enable safe upstream Medplum sync. See [Upstream Sync Strategy](/docs/architecture/upstream-sync) for details.
+All MEDrecord code lives in the `mrd/` folder to enable safe upstream Medplum sync. See [Upstream Sync Strategy](./upstream-sync.mdx) for details.
 
 ### Shared Packages (Brand-Agnostic)
 
@@ -109,34 +58,19 @@ Brand applications live in `mrd/apps/`:
 mrd/
 └── apps/
     ├── healthtalk/                  # @mrd/healthtalk
-│   ├── app/
-│   │   ├── layout.tsx               # Imports @mrd/ui + brand theme
-│   │   ├── page.tsx
-│   │   └── api/                     # Server-side route handlers
-│   │       └── [...]/route.ts
-│   ├── .agents/                     # Brand-specific agent overrides
-│   │   ├── compliance/
-│   │   │   └── *.mdx
-│   │   ├── instincts/
-│   │   │   └── *.mdx
-│   │   ├── skills/
-│   │   │   └── *.mdx
-│   │   ├── standards/
-│   │   │   └── *.mdx
-│   │   └── config.yaml              # extends: "@mrd/agents"
-│   ├── next.config.ts
-│   ├── tsconfig.json
-│   ├── .env.local                   # Brand-specific environment
-│   └── package.json
-│
-├── coachi/                          # @mrd/coachi
-│   └── ...                          # Same structure
-│
-├── medsafe/                         # @mrd/medsafe
-│   └── ...                          # Same structure
-│
-└── medrecord/                       # @mrd/medrecord
-    └── ...                          # Same structure
+    │   ├── app/
+    │   │   ├── layout.tsx           # Imports @mrd/ui + brand theme
+    │   │   ├── page.tsx
+    │   │   └── api/                  # Server-side route handlers
+    │   ├── .agents/                  # Brand-specific agent overrides
+    │   │   ├── config.yaml           # extends: "@mrd/agents"
+    │   │   └── skills/
+    │   ├── next.config.ts
+    │   └── package.json
+    │
+    ├── coachi/                       # @mrd/coachi
+    ├── medsafe/                      # @mrd/medsafe
+    └── medrecord/                    # @mrd/medrecord
 ```
 
 ### Workspace Configuration
@@ -166,71 +100,7 @@ Each brand operates within its own Medplum Project. This provides:
 
 ### Organization-Level Multi-Tenancy (Within Brands)
 
-Within each brand, Organizations represent tenants (clinics, hospitals, departments). This uses Medplum's native multi-tenant access control:
-
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    subgraph Project["Medplum Project: coachi-prod"]
-        subgraph Orgs["Organizations (Tenants)"]
-            O1["Organization/clinic-amsterdam"]
-            O2["Organization/hospital-rotterdam"]
-        end
-        
-        subgraph Users["Users"]
-            U1["Practitioner/dr-smith"]
-            U2["Practitioner/nurse-janssen"]
-        end
-        
-        subgraph Data["Patient Data"]
-            P1["Patient/patient-1<br/>meta.compartment → clinic-amsterdam"]
-            P2["Patient/patient-2<br/>meta.compartment → clinic-amsterdam"]
-            P3["Patient/patient-3<br/>meta.compartment → hospital-rotterdam"]
-        end
-        
-        subgraph PM["ProjectMemberships"]
-            PM1["Dr. Smith<br/>access.parameter → clinic-amsterdam"]
-            PM2["Nurse Janssen<br/>access.parameter → clinic-amsterdam, hospital-rotterdam"]
-        end
-    end
-    
-    U1 --> PM1
-    U2 --> PM2
-    
-    PM1 --> O1
-    PM2 --> O1
-    PM2 --> O2
-    
-    O1 --> P1
-    O1 --> P2
-    O2 --> P3
-    
-    style Orgs fill:#e1f5ff
-    style Users fill:#e8f5e9
-    style Data fill:#fff4e1
-    style PM fill:#fce4ec
-```
-
-## Gateway Flow
-
-All brand applications communicate through the HealthTalk Gateway for authentication and API routing:
-
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-sequenceDiagram
-    participant App as Brand App (Coachi)
-    participant GW as Gateway
-    participant MP as Medplum Project
-    
-    App->>GW: Request with brand token
-    GW->>GW: Authenticate (B2C)
-    GW->>GW: Determine brand from domain/token
-    GW->>GW: Extract tenant (Organization) from ProjectMembership
-    GW->>MP: Forward to coachi-prod with auth context
-    MP->>MP: AccessPolicy enforces tenant scope
-    MP-->>GW: Tenant-scoped response
-    GW-->>App: Response
-```
+Within each brand, Organizations represent tenants (clinics, hospitals, departments). This uses Medplum's native multi-tenant access control.
 
 ## Environment Configuration
 
@@ -257,7 +127,7 @@ All brand applications MUST follow these security patterns:
 | Requirement | Implementation |
 |-------------|----------------|
 | Server-side only backend operations | Use Next.js Server Components, Server Actions, Route Handlers |
-| No direct client-to-Medplum calls | All requests go through Gateway via `@mrd/gateway-client` |
+| No direct client-to-Medplum calls | All requests go through Gateway |
 | Tenant-scoped queries | Every request verified with `auth.id` from Gateway |
 | No secrets in client code | Environment variables without `NEXT_PUBLIC_` prefix |
 
@@ -287,4 +157,4 @@ Brand configuration can be stored in the Medplum Project.setting for runtime the
 
 Use `getProjectTheme()` from `@mrd/ui` to load these settings at runtime.
 
-See [Agent Configuration](/docs/architecture/agent-configuration) for details on customizing agent behavior per brand.
+See [Agent Configuration](./agent-configuration.mdx) for details on customizing agent behavior per brand.
