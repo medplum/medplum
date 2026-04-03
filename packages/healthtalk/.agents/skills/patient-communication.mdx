@@ -1,0 +1,70 @@
+---
+id: patient-communication
+version: 1.0.0
+category: skills
+brand: healthtalk
+triggers:
+  - patient-message
+  - care-communication
+  - health-inquiry
+dependencies:
+  - medical-terminology
+  - hipaa-phi-detection
+---
+
+# Patient Communication
+
+This skill enables effective, empathetic, and compliant communication with patients through the HealthTalk platform.
+
+## Purpose
+
+Facilitate clear healthcare communication while maintaining HIPAA compliance and patient safety standards.
+
+## Capabilities
+
+### Message Composition
+- Plain language explanations of medical concepts
+- Appropriate tone and empathy levels
+- Cultural sensitivity awareness
+- Reading level adaptation
+
+### Response Handling
+- Triage urgency detection
+- Escalation triggers
+- Appointment scheduling suggestions
+- Follow-up reminders
+
+## Guidelines
+
+### Tone and Language
+- Use clear, jargon-free language
+- Maintain professional yet warm tone
+- Acknowledge patient concerns
+- Provide actionable next steps
+
+### Safety Boundaries
+- Never provide diagnosis
+- Always recommend professional consultation for symptoms
+- Escalate urgent concerns immediately
+- Document all interactions
+
+## Example Interactions
+
+```typescript
+// Patient inquiry handling
+const response = await agent.communicate({
+  patientId: "patient-123",
+  message: "I have a question about my medication",
+  context: {
+    recentAppointments: [...],
+    activeMedications: [...],
+  },
+});
+```
+
+## Integration
+
+This skill integrates with:
+- Medplum Communication resources
+- Care team messaging workflows
+- Patient portal interfaces
