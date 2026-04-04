@@ -1,0 +1,43 @@
+# ISO 27001 Compliance
+
+## Overview
+
+MEDrecord is ISO 27001 certified. All code must adhere to Information Security Management System (ISMS) requirements.
+
+## Key Requirements
+
+### Access Control
+
+- All API endpoints MUST verify authentication via Gateway
+- Role-based access control (RBAC) for all resources
+- Principle of least privilege for all operations
+- Session management with secure token handling
+
+### Data Protection
+
+- Encrypt sensitive data at rest and in transit
+- Use TLS 1.3 for all communications
+- Never log sensitive patient data
+- Implement secure key management
+
+### Audit Trail
+
+- Log all data access and modifications
+- Include timestamp, user_id, tenant_id, action, resource
+- Retain audit logs according to retention policy
+- Immutable audit records
+
+### Incident Management
+
+- Implement error handling that doesn't expose internals
+- Log security events for monitoring
+- Define incident response procedures
+
+## Implementation Checklist
+
+- [ ] All endpoints authenticated via Gateway
+- [ ] RBAC implemented for resources
+- [ ] Audit logging for all mutations
+- [ ] TLS enforced for all connections
+- [ ] Secure error handling (no stack traces in production)
+- [ ] Input validation on all user input
