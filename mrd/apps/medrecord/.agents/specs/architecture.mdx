@@ -1,0 +1,78 @@
+# Architecture
+
+This section covers the MEDrecord ecosystem architecture - a Gateway-First multi-tenant platform built on top of Medplum.
+
+## Core Architecture
+
+MEDrecord uses a **Gateway-First** approach where:
+
+- **Azure B2C** handles all user authentication
+- **Gateway** controls tenant resolution, brand assignment, and auth context
+- **Medplum** serves as the FHIR data layer only
+- **MEDrecord chooses the brand** per tenant (healthcare institutions see our branding)
+
+```
+User → Azure B2C → Gateway → App → Medplum (data layer)
+```
+
+## Key Concepts
+
+- [Multi-Tenant Architecture](./multi-tenant.mdx) — Gateway-First tenant model, Tenant = Medplum Project
+- [Multi-Brand Architecture](./multi-brand.mdx) — MEDrecord-owned brands, Mantine theming
+- [Gateway Integration](./gateway-integration.mdx) — Azure B2C, auth flow, tenant resolution
+- [Upstream Sync Strategy](./upstream-sync.mdx) — Safe sync with upstream Medplum
+- [Design System](./design-system.mdx) — Shared Mantine UI components
+- [Agent Configuration](./agent-configuration.mdx) — MDX-based agent definitions
+- [Admin Portal Deployment](./admin-deployment.mdx) — Vercel deployment guide
+
+## Core Principles
+
+| Principle | Description |
+|-----------|-------------|
+| **Gateway-First** | All auth and tenant resolution via Gateway, never direct Medplum auth |
+| **Azure B2C** | MEDrecord manages all user identities |
+| **MEDrecord Chooses Brand** | We determine which brand per tenant, not the healthcare institution |
+| **Tenant = Project** | Each healthcare institution = Medplum Project for data isolation |
+| **Sync-Safe** | All MEDrecord code in `mrd/` namespace, never touches upstream |
+| **Server-Side Only** | All backend operations run on server (Route Handlers, Server Actions) |
+| **Mantine Theming** | Brand theming via Mantine (Medplum native) |
+
+## The Three Layers
+
+| Layer | Who Decides | Definition |
+|-------|-------------|------------|
+| **Brand** | MEDrecord | Our product: HealthTalk, Coachi, MedSafe |
+| **Tenant** | MEDrecord | Healthcare institution = Medplum Project |
+| **Organization** | Healthcare institution | Departments within their tenant |
+
+## Control Overview
+
+| Component | Who Manages | Where |
+|-----------|-------------|-------|
+| Identity/Users | MEDrecord | Azure B2C |
+| Tenant config | MEDrecord | Gateway |
+| Brand per tenant | MEDrecord | Gateway |
+| Medplum Projects | MEDrecord | Medplum (via Gateway) |
+| Organizations | Healthcare institution | Medplum (within their project) |
+| FHIR Data | Healthcare institution | Medplum (within their project) |
+
+## Folder Structure
+
+```
+mrd/
+├── apps/
+│   ├── healthtalk/           # HealthTalk brand app
+│   │   ├── src/theme.ts      # Mantine theme
+│   │   ├── specs/            # Specifications
+│   │   └── .agents/          # Agent overrides
+│   ├── coachi/               # Coachi brand app
+│   ├── medsafe/              # MedSafe brand app
+│   └── admin/                # Admin portal
+│
+├── packages/
+│   ├── ui/                   # @mrd/ui shared components
+│   └── agents/               # @mrd/agents base configs
+│
+└── docs/
+    └── architecture/         # This documentation
+```

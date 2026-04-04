@@ -1,0 +1,61 @@
+# MedMij Compliance
+
+## Overview
+
+MedMij is the Dutch standard for secure exchange of health data between healthcare providers and patients. MEDrecord participates in the MedMij network.
+
+## Key Principles
+
+### Patient in Control
+
+- Patients decide which data is shared
+- Explicit consent required for data exchange
+- Patients can revoke access at any time
+- Transparent about what data is collected and why
+
+### Standardized Data Exchange
+
+- Use FHIR R4 for all health data
+- Follow MedMij information standards (Zorginformatiebouwstenen/ZIBs)
+- Implement MedMij Gegevensdiensten where applicable
+
+### Secure Infrastructure
+
+- Whitelist-based network access
+- PKIoverheid certificates for authentication
+- Signed and encrypted messages
+
+## FHIR Resources
+
+MedMij uses specific FHIR profiles based on Dutch ZIBs:
+
+| ZIB | FHIR Resource | Description |
+|-----|---------------|-------------|
+| Patient | Patient | Patient demographics |
+| Zorgverlener | Practitioner | Healthcare provider |
+| Zorgaanbieder | Organization | Healthcare organization |
+| Probleem | Condition | Medical conditions |
+| Verrichting | Procedure | Medical procedures |
+| Meetwaarde | Observation | Measurements/observations |
+| Medicatie | MedicationRequest | Medication prescriptions |
+
+## Implementation
+
+```typescript
+// FHIR resources must follow Dutch profiles
+const observation: Observation = {
+  resourceType: 'Observation',
+  meta: {
+    profile: ['http://nictiz.nl/fhir/StructureDefinition/zib-BloodPressure']
+  },
+  // ... rest of resource
+};
+```
+
+## Implementation Checklist
+
+- [ ] FHIR R4 resources following MedMij profiles
+- [ ] Patient consent management
+- [ ] ZIB-compliant data structures
+- [ ] Secure data exchange infrastructure
+- [ ] Patient portal for data access (Coachi brand)

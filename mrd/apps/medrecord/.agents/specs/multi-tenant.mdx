@@ -1,0 +1,243 @@
+# Multi-Tenant Architecture
+
+## Overview
+
+MEDrecord uses a **Gateway-First Multi-Tenant** model where:
+
+- **All authentication flows through Azure B2C via our Gateway**
+- **MEDrecord controls all tenant and brand configuration**
+- **Medplum serves as the FHIR data layer only**
+
+This ensures total control over identity, tenants, and branding while leveraging Medplum for compliant healthcare data storage.
+
+---
+
+## Core Principles
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Gateway-First** | All auth and tenant resolution via Gateway, never direct Medplum auth |
+| **Azure B2C** | MEDrecord manages all user identities |
+| **MEDrecord chooses brand** | We determine which brand (HealthTalk/Coachi/etc) per tenant |
+| **Sync-Safe** | All config in `mrd/` namespace or Gateway, never in Medplum upstream code |
+| **Total Control** | We control auth, tenants, brands - Medplum is data layer |
+
+---
+
+## The Three Layers
+
+| Layer | Who Decides | Definition | Storage |
+|-------|-------------|------------|---------|
+| **Brand** | MEDrecord | Our product: HealthTalk, Coachi, MedSafe | Gateway config |
+| **Tenant** | MEDrecord | Healthcare institution = Medplum Project | Gateway config |
+| **Organization** | Healthcare institution | Internal departments within tenant | Medplum |
+
+---
+
+## Architecture Diagram
+
+```
+User
+  │
+  ▼
+Azure B2C (authentication)
+  │
+  ▼
+Gateway (auth-test-b2c.healthtalk.ai)
+  │
+  ├── Validates token
+  ├── Resolves tenant_id (Medplum Project)
+  ├── Resolves organization_id (department)
+  ├── Determines brand (MEDrecord chooses)
+  │
+  ▼
+Brand App (HealthTalk/Coachi/etc)
+  │
+  ▼
+Medplum API (FHIR data layer only)
+```
+
+---
+
+## Gateway Response (Single Source of Truth)
+
+Every authenticated request includes tenant context from Gateway:
+
+```typescript
+// Gateway auth response - the ONLY source of truth
+{
+  "auth": {
+    "user_id": "azure-b2c-user-id",
+    "email": "arts@ziekenhuis.nl",
+    "tenant_id": "ziekenhuis-amsterdam",    // Medplum Project ID
+    "organization_id": "cardiologie",        // Department (optional)
+    "brand": "healthtalk",                   // MEDrecord determines this
+    "roles": ["practitioner", "admin"]
+  }
+}
+```
+
+**The app NEVER asks Medplum directly for user identity or tenant. Everything comes from Gateway.**
+
+---
+
+## What Lives Where
+
+| What | Where | Why |
+|------|-------|-----|
+| User identities | Azure B2C | We control identity |
+| Tenant config | Gateway | We control tenant assignment |
+| Tenant → Brand mapping | Gateway | We choose the brand |
+| Tenant → Project mapping | Gateway | We link to Medplum |
+| Patient data | Medplum | FHIR data layer |
+| Questionnaires | Medplum | FHIR resources |
+| Organizations (departments) | Medplum | Within tenant project |
+
+---
+
+## Tenant Model
+
+```
+Tenant: ziekenhuis-amsterdam (Medplum Project)
+├── Brand: HealthTalk (MEDrecord chooses)
+├── Organization: Cardiologie
+├── Organization: Neurologie
+├── Organization: Huisartsenpost
+└── Users see: HealthTalk logo, HealthTalk colors
+
+
+Tenant: huisarts-rotterdam (Medplum Project)
+├── Brand: Coachi (MEDrecord chooses)
+└── Users see: Coachi logo, Coachi colors
+
+
+Tenant: ggz-utrecht (Medplum Project)
+├── Brand: HealthTalk (MEDrecord chooses)
+├── Organization: Volwassenen
+├── Organization: Jeugd
+└── Users see: HealthTalk logo, HealthTalk colors
+```
+
+---
+
+## Key Points
+
+| Question | Answer |
+|----------|--------|
+| Who chooses the brand? | **MEDrecord** |
+| What does the healthcare institution see? | **Our branding** (HealthTalk/Coachi/etc) |
+| Does the institution have their own logo? | **No** - they see our brand |
+| What is a tenant? | **Healthcare institution = Medplum Project** |
+| What is an organization? | **Department within tenant** |
+| Where does auth come from? | **Azure B2C via Gateway** |
+| Does Medplum handle auth? | **No** - Gateway handles all auth |
+
+---
+
+## API Route Pattern (Gateway-First)
+
+```typescript
+// app/api/tasks/route.ts
+import { verifyGatewayAuth, getMedplumClient } from '@/lib/gateway';
+
+export async function GET(request: Request) {
+  // 1. ALWAYS via Gateway - never direct Medplum auth
+  const auth = await verifyGatewayAuth(request);
+  
+  // 2. tenant_id from Gateway (not from request body/params)
+  const medplum = getMedplumClient(auth.tenant_id);
+  
+  // 3. brand from Gateway (for brand-specific logic)
+  const brand = auth.brand; // 'healthtalk' | 'coachi' | etc
+  
+  // 4. Fetch data - automatically scoped to tenant project
+  const tasks = await medplum.searchResources('Task', {
+    status: 'requested',
+  });
+  
+  return Response.json(tasks);
+}
+```
+
+---
+
+## Gateway Tenant Configuration
+
+Tenant configuration lives in the Gateway, NOT in Medplum:
+
+```typescript
+// Gateway tenant config (stored in Gateway database)
+{
+  "tenant_id": "ziekenhuis-amsterdam",
+  "display_name": "Ziekenhuis Amsterdam",
+  "medplum_project_id": "proj_xxx",
+  "medplum_client_id": "client_xxx",
+  "medplum_client_secret": "secret_xxx",  // Encrypted
+  "brand": "healthtalk",
+  "azure_b2c_tenant": "ziekenhuisamsterdam.onmicrosoft.com",
+  "enabled": true
+}
+```
+
+---
+
+## Onboarding a New Tenant
+
+1. **Create Medplum Project** for the tenant
+2. **Configure in Gateway** - tenant_id, brand, Medplum credentials
+3. **Set up Azure B2C** connection for the institution
+4. **Configure Organizations** in Medplum for departments
+5. **Set up AccessPolicies** for user roles
+6. **Copy template Questionnaires** if needed
+
+All tenant config is in Gateway - the app reads from Gateway at runtime.
+
+---
+
+## Control Overview
+
+| Component | Who Manages | Where |
+|-----------|-------------|-------|
+| Identity/Users | MEDrecord | Azure B2C |
+| Tenant config | MEDrecord | Gateway |
+| Brand per tenant | MEDrecord | Gateway |
+| Medplum Projects | MEDrecord | Medplum (via Gateway) |
+| Organizations | Healthcare institution | Medplum (within their project) |
+| FHIR Data | Healthcare institution | Medplum (within their project) |
+
+---
+
+## Sync-Safe Architecture
+
+```
+Medplum Repository (upstream)
+│
+├── packages/           <- NEVER TOUCH - sync-safe
+│   ├── app/
+│   ├── core/
+│   ├── react/
+│   └── ...
+│
+└── mrd/                <- OUR NAMESPACE - never overwritten by upstream
+    ├── apps/
+    │   ├── healthtalk/
+    │   ├── coachi/
+    │   └── ...
+    ├── packages/
+    │   └── ui/
+    └── docs/
+```
+
+| On upstream sync | What happens |
+|------------------|--------------|
+| `packages/*` changes | We merge, our code untouched |
+| `mrd/*` | Never touched by upstream |
+| `.gitattributes` | `mrd/** merge=ours` protects our code |
+
+---
+
+## Related Documentation
+
+- [Multi-Brand Architecture](./multi-brand.mdx) - Brand theming (Mantine)
+- [Gateway Integration](./gateway-integration.mdx) - Azure B2C and Gateway flow
+- [Upstream Sync Strategy](./upstream-sync.mdx) - Safe upstream merging

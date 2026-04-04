@@ -1,0 +1,53 @@
+# NEN 7510 Compliance
+
+## Overview
+
+NEN 7510 is the Dutch standard for information security in healthcare. MEDrecord MUST comply with all NEN 7510 requirements for handling patient data.
+
+## Key Requirements
+
+### Patient Data Protection
+
+- Patient data MUST be isolated per healthcare institution (tenant)
+- Access to patient data MUST be logged
+- Patient data MUST NOT leave the tenant boundary without explicit consent
+- BSN (Burgerservicenummer) handling according to Wbsn-z
+
+### Authentication & Authorization
+
+- Strong authentication required for healthcare professionals
+- Multi-factor authentication for sensitive operations
+- Session timeout after period of inactivity
+- Azure B2C integration for identity management
+
+### Data Minimization
+
+- Only collect data necessary for the specific purpose
+- Implement data retention policies
+- Provide data export/deletion capabilities
+
+### Availability
+
+- Healthcare data must be available when needed for care
+- Implement backup and recovery procedures
+- Define and meet SLA requirements
+
+## Tenant Isolation
+
+```typescript
+// Every request MUST be scoped to a tenant
+const auth = await verifyGatewayAuth(request);
+const medplum = getMedplumClient(auth.tenant_id);
+
+// Data is automatically isolated to this tenant's Medplum Project
+const patients = await medplum.searchResources('Patient', {});
+```
+
+## Implementation Checklist
+
+- [ ] Tenant isolation via Medplum Projects
+- [ ] All access logged with audit trail
+- [ ] Strong authentication via Azure B2C
+- [ ] Data retention policies implemented
+- [ ] BSN handling compliant with Wbsn-z
+- [ ] Backup and recovery tested

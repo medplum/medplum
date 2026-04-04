@@ -1,0 +1,41 @@
+/**
+ * MedSafe Brand Theme
+ * 
+ * Orange/amber color palette for medication safety.
+ * Import after globals.css to override base tokens.
+ */
+
+@layer base {
+  :root {
+    /* Primary - MedSafe Orange */
+    --primary: 25 95% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 25 95% 95%;
+    --accent-foreground: 25 95% 25%;
+
+    /* Ring */
+    --ring: 25 95% 50%;
+
+    /* Chart colors */
+    --chart-1: 25 95% 50%;
+    --chart-2: 25 75% 60%;
+    --chart-3: 25 55% 70%;
+    --chart-4: 25 35% 80%;
+    --chart-5: 25 15% 90%;
+  }
+
+  .dark {
+    /* Primary - MedSafe Orange (Dark Mode) */
+    --primary: 25 95% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 25 50% 20%;
+    --accent-foreground: 25 95% 90%;
+
+    /* Ring */
+    --ring: 25 95% 55%;
+  }
+}
