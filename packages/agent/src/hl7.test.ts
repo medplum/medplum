@@ -60,7 +60,7 @@ async function createEndpointWithRandomPort(endpoint: Endpoint): Promise<[WithId
   const port = await getFreePort();
   const url = new URL(endpoint.address);
   url.port = port.toString();
-  const createdEndpoint = await medplum.createResource<Endpoint>({
+  const createdEndpoint = await medplum.createResource({
     ...endpoint,
     address: url.toString(),
   });
