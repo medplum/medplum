@@ -1,0 +1,209 @@
+# MEDrecord Brand Style Guide
+
+## Brand Identity
+
+### Brand Name
+**MEDrecord** - geschreven als één woord met hoofdletters MED
+
+### Tagline
+*eHealth platform as a Service*
+
+### Brand Archetype
+**The Creator** - "Think different."
+Brands die innovatie, verbeelding en creativiteit waarderen. Wij creëren dingen van blijvende waarde.
+
+---
+
+## Brand Voice & Personality
+
+### Voice
+- Professional
+- Clear
+- Confident
+- Empowering
+- Innovative
+- Human-centric
+
+Wij spreken direct en vermijden onnodige jargon om begrip te garanderen.
+
+### Personality
+- Innovative
+- Trustworthy
+- Empowering
+- Intelligent
+- Pioneering
+
+### Brand Promise
+Wij beloven dat het bouwen van veilige, compliant en effectieve eHealth applicaties makkelijker en sneller wordt. Dit stelt je in staat om je innovaties met vertrouwen naar patiënten te brengen.
+
+### Unique Selling Proposition
+MEDrecord gebruikt AI en Agentic frameworks om het bouwen van veilige, compliant eHealth applicaties te versnellen. Wij transformeren complexe data uitdagingen in soepele innovatie.
+
+---
+
+## Visual Identity
+
+### Logo's
+
+#### Primary Logo (Shield)
+- **Gebruik:** App iconen, favicons, kleine formaten
+- **Bestand:** `/images/medrecord-logo.png`
+- **Varianten:** Transparant, wit
+
+#### Full Logo (Tandwiel met Hartslag)
+- **Gebruik:** Headers, marketing, grote formaten
+- **Bestand:** `/images/medrecord-full-logo.png`
+
+#### Made with Love
+- **Gebruik:** Footer, "powered by" secties
+- **Hart kleur:** Vital Teal (#4A9C8D)
+
+---
+
+## Color Palette
+
+### Primary Color
+| Naam | Hex | Gebruik |
+|------|-----|---------|
+| **Deep Trust Blue** | `#2C5F9B` | Primaire actie, headers, links |
+
+### Secondary Colors
+| Naam | Hex | Gebruik |
+|------|-----|---------|
+| **Clear Sky Blue** | `#5DADE2` | Hover states, accenten, highlights |
+| **Vital Teal** | `#4A9C8D` | Succes, gezondheid, hart icoon |
+| **Professional Gray** | `#6C757D` | Body text, secundaire elementen |
+
+### Extended Palette
+| Naam | Hex | Gebruik |
+|------|-----|---------|
+| **Dark Navy** | `#1A365D` | Donkere achtergronden, contrast |
+| **Golden Amber** | `#D69E2E` | Logo accent, waarschuwingen |
+| **Light Background** | `#F7FAFC` | Pagina achtergrond |
+| **White** | `#FFFFFF` | Cards, content areas |
+
+### Dark Mode
+| Light Mode | Dark Mode Equivalent |
+|------------|---------------------|
+| `#2C5F9B` | `#5DADE2` |
+| `#F7FAFC` | `#1A202C` |
+| `#FFFFFF` | `#2D3748` |
+
+---
+
+## Typography
+
+### Primary Font: IBM Plex Sans
+**Gebruik:** Headlines, titels, belangrijke statements
+
+| Element | Size | Weight |
+|---------|------|--------|
+| H1 | 36-48pt | 700 (Bold) |
+| H2 | 24-30pt | 600 (SemiBold) |
+| H3 | 20-24pt | 600 (SemiBold) |
+| H4 | 18-20pt | 500 (Medium) |
+
+### Secondary Font: Inter
+**Gebruik:** Body text, UI elementen, formulieren
+
+| Element | Size | Weight |
+|---------|------|--------|
+| Body | 14-16pt | 400 (Regular) |
+| Body Large | 16-18pt | 400 (Regular) |
+| Button | 14-16pt | 500 (Medium) |
+| Caption | 12-14pt | 400 (Regular) |
+
+### Font Loading (Next.js)
+```typescript
+import { IBM_Plex_Sans, Inter } from 'next/font/google';
+
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-heading',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-body',
+});
+```
+
+---
+
+## CSS Design Tokens
+
+```css
+:root {
+  /* Primary */
+  --primary: 216 56% 39%;           /* #2C5F9B */
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary */
+  --secondary: 197 67% 63%;         /* #5DADE2 */
+  --secondary-foreground: 216 56% 39%;
+  
+  /* Accent */
+  --accent: 168 35% 45%;            /* #4A9C8D */
+  --accent-foreground: 0 0% 100%;
+  
+  /* Neutral */
+  --background: 210 40% 98%;        /* #F7FAFC */
+  --foreground: 210 11% 46%;        /* #6C757D */
+  --muted: 210 11% 46%;
+  --muted-foreground: 210 11% 35%;
+  
+  /* Semantic */
+  --destructive: 0 84% 60%;
+  --warning: 43 74% 51%;            /* #D69E2E */
+  --success: 168 35% 45%;           /* #4A9C8D */
+  
+  /* Border & Radius */
+  --border: 214 32% 91%;
+  --radius: 0.5rem;
+}
+```
+
+---
+
+## Brand Applications
+
+### Admin Interface
+- Sidebar: Dark Navy background
+- Header: White met Deep Trust Blue accenten
+- Versie footer: "MEDrecord 1.0.0"
+
+### Multi-Brand Support
+MEDrecord is het overkoepelende platform. Per tenant wordt een sub-brand toegepast:
+- **HealthTalk** - Voor zorgverleners
+- **Coachi** - Voor patiënten/eindgebruikers
+- **MedSafe** - Voor medicatie veiligheid
+
+De tenant brand wordt bepaald door de Gateway configuratie.
+
+---
+
+## Compliance & Certifications
+
+MEDrecord voldoet aan:
+- ISO 27001
+- NEN 7510
+- MedMij
+- HL7 FHIR R4
+
+---
+
+## Usage Guidelines
+
+### Do
+- Gebruik Deep Trust Blue als primaire kleur
+- Handhaaf voldoende contrast (WCAG AA)
+- Gebruik IBM Plex Sans voor headers
+- Toon "MEDrecord" als één woord
+
+### Don't
+- Verander de logo kleuren niet
+- Gebruik geen gradients op het logo
+- Schrijf niet "Med Record" of "MEDRECORD"
+- Mix geen andere fonts in headers
