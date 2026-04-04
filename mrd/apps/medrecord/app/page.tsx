@@ -1,14 +1,33 @@
+import { VERSION } from '@/lib/version';
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-primary mb-4">
-          MEDrecord
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          Healthcare records management platform
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome to {VERSION.display}
         </p>
       </div>
-    </main>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-medium text-muted-foreground">Patients</h3>
+          <p className="mt-2 text-2xl font-bold">1,234</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-medium text-muted-foreground">Practitioners</h3>
+          <p className="mt-2 text-2xl font-bold">56</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-medium text-muted-foreground">Organizations</h3>
+          <p className="mt-2 text-2xl font-bold">12</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-medium text-muted-foreground">Questionnaires</h3>
+          <p className="mt-2 text-2xl font-bold">89</p>
+        </div>
+      </div>
+    </div>
   );
 }
