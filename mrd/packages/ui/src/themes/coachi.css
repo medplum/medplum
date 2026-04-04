@@ -1,0 +1,41 @@
+/**
+ * Coachi Brand Theme
+ * 
+ * Green color palette for patient/coaching interface.
+ * Import after globals.css to override base tokens.
+ */
+
+@layer base {
+  :root {
+    /* Primary - Coachi Green */
+    --primary: 142 70% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 142 70% 95%;
+    --accent-foreground: 142 70% 20%;
+
+    /* Ring */
+    --ring: 142 70% 35%;
+
+    /* Chart colors */
+    --chart-1: 142 70% 35%;
+    --chart-2: 142 55% 50%;
+    --chart-3: 142 40% 65%;
+    --chart-4: 142 25% 80%;
+    --chart-5: 142 10% 90%;
+  }
+
+  .dark {
+    /* Primary - Coachi Green (Dark Mode) */
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 142 40% 20%;
+    --accent-foreground: 142 70% 90%;
+
+    /* Ring */
+    --ring: 142 70% 45%;
+  }
+}

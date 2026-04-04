@@ -1,0 +1,41 @@
+/**
+ * MEDrecord Brand Theme
+ * 
+ * Purple color palette for the overarching FHIR repository brand.
+ * Import after globals.css to override base tokens.
+ */
+
+@layer base {
+  :root {
+    /* Primary - MEDrecord Purple */
+    --primary: 262 80% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 262 80% 95%;
+    --accent-foreground: 262 80% 25%;
+
+    /* Ring */
+    --ring: 262 80% 50%;
+
+    /* Chart colors */
+    --chart-1: 262 80% 50%;
+    --chart-2: 262 60% 60%;
+    --chart-3: 262 40% 70%;
+    --chart-4: 262 20% 80%;
+    --chart-5: 262 10% 90%;
+  }
+
+  .dark {
+    /* Primary - MEDrecord Purple (Dark Mode) */
+    --primary: 262 80% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 262 50% 20%;
+    --accent-foreground: 262 80% 90%;
+
+    /* Ring */
+    --ring: 262 80% 60%;
+  }
+}

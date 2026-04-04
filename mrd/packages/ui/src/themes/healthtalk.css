@@ -1,0 +1,41 @@
+/**
+ * HealthTalk Brand Theme
+ * 
+ * Blue color palette for healthcare provider interface.
+ * Import after globals.css to override base tokens.
+ */
+
+@layer base {
+  :root {
+    /* Primary - HealthTalk Blue */
+    --primary: 210 100% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 210 100% 95%;
+    --accent-foreground: 210 100% 25%;
+
+    /* Ring */
+    --ring: 210 100% 40%;
+
+    /* Chart colors */
+    --chart-1: 210 100% 40%;
+    --chart-2: 210 80% 55%;
+    --chart-3: 210 60% 70%;
+    --chart-4: 210 40% 80%;
+    --chart-5: 210 20% 90%;
+  }
+
+  .dark {
+    /* Primary - HealthTalk Blue (Dark Mode) */
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Accent */
+    --accent: 210 50% 20%;
+    --accent-foreground: 210 100% 90%;
+
+    /* Ring */
+    --ring: 210 100% 50%;
+  }
+}
