@@ -6,10 +6,11 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
-import type { WsSubProjectDetailStats } from './getwssubstats';
+import type { WsSubProjectDetailStats } from './getwssubprojectstats';
 
 describe('$get-ws-sub-project-stats', () => {
   const app = express();
@@ -59,20 +60,49 @@ describe('$get-ws-sub-project-stats', () => {
     expect(stats.resourceTypes).toHaveLength(0);
   });
 
-  test('Returns resource types with criteria for a project', async () => {
+  test('Returns resource types with criteria and full entries for a project', async () => {
     const redis = getPubSubRedis();
     const projectId = randomUUID();
+
+    const entry1: ActiveSubscriptionEntry = {
+      criteria: 'Observation?code=85354-9',
+      expiration: 1700000000,
+      author: 'Practitioner/author1',
+      loginId: 'login1',
+      membershipId: 'membership1',
+    };
+    const entry2: ActiveSubscriptionEntry = {
+      criteria: 'Observation?code=85354-9',
+      expiration: 1700001000,
+      author: 'Practitioner/author2',
+      loginId: 'login2',
+      membershipId: 'membership2',
+    };
+    const entry3: ActiveSubscriptionEntry = {
+      criteria: 'Observation?status=final',
+      expiration: 1700002000,
+      author: 'Practitioner/author3',
+      loginId: 'login3',
+      membershipId: 'membership3',
+    };
+    const entry4: ActiveSubscriptionEntry = {
+      criteria: 'Patient?name=Alice',
+      expiration: 1700003000,
+      author: 'Practitioner/author4',
+      loginId: 'login4',
+      membershipId: 'membership4',
+    };
 
     await redis.hset(
       getActiveSubsKey(projectId, 'Observation'),
       'Subscription/sub1',
-      'Observation?code=85354-9',
+      JSON.stringify(entry1),
       'Subscription/sub2',
-      'Observation?code=85354-9',
+      JSON.stringify(entry2),
       'Subscription/sub3',
-      'Observation?status=final'
+      JSON.stringify(entry3)
     );
-    await redis.hset(getActiveSubsKey(projectId, 'Patient'), 'Subscription/sub4', 'Patient?name=Alice');
+    await redis.hset(getActiveSubsKey(projectId, 'Patient'), 'Subscription/sub4', JSON.stringify(entry4));
 
     try {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
@@ -97,13 +127,30 @@ describe('$get-ws-sub-project-stats', () => {
       expect(obType?.count).toBe(3);
       expect(obType?.criteria).toHaveLength(2);
       // Criteria sorted descending by count
-      expect(obType?.criteria[0]).toEqual({ criteria: 'Observation?code=85354-9', count: 2 });
-      expect(obType?.criteria[1]).toEqual({ criteria: 'Observation?status=final', count: 1 });
+      expect(obType?.criteria[0].criteria).toBe('Observation?code=85354-9');
+      expect(obType?.criteria[0].count).toBe(2);
+      expect(obType?.criteria[0].entries).toHaveLength(2);
+      expect(obType?.criteria[0].entries).toEqual(
+        expect.arrayContaining([
+          { subscriptionId: 'sub1', criteria: entry1.criteria, expiration: entry1.expiration, author: entry1.author },
+          { subscriptionId: 'sub2', criteria: entry2.criteria, expiration: entry2.expiration, author: entry2.author },
+        ])
+      );
+
+      expect(obType?.criteria[1].criteria).toBe('Observation?status=final');
+      expect(obType?.criteria[1].count).toBe(1);
+      expect(obType?.criteria[1].entries).toEqual([
+        { subscriptionId: 'sub3', criteria: entry3.criteria, expiration: entry3.expiration, author: entry3.author },
+      ]);
 
       const patientType = stats.resourceTypes.find((rt) => rt.resourceType === 'Patient');
       expect(patientType).toBeDefined();
       expect(patientType?.count).toBe(1);
-      expect(patientType?.criteria).toEqual([{ criteria: 'Patient?name=Alice', count: 1 }]);
+      expect(patientType?.criteria[0].criteria).toBe('Patient?name=Alice');
+      expect(patientType?.criteria[0].count).toBe(1);
+      expect(patientType?.criteria[0].entries).toEqual([
+        { subscriptionId: 'sub4', criteria: entry4.criteria, expiration: entry4.expiration, author: entry4.author },
+      ]);
     } finally {
       await redis.del(getActiveSubsKey(projectId, 'Observation'), getActiveSubsKey(projectId, 'Patient'));
     }
@@ -113,10 +160,17 @@ describe('$get-ws-sub-project-stats', () => {
     const redis = getPubSubRedis();
     const projectId = randomUUID();
 
+    const entry: ActiveSubscriptionEntry = {
+      criteria: 'Observation?code=85354-9',
+      expiration: 1700000000,
+      author: 'Practitioner/author1',
+      loginId: 'login1',
+      membershipId: 'membership1',
+    };
     await redis.hset(
       getActiveSubsKey(projectId, 'Observation'),
       'Subscription/sub1',
-      'Observation?code=85354-9'
+      JSON.stringify(entry)
     );
     // Legacy key formats that should not appear in stats
     await redis.hset(

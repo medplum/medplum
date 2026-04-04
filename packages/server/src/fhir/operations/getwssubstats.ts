@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, isResourceType } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project } from '@medplum/fhirtypes';
+import type { OperationDefinition, Project, ResourceType } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
 import { getActiveSubsKey } from '../../pubsub';
@@ -30,20 +30,9 @@ const operation: OperationDefinition = {
   ],
 };
 
-export interface WsSubCriteriaStats {
-  criteria: string;
-  count: number;
-}
-
 export interface WsSubResourceTypeStats {
   resourceType: string;
   count: number;
-}
-
-export interface WsSubResourceTypeDetailStats {
-  resourceType: string;
-  count: number;
-  criteria: WsSubCriteriaStats[];
 }
 
 export interface WsSubProjectStats {
@@ -51,11 +40,6 @@ export interface WsSubProjectStats {
   projectName?: string;
   subscriptionCount: number;
   resourceTypes: WsSubResourceTypeStats[];
-}
-
-export interface WsSubProjectDetailStats {
-  projectId: string;
-  resourceTypes: WsSubResourceTypeDetailStats[];
 }
 
 export interface WsSubStats {
@@ -69,7 +53,7 @@ const testSubsKey = getActiveSubsKey(testProjectId, testResourceType);
 const [ACTIVE_SUB_KEY_PREFIX, restOfSubsKey] = testSubsKey.split(testProjectId);
 const ACTIVE_KEY_SEPARATOR = restOfSubsKey.split(testResourceType)[0];
 
-export function parseActiveSubKey(key: string): { projectId: string; resourceType: string } | undefined {
+export function parseActiveSubKey(key: string): { projectId: string; resourceType: ResourceType } | undefined {
   if (!key.startsWith(ACTIVE_SUB_KEY_PREFIX)) {
     return undefined;
   }
