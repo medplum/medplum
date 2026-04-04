@@ -32,7 +32,7 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@mantine/core": "8.3.18",
+    "@mantine/core": "^8.3.18",
     "@mantine/dropzone": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
