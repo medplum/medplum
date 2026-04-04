@@ -1,41 +1,132 @@
 /**
  * MEDrecord Brand Theme
  * 
- * Purple color palette for the overarching FHIR repository brand.
+ * Deep Trust Blue color palette for the overarching eHealth platform brand.
+ * Based on Brand Positioning Report (July 2025).
  * Import after globals.css to override base tokens.
+ * 
+ * Colors:
+ * - Deep Trust Blue (Primary): #2C5F9B
+ * - Clear Sky Blue: #5DADE2
+ * - Vital Teal: #4A9C8D
+ * - Professional Gray: #6C757D
+ * - Golden Amber: #D69E2E
+ * - Dark Navy: #1A365D
+ * 
+ * Typography:
+ * - Headings: IBM Plex Sans (400, 500, 600, 700)
+ * - Body: Inter (400, 500, 600)
  */
 
 @layer base {
   :root {
-    /* Primary - MEDrecord Purple */
-    --primary: 262 80% 50%;
+    /* Primary - Deep Trust Blue #2C5F9B */
+    --primary: 216 56% 39%;
     --primary-foreground: 0 0% 100%;
 
-    /* Accent */
-    --accent: 262 80% 95%;
-    --accent-foreground: 262 80% 25%;
+    /* Secondary - Clear Sky Blue #5DADE2 */
+    --secondary: 197 67% 63%;
+    --secondary-foreground: 216 56% 25%;
+
+    /* Accent - Vital Teal #4A9C8D */
+    --accent: 168 35% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Muted - Professional Gray #6C757D */
+    --muted: 210 11% 71%;
+    --muted-foreground: 210 11% 46%;
+
+    /* Background */
+    --background: 210 40% 98%;
+    --foreground: 215 28% 17%;
+
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    /* Border */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
 
     /* Ring */
-    --ring: 262 80% 50%;
+    --ring: 216 56% 39%;
 
-    /* Chart colors */
-    --chart-1: 262 80% 50%;
-    --chart-2: 262 60% 60%;
-    --chart-3: 262 40% 70%;
-    --chart-4: 262 20% 80%;
-    --chart-5: 262 10% 90%;
+    /* Semantic - Success (Vital Teal) */
+    --success: 168 35% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Semantic - Warning (Golden Amber #D69E2E) */
+    --warning: 43 74% 51%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Semantic - Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Chart colors - Blue spectrum */
+    --chart-1: 216 56% 39%;
+    --chart-2: 197 67% 63%;
+    --chart-3: 168 35% 45%;
+    --chart-4: 43 74% 51%;
+    --chart-5: 210 11% 46%;
+
+    /* Sidebar - Dark Navy #1A365D */
+    --sidebar-background: 215 54% 23%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 197 67% 63%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 56% 30%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 54% 30%;
   }
 
   .dark {
-    /* Primary - MEDrecord Purple (Dark Mode) */
-    --primary: 262 80% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Clear Sky Blue (brighter in dark mode) */
+    --primary: 197 67% 63%;
+    --primary-foreground: 215 28% 10%;
+
+    /* Secondary */
+    --secondary: 216 56% 50%;
+    --secondary-foreground: 0 0% 100%;
 
     /* Accent */
-    --accent: 262 50% 20%;
-    --accent-foreground: 262 80% 90%;
+    --accent: 168 35% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Background - Dark Navy */
+    --background: 215 28% 10%;
+    --foreground: 210 40% 98%;
+
+    /* Card */
+    --card: 215 28% 14%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover */
+    --popover: 215 28% 14%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Border */
+    --border: 215 28% 20%;
+    --input: 215 28% 20%;
 
     /* Ring */
-    --ring: 262 80% 60%;
+    --ring: 197 67% 63%;
+
+    /* Muted */
+    --muted: 215 28% 20%;
+    --muted-foreground: 210 11% 60%;
+
+    /* Sidebar */
+    --sidebar-background: 215 28% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 197 67% 63%;
+    --sidebar-primary-foreground: 215 28% 10%;
+    --sidebar-accent: 215 28% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 28% 15%;
   }
 }

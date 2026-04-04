@@ -1,7 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { VERSION } from '@/lib/version';
+import { getCurrentBrand } from '@/lib/brand-config';
 
 interface BrandedHeaderProps {
   user?: {
@@ -11,15 +12,21 @@ interface BrandedHeaderProps {
 }
 
 export function BrandedHeader({ user }: BrandedHeaderProps) {
+  const brand = getCurrentBrand();
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4">
         {/* Logo and Brand */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">MR</span>
-          </div>
-          <span className="font-semibold">MEDrecord</span>
+          <Image
+            src={brand.logo}
+            alt={brand.name}
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
+          <span className="font-semibold">{brand.name}</span>
         </Link>
 
         {/* Search */}

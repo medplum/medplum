@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { VERSION } from '@/lib/version';
+import { getCurrentBrand } from '@/lib/brand-config';
 
 interface NavItem {
   label: string;
@@ -47,6 +48,7 @@ const navigation: NavSection[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const brand = getCurrentBrand();
 
   return (
     <aside className="flex h-full w-56 flex-col border-r bg-background">
@@ -90,7 +92,7 @@ export function Sidebar() {
       {/* Version Footer */}
       <div className="border-t p-3">
         <p className="text-xs text-muted-foreground text-right">
-          MEDrecord: {VERSION.short}
+          {brand.name}: {VERSION.short}
         </p>
       </div>
     </aside>
