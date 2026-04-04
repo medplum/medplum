@@ -22,7 +22,9 @@ SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/se
 cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
 
 # Test
-npx turbo run test --concurrency=75% --force
+# Even though docs do not have a "test" action, we still will build the docs via the 
+# global "build" job unless we filter it out
+npx turbo run test --concurrency=75% --filter=!@medplum/docs --force
 
 # Find all coverage-final.json files in packages subdirectories
 for coverage_file in packages/*/coverage/coverage-final.json; do
