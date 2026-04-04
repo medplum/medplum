@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { useParams } from 'react-router';
@@ -9,7 +10,7 @@ type Options = {
   setOutcome?: (outcome: OperationOutcome) => void;
 };
 
-export function usePatient(options?: Options): Patient | undefined {
+export function usePatient(options?: Options): WithId<Patient> | undefined {
   const { patientId } = useParams();
   if (!patientId && !options?.ignoreMissingPatientId) {
     throw new Error('Patient ID not found');
