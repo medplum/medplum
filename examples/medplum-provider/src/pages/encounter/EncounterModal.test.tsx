@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import type { Encounter, Patient, PlanDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -18,13 +19,13 @@ vi.mock('../../utils/encounter', () => ({
   createEncounter: vi.fn(),
 }));
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['John'], family: 'Doe' }],
 };
 
-const mockPlanDefinition: PlanDefinition = {
+const mockPlanDefinition: WithId<PlanDefinition> = {
   resourceType: 'PlanDefinition',
   id: 'plan-123',
   status: 'active',
