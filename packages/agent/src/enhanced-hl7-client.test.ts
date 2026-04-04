@@ -272,9 +272,10 @@ describe('EnhancedHl7Client', () => {
 
   describe('startTrackingStats', () => {
     test('Does not start tracking if already tracking', async () => {
+      const port = await getFreePort();
       const client = new EnhancedHl7Client({
         host: 'localhost',
-        port: 9999,
+        port,
         log: mockLogger,
       });
 
@@ -302,9 +303,10 @@ describe('EnhancedHl7Client', () => {
 
   describe('stopTrackingStats', () => {
     test('Calls cleanup on stats tracker when stopping', async () => {
+      const port = await getFreePort();
       const client = new EnhancedHl7Client({
         host: 'localhost',
-        port: 9999,
+        port,
         log: mockLogger,
       });
 
@@ -324,9 +326,10 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('Does not error when stopping tracking when not tracking', async () => {
+      const port = await getFreePort();
       const client = new EnhancedHl7Client({
         host: 'localhost',
-        port: 9999,
+        port,
         log: mockLogger,
       });
 
