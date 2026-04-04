@@ -7,7 +7,6 @@ import type {
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
-  WithId,
 } from '@medplum/core';
 import {
   allOk,
@@ -37,7 +36,7 @@ import {
   parseEnhancedMode,
   shouldSendAppLevelAck,
 } from './hl7';
-import { createMockLogger, getFreePort } from './test-utils';
+import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
 
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
@@ -55,17 +54,6 @@ const BASE_ENDPOINT: Endpoint = {
 };
 
 let bot: Bot;
-
-async function createEndpointWithRandomPort(endpoint: Endpoint): Promise<[WithId<Endpoint>, number]> {
-  const port = await getFreePort();
-  const url = new URL(endpoint.address);
-  url.port = port.toString();
-  const createdEndpoint = await medplum.createResource({
-    ...endpoint,
-    address: url.toString(),
-  });
-  return [createdEndpoint, port];
-}
 
 describe('HL7', () => {
   beforeAll(async () => {
@@ -129,7 +117,7 @@ describe('HL7', () => {
       });
     });
 
-    const [endpoint, port] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -215,7 +203,7 @@ describe('HL7', () => {
       });
     });
 
-    const [endpoint, port] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -304,7 +292,7 @@ describe('HL7', () => {
       });
     });
 
-    const [endpoint, port] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -387,7 +375,7 @@ describe('HL7', () => {
       });
     });
 
-    const [enhancedEndpoint, port] = await createEndpointWithRandomPort({
+    const [enhancedEndpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
       address: BASE_ENDPOINT.address + '?enhanced=true',
     });
@@ -477,7 +465,7 @@ describe('HL7', () => {
       });
     });
 
-    const [enhancedEndpoint, port] = await createEndpointWithRandomPort({
+    const [enhancedEndpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
       address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=60',
     });
@@ -557,7 +545,7 @@ describe('HL7', () => {
       });
     });
 
-    const [enhancedEndpoint] = await createEndpointWithRandomPort({
+    const [enhancedEndpoint] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
       address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=twenty',
     });
@@ -1861,7 +1849,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint, port] = await createEndpointWithRandomPort({
+      const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
         ...BASE_ENDPOINT,
         address: 'mllp://0.0.0.0:57001?assignSeqNo=true',
       });
@@ -1969,7 +1957,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint, port] = await createEndpointWithRandomPort({
+      const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
         ...BASE_ENDPOINT,
         address: 'mllp://0.0.0.0:57001?assignSeqNo=true',
       });
@@ -2121,7 +2109,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint, port] = await createEndpointWithRandomPort({
+      const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
         ...BASE_ENDPOINT,
         address: 'mllp://0.0.0.0:57001?assignSeqNo=true',
       });
@@ -2288,7 +2276,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint, port] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+      const [endpoint, port] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
       const agent = await medplum.createResource<Agent>({
         resourceType: 'Agent',
@@ -2465,7 +2453,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+      const [endpoint] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
       const agent = await medplum.createResource<Agent>({
         resourceType: 'Agent',
@@ -2519,7 +2507,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint2] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+      const [endpoint2] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
       const agent = await medplum.createResource<Agent>({
         resourceType: 'Agent',
@@ -2606,7 +2594,7 @@ describe('HL7', () => {
         });
       });
 
-      const [endpoint3] = await createEndpointWithRandomPort(BASE_ENDPOINT);
+      const [endpoint3] = await createEndpointWithRandomPort(medplum, BASE_ENDPOINT);
 
       const agent = await medplum.createResource<Agent>({
         resourceType: 'Agent',

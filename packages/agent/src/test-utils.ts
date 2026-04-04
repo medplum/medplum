@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger } from '@medplum/core';
+import type { ILogger, MedplumClient, WithId } from '@medplum/core';
 import { LogLevel } from '@medplum/core';
+import type { Endpoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -96,4 +97,18 @@ export async function getFreePort(): Promise<number> {
     });
     server.on('error', reject);
   });
+}
+
+export async function createEndpointWithRandomPort(
+  medplum: MedplumClient,
+  endpoint: Endpoint
+): Promise<[WithId<Endpoint>, number]> {
+  const port = await getFreePort();
+  const url = new URL(endpoint.address);
+  url.port = port.toString();
+  const createdEndpoint = await medplum.createResource({
+    ...endpoint,
+    address: url.toString(),
+  });
+  return [createdEndpoint, port];
 }
