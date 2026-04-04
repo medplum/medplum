@@ -167,11 +167,7 @@ describe('$get-ws-sub-project-stats', () => {
       loginId: 'login1',
       membershipId: 'membership1',
     };
-    await redis.hset(
-      getActiveSubsKey(projectId, 'Observation'),
-      'Subscription/sub1',
-      JSON.stringify(entry)
-    );
+    await redis.hset(getActiveSubsKey(projectId, 'Observation'), 'Subscription/sub1', JSON.stringify(entry));
     // Legacy key formats that should not appear in stats
     await redis.hset(
       `medplum:subscriptions:r4:project:${projectId}:active:Observation`,

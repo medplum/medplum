@@ -6,9 +6,9 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
-import { getActiveSubsKey } from '../../pubsub';
 import type { WsSubStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
 
@@ -117,11 +117,7 @@ describe('$get-ws-sub-stats', () => {
     const redis = getPubSubRedis();
     const projectId = randomUUID();
 
-    await redis.hset(
-      getActiveSubsKey(projectId, 'Observation'),
-      'Subscription/sub1',
-      'Observation?code=85354-9'
-    );
+    await redis.hset(getActiveSubsKey(projectId, 'Observation'), 'Subscription/sub1', 'Observation?code=85354-9');
     // Legacy key formats that should not appear in stats
     await redis.hset(
       `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
