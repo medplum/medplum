@@ -1,0 +1,17 @@
+{
+    "resourceType": "Subscription",
+    "status": "active",
+    "criteria": "Encounter?status=finished",
+    "reason": "Encounter Follow Up Email Bot",
+    "channel": {
+        "type": "rest-hook",
+        "endpoint": "Bot/<YOUR_BOT_ID>",
+        "payload": "application/fhir+json"
+    },
+    "extension": [
+        {
+            "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+            "valueCode": "update"
+        }
+    ]
+}
