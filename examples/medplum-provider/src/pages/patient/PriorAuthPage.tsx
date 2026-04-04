@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Checkbox, Group, JsonInput, NativeSelect, Stack, Title } from '@mantine/core';
-import type { CdsDiscoveryResponse, WithId } from '@medplum/core';
-import { buildCdsRequest, CdsResponse, getDisplayString, getReferenceString } from '@medplum/core';
+import type { CdsDiscoveryResponse, WithId , CdsResponse} from '@medplum/core';
+import { buildCdsRequest, getDisplayString, getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
 import { Document, Form, Loading, useMedplum, useSearchResources } from '@medplum/react';
 import type { JSX } from 'react';
