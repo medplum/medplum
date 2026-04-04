@@ -1,128 +1,105 @@
 /**
  * MEDrecord Brand Theme
  * 
- * Deep Trust Blue color palette for the overarching eHealth platform brand.
- * Based on Brand Positioning Report (July 2025).
- * Import after globals.css to override base tokens.
- * 
- * Colors:
- * - Deep Trust Blue (Primary): #2C5F9B
- * - Clear Sky Blue: #5DADE2
- * - Vital Teal: #4A9C8D
- * - Professional Gray: #6C757D
- * - Golden Amber: #D69E2E
- * - Dark Navy: #1A365D
- * 
- * Typography:
- * - Headings: IBM Plex Sans (400, 500, 600, 700)
- * - Body: Inter (400, 500, 600)
+ * Colors from Brand Positioning Report (July 2025):
+ * - Deep Trust Blue (Primary): #2C5F9B -> HSL 213 56% 39%
+ * - Clear Sky Blue: #5DADE2 -> HSL 199 70% 63%
+ * - Vital Teal (Accent): #4A9C8D -> HSL 167 36% 45%
+ * - Professional Gray: #6C757D -> HSL 208 7% 46%
+ * - Golden Amber: #D69E2E -> HSL 43 67% 51%
+ * - Dark Navy (Sidebar): #1A365D -> HSL 217 57% 23%
  */
 
 :root {
   /* Primary - Deep Trust Blue #2C5F9B */
-  --primary: oklch(0.45 0.1 240);
-  --primary-foreground: oklch(1 0 0);
+  --primary: 213 56% 39%;
+  --primary-foreground: 0 0% 100%;
 
   /* Secondary - Clear Sky Blue #5DADE2 */
-  --secondary: oklch(0.7 0.1 220);
-  --secondary-foreground: oklch(0.25 0.05 240);
+  --secondary: 199 70% 63%;
+  --secondary-foreground: 217 57% 15%;
 
   /* Accent - Vital Teal #4A9C8D */
-  --accent: oklch(0.6 0.1 180);
-  --accent-foreground: oklch(1 0 0);
+  --accent: 167 36% 45%;
+  --accent-foreground: 0 0% 100%;
 
-  /* Muted - Professional Gray #6C757D */
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.5 0.01 250);
-
-  /* Background */
-  --background: oklch(0.98 0.005 240);
-  --foreground: oklch(0.2 0.02 240);
+  /* Background - Light with blue tint */
+  --background: 210 20% 98%;
+  --foreground: 217 33% 17%;
 
   /* Card */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 240);
+  --card: 0 0% 100%;
+  --card-foreground: 217 33% 17%;
 
   /* Popover */
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 240);
+  --popover: 0 0% 100%;
+  --popover-foreground: 217 33% 17%;
+
+  /* Muted - Professional Gray */
+  --muted: 210 16% 93%;
+  --muted-foreground: 208 7% 46%;
 
   /* Border */
-  --border: oklch(0.9 0.01 240);
-  --input: oklch(0.9 0.01 240);
+  --border: 214 20% 88%;
+  --input: 214 20% 88%;
 
-  /* Ring */
-  --ring: oklch(0.45 0.1 240);
-
-  /* Destructive */
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(1 0 0);
-
-  /* Chart colors - MEDrecord blue spectrum */
-  --chart-1: oklch(0.45 0.1 240);
-  --chart-2: oklch(0.7 0.1 220);
-  --chart-3: oklch(0.6 0.1 180);
-  --chart-4: oklch(0.7 0.15 85);
-  --chart-5: oklch(0.5 0.01 250);
+  /* Ring - matches primary */
+  --ring: 213 56% 39%;
 
   /* Sidebar - Dark Navy #1A365D */
-  --sidebar: oklch(0.28 0.05 250);
-  --sidebar-foreground: oklch(0.98 0.005 240);
-  --sidebar-primary: oklch(0.7 0.1 220);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.35 0.05 250);
-  --sidebar-accent-foreground: oklch(0.98 0.005 240);
-  --sidebar-border: oklch(0.35 0.05 250);
-  --sidebar-ring: oklch(0.7 0.1 220);
+  --sidebar: 217 57% 23%;
+  --sidebar-foreground: 210 20% 98%;
+  --sidebar-primary: 199 70% 63%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 217 50% 30%;
+  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar-border: 217 50% 30%;
+  --sidebar-ring: 199 70% 63%;
 }
 
 .dark {
-  /* Primary - Clear Sky Blue (brighter in dark mode) */
-  --primary: oklch(0.7 0.1 220);
-  --primary-foreground: oklch(0.15 0.02 240);
+  /* Primary - Clear Sky Blue (brighter in dark) */
+  --primary: 199 70% 63%;
+  --primary-foreground: 217 57% 15%;
 
-  /* Secondary */
-  --secondary: oklch(0.5 0.1 240);
-  --secondary-foreground: oklch(1 0 0);
+  /* Secondary - Deep Trust Blue */
+  --secondary: 213 56% 39%;
+  --secondary-foreground: 0 0% 100%;
 
-  /* Accent */
-  --accent: oklch(0.65 0.1 180);
-  --accent-foreground: oklch(1 0 0);
+  /* Accent - Vital Teal */
+  --accent: 167 40% 50%;
+  --accent-foreground: 0 0% 100%;
 
   /* Background - Dark Navy */
-  --background: oklch(0.15 0.02 240);
-  --foreground: oklch(0.98 0.005 240);
+  --background: 217 57% 10%;
+  --foreground: 210 20% 98%;
 
   /* Card */
-  --card: oklch(0.2 0.02 240);
-  --card-foreground: oklch(0.98 0.005 240);
+  --card: 217 50% 15%;
+  --card-foreground: 210 20% 98%;
 
   /* Popover */
-  --popover: oklch(0.2 0.02 240);
-  --popover-foreground: oklch(0.98 0.005 240);
-
-  /* Border */
-  --border: oklch(0.28 0.02 240);
-  --input: oklch(0.28 0.02 240);
-
-  /* Ring */
-  --ring: oklch(0.7 0.1 220);
+  --popover: 217 50% 15%;
+  --popover-foreground: 210 20% 98%;
 
   /* Muted */
-  --muted: oklch(0.28 0.02 240);
-  --muted-foreground: oklch(0.6 0.01 250);
+  --muted: 217 50% 20%;
+  --muted-foreground: 215 16% 60%;
 
-  /* Destructive */
-  --destructive: oklch(0.45 0.2 25);
-  --destructive-foreground: oklch(0.65 0.25 25);
+  /* Border */
+  --border: 217 50% 20%;
+  --input: 217 50% 20%;
+
+  /* Ring */
+  --ring: 199 70% 63%;
 
   /* Sidebar */
-  --sidebar: oklch(0.12 0.02 240);
-  --sidebar-foreground: oklch(0.98 0.005 240);
-  --sidebar-primary: oklch(0.7 0.1 220);
-  --sidebar-primary-foreground: oklch(0.15 0.02 240);
-  --sidebar-accent: oklch(0.2 0.02 240);
-  --sidebar-accent-foreground: oklch(0.98 0.005 240);
-  --sidebar-border: oklch(0.2 0.02 240);
-  --sidebar-ring: oklch(0.7 0.1 220);
+  --sidebar: 217 57% 8%;
+  --sidebar-foreground: 210 20% 98%;
+  --sidebar-primary: 199 70% 63%;
+  --sidebar-primary-foreground: 217 57% 10%;
+  --sidebar-accent: 217 50% 15%;
+  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar-border: 217 50% 15%;
+  --sidebar-ring: 199 70% 63%;
 }
