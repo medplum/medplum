@@ -1,132 +1,105 @@
 /**
  * MEDrecord Brand Theme
  * 
- * Deep Trust Blue color palette for the overarching eHealth platform brand.
- * Based on Brand Positioning Report (July 2025).
- * Import after globals.css to override base tokens.
- * 
- * Colors:
- * - Deep Trust Blue (Primary): #2C5F9B
- * - Clear Sky Blue: #5DADE2
- * - Vital Teal: #4A9C8D
- * - Professional Gray: #6C757D
- * - Golden Amber: #D69E2E
- * - Dark Navy: #1A365D
- * 
- * Typography:
- * - Headings: IBM Plex Sans (400, 500, 600, 700)
- * - Body: Inter (400, 500, 600)
+ * Colors from Brand Positioning Report (July 2025):
+ * - Deep Trust Blue (Primary): #2C5F9B -> HSL 213 56% 39%
+ * - Clear Sky Blue: #5DADE2 -> HSL 199 70% 63%
+ * - Vital Teal (Accent): #4A9C8D -> HSL 167 36% 45%
+ * - Professional Gray: #6C757D -> HSL 208 7% 46%
+ * - Golden Amber: #D69E2E -> HSL 43 67% 51%
+ * - Dark Navy (Sidebar): #1A365D -> HSL 217 57% 23%
  */
 
-@layer base {
-  :root {
-    /* Primary - Deep Trust Blue #2C5F9B */
-    --primary: 216 56% 39%;
-    --primary-foreground: 0 0% 100%;
+:root {
+  /* Primary - Deep Trust Blue #2C5F9B */
+  --primary: 213 56% 39%;
+  --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Clear Sky Blue #5DADE2 */
-    --secondary: 197 67% 63%;
-    --secondary-foreground: 216 56% 25%;
+  /* Secondary - Clear Sky Blue #5DADE2 */
+  --secondary: 199 70% 63%;
+  --secondary-foreground: 217 57% 15%;
 
-    /* Accent - Vital Teal #4A9C8D */
-    --accent: 168 35% 45%;
-    --accent-foreground: 0 0% 100%;
+  /* Accent - Vital Teal #4A9C8D */
+  --accent: 167 36% 45%;
+  --accent-foreground: 0 0% 100%;
 
-    /* Muted - Professional Gray #6C757D */
-    --muted: 210 11% 71%;
-    --muted-foreground: 210 11% 46%;
+  /* Background - Light with blue tint */
+  --background: 210 20% 98%;
+  --foreground: 217 33% 17%;
 
-    /* Background */
-    --background: 210 40% 98%;
-    --foreground: 215 28% 17%;
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 217 33% 17%;
 
-    /* Card */
-    --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 217 33% 17%;
 
-    /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
+  /* Muted - Professional Gray */
+  --muted: 210 16% 93%;
+  --muted-foreground: 208 7% 46%;
 
-    /* Border */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+  /* Border */
+  --border: 214 20% 88%;
+  --input: 214 20% 88%;
 
-    /* Ring */
-    --ring: 216 56% 39%;
+  /* Ring - matches primary */
+  --ring: 213 56% 39%;
 
-    /* Semantic - Success (Vital Teal) */
-    --success: 168 35% 45%;
-    --success-foreground: 0 0% 100%;
+  /* Sidebar - Dark Navy #1A365D */
+  --sidebar: 217 57% 23%;
+  --sidebar-foreground: 210 20% 98%;
+  --sidebar-primary: 199 70% 63%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 217 50% 30%;
+  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar-border: 217 50% 30%;
+  --sidebar-ring: 199 70% 63%;
+}
 
-    /* Semantic - Warning (Golden Amber #D69E2E) */
-    --warning: 43 74% 51%;
-    --warning-foreground: 0 0% 100%;
+.dark {
+  /* Primary - Clear Sky Blue (brighter in dark) */
+  --primary: 199 70% 63%;
+  --primary-foreground: 217 57% 15%;
 
-    /* Semantic - Destructive */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+  /* Secondary - Deep Trust Blue */
+  --secondary: 213 56% 39%;
+  --secondary-foreground: 0 0% 100%;
 
-    /* Chart colors - Blue spectrum */
-    --chart-1: 216 56% 39%;
-    --chart-2: 197 67% 63%;
-    --chart-3: 168 35% 45%;
-    --chart-4: 43 74% 51%;
-    --chart-5: 210 11% 46%;
+  /* Accent - Vital Teal */
+  --accent: 167 40% 50%;
+  --accent-foreground: 0 0% 100%;
 
-    /* Sidebar - Dark Navy #1A365D */
-    --sidebar-background: 215 54% 23%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 197 67% 63%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 216 56% 30%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 54% 30%;
-  }
+  /* Background - Dark Navy */
+  --background: 217 57% 10%;
+  --foreground: 210 20% 98%;
 
-  .dark {
-    /* Primary - Clear Sky Blue (brighter in dark mode) */
-    --primary: 197 67% 63%;
-    --primary-foreground: 215 28% 10%;
+  /* Card */
+  --card: 217 50% 15%;
+  --card-foreground: 210 20% 98%;
 
-    /* Secondary */
-    --secondary: 216 56% 50%;
-    --secondary-foreground: 0 0% 100%;
+  /* Popover */
+  --popover: 217 50% 15%;
+  --popover-foreground: 210 20% 98%;
 
-    /* Accent */
-    --accent: 168 35% 55%;
-    --accent-foreground: 0 0% 100%;
+  /* Muted */
+  --muted: 217 50% 20%;
+  --muted-foreground: 215 16% 60%;
 
-    /* Background - Dark Navy */
-    --background: 215 28% 10%;
-    --foreground: 210 40% 98%;
+  /* Border */
+  --border: 217 50% 20%;
+  --input: 217 50% 20%;
 
-    /* Card */
-    --card: 215 28% 14%;
-    --card-foreground: 210 40% 98%;
+  /* Ring */
+  --ring: 199 70% 63%;
 
-    /* Popover */
-    --popover: 215 28% 14%;
-    --popover-foreground: 210 40% 98%;
-
-    /* Border */
-    --border: 215 28% 20%;
-    --input: 215 28% 20%;
-
-    /* Ring */
-    --ring: 197 67% 63%;
-
-    /* Muted */
-    --muted: 215 28% 20%;
-    --muted-foreground: 210 11% 60%;
-
-    /* Sidebar */
-    --sidebar-background: 215 28% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 197 67% 63%;
-    --sidebar-primary-foreground: 215 28% 10%;
-    --sidebar-accent: 215 28% 15%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 15%;
-  }
+  /* Sidebar */
+  --sidebar: 217 57% 8%;
+  --sidebar-foreground: 210 20% 98%;
+  --sidebar-primary: 199 70% 63%;
+  --sidebar-primary-foreground: 217 57% 10%;
+  --sidebar-accent: 217 50% 15%;
+  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar-border: 217 50% 15%;
+  --sidebar-ring: 199 70% 63%;
 }

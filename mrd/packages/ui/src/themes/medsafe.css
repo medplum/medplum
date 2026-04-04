@@ -1,41 +1,104 @@
 /**
  * MedSafe Brand Theme
  * 
- * Orange/amber color palette for medication safety.
- * Import after globals.css to override base tokens.
+ * For medication safety platform
+ * 
+ * Colors:
+ * - Primary Orange: #EA580C -> HSL 21 90% 48%
+ * - Accent Blue: #2563EB -> HSL 221 83% 53%
+ * - Sidebar Zinc: #27272A -> HSL 240 6% 16%
  */
 
-@layer base {
-  :root {
-    /* Primary - MedSafe Orange */
-    --primary: 25 95% 50%;
-    --primary-foreground: 0 0% 100%;
+:root {
+  /* Primary - Safety Orange #EA580C */
+  --primary: 21 90% 48%;
+  --primary-foreground: 0 0% 100%;
 
-    /* Accent */
-    --accent: 25 95% 95%;
-    --accent-foreground: 25 95% 25%;
+  /* Secondary */
+  --secondary: 30 40% 96%;
+  --secondary-foreground: 21 33% 17%;
 
-    /* Ring */
-    --ring: 25 95% 50%;
+  /* Accent - Blue #2563EB */
+  --accent: 221 83% 53%;
+  --accent-foreground: 0 0% 100%;
 
-    /* Chart colors */
-    --chart-1: 25 95% 50%;
-    --chart-2: 25 75% 60%;
-    --chart-3: 25 55% 70%;
-    --chart-4: 25 35% 80%;
-    --chart-5: 25 15% 90%;
-  }
+  /* Background */
+  --background: 30 20% 98%;
+  --foreground: 21 33% 17%;
 
-  .dark {
-    /* Primary - MedSafe Orange (Dark Mode) */
-    --primary: 25 95% 55%;
-    --primary-foreground: 0 0% 100%;
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 21 33% 17%;
 
-    /* Accent */
-    --accent: 25 50% 20%;
-    --accent-foreground: 25 95% 90%;
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 21 33% 17%;
 
-    /* Ring */
-    --ring: 25 95% 55%;
-  }
+  /* Muted */
+  --muted: 30 40% 96%;
+  --muted-foreground: 21 16% 47%;
+
+  /* Border */
+  --border: 30 32% 91%;
+  --input: 30 32% 91%;
+
+  /* Ring */
+  --ring: 21 90% 48%;
+
+  /* Sidebar - Zinc #27272A */
+  --sidebar: 240 6% 16%;
+  --sidebar-foreground: 30 40% 98%;
+  --sidebar-primary: 21 90% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 6% 22%;
+  --sidebar-accent-foreground: 30 40% 98%;
+  --sidebar-border: 240 6% 22%;
+  --sidebar-ring: 21 90% 55%;
+}
+
+.dark {
+  /* Primary */
+  --primary: 21 90% 55%;
+  --primary-foreground: 21 33% 10%;
+
+  /* Secondary */
+  --secondary: 21 33% 17%;
+  --secondary-foreground: 30 40% 98%;
+
+  /* Accent */
+  --accent: 221 83% 60%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Background */
+  --background: 240 6% 10%;
+  --foreground: 30 40% 98%;
+
+  /* Card */
+  --card: 240 6% 15%;
+  --card-foreground: 30 40% 98%;
+
+  /* Popover */
+  --popover: 240 6% 15%;
+  --popover-foreground: 30 40% 98%;
+
+  /* Muted */
+  --muted: 240 6% 20%;
+  --muted-foreground: 30 20% 65%;
+
+  /* Border */
+  --border: 240 6% 20%;
+  --input: 240 6% 20%;
+
+  /* Ring */
+  --ring: 21 90% 55%;
+
+  /* Sidebar */
+  --sidebar: 240 6% 8%;
+  --sidebar-foreground: 30 40% 98%;
+  --sidebar-primary: 21 90% 55%;
+  --sidebar-primary-foreground: 240 6% 10%;
+  --sidebar-accent: 240 6% 15%;
+  --sidebar-accent-foreground: 30 40% 98%;
+  --sidebar-border: 240 6% 15%;
+  --sidebar-ring: 21 90% 55%;
 }

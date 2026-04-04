@@ -1,41 +1,104 @@
 /**
  * HealthTalk Brand Theme
  * 
- * Blue color palette for healthcare provider interface.
- * Import after globals.css to override base tokens.
+ * For healthcare professionals - questionnaire platform
+ * 
+ * Colors:
+ * - Primary Blue: #0066CC -> HSL 210 100% 40%
+ * - Accent Teal: #0D9488 -> HSL 173 85% 32%
+ * - Sidebar Slate: #334155 -> HSL 217 33% 27%
  */
 
-@layer base {
-  :root {
-    /* Primary - HealthTalk Blue */
-    --primary: 210 100% 40%;
-    --primary-foreground: 0 0% 100%;
+:root {
+  /* Primary - Trust Blue #0066CC */
+  --primary: 210 100% 40%;
+  --primary-foreground: 0 0% 100%;
 
-    /* Accent */
-    --accent: 210 100% 95%;
-    --accent-foreground: 210 100% 25%;
+  /* Secondary */
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 217 33% 17%;
 
-    /* Ring */
-    --ring: 210 100% 40%;
+  /* Accent - Teal #0D9488 */
+  --accent: 173 85% 32%;
+  --accent-foreground: 0 0% 100%;
 
-    /* Chart colors */
-    --chart-1: 210 100% 40%;
-    --chart-2: 210 80% 55%;
-    --chart-3: 210 60% 70%;
-    --chart-4: 210 40% 80%;
-    --chart-5: 210 20% 90%;
-  }
+  /* Background */
+  --background: 210 20% 98%;
+  --foreground: 217 33% 17%;
 
-  .dark {
-    /* Primary - HealthTalk Blue (Dark Mode) */
-    --primary: 210 100% 50%;
-    --primary-foreground: 0 0% 100%;
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 217 33% 17%;
 
-    /* Accent */
-    --accent: 210 50% 20%;
-    --accent-foreground: 210 100% 90%;
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 217 33% 17%;
 
-    /* Ring */
-    --ring: 210 100% 50%;
-  }
+  /* Muted */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  /* Border */
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+
+  /* Ring */
+  --ring: 210 100% 40%;
+
+  /* Sidebar - Slate #334155 */
+  --sidebar: 217 33% 27%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 210 100% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 217 33% 35%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 35%;
+  --sidebar-ring: 210 100% 50%;
+}
+
+.dark {
+  /* Primary */
+  --primary: 210 100% 50%;
+  --primary-foreground: 217 33% 10%;
+
+  /* Secondary */
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Accent */
+  --accent: 173 70% 40%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Background */
+  --background: 217 33% 10%;
+  --foreground: 210 40% 98%;
+
+  /* Card */
+  --card: 217 33% 15%;
+  --card-foreground: 210 40% 98%;
+
+  /* Popover */
+  --popover: 217 33% 15%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Muted */
+  --muted: 217 33% 20%;
+  --muted-foreground: 215 20% 65%;
+
+  /* Border */
+  --border: 217 33% 20%;
+  --input: 217 33% 20%;
+
+  /* Ring */
+  --ring: 210 100% 50%;
+
+  /* Sidebar */
+  --sidebar: 217 33% 8%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 210 100% 50%;
+  --sidebar-primary-foreground: 217 33% 10%;
+  --sidebar-accent: 217 33% 15%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 15%;
+  --sidebar-ring: 210 100% 50%;
 }

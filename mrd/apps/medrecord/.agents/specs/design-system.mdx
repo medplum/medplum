@@ -2,176 +2,152 @@
 
 ## Overview
 
-MEDrecord uses **Mantine** as the UI framework - the same system Medplum uses natively. This ensures sync-safe theming and consistent design across all brands.
+MEDrecord brands use **Tailwind CSS** as the UI framework for all custom applications deployed on Vercel/Next.js. This is separate from Medplum's internal Mantine system which remains untouched for upstream compatibility.
 
-## Theming Architecture
+## Architecture
 
-### Single Source of Truth
+### Two Systems, Clearly Separated
 
-Each brand has **one** Mantine theme file:
+| Context | Framework | Location | Owner |
+|---------|-----------|----------|-------|
+| **Medplum upstream** | Mantine | `/packages/*` | Medplum (do not touch) |
+| **MEDrecord brands** | Tailwind | `/mrd/*` | MEDrecord team |
 
-```
-mrd/apps/
-├── healthtalk/src/theme.ts    # HealthTalk theme
-├── coachi/src/theme.ts        # Coachi theme
-├── medsafe/src/theme.ts       # MedSafe theme
-└── medrecord/src/theme.ts     # MEDrecord theme
-```
-
-No CSS files, no OKLCH, no runtime generation - just Mantine's native `createTheme()`.
+This separation ensures:
+- Upstream merges never conflict with our styling
+- v0/Vercel/Next.js native Tailwind support
+- Brand theming via CSS custom properties
 
 ---
 
-## Theme Structure
+## Theming Architecture
 
-### Mantine Theme File
+### File Structure
 
-```typescript
-// mrd/apps/healthtalk/src/theme.ts
-import { createTheme, MantineColorsTuple } from '@mantine/core';
-
-const healthtalkBlue: MantineColorsTuple = [
-  '#E6F0FF',  // 0 - lightest
-  '#CCE0FF',  // 1
-  '#99C2FF',  // 2
-  '#66A3FF',  // 3
-  '#3385FF',  // 4
-  '#0066CC',  // 5 - primary (default)
-  '#0052A3',  // 6
-  '#003D7A',  // 7
-  '#002952',  // 8
-  '#001429',  // 9 - darkest
-];
-
-export const healthtalkTheme = createTheme({
-  primaryColor: 'healthtalkBlue',
-  colors: {
-    healthtalkBlue,
-  },
-  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-  headings: {
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-    fontWeight: '600',
-  },
-  defaultRadius: 'md',
-});
+```
+mrd/packages/ui/src/
+├── globals.css              # Base Tailwind tokens (brand-agnostic)
+└── themes/
+    ├── medrecord.css        # MEDrecord brand colors
+    ├── healthtalk.css       # HealthTalk brand colors
+    ├── coachi.css           # Coachi brand colors
+    └── medsafe.css          # MedSafe brand colors
 ```
 
-### Applying Theme
+### How It Works
 
-```typescript
-// mrd/apps/healthtalk/app/layout.tsx
-import { MantineProvider } from '@mantine/core';
-import { healthtalkTheme } from '../src/theme';
-import '@mantine/core/styles.css';
+1. **globals.css** - Defines all CSS custom properties with neutral defaults
+2. **themes/{brand}.css** - Overrides `--primary`, `--accent`, etc. with brand colors
+3. **layout.tsx** - Imports both: `@import globals.css` then `@import themes/{brand}.css`
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="nl">
-      <body>
-        <MantineProvider theme={healthtalkTheme}>
-          {children}
-        </MantineProvider>
-      </body>
-    </html>
-  );
+---
+
+## CSS Custom Properties
+
+All colors use HSL format for simplicity:
+
+```css
+:root {
+  --primary: 217 65% 39%;           /* HSL values only */
+  --primary-foreground: 0 0% 100%;
+  --background: 210 20% 98%;
+  --foreground: 217 33% 17%;
+  /* ... */
 }
 ```
+
+### Token Reference
+
+| Token | Usage |
+|-------|-------|
+| `--primary` | Buttons, links, active states |
+| `--primary-foreground` | Text on primary backgrounds |
+| `--secondary` | Secondary buttons, less emphasis |
+| `--accent` | Highlights, badges, accents |
+| `--muted` | Disabled states, subtle backgrounds |
+| `--background` | Page background |
+| `--foreground` | Primary text |
+| `--border` | Borders, dividers |
+| `--ring` | Focus rings |
+| `--sidebar` | Sidebar background |
 
 ---
 
 ## Brand Color Palettes
 
-Each brand uses a 10-shade color palette (Mantine standard):
-
-| Brand | Primary | Hex (shade 5) | Use Case |
-|-------|---------|---------------|----------|
-| **HealthTalk** | Blue | `#0066CC` | Trust, healthcare, communication |
-| **Coachi** | Green | `#2E7D32` | Growth, wellness, coaching |
-| **MedSafe** | Teal | `#00796B` | Safety, medication, reliability |
-| **MEDrecord** | Indigo | `#3F51B5` | Professional, enterprise, core |
-
-### Color Shade Usage
-
-| Shade | Usage | Example |
-|-------|-------|---------|
-| 0-2 | Backgrounds, hover states | Light backgrounds |
-| 3-4 | Borders, secondary elements | Input borders |
-| **5** | **Primary color** | Buttons, links |
-| 6-7 | Hover/active states | Button hover |
-| 8-9 | Text on light backgrounds | Dark text |
-
----
-
-## Shared Components (@mrd/ui)
-
-The `@mrd/ui` package provides shared components that work with any Mantine theme:
-
-```typescript
-// Using shared component
-import { DataTable } from '@mrd/ui/components/data-table';
-
-// Component automatically inherits brand theme from MantineProvider
-<DataTable data={patients} columns={columns} />
-```
-
-### Package Structure
-
-```
-mrd/packages/ui/
-├── src/
-│   ├── components/           # Shared UI components
-│   │   ├── data-table.tsx
-│   │   ├── form-builder.tsx
-│   │   └── ...
-│   └── lib/
-│       └── utils.ts          # cn() and other utilities
-└── package.json
-```
+| Brand | Primary | Accent | Sidebar |
+|-------|---------|--------|---------|
+| **MEDrecord** | Deep Trust Blue `#2C5F9B` | Vital Teal `#4A9C8D` | Dark Navy `#1A365D` |
+| **HealthTalk** | Sky Blue `#0066CC` | Teal `#0D9488` | Slate `#334155` |
+| **Coachi** | Forest Green `#2E7D32` | Amber `#F59E0B` | Emerald `#064E3B` |
+| **MedSafe** | Safety Orange `#EA580C` | Blue `#2563EB` | Zinc `#27272A` |
 
 ---
 
 ## Typography
 
-All brands use Inter as the primary font:
+All brands use the same font stack:
 
-```typescript
-fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+```css
+--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 ```
 
-| Element | Weight | Size |
-|---------|--------|------|
-| H1 | 600 | 2.125rem |
-| H2 | 600 | 1.625rem |
-| H3 | 600 | 1.375rem |
-| Body | 400 | 1rem |
-| Small | 400 | 0.875rem |
+| Element | Size | Weight |
+|---------|------|--------|
+| H1 | 2.25rem | 700 |
+| H2 | 1.875rem | 600 |
+| H3 | 1.5rem | 600 |
+| Body | 1rem | 400 |
+| Small | 0.875rem | 400 |
 
 ---
 
-## Accessibility
+## Using in Components
 
-### Color Contrast
+```tsx
+// Tailwind classes automatically use CSS custom properties
+<button className="bg-primary text-primary-foreground hover:bg-primary/90">
+  Submit
+</button>
 
-All brand color palettes are designed to meet WCAG 2.1 AA:
+<div className="bg-sidebar text-sidebar-foreground">
+  <nav>...</nav>
+</div>
+```
 
-- Primary text (shade 5 on white): minimum 4.5:1
-- Interactive elements: minimum 3:1
+---
 
-### Dark Mode
+## Dark Mode
 
-Mantine handles dark mode automatically:
+Tailwind handles dark mode via the `.dark` class:
+
+```css
+.dark {
+  --background: 217 33% 10%;
+  --foreground: 210 20% 98%;
+  /* ... */
+}
+```
+
+---
+
+## Shared Components (@mrd/ui)
+
+The `@mrd/ui` package provides shared Tailwind components:
 
 ```typescript
-<MantineProvider 
-  theme={healthtalkTheme}
-  defaultColorScheme="auto"  // Respects system preference
->
+import { cn } from '@mrd/ui/lib/utils';
+import { Button } from '@mrd/ui/components/button';
+
+// Components use Tailwind + CSS custom properties
+<Button variant="primary">Click me</Button>
 ```
 
 ---
 
 ## Related Documentation
 
-- [Multi-Brand Architecture](./multi-brand.mdx) - Brand theming overview
-- [Multi-Tenant Architecture](./multi-tenant.mdx) - Tenant isolation
+- [Brand Style Guide](./brand-style-guide.mdx) - Logo, colors, typography per brand
+- [Multi-Brand Architecture](./multi-brand.mdx) - How brands are configured
+- [Gateway Integration](./gateway-integration.mdx) - How brand is determined per tenant

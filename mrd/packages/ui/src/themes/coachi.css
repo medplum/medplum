@@ -1,41 +1,104 @@
 /**
  * Coachi Brand Theme
  * 
- * Green color palette for patient/coaching interface.
- * Import after globals.css to override base tokens.
+ * For patients - self-help and coaching platform
+ * 
+ * Colors:
+ * - Primary Green: #2E7D32 -> HSL 123 46% 34%
+ * - Accent Amber: #F59E0B -> HSL 38 92% 50%
+ * - Sidebar Emerald: #064E3B -> HSL 162 85% 16%
  */
 
-@layer base {
-  :root {
-    /* Primary - Coachi Green */
-    --primary: 142 70% 35%;
-    --primary-foreground: 0 0% 100%;
+:root {
+  /* Primary - Forest Green #2E7D32 */
+  --primary: 123 46% 34%;
+  --primary-foreground: 0 0% 100%;
 
-    /* Accent */
-    --accent: 142 70% 95%;
-    --accent-foreground: 142 70% 20%;
+  /* Secondary */
+  --secondary: 138 40% 96%;
+  --secondary-foreground: 123 33% 17%;
 
-    /* Ring */
-    --ring: 142 70% 35%;
+  /* Accent - Amber #F59E0B */
+  --accent: 38 92% 50%;
+  --accent-foreground: 0 0% 0%;
 
-    /* Chart colors */
-    --chart-1: 142 70% 35%;
-    --chart-2: 142 55% 50%;
-    --chart-3: 142 40% 65%;
-    --chart-4: 142 25% 80%;
-    --chart-5: 142 10% 90%;
-  }
+  /* Background */
+  --background: 138 20% 98%;
+  --foreground: 123 33% 17%;
 
-  .dark {
-    /* Primary - Coachi Green (Dark Mode) */
-    --primary: 142 70% 45%;
-    --primary-foreground: 0 0% 100%;
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 123 33% 17%;
 
-    /* Accent */
-    --accent: 142 40% 20%;
-    --accent-foreground: 142 70% 90%;
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 123 33% 17%;
 
-    /* Ring */
-    --ring: 142 70% 45%;
-  }
+  /* Muted */
+  --muted: 138 40% 96%;
+  --muted-foreground: 138 16% 47%;
+
+  /* Border */
+  --border: 138 32% 91%;
+  --input: 138 32% 91%;
+
+  /* Ring */
+  --ring: 123 46% 34%;
+
+  /* Sidebar - Emerald #064E3B */
+  --sidebar: 162 85% 16%;
+  --sidebar-foreground: 138 40% 98%;
+  --sidebar-primary: 123 50% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 162 70% 22%;
+  --sidebar-accent-foreground: 138 40% 98%;
+  --sidebar-border: 162 70% 22%;
+  --sidebar-ring: 123 50% 45%;
+}
+
+.dark {
+  /* Primary */
+  --primary: 123 50% 45%;
+  --primary-foreground: 123 33% 10%;
+
+  /* Secondary */
+  --secondary: 123 33% 17%;
+  --secondary-foreground: 138 40% 98%;
+
+  /* Accent */
+  --accent: 38 85% 55%;
+  --accent-foreground: 0 0% 0%;
+
+  /* Background */
+  --background: 123 33% 10%;
+  --foreground: 138 40% 98%;
+
+  /* Card */
+  --card: 123 33% 15%;
+  --card-foreground: 138 40% 98%;
+
+  /* Popover */
+  --popover: 123 33% 15%;
+  --popover-foreground: 138 40% 98%;
+
+  /* Muted */
+  --muted: 123 33% 20%;
+  --muted-foreground: 138 20% 65%;
+
+  /* Border */
+  --border: 123 33% 20%;
+  --input: 123 33% 20%;
+
+  /* Ring */
+  --ring: 123 50% 45%;
+
+  /* Sidebar */
+  --sidebar: 162 85% 10%;
+  --sidebar-foreground: 138 40% 98%;
+  --sidebar-primary: 123 50% 45%;
+  --sidebar-primary-foreground: 162 85% 10%;
+  --sidebar-accent: 162 70% 15%;
+  --sidebar-accent-foreground: 138 40% 98%;
+  --sidebar-border: 162 70% 15%;
+  --sidebar-ring: 123 50% 45%;
 }
