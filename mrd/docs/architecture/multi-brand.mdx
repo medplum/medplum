@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MEDrecord ecosystem consists of multiple brands, each serving different healthcare use cases while sharing common infrastructure and codebase.
+MEDrecord owns multiple brands, each serving different healthcare use cases. **We choose which brand to assign to each tenant** - the healthcare institution sees our branding, not their own.
 
 | Brand | Purpose | Primary Users |
 |-------|---------|---------------|
@@ -11,13 +11,39 @@ The MEDrecord ecosystem consists of multiple brands, each serving different heal
 | **MedSafe** | Medication safety and compliance | Pharmacists, Patients |
 | **MEDrecord** | Core EHR functionality | All healthcare roles |
 
-For tenant (healthcare institution) isolation, see [Multi-Tenant Architecture](./multi-tenant.mdx).
+---
+
+## Key Principle
+
+| Question | Answer |
+|----------|--------|
+| Who chooses the brand? | **MEDrecord** |
+| Does the healthcare institution have their own branding? | **No** |
+| What does the user see? | **Our brand** (HealthTalk/Coachi/etc) |
+| Where is brand configured? | **Gateway** (not Medplum) |
+
+---
+
+## Brand Assignment Flow
+
+```
+Tenant: ziekenhuis-amsterdam
+│
+├── Gateway Config: brand = "healthtalk"
+│
+├── User logs in
+│   └── Gateway returns: { brand: "healthtalk", tenant_id: "ziekenhuis-amsterdam" }
+│
+└── App displays: HealthTalk logo, HealthTalk colors, HealthTalk UI
+```
+
+The healthcare institution never configures branding. We configure it in the Gateway.
 
 ---
 
 ## Brand Theming (Mantine Native)
 
-MEDrecord uses **Mantine theming** - the same system Medplum uses natively. This ensures:
+MEDrecord uses **Mantine theming** - the same system Medplum uses. This ensures:
 
 - **Sync-safe** - No Medplum code modifications
 - **Single source of truth** - One theme file per brand
@@ -25,14 +51,12 @@ MEDrecord uses **Mantine theming** - the same system Medplum uses natively. This
 
 ### Theme File Structure
 
-Each brand has a Mantine theme file:
-
 ```
 mrd/apps/
-├── healthtalk/src/theme.ts    # HealthTalk theme
-├── coachi/src/theme.ts        # Coachi theme
-├── medsafe/src/theme.ts       # MedSafe theme
-└── medrecord/src/theme.ts     # MEDrecord theme
+├── healthtalk/src/theme.ts    # HealthTalk theme (blue)
+├── coachi/src/theme.ts        # Coachi theme (green)
+├── medsafe/src/theme.ts       # MedSafe theme (teal)
+└── medrecord/src/theme.ts     # MEDrecord theme (indigo)
 ```
 
 ### Theme Definition
@@ -47,7 +71,7 @@ const healthtalkBlue: MantineColorsTuple = [
   '#99C2FF',  // 2
   '#66A3FF',  // 3
   '#3385FF',  // 4
-  '#0066CC',  // 5 - primary (default)
+  '#0066CC',  // 5 - primary
   '#0052A3',  // 6
   '#003D7A',  // 7
   '#002952',  // 8
@@ -64,28 +88,39 @@ export const healthtalkTheme = createTheme({
     fontFamily: 'Inter, sans-serif',
   },
 });
+
+export const brandConfig = {
+  name: 'HealthTalk',
+  tagline: 'Patient Communication Platform',
+  logoUrl: '/logos/healthtalk.svg',
+};
 ```
 
-### Brand Color Palettes
+### Brand Color Reference
 
-| Brand | Primary Color | Hex | Use Case |
-|-------|---------------|-----|----------|
+| Brand | Primary Color | Hex | Purpose |
+|-------|---------------|-----|---------|
 | **HealthTalk** | Blue | `#0066CC` | Trust, healthcare, communication |
 | **Coachi** | Green | `#2E7D32` | Growth, wellness, coaching |
 | **MedSafe** | Teal | `#00796B` | Safety, medication, reliability |
 | **MEDrecord** | Indigo | `#3F51B5` | Professional, enterprise, core |
 
-### Applying Theme
+---
+
+## Applying Brand Theme
 
 ```typescript
 // mrd/apps/healthtalk/app/layout.tsx
 import { MantineProvider } from '@mantine/core';
-import { healthtalkTheme } from '../src/theme';
+import { healthtalkTheme, brandConfig } from '../src/theme';
 import '@mantine/core/styles.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl">
+      <head>
+        <title>{brandConfig.name}</title>
+      </head>
       <body>
         <MantineProvider theme={healthtalkTheme}>
           {children}
@@ -98,30 +133,66 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ---
 
-## Logo Override
+## Logo Configuration
 
-Medplum natively supports logo override via environment variable:
+Each brand has its own logo in the public folder:
 
-```bash
-# .env.local
-MEDPLUM_LOGO_URL=https://cdn.healthtalk.ai/logo.svg
+```
+mrd/apps/healthtalk/public/logos/
+└── healthtalk.svg
+
+mrd/apps/coachi/public/logos/
+└── coachi.svg
 ```
 
-This works automatically with Medplum's `<Logo />` component - no code changes needed.
-
-For custom logo components in our apps:
+Logo component:
 
 ```typescript
 // mrd/apps/healthtalk/components/brand-logo.tsx
-const BRAND_LOGOS = {
-  healthtalk: '/logos/healthtalk.svg',
-  coachi: '/logos/coachi.svg',
-  medsafe: '/logos/medsafe.svg',
-  medrecord: '/logos/medrecord.svg',
-};
+import { brandConfig } from '../src/theme';
 
-export function BrandLogo({ brand, size = 32 }: { brand: string; size?: number }) {
-  return <img src={BRAND_LOGOS[brand]} alt={brand} height={size} />;
+export function BrandLogo({ size = 32 }: { size?: number }) {
+  return (
+    <img 
+      src={brandConfig.logoUrl} 
+      alt={brandConfig.name} 
+      height={size} 
+    />
+  );
+}
+```
+
+For Medplum components that use their Logo, override via environment:
+
+```bash
+MEDPLUM_LOGO_URL=/logos/healthtalk.svg
+```
+
+---
+
+## Runtime Brand Resolution
+
+When a request comes in, the Gateway determines the brand:
+
+```typescript
+// lib/gateway.ts
+export async function verifyGatewayAuth(request: Request) {
+  const response = await fetch(`${GATEWAY_URL}/auth/verify`, {
+    headers: { 'Authorization': request.headers.get('Authorization') },
+  });
+  
+  return response.json();
+  // Returns: { auth: { brand: "healthtalk", tenant_id: "...", ... } }
+}
+
+// app/api/example/route.ts
+export async function GET(request: Request) {
+  const { auth } = await verifyGatewayAuth(request);
+  
+  // Brand-specific logic
+  if (auth.brand === 'healthtalk') {
+    // HealthTalk specific features
+  }
 }
 ```
 
@@ -133,20 +204,19 @@ export function BrandLogo({ brand, size = 32 }: { brand: string; size?: number }
 mrd/
 ├── packages/
 │   ├── ui/                     # @mrd/ui - Shared components
-│   │   ├── src/components/     # shadcn/ui components
-│   │   └── package.json
+│   │   └── src/components/     # Brand-agnostic UI components
 │   │
 │   └── agents/                 # @mrd/agents - Base agent configs
 │       ├── compliance/*.mdx
 │       ├── instincts/*.mdx
-│       ├── skills/*.mdx
-│       └── standards/*.mdx
+│       └── skills/*.mdx
 │
 └── apps/
     ├── healthtalk/
-    │   ├── src/theme.ts        # Mantine theme
-    │   ├── app/layout.tsx      # MantineProvider
-    │   ├── .agents/            # Brand-specific overrides
+    │   ├── src/theme.ts        # Brand theme + config
+    │   ├── public/logos/       # Brand logo
+    │   ├── app/                # Next.js app
+    │   ├── .agents/            # Brand-specific agent overrides
     │   └── specs/              # Brand specifications
     │
     ├── coachi/
@@ -169,42 +239,53 @@ overrides:
     - nen-7510-healthtalk.mdx
   skills:
     - questionnaire-voice.mdx
+    - patient-communication.mdx
 ```
 
 ---
 
 ## Creating a New Brand
 
-1. **Copy template** from existing brand in `mrd/apps/`
-2. **Update package.json** with new name (`@mrd/newbrand`)
-3. **Create theme.ts** with Mantine `createTheme()` and brand colors
-4. **Add logo** to `/public/logos/newbrand.svg`
-5. **Customize `.agents/`** with brand-specific MDX overrides
-6. **Add specs/** folder with brand specifications
+1. **Create app folder** - Copy from existing brand in `mrd/apps/`
+2. **Update package.json** - New name (`@mrd/newbrand`)
+3. **Create theme.ts** - Mantine theme with brand colors
+4. **Add logo** - `/public/logos/newbrand.svg`
+5. **Configure agents** - `.agents/config.yaml` with overrides
+6. **Add specs** - `specs/` folder with brand specifications
+7. **Register in Gateway** - Add brand to Gateway config
 
 ---
 
 ## Environment Variables
 
 ```bash
-# Brand identification
-NEXT_PUBLIC_BRAND=healthtalk
-NEXT_PUBLIC_BRAND_NAME="HealthTalk"
-
-# Logo override (Medplum native)
-MEDPLUM_LOGO_URL=https://cdn.healthtalk.ai/logo.svg
-
-# Gateway (shared)
+# Server-side
 GATEWAY_URL=https://auth-test-b2c.healthtalk.ai
+MEDPLUM_LOGO_URL=/logos/healthtalk.svg
 
-# Tenant-specific (see multi-tenant.mdx)
-MEDPLUM_PROJECT_ID=healthtalk-ziekenhuis-a
+# These come from Gateway at runtime, not hardcoded:
+# - brand
+# - tenant_id
+# - organization_id
 ```
+
+---
+
+## Summary
+
+| Concept | Definition |
+|---------|------------|
+| **Brand** | Our product (HealthTalk/Coachi/etc) |
+| **Who chooses** | MEDrecord |
+| **Where configured** | Gateway |
+| **What user sees** | Our logo, our colors |
+| **Theme system** | Mantine (Medplum native) |
+| **Sync-safe** | Yes - all in `mrd/` namespace |
 
 ---
 
 ## Related Documentation
 
-- [Multi-Tenant Architecture](./multi-tenant.mdx) - Tenant isolation per healthcare institution
+- [Multi-Tenant Architecture](./multi-tenant.mdx) - Tenant = Medplum Project
+- [Gateway Integration](./gateway-integration.mdx) - Auth and brand resolution
 - [Design System](./design-system.mdx) - Shared UI components
-- [Agent Configuration](./agent-configuration.mdx) - MDX agent overrides

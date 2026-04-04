@@ -2,45 +2,213 @@
 
 ## Overview
 
-The HealthTalk Gateway (`auth-test-b2c.healthtalk.ai`) serves as the central authentication and routing layer for all brand applications. It provides:
+The Gateway (`auth-test-b2c.healthtalk.ai`) is the **single source of truth** for all authentication, tenant resolution, and brand assignment. It connects Azure B2C identity with our multi-tenant architecture.
 
-- **Azure AD B2C authentication**
-- **Brand routing** based on domain or token
-- **Tenant resolution** from ProjectMembership
-- **Request forwarding** to appropriate Medplum Projects
+**Key principle:** The app NEVER authenticates directly with Medplum. All auth flows through Gateway.
 
-## Request Flow
+---
 
-### 1. Authentication
+## Architecture
 
-Every request must include a valid authentication token:
+```
+User Login
+    │
+    ▼
+Azure B2C (identity provider)
+    │
+    ├── User authenticates
+    ├── B2C issues token
+    │
+    ▼
+Gateway
+    │
+    ├── Validates B2C token
+    ├── Looks up user in Gateway database
+    ├── Resolves tenant_id (Medplum Project)
+    ├── Resolves organization_id (department)
+    ├── Determines brand (MEDrecord decides)
+    ├── Returns enriched auth context
+    │
+    ▼
+Brand App (HealthTalk/Coachi/etc)
+    │
+    ├── Receives auth context from Gateway
+    ├── Uses tenant_id to scope Medplum queries
+    ├── Uses brand to apply correct theming
+    │
+    ▼
+Medplum API (data layer only)
+```
+
+---
+
+## Gateway Auth Response
+
+Every authenticated request returns this context:
 
 ```typescript
-// Server-side only - Next.js Route Handler
-import { gatewayClient } from '@mrd/gateway-client';
-
-export async function GET(request: Request) {
-  const token = request.headers.get('Authorization');
-  
-  // Gateway validates token and returns user context
-  const { user, brand, tenant } = await gatewayClient.authenticate(token);
-  
-  // user.id is verified from Gateway - use for all subsequent requests
-  // ...
+interface GatewayAuthResponse {
+  auth: {
+    // User identity (from Azure B2C)
+    user_id: string;              // Azure B2C user ID
+    email: string;                // User email
+    name: string;                 // Display name
+    
+    // Tenant context (from Gateway config)
+    tenant_id: string;            // Medplum Project ID
+    organization_id?: string;     // Department (optional)
+    
+    // Brand (MEDrecord determines)
+    brand: 'healthtalk' | 'coachi' | 'medsafe' | 'medrecord';
+    
+    // Permissions
+    roles: string[];              // ['practitioner', 'admin', etc]
+  };
 }
 ```
 
-### 2. Brand Resolution
+**This is the ONLY source of truth. The app trusts this completely.**
 
-The Gateway determines the brand from:
+---
 
-1. **Request domain** (e.g., `coachi.healthtalk.ai` -> Coachi)
-2. **Token claims** (brand identifier in JWT)
-3. **Explicit header** (`X-MRD-Brand: coachi`)
+## Request Flow
 
-### 3. Tenant Resolution
+### 1. Client Request
 
-Within a brand, the user's tenant(s) are resolved from their ProjectMembership.
+```typescript
+// Client sends request with B2C token
+const response = await fetch('/api/tasks', {
+  headers: {
+    'Authorization': `Bearer ${b2cToken}`,
+  },
+});
+```
+
+### 2. API Route Verifies via Gateway
+
+```typescript
+// app/api/tasks/route.ts
+import { verifyGatewayAuth, getMedplumClient } from '@/lib/gateway';
+
+export async function GET(request: Request) {
+  // Gateway validates B2C token and returns enriched context
+  const auth = await verifyGatewayAuth(request);
+  
+  // Now we have verified: user_id, tenant_id, brand, roles
+  const medplum = getMedplumClient(auth.tenant_id);
+  
+  const tasks = await medplum.searchResources('Task', {
+    status: 'requested',
+  });
+  
+  return Response.json(tasks);
+}
+```
+
+### 3. Gateway Client Implementation
+
+```typescript
+// lib/gateway.ts
+const GATEWAY_URL = process.env.GATEWAY_URL;
+
+export async function verifyGatewayAuth(request: Request): Promise<GatewayAuthResponse> {
+  const token = request.headers.get('Authorization');
+  
+  if (!token) {
+    throw new GatewayError('UNAUTHORIZED', 'No token provided');
+  }
+  
+  const response = await fetch(`${GATEWAY_URL}/auth/verify`, {
+    method: 'POST',
+    headers: {
+      'Authorization': token,
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new GatewayError(error.code, error.message);
+  }
+  
+  return response.json();
+}
+
+export function getMedplumClient(tenantId: string): MedplumClient {
+  // Get tenant-specific Medplum credentials from secure store
+  const credentials = getTenantCredentials(tenantId);
+  
+  return new MedplumClient({
+    baseUrl: process.env.MEDPLUM_BASE_URL,
+    clientId: credentials.clientId,
+    clientSecret: credentials.clientSecret,
+  });
+}
+```
+
+---
+
+## Azure B2C Integration
+
+### User Flow
+
+1. User visits app (e.g., `app.healthtalk.ai`)
+2. App redirects to Azure B2C login
+3. User authenticates (email/password, MFA, etc)
+4. B2C redirects back with token
+5. App sends token to Gateway for verification
+6. Gateway returns enriched auth context
+
+### B2C Configuration
+
+```bash
+# Environment variables
+AZURE_B2C_TENANT_ID=medrecord.onmicrosoft.com
+AZURE_B2C_CLIENT_ID=xxx
+AZURE_B2C_POLICY=B2C_1_SignUpSignIn
+```
+
+### Token Claims
+
+Gateway extracts these claims from B2C token:
+
+| Claim | Usage |
+|-------|-------|
+| `sub` | User ID |
+| `email` | User email |
+| `name` | Display name |
+| `extension_TenantId` | Custom claim for tenant (optional) |
+
+---
+
+## Gateway Database Schema
+
+The Gateway maintains its own database for tenant configuration:
+
+```typescript
+// Tenants table
+interface Tenant {
+  tenant_id: string;              // Primary key, e.g., "ziekenhuis-amsterdam"
+  display_name: string;           // "Ziekenhuis Amsterdam"
+  brand: string;                  // "healthtalk" - we choose this
+  medplum_project_id: string;     // Medplum Project ID
+  medplum_client_id: string;      // Medplum client credentials
+  medplum_client_secret: string;  // Encrypted
+  azure_b2c_tenant: string;       // B2C tenant for this institution
+  enabled: boolean;
+  created_at: Date;
+}
+
+// User-Tenant mappings
+interface UserTenant {
+  user_id: string;                // Azure B2C user ID
+  tenant_id: string;              // Foreign key to Tenant
+  organization_id?: string;       // Department within tenant
+  roles: string[];                // ['practitioner', 'admin']
+}
+```
+
+---
 
 ## Security Requirements
 
@@ -49,28 +217,23 @@ Within a brand, the user's tenant(s) are resolved from their ProjectMembership.
 All Gateway operations MUST run server-side:
 
 ```typescript
-// CORRECT: Server Component
-async function PatientList() {
-  const patients = await gateway.search('Patient');
-  return <ul>{patients.map(p => <li key={p.id}>{p.name}</li>)}</ul>;
-}
-
 // CORRECT: Route Handler
-export async function GET() {
-  const patients = await gateway.search('Patient');
-  return Response.json(patients);
+export async function GET(request: Request) {
+  const auth = await verifyGatewayAuth(request);
+  // ...
 }
 
 // CORRECT: Server Action
 'use server';
 export async function getPatients() {
-  return await gateway.search('Patient');
+  const auth = await verifyGatewayAuth(request);
+  // ...
 }
 
-// WRONG: Client Component - will fail
+// WRONG: Client Component
 'use client';
-function PatientList() {
-  const patients = gateway.search('Patient'); // ERROR: Cannot use on client
+function Component() {
+  const auth = verifyGatewayAuth(); // ERROR: Cannot run on client
 }
 ```
 
@@ -79,49 +242,86 @@ function PatientList() {
 ```bash
 # Server-side only (no NEXT_PUBLIC_ prefix)
 GATEWAY_URL=https://auth-test-b2c.healthtalk.ai
-MEDPLUM_PROJECT_ID=coachi-prod
-MEDPLUM_CLIENT_ID=xxx
-MEDPLUM_CLIENT_SECRET=xxx
+GATEWAY_API_KEY=xxx                    # For server-to-gateway auth
 
-# Client-safe (with NEXT_PUBLIC_ prefix)
-NEXT_PUBLIC_BRAND=coachi
-NEXT_PUBLIC_BRAND_NAME="Coachi"
+# Client-safe
+NEXT_PUBLIC_AZURE_B2C_TENANT=medrecord.onmicrosoft.com
+NEXT_PUBLIC_AZURE_B2C_CLIENT_ID=xxx
+NEXT_PUBLIC_AZURE_B2C_POLICY=B2C_1_SignUpSignIn
 ```
 
 ### Request Verification Checklist
 
-Every API route MUST verify:
+Every API route MUST:
 
 | Check | Implementation |
 |-------|----------------|
 | Token present | `request.headers.get('Authorization')` |
-| Token valid | `gateway.authenticate(request)` |
-| User ID verified | `auth.id` is present and not null |
-| Tenant in scope | Automatic via Gateway, or explicit check |
+| Token valid | `verifyGatewayAuth(request)` |
+| User verified | `auth.user_id` is present |
+| Tenant scoped | Use `auth.tenant_id` for all Medplum queries |
+| Brand applied | Use `auth.brand` for brand-specific logic |
+
+---
 
 ## Error Handling
 
 ```typescript
-import { GatewayError } from '@mrd/gateway-client';
+import { GatewayError } from '@/lib/gateway';
 
-try {
-  const result = await gateway.search('Patient');
-} catch (error) {
-  if (error instanceof GatewayError) {
-    switch (error.code) {
-      case 'UNAUTHORIZED':
-        // Token invalid or expired
-        return redirect('/login');
-      case 'FORBIDDEN':
-        // User lacks access to requested tenant
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-      case 'TENANT_NOT_FOUND':
-        // Requested tenant doesn't exist or user not enrolled
-        return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
-      default:
-        throw error;
+export async function GET(request: Request) {
+  try {
+    const auth = await verifyGatewayAuth(request);
+    // ...
+  } catch (error) {
+    if (error instanceof GatewayError) {
+      switch (error.code) {
+        case 'UNAUTHORIZED':
+          return Response.json({ error: 'Invalid token' }, { status: 401 });
+        case 'FORBIDDEN':
+          return Response.json({ error: 'Access denied' }, { status: 403 });
+        case 'TENANT_NOT_FOUND':
+          return Response.json({ error: 'Tenant not found' }, { status: 404 });
+        case 'TENANT_DISABLED':
+          return Response.json({ error: 'Tenant disabled' }, { status: 403 });
+        default:
+          throw error;
+      }
     }
+    throw error;
   }
-  throw error;
 }
 ```
+
+---
+
+## Gateway Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/auth/verify` | POST | Verify B2C token, return auth context |
+| `/auth/refresh` | POST | Refresh token |
+| `/tenants/:id` | GET | Get tenant config (admin only) |
+| `/tenants/:id/users` | GET | List users in tenant (admin only) |
+
+---
+
+## Control Flow Summary
+
+| Step | Component | Action |
+|------|-----------|--------|
+| 1 | User | Logs in via Azure B2C |
+| 2 | Azure B2C | Issues token |
+| 3 | App | Sends token to Gateway |
+| 4 | Gateway | Validates token, resolves tenant/brand |
+| 5 | App | Receives enriched auth context |
+| 6 | App | Uses context to scope all operations |
+| 7 | Medplum | Receives scoped requests (data layer only) |
+
+---
+
+## Related Documentation
+
+- [Multi-Tenant Architecture](./multi-tenant.mdx) - Tenant model and data isolation
+- [Multi-Brand Architecture](./multi-brand.mdx) - Brand theming
+- [Security & Compliance](./design-system.mdx) - NEN 7510 / AVG patterns
