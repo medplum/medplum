@@ -190,9 +190,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
         </div>
       )}
       {props.onBulk && (
-        <Button onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selected))}>
-          Bulk...
-        </Button>
+        <Button onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selected))}>Bulk...</Button>
       )}
     </div>
   );
