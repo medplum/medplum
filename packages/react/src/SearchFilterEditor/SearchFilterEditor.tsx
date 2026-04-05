@@ -6,7 +6,7 @@ import { Operator, deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -31,7 +31,9 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   const [search, setSearch] = useState(deepClone(props.search));
 
   const searchRef = useRef(search);
-  searchRef.current = search;
+  useLayoutEffect(() => {
+    searchRef.current = search;
+  });
 
   useEffect(() => {
     setSearch(deepClone(props.search));

@@ -25,7 +25,7 @@ import type {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
@@ -54,7 +54,9 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }
 
   const valueRef = useRef<PlanDefinition>(value);
-  valueRef.current = value;
+  useLayoutEffect(() => {
+    valueRef.current = value;
+  });
 
   useEffect(() => {
     medplum
@@ -118,7 +120,9 @@ interface ActionArrayBuilderProps {
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
   const actionsRef = useRef(props.actions);
-  actionsRef.current = props.actions;
+  useLayoutEffect(() => {
+    actionsRef.current = props.actions;
+  });
 
   function changeAction(changedAction: PlanDefinitionAction): void {
     props.onChange(

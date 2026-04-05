@@ -6,7 +6,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
@@ -87,22 +87,20 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
   const searchRef = useRef(search);
-  searchRef.current = search;
-
   const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>(undefined);
   const lastValueRef = useRef<string>(undefined);
-
   const timerRef = useRef<number>(timer);
-  timerRef.current = timer;
-
   const abortControllerRef = useRef<AbortController>(abortController);
-  abortControllerRef.current = abortController;
-
   const autoSubmitRef = useRef<boolean>(autoSubmit);
-  autoSubmitRef.current = autoSubmit;
-
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+
+  useLayoutEffect(() => {
+    searchRef.current = search;
+    timerRef.current = timer;
+    abortControllerRef.current = abortController;
+    autoSubmitRef.current = autoSubmit;
+    optionsRef.current = options;
+  });
 
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
