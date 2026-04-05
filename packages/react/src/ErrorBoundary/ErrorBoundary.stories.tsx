@@ -10,11 +10,11 @@ export default {
   component: ErrorBoundary,
 } as Meta;
 
-export const Basic = (): JSX.Element => {
-  function ErrorComponent(): JSX.Element {
-    throw new Error('Error');
-  }
+function ErrorComponent(): JSX.Element {
+  throw new Error('Error');
+}
 
+export const Basic = (): JSX.Element => {
   return (
     <Document>
       <div>Outside Error Boundary</div>

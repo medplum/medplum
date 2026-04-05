@@ -109,25 +109,17 @@ interface FilterRowInputProps {
 
 function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   const value: Filter = props.value;
-  const valueRef = useRef(value);
-  valueRef.current = value;
 
   function setFilterCode(newCode: string): void {
-    valueRef.current.code = newCode;
-    valueRef.current.operator = Operator.EQUALS;
-    valueRef.current.value = '';
-    props.onChange(valueRef.current);
+    props.onChange({ code: newCode, operator: Operator.EQUALS, value: '' });
   }
 
   function setFilterOperator(newOperator: Operator): void {
-    valueRef.current.operator = newOperator;
-    valueRef.current.value = '';
-    props.onChange(valueRef.current);
+    props.onChange({ code: value.code, operator: newOperator, value: '' });
   }
 
   function setFilterValue(newFilterValue: string): void {
-    valueRef.current.value = newFilterValue;
-    props.onChange(valueRef.current);
+    props.onChange({ code: value.code, operator: value.operator, value: newFilterValue });
   }
 
   const searchParam = props.searchParams[value.code];
