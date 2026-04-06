@@ -15,7 +15,7 @@ Visit management is at the heart of clinical documentation and patient care deli
 <br/>
 
 :::info Prerequisites
-Before following the guide below, make sure you have [data in your project](./getting-started#importing-data) (patients, practitioners, etc.) and that you are [signed in](./index#registering--signing-in) to Medplum Provider.
+Before following the guide below, make sure you have [data in your project](./getting-started#importing-data) (patients, practitioners, etc.) and that you are [signed in](/docs/provider#registering--signing-in) to Medplum Provider.
 :::
 
 ## Understanding Visits
