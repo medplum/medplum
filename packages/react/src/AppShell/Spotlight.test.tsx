@@ -56,11 +56,16 @@ describe('Spotlight', () => {
     jest.clearAllMocks();
     mockNavigate.mockReset();
     medplum = new MockClient();
-    spotlight.close();
+
+    act(() => {
+      spotlight.close();
+    });
   });
 
   afterEach(() => {
-    spotlight.close();
+    act(() => {
+      spotlight.close();
+    });
   });
 
   describe('Initial render', () => {
