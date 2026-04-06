@@ -16,7 +16,6 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
 
-
 const mockCoverage: WithId<Coverage> = {
   resourceType: 'Coverage',
   id: 'coverage-123',
@@ -71,17 +70,15 @@ function mockSearchOne(
   medplum: MockClient,
   opts: { bot?: Bot | undefined; practitionerRole?: PractitionerRole | undefined } = {}
 ): void {
-  vi.spyOn(medplum, 'searchOne').mockImplementation(
-    (async (resourceType: string) => {
-      if (resourceType === 'Bot') {
-        return opts.bot ?? undefined;
-      }
-      if (resourceType === 'PractitionerRole') {
-        return opts.practitionerRole ?? undefined;
-      }
-      return undefined;
-    }) as any
-  );
+  vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string) => {
+    if (resourceType === 'Bot') {
+      return opts.bot ?? undefined;
+    }
+    if (resourceType === 'PractitionerRole') {
+      return opts.practitionerRole ?? undefined;
+    }
+    return undefined;
+  }) as any);
 }
 
 function mockSearchResources(
@@ -92,20 +89,18 @@ function mockSearchResources(
     eligibilityResponses?: CoverageEligibilityResponse[];
   } = {}
 ): void {
-  vi.spyOn(medplum, 'searchResources').mockImplementation(
-    (async (resourceType: string) => {
-      if (resourceType === 'Coverage') {
-        return opts.coverages ?? [];
-      }
-      if (resourceType === 'CoverageEligibilityRequest') {
-        return opts.eligibilityRequests ?? [];
-      }
-      if (resourceType === 'CoverageEligibilityResponse') {
-        return opts.eligibilityResponses ?? [];
-      }
-      return [];
-    }) as any
-  );
+  vi.spyOn(medplum, 'searchResources').mockImplementation((async (resourceType: string) => {
+    if (resourceType === 'Coverage') {
+      return opts.coverages ?? [];
+    }
+    if (resourceType === 'CoverageEligibilityRequest') {
+      return opts.eligibilityRequests ?? [];
+    }
+    if (resourceType === 'CoverageEligibilityResponse') {
+      return opts.eligibilityResponses ?? [];
+    }
+    return [];
+  }) as any);
 }
 
 describe('EncounterCoverageEligibilityModal', () => {
@@ -116,19 +111,12 @@ describe('EncounterCoverageEligibilityModal', () => {
     vi.clearAllMocks();
   });
 
-  const setup = async (
-    props: Partial<Parameters<typeof EncounterCoverageEligibilityModal>[0]> = {}
-  ): Promise<void> => {
+  const setup = async (props: Partial<Parameters<typeof EncounterCoverageEligibilityModal>[0]> = {}): Promise<void> => {
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <EncounterCoverageEligibilityModal
-              patient={HomerSimpson}
-              opened={true}
-              onClose={vi.fn()}
-              {...props}
-            />
+            <EncounterCoverageEligibilityModal patient={HomerSimpson} opened={true} onClose={vi.fn()} {...props} />
           </MantineProvider>
         </MedplumProvider>
       );
@@ -304,11 +292,7 @@ describe('EncounterCoverageEligibilityModal', () => {
         expect(medplum.createResource).toHaveBeenCalledWith(
           expect.objectContaining({ resourceType: 'CoverageEligibilityRequest' })
         );
-        expect(medplum.executeBot).toHaveBeenCalledWith(
-          ExampleBot.id,
-          mockEligibilityRequest,
-          'application/fhir+json'
-        );
+        expect(medplum.executeBot).toHaveBeenCalledWith(ExampleBot.id, mockEligibilityRequest, 'application/fhir+json');
       });
     });
   });
