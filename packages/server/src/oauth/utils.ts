@@ -349,6 +349,11 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
       operator: Operator.EQUALS,
       value: login.user.reference,
     },
+    {
+      code: 'active',
+      operator: Operator.NOT,
+      value: 'false',
+    },
   ];
 
   if (login.project?.reference) {
