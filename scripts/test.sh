@@ -14,6 +14,9 @@ rm -rf coverage
 mkdir -p coverage/packages
 mkdir -p coverage/combined
 
+# Build
+npm run build
+
 # Seed the database
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
 # On a normal developer machine, this is run only rarely when setting up a new database
@@ -24,7 +27,7 @@ cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-se
 # Test
 # Even though docs do not have a "test" action, we still will build the docs via the 
 # global "build" job unless we filter it out
-npx turbo run test --concurrency=75% --filter=!@medplum/docs --force
+npx turbo run test --concurrency=1 --filter=!@medplum/docs --force
 
 # Find all coverage-final.json files in packages subdirectories
 for coverage_file in packages/*/coverage/coverage-final.json; do
