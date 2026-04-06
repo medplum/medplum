@@ -28,9 +28,9 @@ export interface SearchFilterEditorProps {
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
-  const [search, setSearch] = useState<SearchRequest>(deepClone(props.search));
+  const [search, setSearch] = useState(deepClone(props.search));
 
-  const searchRef = useRef<SearchRequest>(search);
+  const searchRef = useRef(search);
   searchRef.current = search;
 
   useEffect(() => {
@@ -109,7 +109,7 @@ interface FilterRowInputProps {
 
 function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   const value: Filter = props.value;
-  const valueRef = useRef<Filter>(value);
+  const valueRef = useRef(value);
   valueRef.current = value;
 
   function setFilterCode(newCode: string): void {

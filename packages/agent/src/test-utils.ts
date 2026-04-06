@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger } from '@medplum/core';
+import type { ILogger, MedplumClient, WithId } from '@medplum/core';
 import { LogLevel } from '@medplum/core';
+import type { Endpoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
+import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import type { AgentLoggerConfig } from './logger';
@@ -75,4 +77,38 @@ export function generateTestLogs(
 
     logMethod.call(logger, message, metadata);
   }
+}
+
+// Used only for tests that need a free port number with *nothing* listening on it.
+// For tests that start an Hl7Server, prefer `server.start(0)` which returns the OS-assigned
+// port and never has a release-then-rebind window.
+export async function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.listen(0, () => {
+      const { port } = server.address() as { port: number };
+      server.close((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(port);
+        }
+      });
+    });
+    server.on('error', reject);
+  });
+}
+
+export async function createEndpointWithRandomPort(
+  medplum: MedplumClient,
+  endpoint: Endpoint
+): Promise<[WithId<Endpoint>, number]> {
+  const port = await getFreePort();
+  const url = new URL(endpoint.address);
+  url.port = port.toString();
+  const createdEndpoint = await medplum.createResource({
+    ...endpoint,
+    address: url.toString(),
+  });
+  return [createdEndpoint, port];
 }

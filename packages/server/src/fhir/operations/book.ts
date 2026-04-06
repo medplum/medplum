@@ -12,14 +12,22 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, OperationDefinition, Patient, Reference, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Bundle,
+  HealthcareService,
+  OperationDefinition,
+  Patient,
+  Reference,
+  Slot,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { invariant } from '../../util/invariant';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
 import type { SchedulingParameters } from './utils/scheduling-parameters';
-import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
+import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const bookOperation = {
   resourceType: 'OperationDefinition',
@@ -43,8 +51,6 @@ type BookParameters = {
   'patient-reference'?: Reference<Patient>;
 };
 
-type Matcher = (params: SchedulingParameters) => boolean;
-
 function assertAllOk<T>(objects: (Error | T)[], msg: string, path?: string): asserts objects is T[] {
   objects.forEach((obj, idx) => {
     if (obj instanceof Error) {
@@ -61,29 +67,16 @@ function assertAllMatch<T>(objects: T[], msg: string): T {
   return first;
 }
 
-function makeMatcher(slot: Slot): Matcher {
-  const codes = (slot.serviceType ?? EMPTY).flatMap((concept) =>
-    (concept.coding ?? EMPTY).map((coding) => `${coding.system}|${coding.code}`)
-  );
-  const codeSet = new Set(codes);
-  return (schedulingParams: SchedulingParameters) => {
-    return schedulingParams.serviceType.some((codeableConcept) => {
-      return codeableConcept.coding?.some((coding) => codeSet.has(`${coding.system}|${coding.code}`));
-    });
-  };
-}
-
-function findMatchingSchedulingParameters(extensions: SchedulingParameters[], slot: Slot): SchedulingParameters[] {
-  const matcher = makeMatcher(slot);
-  const parameters = extensions.filter((ext) => matcher(ext));
-
-  const startDate = new Date(slot.start);
-  const endDate = new Date(slot.end);
-
-  const durationMs = endDate.getTime() - startDate.getTime();
-  const durationMinutes = durationMs / 1000 / 60;
-
-  return parameters.filter((ext) => ext.duration === durationMinutes);
+function serviceTypeTokens(slots: Slot[]): string[] {
+  const tokenSet = new Set<string>();
+  for (const slot of slots) {
+    for (const concept of slot.serviceType ?? EMPTY) {
+      for (const coding of concept.coding ?? EMPTY) {
+        tokenSet.add(`${coding.system ?? ''}|${coding.code ?? ''}`);
+      }
+    }
+  }
+  return [...tokenSet.values()];
 }
 
 function chooseActiveParameters(
@@ -94,7 +87,6 @@ function chooseActiveParameters(
 ): SchedulingParameters | undefined {
   const startDate = new Date(proposedSlot.start);
   const endDate = new Date(proposedSlot.end);
-  const serviceType = (proposedSlot.serviceType ?? EMPTY).flatMap((concept) => concept.coding ?? EMPTY);
   return parameters.find((params) => {
     const timeZone = params.timezone ?? actorTimeZone;
     const range = {
@@ -106,7 +98,7 @@ function chooseActiveParameters(
       availability,
       slots: existingSlots,
       range,
-      serviceType,
+      serviceType: proposedSlot.serviceType ?? EMPTY,
     });
     return result.some(
       (interval) => interval.start.getTime() <= range.start.getTime() && interval.end.getTime() >= range.end.getTime()
@@ -165,13 +157,26 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const actors = await ctx.repo.readReferences(schedules.flatMap((schedule) => schedule.actor));
   assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
 
+  // Collect all unique service type codes across all proposed slots, then fetch
+  // matching HealthcareService resources in a single query.
+  const allServiceTypes = serviceTypeTokens(proposedSlots);
+
+  const healthcareServices: HealthcareService[] =
+    allServiceTypes.length > 0
+      ? await ctx.repo.searchResources<HealthcareService>({
+          resourceType: 'HealthcareService',
+          filters: [{ code: 'service-type', operator: Operator.EQUALS, value: allServiceTypes.join(',') }],
+        })
+      : [];
+
   const bufferSlots: Slot[] = [];
 
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await Promise.all(
         proposedSlots.map(async (proposedSlot, index) => {
-          const schedule = schedules.find((s) => `Schedule/${s.id}` === proposedSlot.schedule.reference);
+          const scheduleRefString = getReferenceString(proposedSlot.schedule);
+          const schedule = schedules.find((s) => `Schedule/${s.id}` === scheduleRefString);
           invariant(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
@@ -183,8 +188,13 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             );
           }
 
-          const extensions = parseSchedulingParametersExtensions(schedule);
-          const parameters = findMatchingSchedulingParameters(extensions, proposedSlot);
+          const slotServiceTypes = serviceTypeTokens([proposedSlot]);
+
+          const durationMinutes = (Date.parse(proposedSlot.end) - Date.parse(proposedSlot.start)) / 60000;
+
+          const parameters = chooseSchedulingParameters(schedule, healthcareServices, slotServiceTypes)
+            .map(([params]) => params)
+            .filter((params) => params.duration === durationMinutes);
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
@@ -279,13 +289,6 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
         });
       }
 
-      const appointment = await ctx.repo.createResource<Appointment>({
-        resourceType: 'Appointment',
-        status: 'booked',
-        participant,
-        start,
-        end,
-      });
       const createdSlots = await Promise.all(
         proposedSlots.map((slot) =>
           ctx.repo.createResource({
@@ -295,6 +298,15 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
         )
       );
       const createdBufferSlots = await Promise.all(bufferSlots.map((slot) => ctx.repo.createResource(slot)));
+
+      const appointment = await ctx.repo.createResource<Appointment>({
+        resourceType: 'Appointment',
+        status: 'booked',
+        slot: createdSlots.map((slot) => ({ reference: getReferenceString(slot) })),
+        participant,
+        start,
+        end,
+      });
       return [appointment, ...createdSlots, ...createdBufferSlots];
     },
     { serializable: true }

@@ -38,6 +38,11 @@ const ARRAY_PATHS = [
 
   'code.translation',
   'value.translation',
+  'routeCode.translation',
+  'methodCode.translation',
+  'targetSiteCode.translation',
+  'approachSiteCode.translation',
+  'administrationUnitCode.translation',
 
   'section.entry',
 

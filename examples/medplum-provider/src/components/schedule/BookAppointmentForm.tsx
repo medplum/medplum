@@ -16,7 +16,7 @@ type BookAppointmentFormProps = {
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
 
   const { slot, onSuccess } = props;
 

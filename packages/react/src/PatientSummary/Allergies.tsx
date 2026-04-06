@@ -23,7 +23,7 @@ export interface AllergiesProps {
 export function Allergies(props: AllergiesProps): JSX.Element {
   const medplum = useMedplum();
   const { patient, encounter } = props;
-  const [allergies, setAllergies] = useState<AllergyIntolerance[]>(props.allergies);
+  const [allergies, setAllergies] = useState(props.allergies);
   const [opened, { open, close }] = useDisclosure(false);
   const [editAllergy, setEditAllergy] = useState<AllergyIntolerance>();
 

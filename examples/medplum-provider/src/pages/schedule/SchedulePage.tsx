@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Drawer, Stack, Text } from '@mantine/core';
+import { Box, Drawer, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
@@ -15,7 +15,6 @@ import { AppointmentDetails } from '../../components/schedule/AppointmentDetails
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-import { serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
@@ -193,7 +192,6 @@ export function SchedulePage(): JSX.Element | null {
   );
 
   const height = window.innerHeight - 60;
-  const serviceTypes = useMemo(() => schedule && serviceTypesFromSchedulingParameters(schedule), [schedule]);
 
   const handleAppointmentUpdate = useCallback((updated: Appointment) => {
     setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
@@ -243,10 +241,14 @@ export function SchedulePage(): JSX.Element | null {
             />
           </div>
 
-          {Boolean(serviceTypes?.length) && schedule && range && (
-            <Stack gap="md" justify="space-between" className={classes.findPane}>
-              <FindPane key={schedule.id} schedule={schedule} range={range} onSuccess={handleBookSuccess} />
-            </Stack>
+          {schedule && range && (
+            <FindPane
+              key={schedule.id}
+              schedule={schedule}
+              range={range}
+              onSuccess={handleBookSuccess}
+              className={classes.findPane}
+            />
           )}
         </div>
       </div>

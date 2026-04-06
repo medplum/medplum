@@ -61,7 +61,7 @@ const SYSTEM_ASYNCJOB_SEARCH: SearchRequest = {
 
 function AsyncJobs(): JSX.Element {
   const navigate = useNavigate();
-  const [search] = useState<SearchRequest>(SYSTEM_ASYNCJOB_SEARCH);
+  const [search] = useState(SYSTEM_ASYNCJOB_SEARCH);
 
   return (
     <Stack>

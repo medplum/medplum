@@ -15,10 +15,10 @@ import { useCallback, useState } from 'react';
 
 export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): JSX.Element {
   const medplum = useMedplum();
-  const [prescriptionStartDate, setPrescriptionStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [prescriptionEndDate, setPrescriptionEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [historyStartDate, setHistoryStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [historyEndDate, setHistoryEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [prescriptionStartDate, setPrescriptionStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [prescriptionEndDate, setPrescriptionEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [historyStartDate, setHistoryStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [historyEndDate, setHistoryEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const syncPrescriptions = useCallback(async () => {
