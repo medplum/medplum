@@ -1306,6 +1306,8 @@ curl -G 'https://api.medplum.com/fhir/R4/Communication' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block asyncEncountersVerifySearchesCurl
+*/
+
 // start-block threadLifecycleCloseHeaderTs
 await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'completed' }]);
 // end-block threadLifecycleCloseHeaderTs
