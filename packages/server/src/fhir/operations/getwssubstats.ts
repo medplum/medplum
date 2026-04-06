@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, isResourceType } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project } from '@medplum/fhirtypes';
+import type { OperationDefinition, Project, ResourceType } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
+import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -29,20 +30,9 @@ const operation: OperationDefinition = {
   ],
 };
 
-export interface WsSubCriteriaStats {
-  criteria: string;
-  count: number;
-}
-
 export interface WsSubResourceTypeStats {
   resourceType: string;
   count: number;
-}
-
-export interface WsSubResourceTypeDetailStats {
-  resourceType: string;
-  count: number;
-  criteria: WsSubCriteriaStats[];
 }
 
 export interface WsSubProjectStats {
@@ -52,30 +42,28 @@ export interface WsSubProjectStats {
   resourceTypes: WsSubResourceTypeStats[];
 }
 
-export interface WsSubProjectDetailStats {
-  projectId: string;
-  resourceTypes: WsSubResourceTypeDetailStats[];
-}
-
 export interface WsSubStats {
   projects: WsSubProjectStats[];
 }
 
-const ACTIVE_SUB_KEY_PREFIX = 'medplum:subscriptions:r4:project:';
-const ACTIVE_PART = ':active:';
+// Derive key structure from getActiveSubsKey to avoid duplicating key format
+const testProjectId = 'abc123';
+const testResourceType = 'Patient';
+const testSubsKey = getActiveSubsKey(testProjectId, testResourceType);
+const [ACTIVE_SUB_KEY_PREFIX, restOfSubsKey] = testSubsKey.split(testProjectId);
+const ACTIVE_KEY_SEPARATOR = restOfSubsKey.split(testResourceType)[0];
 
-export function parseActiveSubKey(key: string): { projectId: string; resourceType: string } | undefined {
+export function parseActiveSubKey(key: string): { projectId: string; resourceType: ResourceType } | undefined {
   if (!key.startsWith(ACTIVE_SUB_KEY_PREFIX)) {
     return undefined;
   }
-  const withoutPrefix = key.slice(ACTIVE_SUB_KEY_PREFIX.length);
-  const activeIdx = withoutPrefix.lastIndexOf(ACTIVE_PART);
-  if (activeIdx === -1) {
+  const rest = key.slice(ACTIVE_SUB_KEY_PREFIX.length);
+  const sepIdx = rest.indexOf(ACTIVE_KEY_SEPARATOR);
+  if (sepIdx === -1) {
     return undefined;
   }
-  const projectId = withoutPrefix.slice(0, activeIdx);
-  const resourceType = withoutPrefix.slice(activeIdx + ACTIVE_PART.length);
-  // Filter out legacy pre-release keys that used 'v2' instead of a resource type
+  const projectId = rest.slice(0, sepIdx);
+  const resourceType = rest.slice(sepIdx + ACTIVE_KEY_SEPARATOR.length);
   if (!isResourceType(resourceType)) {
     return undefined;
   }
@@ -88,7 +76,7 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
   const redis = getPubSubRedis();
 
   // Scan for all active subscription hash keys
-  const pattern = 'medplum:subscriptions:r4:project:*:active:*';
+  const pattern = getActiveSubsKey('*', '*');
   const keys: string[] = [];
   let cursor = '0';
   do {
