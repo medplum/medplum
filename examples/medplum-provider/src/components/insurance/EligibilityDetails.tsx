@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Divider, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
+import { Divider, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { formatDate, formatPeriod } from '@medplum/core';
 import type {
   CoverageEligibilityRequest,
@@ -135,7 +135,6 @@ function InsuranceSection({
   );
 }
 
-
 function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.Element {
   return (
     <Table.Tr>
@@ -151,7 +150,6 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }): JSX.E
     </Table.Tr>
   );
 }
-
 
 function formatOutcome(outcome: string | undefined): string {
   switch (outcome) {
