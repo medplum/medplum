@@ -137,16 +137,16 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'administration/provider-directory/provider-organizations' },
         { type: 'doc', id: 'administration/provider-directory/provider-networks' },
         { type: 'doc', id: 'administration/provider-directory/provider-credentials' },
-        {
-          type: 'category',
-          label: 'Questionnaires & Assessments',
-          link: { type: 'doc', id: 'administration/provider-directory/questionnaires/index' },
-          items: [
-            { type: 'doc', id: 'administration/provider-directory/questionnaires/basic-tutorial' },
-            { type: 'doc', id: 'administration/provider-directory/questionnaires/questionnaires-and-responses' },
-            { type: 'doc', id: 'administration/provider-directory/questionnaires/structured-data-capture' },
-          ],
-        },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Questionnaires & Assessments',
+      link: { type: 'doc', id: 'administration/provider-directory/questionnaires/index' },
+      items: [
+        { type: 'doc', id: 'administration/provider-directory/questionnaires/basic-tutorial' },
+        { type: 'doc', id: 'administration/provider-directory/questionnaires/questionnaires-and-responses' },
+        { type: 'doc', id: 'administration/provider-directory/questionnaires/structured-data-capture' },
       ],
     },
     { type: 'doc', id: 'careplans/protocols' },
