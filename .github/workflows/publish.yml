@@ -57,6 +57,9 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/1120
+          package-manager-cache: false
 
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
@@ -176,6 +179,9 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/1120
+          package-manager-cache: false
 
       # See: https://github.com/actions/cache/blob/cdf6c1fa76f9f475f3d7449005a359c84ca0f306/examples.md#node---npm
       - name: Get npm cache directory
@@ -384,6 +390,9 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/1120
+          package-manager-cache: false
 
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
@@ -474,6 +483,9 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/1120
+          package-manager-cache: false
 
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
