@@ -35,7 +35,7 @@
     "jest-worker": "30.3.0",
     "jsdom": "29.0.1",
     "typescript": "6.0.2",
-    "vite": "8.0.3",
+    "vite": "8.0.5",
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {
@@ -76,7 +76,7 @@
     "tsx": "4.21.0",
     "turbo": "2.8.20",
     "typescript": "6.0.2",
-    "vite": "8.0.3"
+    "vite": "8.0.5"
   },
   "packageManager": "npm@10.9.7",
   "engines": {
