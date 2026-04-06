@@ -130,9 +130,6 @@
     "@mantine/notifications": {
       "optional": true
     },
-    "@mantine/spotlight": {
-      "optional": true
-    },
     "@medplum/dosespot-core": {
       "optional": true
     },
