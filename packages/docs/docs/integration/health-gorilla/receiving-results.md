@@ -446,9 +446,11 @@ Health Gorilla returns detailed information about the performing laboratory for 
 
 ## Resolving Orders with Results {#resolving-orders-with-results}
 
+When a result is received, Medplum attempts to match it to an existing order (`ServiceRequest`).
+
 **Processing Logic:**
 
-1. `receive-from-health-gorilla` first attempts to match the incoming result to an existing order (`ServiceRequest`) by checking:
+1. `receive-from-health-gorilla` first attempts to match the incoming result to an existing order by checking:
    - `basedOn` references (which contain the requisition ID)
    - **Accession number (`ACSN` identifier)**: A unique identifier assigned by the _performing laboratory_ (e.g., Quest, Labcorp) to the specific specimen(s) when they are received and logged into their system.
    - **Placer number (`PLAC` identifier)**: The order ID assigned by the _ordering system_ (e.g., your EMR, Medplum, or the clinic) that placed the order.
@@ -463,14 +465,3 @@ Health Gorilla returns detailed information about the performing laboratory for 
 ### Quest
 
 - **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource *in-place*. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.
-
-## Special Workflows
-
-### Unsolicited Reports
-
-Occasionally, laboratories send results without a corresponding order in the system. This typically occurs when:
-
-- Providers order tests directly through lab websites or phone calls
-- Reflex testing triggers additional tests beyond the original order
-
-
