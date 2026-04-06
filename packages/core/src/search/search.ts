@@ -111,10 +111,6 @@ const MODIFIER_OPERATORS: Record<string, Operator> = {
   missing: Operator.MISSING,
   identifier: Operator.IDENTIFIER,
   iterate: Operator.ITERATE,
-
-  // Allow equality prefixes for use with _filter
-  eq: Operator.EQUALS,
-  ne: Operator.NOT_EQUALS,
 };
 
 /**
@@ -361,14 +357,22 @@ export function parseParameter(searchParam: SearchParameter, modifier: string, v
     case 'reference':
     case 'string':
     case 'token':
-    case 'uri':
+    case 'uri': {
       if (!isValidSearchValue(searchParam, value)) {
         throw new OperationOutcomeError(
           badRequest(`Invalid format for ${searchParam.type} search parameter: ${value}`)
         );
       }
-      return { code: searchParam.code, operator: parseModifier(modifier) ?? Operator.EQUALS, value };
-
+      let operator = parseModifier(modifier);
+      if (!operator) {
+        if (modifier === Operator.NOT_EQUALS) {
+          operator = Operator.NOT_EQUALS;
+        } else {
+          operator = Operator.EQUALS;
+        }
+      }
+      return { code: searchParam.code, operator: operator, value };
+    }
     default:
       throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
