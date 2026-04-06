@@ -29,7 +29,7 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
-          # See: https://github.com/actions/setup-node/issues/1120
+          # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
 
       - name: Setup Helm
