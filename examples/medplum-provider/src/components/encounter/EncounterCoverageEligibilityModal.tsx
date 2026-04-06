@@ -33,8 +33,8 @@ import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medpl
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 import { BenefitsTable } from '../insurance/BenefitsTable';
-  import { showErrorNotification } from '../../utils/notifications';
 
 interface EncounterCoverageEligibilityModalProps {
   patient: Reference<Patient> | Patient;
@@ -49,7 +49,7 @@ function getPatientId(patient: Reference<Patient> | Patient): string | undefined
   return patient.reference?.split('/')?.[1];
 }
 
-export function EncounterCoverageEligibilityModal( props: EncounterCoverageEligibilityModalProps): JSX.Element {
+export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligibilityModalProps): JSX.Element {
   const { patient: patientRef, opened, onClose } = props;
   const medplum = useMedplum();
   const patient: Patient | undefined = useResource(patientRef);
@@ -59,8 +59,6 @@ export function EncounterCoverageEligibilityModal( props: EncounterCoverageEligi
   const [eligibilityBot] = useSearchOne('Bot', {
     identifier: 'https://www.medplum.com/bots|eligibility',
   });
-
-
 
   useEffect(() => {
     if (!opened || !patient?.id) {
@@ -216,7 +214,13 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
         </Box>
         <Group gap="xs" style={{ flexShrink: 0 }}>
           {eligibilityBot ? (
-            <Button size="xs" variant="light" color="blue" loading={checkingEligibility} onClick={handleCheckEligibility}>
+            <Button
+              size="xs"
+              variant="light"
+              color="blue"
+              loading={checkingEligibility}
+              onClick={handleCheckEligibility}
+            >
               Check Eligibility
             </Button>
           ) : (
@@ -242,13 +246,7 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
       <Divider />
 
       <Box>
-        <Flex
-          justify="space-between"
-          align="center"
-          style={{ cursor: 'pointer' }}
-          onClick={toggleBenefits}
-          py={4}
-        >
+        <Flex justify="space-between" align="center" style={{ cursor: 'pointer' }} onClick={toggleBenefits} py={4}>
           <Title order={5}>Plan Benefits</Title>
           <Group gap="xs">
             {benefitsLoading && <Loader size="xs" />}
@@ -318,7 +316,6 @@ function CoverageSkeleton(): JSX.Element {
     </Stack>
   );
 }
-
 
 function getPlanLabel(coverage: Coverage): string {
   const planName = coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan')?.name;
