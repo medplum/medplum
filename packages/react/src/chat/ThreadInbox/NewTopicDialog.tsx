@@ -40,7 +40,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
 
   const [topic, setTopic] = useState('');
-  const [practitioners, setPractitioners] = useState<Reference<Practitioner>[]>(
+  const [practitioners, setPractitioners] = useState(
     profile?.resourceType === 'Practitioner' ? [createReference(profile) as Reference<Practitioner>] : []
   );
   const [patient, setPatient] = useState<Reference<Patient> | undefined>(

@@ -59,7 +59,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
         });
       } else {
         // Create new policy
-        const created = await medplum.createResource<AccessPolicy>(MSO_ACCESS_POLICY);
+        const created = await medplum.createResource(MSO_ACCESS_POLICY);
         setExistingPolicy(created);
         showNotification({
           title: 'Success',

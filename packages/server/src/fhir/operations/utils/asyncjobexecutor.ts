@@ -23,8 +23,9 @@ export class AsyncJobExecutor {
     this.resource = resource;
   }
 
-  async init(url: string): Promise<WithId<AsyncJob>> {
+  async init(url: string, params?: Partial<AsyncJob>): Promise<WithId<AsyncJob>> {
     this.resource ??= await this.repo.createResource<AsyncJob>({
+      ...params,
       resourceType: 'AsyncJob',
       status: 'accepted',
       request: url,
@@ -118,11 +119,11 @@ export class AsyncJobExecutor {
         version: `v${completedDataVersion}`,
       });
       await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      updatedJob = await this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
+      updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;
     } else {
-      return this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
+      return this.repo.getSystemRepo().updateResource(updatedJob);
     }
   }
 
@@ -159,7 +160,7 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return this.repo.getSystemRepo().updateResource<AsyncJob>(failedJob);
+    return this.repo.getSystemRepo().updateResource(failedJob);
   }
 
   getContentLocation(baseUrl: string): string {

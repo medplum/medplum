@@ -160,6 +160,21 @@
   border-color: var(--mantine-color-blue-3);
 }
 
+/* Drag handle between chat and resource panels */
+.dragHandle {
+  width: 5px;
+  cursor: col-resize;
+  background-color: transparent;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.dragHandle:hover {
+  background-color: var(--mantine-color-blue-4);
+}
+
 /* Resource Panel */
 .resourcePanel {
   flex: 1;

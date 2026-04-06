@@ -489,7 +489,7 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource<Login>(updatedLogin);
+  return globalSystemRepo.updateResource(updatedLogin);
 }
 
 /**
