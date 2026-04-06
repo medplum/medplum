@@ -92,7 +92,7 @@ for (const allergy of allergies) {
 }
 ```
 
-For general Questionnaire mechanics (item types, enableWhen, nested items), see [Questionnaires & Assessments](/docs/administration/provider-directory/questionnaires).
+For general Questionnaire mechanics (item types, enableWhen, nested items), see [Questionnaires & Assessments](/docs/questionnaires).
 
 ## Processing Responses
 
@@ -103,7 +103,7 @@ Once a patient submits their intake form, the [`QuestionnaireResponse`](/docs/ap
 
 ### Approach 1: SDC Extraction (`$extract`)
 
-[Structured Data Capture (SDC)](/docs/administration/provider-directory/questionnaires/structured-data-capture) lets you annotate the Questionnaire itself with extraction rules. When a response is submitted, the [`$extract` operation](/docs/api/fhir/operations/extract) reads those annotations and returns a transaction Bundle containing the extracted resources — no custom code required.
+[Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) lets you annotate the Questionnaire itself with extraction rules. When a response is submitted, the [`$extract` operation](/docs/api/fhir/operations/extract) reads those annotations and returns a transaction Bundle containing the extracted resources — no custom code required.
 
 **How it works:**
 
@@ -118,7 +118,7 @@ Once a patient submits their intake form, the [`QuestionnaireResponse`](/docs/ap
 - You don't need conditional logic during extraction (e.g., "only create this resource if another field has a specific value")
 - You want the extraction rules to live with the Questionnaire rather than in separate code
 
-For full details on SDC annotation syntax, template resources, and FHIRPath rules, see [Structured Data Capture](/docs/administration/provider-directory/questionnaires/structured-data-capture).
+For full details on SDC annotation syntax, template resources, and FHIRPath rules, see [Structured Data Capture](/docs/questionnaires/structured-data-capture).
 
 ### Approach 2: Bot-Based Extraction
 
@@ -272,8 +272,8 @@ For communication preferences, the `provision` field specifies which channels ar
 
 ## See Also
 
-- [Structured Data Capture](/docs/administration/provider-directory/questionnaires/structured-data-capture) — Full SDC annotation guide and `$extract` API details
-- [Questionnaires & Assessments](/docs/administration/provider-directory/questionnaires) — General Questionnaire mechanics
+- [Structured Data Capture](/docs/questionnaires/structured-data-capture) — Full SDC annotation guide and `$extract` API details
+- [Questionnaires & Assessments](/docs/questionnaires) — General Questionnaire mechanics
 - [Bot Basics](/docs/bots/bot-basics) — Creating and deploying Bots
 - [Subscriptions](/docs/subscriptions) — Triggering automations on resource creation
 - [Intake Data Model](/docs/intake/intake-data-model) — Resource graph and relationships

@@ -45,7 +45,7 @@ EPIC supports gathering patient data with the patient's consent.  Here is a vide
 
 ### NIH Forms Library
 
-The NIH provides a free forms library, these are tagged with standard ontologies.  This video shows how to use it, and refers to the [questionnaire tutorial](/docs/administration/provider-directory/questionnaires/basic-tutorial).
+The NIH provides a free forms library, these are tagged with standard ontologies.  This video shows how to use it, and refers to the [questionnaire tutorial](/docs/questionnaires/basic-tutorial).
 
 <div className="responsive-iframe-wrapper">
   <iframe src="https://www.youtube.com/embed/E5gttZwr2mk?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>

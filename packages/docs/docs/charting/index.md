@@ -77,7 +77,7 @@ A wide variety of notes experiences are possible, and customizability is one of 
 
 Some implementations have a simple text box and allow the practitioner to enter text free form, then construct [Encounter](/docs/api/fhir/resources/encounter.mdx) and/or [ClinicalImpression](/docs/api/fhir/resources/clinicalimpression.mdx) resources.
 
-Some implementations have a library of [Questionnaires](/docs/administration/provider-directory/questionnaires/) that practitioners fill out and use [Bots](/docs/bots/) to drive workflow and create resources in a specific way.
+Some implementations have a library of [Questionnaires](/docs/questionnaires/) that practitioners fill out and use [Bots](/docs/bots/) to drive workflow and create resources in a specific way.
 
 ```mermaid
 

@@ -142,11 +142,11 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Questionnaires & Assessments',
-      link: { type: 'doc', id: 'administration/provider-directory/questionnaires/index' },
+      link: { type: 'doc', id: 'questionnaires/index' },
       items: [
-        { type: 'doc', id: 'administration/provider-directory/questionnaires/basic-tutorial' },
-        { type: 'doc', id: 'administration/provider-directory/questionnaires/questionnaires-and-responses' },
-        { type: 'doc', id: 'administration/provider-directory/questionnaires/structured-data-capture' },
+        { type: 'doc', id: 'questionnaires/basic-tutorial' },
+        { type: 'doc', id: 'questionnaires/questionnaires-and-responses' },
+        { type: 'doc', id: 'questionnaires/structured-data-capture' },
       ],
     },
     { type: 'doc', id: 'careplans/protocols' },

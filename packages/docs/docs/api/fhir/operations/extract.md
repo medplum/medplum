@@ -14,7 +14,7 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 
 [template-extract]: https://build.fhir.org/ig/HL7/sdc/extraction.html#template-extract
 [sdc-ig]: https://build.fhir.org/ig/HL7/sdc/
-[data-capture]: /docs/administration/provider-directory/questionnaires/structured-data-capture
+[data-capture]: /docs/questionnaires/structured-data-capture
 
 ## Invoke the `$extract` operation
 
@@ -75,8 +75,8 @@ curl 'https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8
 
 ## Related
 
-- [Structured Data Capture Guide](/docs/administration/provider-directory/questionnaires/structured-data-capture) - Complete guide to SDC workflows
+- [Structured Data Capture Guide](/docs/questionnaires/structured-data-capture) - Complete guide to SDC workflows
 - [FHIR Questionnaire Resource](https://hl7.org/fhir/R4/questionnaire.html) - FHIR specification for Questionnaire
 - [FHIR QuestionnaireResponse Resource](https://hl7.org/fhir/R4/questionnaireresponse.html) - FHIR specification for QuestionnaireResponse
 - [HL7 SDC Implementation Guide](https://build.fhir.org/ig/HL7/sdc/) - Official Structured Data Capture IG
-- [Medplum Questionnaires Guide](/docs/administration/provider-directory/questionnaires) - Building and using questionnaires in Medplum
+- [Medplum Questionnaires Guide](/docs/questionnaires) - Building and using questionnaires in Medplum

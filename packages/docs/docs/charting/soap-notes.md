@@ -28,7 +28,7 @@ How notes are actually captured and processed varies significantly by practice t
 
 ### Questionnaire-Driven Capture (e.g., Primary Care)
 
-Many practices collect notes through a `Questionnaire` that always includes a standard set of fields — for example, a primary care practice might require blood pressure and weight at every visit. The `QuestionnaireResponse` holds the raw form submission, but those answers should be parsed into structured `Observation` resources so the data is searchable and interoperable. See [Structured Data Capture](/docs/administration/provider-directory/questionnaires/structured-data-capture) for how to use the `$extract` operation to automate this, and [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response) for a custom parsing approach using Bots.
+Many practices collect notes through a `Questionnaire` that always includes a standard set of fields — for example, a primary care practice might require blood pressure and weight at every visit. The `QuestionnaireResponse` holds the raw form submission, but those answers should be parsed into structured `Observation` resources so the data is searchable and interoperable. See [Structured Data Capture](/docs/questionnaires/structured-data-capture) for how to use the `$extract` operation to automate this, and [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response) for a custom parsing approach using Bots.
 
 ### Template-Driven Plan Section (e.g., Specialty Protocols)
 

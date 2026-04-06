@@ -53,7 +53,7 @@ Developers can now define [custom FHIR operations](/docs/bots/custom-fhir-operat
 
 <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**
 
-- **X-FHIR-Query support in [SDC `$extract`](/docs/api/fhir/operations/extract)** — enables dynamic queries in [Structured Data Capture](/docs/administration/provider-directory/questionnaires/structured-data-capture) extraction, improving form-based data capture workflows
+- **X-FHIR-Query support in [SDC `$extract`](/docs/api/fhir/operations/extract)** — enables dynamic queries in [Structured Data Capture](/docs/questionnaires/structured-data-capture) extraction, improving form-based data capture workflows
 - **Display language overrides** in [`ValueSet/$expand`](/docs/api/fhir/operations/valueset-expand) and [`CodeSystem/$validate-code`](/docs/api/fhir/operations/codesystem-validate-code) — supports multilingual [terminology services](/docs/terminology), which is important for international deployments
 
 ### Site Reliability and Infrastructure
@@ -139,7 +139,7 @@ The [Medplum Agent](/docs/agent) is an application that runs inside your firewal
 ## Bug Fixes
 
 **Forms and UI**
-- Fixed repeatable items in [`QuestionnaireForm`](/docs/administration/provider-directory/questionnaires)
+- Fixed repeatable items in [`QuestionnaireForm`](/docs/questionnaires)
 - Fixed dark mode on the visit details page
 - Fixed color inheritance issue (dark to inherit)
 - Updated diagnoses binding URL in OrderLabsPage
