@@ -7,7 +7,7 @@ sidebar_position: 10
 
 This guide covers how to configure availability using the `SchedulingParameters` extension — at both the actor level (per Schedule) and the service type level (via HealthcareService). It covers scheduling constraints, override behavior, timezone handling, and multi-resource scheduling patterns.
 
-The diagram below shows how availabilty can be defined at both
+The diagram below shows how availability can be defined at both
 - The [actor level](/docs/scheduling/defining-availability#actor-level-availability) (via Schedule)
 - The [service level](/docs/scheduling/defining-availability#service-level-availability) (via HealthcareService)
 
@@ -229,14 +229,14 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
 
 The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
 
-| Sub-extension         | Type          | Description                                    |
-| --------------------- | ------------- | ---------------------------------------------- |
-| `availableTime`       | (nested)      | One entry per availability window (repeatable) |
-| ↳ `daysOfWeek`        | `valueCode`   | One entry per day (`mon`–`sun`); repeatable    |
-| ↳ `allDay`            | `valueBoolean`| If `true`, window spans the full day           |
-| ↳ `availableStartTime`| `valueTime`   | Opening time (ignored when `allDay` is `true`) |
-| ↳ `availableEndTime`  | `valueTime`   | Closing time (ignored when `allDay` is `true`) |
-| `notAvailableTime`    | (nested)      | Typed for future use; not yet processed        |
+| Sub-extension         | Type          | Description                                          | Repeatable |
+| --------------------- | ------------- | ---------------------------------------------------- | ---------- |
+| `availableTime`       | (nested)      | One entry per availability window                    | Yes        |
+| ↳ `daysOfWeek`        | `valueCode`   | One entry per day (`mon`–`sun`)                      | Yes        |
+| ↳ `allDay`            | `valueBoolean`| If `true`, window spans the full day                 | No         |
+| ↳ `availableStartTime`| `valueTime`   | Opening time (not allowed  when `allDay` is present) | No         |
+| ↳ `availableEndTime`  | `valueTime`   | Closing time (not allowed  when `allDay` is present) | No         |
+| `notAvailableTime`    | (nested)      | Typed for future use; not yet processed              | Yes        |
 
 ```tsx
 {

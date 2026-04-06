@@ -203,13 +203,23 @@ function extractAvailabilityR4(ext: {
     .filter((sub) => sub.url === 'availableTime')
     .map((availTime) => {
       const dayOfWeek = availTime.extension.filter((e) => e.url === 'daysOfWeek').map((e) => e.valueCode);
-      const allDay = availTime.extension.find((e) => e.url === 'allDay')?.valueBoolean;
-      const start = availTime.extension.find((e) => e.url === 'availableStartTime')?.valueTime;
-      const end = availTime.extension.find((e) => e.url === 'availableEndTime')?.valueTime;
 
+      const allDay = availTime.extension.find((e) => e.url === 'allDay')?.valueBoolean;
       if (allDay) {
+        // FHIR doesn't allow representing end-of-day as `24:00:00` in a time
+        //
+        // We follow a convention where when end <= start, we treat it as
+        // belonging to the next day. In other words, this availability is from
+        // the start of the given weekdays to the start of the subsequent day.
+        //
+        // Note that we don't use a sentinel value like `23:59:59`, as we don't
+        // want to introduce a 1sec gap in availability; some events are
+        // scheduled to cross that boundary.
         return { dayOfWeek, availableStartTime: '00:00:00' as const, availableEndTime: '00:00:00' as const };
       }
+
+      const start = availTime.extension.find((e) => e.url === 'availableStartTime')?.valueTime;
+      const end = availTime.extension.find((e) => e.url === 'availableEndTime')?.valueTime;
       if (start && end) {
         return { dayOfWeek, availableStartTime: start, availableEndTime: end };
       }
