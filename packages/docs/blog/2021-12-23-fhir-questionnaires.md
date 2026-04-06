@@ -26,7 +26,7 @@ Here is a 2 minute video introducing the product.
 3. Each questionnaire has one or more `Subject`s, which will link the Questionnaire in the tool to the `Subject` data type. For example if the `Subject` is a `Patient`, then the Questionnaire can be found in the `Apps` tab on the `Patient` object (see video to get a visual).
 4. Once the `Form` is filled out a [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse) will be created with all the appropriate data.
 5. This is an advanced topic which will be covered in another tutorial, but you can use [Bots](/docs/bots) to create new FHIR objects and execute an advanced workflows.
-6. Questionnaires can be embedded in applications such as your webapp, this is also an advanced topic for another time but if you want to get started building app [start here](/docs/questionnaires)
+6. Questionnaires can be embedded in applications such as your webapp, this is also an advanced topic for another time but if you want to get started building app [start here](/docs/administration/provider-directory/questionnaires)
 
 ## Open Source Questionnaires
 

@@ -786,7 +786,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 
 :::tip SDC Extraction
 
-The Vital Signs Assessment questionnaire above uses [Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) patterns to automatically extract `Observation` resources from questionnaire responses. Each vital sign item includes:
+The Vital Signs Assessment questionnaire above uses [Structured Data Capture (SDC)](/docs/administration/provider-directory/questionnaires/structured-data-capture) patterns to automatically extract `Observation` resources from questionnaire responses. Each vital sign item includes:
 
 - A **contained template** (`Observation` resource with LOINC codes) defining the structure of the extracted resource
 - A **`templateExtract` extension** on each item linking it to its template

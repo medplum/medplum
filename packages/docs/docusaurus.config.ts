@@ -45,6 +45,22 @@ const config: Config = {
             from: '/docs/communications/task-based-message-response-tracking-and-routing',
             to: '/docs/communications/message-response-tracking-and-routing',
           },
+          {
+            from: '/docs/questionnaires',
+            to: '/docs/administration/provider-directory/questionnaires',
+          },
+          {
+            from: '/docs/questionnaires/basic-tutorial',
+            to: '/docs/administration/provider-directory/questionnaires/basic-tutorial',
+          },
+          {
+            from: '/docs/questionnaires/questionnaires-and-responses',
+            to: '/docs/administration/provider-directory/questionnaires/questionnaires-and-responses',
+          },
+          {
+            from: '/docs/questionnaires/structured-data-capture',
+            to: '/docs/administration/provider-directory/questionnaires/structured-data-capture',
+          },
         ],
       },
     ],

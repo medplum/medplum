@@ -69,5 +69,5 @@ comm -->|about| referral
 - [FHIR ServiceRequest Resource](https://hl7.org/fhir/R4/servicerequest.html)
 - [FHIR Task Resource](https://hl7.org/fhir/R4/task.html)
 - [FHIR Communication Resource](https://hl7.org/fhir/R4/communication.html)
-- [Medplum Questionnaires Documentation](/docs/questionnaires/)
+- [Medplum Questionnaires Documentation](/docs/administration/provider-directory/questionnaires/)
 - [Medplum Bots Documentation](/docs/bots/)
