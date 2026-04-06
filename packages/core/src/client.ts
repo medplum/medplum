@@ -125,6 +125,8 @@ const system: Device = {
   deviceName: [{ type: 'model-name', name: 'System' }],
 };
 
+console.log('Testing cache busting');
+
 /**
  * The MedplumClientOptions interface defines configuration options for MedplumClient.
  *
