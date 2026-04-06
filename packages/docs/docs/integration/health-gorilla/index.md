@@ -113,7 +113,7 @@ Often, the first step is to enable the integration in **"receive-only" mode**. T
 
 #### 2. Syncing Placeholder Orders
 
-When operating in receive-only mode, incoming results will lack a corresponding order in Medplum, which normally results in [`unsolicited-diagnostic-report` or `unknown-patient` issues](./receiving-results.md#matching-results-to-orders).
+When operating in receive-only mode, incoming results will lack a corresponding order in Medplum, which normally results in [`unsolicited-diagnostic-report` or `unknown-patient` issues](./receiving-results.md#resolving-orders-with-results).
 
 To avoid this and ensure results are properly matched to the correct patient:
 

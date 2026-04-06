@@ -1,6 +1,6 @@
 ---
-
-## sidebar_position: 2
+sidebar_position: 2
+---
 
 # Receiving Results
 
@@ -444,6 +444,20 @@ Health Gorilla returns detailed information about the performing laboratory for 
 }
 ```
 
+## Resolving Orders with Results {#resolving-orders-with-results}
+
+**Processing Logic:**
+
+1. `receive-from-health-gorilla` first attempts to match the incoming result to an existing order (`ServiceRequest`) by checking:
+   - `basedOn` references (which contain the requisition ID)
+   - **Accession number (`ACSN` identifier)**: A unique identifier assigned by the _performing laboratory_ (e.g., Quest, Labcorp) to the specific specimen(s) when they are received and logged into their system.
+   - **Placer number (`PLAC` identifier)**: The order ID assigned by the _ordering system_ (e.g., your EMR, Medplum, or the clinic) that placed the order.
+   - **Filler number (`FILL` identifier)**: The order ID assigned by the _fulfilling system_ (the performing laboratory) that carries out the order.
+2. If a matching order is found, the result is linked to that order. The patient associated with that order is used, preventing duplicate patients or `unknown-patient` issues.
+3. If no matching order is found, the result is considered "unsolicited". The bot then attempts to match the result to a patient using the patient's Health Gorilla identifier.
+4. If a matching patient exists, the result is imported normally, but without a `DiagnosticReport.basedOn` reference, and a `DetectedIssue` with code `unsolicited-diagnostic-report` is created.
+5. If no patient match is found, a new `Patient` resource is created using the demographic information provided by the lab, and a `DetectedIssue` with code `unknown-patient` is created.
+
 ## Lab-specific Behavior
 
 ### Quest
@@ -459,17 +473,4 @@ Occasionally, laboratories send results without a corresponding order in the sys
 - Providers order tests directly through lab websites or phone calls
 - Reflex testing triggers additional tests beyond the original order
 
-#### Matching incoming results to orders {#matching-results-to-orders}
-
-**Processing Logic:**
-
-1. `receive-from-health-gorilla` first attempts to match the incoming result to an existing order (`ServiceRequest`) by checking:
-   - `basedOn` references (which contain the requisition ID)
-   - **Accession number (`ACSN` identifier)**: A unique identifier assigned by the _performing laboratory_ (e.g., Quest, Labcorp) to the specific specimen(s) when they are received and logged into their system.
-   - **Placer number (`PLAC` identifier)**: The order ID assigned by the _ordering system_ (e.g., your EMR, Medplum, or the clinic) that placed the order.
-   - **Filler number (`FILL` identifier)**: The order ID assigned by the _fulfilling system_ (the performing laboratory) that carries out the order.
-2. If a matching order is found, the result is linked to that order. The patient associated with that order is used, preventing duplicate patients or `unknown-patient` issues.
-3. If no matching order is found, the result is considered "unsolicited". The bot then attempts to match the result to a patient using the patient's Health Gorilla identifier.
-4. If a matching patient exists, the result is imported normally, but without a `DiagnosticReport.basedOn` reference, and a `DetectedIssue` with code `unsolicited-diagnostic-report` is created.
-5. If no patient match is found, a new `Patient` resource is created using the demographic information provided by the lab, and a `DetectedIssue` with code `unknown-patient` is created.
 
