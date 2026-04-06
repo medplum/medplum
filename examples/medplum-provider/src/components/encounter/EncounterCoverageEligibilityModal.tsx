@@ -26,23 +26,33 @@ import type {
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
   Organization,
+  Patient,
   Reference,
 } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, useSearchOne } from '@medplum/react';
+import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medplum/react';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { BenefitsTable } from '../insurance/BenefitsTable';
-import { showErrorNotification } from '../../utils/notifications';
+  import { showErrorNotification } from '../../utils/notifications';
 
 interface EncounterCoverageEligibilityModalProps {
-  patientId: string;
+  patient: Reference<Patient> | Patient;
   opened: boolean;
   onClose: () => void;
 }
 
-export function EncounterCoverageEligibilityModal({ patientId, opened, onClose }: EncounterCoverageEligibilityModalProps): JSX.Element {
+function getPatientId(patient: Reference<Patient> | Patient): string | undefined {
+  if ('resourceType' in patient) {
+    return patient.id;
+  }
+  return patient.reference?.split('/')?.[1];
+}
+
+export function EncounterCoverageEligibilityModal( props: EncounterCoverageEligibilityModalProps): JSX.Element {
+  const { patient: patientRef, opened, onClose } = props;
   const medplum = useMedplum();
+  const patient: Patient | undefined = useResource(patientRef);
   const [coverages, setCoverages] = useState<Coverage[]>([]);
   const [coverageLoading, setCoverageLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -50,14 +60,16 @@ export function EncounterCoverageEligibilityModal({ patientId, opened, onClose }
     identifier: 'https://www.medplum.com/bots|eligibility',
   });
 
+
+
   useEffect(() => {
-    if (!opened || !patientId) {
+    if (!opened || !patient?.id) {
       return;
     }
     setCoverageLoading(true);
     setCoverages([]);
     medplum
-      .searchResources('Coverage', `patient=Patient/${patientId}&status=active`)
+      .searchResources('Coverage', `patient=Patient/${patient.id}&status=active`)
       .then((results) => {
         const sorted = results.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
         setCoverages(sorted);
@@ -65,7 +77,7 @@ export function EncounterCoverageEligibilityModal({ patientId, opened, onClose }
       })
       .catch(showErrorNotification)
       .finally(() => setCoverageLoading(false));
-  }, [opened, patientId, medplum]);
+  }, [opened, patient?.id, medplum]);
 
   return (
     <Modal opened={opened} onClose={onClose} title="Insurance" size="xl">
@@ -75,7 +87,7 @@ export function EncounterCoverageEligibilityModal({ patientId, opened, onClose }
           No active coverage found for this patient.
         </Text>
       )}
-      {!coverageLoading && coverages.length > 0 && (
+      {!coverageLoading && coverages.length > 0 && patient && (
         <Stack gap="md">
           {coverages.length > 1 && (
             <Select
@@ -90,7 +102,7 @@ export function EncounterCoverageEligibilityModal({ patientId, opened, onClose }
           {coverages
             .filter((c) => c.id === selectedId)
             .map((coverage) => (
-              <CoverageCard key={coverage.id} coverage={coverage} patientId={patientId} eligibilityBot={eligibilityBot} />
+              <CoverageCard key={coverage.id} coverage={coverage} patient={patient} eligibilityBot={eligibilityBot} />
             ))}
         </Stack>
       )}
@@ -100,11 +112,12 @@ export function EncounterCoverageEligibilityModal({ patientId, opened, onClose }
 
 interface CoverageCardProps {
   coverage: Coverage;
-  patientId: string;
+  patient: Reference<Patient> | Patient;
   eligibilityBot: Bot | undefined;
 }
 
-function CoverageCard({ coverage, patientId, eligibilityBot }: CoverageCardProps): JSX.Element {
+function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps): JSX.Element {
+  const patientId = getPatientId(patient);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [practitionerRole] = useSearchOne(
