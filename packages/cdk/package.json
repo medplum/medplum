@@ -28,8 +28,8 @@
   "dependencies": {
     "@aws-sdk/types": "3.973.6",
     "@medplum/core": "5.1.6",
-    "aws-cdk-lib": "2.244.0",
-    "cdk": "2.1114.1",
+    "aws-cdk-lib": "2.248.0",
+    "cdk": "2.1116.0",
     "cdk-nag": "2.37.55",
     "cdk-serverless-clamscan": "2.13.46",
     "constructs": "10.6.0",

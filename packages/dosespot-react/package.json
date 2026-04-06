@@ -67,7 +67,7 @@
     "@medplum/react-hooks": "5.1.6",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
-    "@types/node": "22.19.15",
+    "@types/node": "22.19.16",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
