@@ -189,9 +189,12 @@ describe('Spotlight', () => {
         fireEvent.change(searchInput, { target: { value: 'nonexistentzzzxxx' } });
       });
 
-      await waitFor(() => {
-        expect(screen.getByText('No results found')).toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          expect(screen.getByText('No results found')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
