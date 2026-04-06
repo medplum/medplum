@@ -60,11 +60,26 @@ describe('createMedplumClient', () => {
   });
 
   test('with global options set', async () => {
+    const fetch = jest.fn(async (url: string) => {
+      if (url.includes('healthcheck')) {
+        return {
+          status: 200,
+          ok: true,
+          json: jest.fn(async () => ({ ok: true })),
+        };
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => ({})),
+      };
+    });
     const options: MedplumClientOptions = {
       baseUrl: 'http://example.com/',
       fhirUrlPath: '/fhir/test/path/',
       tokenUrl: 'http://example.com/oauth/token',
       accessToken: 'test-access-token',
+      fetch,
     };
     process.env.MEDPLUM_BASE_URL = 'http://example.com';
     process.env.MEDPLUM_FHIR_URL_PATH = '/fhir/test/path/';
@@ -114,5 +129,94 @@ describe('createMedplumClient', () => {
     } catch {
       expect(console.log).toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to sign in');
     }
+  });
+
+  test('validates base URL healthcheck on non-default URL', async () => {
+    const fetch = jest.fn(async (url: string) => {
+      if (url.includes('healthcheck')) {
+        return {
+          status: 200,
+          ok: true,
+          json: jest.fn(async () => ({ ok: true })),
+        };
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => ({})),
+      };
+    });
+
+    const medplumClient = await createMedplumClient({
+      baseUrl: 'http://custom.example.com/',
+      fetch,
+    });
+
+    expect(medplumClient.getBaseUrl()).toContain('http://custom.example.com/');
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('healthcheck'));
+  });
+
+  test('throws error when healthcheck fails', async () => {
+    const fetch = jest.fn(async (url: string) => {
+      if (url.includes('healthcheck')) {
+        return {
+          status: 500,
+          ok: false,
+          json: jest.fn(async () => ({ ok: false })),
+        };
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => ({})),
+      };
+    });
+
+    await expect(
+      createMedplumClient({
+        baseUrl: 'http://custom.example.com/',
+        fetch,
+      })
+    ).rejects.toThrow('Failed to validate base URL');
+  });
+
+  test('throws error when healthcheck response missing ok field', async () => {
+    const fetch = jest.fn(async (url: string) => {
+      if (url.includes('healthcheck')) {
+        return {
+          status: 200,
+          ok: true,
+          json: jest.fn(async () => ({ status: 'ok' })),
+        };
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => ({})),
+      };
+    });
+
+    await expect(
+      createMedplumClient({
+        baseUrl: 'http://custom.example.com/',
+        fetch,
+      })
+    ).rejects.toThrow('Healthcheck response does not have "ok": true');
+  });
+
+  test('does not validate healthcheck for default URL', async () => {
+    const fetch = jest.fn(async () => {
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => ({})),
+      };
+    });
+
+    const medplumClient = await createMedplumClient({ fetch });
+
+    expect(medplumClient.getBaseUrl()).toContain('https://api.medplum.com/');
+    // Verify healthcheck was not called for default URL
+    expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining('healthcheck'));
   });
 });

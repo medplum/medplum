@@ -27,7 +27,7 @@ export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
-  const [pageDisabled, setPageDisabled] = useState<boolean>(false);
+  const [pageDisabled, setPageDisabled] = useState(false);
 
   const { questionnaire } = useContext(IntakeQuestionnaireContext);
 

@@ -18,8 +18,11 @@ export * from './AttachmentArrayInput/AttachmentArrayInput';
 export * from './AttachmentButton/AttachmentButton';
 export * from './AttachmentDisplay/AttachmentDisplay';
 export * from './AttachmentInput/AttachmentInput';
+export * from './auth/ChangePasswordForm';
 export * from './auth/MfaForm';
 export * from './auth/RegisterForm';
+export * from './auth/ResetPasswordForm';
+export * from './auth/SetPasswordForm';
 export * from './auth/SignInForm';
 export * from './BackboneElementDisplay/BackboneElementDisplay';
 export * from './BackboneElementInput/BackboneElementInput';
@@ -72,12 +75,31 @@ export * from './NoteDisplay/NoteDisplay';
 export * from './NotificationIcon/NotificationIcon';
 export * from './OperationOutcomeAlert/OperationOutcomeAlert';
 export * from './Panel/Panel';
+export * from './PatientAccountsForm/PatientAccountsForm';
 export * from './PatientExportForm/PatientExportForm';
 export * from './PatientHeader/PatientHeader';
 export * from './PatientSummary/PatientSummary';
+export type * from './PatientSummary/PatientSummary.types';
 export * from './PatientSummary/Pharmacies';
 export * from './PatientSummary/pharmacy-utils';
 export * from './PatientSummary/PharmacyDialog';
+export {
+  AllergiesSection,
+  DemographicsSection,
+  InsuranceSection,
+  LabsSection,
+  MedicationsSection,
+  PharmaciesSection,
+  ProblemListSection,
+  SexualOrientationSection,
+  SmokingStatusSection,
+  VitalsSection,
+  createLabsSection,
+  createPharmaciesSection,
+  getDefaultSections,
+} from './PatientSummary/sectionConfigs';
+export { summaryResourceListSection } from './PatientSummary/SummaryResourceListSection';
+export type { SummaryResourceListOptions } from './PatientSummary/SummaryResourceListSection';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
 export * from './QuantityDisplay/QuantityDisplay';

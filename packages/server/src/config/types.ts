@@ -64,6 +64,8 @@ export interface MedplumServerConfig {
   maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
+  /** Optional base64-encoded 256-bit key for S3 SSE-C (Server-Side Encryption with Customer-Provided Keys) */
+  sseCustomerKey?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
@@ -177,6 +179,15 @@ export interface MedplumServerConfig {
    * Allows running separate server pools for HTTP request serving vs. background job processing.
    */
   workers?: MedplumWorkersConfig;
+
+  /**
+   * Optional mTLS certificate header for incoming requests.
+   * If set, the server will attempt to extract the client certificate from the specified header.
+   * Header name should be all lowercase.
+   * For AWS ALB in "pass through" mode, this should be set to "x-amzn-mtls-clientcert".
+   * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
+   */
+  mtlsCertHeader?: string;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -264,6 +275,7 @@ export interface MedplumExternalAuthConfig {
 }
 
 export type WorkerName =
+  | 'dispatch'
   | 'subscription'
   | 'download'
   | 'cron'

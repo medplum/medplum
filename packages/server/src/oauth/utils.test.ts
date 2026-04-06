@@ -7,7 +7,6 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import {} from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -471,7 +470,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -521,7 +520,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login without email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -569,7 +568,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'client',
           user: createReference(client),
@@ -619,7 +618,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),

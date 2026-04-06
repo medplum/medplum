@@ -306,7 +306,7 @@ Maximum JSON size for API calls. String is parsed with the [bytes](https://www.n
 
 ### maxBatchSize
 
-Maximum batch size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library.
+Maximum batch size for Async Batches. When processing Async Batches, this limit overrides `maxJsonSize`. See [Asynchronous Batch Requests](/docs/fhir-datastore/fhir-batch-requests#asynchronous-batch-requests) for more details. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library.
 
 **Default:** `50mb`
 
@@ -353,6 +353,26 @@ The AWS Region identifier.
 
 **Created by:** `cdk`
 **Default:** `us-east-1`
+
+### sseCustomerKey
+
+Optional base64-encoded 256-bit key for S3 Server-Side Encryption with Customer-Provided Keys (SSE-C). When set, all S3 operations (upload, download, copy, presigned URLs) will use SSE-C encryption with the `AES256` algorithm.
+
+To generate a suitable key:
+
+```bash
+openssl rand -base64 32
+```
+
+:::caution
+You must store this key securely. If the key is lost, all data encrypted with it becomes permanently inaccessible. AWS does not store or manage SSE-C keys.
+:::
+
+:::warning
+Enabling SSE-C does not retroactively encrypt existing objects in the S3 bucket. Only new uploads will be encrypted. To encrypt existing data, you must re-upload the objects (e.g., using `aws s3 cp` with the `--sse-c` flags).
+:::
+
+**Default:** None
 
 ### accurateCountThreshold
 

@@ -3,7 +3,8 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import { ReadablePromise } from '@medplum/core';
+import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -30,7 +31,6 @@ describe('FindPane', () => {
   const serviceType2: CodeableConcept = {
     coding: [
       {
-        system: 'http://example.com/service-types',
         code: 'followup',
       },
     ],
@@ -104,12 +104,26 @@ describe('FindPane', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+            <div data-testid="FindPaneTestWrapper">
+              <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+            </div>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
   };
+
+  test('it renders null when there are no schedulable service types', async () => {
+    const schedule = {
+      resourceType: 'Schedule',
+      id: 'schedule-123',
+      actor: [{ reference: 'Practitioner/practitioner-123' }],
+      active: true,
+    } satisfies Schedule;
+
+    await act(async () => setup({ schedule }));
+    expect(screen.getByTestId('FindPaneTestWrapper')).toBeEmptyDOMElement();
+  });
 
   describe('Initial Rendering', () => {
     test('renders "Schedule..." title when no service type is selected', async () => {
@@ -127,17 +141,6 @@ describe('FindPane', () => {
 
       expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
       expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
-    });
-
-    test('renders "Other" for undefined service types', async () => {
-      const schedule = createScheduleWithServiceTypes([serviceType1, undefined]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      expect(screen.getByText('Other')).toBeInTheDocument();
     });
   });
 
@@ -320,21 +323,152 @@ describe('FindPane', () => {
 
       await user.click(screen.getByText('Annual Checkup'));
 
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls
+        .map((call) => call[0])
+        .find((url) => url.toString().includes('$find'));
+
       expect(callUrl).toContain('start=');
       expect(callUrl).toContain('end=');
     });
 
-    test('fetches without service-type param when wildcard (undefined) is selected', async () => {
-      const schedule = createScheduleWithServiceTypes([undefined]);
+    test('uses `system|code` style for service-type parameter', async () => {
+      const user = userEvent.setup();
+      const range = {
+        start: new Date('2024-02-01T00:00:00Z'),
+        end: new Date('2024-02-07T23:59:59Z'),
+      };
 
       await act(async () => {
-        setup({ schedule });
+        setup({ range });
       });
 
-      // With single undefined service type, it auto-selects
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] || '';
-      expect(callUrl).not.toContain('service-type=');
+      await user.click(screen.getByText('Annual Checkup'));
+
+      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls
+        .map((call) => call[0])
+        .find((url) => url.toString().includes('$find'));
+      expect(callUrl).toContain(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`);
+    });
+
+    test('service-type parameters with no system component use "|code" style', async () => {
+      const user = userEvent.setup();
+      const range = {
+        start: new Date('2024-02-01T00:00:00Z'),
+        end: new Date('2024-02-07T23:59:59Z'),
+      };
+
+      await act(async () => {
+        setup({ range });
+      });
+
+      await user.click(screen.getByText('Follow-up Visit'));
+
+      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls
+        .map((call) => call[0])
+        .find((url) => url.toString().includes('$find'));
+      expect(callUrl).toContain(`service-type=${encodeURIComponent('|followup')}`);
+    });
+  });
+
+  describe('HealthcareService Integration', () => {
+    const healthcareServiceType: CodeableConcept = {
+      coding: [{ system: 'http://example.com/service-types', code: 'therapy' }],
+      text: 'Therapy Session',
+    };
+
+    // Spy on searchResources to return controlled HealthcareService data.
+    // MockClient's MemoryRepository doesn't have HealthcareService search
+    // parameters indexed, so we can't rely on it filtering by service-type.
+    const mockHealthcareServiceSearch = (healthcareServices: WithId<HealthcareService>[]): void => {
+      const bundle: Bundle<WithId<HealthcareService>> = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: healthcareServices.map((resource) => ({ resource })),
+      } as const;
+
+      const resourceArray = Object.assign([...healthcareServices], { bundle });
+
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType) => {
+        if (resourceType === 'HealthcareService') {
+          return new ReadablePromise(Promise.resolve(resourceArray));
+        }
+        return new ReadablePromise(
+          Promise.resolve(
+            Object.assign([], {
+              bundle: {
+                resourceType: 'Bundle',
+                type: 'searchset',
+              } as const,
+            })
+          )
+        );
+      });
+    };
+
+    test('shows service types from HealthcareService resources', async () => {
+      mockHealthcareServiceSearch([
+        {
+          resourceType: 'HealthcareService',
+          id: 'hs-1',
+          type: [healthcareServiceType],
+          extension: [{ url: SchedulingParametersURI }],
+        },
+      ]);
+
+      const schedule = {
+        resourceType: 'Schedule',
+        id: 'schedule-123',
+        actor: [{ reference: 'Practitioner/practitioner-123' }],
+        active: true,
+      } satisfies Schedule;
+
+      await act(async () => setup({ schedule }));
+
+      await waitFor(() => expect(screen.getByText('Therapy Session')).toBeInTheDocument());
+    });
+
+    test('deduplicates service types that appear in both HealthcareService and Schedule', async () => {
+      // serviceType1 exists in both the HealthcareService and the Schedule
+      mockHealthcareServiceSearch([
+        {
+          resourceType: 'HealthcareService',
+          id: 'hs-1',
+          type: [serviceType1],
+          extension: [{ url: SchedulingParametersURI }],
+        },
+      ]);
+
+      const schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]);
+
+      await act(async () => setup({ schedule }));
+
+      // serviceType1 should appear only once
+      await waitFor(() => expect(screen.getAllByText('Annual Checkup')).toHaveLength(1));
+      // serviceType2 is schedule-only and should still appear
+      expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
+    });
+
+    test('ignores HealthcareService resources without scheduling parameters', async () => {
+      mockHealthcareServiceSearch([
+        {
+          resourceType: 'HealthcareService',
+          id: 'hs-no-params',
+          type: [healthcareServiceType],
+          // no SchedulingParameters extension
+        },
+      ]);
+
+      const schedule = {
+        resourceType: 'Schedule',
+        id: 'schedule-123',
+        actor: [{ reference: 'Practitioner/practitioner-123' }],
+        active: true,
+      } satisfies Schedule;
+
+      await act(async () => setup({ schedule }));
+
+      // No scheduling params on the service or schedule, renders null
+      await waitFor(() => expect(screen.getByTestId('FindPaneTestWrapper')).toBeEmptyDOMElement());
     });
   });
 

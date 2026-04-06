@@ -6,8 +6,10 @@ import type { JSX } from 'react';
 
 export interface RangeDisplayProps {
   readonly value?: Range;
+  readonly precision?: number;
+  readonly exclusive?: boolean;
 }
 
 export function RangeDisplay(props: RangeDisplayProps): JSX.Element | null {
-  return <>{formatRange(props.value)}</>;
+  return <>{formatRange(props.value, props.precision, props.exclusive)}</>;
 }

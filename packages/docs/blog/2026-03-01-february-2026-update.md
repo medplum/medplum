@@ -48,8 +48,8 @@ February saw a major investment in [WebSocket subscriptions](/docs/subscriptions
 
 Building on January's [`$find` and `$book`](/docs/scheduling/defining-availability) foundation, scheduling received several refinements this month:
 
-- **Customizable appointment creation before [`$book`](/docs/scheduling/defining-availability#appointment-booking-fhir-operations)** — Developers can now inject custom fields and logic into the appointment object before the booking operation executes, enabling clinic-specific workflows
-- **`_count` parameter for [`$find`](/docs/scheduling/defining-availability#appointment-booking-fhir-operations)** — Limits the number of available slots returned, improving efficiency for high-volume scheduling queries
+- **Customizable appointment creation before [`$book`](/docs/scheduling/appointment-book)** — Developers can now inject custom fields and logic into the appointment object before the booking operation executes, enabling clinic-specific workflows
+- **`_count` parameter for [`$find`](/docs/scheduling/schedule-find)** — Limits the number of available slots returned, improving efficiency for high-volume scheduling queries
 - **Adding a visit now creates a busy slot** — The [Provider calendar](/docs/provider/schedule) correctly blocks time when a visit is added, ensuring accurate availability display
 - **Improved UTC/local day discrepancy handling** — Scheduling operations behave correctly when the server's UTC time and the local calendar day differ
 
