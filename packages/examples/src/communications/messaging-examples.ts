@@ -1213,6 +1213,101 @@ const categoryExampleCommunications: Communication =
 
 console.log(categoryExampleCommunications);
 
+// start-block asyncEncountersCreateSessionEncounterTs
+// Single-patient session: set Encounter.subject to that patient. Replace references with real ids from your project.
+const asyncEncountersSessionEncounter = await medplum.createResource({
+  resourceType: 'Encounter',
+  status: 'in-progress',
+  class: {
+    system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+    code: 'VR',
+    display: 'virtual',
+  },
+  subject: { reference: 'Patient/homer-simpson' },
+  participant: [
+    {
+      individual: { reference: 'Practitioner/doctor-alice-smith' },
+    },
+  ],
+});
+console.log(asyncEncountersSessionEncounter);
+// end-block asyncEncountersCreateSessionEncounterTs
+
+// start-block asyncEncountersLinkThreadHeaderEncounterTs
+// Link only the thread header: child messages inherit encounter context via Communication.partOf → header.
+// Uses the session Encounter created above and an existing thread header Communication.
+const asyncEncountersLinkedHeader = await medplum.patchResource('Communication', threadHeader.id, [
+  { op: 'add', path: '/encounter', value: { reference: `Encounter/${asyncEncountersSessionEncounter.id}` } },
+]);
+console.log(asyncEncountersLinkedHeader);
+// end-block asyncEncountersLinkThreadHeaderEncounterTs
+
+// start-block asyncEncountersChildMedicalEncounterTs
+// Multi-patient session: one child Encounter per patient; thread header stays linked to the session Encounter.
+const asyncEncountersChildEncounter = await medplum.createResource({
+  resourceType: 'Encounter',
+  status: 'in-progress',
+  class: {
+    system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+    code: 'VR',
+    display: 'virtual',
+  },
+  subject: { reference: 'Patient/bart-simpson' },
+  partOf: { reference: `Encounter/${asyncEncountersSessionEncounter.id}` },
+  reasonCode: [
+    {
+      coding: [{ system: SNOMED, code: '38341003', display: 'Hypertensive disorder, systemic arterial' }],
+    },
+  ],
+  type: [
+    {
+      coding: [
+        {
+          system: 'https://medplum.com/fhir/CodeSystem/encounter-type',
+          code: 'medical-encounter',
+          display: 'Medical Encounter',
+        },
+      ],
+    },
+  ],
+});
+console.log(asyncEncountersChildEncounter);
+// end-block asyncEncountersChildMedicalEncounterTs
+
+// start-block asyncEncountersVerifySearchesTs
+// List virtual (VR) encounters; find thread headers linked to a specific session Encounter.
+const asyncEncountersVirtualList = await medplum.searchResources('Encounter', {
+  class: 'http://terminology.hl7.org/CodeSystem/v3-ActCode|VR',
+});
+console.log(asyncEncountersVirtualList);
+
+const asyncEncountersThreadsForSession = await medplum.searchResources('Communication', {
+  encounter: `Encounter/${asyncEncountersSessionEncounter.id}`,
+  'part-of:missing': true,
+});
+console.log(asyncEncountersThreadsForSession);
+// end-block asyncEncountersVerifySearchesTs
+
+/*
+// start-block asyncEncountersVerifySearchesCli
+medplum get 'Encounter?class=http://terminology.hl7.org/CodeSystem/v3-ActCode|VR'
+medplum get 'Communication?encounter=Encounter/{sessionEncounterId}&part-of:missing=true'
+// end-block asyncEncountersVerifySearchesCli
+
+// start-block asyncEncountersVerifySearchesCurl
+curl -G 'https://api.medplum.com/fhir/R4/Encounter' \
+  --data-urlencode 'class=http://terminology.hl7.org/CodeSystem/v3-ActCode|VR' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+
+curl -G 'https://api.medplum.com/fhir/R4/Communication' \
+  --data-urlencode 'encounter=Encounter/{sessionEncounterId}' \
+  --data-urlencode 'part-of:missing=true' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block asyncEncountersVerifySearchesCurl
+*/
+
 // start-block threadLifecycleCloseHeaderTs
 await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'completed' }]);
 // end-block threadLifecycleCloseHeaderTs
