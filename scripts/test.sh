@@ -22,7 +22,8 @@ else
 fi
 
 # Build
-npm run build
+# We want to build all packages and examples so they are cached when we run test for them later
+npx turbo run build --filter=!@medplum/docs
 
 # Seed the database
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
