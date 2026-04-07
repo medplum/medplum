@@ -59,6 +59,7 @@ import * as workerUtils from './utils';
 
 jest.mock('node-fetch');
 jest.mock('../constants', () => ({
+  ...jest.requireActual('../constants'),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
 }));
 const mockBullmq = jest.mocked(bullmqModule);

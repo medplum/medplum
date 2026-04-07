@@ -44,6 +44,7 @@ import * as workerUtilsModule from '../workers/utils';
 
 jest.mock('hibp');
 jest.mock('../constants', () => ({
+  ...jest.requireActual('../constants'),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:ws',
 }));
 
