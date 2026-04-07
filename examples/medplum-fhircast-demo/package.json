@@ -11,10 +11,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@mantine/core": "9.0.0",
-    "@mantine/hooks": "9.0.0",
-    "@mantine/notifications": "9.0.0",
-    "@mantine/spotlight": "9.0.0",
+    "@mantine/core": "8.3.18",
+    "@mantine/hooks": "8.3.18",
+    "@mantine/notifications": "8.3.18",
+    "@mantine/spotlight": "8.3.18",
     "@medplum/core": "5.1.6",
     "@medplum/eslint-config": "5.1.6",
     "@medplum/fhirtypes": "5.1.6",

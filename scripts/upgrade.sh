@@ -101,7 +101,8 @@ fi
 # uuid - version 12+ requires ESM, holding back until server supports ESM
 # otplib - version 13+ requires ESM, holding back until server supports ESM
 # temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp jose node-fetch npm zod uuid otplib temporal-polyfill"
+# @mantine/* - version 9+ has breaking changes, needs dedicated migration
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp jose node-fetch npm zod uuid otplib temporal-polyfill @mantine/core @mantine/hooks @mantine/dropzone @mantine/notifications @mantine/spotlight"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
