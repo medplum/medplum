@@ -32,7 +32,7 @@ import type {
 import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medplum/react';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { BenefitsTable } from '../insurance/BenefitsTable';
 
@@ -40,13 +40,6 @@ interface EncounterCoverageEligibilityModalProps {
   patient: Reference<Patient> | Patient;
   opened: boolean;
   onClose: () => void;
-}
-
-function getPatientId(patient: Reference<Patient> | Patient): string | undefined {
-  if ('resourceType' in patient) {
-    return patient.id;
-  }
-  return patient.reference?.split('/')?.[1];
 }
 
 export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligibilityModalProps): JSX.Element {
@@ -114,8 +107,9 @@ interface CoverageCardProps {
   eligibilityBot: Bot | undefined;
 }
 
-function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps): JSX.Element {
-  const patientId = getPatientId(patient);
+function CoverageCard(props: CoverageCardProps): JSX.Element {
+  const { coverage, patient: patientRef, eligibilityBot } = props;
+  const patient = useResource(patientRef);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [practitionerRole] = useSearchOne(
@@ -129,20 +123,22 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
   const [benefitsLoading, setBenefitsLoading] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
 
-  const fetchLatestRequestAndResponse = async (): Promise<void> => {
-    if (!coverage.id) {
+  const fetchLatestRequestAndResponse = useCallback(async (): Promise<void> => {
+    if (!coverage.id || !patient?.id) {
       return;
     }
     setBenefitsLoading(true);
     try {
       const requests = await medplum.searchResources(
         'CoverageEligibilityRequest',
-        new URLSearchParams({ patient: `Patient/${patientId}`, _count: '10', _sort: '-_lastUpdated' })
+        new URLSearchParams(
+          { patient: getReferenceString(patient), 
+            _count: '10', 
+            _sort: '-_lastUpdated' }
+        )
       );
       const req = requests.find((r) =>
-        r.insurance?.some(
-          (ins) => ins.coverage?.reference === `Coverage/${coverage.id}` || ins.coverage?.reference === coverage.id
-        )
+        r.insurance?.some((ins) => ins.coverage?.reference === getReferenceString(coverage))
       );
       setLatestRequest(req);
       if (!req?.id) {
@@ -150,7 +146,7 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
       }
       const responses = await medplum.searchResources(
         'CoverageEligibilityResponse',
-        new URLSearchParams({ request: `CoverageEligibilityRequest/${req.id}`, _count: '1' })
+        new URLSearchParams({ request: getReferenceString(req), _count: '1' })
       );
       setEligibilityResponse(responses[0]);
     } catch (err) {
@@ -158,15 +154,14 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
     } finally {
       setBenefitsLoading(false);
     }
-  };
+  }, [coverage, patient, medplum]);
 
   useEffect(() => {
     fetchLatestRequestAndResponse().catch(showErrorNotification);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coverage.id, patientId]);
+  }, [fetchLatestRequestAndResponse]);
 
   const handleCheckEligibility = async (): Promise<void> => {
-    if (!eligibilityBot || !practitionerRole || !coverage || !patientId) {
+    if (!eligibilityBot || !practitionerRole || !coverage || !patient) {
       return;
     }
     setCheckingEligibility(true);
@@ -176,7 +171,7 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
         status: 'active',
         purpose: ['benefits'],
         created: new Date().toISOString(),
-        patient: { reference: `Patient/${patientId}` },
+        patient: createReference(patient),
         insurer: coverage.payor?.[0] as Reference<Organization>,
         provider: practitionerRole.organization,
         insurance: [{ focal: true, coverage: createReference(coverage) }],
@@ -195,7 +190,7 @@ function CoverageCard({ coverage, patient, eligibilityBot }: CoverageCardProps):
       }
       const responses = await medplum.searchResources(
         'CoverageEligibilityResponse',
-        new URLSearchParams({ request: `CoverageEligibilityRequest/${savedRequest.id}`, _count: '1' })
+        new URLSearchParams({ request: getReferenceString(savedRequest), _count: '1' })
       );
       setEligibilityResponse(responses[0]);
     } finally {
