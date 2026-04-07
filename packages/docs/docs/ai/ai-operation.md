@@ -20,7 +20,7 @@ The AI operation provides:
 Before using the `$ai` operation, you need:
 
 1. **Enable AI Feature**: The `ai` feature must be enabled on your Medplum project
-2. **OpenAI API Key**: A valid OpenAI API key (starts with `sk-`)
+2. **Configure OpenAI API Key**: Add your OpenAI API key as a project secret named `OPENAI_API_KEY` in your project settings
 
 ## Endpoint
 
@@ -35,7 +35,6 @@ POST [baseUrl]/fhir/R4/$ai
 | Name       | Type   | Required | Description                                                                                                                                          |
 | ---------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `messages` | string | Yes      | JSON string containing the conversation messages array. Each message should have `role` (`user`, `assistant`, or `system`) and `content` properties. |
-| `apiKey`   | string | Yes      | Your OpenAI API key (e.g., `sk-...`)                                                                                                                 |
 | `model`    | string | Yes      | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`, `gpt-4-turbo`)                                                                                  |
 | `tools`    | string | No       | JSON string containing the tools array for function calling (optional)                                                                               |
 
@@ -63,10 +62,6 @@ curl 'https://api.medplum.com/fhir/R4/$ai' \
       {
         "name": "messages",
         "valueString": "[{\"role\":\"user\",\"content\":\"What is FHIR?\"}]"
-      },
-      {
-        "name": "apiKey",
-        "valueString": "sk-your-api-key"
       },
       {
         "name": "model",
@@ -101,10 +96,6 @@ To maintain conversation context, include previous messages:
     {
       "name": "messages",
       "valueString": "[{\"role\":\"user\",\"content\":\"What is FHIR?\"},{\"role\":\"assistant\",\"content\":\"FHIR is a standard...\"},{\"role\":\"user\",\"content\":\"What resources does it define?\"}]"
-    },
-    {
-      "name": "apiKey",
-      "valueString": "sk-your-api-key"
     },
     {
       "name": "model",
@@ -168,10 +159,6 @@ curl 'https://api.medplum.com/fhir/R4/$ai' \
         "valueString": "[{\"role\":\"user\",\"content\":\"Find patient with phone 718-564-9483\"}]"
       },
       {
-        "name": "apiKey",
-        "valueString": "sk-your-api-key"
-      },
-      {
         "name": "model",
         "valueString": "gpt-4"
       },
@@ -212,10 +199,6 @@ curl 'https://api.medplum.com/fhir/R4/$ai' \
     {
       "name": "messages",
       "valueString": "[{\"role\":\"user\",\"content\":\"Create a task to fill up chart note\"}]"
-    },
-    {
-      "name": "apiKey",
-      "valueString": "sk-your-api-key"
     },
     {
       "name": "model",
@@ -265,10 +248,6 @@ curl 'https://api.medplum.com/fhir/R4/$ai' \
         "valueString": "[{\"role\":\"user\",\"content\":\"Explain FHIR resources\"}]"
       },
       {
-        "name": "apiKey",
-        "valueString": "sk-your-api-key"
-      },
-      {
         "name": "model",
         "valueString": "gpt-4"
       }
@@ -304,10 +283,6 @@ const response = await medplum.fhirUrl('$ai').post({
     {
       name: 'messages',
       valueString: JSON.stringify([{ role: 'user', content: 'What is FHIR?' }]),
-    },
-    {
-      name: 'apiKey',
-      valueString: 'sk-your-api-key',
     },
     {
       name: 'model',
@@ -359,10 +334,6 @@ const response = await medplum.fhirUrl('$ai').post({
       valueString: JSON.stringify([{ role: 'user', content: 'Create a patient named John Smith' }]),
     },
     {
-      name: 'apiKey',
-      valueString: 'sk-your-api-key',
-    },
-    {
       name: 'model',
       valueString: 'gpt-4',
     },
@@ -389,7 +360,7 @@ if (toolCallsParam?.valueString) {
 
 ## Security Considerations
 
-1. **API Key Management**: Never expose your OpenAI API key in client-side code. Store it securely and only pass it from server-side code.
+1. **API Key Management**: The OpenAI API key is stored as a project secret (`OPENAI_API_KEY`) and never exposed to clients. It is read server-side from project settings.
 
 2. **Feature Gating**: The AI feature must be explicitly enabled on your project. This prevents unauthorized usage.
 
@@ -404,7 +375,7 @@ if (toolCallsParam?.valueString) {
 
 ## Error Handling
 
-### Missing API Key
+### API Key Not Configured
 
 ```json
 {
@@ -414,7 +385,7 @@ if (toolCallsParam?.valueString) {
       "severity": "error",
       "code": "invalid",
       "details": {
-        "text": "Expected 1 value(s) for input parameter apiKey, but 0 provided"
+        "text": "OpenAI API key not configured in project settings"
       }
     }
   ]
