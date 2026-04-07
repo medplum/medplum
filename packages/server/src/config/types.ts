@@ -171,6 +171,7 @@ export interface MedplumServerConfig {
    * Each trigger defines a threshold: if a subscription accumulates `maxConsecutiveFailures`
    * final failures (after all retries exhausted) within `timeWindowSeconds`, it is set to status "off".
    * Multiple triggers are evaluated independently — the subscription is disabled if ANY trigger fires.
+   * Can be overridden per project via `Project.systemSetting[name="subscriptionAutoDisable"].valueString`.
    */
   subscriptionAutoDisable?: SubscriptionAutoDisableTrigger[];
 

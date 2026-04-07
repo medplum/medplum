@@ -57,7 +57,11 @@ import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import { clearSubscriptionFailures, recordSubscriptionFailure } from './subscription-failure-tracker';
+import {
+  clearSubscriptionFailures,
+  getSubscriptionAutoDisableTriggers,
+  recordSubscriptionFailure,
+} from './subscription-failure-tracker';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -859,7 +863,8 @@ async function catchJobError(
 
   // All retries exhausted - record as a final failure for auto-disable tracking
   globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
-  const result = await recordSubscriptionFailure(subscription.id);
+  const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+  const result = await recordSubscriptionFailure(subscription.id, triggers);
   if (result) {
     await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
   }
