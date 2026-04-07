@@ -20,6 +20,7 @@ import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import {
+  WEBSOCKET_SUB_PUBLISH_CHANNEL,
   addUserActiveWebSocketSubscription,
   getUserActiveWebSocketSubscriptionCount,
   removeActiveSubscriptions,
@@ -171,7 +172,7 @@ async function setupSubscriptionHandler(): Promise<void> {
       }
     }
   });
-  await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
+  await redisSubscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
 }
 
 function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {

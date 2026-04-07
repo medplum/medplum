@@ -21,6 +21,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { Repository } from '../fhir/repo';
 import * as rewriteModule from '../fhir/rewrite';
 import { RewriteMode } from '../fhir/rewrite';
@@ -42,6 +43,9 @@ import { findAndExecDispatchJob } from '../workers/test-utils';
 import * as workerUtilsModule from '../workers/utils';
 
 jest.mock('hibp');
+jest.mock('../constants', () => ({
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:ws',
+}));
 
 describe('WebSocket Subscription', () => {
   let config: MedplumServerConfig;
@@ -540,7 +544,7 @@ describe('WebSocket Subscription', () => {
           }
           // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
           const v1Payload = [[patient, subscription.id, { includeResource: true }]];
-          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v1Payload));
+          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v1Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -608,7 +612,7 @@ describe('WebSocket Subscription', () => {
           }
           // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
           const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
-          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -712,7 +716,7 @@ describe('WebSocket Subscription', () => {
               [subscription2.id, { includeResource: true }],
             ],
           };
-          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
         })
         // Expect first event-notification
         .expectJson((msg: Bundle): boolean => {

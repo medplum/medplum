@@ -35,6 +35,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
@@ -57,6 +58,9 @@ import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils
 import * as workerUtils from './utils';
 
 jest.mock('node-fetch');
+jest.mock('../constants', () => ({
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
+}));
 const mockBullmq = jest.mocked(bullmqModule);
 
 describe('Subscription Worker', () => {
@@ -1929,7 +1933,7 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
-      await subscriber.subscribe('medplum:subscriptions:r4:websockets');
+      await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
     });
 
     afterAll(async () => {
