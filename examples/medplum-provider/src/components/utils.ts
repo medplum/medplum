@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProjectMembership } from '@medplum/fhirtypes';
 
+const DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM = 'https://dosespot.com/practitionerrole-type';
+
 /**
  * Returns true if the profile has a DoseSpot identifier.
  *
@@ -15,3 +17,9 @@ import type { ProjectMembership } from '@medplum/fhirtypes';
 export function hasDoseSpotIdentifier(membership: ProjectMembership | undefined): boolean {
   return !!membership?.identifier?.some((i) => i.system?.includes('dosespot'));
 }
+
+/**
+ * The system URL used on PractitionerRole.code to authorize DoseSpot enrollment.
+ * Exported for reuse in hooks and tests.
+ */
+export { DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM };

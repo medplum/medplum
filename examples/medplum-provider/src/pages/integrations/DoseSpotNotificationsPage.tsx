@@ -9,6 +9,13 @@ import classes from './DoseSpotNotificationsPage.module.css';
 
 export function DoseSpotNotificationsPage(): JSX.Element {
   const iframeUrl = useDoseSpotIFrame({
+    selfEnroll: true,
+    onSelfEnrollSuccess: (result) =>
+      showNotification({
+        color: 'blue',
+        title: 'DoseSpot Enrollment',
+        message: result.nextSteps[0] ?? 'Enrollment in progress...',
+      }),
     onIframeSuccess: () =>
       showNotification({
         color: 'green',
