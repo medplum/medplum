@@ -1582,3 +1582,6 @@ export function isDefined<T>(value: T | undefined | null): value is T {
 
 /** Constant empty array. */
 export const EMPTY: readonly [] = Object.freeze([]);
+
+/** No operation function. */
+export const NOOP = (): void => {};
