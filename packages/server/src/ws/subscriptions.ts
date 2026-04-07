@@ -9,6 +9,7 @@ import crypto, { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
@@ -20,7 +21,6 @@ import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import {
-  WEBSOCKET_SUB_PUBLISH_CHANNEL,
   addUserActiveWebSocketSubscription,
   getUserActiveWebSocketSubscriptionCount,
   removeActiveSubscriptions,
