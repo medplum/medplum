@@ -3069,15 +3069,7 @@ describe('Subscription Worker', () => {
             name: [{ given: ['Test'], family: `AutoDisable${i}` }],
           });
           expect(patient).toBeDefined();
-
-          const job = {
-            id: `auto-disable-${i}`,
-            data: queue.add.mock.calls[i][1],
-            attemptsMade: 1, // Matches max-attempts extension, so retries are exhausted
-            changePriority: jest.fn(),
-          } as unknown as Job;
-
-          await execSubscriptionJob(job);
+          await findAndExecSubscriptionJob(patient, 'create');
         }
 
         // Verify subscription was disabled
@@ -3126,17 +3118,11 @@ describe('Subscription Worker', () => {
         });
 
         for (let i = 0; i < 3; i++) {
-          await repo.createResource<Patient>({
+          const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ExistingError${i}` }],
           });
-          const job = {
-            id: `existing-error-${i}`,
-            data: queue.add.mock.calls[i][1],
-            attemptsMade: 1,
-            changePriority: jest.fn(),
-          } as unknown as Job;
-          await execSubscriptionJob(job);
+          await findAndExecSubscriptionJob(patient, 'create');
         }
 
         // Verify subscription was disabled and error was overwritten
@@ -3174,48 +3160,31 @@ describe('Subscription Worker', () => {
           throw new Error('Connection refused');
         });
         for (let i = 0; i < 2; i++) {
-          await repo.createResource<Patient>({
+          const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `Reset${i}` }],
           });
-          const job = {
-            id: `reset-fail-${i}`,
-            data: queue.add.mock.calls[i][1],
-            attemptsMade: 1,
-            changePriority: jest.fn(),
-          } as unknown as Job;
-          await execSubscriptionJob(job);
+          await findAndExecSubscriptionJob(patient, 'create');
         }
 
         // Succeed once - should reset counter
         (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
-        await repo.createResource<Patient>({
+        const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Test'], family: 'ResetSuccess' }],
         });
-        const successJob = {
-          id: 'reset-success',
-          data: queue.add.mock.calls[2][1],
-          attemptsMade: 0,
-        } as unknown as Job;
-        await execSubscriptionJob(successJob);
+        await findAndExecSubscriptionJob(patient, 'create');
 
         // Fail twice more (should not trigger auto-disable since counter was reset)
         (fetch as unknown as jest.Mock).mockImplementation(() => {
           throw new Error('Connection refused');
         });
         for (let i = 0; i < 2; i++) {
-          await repo.createResource<Patient>({
+          const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ResetAgain${i}` }],
           });
-          const job = {
-            id: `reset-fail2-${i}`,
-            data: queue.add.mock.calls[3 + i][1],
-            attemptsMade: 1,
-            changePriority: jest.fn(),
-          } as unknown as Job;
-          await execSubscriptionJob(job);
+          await findAndExecSubscriptionJob(patient, 'create');
         }
 
         // Subscription should still be active
@@ -3263,19 +3232,22 @@ describe('Subscription Worker', () => {
           throw new Error('Connection refused');
         });
 
-        for (let i = 0; i < 3; i++) {
-          await repo.createResource<Patient>({
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `PatchTest${i}` }],
           });
-          const job = {
-            id: `patch-test-${i}`,
-            data: queue.add.mock.calls[i][1],
-            attemptsMade: 1,
-            changePriority: jest.fn(),
-          } as unknown as Job;
-          await execSubscriptionJob(job);
+          await findAndExecSubscriptionJob(patient, 'create');
         }
+
+        // The subscription was disabled during the second resource's first attempt,
+        // so subsequent resource changes should not enqueue a subscription job at all.
+        const thirdPatient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Test'], family: 'PatchTest2' }],
+        });
+        await expect(findAndExecSubscriptionJob(thirdPatient, 'create')).rejects.toThrow('Job not found');
+        expect(callCount).toBe(3);
 
         // Verify the admin's error message was preserved, not overwritten by auto-disable
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
