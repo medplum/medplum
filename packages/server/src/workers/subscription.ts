@@ -39,6 +39,7 @@ import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -52,9 +53,9 @@ import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import type { SubEventsOptions } from '../ws/subscriptions';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -369,7 +370,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -417,7 +418,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = getProjectSystemRepo(projectId);
+  const systemRepo = await getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -669,7 +670,7 @@ async function sendRestHook(
   let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
-    systemRepo = getProjectSystemRepo(subscription.meta.project);
+    systemRepo = await getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }

@@ -139,7 +139,7 @@ export function Calendar(props: {
   onRangeChange?: (range: Range) => void;
 }): JSX.Element {
   const [view, setView] = useState<View>('week');
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState(new Date());
   const [range, setRange] = useState<Range | undefined>();
 
   const { onRangeChange } = props;
@@ -189,28 +189,30 @@ export function Calendar(props: {
   const backgroundEvents = slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot)));
 
   return (
-    <ReactBigCalendar
-      components={{ toolbar: CalendarToolbar }}
-      view={view}
-      date={date}
-      localizer={dayjsLocalizer(dayjs)}
-      events={events}
-      // Background events don't show in the month view
-      backgroundEvents={backgroundEvents}
-      onNavigate={(newDate: Date, newView: View) => {
-        setDate(newDate);
-        setView(newView);
-      }}
-      onRangeChange={handleRangeChange}
-      onSelectSlot={props.onSelectInterval}
-      onSelectEvent={handleSelectEvent}
-      onView={setView}
-      // Default scroll to current time
-      scrollToTime={date}
-      selectable
-      eventPropGetter={eventPropGetter}
-      style={props.style}
-      dayLayoutAlgorithm="no-overlap"
-    />
+    <div data-testid="calendar">
+      <ReactBigCalendar
+        components={{ toolbar: CalendarToolbar }}
+        view={view}
+        date={date}
+        localizer={dayjsLocalizer(dayjs)}
+        events={events}
+        // Background events don't show in the month view
+        backgroundEvents={backgroundEvents}
+        onNavigate={(newDate: Date, newView: View) => {
+          setDate(newDate);
+          setView(newView);
+        }}
+        onRangeChange={handleRangeChange}
+        onSelectSlot={props.onSelectInterval}
+        onSelectEvent={handleSelectEvent}
+        onView={setView}
+        // Default scroll to current time
+        scrollToTime={date}
+        selectable
+        eventPropGetter={eventPropGetter}
+        style={props.style}
+        dayLayoutAlgorithm="no-overlap"
+      />
+    </div>
   );
 }

@@ -6,7 +6,7 @@ import type { JSX } from 'react';
 import { Fragment } from 'react';
 import { ChatListItem } from './ChatListItem';
 
-interface ChatListProps {
+export interface ChatListProps {
   threads: [Communication, Communication | undefined][];
   selectedCommunication: Communication | undefined;
   getThreadUri: (topic: Communication) => string;

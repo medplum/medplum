@@ -64,6 +64,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
       const state = JSON.stringify({
         ...(await medplum.ensureCodeChallenge(baseLoginRequest)),
         domain: authMethod.domain,
+        returnTo: locationUtils.getLocation(),
       });
       const url = new URL(authMethod.authorizeUrl);
       url.searchParams.set('state', state);

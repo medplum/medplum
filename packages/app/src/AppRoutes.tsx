@@ -8,6 +8,7 @@ import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
 import { DatabaseToolsPage } from './admin/DatabaseToolsPage';
 import { InvitePage } from './admin/InvitePage';
+import { MemberDetailsPage } from './admin/MemberDetailsPage';
 import { ProjectAdminConfigPage } from './admin/ProjectAdminConfigPage';
 import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
@@ -29,6 +30,7 @@ import { MfaPage } from './MfaPage';
 import { OAuthPage } from './OAuthPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
+import { AccountsPage } from './resource/AccountsPage';
 import { ApplyPage } from './resource/ApplyPage';
 import { AppsPage } from './resource/AppsPage';
 import { AuditEventPage } from './resource/AuditEventPage';
@@ -36,6 +38,7 @@ import { BlamePage } from './resource/BlamePage';
 import { BotEditor } from './resource/BotEditor';
 import { BuilderPage } from './resource/BuilderPage';
 import { ChecklistPage } from './resource/ChecklistPage';
+import { CommunicationPayloadPage } from './resource/CommunicationPayloadPage';
 import { DeletePage } from './resource/DeletePage';
 import { DetailsPage } from './resource/DetailsPage';
 import { EditPage } from './resource/EditPage';
@@ -85,13 +88,16 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/super/db" element={<DatabaseToolsPage />} />
         <Route path="/admin/config" element={<ProjectAdminConfigPage />} />
         <Route path="/admin" element={<ProjectPage />}>
+          <Route path="bots/:membershipId" element={<MemberDetailsPage />} />
           <Route path="bots/new" element={<CreateBotPage />} />
           <Route path="bots" element={<BotsPage />} />
+          <Route path="clients/:membershipId" element={<MemberDetailsPage />} />
           <Route path="clients/new" element={<CreateClientPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="details" element={<ProjectDetailsPage />} />
           <Route path="invite" element={<InvitePage />} />
           <Route path="patients" element={<Navigate to="/admin/users" replace />} />
+          <Route path="users/:membershipId" element={<MemberDetailsPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="project" element={<ProjectDetailsPage />} />
           <Route path="secrets" element={<SecretsPage />} />
@@ -136,7 +142,9 @@ export function AppRoutes(): JSX.Element {
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
+          <Route path="payload" element={<CommunicationPayloadPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
           <Route path="export" element={<ExportPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />

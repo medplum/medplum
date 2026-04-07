@@ -34,7 +34,7 @@ export interface SmokingStatusProps {
 
 export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
   const medplum = useMedplum();
-  const [smokingStatus, setSmokingStatus] = useState<Observation | undefined>(props.smokingStatus);
+  const [smokingStatus, setSmokingStatus] = useState(props.smokingStatus);
   const [opened, { open, close }] = useDisclosure(false);
 
   const handleSubmit = useCallback(

@@ -22,6 +22,7 @@ import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
 import { ccdaExportHandler } from './operations/ccdaexport';
@@ -56,7 +57,9 @@ import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
+import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
@@ -293,6 +296,9 @@ function initInternalFhirRouter(): FhirRouter {
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
 
+  // Binary $presigned-url operation
+  router.add('GET', '/Binary/:id/$presigned-url', binaryPresignedUrlHandler);
+
   // Bot $init operation
   router.add('POST', '/Bot/$init', botInitHandler);
 
@@ -329,6 +335,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Resource $refresh-reference-display operation
   router.add('POST', '/:resourceType/:id/$refresh-reference-display', refreshReferenceDisplayHandler);
 
+  // Patient $match operation
+  router.add('POST', '/Patient/$match', patientMatchHandler);
+
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
   router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
@@ -357,6 +366,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // ClientApplication $launch
   router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+
   // Rotate client secret
   router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
@@ -368,6 +378,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Appointment $book operation
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
+
+  // PackageRelease $install operation
+  router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {

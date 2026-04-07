@@ -23,7 +23,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
     props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const prevThreadId = usePrevious<string | undefined>(thread?.id);
+  const prevThreadId = usePrevious(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
 
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
@@ -94,7 +94,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
                   ...message,
                   received: message.received ?? new Date().toISOString(), // Mark as received if needed
                   status: 'completed', // Mark as 'read'
-                  // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+                  // See: https://www.medplum.com/docs/communications/messaging-data-model#communication-lifecycle
                   // for more info about recommended `Communication` lifecycle
                 })
                 .catch(console.error);

@@ -305,22 +305,6 @@
       "inherited": false
     },
     {
-      "name": "redirectUri",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "uri"
-        }
-      ],
-      "path": "ClientApplication.redirectUri",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "@deprecated This field is deprecated. Use redirectUris instead.",
-      "comment": "",
-      "inherited": false
-    },
-    {
       "name": "redirectUris",
       "depth": 1,
       "types": [
@@ -349,6 +333,54 @@
       "max": "1",
       "short": "",
       "definition": "Optional launch URI for SMART EHR launch sequence.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "launchIdentifierSystems",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ClientApplication.launchIdentifierSystems",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional array of identifier systems to use in SMART launch context. When specified, the resource's identifier with the matching system will be included in the SmartAppLaunch resource's reference and returned to the SMART app in the token response.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "resourceType",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ClientApplication.launchIdentifierSystems.resourceType",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The resource type for which to use the identifier system (e.g., 'Patient', 'Encounter').",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "system",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ClientApplication.launchIdentifierSystems.system",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The identifier system URI to use for the specified resource type.",
       "comment": "",
       "inherited": false
     },
@@ -446,6 +478,38 @@
       "max": "*",
       "short": "",
       "definition": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "certificateTrustStore",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.certificateTrustStore",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional PEM-formatted certificates that are allowed to authenticate to this service via mutual TLS. Supports both Certificate Authorities (CAs) and self-signed certificates. Multiple certificates can be included.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "redirectUri",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ClientApplication.redirectUri",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "@deprecated This field is deprecated. Use redirectUris instead.",
       "comment": "",
       "inherited": false
     }

@@ -1,6 +1,8 @@
 # Presigned URLs
 
-**Presigned URLs** are a secure mechanism Medplum uses to serve binary content (images, videos, documents). They grant **temporary, authenticated access**, allowing the content to be safely embedded in web applications using native HTML tags like `<img>` and `<video>` without requiring extra authentication headers.
+**Presigned URLs** are a secure mechanism Medplum uses to serve binary content (images, videos, documents).
+They grant **temporary, authenticated access**, allowing the content to be safely embedded in web applications using
+native HTML tags like `<img>` and `<video>` without requiring extra authentication headers.
 
 For more details about how binary data works in Medplum, see [Binary Data](/docs/fhir-datastore/binary-data).
 
@@ -45,3 +47,12 @@ If the Medplum server is configured to serve binary content directly and no sign
 Security Update: Historically, Medplum example configuration files included a hardcoded sample signing key. We have removed these keys entirely to eliminate the risk of accidental usage in production and to enforce best security practices from the start.
 
 :::
+
+## Generating Presigned URLs
+
+To generate a presigned URL for a Binary resource, you can call the [`$presigned-url` operation API](/docs/api/fhir/operations/binary-presigned-url):
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Binary/[id]/$presigned-url' \
+    -H "Authorization: Bearer $ACCESS_TOKEN"
+```

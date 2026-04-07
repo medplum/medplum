@@ -912,6 +912,48 @@ export function findCodeBySystem(categories: CodeableConcept[] | undefined, syst
 }
 
 /**
+ * Checks if a Coding matches a token search string
+ * https://build.fhir.org/search.html#token
+ *
+ * @param coding - The Coding to test
+ * @param token - The token string to test
+ * @returns True if the Coding matches the token
+ */
+export function codingMatchesToken(coding: Coding, token: string): boolean {
+  const [system, code] = splitN(token, '|', 2);
+
+  if (code === undefined) {
+    // There was no '|' delimiter in the token, so we treat the whole token as a code and
+    // match irrespective of the `system` property
+    return coding.code === token;
+  }
+
+  if (system === '') {
+    // The token was of the form '|[code]', which only matches Coding values with no `system`
+    return coding.system === undefined && coding.code === code;
+  }
+
+  if (code === '') {
+    // The token was of the form '[system]|', which matches any Coding belonging to that system
+    return coding.system === system;
+  }
+
+  return coding.system === system && coding.code === code;
+}
+
+/**
+ * Checks if a CodeableConcept matches a token search string
+ * https://build.fhir.org/search.html#token
+ *
+ * @param codeableConcept - The CodeableConcept to test
+ * @param token - The token string to test
+ * @returns True if the CodeableConcept matches the token
+ */
+export function codeableConceptMatchesToken(codeableConcept: CodeableConcept, token: string): boolean {
+  return (codeableConcept.coding ?? EMPTY).some((coding) => codingMatchesToken(coding, token));
+}
+
+/**
  * Returns true if the input value is an object with a string text property.
  * This is a heuristic check based on the presence of the "text" property.
  * @param value - The candidate value.
@@ -1540,3 +1582,6 @@ export function isDefined<T>(value: T | undefined | null): value is T {
 
 /** Constant empty array. */
 export const EMPTY: readonly [] = Object.freeze([]);
+
+/** No operation function. */
+export const NOOP = (): void => {};

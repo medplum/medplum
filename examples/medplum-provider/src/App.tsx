@@ -33,6 +33,7 @@ import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotifica
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
+import { CoveragePage } from './pages/patient/CoveragePage';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
@@ -92,7 +93,7 @@ export function App(): JSX.Element | null {
                     label: 'Patients',
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
-                  { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
+                  { icon: <IconCalendarEvent />, label: 'Schedule', href: `/Calendar/Schedule` },
                   {
                     icon: <IconMail />,
                     label: 'Messages',
@@ -191,6 +192,8 @@ export function App(): JSX.Element | null {
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path="Coverage/:coverageId" element={<CoveragePage />} />
+                <Route path="Coverage/:coverageId/CoverageEligibilityRequest/:requestId" element={<CoveragePage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
                   <Route path="" element={<ResourceDetailPage />} />
@@ -208,7 +211,8 @@ export function App(): JSX.Element | null {
               <Route path="/Fax/Communication" element={<FaxPage />} />
               <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
-              <Route path="/schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />

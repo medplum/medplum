@@ -277,6 +277,18 @@ export interface MedplumClientOptions {
   maxRetryTime?: number;
 
   /**
+   * The maximum number of retries for failed requests.
+   *
+   * When the client encounters a retryable response (HTTP 429 or 5xx), it will automatically retry the request.
+   * This setting defines the maximum number of retry attempts.
+   *
+   * This can be overridden per-request using the `maxRetries` option in `MedplumRequestOptions`.
+   *
+   * Default value is `2`.
+   */
+  maxRetries?: number;
+
+  /**
    * The refresh grace period in milliseconds.
    *
    * This is the amount of time before the access token expires that the client will attempt to refresh the token.
@@ -967,6 +979,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly maxRetries: number;
   private readonly maxRetryTime: number;
   private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
@@ -1015,6 +1028,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
     this.logLevel = this.initializeLogLevel(options);
+    this.maxRetries = options?.maxRetries ?? 2;
     this.maxRetryTime = options?.maxRetryTime ?? 2000;
 
     this.cacheTime =
@@ -1746,7 +1760,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
     const promise = new ReadablePromise(
-      this.search<RT>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
+      this.search(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
     this.setCacheEntry(cacheKey, promise, options);
     return promise;
@@ -1785,7 +1799,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(this.search<RT>(resourceType, query, options).then(bundleToResourceArray));
+    const promise = new ReadablePromise(this.search(resourceType, query, options).then(bundleToResourceArray));
     this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
@@ -3611,7 +3625,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
     // Default of 2 matches old behavior with the new semantics
-    const maxRetries = options?.maxRetries ?? 2;
+    const maxRetries = options?.maxRetries ?? this.maxRetries;
 
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
@@ -3791,7 +3805,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     };
 
     // Execute the batch request
-    const response = await this.post<Bundle>(this.fhirBaseUrl, batch);
+    const response = await this.post(this.fhirBaseUrl, batch);
 
     // Process the response
     for (let i = 0; i < entries.length; i++) {
@@ -4322,16 +4336,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (isContextVersionRequired(event)) {
       return this.post(
         this.fhircastHubUrl,
-        createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
+        createFhircastMessagePayload(topic, event, context, versionId as string),
         ContentType.JSON
       );
     }
     assertContextVersionOptional(event);
-    return this.post(
-      this.fhircastHubUrl,
-      createFhircastMessagePayload<typeof event>(topic, event, context),
-      ContentType.JSON
-    );
+    return this.post(this.fhircastHubUrl, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**
@@ -4568,9 +4578,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return;
     }
     this.subscriptionManager.removeCriteria(criteria, subscriptionProps);
-    if (this.subscriptionManager.getCriteriaCount() === 0) {
-      this.subscriptionManager.closeWebSocket();
-    }
   }
 
   /**

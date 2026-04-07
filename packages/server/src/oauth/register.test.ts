@@ -55,7 +55,7 @@ describe('OAuth2 register', () => {
       });
     expect(res.status).toBe(201);
     expect(res.body.client_id).toBe('example');
-    expect(res.body.client_secret).toBe('my-secret');
+    expect(res.body.client_secret).toBeUndefined();
     expect(res.body.client_id_issued_at).toBeDefined();
   });
 });

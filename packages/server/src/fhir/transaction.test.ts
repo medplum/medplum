@@ -8,7 +8,6 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
-import {} from './repo';
 import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {
@@ -76,7 +75,7 @@ describe('FHIR Repo Transactions', () => {
 
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
-          await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+          await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
         })
       ).rejects.toMatchObject(
         new OperationOutcomeError({
@@ -199,7 +198,7 @@ describe('FHIR Repo Transactions', () => {
 
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
-            await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+            await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
           })
         ).rejects.toMatchObject(
           new OperationOutcomeError({
