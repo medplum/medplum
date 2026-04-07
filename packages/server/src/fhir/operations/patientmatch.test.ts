@@ -53,6 +53,25 @@ describe('Patient $match Operation', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Returns 400 when Patient has no matchable fields', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: {
+              resourceType: 'Patient',
+            } satisfies Patient,
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+  });
+
   test('Returns empty bundle when no patients match', async () => {
     const res = await request(app)
       .post('/fhir/R4/Patient/$match')
@@ -167,6 +186,80 @@ describe('Patient $match Operation', () => {
     const topEntry = bundle.entry?.[0] as BundleEntry<Patient>;
     expect(topEntry.resource?.name?.[0]?.family).toBe('Namebirthtest');
     expect(topEntry.search?.score).toBeGreaterThan(0);
+  });
+
+  test('Matches patient by phone', async () => {
+    const createRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        telecom: [{ system: 'phone', value: '5551112222' }],
+        name: [{ family: 'Phoneonly', given: ['Delta'] }],
+      } satisfies Patient);
+    expect(createRes.status).toBe(201);
+
+    const matchRes = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: {
+              resourceType: 'Patient',
+              telecom: [{ system: 'phone', value: '5551112222' }],
+            } satisfies Patient,
+          },
+        ],
+      });
+
+    expect(matchRes.status).toBe(200);
+    const bundle = matchRes.body as Bundle<Patient>;
+    expect(bundle.total).toBeGreaterThan(0);
+
+    const topEntry = bundle.entry?.[0] as BundleEntry<Patient>;
+    expect(topEntry.resource?.telecom?.[0]?.value).toBe('5551112222');
+  });
+
+  test('Matches patient by email', async () => {
+    const createRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        telecom: [{ system: 'email', value: 'delta.match@example.com' }],
+        name: [{ family: 'Emailonly', given: ['Epsilon'] }],
+      } satisfies Patient);
+    expect(createRes.status).toBe(201);
+
+    const matchRes = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: {
+              resourceType: 'Patient',
+              telecom: [{ system: 'email', value: 'delta.match@example.com' }],
+            } satisfies Patient,
+          },
+        ],
+      });
+
+    expect(matchRes.status).toBe(200);
+    const bundle = matchRes.body as Bundle<Patient>;
+    expect(bundle.total).toBeGreaterThan(0);
+
+    const topEntry = bundle.entry?.[0] as BundleEntry<Patient>;
+    expect(topEntry.resource?.telecom?.[0]?.value).toBe('delta.match@example.com');
   });
 
   test('Respects onlyCertainMatches flag', async () => {

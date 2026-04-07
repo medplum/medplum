@@ -27,6 +27,7 @@ const MATCH_GRADE_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/matc
 const CERTAIN_THRESHOLD = 0.9;
 const PROBABLE_THRESHOLD = 0.65;
 const POSSIBLE_THRESHOLD = 0.4;
+const CANDIDATE_SEARCH_COUNT = 100;
 
 export type MatchGrade = 'certain' | 'probable' | 'possible' | 'certainly-not';
 
@@ -59,6 +60,11 @@ export async function patientMatchHandler(req: FhirRequest): Promise<FhirRespons
 
   if (params.resource?.resourceType !== 'Patient') {
     throw new OperationOutcomeError(badRequest('Input parameter "resource" must be a Patient resource'));
+  }
+  if (!hasMatchableField(params.resource)) {
+    throw new OperationOutcomeError(
+      badRequest('Input Patient must include at least one of: identifier, name, birthDate, telecom, or gender')
+    );
   }
 
   const bundle = await matchPatients(ctx.repo, params);
@@ -127,7 +133,7 @@ async function gatherCandidates(repo: Repository, input: Patient): Promise<WithI
         const result = await repo.search<WithId<Patient>>({
           resourceType: 'Patient',
           filters: [{ code: 'identifier', operator: Operator.EQUALS, value }],
-          count: 100,
+          count: CANDIDATE_SEARCH_COUNT,
         });
         addCandidates(result);
       }
@@ -140,7 +146,22 @@ async function gatherCandidates(repo: Repository, input: Patient): Promise<WithI
       const result = await repo.search<WithId<Patient>>({
         resourceType: 'Patient',
         filters: [{ code: 'birthdate', operator: Operator.EQUALS, value: input.birthDate }],
-        count: 100,
+        count: CANDIDATE_SEARCH_COUNT,
+      });
+      addCandidates(result);
+    }
+
+    // Strategy 3: search by telecom (phone/email) when present.
+    const telecomValues = new Set(
+      (input.telecom ?? EMPTY)
+        .filter((t) => (t.system === 'phone' || t.system === 'email') && t.value)
+        .map((t) => t.value as string)
+    );
+    for (const value of telecomValues) {
+      const result = await repo.search<WithId<Patient>>({
+        resourceType: 'Patient',
+        filters: [{ code: 'telecom', operator: Operator.EQUALS, value }],
+        count: CANDIDATE_SEARCH_COUNT,
       });
       addCandidates(result);
     }
@@ -247,6 +268,8 @@ export function scoreCandidate(candidate: WithId<Patient>, input: Patient): Scor
   }
 
   // Normalize: if we had no overlapping fields to compare, score is 0
+  // Note: totalWeight only includes fields present on both input and candidate,
+  // so missing candidate fields do not penalize the score.
   const normalizedScore = totalWeight > 0 ? score / totalWeight : 0;
   const grade = classifyMatchGrade(normalizedScore);
 
@@ -272,6 +295,15 @@ function getFamilyName(patient: Patient): string | undefined {
 
 function getGivenNames(patient: Patient): readonly string[] {
   return patient.name?.flatMap((n) => n.given ?? EMPTY) ?? (EMPTY as readonly string[]);
+}
+
+function hasMatchableField(patient: Patient): boolean {
+  const hasIdentifier = !!patient.identifier?.some((id) => id.value);
+  const hasName = !!patient.name?.some((n) => n.family || (n.given && n.given.length > 0));
+  const hasBirthDate = !!patient.birthDate;
+  const hasTelecom = !!patient.telecom?.some((t) => (t.system === 'phone' || t.system === 'email') && t.value);
+  const hasGender = !!patient.gender;
+  return hasIdentifier || hasName || hasBirthDate || hasTelecom || hasGender;
 }
 
 /**
