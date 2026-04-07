@@ -104,12 +104,14 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     let completed = false;
     const controller = new AbortController();
     const signal = controller.signal;
-    const params = new URLSearchParams({ start, end });
-    if (serviceType) {
-      serviceType.coding?.forEach((coding) => {
-        params.append('service-type', `${coding.system ?? ''}|${coding.code ?? ''}`);
-      });
-    }
+    const params = new URLSearchParams({
+      start,
+      end,
+      'service-type': (serviceType.coding ?? EMPTY)
+        ?.map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`)
+        .join(','),
+    });
+
     medplum
       .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
       .then(
