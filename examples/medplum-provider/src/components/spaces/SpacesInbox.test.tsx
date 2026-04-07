@@ -208,7 +208,6 @@ describe('SpacesInbox', () => {
       await waitFor(() => {
         expect(screen.getByText('Hello! How can I help you?')).toBeInTheDocument();
       });
-
     });
   });
 
