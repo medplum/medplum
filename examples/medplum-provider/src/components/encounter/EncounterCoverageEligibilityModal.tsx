@@ -131,11 +131,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
     try {
       const requests = await medplum.searchResources(
         'CoverageEligibilityRequest',
-        new URLSearchParams(
-          { patient: getReferenceString(patient), 
-            _count: '10', 
-            _sort: '-_lastUpdated' }
-        )
+        new URLSearchParams({ patient: getReferenceString(patient), _count: '10', _sort: '-_lastUpdated' })
       );
       const req = requests.find((r) =>
         r.insurance?.some((ins) => ins.coverage?.reference === getReferenceString(coverage))
