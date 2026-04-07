@@ -1885,13 +1885,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
-    // Handle special case for "MeasureReport-period"
-    // This is a trial for using "tstzrange" columns for date/time ranges.
-    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
-    if (searchParam.id === 'MeasureReport-period') {
-      columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
-    }
-
     if (impl.searchStrategy === 'token-column') {
       buildTokenColumns(searchParam, impl, columns, resource, {
         paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
@@ -1900,6 +1893,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     if (impl.searchStrategy === 'range-column') {
       buildRangeColumns(searchParam, impl, columns, resource);
+
+      // Handle special case for "MeasureReport-period"
+      // This is a trial for using "tstzrange" columns for date/time ranges.
+      // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+      if (searchParam.id === 'MeasureReport-period') {
+        columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+      }
       return;
     }
 

@@ -1,12 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
-import { evalFhirPathTyped, getSearchParameterDetails, isEmpty, Operator, toTypedValue } from '@medplum/core';
-import type { Period, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { evalFhirPathTyped, getSearchParameterDetails, Operator, toTypedValue } from '@medplum/core';
+import type { Period, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
 import { Column, ColumnType, Condition, Negation } from './sql';
+
+type Interval<T extends number | Date> = {
+  left?: T;
+  right?: T;
+  lInc?: boolean;
+  rInc?: boolean;
+};
 
 export function buildRangeColumns(
   searchParam: SearchParameter,
@@ -15,15 +22,15 @@ export function buildRangeColumns(
   resource: Resource
 ): void {
   if (searchParam.type === 'date') {
-    columns[impl.rangeColumnName] = buildDateTimeRange(searchParam, impl, resource);
+    columns[impl.rangeColumnName] = extractDateTimeParameter(searchParam, impl, resource);
   } else if (searchParam.type === 'number') {
-    columns[impl.rangeColumnName] = buildNumericRange(searchParam, impl, resource);
+    columns[impl.rangeColumnName] = extractNumberParameter(searchParam, impl, resource);
   } else {
     throw new Error('Unsupported search parameter type for range column: ' + searchParam.type);
   }
 }
 
-function buildDateTimeRange(
+function extractDateTimeParameter(
   searchParam: SearchParameter,
   impl: RangeColumnSearchParameterImplementation,
   resource: Resource
@@ -35,46 +42,73 @@ function buildDateTimeRange(
   }
 
   if (impl.array) {
-    const values = typedValues.map((v) => formatDateTimeRange(v));
+    const values = typedValues.map((v) => formatRange(buildDateTimeRange(v)));
     return `{${values.join(',')}}`;
   } else {
-    const value = formatDateTimeRange(typedValues[0]);
+    const value = formatRange(buildDateTimeRange(typedValues[0]));
     return value;
   }
 }
 
-function formatDateTimeRange(typed: TypedValue): string {
-  if (typed.type === 'Period') {
-    const { start, end } = typed.value as Period;
-    const lowEndpoint = isEmpty(start) ? '(' : '[' + new Date(start as string).toISOString();
-    const highEndpoint = isEmpty(end) ? ')' : new Date(end as string).toISOString() + ']';
-    return `${lowEndpoint},${highEndpoint}`;
+function buildDateTimeRange(typed: TypedValue): Interval<Date> {
+  switch (typed.type) {
+    case 'Period': {
+      const { start, end } = typed.value as Period;
+      const range: Interval<Date> = {};
+      if (start) {
+        range.left = new Date(start);
+        range.lInc = true;
+      }
+      if (end) {
+        range.right = new Date(end);
+        range.rInc = true;
+      }
+      return range;
+    }
+    case 'date':
+    case 'dateTime':
+      return parseDateTimeToRange(typed.value);
+    case 'instant': {
+      const d = new Date(typed.value);
+      return { lInc: true, left: d, right: d, rInc: true };
+    }
+    default:
+      throw new Error('Cannot build datetime range from ' + typed.type);
   }
+}
 
-  const value = typed.value;
-  const d = new Date(value);
-  const start = d.toISOString();
-  const len = value.length;
+function parseDateTimeToRange(dt: string): Interval<Date> {
+  const start = new Date(dt);
+  const end = new Date(start.getTime()); // Copy start time before modifying
+  const len = dt.length;
   if (len <= 4) {
     // Year precision
-    d.setFullYear(d.getFullYear() + 1);
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
   } else if (len <= 7) {
     // Month precision
-    d.setMonth(d.getMonth() + 1);
+    end.setUTCMonth(end.getUTCMonth() + 1);
   } else if (len <= 10) {
     // Day precision
-    d.setDate(d.getDate() + 1);
+    end.setUTCDate(end.getUTCDate() + 1);
   } else if (len <= 20) {
     // Second precision
-    d.setSeconds(d.getSeconds() + 1);
+    end.setSeconds(end.getSeconds() + 1);
   } else {
     // Millisecond precision
-    d.setMilliseconds(d.getMilliseconds() + 1);
+    end.setMilliseconds(end.getMilliseconds() + 1);
   }
-  return `[${start},${d.toISOString()})`;
+  return { lInc: true, left: start, right: end, rInc: false };
 }
 
-function buildNumericRange(
+function formatRange(r: Interval<any>): string {
+  return `${r.lInc ? '[' : '('}${formatEndpoint(r.left)},${formatEndpoint(r.right)}${r.rInc ? ']' : ')'}`;
+}
+
+function formatEndpoint(e: any): string {
+  return e?.toISOString?.() ?? e?.toString?.() ?? '';
+}
+
+function extractNumberParameter(
   searchParam: SearchParameter,
   impl: RangeColumnSearchParameterImplementation,
   resource: Resource
@@ -86,26 +120,42 @@ function buildNumericRange(
   }
 
   if (impl.array) {
-    const values = typedValues.map((v) => formatNumericRange(v));
+    const values = typedValues.map((v) => formatRange(buildNumericRange(v)));
     return `{${values.join(',')}}`;
   } else {
-    const value = formatNumericRange(typedValues[0].value);
+    const value = formatRange(buildNumericRange(typedValues[0]));
     return value;
   }
 }
 
-function formatNumericRange(typed: TypedValue): string {
-  if (typed.type === 'Range') {
-    const { low, high } = typed.value;
-
-    const lowEndpoint = isEmpty(low?.value) ? '(' : '[' + low.value;
-    const highEndpoint = isEmpty(high?.value) ? ')' : high.value + ']';
-    return `${lowEndpoint},${highEndpoint}`;
+function buildNumericRange(typed: TypedValue): Interval<number> {
+  switch (typed.type) {
+    case 'Range': {
+      const { low, high } = typed.value as Range;
+      const range: Interval<number> = {};
+      if (low?.value !== undefined) {
+        range.left = low.value;
+        range.lInc = true;
+      }
+      if (high?.value !== undefined) {
+        range.right = high.value;
+        range.rInc = true;
+      }
+      return range;
+    }
+    case 'decimal':
+    case 'integer':
+    case 'unsignedInt':
+    case 'positiveInt':
+      return parseNumberToRange(typed.value);
+    default:
+      throw new Error('Cannot build numeric range from ' + typed.type);
   }
+}
 
-  const value = typed.value;
-  const n = Number.parseFloat(value);
-  return `[${n},${n}]`; // TODO: Implement precision range
+function parseNumberToRange(n: number): Interval<number> {
+  // TODO: Implement precision range
+  return { lInc: true, left: n, right: n, rInc: true };
 }
 
 /**
@@ -126,20 +176,10 @@ export function addRangeColumnsOrderBy(
     the sort is based on the item in the set of multiple parameters that comes earliest in
     the specified sort order when ordering the returned resources.
 
-    In [R5](https://www.hl7.org/fhir/r5/search.html#_sort) and beyond, that language is replaced with:
-    Servers have discretion on the implementation of sorting for both repeated elements and complex
-    elements. For example, if requesting a sort on Patient.name, servers might search by family name
-    then given, given name then family, or prefix, family, and then given. Similarly, when sorting with
-    multiple given names, the sort might be based on the 'earliest' name in sort order or the first name
-    in the instance.
-
     Current behavior:
     Sorts by the lower bound of the range. This can result
     in possibly unexpected/surprising result ordering when a resource has multiple range
     values for the same field, or if the range is unbounded to the left.
-
-    To avoid the surprising behavior, we could store both the lower and upper bound
-    values for each search parameter.
   */
   selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
@@ -155,25 +195,54 @@ export function buildRangeColumnsSearchFilter(
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
   }
 
+  let range: Interval<number | Date>;
+  let colType: ColumnType;
+  if (param.type === 'date') {
+    range = parseDateTimeToRange(filter.value);
+    colType = ColumnType.TSTZRANGE;
+  } else {
+    range = parseNumberToRange(Number.parseFloat(filter.value));
+    colType = ColumnType.NUMRANGE;
+  }
   const column = new Column(tableName, impl.rangeColumnName);
   switch (filter.operator) {
     case Operator.EQUALS:
-      return new Condition(column, 'RANGE_OVERLAPS', periodRangeString);
+      return new Condition(column, 'RANGE_OVERLAPS', formatRange(range));
     case Operator.NOT:
     case Operator.NOT_EQUALS:
-      return new Negation(new Condition(column, 'RANGE_OVERLAPS', periodRangeString));
+      return new Negation(new Condition(column, 'RANGE_OVERLAPS', formatRange(range)));
     case Operator.LESS_THAN:
-      return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end})`, ColumnType.TSTZRANGE);
+      return new Condition(
+        column,
+        'RANGE_OVERLAPS',
+        `(,${formatEndpoint(range.left)}${range.lInc ? ')' : ']'}`,
+        colType
+      );
     case Operator.LESS_THAN_OR_EQUALS:
-      return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end}]`, ColumnType.TSTZRANGE);
+      return new Condition(
+        column,
+        'RANGE_OVERLAPS',
+        `(,${formatEndpoint(range.right)}${range.rInc ? ']' : ')'}`,
+        colType
+      );
     case Operator.GREATER_THAN:
-      return new Condition(column, 'RANGE_OVERLAPS', `(${period.start},)`, ColumnType.TSTZRANGE);
+      return new Condition(
+        column,
+        'RANGE_OVERLAPS',
+        `${range.rInc ? '(' : '['}${formatEndpoint(range.right)},)`,
+        colType
+      );
     case Operator.GREATER_THAN_OR_EQUALS:
-      return new Condition(column, 'RANGE_OVERLAPS', `[${period.start},)`, ColumnType.TSTZRANGE);
+      return new Condition(
+        column,
+        'RANGE_OVERLAPS',
+        `${range.lInc ? '[' : '('}${formatEndpoint(range.left)},)`,
+        colType
+      );
     case Operator.STARTS_AFTER:
-      return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', periodRangeString, ColumnType.TSTZRANGE);
+      return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', formatRange(range), colType);
     case Operator.ENDS_BEFORE:
-      return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', periodRangeString, ColumnType.TSTZRANGE);
+      return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', formatRange(range), colType);
     default:
       throw new Error(`Unknown FHIR operator: ${filter.operator}`);
   }
