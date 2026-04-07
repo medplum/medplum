@@ -95,9 +95,10 @@ describe('Certificate validation', () => {
       for (let i = 0; i < lines.length; i++) {
         // Find a line with substantial base64 data (not BEGIN/END markers, and long enough)
         if (lines[i].length > 20 && !lines[i].includes('BEGIN') && !lines[i].includes('END')) {
-          // Replace a character in the middle
+          // Replace a character in the middle with a different character
           const mid = Math.floor(lines[i].length / 2);
-          lines[i] = lines[i].substring(0, mid) + 'X' + lines[i].substring(mid + 1);
+          const replacement = lines[i][mid] === 'X' ? 'Y' : 'X';
+          lines[i] = lines[i].substring(0, mid) + replacement + lines[i].substring(mid + 1);
           break;
         }
       }
