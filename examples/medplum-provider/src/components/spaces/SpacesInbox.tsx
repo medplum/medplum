@@ -358,7 +358,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                       <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
                         <Stack gap={6}>
                           {message.tool_calls.map((tc, tcIdx) => {
-                            let args: { method?: string; path?: string } = {};
+                            let args: { method?: string; path?: string } | undefined;
                             try {
                               args =
                                 typeof tc.function.arguments === 'string'
@@ -367,20 +367,22 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                             } catch {
                               /* ignore */
                             }
-                            const methodColors: Record<string, string> = {
-                              GET: 'blue',
-                              POST: 'green',
-                              PUT: 'orange',
-                              DELETE: 'red',
-                            };
+                            if (args) {
+                              return (
+                                <Group key={tcIdx} gap="xs" align="center">
+                                  <Badge size="sm" color={getMethodColor(args.method)} variant="filled">
+                                    {args.method ?? 'CALL'}
+                                  </Badge>
+                                  <Code>{args.path ?? tc.function.name}</Code>
+                                </Group>
+                              );
+                            }
                             return (
-                              <Group key={tcIdx} gap="xs" align="center">
-                                <Badge size="sm" color={methodColors[args.method ?? ''] ?? 'gray'} variant="filled">
-                                  {args.method ?? 'CALL'}
-                                </Badge>
-                                <Code style={{ fontSize: 12 }}>{args.path ?? tc.function.name}</Code>
-                              </Group>
+                              <Text key={tcIdx} size="xs" c="dimmed" fs="italic">
+                                Unable to parse tool call
+                              </Text>
                             );
+
                           })}
                         </Stack>
                       </div>
@@ -658,3 +660,15 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     </>
   );
 }
+
+const METHOD_COLORS: Record<string, string> = {
+  GET: 'blue',
+  POST: 'green',
+  PUT: 'orange',
+  DELETE: 'red',
+};
+
+function getMethodColor(method: string | undefined): string {
+  return METHOD_COLORS[method ?? ''] ?? 'gray';
+}
+
