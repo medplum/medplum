@@ -66,7 +66,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
   const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
-  const [expandedResponses, setExpandedResponses] = useState<Set<number>>(new Set());
+  const [expandedResponses, setExpandedResponses] = useState(new Set<number>());
   const [panelWidth, setPanelWidth] = useState<number>(() => window.innerWidth * 0.5);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);

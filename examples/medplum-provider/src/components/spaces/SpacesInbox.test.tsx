@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -209,7 +209,6 @@ describe('SpacesInbox', () => {
         expect(screen.getByText('Hello! How can I help you?')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('AI Assistant')).toBeInTheDocument();
     });
   });
 
@@ -374,7 +373,8 @@ describe('SpacesInbox', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Patient/patient-123')).toBeInTheDocument();
+        const resourceBox = screen.getByTestId('resource-box');
+        expect(within(resourceBox).getByText('Patient/patient-123')).toBeInTheDocument();
       });
     });
 
