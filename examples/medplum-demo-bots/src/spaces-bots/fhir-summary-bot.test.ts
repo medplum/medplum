@@ -70,7 +70,7 @@ describe('fhir-summary-bot', () => {
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
-    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }]), contentType });
+    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }]), contentType, secrets: {} });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     expect(callArgs.parameter?.find((p) => p.name === 'model')?.valueString).toBe('gpt-4');
@@ -102,7 +102,7 @@ describe('fhir-summary-bot', () => {
         tool_calls: [{ function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Patient/123' } } }],
       },
     ];
-    await handler(medplum, { bot, input: makeInput(messages), contentType });
+    await handler(medplum, { bot, input: makeInput(messages), contentType, secrets: {} });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
