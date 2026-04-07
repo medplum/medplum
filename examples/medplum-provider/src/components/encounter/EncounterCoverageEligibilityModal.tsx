@@ -18,7 +18,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import { createReference, formatDate, getReferenceString } from '@medplum/core';
 import type {
   Bot,
@@ -30,7 +30,7 @@ import type {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medplum/react';
-import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronUp, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -124,7 +124,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
   const [checkingEligibility, setCheckingEligibility] = useState(false);
 
   const fetchLatestRequestAndResponse = useCallback(async (): Promise<void> => {
-    if (!coverage.id || !patient?.id) {
+    if (!coverage.id || !patient) {
       return;
     }
     setBenefitsLoading(true);
@@ -181,9 +181,16 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
       try {
         await medplum.executeBot(eligibilityBot.id as string, savedRequest, 'application/fhir+json');
       } catch (err) {
+        let errorMessage: string | undefined;
         try {
           const parsed = JSON.parse((err as Error).message);
-          showNotification({ color: 'red', title: 'Error', message: parsed?.errorMessage });
+          errorMessage = parsed?.errorMessage;
+          notifications.show({
+            color: 'red',
+            icon: <IconCircleOff />,
+            title: 'Error',
+            message: errorMessage,
+          });
         } catch {
           showErrorNotification(err);
         }
