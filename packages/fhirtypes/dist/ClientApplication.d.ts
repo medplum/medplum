@@ -223,6 +223,26 @@ export interface ClientApplicationLaunchIdentifierSystems {
 }
 
 /**
+ * Optional array of identifier systems to use in SMART launch context.
+ * When specified, the resource's identifier with the matching system
+ * will be included in the SmartAppLaunch resource's reference and
+ * returned to the SMART app in the token response.
+ */
+export interface ClientApplicationLaunchIdentifierSystems {
+
+  /**
+   * The resource type for which to use the identifier system (e.g.,
+   * 'Patient', 'Encounter').
+   */
+  resourceType: string;
+
+  /**
+   * The identifier system URI to use for the specified resource type.
+   */
+  system: string;
+}
+
+/**
  * Custom values for the Log In form.
  */
 export interface ClientApplicationSignInForm {

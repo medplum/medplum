@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals"],
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "rootDir": "src",
+    "outDir": "dist/types",
+    "emitDeclarationOnly": true,
+    "noEmit": false
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
