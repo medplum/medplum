@@ -6,6 +6,7 @@ import {
   badRequest,
   DEFAULT_SEARCH_COUNT,
   EMPTY,
+  HTTP_HL7_ORG,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -20,7 +21,7 @@ import { parseInputParameters } from './utils/parameters';
 const operation = getOperationDefinition('Patient', 'match');
 
 // Extension URL for match-grade, as defined by the FHIR spec
-const MATCH_GRADE_EXTENSION_URL = 'http://hl7.org/fhir/StructureDefinition/match-grade';
+const MATCH_GRADE_EXTENSION_URL = `${HTTP_HL7_ORG}/StructureDefinition/match-grade`;
 
 // Thresholds for match-grade classification
 const CERTAIN_THRESHOLD = 0.9;
