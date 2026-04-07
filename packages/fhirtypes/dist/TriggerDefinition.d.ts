@@ -5,12 +5,12 @@
  * Do not edit manually.
  */
 
-import { DataRequirement } from './DataRequirement';
-import { Expression } from './Expression';
-import { Extension } from './Extension';
-import { Reference } from './Reference';
-import { Schedule } from './Schedule';
-import { Timing } from './Timing';
+import type { DataRequirement } from './DataRequirement.d.ts';
+import type { Expression } from './Expression.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Schedule } from './Schedule.d.ts';
+import type { Timing } from './Timing.d.ts';
 
 /**
  * A description of a triggering event. Triggering events can be named

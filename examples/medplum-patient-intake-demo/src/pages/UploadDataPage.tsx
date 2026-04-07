@@ -27,7 +27,7 @@ export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
-  const [pageDisabled, setPageDisabled] = useState<boolean>(false);
+  const [pageDisabled, setPageDisabled] = useState(false);
 
   const { questionnaire } = useContext(IntakeQuestionnaireContext);
 
@@ -158,7 +158,7 @@ async function uploadExampleBots(
 
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
-    (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
+    exampleBotData.entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
@@ -168,17 +168,17 @@ async function uploadExampleBots(
     if (!existingBot) {
       const projectId = profile.meta?.project;
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
-      existingBot = (await medplum.post(createBotUrl, {
+      existingBot = await medplum.post<WithId<Bot>>(createBotUrl, {
         name: botName,
-      })) as WithId<Bot>;
+      });
     }
 
-    botIds[botName] = existingBot.id as string;
+    botIds[botName] = existingBot.id;
 
     // Replace the Bot id placeholder in the bundle
     transactionString = transactionString
       .replaceAll(`$bot-${botName}-reference`, getReferenceString(existingBot))
-      .replaceAll(`$bot-${botName}-id`, existingBot.id as string);
+      .replaceAll(`$bot-${botName}-id`, existingBot.id);
   }
 
   transactionString = transactionString.replaceAll(`$${questionnaire.name}`, getReferenceString(questionnaire));

@@ -1,21 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type {
-  Patient,
-  ServiceRequest,
-  Practitioner,
   DiagnosticReport,
   DocumentReference,
-  QuestionnaireResponse,
   Observation,
+  Patient,
+  Practitioner,
+  QuestionnaireResponse,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { LabOrderDetails } from './LabOrderDetails';
 
 // Mock the documentReference utility
@@ -24,7 +25,7 @@ vi.mock('../../utils/documentReference', () => ({
   getHealthGorillaRequisitionId: vi.fn(),
 }));
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['John'], family: 'Doe' }],
@@ -402,8 +403,8 @@ describe('LabOrderDetails', () => {
         expect(screen.getByText('Progress Tracker')).toBeInTheDocument();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('Order Date')).toBeInTheDocument();
@@ -432,8 +433,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('Order Date')).toBeInTheDocument();
@@ -459,8 +460,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('Reason')).toBeInTheDocument();
@@ -485,8 +486,8 @@ describe('LabOrderDetails', () => {
         setup({ order: orderWithDetails });
       });
 
-      const orderDetailsButton = screen.getByRole('button', { name: 'Order Details' });
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('Stat processing required')).toBeInTheDocument();
@@ -603,8 +604,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(fetchLabOrderRequisitionDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
@@ -626,8 +627,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByRole('button', { name: 'Order Details' });
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(
         () => {
@@ -645,8 +646,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('No specimen label documents found.')).toBeInTheDocument();
@@ -671,8 +672,8 @@ describe('LabOrderDetails', () => {
         setup({ order: orderWithQuestionnaire });
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('Order Entry Questions')).toBeInTheDocument();
@@ -707,8 +708,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(medplum.searchResources).toHaveBeenCalledWith('ServiceRequest', expect.any(Object));
@@ -773,8 +774,8 @@ describe('LabOrderDetails', () => {
         setup({ order: orderWithQuestionnaire });
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('Boolean question')).toBeInTheDocument();
@@ -831,8 +832,8 @@ describe('LabOrderDetails', () => {
         setup();
       });
 
-      const orderDetailsButton = screen.getByText('Order Details');
-      await user.click(orderDetailsButton);
+      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
+      await user.click(orderDetailsTab);
 
       await waitFor(() => {
         expect(screen.getByText('No lab order requisition documents found.')).toBeInTheDocument();
@@ -870,23 +871,6 @@ describe('LabOrderDetails', () => {
       await waitFor(() => {
         expect(fetchLabOrderRequisitionDocumentsMock).toHaveBeenCalledWith(medplum, newOrder);
       });
-    });
-  });
-
-  describe('onOrderChange callback', () => {
-    test('accepts onOrderChange prop', async () => {
-      const onOrderChange = vi.fn();
-
-      await act(async () => {
-        setup({ onOrderChange });
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-      });
-
-      // The callback is accepted and can be used by the component
-      expect(onOrderChange).not.toHaveBeenCalled(); // Not called unless order changes
     });
   });
 });

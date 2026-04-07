@@ -77,7 +77,7 @@ function normalizeDateTime(input: string | undefined): string | undefined {
   }
   try {
     return new Date(input).toISOString();
-  } catch (_err) {
+  } catch {
     return undefined;
   }
 }

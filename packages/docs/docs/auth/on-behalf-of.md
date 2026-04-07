@@ -3,6 +3,9 @@ sidebar_position: 30
 tags: [auth]
 ---
 
+import ExampleCode from '!!raw-loader!@site/..//examples/src/auth/on-behalf-of.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # On-Behalf-Of
 
 The Medplum API supports an "On-Behalf-Of" feature to enable a Customer Server Side App to act on behalf of a Medplum user.
@@ -34,7 +37,7 @@ Then, when making API requests, the Customer Server Side App must include an `X-
 1. A `ProjectMembership` ID - This is the most direct and explicit way to specify the Medplum user. The Customer Server Side App would presumably store this id in its own database.
 2. A profile ID such as `Patient` or `Practitioner` - This is a more natural value for the Customer Server Side App to use, but requires a lookup to find the corresponding `ProjectMembership`.
 
-For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](https://www.medplum.com/docs/user-management).
+For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](/docs/user-management).
 
 The `X-Medplum-On-Behalf-Of` header is only valid for the current request. It is not stored or persisted in any way.
 
@@ -56,14 +59,21 @@ When the Medplum Server receives a request with the `X-Medplum-On-Behalf-Of` hea
 
 Here is a curl example of using the `X-Medplum-On-Behalf-Of` header:
 
-```bash
-curl 'https://api.medplum.com/fhir/R4/Patient' \
-  --user $MY_CLIENT_ID:$MY_CLIENT_SECRET \
-  -H 'content-type: application/fhir+json' \
-  -H 'x-medplum: extended' \
-  -H 'x-medplum-on-behalf-of: ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87' \
-  --data-raw '{"resourceType":"Patient","name":[{"given":["Homer"],"family":"Simpson"}]}'
-```
+<MedplumCodeBlock language="bash" selectBlocks="curlExample">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Here is the same example using the Medplum SDK:
+
+<MedplumCodeBlock language="ts" selectBlocks="createResourceOnBehalfOf">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+If you want to apply the header to all requests, set a default header when constructing the client:
+
+<MedplumCodeBlock language="ts" selectBlocks="defaultHeadersOnBehalfOf">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 Note the two extra HTTP request headers:
 

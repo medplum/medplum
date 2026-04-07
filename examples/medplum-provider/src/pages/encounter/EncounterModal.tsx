@@ -6,12 +6,12 @@ import { normalizeErrorString } from '@medplum/core';
 import type { Coding, Encounter, PlanDefinition } from '@medplum/fhirtypes';
 import { CodeInput, CodingInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
+import { createAppointment, createEncounter } from '../../utils/encounter';
 import classes from './EncounterModal.module.css';
-import { createEncounter } from '../../utils/encounter';
 
 export const EncounterModal = (): JSX.Element => {
   const navigate = useNavigate();
@@ -39,7 +39,8 @@ export const EncounterModal = (): JSX.Element => {
     setIsLoading(true);
 
     try {
-      const encounter = await createEncounter(medplum, start, end, encounterClass, patient, planDefinitionData);
+      const appointment = await createAppointment(medplum, start, end, patient);
+      const encounter = await createEncounter(medplum, encounterClass, patient, planDefinitionData, appointment);
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {

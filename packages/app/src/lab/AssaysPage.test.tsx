@@ -40,21 +40,21 @@ describe('AssaysPage', () => {
   test('Reference range', async () => {
     await medplum.createResource({
       resourceType: 'ObservationDefinition',
-      id: '1',
-      code: { coding: [{ display: 'Assay 1' }] },
+      id: '2',
+      code: { coding: [{ display: 'Assay 2' }] },
       qualifiedInterval: [{ range: { low: { value: 0, unit: 'mg/dL' }, high: { value: 100, unit: 'mg/dL' } } }],
     } as ObservationDefinition);
 
     await setup();
-    expect(screen.getByText('Assay 1')).toBeInTheDocument();
+    expect(screen.getByText('Assay 2')).toBeInTheDocument();
     expect(screen.getByText('0 - 100 mg/dL')).toBeInTheDocument();
   });
 
   test('Qualified range', async () => {
     await medplum.createResource({
       resourceType: 'ObservationDefinition',
-      id: '1',
-      code: { coding: [{ display: 'Assay 1' }] },
+      id: '3',
+      code: { coding: [{ display: 'Assay 3' }] },
       qualifiedInterval: [
         {
           gender: 'female',
@@ -80,7 +80,7 @@ describe('AssaysPage', () => {
     } as ObservationDefinition);
 
     await setup();
-    expect(screen.getByText('Assay 1')).toBeInTheDocument();
+    expect(screen.getByText('Assay 3')).toBeInTheDocument();
     expect(screen.getByText('Female')).toBeInTheDocument();
     expect(screen.getByText('Male')).toBeInTheDocument();
   });

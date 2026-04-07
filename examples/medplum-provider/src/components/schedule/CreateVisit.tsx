@@ -1,38 +1,37 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
-import { useState, useEffect } from 'react';
-import type { JSX } from 'react';
-import type { SlotInfo } from 'react-big-calendar';
 import { Button, Card, Flex, Stack, Text, Title } from '@mantine/core';
-import type { Coding, Patient, PlanDefinition, PlanDefinitionAction } from '@medplum/fhirtypes';
-import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
-import classes from './CreateVisit.module.css';
-import { createEncounter } from '../../utils/encounter';
-import { showErrorNotification } from '../../utils/notifications';
-import { useNavigate } from 'react-router';
 import { showNotification } from '@mantine/notifications';
+import type { Coding, Patient, PlanDefinition, PlanDefinitionAction, Schedule } from '@medplum/fhirtypes';
+import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
+import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
+import type { Range } from '../../types/scheduling';
+import { createAppointment, createEncounter } from '../../utils/encounter';
+import { showErrorNotification } from '../../utils/notifications';
+import classes from './CreateVisit.module.css';
 
 interface CreateVisitProps {
-  appointmentSlot: SlotInfo | undefined;
+  appointmentSlot: Range | undefined;
+  schedule?: Schedule;
 }
 
 export function CreateVisit(props: CreateVisitProps): JSX.Element {
-  const { appointmentSlot } = props;
-  const [formattedDate, setFormattedDate] = useState<string>('');
-  const [formattedSlotTime, setFormattedSlotTime] = useState<string>('');
+  const { appointmentSlot, schedule } = props;
   const [patient, setPatient] = useState<Patient | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
-  const [start, setStart] = useState<Date | undefined>(appointmentSlot?.start);
-  const [end, setEnd] = useState<Date | undefined>(appointmentSlot?.end);
+  const [start, setStart] = useState(appointmentSlot?.start);
+  const [end, setEnd] = useState(appointmentSlot?.end);
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const [formattedDate, formattedSlotTime] = useMemo(() => {
     if (!appointmentSlot) {
-      return;
+      return ['', ''];
     }
 
     const startDate = new Date(appointmentSlot?.start);
@@ -51,8 +50,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
     const endTimeStr = endDate.toLocaleTimeString('en-US', timeOptions);
 
     const formattedTime = `${startTimeStr} – ${endTimeStr}`;
-    setFormattedDate(dateStr);
-    setFormattedSlotTime(formattedTime);
+    return [dateStr, formattedTime];
   }, [appointmentSlot]);
 
   async function handleSubmit(): Promise<void> {
@@ -67,7 +65,8 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
     }
     setIsLoading(true);
     try {
-      const encounter = await createEncounter(medplum, start, end, encounterClass, patient, planDefinitionData);
+      const appointment = await createAppointment(medplum, start, end, patient, schedule);
+      const encounter = await createEncounter(medplum, encounterClass, patient, planDefinitionData, appointment);
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Visit created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {

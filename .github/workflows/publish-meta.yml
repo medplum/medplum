@@ -23,7 +23,7 @@ jobs:
         run: aws --version
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
@@ -32,6 +32,7 @@ jobs:
         run: |
           # Download releases data
           curl -s "https://api.github.com/repos/medplum/medplum/releases?per_page=100" > releases.json
+          curl -s "https://api.github.com/repos/medplum/medplum/releases/latest" > latest-tmp.json
 
           # Track whether we should continue syncing
           DONE=false
@@ -102,7 +103,7 @@ jobs:
           }' releases.json > all.json
 
           # Create latest release file
-          jq '.[0] | . as $release | {
+          jq '. as $release | {
             tag_name,
             version: (.tag_name | ltrimstr("v")),
             published_at,
@@ -114,7 +115,7 @@ jobs:
                 browser_download_url: "https://download.medplum.com/releases/\($release.tag_name)/\(.name)"
               }
             ]
-          }' releases.json > latest.json
+          }' latest-tmp.json > latest.json
 
           # Extract version tag for versioned filename
           VERSION_TAG=$(jq -r '.[0].tag_name' releases.json)

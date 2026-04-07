@@ -17,15 +17,12 @@ export interface QuestionnaireFormRepeatableItemProps {
 
 export function QuestionnaireFormRepeatableItem(props: QuestionnaireFormRepeatableItemProps): JSX.Element | null {
   const { formState, context, item, responseItem } = props;
-  const showAddButton = item.type !== QuestionnaireItemType.choice && item.type !== QuestionnaireItemType.openChoice;
-  const answers = responseItem.answer && responseItem.answer.length > 0 ? responseItem.answer : [{}];
+  const isChoiceType = item.type === QuestionnaireItemType.choice || item.type === QuestionnaireItemType.openChoice;
+  const showAddButton = !isChoiceType;
+
+  const answers = !isChoiceType && responseItem.answer && responseItem.answer.length > 0 ? responseItem.answer : [{}];
   return (
-    <FormSection
-      key={props.item.linkId}
-      htmlFor={props.item.linkId}
-      title={props.item.text}
-      withAsterisk={props.item.required}
-    >
+    <FormSection key={props.item.linkId} title={props.item.text} withAsterisk={props.item.required}>
       <Stack gap="xs">
         {answers?.map((_, index) => (
           <QuestionnaireFormItem

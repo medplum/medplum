@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
 import type {
   CodeSystem,
   CodeSystemProperty,
@@ -11,8 +11,8 @@ import type {
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
-import { getAuthenticatedContext } from '../../../context';
-import { getSystemRepo } from '../../repo';
+import { r4ProjectId } from '../../../constants';
+import type { Repository } from '../../repo';
 import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -22,6 +22,7 @@ export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelec
 export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
 export async function findTerminologyResource<T extends TerminologyResource>(
+  repo: Repository,
   resourceType: T['resourceType'],
   url: string,
   options?: {
@@ -32,7 +33,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   if (!url) {
     throw new OperationOutcomeError(badRequest(`${resourceType} not specified`));
   }
-  const { repo, project } = getAuthenticatedContext();
+  const project = repo.currentProject();
 
   const versionDelim = url.lastIndexOf('|');
   if (versionDelim > 0) {
@@ -55,11 +56,12 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     ],
   });
 
+  const systemRepo = repo.getSystemRepo();
   if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {
     if (options?.ownProjectOnly) {
-      const fullResource = await getSystemRepo().readReference(createReference(results[0]));
+      const fullResource = await systemRepo.readReference(createReference(results[0]));
       if (fullResource.meta?.project === repo.currentProject()?.id) {
         return results[0];
       }
@@ -71,14 +73,14 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     for (const resource of results) {
       resourceReferences.push(createReference(resource));
     }
-    const resources = await getSystemRepo().readReferences(resourceReferences);
-    const projectResource = resources.find((r) => r instanceof Error || r.meta?.project === project.id);
+    const resources = await systemRepo.readReferences(resourceReferences);
+    const projectResource = resources.find((r) => r instanceof Error || (project && r.meta?.project === project.id));
     if (projectResource instanceof Error) {
       throw projectResource;
     } else if (projectResource) {
       return projectResource;
     }
-    if (!options?.ownProjectOnly && project.link) {
+    if (!options?.ownProjectOnly && project?.link) {
       for (const linkedProject of project.link) {
         const linkedResource = resources.find(
           (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
@@ -88,17 +90,18 @@ export async function findTerminologyResource<T extends TerminologyResource>(
         }
       }
     }
+    const baseResource = resources.find((r) => r instanceof Error || r.meta?.project === r4ProjectId);
+    if (baseResource instanceof Error) {
+      throw baseResource;
+    } else if (baseResource) {
+      return baseResource;
+    }
   }
   throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
 }
 
 function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {
-  if (a.version !== b.version) {
-    return false;
-  } else if (a.date !== b.date) {
-    return false;
-  }
-  return true;
+  return a.version === b.version && a.date === b.date;
 }
 
 export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
@@ -107,9 +110,9 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .column('code')
     .column('display')
     .column('synonymOf')
+    .column('language')
     .where('system', '=', systemId)
-    .where('code', 'IN', code)
-    .where('synonymOf', '=', null);
+    .where('code', 'IN', code);
 }
 
 export function addPropertyFilter(
@@ -174,12 +177,9 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
       badRequest(`Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`)
     );
   }
-  let property = codeSystem.property?.find((p) => p.uri === parentProperty);
-  if (!property) {
-    // Implicit parent property for hierarchical CodeSystems
-    property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
-  }
-  return property;
+  const property = codeSystem.property?.find((p) => p.uri === parentProperty);
+  // Implicit parent property for hierarchical CodeSystems
+  return property ?? { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
 }
 
 export async function resolveProperty(
@@ -220,6 +220,7 @@ export function addDescendants(
     .column('code')
     .column('display')
     .column('synonymOf')
+    .column('language')
     .where('system', '=', codeSystem.id)
     .where('code', '=', parentCode);
 

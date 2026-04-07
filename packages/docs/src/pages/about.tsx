@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { IconCode, IconPlayerPlay, IconSettings, IconStar } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { Card } from '../components/Card';
@@ -42,19 +43,19 @@ export default function AboutPage(): JSX.Element {
         </SectionHeader>
         <Section>
           <FeatureGrid columns={2}>
-            <Feature title="Act. Deliberately and purposefully." imgSrc="/img/icons/api.svg">
+            <Feature title="Act. Deliberately and purposefully." icon={<IconPlayerPlay />}>
               We move decisively but with intention, seeking to understand the nature of actions before we take them and
               going slow enough to move forward with speed.
             </Feature>
-            <Feature title="Practice uncompromising consistency." imgSrc="/img/icons/code.svg">
+            <Feature title="Practice uncompromising consistency." icon={<IconSettings />}>
               We're reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
               taken for granted.
             </Feature>
-            <Feature title="Convene a catalytic force." imgSrc="/img/icons/automation.svg">
+            <Feature title="Convene a catalytic force." icon={<IconStar />}>
               We believe collaborative innovation will unlock capabilities, advancements, and ideas that will ultimately
               transform healthcare, so we continually strive to elevate and unify the entire field of players.
             </Feature>
-            <Feature title="Pursue technical excellence." imgSrc="/img/icons/shield.svg">
+            <Feature title="Pursue technical excellence." icon={<IconCode />}>
               We are fueled by solving hard problems, both technical and human, and are deeply devoted to pushing the
               boundaries of our craft.
             </Feature>
@@ -72,21 +73,21 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Reshma Khilnani"
               title="CEO"
-              imgUrl="/img/people/reshma.jpg"
+              imgUrl="/img/people/reshma.webp"
               linkedInUrl="https://www.linkedin.com/in/reshmakhilnani/"
               githubUrl="https://github.com/reshmakh"
             />
             <ProfileCard
               name="Cody Ebberson"
               title="CTO"
-              imgUrl="/img/people/cody.jpg"
+              imgUrl="/img/people/cody.webp"
               linkedInUrl="https://www.linkedin.com/in/codyebberson/"
               githubUrl="https://github.com/codyebberson"
             />
             <ProfileCard
               name="Rahul Agarwal"
               title="COO"
-              imgUrl="/img/people/rahul.jpg"
+              imgUrl="/img/people/rahul.webp"
               linkedInUrl="https://www.linkedin.com/in/rahul-agarwal-330a979/"
               githubUrl="https://github.com/rahul1"
             />
@@ -95,21 +96,21 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Matt Willer"
               title="Founding Engineer"
-              imgUrl="/img/people/mattwiller.jpg"
+              imgUrl="/img/people/mattwiller.webp"
               linkedInUrl="https://www.linkedin.com/in/matt-willer-0b779463/"
               githubUrl="https://github.com/mattwiller"
             />
             <ProfileCard
               name="Derrick Farris"
               title="Founding Engineer"
-              imgUrl="/img/people/derrickfarris.jpg"
+              imgUrl="/img/people/derrickfarris.webp"
               linkedInUrl="https://www.linkedin.com/in/derrickfarris/"
               githubUrl="https://github.com/ThatOneBro"
             />
             <ProfileCard
               name="Matt Long"
               title="Founding Engineer"
-              imgUrl="/img/people/mattlong.jpg"
+              imgUrl="/img/people/mattlong.webp"
               linkedInUrl="https://www.linkedin.com/in/mateolargo/"
               githubUrl="https://github.com/mattlong"
             />
@@ -118,21 +119,21 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Ian Plunkett"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/ianplunkett.jpg"
+              imgUrl="/img/people/ianplunkett.webp"
               linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
               githubUrl="https://github.com/ianplunkett"
             />
             <ProfileCard
               name="David Yanez"
               title="Senior Software Engineer"
-              imgUrl="/img/people/david.jpg"
+              imgUrl="/img/people/david.webp"
               linkedInUrl="https://www.linkedin.com/in/jorge-david-yanez-a427b459/"
               githubUrl="https://github.com/techdavidy"
             />
             <ProfileCard
               name="Finn Bergquist"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/finnbergquist.jpg"
+              imgUrl="/img/people/finnbergquist.webp"
               linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
               githubUrl="https://github.com/finnbergquist"
             />
@@ -141,21 +142,21 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Maddy Li"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/maddyli.jpg"
+              imgUrl="/img/people/maddyli.webp"
               linkedInUrl="https://www.linkedin.com/in/maddy-li/"
               githubUrl="https://github.com/maddyli"
             />
             <ProfileCard
               name="Kevin Shaw"
               title="Product Designer"
-              imgUrl="/img/people/kevinwadeshaw.jpeg"
+              imgUrl="/img/people/kevinwadeshaw.webp"
               linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
               githubUrl="https://github.com/kevinwadeshaw"
             />
             <ProfileCard
               name="Karl Pietrzak"
               title="Senior Software Engineer"
-              imgUrl="/img/people/karlpietrzak.jpg"
+              imgUrl="/img/people/karlpietrzak.webp"
               linkedInUrl="https://www.linkedin.com/in/karl-p-30525a5"
               githubUrl="https://github.com/The-Alchemist"
             />
@@ -164,16 +165,46 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Darren Eam"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/darreneam.jpeg"
+              imgUrl="/img/people/darreneam.webp"
               linkedInUrl="https://www.linkedin.com/in/darren-eam/"
               githubUrl="https://github.com/deam65"
             />
             <ProfileCard
               name="Noah Silas"
               title="Staff Software Engineer"
-              imgUrl="/img/people/noahsilas.jpg"
+              imgUrl="/img/people/noahsilas.webp"
               linkedInUrl="https://www.linkedin.com/in/noahsilas"
               githubUrl="https://github.com/noahsilas"
+            />
+            <ProfileCard
+              name="Everett Williams"
+              title="Deployment Strategist"
+              imgUrl="/img/people/everettwilliams.webp"
+              linkedInUrl="https://www.linkedin.com/in/everetttwilliams/"
+              githubUrl="https://github.com/everett-williams"
+            />
+          </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Aditya Suri"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/aditya-suri.webp"
+              linkedInUrl="https://www.linkedin.com/in/adityasuri1/"
+              githubUrl="https://github.com/Ljeytl"
+            />
+            <ProfileCard
+              name="Alex Lin"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/alexlin.webp"
+              linkedInUrl="https://www.linkedin.com/in/alexanderxlin/"
+              githubUrl="https://github.com/alexanderxlin"
+            />
+            <ProfileCard
+              name="Oleg Rocklin"
+              title="Integration Engineer"
+              imgUrl="/img/people/oleg.webp"
+              linkedInUrl="https://www.linkedin.com/in/olegrocklin/"
+              githubUrl="https://github.com/oleg-mp"
             />
           </CardContainer>
         </Section>

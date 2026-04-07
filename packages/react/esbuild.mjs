@@ -31,6 +31,7 @@ const options = {
     '@mantine/core',
     '@mantine/hooks',
     '@mantine/notifications',
+    '@mantine/spotlight',
     '@mantine/react',
     '@medplum/core',
     '@medplum/fhir-router',

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
+import type { Patient, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskListItem } from './TaskListItem';
-import type { Task, Patient, Practitioner } from '@medplum/fhirtypes';
 
 describe('TaskListItem', () => {
   let medplum: MockClient;
@@ -16,12 +16,13 @@ describe('TaskListItem', () => {
     medplum = new MockClient();
   });
 
-  const setup = (task: Task, selectedTask?: Task): ReturnType<typeof render> => {
+  const setup = (task: Task, selectedTask?: Task, getTaskUri?: (task: Task) => string): ReturnType<typeof render> => {
+    const defaultGetTaskUri = (t: Task): string => `/Task/${t.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskListItem task={task} selectedTask={selectedTask} />
+            <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri ?? defaultGetTaskUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -40,6 +41,20 @@ describe('TaskListItem', () => {
   test('renders task details correctly', () => {
     setup(mockTask);
     expect(screen.getByText('Test Task')).toBeInTheDocument();
+  });
+
+  test('renders status badge with correct status', () => {
+    setup(mockTask);
+    expect(screen.getByText('in progress')).toBeInTheDocument();
+  });
+
+  test('renders different status values correctly', () => {
+    const completedTask: Task = {
+      ...mockTask,
+      status: 'completed',
+    };
+    setup(completedTask);
+    expect(screen.getByText('completed')).toBeInTheDocument();
   });
 
   test('renders due date if present', () => {
@@ -90,5 +105,45 @@ describe('TaskListItem', () => {
   test('highlights selected task', () => {
     setup(mockTask, mockTask);
     expect(screen.getByText('Test Task')).toBeInTheDocument();
+  });
+
+  test('uses getTaskUri URL', () => {
+    setup(mockTask);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Task/task-123');
+  });
+
+  test('uses custom URL from getTaskUri when provided', () => {
+    const getTaskUri = (task: Task): string => {
+      return `/Patient/patient-123/Task/${task.id}`;
+    };
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <TaskListItem task={mockTask} selectedTask={undefined} getTaskUri={getTaskUri} />
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Patient/patient-123/Task/task-123');
+  });
+
+  test('calls getTaskUri with correct task', () => {
+    const getTaskUri = vi.fn((task: Task) => `/Custom/${task.id}`);
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <TaskListItem task={mockTask} selectedTask={undefined} getTaskUri={getTaskUri} />
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+    expect(getTaskUri).toHaveBeenCalledWith(mockTask);
+    expect(getTaskUri).toHaveBeenCalledTimes(1);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Custom/task-123');
   });
 });

@@ -60,7 +60,7 @@ export function getSearchParameterImplementation(
   searchParam: SearchParameter
 ): SearchParameterImplementation {
   let result: SearchParameterImplementation | undefined =
-    globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
+    globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code];
   if (!result) {
     result = buildSearchParameterImplementation(resourceType, searchParam);
     setSearchParameterImplementation(resourceType, searchParam.code, result);

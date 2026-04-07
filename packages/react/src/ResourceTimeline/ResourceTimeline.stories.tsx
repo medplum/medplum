@@ -52,7 +52,7 @@ export const WithComments = (): JSX.Element => (
         resourceType: 'Communication',
         status: 'completed',
         encounter: createReference(resource),
-        subject: (resource as Encounter).subject,
+        subject: resource.subject,
         sender: createReference(sender),
         payload: [{ contentString: text }],
       })}
@@ -60,7 +60,7 @@ export const WithComments = (): JSX.Element => (
         resourceType: 'Media',
         status: 'completed',
         encounter: createReference(resource),
-        subject: (resource as Encounter).subject,
+        subject: resource.subject,
         operator: createReference(operator),
         content,
       })}

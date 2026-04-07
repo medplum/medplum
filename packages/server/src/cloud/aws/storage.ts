@@ -1,15 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
+import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
+import type { PresignedUrlOptions } from '../../storage/base';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
+
+interface SseCParams {
+  SSECustomerAlgorithm: string;
+  SSECustomerKey: string;
+  SSECustomerKeyMD5: string;
+}
 
 /**
  * The S3Storage class stores binary data in an AWS S3 bucket.
@@ -18,11 +26,21 @@ import type { BinarySource } from '../../storage/types';
 export class S3Storage extends BaseBinaryStorage {
   private readonly client: S3Client;
   readonly bucket: string;
+  private readonly sseC: SseCParams | undefined;
 
   constructor(bucket: string) {
     super();
-    this.client = new S3Client({ region: getConfig().awsRegion });
+    const config = getConfig();
+    this.client = new S3Client({ region: config.awsRegion });
     this.bucket = bucket;
+
+    if (config.sseCustomerKey) {
+      this.sseC = {
+        SSECustomerAlgorithm: 'AES256',
+        SSECustomerKey: config.sseCustomerKey,
+        SSECustomerKeyMD5: createHash('md5').update(Buffer.from(config.sseCustomerKey, 'base64')).digest('base64'),
+      };
+    }
   }
 
   /**
@@ -59,6 +77,7 @@ export class S3Storage extends BaseBinaryStorage {
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
         Body: stream,
+        ...this.sseC,
       },
       client: this.client,
       queueSize: 3,
@@ -72,6 +91,7 @@ export class S3Storage extends BaseBinaryStorage {
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: key,
+        ...this.sseC,
       })
     );
     return output.Body as Readable;
@@ -83,6 +103,12 @@ export class S3Storage extends BaseBinaryStorage {
         CopySource: `${this.bucket}/${sourceKey}`,
         Bucket: this.bucket,
         Key: destinationKey,
+        ...this.sseC,
+        ...(this.sseC && {
+          CopySourceSSECustomerAlgorithm: this.sseC.SSECustomerAlgorithm,
+          CopySourceSSECustomerKey: this.sseC.SSECustomerKey,
+          CopySourceSSECustomerKeyMD5: this.sseC.SSECustomerKeyMD5,
+        }),
       })
     );
   }
@@ -94,14 +120,18 @@ export class S3Storage extends BaseBinaryStorage {
    * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/modules/_aws_sdk_cloudfront_signer.html
    *
    * @param binary - Binary resource.
+   * @param opts - Optional parameters.
    * @returns Presigned URL to access the binary data.
    */
-  async getPresignedUrl(binary: Binary): Promise<string> {
+  async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
     const config = getConfig();
 
-    if (!config.signingKey || !config.signingKeyId) {
+    if (!config.signingKey || !config.signingKeyId || opts?.upload) {
       const Key = this.getKey(binary);
-      return s3GetSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key }), { expiresIn: 3600 });
+      const cmd = opts?.upload
+        ? new PutObjectCommand({ Bucket: this.bucket, Key, ...this.sseC })
+        : new GetObjectCommand({ Bucket: this.bucket, Key, ...this.sseC });
+      return s3GetSignedUrl(this.client, cmd, { expiresIn: 3600 });
     }
 
     const storageBaseUrl = config.storageBaseUrl;

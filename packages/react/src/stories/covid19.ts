@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { LOINC, SNOMED, UCUM, createReference, getReferenceString } from '@medplum/core';
+import { LOINC, SNOMED, UCUM, createReference } from '@medplum/core';
 import type {
   ActivityDefinition,
   ObservationDefinition,
@@ -846,10 +846,7 @@ export const Covid19PCRLabService: WithId<PlanDefinition> = {
 export const Covid19AssessmentTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
-  focus: {
-    reference: getReferenceString(Covid19AssessmentQuestionnaire),
-    display: 'Covid19 Assessment Questionnaire',
-  },
+  focus: createReference(Covid19AssessmentQuestionnaire),
   description: 'Request patient to complete "Request COVID-19 Symptoms Assessment" questionnaire',
   intent: 'order',
   status: 'completed',

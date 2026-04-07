@@ -68,7 +68,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               onSuccess();
             }
           })
-          .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+          .catch((err: unknown) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
       }
     },
     [medplum, onCode, onSuccess]
@@ -92,7 +92,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (chooseScopes) {
           setMemberships(undefined);
         } else {
-          handleCode(response.code as string);
+          handleCode(response.code);
         }
       }
     },
@@ -116,12 +116,12 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
       medplum
         .get('auth/login/' + loginCode)
         .then(handleAuthResponse)
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .catch((err: unknown) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
   }, [medplum, loginCode, loginRequested, login, handleAuthResponse]);
 
   return (
-    <Document width={450} px="sm" py="md">
+    <Document width={400} px="xl" py="xl" bdrs="md">
       {(() => {
         if (!login) {
           return (
@@ -140,10 +140,11 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           return (
             <MfaForm
               title="Enroll in MFA"
+              description="Scan this QR code with your authenticator app."
               buttonText="Enroll"
               qrCodeUrl={enrollQrCode}
               onSubmit={async (fields) => {
-                const res = await medplum.post('auth/mfa/login-enroll', {
+                const res = await medplum.post<LoginAuthenticationResponse>('auth/mfa/login-enroll', {
                   login: login,
                   token: fields.token,
                 });
@@ -155,9 +156,10 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           return (
             <MfaForm
               title="Enter MFA code"
-              buttonText="Submit code"
+              description="Enter the code from your authenticator app."
+              buttonText="Submit Code"
               onSubmit={async (fields) => {
-                const res = await medplum.post('auth/mfa/verify', {
+                const res = await medplum.post<LoginAuthenticationResponse>('auth/mfa/verify', {
                   login: login,
                   token: fields.token,
                 });
@@ -165,10 +167,10 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               }}
             />
           );
-        } else if (memberships) {
-          return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.projectId === 'new') {
           return <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />;
+        } else if (memberships) {
+          return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.chooseScopes) {
           return <ChooseScopeForm login={login} scope={props.scope} handleAuthResponse={handleScopeResponse} />;
         } else {

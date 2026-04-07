@@ -28,8 +28,8 @@ import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
@@ -125,7 +125,7 @@ export function getOutParametersFromResult(result: OperationOutcome | BotExecuti
  * @returns True if the bot is enabled.
  */
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
@@ -200,7 +200,7 @@ export async function writeBotInputToStorage(request: BotExecutionRequest): Prom
 }
 
 export async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
@@ -245,11 +245,11 @@ export async function getBotAccessToken(runAs: ProjectMembership): Promise<strin
  * @returns The collection of secrets.
  */
 export async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise<Record<string, ProjectSetting>> {
-  const systemRepo = getSystemRepo();
   const botProjectId = bot.meta?.project as string;
   const runAsProjectId = resolveId(runAs.project) as string;
   const system = !!bot.system;
   const secrets: ProjectSetting[] = [];
+  const systemRepo = getGlobalSystemRepo();
   if (botProjectId !== runAsProjectId) {
     await addBotSecrets(systemRepo, botProjectId, system, secrets);
   }
@@ -258,7 +258,7 @@ export async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise
 }
 
 async function addBotSecrets(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   projectId: string,
   system: boolean,
   out: ProjectSetting[]

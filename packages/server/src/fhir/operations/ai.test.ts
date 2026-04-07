@@ -718,7 +718,6 @@ describe('AI Operation', () => {
         ],
       });
 
-    console.log(JSON.stringify(res.body, null, 2));
     expect(res.status).toBe(200);
     const params = res.body as Parameters;
 

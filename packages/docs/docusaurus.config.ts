@@ -32,6 +32,24 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          {
+            from: '/docs/communications/organizing-communications',
+            to: '/docs/communications/messaging-data-model',
+          },
+          {
+            from: '/docs/communications/task-based-message-response-tracking-and-routing',
+            to: '/docs/communications/message-response-tracking-and-routing',
+          },
+        ],
+      },
+    ],
+  ],
+
   presets: [
     [
       'classic',
@@ -111,14 +129,16 @@ const config: Config = {
           position: 'left',
         },
         {
-          to: 'https://app.medplum.com/',
+          to: 'https://app.medplum.com/signin',
           label: 'Sign In',
           position: 'right',
+          className: 'button button--outline button--primary navbar-btn navbar-btn-outlined',
         },
         {
-          to: 'https://github.com/medplum/medplum',
-          label: 'GitHub',
+          to: 'https://cal.com/team/medplum/30min',
+          label: 'Book a Demo',
           position: 'right',
+          className: 'button button--primary navbar-btn navbar-btn-filled',
         },
       ],
     },
@@ -134,6 +154,10 @@ const config: Config = {
             {
               label: 'Documentation',
               to: '/docs',
+            },
+            {
+              label: 'Why Open Source',
+              to: '/open-source',
             },
             {
               label: 'Search',
@@ -200,7 +224,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Orangebot, Inc.`,
+      copyright: `© ${new Date().getFullYear()} Orangebot, Inc.`,
     },
     prism: {
       theme: prismThemes.github,

@@ -28,6 +28,16 @@ import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference, isResource } from './types';
 
 /**
+ * Sleep options.
+ */
+export interface SleepOptions {
+  /**
+   * Optional `AbortSignal` that can be used to cancel the scheduled sleep.
+   */
+  readonly signal?: AbortSignal | null;
+}
+
+/**
  * QueryTypes defines the different ways to specify FHIR search parameters.
  *
  * Can be any valid input to the URLSearchParams() constructor.
@@ -355,13 +365,11 @@ function buildQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer[0];
-      }
-      buildQuestionnaireAnswerItems(item.item, result);
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      result[item.linkId] = item.answer[0];
     }
+    buildQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -387,17 +395,15 @@ function buildAllQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer[]>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        if (result[item.linkId]) {
-          result[item.linkId] = [...result[item.linkId], ...item.answer];
-        } else {
-          result[item.linkId] = item.answer;
-        }
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      if (result[item.linkId]) {
+        result[item.linkId] = [...result[item.linkId], ...item.answer];
+      } else {
+        result[item.linkId] = item.answer;
       }
-      buildAllQuestionnaireAnswerItems(item.item, result);
     }
+    buildAllQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -425,6 +431,11 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   return undefined;
 }
 
+export interface SetIdentifierOptions {
+  /** IdentifierUse code. See {@link https://build.fhir.org/valueset-identifier-use.html} */
+  use?: Identifier['use'];
+}
+
 /**
  * Sets a resource identifier for the given system.
  *
@@ -439,20 +450,31 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param resource - The resource to add the identifier to.
  * @param system - The identifier system.
  * @param value - The identifier value.
+ * @param options - Optional attributes to set
  */
-export function setIdentifier(resource: Resource & { identifier?: Identifier[] }, system: string, value: string): void {
+export function setIdentifier(
+  resource: Resource & { identifier?: Identifier[] },
+  system: string,
+  value: string,
+  options?: SetIdentifierOptions
+): void {
+  const identifier: Identifier = { system, value };
+  if (options?.use) {
+    identifier.use = options.use;
+  }
+
   const identifiers = resource.identifier;
   if (!identifiers) {
-    resource.identifier = [{ system, value }];
+    resource.identifier = [identifier];
     return;
   }
-  for (const identifier of identifiers) {
-    if (identifier.system === system) {
-      identifier.value = value;
+  for (const existingIdentifier of identifiers) {
+    if (existingIdentifier.system === system) {
+      Object.assign(existingIdentifier, identifier);
       return;
     }
   }
-  identifiers.push({ system, value });
+  identifiers.push(identifier);
 }
 
 /**
@@ -740,8 +762,12 @@ function deepEqualsObject(
   path: string | undefined
 ): boolean {
   const keySet = new Set<string>();
-  Object.keys(object1).forEach((k) => keySet.add(k));
-  Object.keys(object2).forEach((k) => keySet.add(k));
+  for (const k of Object.keys(object1)) {
+    keySet.add(k);
+  }
+  for (const k of Object.keys(object2)) {
+    keySet.add(k);
+  }
   if (path === 'meta') {
     keySet.delete('versionId');
     keySet.delete('lastUpdated');
@@ -875,20 +901,56 @@ export function isCodeableConcept(value: unknown): value is CodeableConcept & { 
  * @returns The code for the matching system, or undefined if not found.
  */
 export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
-  if (!categories) {
-    return undefined;
-  }
-  for (const category of categories) {
-    if (!category.coding) {
-      continue;
-    }
-    for (const coding of category.coding) {
+  for (const category of categories ?? EMPTY) {
+    for (const coding of category.coding ?? EMPTY) {
       if (coding.system === system) {
         return coding.code;
       }
     }
   }
   return undefined;
+}
+
+/**
+ * Checks if a Coding matches a token search string
+ * https://build.fhir.org/search.html#token
+ *
+ * @param coding - The Coding to test
+ * @param token - The token string to test
+ * @returns True if the Coding matches the token
+ */
+export function codingMatchesToken(coding: Coding, token: string): boolean {
+  const [system, code] = splitN(token, '|', 2);
+
+  if (code === undefined) {
+    // There was no '|' delimiter in the token, so we treat the whole token as a code and
+    // match irrespective of the `system` property
+    return coding.code === token;
+  }
+
+  if (system === '') {
+    // The token was of the form '|[code]', which only matches Coding values with no `system`
+    return coding.system === undefined && coding.code === code;
+  }
+
+  if (code === '') {
+    // The token was of the form '[system]|', which matches any Coding belonging to that system
+    return coding.system === system;
+  }
+
+  return coding.system === system && coding.code === code;
+}
+
+/**
+ * Checks if a CodeableConcept matches a token search string
+ * https://build.fhir.org/search.html#token
+ *
+ * @param codeableConcept - The CodeableConcept to test
+ * @param token - The token string to test
+ * @returns True if the CodeableConcept matches the token
+ */
+export function codeableConceptMatchesToken(codeableConcept: CodeableConcept, token: string): boolean {
+  return (codeableConcept.coding ?? EMPTY).some((coding) => codingMatchesToken(coding, token));
 }
 
 /**
@@ -934,7 +996,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    result[i] = String.fromCharCode(bytes[i]);
+    result[i] = String.fromCodePoint(bytes[i]);
   }
   return window.btoa(result.join(''));
 }
@@ -998,9 +1060,7 @@ export function getCodeBySystem(concept: CodeableConcept, system: string): strin
  * @param code - The code value.
  */
 export function setCodeBySystem(concept: CodeableConcept, system: string, code: string): void {
-  if (!concept.coding) {
-    concept.coding = [];
-  }
+  concept.coding ??= [];
   const coding = concept.coding.find((c) => c.system === system);
   if (coding) {
     coding.code = code;
@@ -1226,6 +1286,8 @@ export function findResourceByCode(
   );
 }
 
+export function arrayify<T>(value: NonNullable<T> | NonNullable<T>[]): T[];
+export function arrayify<T>(value: T | T[] | undefined): T[] | undefined;
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   if (value === undefined) {
     return undefined;
@@ -1246,12 +1308,24 @@ export function singularize<T>(value: T | T[] | undefined): T | undefined {
 
 /**
  * Sleeps for the specified number of milliseconds.
- * @param ms - Time delay in milliseconds
+ * @param ms - Time delay in milliseconds.
+ * @param options - Optional sleep options.
  * @returns A promise that resolves after the specified number of milliseconds.
  */
-export const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
+export const sleep = (ms: number, options?: SleepOptions): Promise<void> =>
+  new Promise((resolve, reject) => {
+    options?.signal?.throwIfAborted();
+
+    const timeout = setTimeout(resolve, ms);
+
+    options?.signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timeout);
+        reject(options.signal?.reason);
+      },
+      { once: true }
+    );
   });
 
 /**
@@ -1490,3 +1564,24 @@ export function escapeHtml(unsafe: string): string {
     .replaceAll('’', '&rsquo;')
     .replaceAll('…', '&hellip;');
 }
+
+/**
+ * Helper function to narrow a type by excluding undefined/null values.
+ * @param value - The value to refine
+ * @returns boolean
+ *
+ * @example
+ * ```typescript
+ * const arr: Array<number | undefined> = [1,undefined];
+ * const refined: Array<number> = arr.filter(isDefined);
+ * ```
+ */
+export function isDefined<T>(value: T | undefined | null): value is T {
+  return value !== undefined && value !== null;
+}
+
+/** Constant empty array. */
+export const EMPTY: readonly [] = Object.freeze([]);
+
+/** No operation function. */
+export const NOOP = (): void => {};

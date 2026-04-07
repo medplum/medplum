@@ -1,34 +1,36 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
-import { ContentType } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
-import type { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
-import { NPI_SYSTEM } from '@medplum/health-gorilla-core';
+import { ContentType, createReference } from '@medplum/core';
+import type { Encounter, Patient, Practitioner, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type {
   BillingInformation,
   DiagnosisCodeableConcept,
   LabOrderInputErrors,
+  LabOrganization,
   TestCoding,
 } from '@medplum/health-gorilla-core';
+import { NPI_SYSTEM } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
+import type { AsyncAutocompleteOption } from '@medplum/react';
 import {
   AsyncAutocomplete,
   DateTimeInput,
   Panel,
   ResourceInput,
   useMedplum,
+  useResource,
   ValueSetAutocomplete,
 } from '@medplum/react';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import { PerformingLabInput } from '../../components/PerformingLabInput';
-import { TestMetadataCardInput } from '../../components/TestMetadataCardInput';
-import { CoverageInput } from '../../components/CoverageInput';
-import { useState, useEffect } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { PerformingLabInput } from '../../components/PerformingLabInput';
+import { CoverageInput } from '../../components/labs/CoverageInput';
+import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
 import { showErrorNotification } from '../../utils/notifications';
-import { showNotification } from '@mantine/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(
@@ -42,15 +44,21 @@ async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: Ser
 }
 
 export interface OrderLabsPageProps {
-  onSubmitLabOrder: () => void;
+  encounter?: Encounter | Reference<Encounter> | undefined;
+  task?: Task | Reference<Task> | undefined;
+  tests?: TestCoding[] | undefined;
+  performingLab?: LabOrganization | undefined;
+  onSubmitLabOrder: (serviceRequest?: ServiceRequest) => void;
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
-  const { onSubmitLabOrder } = props;
+  const { encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
   const [patient, setPatient] = useState<Patient | undefined>();
   const [requester, setRequester] = useState<Practitioner | undefined>(medplum.getProfile() as Practitioner);
+  const encounterResource = useResource(encounter);
+  const taskResource = useResource(task);
   const labOrderReturn = useHealthGorillaLabOrder({
     patient,
     requester,
@@ -69,6 +77,21 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState<{ generic?: unknown; validation?: LabOrderInputErrors } | undefined>();
+  const prevTestsRef = useRef<TestCoding[] | undefined>(undefined);
+
+  useEffect(() => {
+    // Only set tests if they're provided and different from the previous value
+    // Compare by checking if arrays have different lengths or different test codes
+    const testsChanged =
+      tests &&
+      (prevTestsRef.current?.length !== tests.length ||
+        prevTestsRef.current.some((prevTest, index) => prevTest.code !== tests[index]?.code));
+
+    if (testsChanged) {
+      setTests(tests);
+      prevTestsRef.current = tests;
+    }
+  }, [tests, setTests]);
 
   useEffect(() => {
     if (patientId) {
@@ -78,7 +101,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
           setPatient(patient);
         })
         .catch((error) => {
-          console.error('Error fetching patient:', error);
+          showErrorNotification(error);
         });
     }
   }, [patientId, medplum]);
@@ -87,7 +110,26 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     try {
       setIsSubmitting(true);
       setCreateError(undefined);
-      const { serviceRequest } = await createOrderBundle();
+      let { serviceRequest } = await createOrderBundle();
+      if (encounterResource) {
+        serviceRequest = {
+          ...serviceRequest,
+          encounter: createReference(encounterResource),
+        };
+      }
+      if (taskResource) {
+        await medplum.updateResource({
+          ...taskResource,
+          output: [
+            ...(taskResource.output || []),
+            {
+              type: { text: 'ServiceRequest' },
+              valueReference: createReference(serviceRequest),
+            },
+          ],
+          focus: createReference(serviceRequest),
+        });
+      }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
 
       showNotification({
@@ -95,7 +137,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
         message: 'The lab order has been successfully submitted.',
         color: 'green',
       });
-      onSubmitLabOrder();
+      onSubmitLabOrder({ ...serviceRequest, status: 'active' });
     } catch (error) {
       setCreateError({ generic: error });
       showErrorNotification(error);
@@ -126,7 +168,11 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 onChange={setPatient}
               />
             </Input.Wrapper>
-            <PerformingLabInput patient={patient} error={createError?.validation?.performingLab} />
+            <PerformingLabInput
+              patient={patient}
+              performingLab={performingLab}
+              error={createError?.validation?.performingLab}
+            />
             <div>
               <AsyncAutocomplete<TestCoding>
                 required
@@ -134,6 +180,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 label="Selected tests"
                 disabled={!state.performingLab}
                 maxValues={10}
+                defaultValue={tests}
                 loadOptions={searchAvailableTests}
                 toOption={TestCodingToOption}
                 onChange={setTests}
@@ -154,7 +201,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm"
+                binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {

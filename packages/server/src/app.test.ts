@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, getReferenceString, unsupportedMediaType } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
+import { getProjectSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
-import { getRedis } from './redis';
+import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
@@ -209,6 +210,32 @@ describe('App', () => {
       const logObj = JSON.parse(logLines[0][0]);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 400 });
     });
+
+    test('Logs authentication error', async () => {
+      const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
+
+      // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
+      await (await getProjectSystemRepo(project)).deleteResource(membership.resourceType, membership.id);
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send();
+      expect(res1.status).toBe(400);
+      const outcome = res1.body as OperationOutcome;
+      const issue = outcome.issue[0];
+
+      // Error should be wrapped for presentation to user
+      expect(issue.details?.text).toStrictEqual('Authentication error');
+      expect(issue.diagnostics).toStrictEqual('OperationOutcomeError: Gone');
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      // Request should be logged
+      expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
+    });
   });
 
   test('Internal Server Error', async () => {
@@ -280,16 +307,16 @@ describe('App', () => {
     const config = await loadTestConfig();
     config.defaultRateLimit = 1;
 
-    const testRedisConfig = config.redis as TestRedisConfig;
-    testRedisConfig.db = 6; // Use different temp Redis instance for this test only
-    testRedisConfig.keyPrefix = 'server-rate-limit:';
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    expect(rateLimitRedisConfig).toBeDefined();
+    rateLimitRedisConfig.keyPrefix = 'server-rate-limit:';
     await initApp(app, config);
 
     const res = await request(app).get('/api/');
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

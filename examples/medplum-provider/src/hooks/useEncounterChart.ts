@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type {
   Appointment,
@@ -13,46 +14,48 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
 import { getChargeItemsForEncounter } from '../utils/chargeitems';
 import { createClaimFromEncounter } from '../utils/claims';
 import { showErrorNotification } from '../utils/notifications';
 
 export interface EncounterChartHook {
   // State values
-  encounter: Encounter | undefined;
-  claim: Claim | undefined;
-  practitioner: Practitioner | undefined;
-  tasks: Task[];
-  clinicalImpression: ClinicalImpression | undefined;
-  chargeItems: ChargeItem[];
-  appointment: Appointment | undefined;
+  encounter: WithId<Encounter> | undefined;
+  patient: WithId<Patient> | undefined;
+  claim: WithId<Claim> | undefined;
+  practitioner: WithId<Practitioner> | undefined;
+  tasks: WithId<Task>[];
+  clinicalImpression: WithId<ClinicalImpression> | undefined;
+  chargeItems: WithId<ChargeItem>[];
+  appointment: WithId<Appointment> | undefined;
   // State setters
-  setEncounter: React.Dispatch<React.SetStateAction<Encounter | undefined>>;
-  setClaim: React.Dispatch<React.SetStateAction<Claim | undefined>>;
-  setPractitioner: React.Dispatch<React.SetStateAction<Practitioner | undefined>>;
-  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
-  setClinicalImpression: React.Dispatch<React.SetStateAction<ClinicalImpression | undefined>>;
-  setChargeItems: React.Dispatch<React.SetStateAction<ChargeItem[]>>;
-  setAppointment: React.Dispatch<React.SetStateAction<Appointment | undefined>>;
+  setEncounter: Dispatch<SetStateAction<WithId<Encounter> | undefined>>;
+  setClaim: Dispatch<SetStateAction<WithId<Claim> | undefined>>;
+  setPractitioner: Dispatch<SetStateAction<WithId<Practitioner> | undefined>>;
+  setTasks: Dispatch<SetStateAction<WithId<Task>[]>>;
+  setClinicalImpression: Dispatch<SetStateAction<WithId<ClinicalImpression> | undefined>>;
+  setChargeItems: Dispatch<SetStateAction<WithId<ChargeItem>[]>>;
+  setAppointment: Dispatch<SetStateAction<WithId<Appointment> | undefined>>;
 }
 
-export function useEncounterChart(
-  encounter: Encounter | Reference<Encounter> | undefined,
-  patient?: Patient | Reference<Patient>
-): EncounterChartHook {
+export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encounter> | undefined): EncounterChartHook {
   const medplum = useMedplum();
   const encounterResource = useResource(encounter);
-  const patientResource = useResource(patient);
-  const [encounterState, setEncounter] = useState<Encounter | undefined>(encounterResource);
-  const [claim, setClaim] = useState<Claim | undefined>();
-  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
-  const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
-  const [appointment, setAppointment] = useState<Appointment | undefined>();
+  const patientReference = encounterResource?.subject as Reference<Patient> | undefined;
+  const patientResource = useResource(patientReference);
+  const [encounterState, setEncounter] = useState(encounterResource);
+  const [claim, setClaim] = useState<WithId<Claim> | undefined>();
+  const [practitioner, setPractitioner] = useState<WithId<Practitioner> | undefined>();
+  const [tasks, setTasks] = useState<WithId<Task>[]>([]);
+  const [clinicalImpression, setClinicalImpression] = useState<WithId<ClinicalImpression> | undefined>();
+  const [chargeItems, setChargeItems] = useState<WithId<ChargeItem>[]>([]);
+  const [appointment, setAppointment] = useState<WithId<Appointment> | undefined>();
 
-  const encounterToUse = encounterResource ?? encounterState;
+  // Prefer encounterState (explicitly set via setEncounter) for immediate optimistic updates.
+  // Falls back to encounterResource on initial load before any explicit set.
+  const encounterToUse = encounterState ?? encounterResource;
 
   useEffect(() => {
     async function loadChargeItems(): Promise<void> {
@@ -76,52 +79,43 @@ export function useEncounterChart(
     fetchClaim().catch(showErrorNotification);
   }, [encounterResource, medplum]);
 
-  // Fetch tasks related to the encounter
-  const fetchTasks = useCallback(async (): Promise<void> => {
-    if (!encounterResource) {
-      return;
-    }
-    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounterResource)}`, {
-      cache: 'no-cache',
-    });
-
-    taskResult.sort((a: Task, b: Task) => {
-      const dateA = new Date(a.authoredOn || '').getTime();
-      const dateB = new Date(b.authoredOn || '').getTime();
-      return dateA - dateB;
-    });
-
-    setTasks(taskResult);
-  }, [medplum, encounterResource]);
-
-  // Fetch clinical impressions related to the encounter
-  const fetchClinicalImpressions = useCallback(async (): Promise<void> => {
-    if (!encounterResource) {
-      return;
-    }
-    const clinicalImpressionResult = await medplum.searchResources(
-      'ClinicalImpression',
-      `encounter=${getReferenceString(encounterResource)}`
-    );
-
-    const result = clinicalImpressionResult?.[0];
-    setClinicalImpression(result);
-  }, [medplum, encounterResource]);
-
-  // Fetch data on component mount or when encounter changes
+  // Fetch tasks and clinical impressions on mount or when encounter ID changes
   useEffect(() => {
-    if (encounterResource) {
-      fetchTasks().catch((err) => showErrorNotification(err));
-      fetchClinicalImpressions().catch((err) => showErrorNotification(err));
+    if (!encounterResource) {
+      return;
     }
-  }, [encounterResource, fetchTasks, fetchClinicalImpressions]);
+    const enc = encounterResource;
+
+    async function fetchTasks(): Promise<void> {
+      const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(enc)}`, {
+        cache: 'no-cache',
+      });
+      taskResult.sort((a: Task, b: Task) => {
+        const dateA = new Date(a.authoredOn || '').getTime();
+        const dateB = new Date(b.authoredOn || '').getTime();
+        return dateA - dateB;
+      });
+      setTasks(taskResult);
+    }
+
+    async function fetchClinicalImpressions(): Promise<void> {
+      const clinicalImpressionResult = await medplum.searchResources(
+        'ClinicalImpression',
+        `encounter=${getReferenceString(enc)}`
+      );
+      setClinicalImpression(clinicalImpressionResult?.[0]);
+    }
+
+    fetchTasks().catch((err) => showErrorNotification(err));
+    fetchClinicalImpressions().catch((err) => showErrorNotification(err));
+  }, [encounterResource, medplum]);
 
   // Fetch practitioner related to the encounter
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
       if (encounterResource?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(encounterResource.participant[0].individual);
-        setPractitioner(practitionerResult as Practitioner);
+        setPractitioner(practitionerResult as WithId<Practitioner>);
       }
     };
 
@@ -136,7 +130,7 @@ export function useEncounterChart(
       const appointmentRef = encounterResource?.appointment?.at(-1);
       if (appointmentRef) {
         const appointmentResult = await medplum.readReference(appointmentRef);
-        setAppointment(appointmentResult as Appointment);
+        setAppointment(appointmentResult);
       }
     };
 
@@ -158,9 +152,9 @@ export function useEncounterChart(
       }
       const newClaim = await createClaimFromEncounter(
         medplum,
-        patientId,
-        encounterResource.id,
-        practitioner.id,
+        patientResource,
+        encounterResource,
+        practitioner,
         chargeItems
       );
       if (newClaim) {
@@ -171,15 +165,14 @@ export function useEncounterChart(
   }, [patientResource, encounterResource, medplum, claim, practitioner, chargeItems]);
 
   return {
-    // State values - use resolved resource when available
     encounter: encounterToUse,
+    patient: patientResource,
     claim,
     practitioner,
     tasks,
     clinicalImpression,
     chargeItems,
     appointment,
-    // State setters
     setEncounter,
     setClaim,
     setPractitioner,

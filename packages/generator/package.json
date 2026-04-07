@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "5.0.5",
+  "version": "5.1.6",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -13,7 +13,6 @@
   "type": "module",
   "scripts": {
     "baseschema": "tsx src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
-    "benchmark": "tsx src/benchmarks.ts",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "compare": "tsx src/compare.ts",
@@ -28,19 +27,18 @@
     "valuesets": "tsx src/valuesets.ts"
   },
   "devDependencies": {
-    "@medplum/core": "5.0.5",
-    "@medplum/definitions": "5.0.5",
-    "@medplum/fhirtypes": "5.0.5",
+    "@medplum/core": "5.1.6",
+    "@medplum/definitions": "5.1.6",
+    "@medplum/fhirtypes": "5.1.6",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.15.6",
+    "@types/pg": "8.20.0",
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.0",
-    "fast-xml-parser": "5.3.2",
-    "fhirpath": "4.8.0",
+    "fast-xml-parser": "5.5.9",
+    "fhirpath": "4.9.1",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
-    "pg": "8.16.3",
-    "tinybench": "5.1.0",
+    "pg": "8.20.0",
     "unzipper": "0.12.3"
   },
   "engines": {

@@ -5,22 +5,22 @@
  * Do not edit manually.
  */
 
-import { Address } from './Address';
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactPoint } from './ContactPoint';
-import { Extension } from './Extension';
-import { HumanName } from './HumanName';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
+import type { Address } from './Address.d.ts';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { HumanName } from './HumanName.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Demographics and other administrative information about an individual

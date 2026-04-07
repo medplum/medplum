@@ -3,10 +3,10 @@
 import type { OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { isDateTimeString } from '../fhirpath/utils';
-import { OperationOutcomeError, badRequest } from '../outcomes';
+import { badRequest, OperationOutcomeError } from '../outcomes';
 import type { TypedValue } from '../types';
 import { globalSchema, stringifyTypedValue } from '../types';
-import { append, sortStringArray } from '../utils';
+import { append, EMPTY, sortStringArray } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 export const DEFAULT_MAX_SEARCH_COUNT = 1000;
@@ -453,11 +453,16 @@ const subexpressionPattern = /{{([^{}]+)}}/g;
  * @see https://hl7.org/fhir/fhir-xquery.html
  * @param query - The X-Fhir-Query string to parse
  * @param variables - Values to pass into embedded FHIRPath expressions
+ * @param context - The context collection to evaluate over
  * @returns The parsed search request
  */
-export function parseXFhirQuery(query: string, variables: Record<string, TypedValue>): SearchRequest {
+export function parseXFhirQuery(
+  query: string,
+  variables: Record<string, TypedValue>,
+  context: TypedValue[] = []
+): SearchRequest {
   query = query.replaceAll(subexpressionPattern, (_, expr) => {
-    const replacement = evalFhirPathTyped(expr, [], variables);
+    const replacement = evalFhirPathTyped(expr, context, variables);
     if (replacement.length !== 1) {
       return '';
     }
@@ -479,8 +484,8 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_fields=' + definition.fields.join(','));
   }
 
-  if (definition.filters) {
-    definition.filters.forEach((filter) => params.push(formatFilter(filter)));
+  for (const filter of definition.filters ?? EMPTY) {
+    params.push(formatFilter(filter));
   }
 
   if (definition.sortRules && definition.sortRules.length > 0) {
@@ -507,12 +512,11 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_type=' + definition.types.join(','));
   }
 
-  if (definition.include) {
-    definition.include.forEach((target) => params.push(formatIncludeTarget('_include', target)));
+  for (const target of definition.include ?? EMPTY) {
+    params.push(formatIncludeTarget('_include', target));
   }
-
-  if (definition.revInclude) {
-    definition.revInclude.forEach((target) => params.push(formatIncludeTarget('_revinclude', target)));
+  for (const target of definition.revInclude ?? EMPTY) {
+    params.push(formatIncludeTarget('_revinclude', target));
   }
 
   if (params.length === 0) {

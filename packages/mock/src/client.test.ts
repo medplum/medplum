@@ -604,7 +604,7 @@ describe('MockClient', () => {
   test('Preserve history', async () => {
     const client = new MockClient();
 
-    const resource1 = await client.createResource<ServiceRequest>({
+    const resource1 = await client.createResource({
       resourceType: 'ServiceRequest',
       orderDetail: [{ text: 'foo' }],
     } as ServiceRequest);
@@ -796,9 +796,7 @@ describe('MockClient', () => {
   test('Project admin', async () => {
     const medplum = new MockClient();
 
-    const { project } = (await medplum.get('admin/projects/123')) as {
-      project: { id: string; name: string; secret: string; site: string };
-    };
+    const { project } = await medplum.get('admin/projects/123');
     expect(project).toMatchObject({
       id: '123',
       name: 'Project 123',

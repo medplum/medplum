@@ -221,7 +221,7 @@ function buildRootSchema(): GraphQLSchema {
 
     // FHIR GraphQL Connection API
     fields[resourceType + 'Connection'] = {
-      type: buildConnectionType(resourceType, graphQLOutputType),
+      type: getConnectionType(resourceType, graphQLOutputType),
       args: buildSearchArgs(resourceType),
       resolve: resolveByConnectionApi,
     };
@@ -293,6 +293,19 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
+export function getConnectionType(
+  resourceType: ResourceType,
+  resourceGraphQLType: GraphQLOutputType
+): GraphQLOutputType {
+  const cacheKey = resourceType + 'Connection';
+  let result = outputTypeCache[cacheKey];
+  if (!result) {
+    result = buildConnectionType(resourceType, resourceGraphQLType);
+    outputTypeCache[cacheKey] = result;
+  }
+  return result;
+}
+
 function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
   return new GraphQLObjectType({
     name: resourceType + 'Connection',
@@ -330,7 +343,7 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
  * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
  */
-async function resolveByConnectionApi(
+export async function resolveByConnectionApi(
   source: any,
   args: Record<string, string>,
   ctx: GraphQLContext,

@@ -1,29 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type {
-  ClinicalImpression,
-  Encounter,
-  Patient,
-  Practitioner,
-  Provenance,
-  Reference,
-  Task,
-} from '@medplum/fhirtypes';
-import { Loading, useMedplum, useResource } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
+import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
+import { Loading, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
+import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { EncounterHeader } from './EncounterHeader';
-import { SignAddendum } from './SignAddendum';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
+import { EncounterHeader } from './EncounterHeader';
+import { SignAddendum } from './SignAddendum';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
 const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
@@ -38,19 +31,17 @@ const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
 ]);
 
 export interface EncounterChartProps {
-  encounter: Encounter | Reference<Encounter>;
+  encounter: WithId<Encounter> | Reference<Encounter>;
 }
 
 export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const { encounter: encounterProp } = props;
   const medplum = useMedplum();
-  const encounterResource = useResource(encounterProp);
-  const patientReference = encounterResource?.subject as Reference<Patient> | undefined;
-  const patientResource = useResource(patientReference);
 
-  const [activeTab, setActiveTab] = useState<string>('notes');
+  const [activeTab, setActiveTab] = useState('notes');
   const {
     encounter,
+    patient: patientResource,
     claim,
     practitioner,
     tasks,
@@ -61,13 +52,14 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
     setClaim,
     setPractitioner,
     setTasks,
+    setClinicalImpression,
     setChargeItems,
-  } = useEncounterChart(encounterProp, patientReference);
+  } = useEncounterChart(encounterProp);
 
-  const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
+  const [chartNote, setChartNote] = useState(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
   const [provenances, setProvenances] = useState<Provenance[]>([]);
-  const [chartNoteStatus, setChartNoteStatus] = useState<ChartNoteStatus>(ChartNoteStatus.Unsigned);
+  const [chartNoteStatus, setChartNoteStatus] = useState(ChartNoteStatus.Unsigned);
 
   useEffect(() => {
     if (!encounter) {
@@ -90,7 +82,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   }, [clinicalImpression, encounter, medplum]);
 
   const updateTaskList = useCallback(
-    (updatedTask: Task): void => {
+    (updatedTask: WithId<Task>): void => {
       setTasks((prevTasks) => prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
     },
     [setTasks]
@@ -163,6 +155,12 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           return updated || task;
         })
       );
+
+      // Mark clinical impression as completed
+      if (clinicalImpression) {
+        const updatedImpression = await medplum.updateResource({ ...clinicalImpression, status: 'completed' });
+        setClinicalImpression(updatedImpression);
+      }
     }
 
     // Create provenance record with signature
@@ -252,7 +250,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
                   />
                 </Card>
               )}
-              {tasks.map((task: Task) => (
+              {tasks.map((task) => (
                 <TaskPanel
                   key={task.id}
                   task={task}
@@ -273,6 +271,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               chargeItems={chargeItems}
               setChargeItems={setChargeItems}
               setClaim={setClaim}
+              chartNoteStatus={chartNoteStatus}
             />
           )}
         </Box>

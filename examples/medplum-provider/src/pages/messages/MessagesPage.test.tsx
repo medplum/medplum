@@ -2,13 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MessagesPage } from './MessagesPage';
+
+vi.mock('@medplum/react-hooks', async () => {
+  const actual = await vi.importActual('@medplum/react-hooks');
+  return {
+    ...actual,
+    useSubscription: vi.fn(),
+  };
+});
 
 describe('MessagesPage', () => {
   let medplum: MockClient;
@@ -16,11 +25,10 @@ describe('MessagesPage', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (messageId?: string): void => {
-    const path = messageId ? `/Message/${messageId}` : '/Message';
+    const path = messageId ? `/Communication/${messageId}` : '/Communication';
     render(
       <MemoryRouter initialEntries={[path]}>
         <MedplumProvider medplum={medplum}>
@@ -37,7 +45,7 @@ describe('MessagesPage', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
@@ -52,9 +60,6 @@ describe('MessagesPage', () => {
       subject: { reference: `Patient/${HomerSimpson.id}` },
     };
 
-    await medplum.createResource(mockCommunication);
-
-    // Create a last message for the thread
     const lastMessage: Communication = {
       resourceType: 'Communication',
       id: 'last-msg-123',
@@ -63,35 +68,27 @@ describe('MessagesPage', () => {
       sent: '2024-01-01T12:00:00Z',
       payload: [{ contentString: 'Last message' }],
     };
-    await medplum.createResource(lastMessage);
 
-    // Mock search to return the communication
-    medplum.search = vi.fn().mockResolvedValue({
+    vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [{ resource: mockCommunication }],
+      total: 1,
+      entry: [{ resource: mockCommunication as WithId<Communication> }],
     });
 
-    // Mock graphql to return the last message
-    medplum.graphql = vi.fn().mockResolvedValue({
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        CommunicationList: [
-          {
-            id: lastMessage.id,
-            partOf: lastMessage.partOf,
-            sender: { display: 'Sender' },
-            payload: lastMessage.payload,
-            status: lastMessage.status,
-          },
-        ],
+        thread_comm123: [lastMessage],
       },
-    });
+    } as any);
+
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockCommunication as WithId<Communication>);
 
     setup('comm-123');
 
     await waitFor(
       () => {
-        expect(screen.getByText('Messages')).toBeInTheDocument();
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
       },
       { timeout: 3000 }
     );

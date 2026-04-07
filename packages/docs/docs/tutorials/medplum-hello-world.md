@@ -5,7 +5,7 @@ sidebar_label: Medplum Hello World
 
 # Medplum Hello World
 
-Digital health companies often build custom UIs on top of the Medplum platform to design streamlined patient and physician experiences. This tutorial will cover to run the **Medplum "Hello World"** example, a simple [React](https://reactjs.org/) app that visualizes patient information.
+Digital health companies often build custom UIs on top of the Medplum platform to design streamlined patient and physician experiences. This tutorial will cover how to run the **Medplum "Hello World"** example, a simple [React](https://reactjs.org/) app that visualizes patient information.
 
 Hello World is built with Medplum's [React Component](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) library, which is a great resource for rapid prototyping and building internal tools.
 
@@ -47,9 +47,9 @@ In this section, we'll familiarize ourselves with functionality of the Hello Wor
 
 ### Sign-in
 
-The first page of the demo asks you to sign in using the Medplum credentials you set up in the the [registration tutorial](./register.md).
+The first page of the demo asks you to sign in using the Medplum credentials you set up in the [registration tutorial](./register.md).
 
-After entering your credentials, you will prompted to select a Medplum project. Click on the name on the project that you registered in the Tutorial 1, and you'll be redirected to the Hello World home page.
+After entering your credentials, you will be prompted to select a Medplum project. Click on the name of the project that you registered in Tutorial 1, and you'll be redirected to the Hello World home page.
 
 ### Home Page
 
@@ -59,7 +59,7 @@ Once you log in, you'll be presented with a greeting, along with a list of all t
 
 Click on the link in the "Welcome" greeting to access the Practitioner profile page.
 
-This page uses the Medplum's [`ResourceTable`](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--patient) component to display basic data about the profile resource of the logged-user. You can read more about profile resources [here](/docs/tutorials/register#invite-a-new-user).
+This page uses Medplum's [`ResourceTable`](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--patient) component to display basic data about the profile resource of the logged-user. You can read more about profile resources [here](/docs/tutorials/register#invite-a-new-user).
 
 ### Patient Profile
 

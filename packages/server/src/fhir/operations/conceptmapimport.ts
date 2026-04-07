@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue, WithId } from '@medplum/core';
-import { allOk, append, badRequest, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   Coding,
@@ -107,8 +107,6 @@ export type MappingAttribute = {
   value?: TypedValue;
 };
 
-const EMPTY_ARRAY: readonly [] = Object.freeze([]);
-
 export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirResponse> {
   const repo = getAuthenticatedContext().repo;
   const isSuperAdmin = repo.isSuperAdmin();
@@ -124,7 +122,7 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
   } else if (req.params.id) {
     conceptMap = await repo.readResource('ConceptMap', req.params.id);
   } else if (params.url) {
-    conceptMap = await findTerminologyResource('ConceptMap', params.url, { ownProjectOnly: !isSuperAdmin });
+    conceptMap = await findTerminologyResource(repo, 'ConceptMap', params.url, { ownProjectOnly: !isSuperAdmin });
   } else {
     return [badRequest('ConceptMap to import into must be specified', `Parameters.parameter.where(name = 'url')`)];
   }
@@ -136,7 +134,7 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
 export async function importConceptMap(
   db: PoolClient,
   conceptMap: WithId<ConceptMap>,
-  mappings: readonly ConceptMapping[] = EMPTY_ARRAY
+  mappings: readonly ConceptMapping[] = EMPTY
 ): Promise<void> {
   const mappingRows: MappingRow[] = [];
   const attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[] = [];
@@ -157,12 +155,12 @@ export async function importConceptMap(
 function gatherResourceMappings(conceptMap: WithId<ConceptMap>): ConceptMapping[] {
   const mappings: ConceptMapping[] = [];
 
-  for (const group of conceptMap.group ?? EMPTY_ARRAY) {
-    for (const mapping of group.element ?? EMPTY_ARRAY) {
+  for (const group of conceptMap.group ?? EMPTY) {
+    for (const mapping of group.element ?? EMPTY) {
       if (!mapping.code) {
         continue;
       }
-      for (const target of mapping.target ?? EMPTY_ARRAY) {
+      for (const target of mapping.target ?? EMPTY) {
         const entry: ConceptMapping = {
           source: { system: group.source, code: mapping.code, display: mapping.display },
           target: { system: group.target, code: target.code, display: target.display },
@@ -170,11 +168,11 @@ function gatherResourceMappings(conceptMap: WithId<ConceptMap>): ConceptMapping[
           comment: target.comment,
         };
 
-        for (const dependency of target.dependsOn ?? EMPTY_ARRAY) {
+        for (const dependency of target.dependsOn ?? EMPTY) {
           const value = getAttributeValue(dependency);
           entry.dependsOn = append(entry.dependsOn, { code: dependency.property, value });
         }
-        for (const product of target.product ?? EMPTY_ARRAY) {
+        for (const product of target.product ?? EMPTY) {
           const value = getAttributeValue(product);
           entry.product = append(entry.product, { code: product.property, value });
         }
@@ -245,7 +243,7 @@ function addRowsForMapping(
   });
 
   let mappingAttributes: Omit<AttributeRow, 'mapping'>[] | undefined;
-  for (const property of mapping.property ?? EMPTY_ARRAY) {
+  for (const property of mapping.property ?? EMPTY) {
     mappingAttributes = append(mappingAttributes, {
       kind: 'property',
       uri: property.code,
@@ -253,7 +251,7 @@ function addRowsForMapping(
       value: JSON.stringify(property.value?.value),
     });
   }
-  for (const dependency of mapping.dependsOn ?? EMPTY_ARRAY) {
+  for (const dependency of mapping.dependsOn ?? EMPTY) {
     mappingAttributes = append(mappingAttributes, {
       kind: 'dependsOn',
       uri: dependency.code,
@@ -261,7 +259,7 @@ function addRowsForMapping(
       value: JSON.stringify(dependency.value?.value),
     });
   }
-  for (const product of mapping.product ?? EMPTY_ARRAY) {
+  for (const product of mapping.product ?? EMPTY) {
     mappingAttributes = append(mappingAttributes, {
       kind: 'product',
       uri: product.code,

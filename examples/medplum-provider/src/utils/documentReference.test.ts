@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { DocumentReference, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
 
 describe('documentReference utils', () => {
@@ -64,7 +64,7 @@ describe('documentReference utils', () => {
       };
       const searchSpy = vi.spyOn(medplum, 'searchResources');
 
-      const result = await fetchLabOrderRequisitionDocuments(medplum as any, request);
+      const result = await fetchLabOrderRequisitionDocuments(medplum, request);
 
       expect(result).toEqual([]);
       expect(searchSpy).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('documentReference utils', () => {
       ];
       const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue(documents as any);
 
-      const result = await fetchLabOrderRequisitionDocuments(medplum as any, request);
+      const result = await fetchLabOrderRequisitionDocuments(medplum, request);
 
       expect(searchSpy).toHaveBeenCalledWith(
         'DocumentReference',

@@ -5,16 +5,16 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { MedicinalProductIngredient } from './MedicinalProductIngredient';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { ProdCharacteristic } from './ProdCharacteristic';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { MedicinalProductIngredient } from './MedicinalProductIngredient.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { ProdCharacteristic } from './ProdCharacteristic.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * The manufactured item as contained in the packaged medicinal product.

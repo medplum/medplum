@@ -7,6 +7,7 @@ import {
   CloseButton,
   Flex,
   Group,
+  Loader,
   NativeSelect,
   Paper,
   Stack,
@@ -14,11 +15,17 @@ import {
   TextInput,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import type { PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
+import type {
+  ActivityDefinition,
+  PlanDefinition,
+  PlanDefinitionAction,
+  Questionnaire,
+  Reference,
+} from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
@@ -46,9 +53,6 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     setSelectedKey(undefined);
   }
 
-  const valueRef = useRef<PlanDefinition>(value);
-  valueRef.current = value;
-
   useEffect(() => {
     medplum
       .requestSchema('PlanDefinition')
@@ -71,10 +75,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }
 
   function changeProperty(property: string, newValue: any): void {
-    setValue({
-      ...valueRef.current,
-      [property]: newValue,
-    } as PlanDefinition);
+    setValue((prevValue) => ({ ...prevValue, [property]: newValue }) as PlanDefinition);
   }
 
   return (
@@ -110,22 +111,17 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const actionsRef = useRef<PlanDefinitionAction[]>(props.actions);
-  actionsRef.current = props.actions;
-
   function changeAction(changedAction: PlanDefinitionAction): void {
-    props.onChange(
-      (actionsRef.current as PlanDefinition[]).map((i) => (i.id === changedAction.id ? changedAction : i))
-    );
+    props.onChange(props.actions.map((i) => (i.id === changedAction.id ? changedAction : i)));
   }
 
   function addAction(addedAction: PlanDefinitionAction): void {
-    props.onChange([...(actionsRef.current as PlanDefinition[]), addedAction]);
+    props.onChange([...props.actions, addedAction]);
     props.setSelectedKey(addedAction.id);
   }
 
   function removeAction(removedAction: PlanDefinitionAction): void {
-    props.onChange((actionsRef.current as PlanDefinition[]).filter((i) => i !== removedAction));
+    props.onChange(props.actions.filter((i) => i !== removedAction));
   }
 
   return (
@@ -169,7 +165,6 @@ interface ActionBuilderProps {
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const { action } = props;
-  const actionType = getInitialActionType(action);
 
   function onClick(e: SyntheticEvent): void {
     e.stopPropagation();
@@ -185,7 +180,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
     <div onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       <ActionEditor
         action={action}
-        actionType={actionType}
         onChange={props.onChange}
         selectedKey={props.selectedKey}
         hoverKey={props.hoverKey}
@@ -197,7 +191,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
 
 interface ActionEditorProps {
   readonly action: PlanDefinitionAction;
-  readonly actionType: string | undefined;
   readonly selectedKey: string | undefined;
   readonly hoverKey: string | undefined;
   readonly onChange: (action: PlanDefinitionAction) => void;
@@ -206,7 +199,10 @@ interface ActionEditorProps {
 
 function ActionEditor(props: ActionEditorProps): JSX.Element {
   const { action } = props;
-  const [actionType, setActionType] = useState<string | undefined>(props.actionType);
+  const [actionType, setActionType] = useState<string | undefined>();
+  const medplum = useMedplum();
+  const [loading, setLoading] = useState(false);
+  const [resource, setResource] = useState<Questionnaire | ActivityDefinition | undefined>();
   const editing = props.selectedKey === props.action.id;
   const hovering = props.hoverKey === props.action.id;
 
@@ -220,6 +216,24 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   const className = cx(classes.section, {
     [classes.hovering]: hovering && !editing,
   });
+
+  useEffect(() => {
+    const readResource = async (): Promise<void> => {
+      if (!action.definitionCanonical) {
+        return;
+      }
+      setLoading(true);
+      const resource = await medplum.readCanonical(['Questionnaire', 'ActivityDefinition'], action.definitionCanonical);
+      setActionType(getInitialActionType(resource));
+      setResource(resource);
+      setLoading(false);
+    };
+    readResource().catch(console.error);
+  }, [action.definitionCanonical, medplum]);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <Paper data-testid={action.id} className={className} p={0} radius="sm" withBorder>
@@ -279,6 +293,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                 </Anchor>
               </Text>
               <ActionResourceTypeBuilder
+                resource={resource}
                 resourceType="Questionnaire"
                 action={action}
                 onChange={props.onChange}
@@ -300,6 +315,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                 </Anchor>
               </Text>
               <ActionResourceTypeBuilder
+                resource={resource}
                 resourceType="ActivityDefinition"
                 action={action}
                 onChange={props.onChange}
@@ -315,22 +331,22 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 
 interface ActionResourceTypeBuilderProps {
   readonly action: PlanDefinitionAction;
+  readonly resource: Questionnaire | ActivityDefinition | undefined;
   readonly resourceType: 'Questionnaire' | 'ActivityDefinition';
   readonly placeholder?: string;
   readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
 function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.Element {
-  const { id, definitionCanonical } = props.action;
-  const reference = definitionCanonical?.startsWith(props.resourceType + '/')
-    ? { reference: definitionCanonical }
-    : undefined;
+  const { id } = props.action;
+  const { resource } = props as { resource: Questionnaire | ActivityDefinition };
+
   return (
     <ResourceInput
       name={id as string}
       placeholder={props.placeholder}
       resourceType={props.resourceType}
-      defaultValue={reference}
+      defaultValue={resource}
       onChange={(newValue) => {
         if (newValue) {
           props.onChange({
@@ -346,16 +362,8 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
   );
 }
 
-function getInitialActionType(action: PlanDefinitionAction): string | undefined {
-  if (action.definitionCanonical?.startsWith('Questionnaire')) {
-    return 'questionnaire';
-  }
-
-  if (action.definitionCanonical?.startsWith('ActivityDefinition')) {
-    return 'activitydefinition';
-  }
-
-  return 'standard';
+function getInitialActionType(resource: Questionnaire | ActivityDefinition | undefined): string | undefined {
+  return resource === undefined ? 'standard' : resource.resourceType.toLowerCase();
 }
 
 let nextId = 1;

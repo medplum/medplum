@@ -34,6 +34,7 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
+import { getConnectionType, resolveByConnectionApi } from './graphql';
 import type { GraphQLContext } from './utils';
 import { buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache } from './utils';
 
@@ -108,7 +109,7 @@ function buildOutputPropertyField(
   elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
-  let typeName = elementDefinitionType.code as string;
+  let typeName = elementDefinitionType.code;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
     typeName = elementDefinition.type[0].code;
   }
@@ -126,10 +127,7 @@ function buildOutputPropertyField(
     fieldConfig.args = buildListPropertyFieldArgs(typeName);
   }
 
-  const propertyName = (key.split('.').pop() as string).replace(
-    '[x]',
-    capitalize(elementDefinitionType.code as string)
-  );
+  const propertyName = (key.split('.').pop() as string).replace('[x]', capitalize(elementDefinitionType.code));
   fields[propertyName] = fieldConfig;
 }
 
@@ -192,7 +190,7 @@ function buildListPropertyFieldArg(
   elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
-  const baseType = elementDefinitionType.code as string;
+  const baseType = elementDefinitionType.code;
   const fieldName = fieldKey.replace('[x]', capitalize(baseType));
   switch (baseType) {
     case 'canonical':
@@ -264,10 +262,17 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
         type: new GraphQLNonNull(enumType),
         description: `Specify which property to use for reverse lookup for ${childResourceType}`,
       };
+      // Add List field for backward compatibility
       fields[childResourceType + 'List'] = {
         type: new GraphQLList(childGraphQLType),
         args,
         resolve: resolveBySearch,
+      };
+      // Add Connection field for count support
+      fields[childResourceType + 'Connection'] = {
+        type: getConnectionType(childResourceType, childGraphQLType),
+        args,
+        resolve: resolveByConnectionApi,
       };
     }
   }

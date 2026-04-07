@@ -18,6 +18,7 @@
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 0.5rem;
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
 }
 
 .contentContainer:hover {

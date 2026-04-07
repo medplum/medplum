@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, tooManyRequests } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Handler, Request, Response } from 'express';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import type { MedplumServerConfig } from './config/types';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
-import { getRedis } from './redis';
+import { getRateLimitRedis } from './redis';
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -17,6 +17,12 @@ import { getRedis } from './redis';
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
 const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
 
+type InMemoryBlock = {
+  result: RateLimiterRes;
+  resetTimestamp: number;
+};
+const blockedUsers = new LRUCache<InMemoryBlock>(1000);
+
 let handler: Handler | undefined;
 export function rateLimitHandler(config: MedplumServerConfig): Handler {
   if (!handler) {
@@ -24,9 +30,21 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {
+        const key = getRateLimitKey(req);
         const limit = getRateLimiter(req, config);
+
+        const userBlock = blockedUsers.get(key);
+        if (userBlock) {
+          if (Date.now() <= userBlock.resetTimestamp) {
+            blockRequest(res, userBlock.result, limit);
+            return;
+          }
+          // User block has expired, request can proceed
+          blockedUsers.delete(key);
+        }
+
         try {
-          const result = await limit.consume(getRateLimitKey(req), 1);
+          const result = await limit.consume(key, 1);
           addRateLimitHeader(result, res);
           next();
         } catch (err: unknown) {
@@ -34,13 +52,7 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
             next(err);
             return;
           }
-
-          const result = err as RateLimiterRes;
-          addRateLimitHeader(result, res);
-
-          const outcome: OperationOutcome = deepClone(tooManyRequests);
-          outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: limit.points });
-          res.status(429).json(outcome).end();
+          blockRequest(res, err as RateLimiterRes, limit);
         }
       };
     }
@@ -48,8 +60,15 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
   return handler;
 }
 
+function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimiterRedis): void {
+  addRateLimitHeader(result, res);
+  const outcome: OperationOutcome = deepClone(tooManyRequests);
+  outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: limiter.points });
+  res.status(429).json(outcome).end();
+}
+
 export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
-  const client = getRedis();
+  const client = getRateLimitRedis();
   return new RateLimiterRedis({
     keyPrefix: 'medplum:rl:',
     storeClient: client,

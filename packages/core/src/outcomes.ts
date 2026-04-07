@@ -495,7 +495,7 @@ export function normalizeErrorString(error: unknown): string {
 }
 
 /**
- * Returns a string represenation of the operation outcome.
+ * Returns a string representation of the operation outcome.
  * @param outcome - The operation outcome.
  * @returns The string representation of the operation outcome.
  */
@@ -505,7 +505,7 @@ export function operationOutcomeToString(outcome: OperationOutcome): string {
 }
 
 /**
- * Returns a string represenation of the operation outcome issue.
+ * Returns a string representation of the operation outcome issue.
  * @param issue - The operation outcome issue.
  * @returns The string representation of the operation outcome issue.
  */

@@ -5,12 +5,12 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Practitioner } from './Practitioner';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
+import type { Extension } from './Extension.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
 
 /**
  * A  text note which also  contains information about who made the

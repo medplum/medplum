@@ -107,7 +107,7 @@ async function getCandidTasks(candidCodedEncounter: any, apiKey: string, apiSecr
     headers: { 'Content-Type': 'application/json' },
   });
 
-  const bearerToken = ((await authResponse.json()) as any).access_token;
+  const bearerToken = (await authResponse.json()).access_token;
 
   // Send the CodedEncounter
   const taskResponse = await fetch(CANDID_API_URL + '/tasks', {

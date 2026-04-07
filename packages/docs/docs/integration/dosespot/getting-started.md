@@ -70,7 +70,7 @@ For patients under 18 years of age, you **must** also sync Height and Weight as 
     {
       "system": "phone",
       "use": "home",
-      "value": "6175672093"//Required: cannot have a +1 prefix and must be 9 digits
+      "value": "6175672093"//Required: cannot have a +1 prefix or start with 555, and must be 10 digits
     }
   ],
   "address": [//Required
@@ -699,6 +699,141 @@ interface DoseSpotClinicDefaultPharmacyResponse {
   message: string;
 }
 ```
+
+## Enrolling Prescribers
+
+### Summary
+
+To enroll a prescriber in DoseSpot, you can use the **DoseSpot Enroll Prescriber Bot**. This bot creates a clinician record in DoseSpot for a Practitioner and automatically adds the DoseSpot clinician ID as an identifier to their ProjectMembership.
+
+### Prerequisites
+
+Before enrolling a prescriber, ensure:
+- The Practitioner resource exists in Medplum
+- The Practitioner has a corresponding ProjectMembership
+- The Practitioner has required information (name, NPI, contact information, etc.)
+- The ProjectMembership does not already have a DoseSpot identifier (the bot will prevent duplicate enrollment)
+
+### Required Practitioner Fields
+
+For successful enrollment, the Practitioner resource must include the following fields:
+
+#### Required Fields
+
+- **`name`** (at least one name entry)
+  - **`name.family`** - Last name (required)
+  - **`name.given`** - First name (at least one given name required)
+- **`birthDate`** - Date of birth
+- **`address`** (at least one address)
+  - **`address.line`** - Street address (at least one line required)
+  - **`address.city`** - City (required)
+  - **`address.state`** - State (required)
+  - **`address.postalCode`** - ZIP/postal code (required)
+- **`identifier`** with NPI
+  - **`identifier.system`** = `"http://hl7.org/fhir/sid/us-npi"` (required)
+  - **`identifier.value`** - NPI number (required, must be exactly 10 digits and pass validation)
+- **`telecom`** with email (`system: "email"`)
+- **`telecom`** with work phone (`system: "phone"`, `use: "work"`)
+- **`telecom`** with fax (`system: "fax"`)
+
+:::warning NPI Validation
+If an NPI identifier is present on the Practitioner resource, it **must** be valid (exactly 10 digits). The bot will throw an error if an invalid NPI is provided.
+:::
+
+<details>
+  <summary>Example of a Practitioner resource with all required fields</summary>
+
+```typescript
+{
+  "resourceType": "Practitioner",
+  "id": "practitioner-123",
+  "name": [
+    {
+      "prefix": ["Dr."],
+      "given": ["John"],
+      "family": "Doe" 
+    }
+  ],
+  "birthDate": "1975-05-15", 
+  "identifier": [
+    {
+      "system": "http://hl7.org/fhir/sid/us-npi", 
+      "value": "1234567893" // Required: exactly 10 digits
+    }
+  ],
+  "telecom": [
+    {
+      "system": "email",
+      "value": "john.doe@example.com" 
+    },
+    {
+      "system": "phone",
+      "use": "work",
+      "value": "555-123-4567" 
+    }
+  ],
+  "address": [ 
+    {
+      "line": ["123 Main St", "Suite 100"], // At least one line required
+      "city": "San Francisco", 
+      "state": "CA", 
+      "postalCode": "94102" 
+    }
+  ],
+  "active": true
+}
+```
+</details>
+
+### Usage
+
+#### Basic Example
+
+```typescript
+const DOSESPOT_ENROLL_PRESCRIBER_BOT: Identifier = {
+  system: 'https://www.medplum.com/bots',
+  value: 'dosespot-enroll-prescriber-bot',
+};
+
+const result = await medplum.execute(DOSESPOT_ENROLL_PRESCRIBER_BOT, {
+  practitionerId: 'practitioner-123',
+  practitionerRoleTypes: [1], // PrescribingClinician
+}) as {
+  doseSpotClinicianId: number;
+  projectMembership: ProjectMembership;
+};
+```
+
+### Response Interface
+
+```typescript
+interface DoseSpotEnrollPrescriberResponse {
+  doseSpotClinicianId: number;        // The DoseSpot clinician ID assigned to the prescriber
+  projectMembership: ProjectMembership; // Updated ProjectMembership with DoseSpot identifier
+}
+```
+
+### Available Clinician Role Types
+
+The `DoseSpotClinicianRoleType` enum includes the following values:
+
+| Value | Enum Name | Description |
+|-------|-----------|-------------|
+| 1 | PrescribingClinician | Prescriber who can write prescriptions |
+| 2 | ReportingClinician | Clinician who can report |
+| 3 | EpcsCoordinator | EPCS coordinator |
+| 4 | ClinicianAdmin | Clinic administrator |
+| 5 | PrescribingAgentClinician | Prescribing agent |
+| 6 | ProxyClinician | Proxy clinician |
+
+### Important Notes
+
+- The bot will throw an error if the Practitioner does not have a ProjectMembership
+- The bot will throw an error if the ProjectMembership already has a DoseSpot identifier
+- The Practitioner's NPI must be valid (10 digits) and will be validated
+- DEA numbers must match the format: `^[A-Za-z]{2}[0-9]{7}$` or similar patterns
+- Medical license numbers can be 0-35 characters
+- After successful enrollment, the DoseSpot clinician ID will be added to the ProjectMembership's `identifier` array with the system `https://dosespot.com/clinician-identifier`
 
 ## Processing DoseSpot Notifications
 

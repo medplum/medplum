@@ -1,85 +1,170 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Flex, Paper, Group, Button, Divider, ActionIcon, ScrollArea, Stack, Skeleton, Text, Box } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { JSX } from 'react';
-import cx from 'clsx';
-import classes from './TaskBoard.module.css';
+import {
+  ActionIcon,
+  Box,
+  Center,
+  Divider,
+  Flex,
+  Group,
+  Pagination,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  Tabs,
+  Text,
+  Tooltip,
+} from '@mantine/core';
+import type { SearchRequest } from '@medplum/core';
+import { Operator, parseSearchRequest } from '@medplum/core';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { createReference, getReferenceString } from '@medplum/core';
-import type { ProfileResource } from '@medplum/core';
+import { useMedplum } from '@medplum/react';
+import { IconPlus } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
-import { TaskFilterType } from './TaskFilterMenu.utils';
-import type { TaskFilterValue } from './TaskFilterMenu.utils';
+import { NewTaskModal } from './NewTaskModal';
+import classes from './TaskBoard.module.css';
+import { TaskDetailPanel } from './TaskDetailPanel';
 import { TaskFilterMenu } from './TaskFilterMenu';
-import { IconClipboardList, IconPlus } from '@tabler/icons-react';
+import type { TaskFilterValue } from './TaskFilterMenu.utils';
+import { TaskFilterType } from './TaskFilterMenu.utils';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
-import { NewTaskModal } from './NewTaskModal';
-import { TaskDetailPanel } from './TaskDetailPanel';
 
 interface FilterState {
-  showMyTasks: boolean;
-  status: Task['status'] | undefined;
   performerType: CodeableConcept | undefined;
 }
 
+/**
+ * TaskBoardProps is the props for the TaskBoard component.
+ * @property query - The query string for the search request.
+ * @property selectedTaskId - The ID of the selected task.
+ * @property onDelete - The function to call when a task is deleted.
+ * @property onNew - The function to call when a new task is created.
+ * @property onChange - The function to call when the search request changes.
+ * @property getTaskUri - The function to call to get the URI of a task.
+ * @property myTasksUri - The URI for the my tasks search request.
+ * @property allTasksUri - The URI for the all tasks search request.
+ * @returns The TaskBoard component.
+ */
 interface TaskBoardProps {
   query: string;
   selectedTaskId: string | undefined;
-  onTaskChange: (task: Task) => void;
-  onDeleteTask: (task: Task) => void;
+  onDelete: (task: Task) => void;
+  onNew: (task: Task) => void;
+  onChange: (search: SearchRequest) => void;
+  getTaskUri: (task: Task) => string;
+  myTasksUri: string;
+  allTasksUri: string;
 }
 
-export function TaskBoard(props: TaskBoardProps): JSX.Element {
-  const { query, selectedTaskId, onTaskChange, onDeleteTask } = props;
+export function TaskBoard({
+  query,
+  selectedTaskId,
+  onDelete,
+  onNew,
+  onChange,
+  getTaskUri,
+  myTasksUri,
+  allTasksUri,
+}: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(false);
-  const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
+  const [loading, setLoading] = useState(false);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
+  const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
+  const [total, setTotal] = useState<number | undefined>(undefined);
+  const requestIdRef = useRef(0);
+  const fetchingRef = useRef(false);
 
   const [filters, setFilters] = useState<FilterState>({
-    showMyTasks: true,
-    status: undefined,
     performerType: undefined,
   });
 
+  // Parse pagination and status filters from query
+  const searchParams = useMemo(() => new URLSearchParams(query), [query]);
+  const itemsPerPage = Number.parseInt(searchParams.get('_count') || '20', 10);
+  const currentOffset = Number.parseInt(searchParams.get('_offset') || '0', 10);
+  const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
+  const isMyTasks = searchParams.has('owner');
+
+  // Parse current search from query string
+  const currentSearch = useMemo(() => parseSearchRequest(`Task?${query}`), [query]);
+
+  const selectedStatuses = useMemo(() => parseFilterValues<Task['status']>(currentSearch, 'status'), [currentSearch]);
+
+  const selectedPriorities = useMemo(
+    () => parseFilterValues<NonNullable<Task['priority']>>(currentSearch, 'priority'),
+    [currentSearch]
+  );
+
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const searchParams = new URLSearchParams(query);
-
-    if (profileRef && filters.showMyTasks) {
-      searchParams.append('owner', getReferenceString(profileRef));
+    if (fetchingRef.current) {
+      return;
     }
-    if (filters.status) {
-      searchParams.append('status', filters.status);
+    fetchingRef.current = true;
+    const currentRequestId = ++requestIdRef.current;
+
+    try {
+      const bundle = await medplum.search('Task', query, { cache: 'no-cache' });
+
+      if (currentRequestId !== requestIdRef.current) {
+        return;
+      }
+
+      let results: Task[] = [];
+
+      if (bundle.entry) {
+        results = bundle.entry.map((entry) => entry.resource as Task).filter((r): r is Task => r !== undefined);
+      }
+
+      if (bundle.total !== undefined) {
+        setTotal(bundle.total);
+      }
+
+      const allPerformerTypes = results.flatMap((task) => task.performerType || []);
+
+      if (filters.performerType) {
+        results = results.filter(
+          (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
+        );
+      }
+
+      setPerformerTypes(allPerformerTypes);
+      setTasks(results);
+    } catch (error) {
+      if (currentRequestId === requestIdRef.current) {
+        throw error;
+      }
+    } finally {
+      fetchingRef.current = false;
     }
-
-    let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
-    const performerTypes = results.flatMap((task) => task.performerType || []);
-
-    if (filters.performerType) {
-      results = results.filter(
-        (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
-      );
-    }
-
-    setPerformerTypes(performerTypes);
-    setTasks(results);
-  }, [medplum, profileRef, filters, query]);
+  }, [medplum, filters.performerType, query]);
 
   useEffect(() => {
     setLoading(true);
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef, filters, query, fetchTasks]);
+  }, [fetchTasks]);
+
+  // Auto-select first task when list loads and no task is selected, or when selected task is not in list
+  useEffect(() => {
+    if (!loading && tasks.length > 0) {
+      const selectedTaskInList = selectedTaskId && tasks.some((task) => task.id === selectedTaskId);
+      if (!selectedTaskInList) {
+        const firstTask = tasks[0];
+        if (firstTask?.id) {
+          navigate(getTaskUri(firstTask))?.catch(console.error);
+        }
+      }
+    }
+  }, [loading, tasks, selectedTaskId, navigate, getTaskUri]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -103,27 +188,27 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
   const handleNewTaskCreated = (task: Task): void => {
     fetchTasks().catch(showErrorNotification);
-    handleTaskChange(task).catch(showErrorNotification);
+    onNew(task);
   };
 
-  const handleTaskChange = async (task: Task): Promise<void> => {
-    setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
-    onTaskChange(task);
-    setSelectedTask(task);
+  const handleTaskChange = async (_task: Task): Promise<void> => {
+    await fetchTasks().catch(showErrorNotification);
   };
 
   const handleDeleteTask = async (task: Task): Promise<void> => {
-    setTasks(tasks.filter((t) => t.id !== task.id));
-    onDeleteTask(task);
+    await fetchTasks().catch(showErrorNotification);
+    onDelete(task);
   };
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
     switch (filterType) {
       case TaskFilterType.STATUS:
-        setFilters((prev) => ({
-          ...prev,
-          status: prev.status !== value ? (value as Task['status']) : undefined,
-        }));
+        onChange(toggleFilterValue(currentSearch, 'status', selectedStatuses, value as Task['status']));
+        break;
+      case TaskFilterType.PRIORITY:
+        onChange(
+          toggleFilterValue(currentSearch, 'priority', selectedPriorities, value as NonNullable<Task['priority']>)
+        );
         break;
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
@@ -139,12 +224,14 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     }
   };
 
-  const handleShowMyTasksChange = (flag: boolean): void => {
-    setFilters({
-      showMyTasks: flag,
-      status: undefined,
-      performerType: undefined,
+  const handleClearAllFilters = (): void => {
+    const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'status' && f.code !== 'priority') || [];
+    onChange({
+      ...currentSearch,
+      filters: otherFilters,
+      offset: 0,
     });
+    setFilters((prev) => ({ ...prev, performerType: undefined }));
   };
 
   return (
@@ -154,53 +241,78 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
           <Flex direction="column" h="100%" className={classes.borderRight}>
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
+                <Tabs
+                  value={isMyTasks ? 'my' : 'all'}
+                  onChange={(value) => {
+                    navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
+                  }}
+                  variant="unstyled"
+                  className="pill-tabs"
+                >
+                  <Tabs.List>
+                    <Tabs.Tab value="my">My Tasks</Tabs.Tab>
+                    <Tabs.Tab value="all">All Tasks</Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
+
                 <Group gap="xs">
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: filters.showMyTasks })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => handleShowMyTasksChange(true)}
-                  >
-                    My Tasks
-                  </Button>
-
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: !filters.showMyTasks })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => handleShowMyTasksChange(false)}
-                  >
-                    All Tasks
-                  </Button>
-
                   <TaskFilterMenu
-                    status={filters.status}
+                    statuses={selectedStatuses}
+                    priorities={selectedPriorities}
                     performerType={filters.performerType}
                     performerTypes={performerTypes}
                     onFilterChange={handleFilterChange}
+                    onClearAllFilters={handleClearAllFilters}
                   />
+                  <Tooltip label="New Task" position="bottom" openDelay={500}>
+                    <ActionIcon
+                      radius="xl"
+                      variant="filled"
+                      color="blue"
+                      size={32}
+                      onClick={() => setNewTaskModalOpened(true)}
+                    >
+                      <IconPlus size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Group>
-
-                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewTaskModalOpened(true)}>
-                  <IconPlus size={16} />
-                </ActionIcon>
               </Flex>
             </Paper>
 
             <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" id="task-list-scrollarea">
+            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <ScrollArea style={{ flex: 1 }} id="task-list-scrollarea">
                 {loading && <TaskListSkeleton />}
                 {!loading && tasks.length === 0 && <EmptyTasksState />}
                 {!loading &&
                   tasks.length > 0 &&
                   tasks.map((task, index) => (
                     <React.Fragment key={task.id}>
-                      <TaskListItem task={task} selectedTask={selectedTask} />
+                      <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri} />
                       {index < tasks.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}
               </ScrollArea>
+              {!loading && total !== undefined && total > itemsPerPage && (
+                <Box p="md">
+                  <Center>
+                    <Pagination
+                      value={currentPage}
+                      total={Math.ceil(total / itemsPerPage)}
+                      onChange={(page) => {
+                        const offset = (page - 1) * itemsPerPage;
+                        onChange({
+                          ...currentSearch,
+                          offset,
+                        });
+                      }}
+                      size="sm"
+                      siblings={1}
+                      boundaries={1}
+                    />
+                  </Center>
+                </Box>
+              )}
             </Paper>
           </Flex>
         </Box>
@@ -225,30 +337,67 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
 function EmptyTasksState(): JSX.Element {
   return (
-    <Flex direction="column" h="100%" justify="center" align="center">
-      <Stack align="center" gap="md" pt="xl">
-        <IconClipboardList size={64} color="var(--mantine-color-gray-4)" />
-        <Text size="lg" c="dimmed" fw={500}>
-          No tasks found
-        </Text>
-      </Stack>
+    <Flex direction="column" h="100%" justify="center" align="center" pt="xl">
+      <Text c="dimmed" fw={500}>
+        No tasks available.
+      </Text>
     </Flex>
   );
 }
 
+const SKELETON_WIDTHS = [
+  ['85%', '60%', '72%'],
+  ['70%', '80%', '55%'],
+  ['92%', '50%', '65%'],
+  ['78%', '68%', '58%'],
+  ['88%', '45%', '75%'],
+  ['74%', '70%', '62%'],
+];
+
 function TaskListSkeleton(): JSX.Element {
   return (
     <Stack gap="md" p="md">
-      {Array.from({ length: 6 }).map((_, index) => (
+      {SKELETON_WIDTHS.map((widths, index) => (
         <Stack key={index}>
           <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
+            <Skeleton height={16} width={widths[0]} />
+            <Skeleton height={14} width={widths[1]} />
+            <Skeleton height={14} width={widths[2]} />
           </Flex>
           <Divider />
         </Stack>
       ))}
     </Stack>
   );
+}
+
+function parseFilterValues<T extends string>(search: SearchRequest, code: string): T[] {
+  const values: T[] = [];
+  for (const filter of search.filters?.filter((f) => f.code === code) || []) {
+    for (const raw of filter.value.split(',')) {
+      const v = raw.trim() as T;
+      if (v && !values.includes(v)) {
+        values.push(v);
+      }
+    }
+  }
+  return values;
+}
+
+function toggleFilterValue<T extends string>(
+  search: SearchRequest,
+  code: string,
+  selected: T[],
+  value: T
+): SearchRequest {
+  const updated = selected.includes(value) ? selected.filter((s) => s !== value) : [...selected, value];
+  const otherFilters = search.filters?.filter((f) => f.code !== code) || [];
+  return {
+    ...search,
+    filters:
+      updated.length > 0
+        ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
+        : otherFilters,
+    offset: 0,
+  };
 }

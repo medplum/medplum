@@ -170,6 +170,10 @@ export async function createResourceImpl<T extends Resource>(
   repo: FhirRepository,
   options?: CreateResourceOptions
 ): Promise<FhirResponse> {
+  // Indicates a custom system-level operation to be handled by implementation, not a resource
+  if (resourceType?.startsWith('$')) {
+    return [notFound];
+  }
   if (resource.resourceType !== resourceType) {
     return [
       badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),

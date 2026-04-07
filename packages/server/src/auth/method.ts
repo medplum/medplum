@@ -5,7 +5,7 @@ import type { DomainConfiguration } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -52,14 +52,14 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
   }
 
   try {
-    const url = new URL(idp.authorizeUrl as string);
-    url.searchParams.set('client_id', idp.clientId as string);
+    const url = new URL(idp.authorizeUrl);
+    url.searchParams.set('client_id', idp.clientId);
     url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'openid profile email');
     return { domain, authorizeUrl: url.toString() };
-  } catch (_err) {
-    globalLogger.error(`Error constructing URL for domain ${domain}:`);
+  } catch (err) {
+    globalLogger.error(`Error constructing URL for domain ${domain}: ${err}`);
     throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));
   }
 }
@@ -70,7 +70,7 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
  * @returns The domain configuration for the domain name if available.
  */
 export async function getDomainConfiguration(domain: string): Promise<DomainConfiguration | undefined> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const results = await systemRepo.search<DomainConfiguration>({
     resourceType: 'DomainConfiguration',
     filters: [

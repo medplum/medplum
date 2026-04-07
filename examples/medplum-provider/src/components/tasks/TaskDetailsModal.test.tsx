@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import type { Task, Patient } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Patient, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { TaskDetailsModal } from './TaskDetailsModal';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import * as usePatientModule from '../../hooks/usePatient';
+import { TaskDetailsModal } from './TaskDetailsModal';
 
 describe('TaskDetailsModal', () => {
   let medplum: MockClient;
@@ -22,7 +23,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  const mockPatient: Patient = {
+  const mockPatient: WithId<Patient> = {
     resourceType: 'Patient',
     id: 'patient-123',
     name: [{ given: ['John'], family: 'Doe' }],
@@ -122,9 +123,7 @@ describe('TaskDetailsModal', () => {
     await user.type(noteInput, 'Updated note');
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -141,9 +140,7 @@ describe('TaskDetailsModal', () => {
     });
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -163,9 +160,7 @@ describe('TaskDetailsModal', () => {
     });
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -221,9 +216,7 @@ describe('TaskDetailsModal', () => {
     await user.type(noteInput, 'Comprehensive update');
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -249,9 +242,7 @@ describe('TaskDetailsModal', () => {
     await user.clear(noteInput);
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();

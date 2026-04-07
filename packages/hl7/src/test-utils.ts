@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { EventEmitter } from 'node:events';
+import { createServer } from 'node:net';
 import { Duplex } from 'node:stream';
 
 export class MockSocket extends Duplex {
@@ -44,9 +45,12 @@ export class MockSocket extends Duplex {
 export class MockServer extends EventEmitter {
   private closed = false;
   private sockets = new Set<MockSocket>();
-  listen = jest.fn((_port, callback) => {
+  private boundPort = 0;
+  listen = jest.fn((port, callback) => {
+    this.boundPort = port;
     callback();
   });
+  address = jest.fn(() => ({ port: this.boundPort }));
   close = jest.fn((callback: (err?: Error) => void) => {
     if (!this.closed) {
       this.closed = true;
@@ -74,4 +78,24 @@ export class MockServer extends EventEmitter {
       this.sockets.add(serverSocket);
     }
   }
+}
+
+// Used only for tests that need a free port number with *nothing* listening on it.
+// For tests that start an Hl7Server, prefer `server.start(0)` which returns the OS-assigned
+// port and never has a release-then-rebind window.
+export async function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.listen(0, () => {
+      const { port } = server.address() as { port: number };
+      server.close((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(port);
+        }
+      });
+    });
+    server.on('error', reject);
+  });
 }

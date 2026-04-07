@@ -1,0 +1,461 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "entry": [
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "system": "http://example.org/subjects",
+            "value": "SUBJ-3015-003"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Williams",
+            "given": ["David", "James"]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1990-02-28",
+        "id": "0533682a-d8af-4585-8470-d84fe8dbe5e7",
+        "meta": {
+          "versionId": "27464843-1bd6-4604-bd54-1c550013e976",
+          "lastUpdated": "2026-01-10T23:48:48.582Z",
+          "author": {
+            "reference": "Practitioner/ed6a2d0f-af13-4f98-9fe8-70d209a9d29a",
+            "display": "David Yanez"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/AllergyIntolerance/07a7a40d-a35d-4a03-93e6-277f2abb32bf",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "patient": {
+          "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+          "display": "David James Williams"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "260152009",
+              "display": "Cat dander (substance)"
+            }
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "onsetDateTime": "1980-01-13T10:22:21",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance"],
+          "versionId": "3b38aaa3-e859-44f2-b548-4f1c02d994bc",
+          "lastUpdated": "2026-01-13T18:22:33.619Z",
+          "author": {
+            "reference": "Practitioner/f7bd3abd-b597-4eaf-adbd-69481a43b645",
+            "display": "Kevin Shaw"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        },
+        "id": "07a7a40d-a35d-4a03-93e6-277f2abb32bf"
+      }
+    },
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/Observation/1d41dbe4-ab97-4c9f-a2b6-e77038059dd4",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "Observation",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/ValueSet/us-core-sexual-orientation"],
+          "versionId": "cf41ea2b-fc6d-4855-9a80-cd7ae04e4ad8",
+          "lastUpdated": "2026-01-13T18:23:56.160Z",
+          "author": {
+            "reference": "Practitioner/f7bd3abd-b597-4eaf-adbd-69481a43b645",
+            "display": "Kevin Shaw"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ],
+            "text": "Social History"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "76690-7",
+              "display": "Sexual orientation"
+            }
+          ],
+          "text": "Sexual orientation"
+        },
+        "subject": {
+          "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+          "display": "David James Williams"
+        },
+        "effectiveDateTime": "2026-01-13T18:23:56.014Z",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "20430005"
+            }
+          ],
+          "text": "Heterosexual"
+        },
+        "id": "1d41dbe4-ab97-4c9f-a2b6-e77038059dd4"
+      }
+    },
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/ResearchSubject/3de54afe-d6c5-4dda-8aa9-345f817ee8ed",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "ResearchSubject",
+        "status": "on-study",
+        "study": {
+          "reference": "ResearchStudy/c26ed3ad-fd3f-49ae-ac7a-c6510a2cd20a",
+          "display": "Paliperidone Palmitate PP6M vs PP3M Study"
+        },
+        "individual": {
+          "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+          "display": "David Williams"
+        },
+        "assignedArm": "PP6M (6-Month Paliperidone Palmitate)",
+        "period": {
+          "start": "2024-04-01"
+        },
+        "id": "3de54afe-d6c5-4dda-8aa9-345f817ee8ed",
+        "meta": {
+          "versionId": "ef72c1d9-08d1-42ba-abe5-9711f8caff8e",
+          "lastUpdated": "2026-01-10T23:48:48.679Z",
+          "author": {
+            "reference": "Practitioner/ed6a2d0f-af13-4f98-9fe8-70d209a9d29a",
+            "display": "David Yanez"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/MedicationRequest/46185986-734f-4399-a5d0-3b88e8e11749",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "intent": "order",
+        "requester": {
+          "reference": "Practitioner/f7bd3abd-b597-4eaf-adbd-69481a43b645",
+          "display": "Kevin Shaw"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1161611",
+              "display": "metformin Pill"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+          "display": "David James Williams"
+        },
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"],
+          "versionId": "30a55573-ba8f-4d54-963f-ccc4f3cc17fb",
+          "lastUpdated": "2026-01-13T18:23:50.506Z",
+          "author": {
+            "reference": "Practitioner/f7bd3abd-b597-4eaf-adbd-69481a43b645",
+            "display": "Kevin Shaw"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        },
+        "id": "46185986-734f-4399-a5d0-3b88e8e11749"
+      }
+    },
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/Condition/856d3666-9d11-4cfb-9e7b-1c56054a5d8f",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "Condition",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ],
+            "text": "Problem List Item"
+          }
+        ],
+        "subject": {
+          "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+          "display": "David James Williams"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "714628002",
+              "display": "Prediabetes (finding)"
+            }
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "onsetDateTime": "2026-01-13T18:23:33.000Z",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns"],
+          "versionId": "03f42d61-ecb9-41c6-9866-4187e14f442f",
+          "lastUpdated": "2026-01-13T18:23:36.986Z",
+          "author": {
+            "reference": "Practitioner/f7bd3abd-b597-4eaf-adbd-69481a43b645",
+            "display": "Kevin Shaw"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        },
+        "id": "856d3666-9d11-4cfb-9e7b-1c56054a5d8f"
+      }
+    },
+    {
+      "fullUrl": "https://api.medplum.com/fhir/R4/Observation/a50c72b1-f7dc-44a4-ad40-1656ad8907ba",
+      "search": {
+        "mode": "match"
+      },
+      "resource": {
+        "resourceType": "Observation",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus"],
+          "versionId": "df7df3ca-5741-4374-afe8-409031eab4c9",
+          "lastUpdated": "2026-01-13T18:24:00.426Z",
+          "author": {
+            "reference": "Practitioner/f7bd3abd-b597-4eaf-adbd-69481a43b645",
+            "display": "Kevin Shaw"
+          },
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            },
+            {
+              "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ],
+            "text": "Social History"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "72166-2",
+              "display": "Tobacco smoking status"
+            }
+          ],
+          "text": "Tobacco smoking status"
+        },
+        "subject": {
+          "reference": "Patient/0533682a-d8af-4585-8470-d84fe8dbe5e7",
+          "display": "David James Williams"
+        },
+        "effectiveDateTime": "2026-01-13T18:24:00.293Z",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/731000124108",
+              "code": "8517006"
+            }
+          ],
+          "text": "Ex-smoker"
+        },
+        "id": "a50c72b1-f7dc-44a4-ad40-1656ad8907ba"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "meta": {
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "versionId": "6e7fbd8c-9996-449d-87f2-4364fa3b863c",
+          "lastUpdated": "2026-01-10T19:41:31.941Z",
+          "author": {
+            "reference": "system"
+          },
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            }
+          ]
+        },
+        "name": [
+          {
+            "given": ["David"],
+            "family": "Yanez"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "email",
+            "use": "work",
+            "value": "david@medplum.com"
+          }
+        ],
+        "id": "ed6a2d0f-af13-4f98-9fe8-70d209a9d29a"
+      },
+      "search": {
+        "mode": "include"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "meta": {
+          "project": "0c3ebe6d-8c67-419e-8971-f7f34e2de6c0",
+          "versionId": "e0ce5a82-6b73-4f92-bf56-503f5074fcbb",
+          "lastUpdated": "2026-01-10T23:39:27.903Z",
+          "author": {
+            "reference": "system"
+          },
+          "compartment": [
+            {
+              "reference": "Project/0c3ebe6d-8c67-419e-8971-f7f34e2de6c0"
+            }
+          ]
+        },
+        "name": [
+          {
+            "given": ["Kevin"],
+            "family": "Shaw"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "email",
+            "use": "work",
+            "value": "kevin@medplum.com"
+          }
+        ],
+        "id": "f7bd3abd-b597-4eaf-adbd-69481a43b645"
+      },
+      "search": {
+        "mode": "include"
+      }
+    }
+  ],
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://api.medplum.com/fhir/R4/Patient?_compartment=Patient%2F0533682a-d8af-4585-8470-d84fe8dbe5e7&_count=1000&_sort=_id&_type=Account,ActivityDefinition,AdverseEvent,AllergyIntolerance,Appointment,AppointmentResponse,AuditEvent,Basic,BiologicallyDerivedProduct,BodyStructure,Bundle,CapabilityStatement,CarePlan,CareTeam,CatalogEntry,ChargeItem,ChargeItemDefinition,Claim,ClaimResponse,ClinicalImpression,CodeSystem,Communication,CommunicationRequest,CompartmentDefinition,Composition,ConceptMap,Condition,Consent,Contract,Coverage,CoverageEligibilityRequest,CoverageEligibilityResponse,DetectedIssue,Device,DeviceDefinition,DeviceMetric,DeviceRequest,DeviceUseStatement,DiagnosticReport,DocumentManifest,DocumentReference,EffectEvidenceSynthesis,Encounter,Endpoint,EnrollmentRequest,EnrollmentResponse,EpisodeOfCare,EventDefinition,Evidence,EvidenceVariable,ExampleScenario,ExplanationOfBenefit,FamilyMemberHistory,Flag,Goal,GraphDefinition,Group,GuidanceResponse,HealthcareService,ImagingStudy,Immunization,ImmunizationEvaluation,ImmunizationRecommendation,ImplementationGuide,InsurancePlan,Invoice,Library,Linkage,List,Location,Measure,MeasureReport,Media,Medication,MedicationAdministration,MedicationDispense,MedicationKnowledge,MedicationRequest,MedicationStatement,MedicinalProduct,MedicinalProductAuthorization,MedicinalProductContraindication,MedicinalProductIndication,MedicinalProductIngredient,MedicinalProductInteraction,MedicinalProductManufactured,MedicinalProductPackaged,MedicinalProductPharmaceutical,MedicinalProductUndesirableEffect,MessageDefinition,MessageHeader,MolecularSequence,NamingSystem,NutritionOrder,Observation,ObservationDefinition,OperationDefinition,OperationOutcome,Organization,OrganizationAffiliation,Patient,Patient,PaymentNotice,PaymentReconciliation,Person,PlanDefinition,Practitioner,PractitionerRole,Procedure,Provenance,Questionnaire,QuestionnaireResponse,RelatedPerson,RequestGroup,ResearchDefinition,ResearchElementDefinition,ResearchStudy,ResearchSubject,RiskAssessment,RiskEvidenceSynthesis,Schedule,SearchParameter,ServiceRequest,Slot,Specimen,SpecimenDefinition,StructureDefinition,StructureMap,Subscription,Substance,SubstanceNucleicAcid,SubstancePolymer,SubstanceProtein,SubstanceReferenceInformation,SubstanceSourceMaterial,SubstanceSpecification,SupplyDelivery,SupplyRequest,Task,TerminologyCapabilities,TestReport,TestScript,ValueSet,VerificationResult,VisionPrescription"
+    },
+    {
+      "relation": "first",
+      "url": "https://api.medplum.com/fhir/R4/Patient?_compartment=Patient%2F0533682a-d8af-4585-8470-d84fe8dbe5e7&_count=1000&_sort=_id&_type=Account,ActivityDefinition,AdverseEvent,AllergyIntolerance,Appointment,AppointmentResponse,AuditEvent,Basic,BiologicallyDerivedProduct,BodyStructure,Bundle,CapabilityStatement,CarePlan,CareTeam,CatalogEntry,ChargeItem,ChargeItemDefinition,Claim,ClaimResponse,ClinicalImpression,CodeSystem,Communication,CommunicationRequest,CompartmentDefinition,Composition,ConceptMap,Condition,Consent,Contract,Coverage,CoverageEligibilityRequest,CoverageEligibilityResponse,DetectedIssue,Device,DeviceDefinition,DeviceMetric,DeviceRequest,DeviceUseStatement,DiagnosticReport,DocumentManifest,DocumentReference,EffectEvidenceSynthesis,Encounter,Endpoint,EnrollmentRequest,EnrollmentResponse,EpisodeOfCare,EventDefinition,Evidence,EvidenceVariable,ExampleScenario,ExplanationOfBenefit,FamilyMemberHistory,Flag,Goal,GraphDefinition,Group,GuidanceResponse,HealthcareService,ImagingStudy,Immunization,ImmunizationEvaluation,ImmunizationRecommendation,ImplementationGuide,InsurancePlan,Invoice,Library,Linkage,List,Location,Measure,MeasureReport,Media,Medication,MedicationAdministration,MedicationDispense,MedicationKnowledge,MedicationRequest,MedicationStatement,MedicinalProduct,MedicinalProductAuthorization,MedicinalProductContraindication,MedicinalProductIndication,MedicinalProductIngredient,MedicinalProductInteraction,MedicinalProductManufactured,MedicinalProductPackaged,MedicinalProductPharmaceutical,MedicinalProductUndesirableEffect,MessageDefinition,MessageHeader,MolecularSequence,NamingSystem,NutritionOrder,Observation,ObservationDefinition,OperationDefinition,OperationOutcome,Organization,OrganizationAffiliation,Patient,Patient,PaymentNotice,PaymentReconciliation,Person,PlanDefinition,Practitioner,PractitionerRole,Procedure,Provenance,Questionnaire,QuestionnaireResponse,RelatedPerson,RequestGroup,ResearchDefinition,ResearchElementDefinition,ResearchStudy,ResearchSubject,RiskAssessment,RiskEvidenceSynthesis,Schedule,SearchParameter,ServiceRequest,Slot,Specimen,SpecimenDefinition,StructureDefinition,StructureMap,Subscription,Substance,SubstanceNucleicAcid,SubstancePolymer,SubstanceProtein,SubstanceReferenceInformation,SubstanceSourceMaterial,SubstanceSpecification,SupplyDelivery,SupplyRequest,Task,TerminologyCapabilities,TestReport,TestScript,ValueSet,VerificationResult,VisionPrescription"
+    }
+  ]
+}

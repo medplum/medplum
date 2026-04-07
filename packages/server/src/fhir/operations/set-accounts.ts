@@ -8,6 +8,7 @@ import {
   append,
   badRequest,
   concatUrls,
+  EMPTY,
   forbidden,
   isResourceType,
   notFound,
@@ -19,8 +20,7 @@ import type { OperationDefinition, Parameters, Reference, Resource, ResourceType
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
-import type { Repository } from '../repo';
-import { getSystemRepo } from '../repo';
+import type { Repository, SystemRepository } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -133,7 +133,7 @@ export async function setResourceAccounts(
   }
 
   // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
-  const systemRepo = getSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const target = await systemRepo.readResource(resourceType, id);
   // Ensure user's repo can read this resource as well
   if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {
@@ -166,7 +166,7 @@ export async function setResourceAccounts(
     const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
     while ((search.offset ?? 0) <= maxSearchOffset) {
       const bundle = await searchPatientCompartment(repo, target, search);
-      for (const entry of bundle.entry ?? []) {
+      for (const entry of bundle.entry ?? EMPTY) {
         const resource = entry.resource;
         if (resource && resource.resourceType !== 'Patient') {
           await updateCompartmentResource(systemRepo, resource, additions, removals);
@@ -187,7 +187,7 @@ export async function setResourceAccounts(
 }
 
 async function updateCompartmentResource<T extends Resource>(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   resource: T,
   additions: Reference[],
   removals: Reference[]

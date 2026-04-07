@@ -21,7 +21,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByText('Choose profile')).toBeInTheDocument();
+    expect(screen.getByText('Choose a Project')).toBeInTheDocument();
     expect(screen.getByText('Prod')).toBeInTheDocument();
     expect(screen.getByText('Staging')).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Search') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search');
     await act(async () => {
       fireEvent.change(input, { target: { value: 'prod' } });
     });
@@ -63,7 +63,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Search') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search');
     await act(async () => {
       fireEvent.change(input, { target: { value: 'xyz' } });
     });
@@ -87,7 +87,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByText('Choose profile')).toBeInTheDocument();
+    expect(screen.getByText('Choose a Project')).toBeInTheDocument();
     expect(screen.getByText(/Prod.*Primary Care/)).toBeInTheDocument();
   });
 });

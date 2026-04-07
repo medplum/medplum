@@ -344,7 +344,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Appointmen
   // Get access token
   const accessToken = await getZoomAccessToken(accountId, clientId, clientSecret);
 
-  const appointment = event.input as Appointment;
+  const appointment = event.input;
 
   // Check if this is a deletion (status is 'cancelled' or 'noshow')
   const isDeletion = appointment.status === 'cancelled' || appointment.status === 'noshow';

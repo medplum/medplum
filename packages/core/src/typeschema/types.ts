@@ -263,11 +263,11 @@ class StructureDefinitionParser {
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
-      name: sd.name as string,
+      name: sd.name,
       path: this.root.path,
       title: sd.title,
       type: sd.type,
-      url: sd.url as string,
+      url: sd.url,
       version: sd.version,
       kind: sd.kind,
       description: getDescription(sd),
@@ -341,7 +341,7 @@ class StructureDefinitionParser {
     if (this.isInnerType(element)) {
       this.enterInnerType(element);
     }
-    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
+    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path)) {
       // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
       // same slice group; otherwise, that group is finished and this is the start of a new field
       this.slicingContext = undefined;
@@ -387,7 +387,7 @@ class StructureDefinitionParser {
           throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
         }
         return {
-          path: d.path as string,
+          path: d.path,
           type: d.type as string,
         };
       }),
@@ -456,7 +456,7 @@ class StructureDefinitionParser {
     const next = this.peek();
     return !!(
       pathsCompatible(current?.path, next?.path) &&
-      current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code as string))
+      current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code))
     );
   }
 

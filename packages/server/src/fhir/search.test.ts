@@ -54,8 +54,9 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
-import { getSystemRepo, Repository } from './repo';
-import { clampEstimateCount } from './search';
+import type { SystemRepository } from './repo';
+import { getGlobalSystemRepo, Repository } from './repo';
+import { clampEstimateCount, getCount } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
@@ -67,6 +68,7 @@ const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', 
 describe('project-scoped Repository', () => {
   let config: MedplumServerConfig;
   let repo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -78,6 +80,7 @@ describe('project-scoped Repository', () => {
       currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -183,6 +186,133 @@ describe('project-scoped Repository', () => {
       expect(clampEstimateCount({ resourceType: 'Patient', offset }, estimateCount, rowCount)).toBe(expected);
     }
   );
+
+  describe('getCount', () => {
+    let getDbClientSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      getDbClientSpy = jest.spyOn(repo, 'getDatabaseClient');
+    });
+
+    afterEach(() => {
+      getDbClientSpy.mockRestore();
+    });
+
+    test('returns estimate and accurate with forceAccurate', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(typeof result.estimate).toBe('number');
+        expect(typeof result.accurate).toBe('number');
+      }));
+
+    test('returns estimate without forceAccurate when below threshold', () =>
+      withTestContext(async () => {
+        // Without forceAccurate, accurate is only returned if estimate < accurateCountThreshold
+        // Since we're testing with minimal data, both should be returned (estimate will be below threshold)
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        // With low data counts, accurate should still be returned since estimate < threshold
+        expect(result).toHaveProperty('accurate');
+      }));
+
+    test('returns only estimate when above threshold', () =>
+      withTestContext(async () => {
+        const prevThreshold = config.accurateCountThreshold;
+        config.accurateCountThreshold = 0;
+
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(result).not.toHaveProperty('accurate');
+
+        config.accurateCountThreshold = prevThreshold;
+      }));
+
+    test('uses rowCount option for clamping', () =>
+      withTestContext(async () => {
+        // Create some patients to ensure non-zero counts
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest1' }] });
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest2' }] });
+
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 2, forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(result.accurate).toBeGreaterThanOrEqual(2);
+      }));
+
+    test('short-circuits when rowCount <= pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5 });
+        expect(result).toStrictEqual({ estimate: 5, accurate: 5 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits with offset when rowCount <= pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', offset: 10 }, { rowCount: 3 });
+        expect(result).toStrictEqual({ estimate: 13, accurate: 13 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits with explicit count when rowCount <= count', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', count: 50 }, { rowCount: 30 });
+        expect(result).toStrictEqual({ estimate: 30, accurate: 30 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits when rowCount is 0 and no offset', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 0 });
+        expect(result).toStrictEqual({ estimate: 0, accurate: 0 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount is 0 with offset', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', offset: 20 }, { rowCount: 0 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when forceAccurate is set', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5, forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(typeof result.estimate).toBe('number');
+        expect(typeof result.accurate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when cursor is present', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', cursor: 'abc123' }, { rowCount: 5 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount > pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 21 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount is undefined', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+  });
 
   test('Search _summary', () =>
     withTestContext(async () => {
@@ -1441,6 +1571,27 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle1, serviceRequest2)).toBeDefined();
     }));
 
+  test('Token not equals matches missing value', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'male',
+      });
+
+      const patient2 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      const bundle1 = await repo.search(parseSearchRequest('Patient', { name: family, 'gender:not': 'male' }));
+      expect(bundle1.entry?.length).toStrictEqual(1);
+      expect(bundleContains(bundle1, patient1)).toBeUndefined();
+      expect(bundleContains(bundle1, patient2)).toBeDefined();
+    }));
+
   test('Token array not equals', () =>
     withTestContext(async () => {
       const category1 = randomUUID();
@@ -1735,6 +1886,53 @@ describe('project-scoped Repository', () => {
       });
       expect(searchResult.entry).toHaveLength(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+    }));
+
+  test('Boolean not equals matches missing value', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      // Create patient with active=true
+      const activeTrue = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        active: true,
+      });
+
+      // Create patient with active=false
+      const activeFalse = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        active: false,
+      });
+
+      // Create patient without active field (undefined/null)
+      const activeUndefined = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      // Search for active:not=false should return activeTrue and activeUndefined
+      const searchResult = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: family,
+          },
+          {
+            code: 'active',
+            operator: Operator.NOT,
+            value: 'false',
+          },
+        ],
+      });
+
+      expect(searchResult.entry?.length).toStrictEqual(2);
+      expect(bundleContains(searchResult, activeTrue)).toBeDefined();
+      expect(bundleContains(searchResult, activeUndefined)).toBeDefined();
+      expect(bundleContains(searchResult, activeFalse)).toBeUndefined();
     }));
 
   test('Not equals with comma separated values', () =>
@@ -3586,47 +3784,101 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle, s)).toBeTruthy();
     }));
 
-  test('Filter task by due date', () =>
-    withTestContext(async () => {
-      const code = randomUUID();
+  describe('Filter Task by due-date', () => {
+    const code = randomUUID();
+    let task: WithId<Task>;
+    const start = '2025-05-15T12:00:00.000Z';
+    const startPlusOneSecond = '2025-05-15T12:00:01.000Z';
+    beforeAll(async () => {
+      task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: { coding: [{ code }] },
+        restriction: {
+          period: {
+            start,
+            end: '2025-05-15T13:00:00.000Z',
+          },
+        },
+      });
+    });
 
-      // Create 3 tasks
-      // Mix of "no due date", using "start", and using "end"
-      const task1 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-      });
-      const task2 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-        restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
-      });
-      const task3 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-        restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
-      });
+    test.each([
+      [Operator.LESS_THAN, start, false],
+      [Operator.LESS_THAN_OR_EQUALS, start, true],
+      [Operator.GREATER_THAN_OR_EQUALS, start, true],
+      [Operator.GREATER_THAN, start, false],
 
-      // Sort and filter by due date
-      const bundle = await repo.search<Task>({
-        resourceType: 'Task',
-        filters: [
-          { code: 'code', operator: Operator.EQUALS, value: code },
-          { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
-        ],
-        sortRules: [{ code: 'due-date' }],
-      });
-      expect(bundle.entry?.length).toStrictEqual(2);
-      expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
-      expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
-      expect(bundleContains(bundle, task1)).not.toBeTruthy();
-    }));
+      [Operator.LESS_THAN, startPlusOneSecond, true],
+      [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true],
+      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, false],
+      [Operator.GREATER_THAN, startPlusOneSecond, false],
+
+      [Operator.GREATER_THAN, '2025-05-01', true],
+      [Operator.GREATER_THAN, '2025-06-01', false],
+    ])('with %s %s', (operator, value, expected) =>
+      withTestContext(async () => {
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator, value },
+          ],
+          sortRules: [{ code: 'due-date' }],
+        });
+
+        if (expected) {
+          expect(bundle.entry?.length).toStrictEqual(1);
+          expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task.id);
+        } else {
+          expect(bundle.entry?.length).toStrictEqual(0);
+        }
+      })
+    );
+
+    test('multiple resources', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+
+        // Create 3 tasks
+        // Mix of "no due date", using "start", and using "end"
+        const task1 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+        });
+        const task2 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
+        });
+        const task3 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
+        });
+
+        // Sort and filter by due date
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
+          ],
+          sortRules: [{ code: 'due-date' }],
+        });
+        expect(bundle.entry?.length).toStrictEqual(2);
+        expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
+        expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
+        expect(bundleContains(bundle, task1)).not.toBeTruthy();
+      }));
+  });
 
   test('Get estimated count with filter on human name', async () =>
     withTestContext(async () => {
@@ -4648,7 +4900,6 @@ describe('project-scoped Repository', () => {
 
     test('Cursor pagination dedupes across page boundaries', () =>
       withTestContext(async () => {
-        const systemRepo = getSystemRepo();
         const identifier = randomUUID();
         const lastUpdated = new Date();
         lastUpdated.setMilliseconds(0);
@@ -4774,6 +5025,21 @@ describe('project-scoped Repository', () => {
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
+  test('Date array columns', async () =>
+    withTestContext(async () => {
+      const result = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'date',
+            operator: Operator.EQUALS,
+            value: new Date().toISOString(),
+          },
+        ],
+      });
+      expect(result.entry).toHaveLength(0);
+    }));
+
   describe('discourage sequential scans', () => {
     let querySpy: jest.SpyInstance;
     beforeEach(() => {
@@ -4821,7 +5087,7 @@ describe('project-scoped Repository', () => {
 });
 
 describe('systemRepo', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

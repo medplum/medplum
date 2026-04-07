@@ -1,7 +1,16 @@
-# CodeSystem Lookup
+# CodeSystem $lookup
 
-This operation checks whether a code belongs to a given code system, and returns the full information about that code
-from the code system.
+The `$lookup` operation retrieves detailed information about a specific code from a code system. This is essential for applications that need to display human-readable descriptions, validate code properties, or understand the relationships and metadata associated with clinical terminology codes.
+
+When working with healthcare standards like LOINC, SNOMED CT, or ICD-10, `$lookup` helps you access display names, synonyms, parent/child relationships, and other properties that make coded data meaningful to clinicians and patients.
+
+## Use Cases
+
+- **Display Code Descriptions**: Show human-readable names for lab tests, diagnoses, or procedures in your UI, including alternative names or consumer-friendly descriptions for medical concepts
+- **Code Property Retrieval**: Access metadata like LOINC component, property, timing, and scale information
+- **Hierarchy Navigation**: Discover parent codes to understand where a concept fits in the terminology hierarchy
+
+## Invoke the `$lookup` operation
 
 ```
 [baseUrl]/CodeSystem/$lookup
@@ -266,3 +275,11 @@ GET /CodeSystem/$lookup?system=http://loinc.org&code=invalid
   "issue": [{ "severity": "error", "code": "not-found", "details": { "text": "Not found" } }],
 }
 ```
+
+## Related
+
+- [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate a code exists in a code system
+- [CodeSystem $subsumes](/docs/api/fhir/operations/codesystem-subsumes) - Check hierarchical relationships between codes
+- [CodeSystem $import](/docs/api/fhir/operations/codesystem-import) - Import codes into a code system
+- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [FHIR CodeSystem $lookup](https://hl7.org/fhir/R4/codesystem-operation-lookup.html) - FHIR specification for $lookup

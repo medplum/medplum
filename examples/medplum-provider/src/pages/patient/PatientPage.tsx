@@ -3,34 +3,46 @@
 import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  createPharmaciesSection,
+  Document,
+  getDefaultSections,
+  OperationOutcomeAlert,
+  PatientSummary,
+  useMedplum,
+} from '@medplum/react';
 import type { JSX } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Location } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
 import { usePatient } from '../../hooks/usePatient';
-import classes from './PatientPage.module.css';
-import { PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
-import type { PatientPageTabInfo } from './PatientPage.utils';
-import { PatientTabsNavigation } from './PatientTabsNavigation';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
+import classes from './PatientPage.module.css';
+import type { PatientPageTabInfo } from './PatientPage.utils';
+import { formatPatientPageTabUrl, getPatientPageTabs } from './PatientPage.utils';
+import { PatientTabsNavigation } from './PatientTabsNavigation';
 
-function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
+function getTabFromLocation(location: Location, tabs: PatientPageTabInfo[]): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';
-  const tab = tabId
-    ? PatientPageTabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()))
-    : undefined;
-  return tab;
+  // If tabId is empty, find the tab with empty url (timeline)
+  if (!tabId) {
+    return tabs.find((t) => t.url === '');
+  }
+  return tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()));
 }
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
+  const medplum = useMedplum();
+  const membership = medplum.getProjectMembership();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
+  const tabs = getPatientPageTabs(membership);
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    return (getTabFromLocation(location) ?? PatientPageTabs[0]).id;
+    return (getTabFromLocation(location, tabs) ?? tabs[0]).id;
   });
 
   /**
@@ -43,27 +55,35 @@ export function PatientPage(): JSX.Element {
         console.error('Not within a patient context');
         return;
       }
-      const tab = newTabName ? PatientPageTabs.find((t) => t.id === newTabName) : PatientPageTabs[0];
+      const tab = newTabName ? tabs.find((t) => t.id === newTabName) : tabs[0];
       if (tab) {
         setCurrentTab(tab.id);
         navigate(formatPatientPageTabUrl(patient.id, tab))?.catch(console.error);
       }
     },
-    [navigate, patient?.id]
+    [navigate, patient?.id, tabs]
   );
 
   // Rectify the active tab UI with the current URL. This is necessary because the active tab can be changed
   // in ways other than clicking on a tab in the navigation bar.
   useEffect(() => {
-    const newTab = getTabFromLocation(location);
+    const newTab = getTabFromLocation(location, tabs);
     if (newTab && newTab.id !== currentTab) {
       setCurrentTab(newTab.id);
     }
-  }, [currentTab, location]);
+  }, [currentTab, location, tabs]);
 
   const handleCloseLabsModal = useCallback(() => {
     setIsLabsModalOpen(false);
   }, []);
+
+  const sections = useMemo(
+    () =>
+      getDefaultSections(() => setIsLabsModalOpen(true)).map((s) =>
+        s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
+      ),
+    [setIsLabsModalOpen]
+  );
 
   if (outcome && !isOk(outcome)) {
     return (
@@ -92,16 +112,16 @@ export function PatientPage(): JSX.Element {
               onClickResource={(resource) =>
                 navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
               }
-              onRequestLabs={() => {
-                setIsLabsModalOpen(true);
-              }}
+              sections={sections}
             />
           </ScrollArea>
         </div>
 
         <div className={classes.content}>
-          <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} />
-          <Outlet />
+          <PatientTabsNavigation tabs={tabs} currentTab={currentTab} onTabChange={onTabChange} />
+          <div className={classes.contentBody}>
+            <Outlet />
+          </div>
         </div>
       </div>
       <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered title="Order Labs">

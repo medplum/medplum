@@ -5,30 +5,30 @@
  * Do not edit manually.
  */
 
-import { Age } from './Age';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { Dosage } from './Dosage';
-import { Duration } from './Duration';
-import { Expression } from './Expression';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Medication } from './Medication';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { ObservationDefinition } from './ObservationDefinition';
-import { Period } from './Period';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
-import { Reference } from './Reference';
-import { RelatedArtifact } from './RelatedArtifact';
-import { Resource } from './Resource';
-import { SpecimenDefinition } from './SpecimenDefinition';
-import { Substance } from './Substance';
-import { Timing } from './Timing';
-import { UsageContext } from './UsageContext';
+import type { Age } from './Age.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Dosage } from './Dosage.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Expression } from './Expression.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { ObservationDefinition } from './ObservationDefinition.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { SpecimenDefinition } from './SpecimenDefinition.d.ts';
+import type { Substance } from './Substance.d.ts';
+import type { Timing } from './Timing.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * This resource allows for the definition of some activity to be

@@ -27,6 +27,7 @@ import type {
   Questionnaire,
   QuestionnaireItem,
   Resource,
+  RiskAssessment,
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
@@ -1019,11 +1020,60 @@ describe('FHIR resource validation', () => {
     binary.data = 123 as unknown as string;
     expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
+    binary.data = '==';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
     binary.data = '===';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
+    binary.data = 'AAAA===';
     expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
+
+    // Long invalid base64 (valid chars but invalid char at end) don't cause catastrophic backtracking
+    binary.data = 'A'.repeat(10000) + '!'; // Invalid: '!' not in base64 alphabet
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+  });
+
+  test('Binary.data can exceed default when cap override is provided', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const cap = 2 * 1024 * 1024; // 2 MB cap
+    const buf = Buffer.alloc(cap, 1); // 2 MB decoded
+    binary.data = buf.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: cap })).not.toThrow();
+  });
+
+  test('Binary.data invalid object does not recurse', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.JSON };
+    // Intentionally invalid: data should be base64 string, not object
+    binary.data = { foo: 'bar' } as unknown as string;
+    expect(() => validateResource(binary)).toThrow('Invalid additional property "foo" (Binary.data.foo)');
+  });
+
+  test('base64Binary exceeds configured byte cap fails', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const bytes = Buffer.alloc(2 * 1024, 7); // 2 KB decoded
+    binary.data = bytes.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: 1024 })).toThrow('base64Binary exceeds 1024 bytes');
+  });
+
+  test('base64Binary decoded size equal to cap passes', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const cap = 1024;
+    const bytes = Buffer.alloc(cap, 1);
+    binary.data = bytes.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: cap })).not.toThrow();
+  });
+
+  test('Attachment.data respects base64Binary cap (fail > cap; pass == cap)', () => {
+    const cap = 1536; // 1.5 KB
+    const p1: Patient = { resourceType: 'Patient', photo: [{ data: Buffer.alloc(cap + 1).toString('base64') }] };
+    expect(() => validateResource(p1, { base64BinaryMaxBytes: cap })).toThrow('base64Binary exceeds 1536 bytes');
+
+    const p2: Patient = { resourceType: 'Patient', photo: [{ data: Buffer.alloc(cap).toString('base64') }] };
+    expect(() => validateResource(p2, { base64BinaryMaxBytes: cap })).not.toThrow();
   });
 
   test('boolean', () => {
@@ -1953,6 +2003,30 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
+  });
+
+  test('RiskAssessment ras-2', () => {
+    const ra1: RiskAssessment = {
+      resourceType: 'RiskAssessment',
+      status: 'preliminary',
+      subject: { reference: 'Patient/123' },
+      prediction: [
+        {
+          // probabilityDecimal: 0, // <--- without this optional property, constraint validation fails on ras-2
+          qualitativeRisk: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/risk-probability',
+                code: 'high',
+                display: 'High likelihood',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => validateResource(ra1)).not.toThrow();
   });
 });
 

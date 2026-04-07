@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, ProjectMembership } from '@medplum/fhirtypes';
+import { hasDoseSpotIdentifier } from '../../components/utils';
 
 export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
@@ -33,6 +34,17 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
   return result;
 }
 
+/**
+ * Returns the patient page tabs filtered based on user permissions.
+ * Currently filters out the DoseSpot tab if the user doesn't have DoseSpot access.
+ * @param membership - The current user's project membership.
+ * @returns Filtered array of patient page tabs.
+ */
+export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
+  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  return PatientPageTabs.filter((tab) => tab.id !== 'dosespot' || hasDoseSpot);
+}
+
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
@@ -43,7 +55,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'tasks',
-    url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'Task',
     label: 'Tasks',
   },
   {
@@ -51,9 +63,10 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'MedicationRequest?_fields=medication[x],intent,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Meds',
   },
+  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   {
     id: 'labs',
-    url: 'labs',
+    url: 'ServiceRequest',
     label: 'Labs',
   },
   {
@@ -63,7 +76,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'documentreference',
-    url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'DocumentReference?subject=%patient.id',
     label: 'Documents',
   },
   {
@@ -72,6 +85,5 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Care Plans',
   },
   { id: 'message', url: 'Communication', label: 'Messages' },
-  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'export', url: 'export', label: 'Export' },
 ];

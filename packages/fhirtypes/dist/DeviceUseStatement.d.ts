@@ -5,31 +5,31 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { Claim } from './Claim';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { Device } from './Device';
-import { DiagnosticReport } from './DiagnosticReport';
-import { DocumentReference } from './DocumentReference';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Media } from './Media';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { QuestionnaireResponse } from './QuestionnaireResponse';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
-import { Timing } from './Timing';
+import type { Annotation } from './Annotation.d.ts';
+import type { Claim } from './Claim.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { DocumentReference } from './DocumentReference.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Media } from './Media.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { QuestionnaireResponse } from './QuestionnaireResponse.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
+import type { Timing } from './Timing.d.ts';
 
 /**
  * A record of a device being used by a patient where the record is the

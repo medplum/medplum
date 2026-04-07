@@ -21,7 +21,7 @@ export interface ElementsInputProps extends BaseInputProps {
 }
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
-  const [value, setValue] = useState<any>(props.defaultValue ?? {});
+  const [value, setValue] = useState(props.defaultValue ?? {});
   const elementsContext = useContext(ElementsContext);
   const elementsToRender = useMemo(() => {
     return getElementsToRender(elementsContext.elements);

@@ -9,7 +9,7 @@ import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getRedis } from '../../redis';
+import { getCacheRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -53,7 +53,7 @@ describe('Agent Status', () => {
     expect(parameters1.parameter?.find((p) => p.name === 'version')?.valueString).toBe('unknown');
 
     // Emulate a connection
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${agent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.CONNECTED,
@@ -78,7 +78,7 @@ describe('Agent Status', () => {
   });
 
   test('Get agent status by ID -- invalid AgentInfo from Redis', async () => {
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${agent.id}:info`,
       JSON.stringify({
         version: '3.1.4',
@@ -104,7 +104,7 @@ describe('Agent Status', () => {
       ],
     });
 
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${agent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.UNKNOWN,

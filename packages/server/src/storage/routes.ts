@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { singularize } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -8,7 +9,8 @@ import { createPrivateKey, createPublicKey, createVerify } from 'node:crypto';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();
@@ -32,10 +34,56 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   originalUrl.searchParams.delete('Signature');
-
   const urlToVerify = originalUrl.toString();
 
   const verifier = createVerify('sha256');
+  verifier.update('GET ');
+  verifier.update(urlToVerify);
+  const publicKey = getPublicKey();
+  const isVerified = verifier.verify(publicKey, signature, 'base64');
+  if (!isVerified) {
+    // Try legacy format without HTTP method
+    const verifier = createVerify('sha256');
+    verifier.update(urlToVerify);
+    const legacyVerified = verifier.verify(publicKey, signature, 'base64');
+    if (!legacyVerified) {
+      res.status(401).send('Invalid signature');
+      return;
+    }
+  }
+
+  const id = singularize(req.params.id) ?? '';
+  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
+  const binary = await systemRepo.readResource<Binary>('Binary', id);
+
+  try {
+    const stream = await getBinaryStorage().readBinary(binary);
+    res.status(200).contentType(binary.contentType);
+    await pump(stream, res);
+  } catch {
+    res.sendStatus(404);
+  }
+});
+
+storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
+  const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
+  const signature = originalUrl.searchParams.get('Signature');
+  if (!signature) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const expires = req.query['Expires'];
+  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
+    res.status(410).send('URL has expired');
+    return;
+  }
+
+  originalUrl.searchParams.delete('Signature');
+  const urlToVerify = originalUrl.toString();
+
+  const verifier = createVerify('sha256');
+  verifier.update('PUT ');
   verifier.update(urlToVerify);
   const publicKey = getPublicKey();
   const isVerified = verifier.verify(publicKey, signature, 'base64');
@@ -44,16 +92,21 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
     return;
   }
 
-  const { id } = req.params;
-  const systemRepo = getSystemRepo();
+  const id = singularize(req.params.id) ?? '';
+  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
+  const contentType = req.headers['content-type'];
+  if (contentType && contentType !== binary.contentType) {
+    res.status(400).send('Content-Type mismatch');
+    return;
+  }
+
   try {
-    const stream = await getBinaryStorage().readBinary(binary);
-    res.status(200).contentType(binary.contentType as string);
-    await pump(stream, res);
-  } catch (_err) {
-    res.sendStatus(404);
+    await getBinaryStorage().writeBinary(binary, undefined, contentType, req);
+    res.sendStatus(200);
+  } catch {
+    res.sendStatus(400);
   }
 });
 

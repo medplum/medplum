@@ -197,6 +197,12 @@ Medplum allows you to easily search using compartments by providing the non-stan
 
 The `_total` parameter allows you to return the total count of matching resources in your search response. For more details see the [Paginated Search docs.](/docs/search/paginated-search#getting-the-total-number-of-results-with-_total)
 
+:::warning `_total=accurate` limitation
+
+The `_total=accurate` search parameter will only attempt to return the accurate count if the estimated total is under 1 million.
+
+:::
+
 <details>
   <summary>Example: Search for all patients in your organization and get an estimate of the total number</summary>
   <Tabs groupId="language">
@@ -222,7 +228,7 @@ The `_total` parameter allows you to return the total count of matching resource
 
 FHIR allows [profiling](http://hl7.org/fhir/R4/profiling.html) to create custom data structures that specify how resources can be sub-specialized to meet specific use cases. The `_profile` parameter allows you to search based on these profiles.
 
-The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter. See the [FHIR Profiles doc](https://www.medplum.com/docs/fhir-datastore/profiles) to learn more about profiling.
+The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter. See the [FHIR Profiles doc](/docs/fhir-datastore/profiles) to learn more about profiling.
 
 <details>
   <summary>Example: Search for observations that are part of the pediatric growth charts profile</summary>

@@ -35,7 +35,7 @@ describe('resource-usage bot', () => {
     // Check that sendEmail was called with correct parameters
     expect(medplum.sendEmail).toHaveBeenCalled();
     const emailArgs = (medplum.sendEmail as any).mock.calls[0][0];
-    expect(emailArgs.to).toBe('admin@example.com');
+    expect(emailArgs.to).toEqual(['admin@example.com', 'admin2@example.com']);
     expect(emailArgs.subject).toContain('Resource Usage Report');
     expect(emailArgs.attachments[0].filename).toContain('resource-usage-');
     expect(emailArgs.attachments[0].content).toContain('Resource Type,Count');

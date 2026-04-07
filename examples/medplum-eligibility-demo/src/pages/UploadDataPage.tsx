@@ -23,7 +23,7 @@ export function UploadDataPage(): JSX.Element {
   const { dataType } = useParams();
   const navigate = useNavigate();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
-  const [pageDisabled, setPageDisabled] = useState<boolean>(false);
+  const [pageDisabled, setPageDisabled] = useState(false);
 
   const handleDataUpload = useCallback((): void => {
     setPageDisabled(true);
@@ -94,8 +94,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     throw err;
   }
   let transactionString = JSON.stringify(exampleBotData);
-  const botEntries: BundleEntry[] =
-    (exampleBotData as Bundle).entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
+  const botEntries: BundleEntry[] = exampleBotData.entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
@@ -105,17 +104,17 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     if (!existingBot) {
       const projectId = profile.meta?.project;
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
-      existingBot = (await medplum.post(createBotUrl, {
+      existingBot = await medplum.post<WithId<Bot>>(createBotUrl, {
         name: botName,
-      })) as WithId<Bot>;
+      });
     }
 
-    botIds[botName] = existingBot.id as string;
+    botIds[botName] = existingBot.id;
 
     // Replace the bot id placeholder in the bundle
     transactionString = transactionString
       .replaceAll(`$bot-${botName}-reference`, getReferenceString(existingBot))
-      .replaceAll(`$bot-${botName}-id`, existingBot.id as string);
+      .replaceAll(`$bot-${botName}-id`, existingBot.id);
   }
 
   // Execute the transaction to upload/update the bot

@@ -5,6 +5,7 @@ import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GoogleCloudStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
+import type { PresignedUrlOptions } from './base';
 import { FileSystemStorage } from './filesystem';
 import { generatePresignedUrl } from './presign';
 import type { BinaryStorage } from './types';
@@ -32,17 +33,17 @@ export function getBinaryStorage(): BinaryStorage {
   return binaryStorage;
 }
 
-export async function getPresignedUrl(binary: Binary): Promise<string> {
+export async function getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
   const config = getConfig();
 
   if (config.storageBaseUrl.startsWith(config.baseUrl)) {
     // If the storage base URL is the same as the FHIR base URL, generate a presigned URL
     // This URL will be handled by the built-in storage handler
     // See packages/server/src/storage/routes.ts
-    return generatePresignedUrl(binary);
+    return generatePresignedUrl(binary, opts);
   } else {
     // Otherwise, return the presigned URL from the storage backend
     // This URL will be handled by the storage backend (e.g., S3, Azure Blob Storage, etc.)
-    return getBinaryStorage().getPresignedUrl(binary);
+    return getBinaryStorage().getPresignedUrl(binary, opts);
   }
 }

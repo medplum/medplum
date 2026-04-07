@@ -7,30 +7,26 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
 
-authenticator.options = {
-  window: 1,
-};
-
 export const mfaRouter = Router();
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
-  const systemRepo = getSystemRepo();
   const ctx = getAuthenticatedContext();
-  let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  let user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
   if (user.mfaEnrolled) {
     res.json({ enrolled: true });
     return;
   }
 
   if (!user.mfaSecret) {
-    user = await systemRepo.updateResource({
+    user = await ctx.systemRepo.updateResource({
       ...user,
       mfaSecret: authenticator.generateSecret(),
     });
@@ -52,7 +48,7 @@ mfaRouter.post(
   '/login-enroll',
   [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
@@ -82,7 +78,7 @@ mfaRouter.post(
   authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     const ctx = getAuthenticatedContext();
     const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
@@ -96,9 +92,10 @@ mfaRouter.post(
       return;
     }
 
-    const secret = user.mfaSecret as string;
+    const secret = user.mfaSecret;
     const token = req.body.token as string;
-    if (!authenticator.check(token, secret)) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -121,7 +118,7 @@ mfaRouter.post(
       return;
     }
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const result = await verifyMfaToken(login, req.body.token);
     await sendLoginResult(res, result);
@@ -130,11 +127,11 @@ mfaRouter.post(
 
 mfaRouter.post(
   '/disable',
+  authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
-    const systemRepo = getSystemRepo();
     const ctx = getAuthenticatedContext();
-    const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+    const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
     if (!user.mfaSecret) {
       sendOutcome(res, badRequest('Secret not found'));
@@ -152,14 +149,15 @@ mfaRouter.post(
       return;
     }
 
-    const secret = user.mfaSecret as string;
+    const secret = user.mfaSecret;
     const token = req.body.token as string;
-    if (!authenticator.check(token, secret)) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
 
-    await systemRepo.updateResource({
+    await ctx.systemRepo.updateResource({
       ...user,
       mfaEnrolled: false,
       // We generate a new secret so that next time the user enrolls that they don't get the same secret

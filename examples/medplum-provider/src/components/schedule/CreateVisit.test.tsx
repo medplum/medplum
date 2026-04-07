@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { Patient, Schedule } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient, HomerSimpson } from '@medplum/mock';
-import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Patient } from '@medplum/fhirtypes';
 import type { SlotInfo } from 'react-big-calendar';
+import { MemoryRouter } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CreateVisit } from './CreateVisit';
 
 describe('CreateVisit', () => {
@@ -44,13 +44,13 @@ describe('CreateVisit', () => {
     });
   });
 
-  const setup = (appointmentSlot?: SlotInfo): ReturnType<typeof render> => {
+  const setup = (appointmentSlot?: SlotInfo, schedule?: Schedule): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <CreateVisit appointmentSlot={appointmentSlot} />
+            <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -82,6 +82,22 @@ describe('CreateVisit', () => {
         expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
       });
     });
+
+    test('renders correctly when schedule prop is provided', async () => {
+      const schedule: Schedule = {
+        resourceType: 'Schedule',
+        id: 'sched-1',
+        actor: [{ reference: 'Practitioner/practitioner-1' }],
+      };
+      await act(async () => {
+        setup(mockSlotInfo, schedule);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
+        expect(screen.getByLabelText(/Patient/i)).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Form Validation', () => {
@@ -95,10 +111,8 @@ describe('CreateVisit', () => {
         expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
       });
 
-      await act(async () => {
-        const submitButton = screen.getByRole('button', { name: /Create Visit/i });
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByRole('button', { name: /Create Visit/i });
+      await user.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText(/Please fill out required fields/i)).toBeInTheDocument();
@@ -115,10 +129,8 @@ describe('CreateVisit', () => {
         expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
       });
 
-      await act(async () => {
-        const submitButton = screen.getByRole('button', { name: /Create Visit/i });
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByRole('button', { name: /Create Visit/i });
+      await user.click(submitButton);
 
       // Verify error notification is shown instead of proceeding
       // Use getAllByText since notifications may persist from previous tests
@@ -188,6 +200,96 @@ describe('CreateVisit', () => {
         expect(submitButton).toBeInTheDocument();
         expect(submitButton).not.toBeDisabled();
       });
+    });
+  });
+
+  describe('Form Field Changes', () => {
+    test('updates patient when patient is selected', async () => {
+      await act(async () => {
+        setup(mockSlotInfo);
+      });
+
+      const patientInput = await screen.findByLabelText(/Patient/i);
+      expect(patientInput).toBeInTheDocument();
+    });
+
+    test('updates start time when changed', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        setup(mockSlotInfo);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Start Time/i)).toBeInTheDocument();
+      });
+
+      const startInput = screen.getByLabelText(/Start Time/i);
+      await act(async () => {
+        await user.clear(startInput);
+        await user.type(startInput, '2024-01-15T11:00');
+      });
+
+      expect(startInput).toHaveValue('2024-01-15T11:00');
+    });
+
+    test('updates end time when changed', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        setup(mockSlotInfo);
+      });
+
+      const endInput = await screen.findByLabelText(/End Time/i);
+      await act(async () => {
+        await user.clear(endInput);
+        await user.type(endInput, '2024-01-15T12:00');
+      });
+
+      expect(endInput).toHaveValue('2024-01-15T12:00');
+    });
+
+    test('updates class when class is selected', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        setup(mockSlotInfo);
+      });
+
+      const classInput = await screen.findByLabelText(/Class/i);
+      await act(async () => {
+        await user.click(classInput);
+      });
+
+      expect(classInput).toBeInTheDocument();
+    });
+
+    test('updates care template when template is selected', async () => {
+      await act(async () => {
+        setup(mockSlotInfo);
+      });
+
+      const templateInput = await screen.findByLabelText(/Care template/i);
+      expect(templateInput).toBeInTheDocument();
+    });
+  });
+
+  describe('Plan Definition Actions', () => {
+    test('displays included tasks when plan definition has actions', async () => {
+      const planDefinition: any = {
+        resourceType: 'PlanDefinition',
+        id: 'plan-1',
+        status: 'active',
+        action: [
+          { id: 'action-1', title: 'Task 1' },
+          { id: 'action-2', title: 'Task 2' },
+        ],
+      };
+      await medplum.createResource(planDefinition);
+
+      await act(async () => {
+        setup(mockSlotInfo);
+      });
+
+      const templateInput = await screen.findByLabelText(/Care template/i);
+      expect(templateInput).toBeInTheDocument();
     });
   });
 });

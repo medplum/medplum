@@ -90,3 +90,60 @@ Common values for these fields include:
 ### Compatibility Caution
 
 Enhanced Mode is not universally supported across all legacy HL7 systems. It is vital to confirm with the external system vendor (the Sender or the Receiver) that they explicitly support the two-step handshaking process before configuring the Medplum Agent to use Enhanced Acknowledgement Mode.
+
+## AA Mode (Simplified Enhanced Mode)
+
+**AA Mode** is a specialized variant of Enhanced Acknowledgement Mode that provides enhanced throughput benefits without requiring the remote system to support or be configured for the full two-step acknowledgement handshake. This mode was introduced in **Medplum Agent version 5.0.11**.
+
+### How AA Mode Works
+
+In AA Mode, the Medplum Agent immediately sends an **Application Accept (AA)** acknowledgement upon receipt of a message, rather than the Commit Accept (CA) used in standard Enhanced Mode. Since AA is a standard application-level ACK code that all HL7 systems understand, the remote system does not need any special configuration to work with this mode.
+
+1. **Sender** transmits Message A.
+2. **Medplum Agent** immediately sends an **AA** (Application Accept) acknowledgement.
+3. **Connection is unblocked** — Sender can immediately transmit Message B.
+4. Message A is processed asynchronously in the background.
+
+### When to Use AA Mode
+
+AA Mode is ideal when:
+
+- **The remote system doesn't support Enhanced Mode:** Many legacy HL7 systems only understand original mode acknowledgements (AA/AE/AR). AA Mode allows you to achieve enhanced throughput while sending ACKs the remote system can process.
+- **You cannot configure the remote system:** In scenarios where you have no control over the remote system's configuration, AA Mode works without any changes on the peer's side.
+- **You need fast throughput but don't require processing feedback:** If your workflow doesn't need to communicate application-level success or failure back to the sender, AA Mode provides the performance benefits of enhanced mode with simpler compatibility.
+
+### Drawbacks
+
+AA Mode has an important trade-off:
+
+- **No asynchronous application-level feedback:** Since the AA is sent immediately (before processing), you lose the ability to send back application-level error responses (AE) or rejections (AR) after processing completes. The remote system will always receive AA, regardless of whether the message was successfully processed by your application.
+
+This means:
+- Processing errors cannot be communicated back to the sender via HL7 ACKs
+- The sender has no mechanism to know if the message failed during application processing
+- You must implement alternative error handling mechanisms if processing feedback is required (e.g., logging, monitoring, or out-of-band notifications)
+
+### Configuration
+
+To enable AA Mode, add `enhanced=aa` to your Agent channel endpoint URL:
+
+```
+mllp://0.0.0.0:2575?enhanced=aa
+```
+
+| Parameter Value | Mode              | Immediate ACK | Application ACK Forwarded |
+| :-------------- | :---------------- | :------------ | :------------------------ |
+| `enhanced=true` | Standard Enhanced | CA            | Yes (AA/AE/AR)            |
+| `enhanced=aa`   | AA Mode           | AA            | No                        |
+| _(not set)_     | Original Mode     | _(none)_      | Yes (AA/AE/AR)            |
+
+### Comparison: Standard Enhanced vs AA Mode
+
+| Aspect                          | Standard Enhanced Mode        | AA Mode                               |
+| :------------------------------ | :---------------------------- | :------------------------------------ |
+| **Immediate ACK Code**          | CA (Commit Accept)            | AA (Application Accept)               |
+| **Remote Configuration**        | Required (must support CA)    | Not required                          |
+| **Application ACK Forwarding**  | Yes                           | No                                    |
+| **Processing Feedback**         | Full (AA/AE/AR after processing) | None (always AA)                   |
+| **Throughput Improvement**      | Yes                           | Yes                                   |
+| **Best For**                    | Full enhanced mode support    | Legacy systems, no peer configuration |

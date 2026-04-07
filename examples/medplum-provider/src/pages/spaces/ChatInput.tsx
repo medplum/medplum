@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper, Textarea, Select, Button, Group, Stack } from '@mantine/core';
+import { Button, Group, Paper, Select, Stack, Textarea } from '@mantine/core';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 
+const MODEL_GPT_5_MINI = 'gpt-5-mini';
+const MODEL_GPT_5_2 = 'gpt-5.2';
+const MODEL_GPT_5_4 = 'gpt-5.4';
+
+export const DEFAULT_MODEL = MODEL_GPT_5_4;
+
 const MODELS = [
-  { value: 'gpt-5', label: 'GPT-5' },
-  { value: 'gpt-4o', label: 'GPT-4o' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+  { value: MODEL_GPT_5_MINI, label: 'GPT-5 Mini' },
+  { value: MODEL_GPT_5_2, label: 'GPT-5.2' },
+  { value: MODEL_GPT_5_4, label: 'GPT-5.4' },
 ];
 
 interface ChatInputProps {
@@ -73,8 +79,8 @@ export function ChatInput({
           size="xs"
           data={MODELS}
           value={selectedModel}
-          onChange={(value) => onModelChange(value ?? 'gpt-5')}
-          w="120px"
+          onChange={(value) => onModelChange(value ?? DEFAULT_MODEL)}
+          w="170px"
           withCheckIcon={false}
           fw={500}
           pr="md"

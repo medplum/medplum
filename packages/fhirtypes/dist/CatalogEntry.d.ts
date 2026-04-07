@@ -5,25 +5,25 @@
  * Do not edit manually.
  */
 
-import { ActivityDefinition } from './ActivityDefinition';
-import { Binary } from './Binary';
-import { CodeableConcept } from './CodeableConcept';
-import { Device } from './Device';
-import { Extension } from './Extension';
-import { HealthcareService } from './HealthcareService';
-import { Identifier } from './Identifier';
-import { Medication } from './Medication';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { ObservationDefinition } from './ObservationDefinition';
-import { Organization } from './Organization';
-import { Period } from './Period';
-import { PlanDefinition } from './PlanDefinition';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { SpecimenDefinition } from './SpecimenDefinition';
+import type { ActivityDefinition } from './ActivityDefinition.d.ts';
+import type { Binary } from './Binary.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { HealthcareService } from './HealthcareService.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { ObservationDefinition } from './ObservationDefinition.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Period } from './Period.d.ts';
+import type { PlanDefinition } from './PlanDefinition.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { SpecimenDefinition } from './SpecimenDefinition.d.ts';
 
 /**
  * Catalog entries are wrappers that contextualize items included in a

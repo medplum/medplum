@@ -1,18 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
 /* global console */
 /* global process */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-import fs from 'node:fs';
-import path from 'node:path';
+
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 
 function copyDir(sourceDir, targetDir) {
-  const files = fs.readdirSync(sourceDir, { withFileTypes: true });
-  fs.mkdirSync(targetDir, { recursive: true });
+  const files = readdirSync(sourceDir, { withFileTypes: true });
+  mkdirSync(targetDir, { recursive: true });
 
   for (const file of files) {
-    const sourceFilePath = path.join(sourceDir, file.name);
-    const targetFilePath = path.join(targetDir, file.name);
+    const sourceFilePath = join(sourceDir, file.name);
+    const targetFilePath = join(targetDir, file.name);
     if (file.isDirectory()) {
       copyDir(sourceFilePath, targetFilePath);
     } else {
@@ -23,9 +24,9 @@ function copyDir(sourceDir, targetDir) {
 
 function copyFile(sourceFile, targetFile) {
   if (sourceFile.endsWith('.md')) {
-    fs.writeFileSync(targetFile.replace('.md', '.mdx'), escapeMdx(sourceFile, fs.readFileSync(sourceFile, 'utf8')));
+    writeFileSync(targetFile.replace('.md', '.mdx'), escapeMdx(sourceFile, readFileSync(sourceFile, 'utf8')));
   } else {
-    fs.copyfileSync(sourceFile, targetFile);
+    copyFileSync(sourceFile, targetFile);
   }
 }
 
@@ -35,7 +36,7 @@ function escapeMdx(fileName, text) {
     .trimStart()
     .replaceAll('.md)', ')');
 
-  if (path.basename(fileName) === 'index.md') {
+  if (basename(fileName) === 'index.md') {
     // In Docusaurus, the index.mdx file is used as the landing page for the folder.
     // Relative links are relative to the parent, not the index.mdx file.
     text = text.replaceAll('](./index)', '](../)').replaceAll('](./', '](./sdk/');
@@ -43,6 +44,7 @@ function escapeMdx(fileName, text) {
     text = text.replaceAll('[Home](./index)', '[Home](./)');
   }
 
+  // Escape { and } characters outside of code blocks
   const specialChars = ['{', '}'];
   let inSingleBacktick = false;
   let inTripleBacktick = false;

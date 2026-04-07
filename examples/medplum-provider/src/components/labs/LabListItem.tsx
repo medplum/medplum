@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack, Text, Badge } from '@mantine/core';
+import { Badge, Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { HumanName, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
-import type { JSX } from 'react';
 import { MedplumLink, useResource } from '@medplum/react';
 import cx from 'clsx';
+import type { JSX } from 'react';
 import classes from './LabListItem.module.css';
 
 type LabTab = 'open' | 'completed';
@@ -14,16 +14,16 @@ interface LabListItemProps {
   item: ServiceRequest;
   selectedItem: ServiceRequest | undefined;
   activeTab: LabTab;
-  onItemChange: (item: ServiceRequest) => string;
+  onItemSelect: (item: ServiceRequest) => string;
 }
 
 export function LabListItem(props: LabListItemProps): JSX.Element {
-  const { item, selectedItem, activeTab, onItemChange } = props;
+  const { item, selectedItem, activeTab, onItemSelect } = props;
   const isSelected = selectedItem?.id === item.id;
   const requester = useResource(item.requester) as Practitioner | undefined;
 
   return (
-    <MedplumLink to={onItemChange(item)} c="dark">
+    <MedplumLink to={onItemSelect(item)} underline="never">
       <Group
         align="center"
         wrap="nowrap"
@@ -31,9 +31,9 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
           [classes.selected]: isSelected,
         })}
       >
-        <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-          <Group justify="space-between" align="flex-start" style={{ minWidth: 0 }}>
-            <Text fw={700} className={classes.title} style={{ flex: 1, minWidth: 0 }}>
+        <Stack gap={0} flex={1}>
+          <Group justify="space-between" align="flex-start">
+            <Text fw={700} className={classes.title} flex={1}>
               {getDisplayText(item)}
             </Text>
             {activeTab !== 'completed' && (
@@ -43,7 +43,7 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
             )}
           </Group>
           {getAdditionalInfo(item, activeTab).map((info, index) => (
-            <Text key={index} size="sm" c="#2E2E2E">
+            <Text key={index} size="sm">
               {info}
             </Text>
           ))}

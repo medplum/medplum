@@ -38,7 +38,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
   config.autoDownloadEnabled ??= true;
-
+  config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
   // History:
   // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
   // That meant that the rate limit was per server instance, rather than per server cluster
@@ -47,6 +47,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
+  config.defaultMaxUserWebSocketSubscriptions ??= 20;
 
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
@@ -93,6 +94,7 @@ type DefaultConfigKeys =
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
+  | 'base64BinaryMaxBytes'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
@@ -104,6 +106,7 @@ type DefaultConfigKeys =
 const integerKeys = new Set([
   'accurateCountThreshold',
   'bcryptHashSalt',
+  'base64BinaryMaxBytes',
   'defaultAuthRateLimit',
   'defaultFhirQuota',
   'defaultRateLimit',
@@ -112,6 +115,7 @@ const integerKeys = new Set([
   'maxBotLogLengthForLogs',
   'maxBotLogLengthForResource',
   'maxSearchOffset',
+  'mfaAuthenticatorWindow',
   'port',
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
@@ -127,6 +131,14 @@ const integerKeys = new Set([
 
   'redis.db',
   'redis.port',
+  'cacheRedis.db',
+  'cacheRedis.port',
+  'rateLimitRedis.db',
+  'rateLimitRedis.port',
+  'pubSubRedis.db',
+  'pubSubRedis.port',
+  'backgroundJobsRedis.db',
+  'backgroundJobsRedis.port',
 
   'smtp.port',
 
@@ -167,7 +179,17 @@ export function isBooleanConfig(key: string): boolean {
   return booleanKeys.has(key);
 }
 
-const objectKeys = new Set(['tls', 'ssl', 'defaultProjectSystemSetting', 'defaultOAuthClients', 'smtp']);
+const objectKeys = new Set([
+  'tls',
+  'ssl',
+  'defaultProjectSystemSetting',
+  'defaultOAuthClients',
+  'smtp',
+  'arrayColumnPadding',
+  'workers',
+  'workers.enabled',
+  'workers.bullmq',
+]);
 
 export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);

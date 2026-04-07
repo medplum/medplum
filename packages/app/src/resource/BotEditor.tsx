@@ -40,7 +40,7 @@ export function BotEditor(): JSX.Element | null {
   const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
-  const [contentType, setContentType] = useState<string>(ContentType.FHIR_JSON);
+  const [contentType, setContentType] = useState(ContentType.FHIR_JSON as string);
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(false);

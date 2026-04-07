@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Quantity } from './Quantity';
+import type { Extension } from './Extension.d.ts';
+import type { Quantity } from './Quantity.d.ts';
 
 /**
  * A series of measurements taken by a device, with upper and lower

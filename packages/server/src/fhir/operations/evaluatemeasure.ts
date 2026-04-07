@@ -79,7 +79,7 @@ async function evaluateMeasure(
     report.group = await Promise.all(measure.group.map((g) => evaluateMeasureGroup(repo, params, g)));
   }
 
-  return repo.createResource<MeasureReport>(report);
+  return repo.createResource(report);
 }
 
 /**
@@ -141,21 +141,19 @@ async function evaluateCount(
   const searchDefinition = parseSearchRequest(criteria);
   searchDefinition.total = 'accurate';
 
-  if (!searchDefinition.filters) {
-    searchDefinition.filters = [];
-  }
-
-  searchDefinition.filters.push({
-    code: '_lastUpdated',
-    operator: Operator.GREATER_THAN_OR_EQUALS,
-    value: params.periodStart,
-  });
-
-  searchDefinition.filters.push({
-    code: '_lastUpdated',
-    operator: Operator.LESS_THAN_OR_EQUALS,
-    value: params.periodEnd,
-  });
+  searchDefinition.filters ??= [];
+  searchDefinition.filters.push(
+    {
+      code: '_lastUpdated',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: params.periodStart,
+    },
+    {
+      code: '_lastUpdated',
+      operator: Operator.LESS_THAN_OR_EQUALS,
+      value: params.periodEnd,
+    }
+  );
 
   const bundle = await repo.search(searchDefinition);
   return bundle.total;

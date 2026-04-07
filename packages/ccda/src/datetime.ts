@@ -53,6 +53,9 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     return undefined;
   }
 
+  // C-CDA timezone format: ±HHMM (e.g., -0500, +0530)
+  const CCDA_TIMEZONE_PATTERN = /^[+-]\d{4}$/;
+
   const year = dateTime.substring(0, 4);
   let month = '01';
   let day = '01';
@@ -71,14 +74,21 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     minute = dateTime.substring(10, 12);
   }
 
-  if (dateTime.length >= 14) {
+  // Check if position 12 is a timezone sign or seconds digit
+  const char12 = dateTime.charAt(12);
+  if (dateTime.length >= 14 && char12 !== '+' && char12 !== '-') {
     second = dateTime.substring(12, 14);
   }
 
-  if (dateTime.length > 14) {
-    tz = dateTime.substring(14);
-    if (tz === '+0000') {
+  // Find timezone: starts at position 12 if no seconds, or position 14 if seconds present
+  const tzStart = char12 === '+' || char12 === '-' ? 12 : 14;
+  if (dateTime.length > tzStart) {
+    tz = dateTime.substring(tzStart);
+    if (tz === '+0000' || tz === '-0000') {
       tz = 'Z';
+    } else if (CCDA_TIMEZONE_PATTERN.test(tz)) {
+      // Format timezone with colon separator: ±HHMM → ±HH:MM
+      tz = `${tz.substring(0, 3)}:${tz.substring(3)}`;
     }
   }
 

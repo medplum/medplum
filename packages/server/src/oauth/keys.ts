@@ -6,7 +6,7 @@ import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } 
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import { randomBytes } from 'node:crypto';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {
@@ -49,6 +49,12 @@ export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
    * For example, "Patient/123" or "Practitioner/456".
    */
   profile: string;
+
+  /**
+   * User email address.
+   * Included when the 'email' scope is requested and the user is a User resource.
+   */
+  email?: string;
 }
 
 export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
@@ -106,7 +112,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const searchResult = await systemRepo.searchResources<JsonWebKey>({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
@@ -123,7 +129,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     globalLogger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(PREFERRED_ALG);
     const jwk = await exportJWK(keyResult.privateKey);
-    const createResult = await systemRepo.createResource<JsonWebKey>({
+    const createResult = await systemRepo.createResource({
       resourceType: 'JsonWebKey',
       active: true,
       alg: PREFERRED_ALG,
@@ -253,6 +259,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
       typ: 'JWT',
     })
     .setIssuedAt()
+    .setNotBefore(new Date())
     .setIssuer(issuer)
     .setAudience(claims.client_id as string)
     .setExpirationTime(exp)

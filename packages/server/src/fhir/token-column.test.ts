@@ -1,13 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter } from '@medplum/core';
-import { Operator, getSearchParameter } from '@medplum/core';
+import { Operator, getSearchParameter, isUUID } from '@medplum/core';
 import type { ResearchStudy } from '@medplum/fhirtypes';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { Column, Condition, Disjunction, Negation, SqlBuilder, TypedCondition } from './sql';
 import { loadStructureDefinitions } from './structure';
-import { buildTokenColumns, buildTokenColumnsSearchFilter, hashTokenColumnValue } from './token-column';
+import {
+  buildTokenColumns,
+  buildTokenColumnsSearchFilter,
+  getPaddingElement,
+  hashTokenColumnValue,
+} from './token-column';
 
 const DELIM = '\x01';
 
@@ -142,7 +147,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(expr).toBeInstanceOf(Condition);
       const cond = expr as Condition;
       expect(cond.column).toBeInstanceOf(Column);
-      expect((cond.column as Column).actualColumnName).toBe('__identifier');
+      expect(cond.column.actualColumnName).toBe('__identifier');
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
       expect(cond.parameterType).toBe('UUID[]');
 
@@ -282,7 +287,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const cond = expr as Condition;
 
-      expect((cond.column as Column).actualColumnName).toBe('__sharedTokens');
+      expect(cond.column.actualColumnName).toBe('__sharedTokens');
 
       // Should include the code prefix for non-dedicated columns - parameter is now an array
       const expectedHash = hashTokenColumnValue('focus' + DELIM + 'http://example.com' + DELIM + 'test');
@@ -377,7 +382,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const cond = disjunction.expressions[0] as TypedCondition<'TOKEN_ARRAY_IREGEX'>;
       expect(cond.operator).toBe('TOKEN_ARRAY_IREGEX');
-      expect((cond.column as Column).actualColumnName).toBe('__telecomText');
+      expect(cond.column.actualColumnName).toBe('__telecomText');
       expect(cond.parameterType).toBe('TEXT[]');
 
       // Should search for the value as a regex substring
@@ -444,7 +449,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       const disjunction = expr as Disjunction;
       const cond = disjunction.expressions[0] as TypedCondition<'TOKEN_ARRAY_IREGEX'>;
 
-      expect((cond.column as Column).actualColumnName).toBe('__sharedTokensText');
+      expect(cond.column.actualColumnName).toBe('__sharedTokensText');
 
       // Should include the code prefix in the regex pattern
       const ARRAY_DELIM = '\x03';
@@ -498,7 +503,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_EMPTY'>;
       expect(cond.operator).toBe('ARRAY_EMPTY');
-      expect((cond.column as Column).actualColumnName).toBe('__identifier');
+      expect(cond.column.actualColumnName).toBe('__identifier');
       expect(cond.parameterType).toBe('UUID[]');
     });
 
@@ -519,7 +524,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_NOT_EMPTY'>;
       expect(cond.operator).toBe('ARRAY_NOT_EMPTY');
-      expect((cond.column as Column).actualColumnName).toBe('__identifier');
+      expect(cond.column.actualColumnName).toBe('__identifier');
     });
 
     test('PRESENT operator with true value (dedicated columns)', () => {
@@ -580,7 +585,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const cond = negation.expression as TypedCondition<'ARRAY_OVERLAPS'>;
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
-      expect((cond.column as Column).actualColumnName).toBe('__sharedTokens');
+      expect(cond.column.actualColumnName).toBe('__sharedTokens');
 
       // Should search for the code as a hashed value
       const expectedHash = hashTokenColumnValue('focus');
@@ -604,7 +609,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_OVERLAPS'>;
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
-      expect((cond.column as Column).actualColumnName).toBe('__sharedTokens');
+      expect(cond.column.actualColumnName).toBe('__sharedTokens');
 
       const expectedHash = hashTokenColumnValue('focus');
       expect(cond.parameter).toBe(expectedHash);
@@ -790,5 +795,30 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(sql).toContain('array_length');
       expect(sql).toContain('> 0');
     });
+  });
+});
+describe('getPaddingElement', () => {
+  test('Math.random is 0.99999999', () => {
+    const rng = jest.fn().mockReturnValue(0.99999999);
+    expect(getPaddingElement({ m: 1, lambda: 150, statisticsTarget: 1 }, rng)).toBeUndefined();
+    // once to decide (not to) return a padding element
+    expect(rng).toHaveBeenCalledTimes(1);
+  });
+
+  test('Math.random is 0', () => {
+    let callCount = 0;
+    const rng = jest.fn().mockImplementation(() => {
+      // first call returns 0 to guarantee padding is returned
+      if (callCount++ === 0) {
+        return 0;
+      }
+      // second call returns 0.99999999 to guarantee the largest padding element is chosen
+      return 0.99999999;
+    });
+    const paddingElement = getPaddingElement({ m: 20, lambda: 150, statisticsTarget: 1 }, rng) as string;
+    expect(paddingElement).toStrictEqual('00000000-0000-0000-0000-000000000019');
+    expect(isUUID(paddingElement)).toStrictEqual(true);
+    // once to decide whether to return a padding element, once to decide which padding element
+    expect(rng).toHaveBeenCalledTimes(2);
   });
 });

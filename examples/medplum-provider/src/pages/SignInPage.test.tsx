@@ -6,7 +6,7 @@ import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
-import { describe, expect, test, beforeAll, vi } from 'vitest';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
 import { App } from '../App';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -34,8 +34,8 @@ describe('SignInPage', () => {
   });
 
   function expectSigninPageRendered(): void {
-    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expect(screen.getByText('Sign in to Provider')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   }
 
   test('Renders', async () => {
@@ -57,17 +57,22 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
+
+    // Wait for password field to appear
+    await screen.findByLabelText('Password *');
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
     });
 
+    const submitButton = screen.getByRole('button', { name: /Continue|Sign In/i });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(submitButton);
     });
 
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    // After successful sign-in, user is redirected to /getstarted
+    expect(await screen.findByText('Get Started with Medplum Provider')).toBeInTheDocument();
   });
 });

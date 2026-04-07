@@ -5,6 +5,7 @@ import {
   allOk,
   concatUrls,
   createReference,
+  EMPTY,
   evalFhirPathTyped,
   getExtension,
   getReferenceString,
@@ -85,29 +86,27 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   }
 
   const actions: RequestGroupAction[] = [];
-  if (planDefinition.action) {
-    for (const action of planDefinition.action) {
-      actions.push(
-        await createAction(
-          ctx.repo,
-          planDefinition,
-          ctx.profile,
-          subjectRef,
-          action,
-          encounterRef,
-          practitionerRef,
-          organizationRef
-        )
-      );
-    }
+  for (const action of planDefinition.action ?? EMPTY) {
+    actions.push(
+      await createAction(
+        ctx.repo,
+        planDefinition,
+        ctx.profile,
+        subjectRef,
+        action,
+        encounterRef,
+        practitionerRef,
+        organizationRef
+      )
+    );
   }
 
   const requestGroup = await ctx.repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
-    instantiatesUri: !planDefinition.url
-      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
-      : undefined,
+    instantiatesUri: planDefinition.url
+      ? undefined
+      : [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))],
     subject: subjectRef,
     status: 'active',
     intent: 'order',
@@ -121,9 +120,9 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     subject: subjectRef,
     intent: 'plan',
     instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
-    instantiatesUri: !planDefinition.url
-      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
-      : undefined,
+    instantiatesUri: planDefinition.url
+      ? undefined
+      : [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))],
     activity: [{ reference: createReference(requestGroup) }],
   });
 

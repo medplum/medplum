@@ -168,8 +168,122 @@ describe('Keys', () => {
     expect(result.payload.login_id).toStrictEqual('123');
   });
 
+  test('Tokens include NotBefore claim', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    // Test access token
+    const accessToken = await generateAccessToken({
+      iss: config.issuer,
+      login_id: '123',
+      username: 'username',
+      scope: 'scope',
+      profile: 'profile',
+    });
+    const accessResult = await verifyJwt(accessToken);
+    expect(accessResult.payload.nbf).toBeDefined();
+    expect(typeof accessResult.payload.nbf).toBe('number');
+    // nbf should be close to current time (within 5 seconds)
+    expect(Math.abs((accessResult.payload.nbf as number) - currentTime)).toBeLessThan(5);
+    // nbf should be close to iat (within 1 second)
+    expect(Math.abs((accessResult.payload.nbf as number) - (accessResult.payload.iat as number))).toBeLessThan(1);
+
+    // Test ID token
+    const idToken = await generateIdToken({
+      iss: config.issuer,
+      login_id: '123',
+      nonce: randomUUID(),
+    });
+    const idResult = await verifyJwt(idToken);
+    expect(idResult.payload.nbf).toBeDefined();
+    expect(typeof idResult.payload.nbf).toBe('number');
+
+    // Test refresh token
+    const refreshToken = await generateRefreshToken({
+      iss: config.issuer,
+      login_id: '123',
+      refresh_secret: 'secret',
+    });
+    const refreshResult = await verifyJwt(refreshToken);
+    expect(refreshResult.payload.nbf).toBeDefined();
+    expect(typeof refreshResult.payload.nbf).toBe('number');
+  });
+
   test('Generate secret', () => {
     expect(generateSecret(16)).toHaveLength(32);
     expect(generateSecret(32)).toHaveLength(64);
+  });
+
+  test('Generate access token with email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const userEmail = 'test@example.com';
+    const token = await generateAccessToken({
+      iss: config.issuer,
+      login_id: '123',
+      username: 'username',
+      scope: 'openid profile email',
+      profile: 'Patient/123',
+      email: userEmail,
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toStrictEqual(userEmail);
+  });
+
+  test('Generate access token without email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const token = await generateAccessToken({
+      iss: config.issuer,
+      login_id: '123',
+      username: 'username',
+      scope: 'openid profile',
+      profile: 'Patient/123',
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toBeUndefined();
+  });
+
+  test('Generate ID token with email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const userEmail = 'test@example.com';
+    const token = await generateIdToken({
+      iss: config.issuer,
+      login_id: '123',
+      nonce: randomUUID(),
+      email: userEmail,
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toStrictEqual(userEmail);
+  });
+
+  test('Generate ID token without email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const token = await generateIdToken({
+      iss: config.issuer,
+      login_id: '123',
+      nonce: randomUUID(),
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toBeUndefined();
   });
 });

@@ -4,6 +4,7 @@ import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
 import {
   buildTypeName,
   capitalize,
+  EMPTY,
   escapeHtml,
   FileBuilder,
   getAllDataTypes,
@@ -38,13 +39,13 @@ export function main(): void {
 function writeIndexFile(): void {
   const names = Object.values(getAllDataTypes())
     .filter((t) => t.name !== 'DomainResource' && !t.parentType && !isLowerCase(t.name.charAt(0)))
-    .map((t) => t.name as string);
+    .map((t) => t.name);
   names.push('ResourceType');
   names.sort();
 
   const b = new FileBuilder();
   for (const resourceType of names) {
-    b.append("export * from './" + resourceType + "';");
+    b.append("export type * from './" + resourceType + ".d.ts';");
   }
   writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
 }
@@ -52,12 +53,12 @@ function writeIndexFile(): void {
 function writeResourceFile(): void {
   const names = Object.values(getAllDataTypes())
     .filter(isResourceTypeSchema)
-    .map((t) => t.name as string)
+    .map((t) => t.name)
     .sort();
 
   const b = new FileBuilder();
   for (const resourceType of names) {
-    b.append('import { ' + resourceType + " } from './" + resourceType + "';");
+    b.append('import type { ' + resourceType + " } from './" + resourceType + ".d.ts';");
   }
   b.newLine();
   for (let i = 0; i < names.length; i++) {
@@ -75,7 +76,7 @@ function writeResourceFile(): void {
 
 function writeResourceTypeFile(): void {
   const b = new FileBuilder();
-  b.append("import { Resource } from './Resource';");
+  b.append("import type { Resource } from './Resource.d.ts';");
   b.newLine();
   b.append("export type ResourceType = Resource['resourceType'];");
   b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
@@ -94,7 +95,7 @@ function writeInterfaceFile(fhirType: InternalTypeSchema): void {
   const b = new FileBuilder();
   for (const referencedType of Array.from(referencedTypes).sort()) {
     if (!includedTypes.has(referencedType)) {
-      b.append('import { ' + referencedType + " } from './" + referencedType + "';");
+      b.append('import type { ' + referencedType + " } from './" + referencedType + ".d.ts';");
     }
   }
 
@@ -142,12 +143,10 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
   writeChoiceOfTypeDefinitions(b, fhirType);
 
   const subTypes = fhirType.innerTypes;
-  if (subTypes) {
-    subTypes.sort((t1, t2) => t1.name.localeCompare(t2.name));
+  subTypes?.sort((t1, t2) => t1.name.localeCompare(t2.name));
 
-    for (const subType of subTypes) {
-      writeInterface(b, subType);
-    }
+  for (const subType of subTypes ?? EMPTY) {
+    writeInterface(b, subType);
   }
 }
 
@@ -192,10 +191,8 @@ function buildImports(fhirType: InternalTypeSchema, includedTypes: Set<string>, 
   }
 
   const subTypes = fhirType.innerTypes;
-  if (subTypes) {
-    for (const subType of subTypes) {
-      buildImports(subType, includedTypes, referencedTypes);
-    }
+  for (const subType of subTypes ?? EMPTY) {
+    buildImports(subType, includedTypes, referencedTypes);
   }
 
   if (typeName === 'Reference') {
@@ -245,7 +242,7 @@ function getTypeScriptProperties(
     const baseName = name.replace('[x]', '');
     const propertyTypes = property.type as ElementDefinitionType[];
     for (const propertyType of propertyTypes) {
-      const code = propertyType.code as string;
+      const code = propertyType.code;
       result.push({
         name: baseName + capitalize(code),
         typeName: getTypeScriptTypeForProperty(property, propertyType, path),
@@ -283,7 +280,7 @@ function getTypeScriptTypeForProperty(
   typeDefinition: ElementDefinitionType,
   path: string
 ): string {
-  let baseType = typeDefinition.code as string;
+  let baseType = typeDefinition.code;
   let binding: string | undefined;
 
   switch (baseType) {
@@ -344,7 +341,7 @@ function getTypeScriptTypeForProperty(
       break;
 
     case 'Reference':
-      if (typeDefinition.targetProfile && typeDefinition.targetProfile.length > 0) {
+      if (typeDefinition.targetProfile?.length) {
         baseType += '<';
         for (const targetProfile of typeDefinition.targetProfile) {
           if (!baseType.endsWith('<')) {

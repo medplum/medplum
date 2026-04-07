@@ -33,7 +33,9 @@ function getSpec(): OpenAPIObjectWithPaths {
 function buildSpec(): OpenAPIObjectWithPaths {
   const result = buildBaseSpec();
   const definitions = getJsonSchemaDefinitions();
-  Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
+  for (const [name, definition] of Object.entries(definitions)) {
+    buildFhirType(result, name, definition);
+  }
   buildPaths(result);
   return result;
 }

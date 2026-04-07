@@ -9,6 +9,7 @@
 import {
   ContentType,
   deepClone,
+  EMPTY,
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
@@ -128,12 +129,10 @@ export function smartStylingHandler(_req: Request, res: Response): void {
 export function parseSmartScopes(scope: string | undefined): SmartScope[] {
   const result: SmartScope[] = [];
 
-  if (scope) {
-    for (const scopeTerm of scope.split(' ')) {
-      const parsed = parseSmartScopeString(scopeTerm);
-      if (parsed) {
-        result.push(parsed);
-      }
+  for (const scopeTerm of scope?.split(' ') ?? EMPTY) {
+    const parsed = parseSmartScopeString(scopeTerm);
+    if (parsed) {
+      result.push(parsed);
     }
   }
 
@@ -230,7 +229,7 @@ function mergeAccessPolicyWithScope(policy: AccessPolicyResource, scope: SmartSc
     result.criteria = result.criteria.replace('*', scope.resourceType);
   }
 
-  if (scope.scope.match(readOnlyScope)) {
+  if (readOnlyScope.exec(scope.scope)) {
     result.readonly = true;
   }
   if (scope.criteria) {
@@ -250,7 +249,7 @@ function generateSmartScopesPolicy(smartScopes: SmartScope[]): PopulatedAccessPo
   };
 
   for (const smartScope of smartScopes) {
-    (result.resource as AccessPolicyResource[]).push({
+    result.resource.push({
       resourceType: smartScope.resourceType,
     });
   }

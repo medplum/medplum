@@ -27,8 +27,8 @@ import {
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
-import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
-import { DEFAULT_ENCODING } from '@medplum/hl7';
+import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import { DEFAULT_ENCODING, ReturnAckCategory } from '@medplum/hl7';
 import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, spawn } from 'node:child_process';
@@ -474,9 +474,7 @@ export class App {
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
-      endpointPromises.push(
-        this.medplum.readReference(definition.endpoint as Reference<Endpoint>, { cache: 'no-cache' })
-      );
+      endpointPromises.push(this.medplum.readReference(definition.endpoint, { cache: 'no-cache' }));
     }
 
     const endpoints = await Promise.all(endpointPromises);
@@ -1016,6 +1014,35 @@ export class App {
 
     const address = new URL(message.remote);
     const encoding = address.searchParams.get('encoding') ?? undefined;
+    let msgReturnAck: ReturnAckCategory | undefined;
+    try {
+      msgReturnAck = this.parseReturnAck(message.returnAck);
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        remote: message.remote,
+        callback: message.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: normalizeErrorString(err),
+      } satisfies AgentTransmitResponse);
+      return;
+    }
+
+    let defaultReturnAck: ReturnAckCategory | undefined;
+    try {
+      defaultReturnAck = this.parseReturnAck(address.searchParams.get('defaultReturnAck'));
+    } catch (err) {
+      this.log.warn(`${normalizeErrorString(err)} - falling back to default return ACK behavior of 'first'.`);
+    }
+
+    // Determine the effective returnAck with fallback chain:
+    // 1. Per-message returnAck from AgentTransmitRequest (highest priority)
+    // 2. defaultReturnAck from Device URL
+    // 3. 'first' (default - for backwards compatibility)
+    const returnAck = msgReturnAck ?? defaultReturnAck ?? ReturnAckCategory.FIRST;
 
     let pool: Hl7ClientPool;
 
@@ -1075,7 +1102,7 @@ export class App {
     }
 
     client
-      .sendAndWait(requestMsg)
+      .sendAndWait(requestMsg, { returnAck })
       .then((response) => {
         this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
         this.addToWebSocketQueue({
@@ -1117,5 +1144,29 @@ export class App {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Parses and normalizes the `returnAck` mode parameter from the Device URL.
+   *
+   * @param rawValue - The raw query parameter value retrieved from the Device URL (e.g., 'application', 'first', or undefined).
+   * @returns The parsed `ReturnAckCategory` enum value.
+   */
+  private parseReturnAck(rawValue: string | null | undefined): ReturnAckCategory | undefined {
+    if (!rawValue) {
+      return undefined;
+    }
+
+    const normalizedValue = rawValue.toLowerCase();
+
+    if (normalizedValue === 'application') {
+      return ReturnAckCategory.APPLICATION;
+    }
+
+    if (normalizedValue === 'first') {
+      return ReturnAckCategory.FIRST;
+    }
+
+    throw new Error(`Invalid value for returnAck; expected: 'first' or 'application', received: ${rawValue}`);
   }
 }

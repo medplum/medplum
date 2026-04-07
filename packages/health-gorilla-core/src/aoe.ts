@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { arrayify, getAllQuestionnaireAnswers, getExtensionValue, getTypedPropertyValue } from '@medplum/core';
+import { arrayify, EMPTY, getAllQuestionnaireAnswers, getExtensionValue, getTypedPropertyValue } from '@medplum/core';
 import type {
   Questionnaire,
   QuestionnaireItem,
@@ -15,13 +15,10 @@ import type {
  * @returns - The normalized input Questionnaire.
  */
 export function normalizeAoeQuestionnaire(aoe: Questionnaire): Questionnaire {
-  if (aoe.item) {
-    for (const item of aoe.item) {
-      item.linkId = item.linkId ?? item.id;
-      item.initial = item.answerOption ? undefined : item.initial;
-    }
+  for (const item of aoe.item ?? EMPTY) {
+    item.linkId = item.linkId ?? item.id;
+    item.initial = item.answerOption ? undefined : item.initial;
   }
-
   return aoe;
 }
 

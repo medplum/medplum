@@ -105,7 +105,7 @@ async function createEpicPatient(
     return id;
   });
 
-  await epic.createResource<Patient>(patientToCreate);
+  await epic.createResource(patientToCreate);
   const epicPatient = await epic.searchOne('Patient', { identifier: ssnIdentifier });
 
   if (!epicPatient) {

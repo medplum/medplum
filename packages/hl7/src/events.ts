@@ -14,11 +14,31 @@ export class Hl7MessageEvent extends Event {
   }
 }
 
+export class Hl7EnhancedAckSentEvent extends Event {
+  readonly connection: Hl7Connection;
+  readonly message: Hl7Message;
+
+  constructor(connection: Hl7Connection, message: Hl7Message) {
+    super('enhancedAckSent');
+    this.connection = connection;
+    this.message = message;
+  }
+}
+
 export class Hl7ErrorEvent extends Event {
   readonly error: Error;
 
   constructor(error: Error) {
     super('error');
+    this.error = error;
+  }
+}
+
+export class Hl7WarningEvent extends Event {
+  readonly error: Error;
+
+  constructor(error: Error) {
+    super('warning');
     this.error = error;
   }
 }

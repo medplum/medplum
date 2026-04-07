@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
-import type { Message } from '../types/spaces';
 import { createReference, getReferenceString } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import type { Message } from '../types/spaces';
 
 /**
  * Creates a new conversation topic (main Communication resource)
@@ -59,7 +59,19 @@ export async function saveMessage(
   message: Message,
   sequenceNumber: number
 ): Promise<Communication> {
-  const communication: Communication = {
+  const communication = buildMessageCommunication(topicId, message, sequenceNumber);
+  return medplum.createResource(communication);
+}
+
+/**
+ * Builds a Communication resource for a message (without saving)
+ * @param topicId - The ID of the conversation topic
+ * @param message - The message to convert
+ * @param sequenceNumber - The sequence number of the message
+ * @returns The Communication resource (not saved)
+ */
+function buildMessageCommunication(topicId: string, message: Message, sequenceNumber: number): Communication {
+  return {
     resourceType: 'Communication',
     status: 'completed',
     identifier: [
@@ -81,13 +93,12 @@ export async function saveMessage(
           tool_calls: message.tool_calls,
           tool_call_id: message.tool_call_id,
           resources: message.resources,
+          componentCode: message.componentCode,
           sequenceNumber,
         }),
       },
     ],
   };
-
-  return medplum.createResource(communication);
 }
 
 /**
@@ -100,6 +111,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
     _sort: '_lastUpdated',
+    _count: '100',
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
@@ -115,6 +127,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
             tool_calls: data.tool_calls,
             tool_call_id: data.tool_call_id,
             resources: data.resources,
+            componentCode: data.componentCode,
           },
           sequenceNumber: data.sequenceNumber || 0,
         });
@@ -126,6 +139,9 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
       }
     }
   }
+
+  // Sort by sequenceNumber to ensure correct message order for OpenAI
+  messages.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
   return messages.map((m) => m.message);
 }

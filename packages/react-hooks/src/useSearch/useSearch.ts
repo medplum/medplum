@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { QueryTypes, ResourceArray } from '@medplum/core';
+import type { QueryTypes, ResourceArray, WithId } from '@medplum/core';
 import { allOk, normalizeOperationOutcome } from '@medplum/core';
 import type { Bundle, ExtractResource, OperationOutcome, ResourceType } from '@medplum/fhirtypes';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { useDebouncedValue } from '../useDebouncedValue/useDebouncedValue';
 
 type SearchFn = 'search' | 'searchOne' | 'searchResources';
-export type SearchOptions = { debounceMs?: number };
+export type SearchOptions = { debounceMs?: number; enabled?: boolean };
 
 const DEFAULT_DEBOUNCE_MS = 250;
 
@@ -26,8 +26,8 @@ export function useSearch<K extends ResourceType>(
   resourceType: K,
   query?: QueryTypes,
   options?: SearchOptions
-): [Bundle<ExtractResource<K>> | undefined, boolean, OperationOutcome | undefined] {
-  return useSearchImpl<K, Bundle<ExtractResource<K>>>('search', resourceType, query, options);
+): [Bundle<WithId<ExtractResource<K>>> | undefined, boolean, OperationOutcome | undefined] {
+  return useSearchImpl<K, Bundle<WithId<ExtractResource<K>>>>('search', resourceType, query, options);
 }
 
 /**
@@ -44,8 +44,8 @@ export function useSearchOne<K extends ResourceType>(
   resourceType: K,
   query?: QueryTypes,
   options?: SearchOptions
-): [ExtractResource<K> | undefined, boolean, OperationOutcome | undefined] {
-  return useSearchImpl<K, ExtractResource<K>>('searchOne', resourceType, query, options);
+): [WithId<ExtractResource<K>> | undefined, boolean, OperationOutcome | undefined] {
+  return useSearchImpl<K, WithId<ExtractResource<K>>>('searchOne', resourceType, query, options);
 }
 
 /**
@@ -62,8 +62,8 @@ export function useSearchResources<K extends ResourceType>(
   resourceType: K,
   query?: QueryTypes,
   options?: SearchOptions
-): [ResourceArray<ExtractResource<K>> | undefined, boolean, OperationOutcome | undefined] {
-  return useSearchImpl<K, ResourceArray<ExtractResource<K>>>('searchResources', resourceType, query, options);
+): [ResourceArray<WithId<ExtractResource<K>>> | undefined, boolean, OperationOutcome | undefined] {
+  return useSearchImpl<K, ResourceArray<WithId<ExtractResource<K>>>>('searchResources', resourceType, query, options);
 }
 
 function useSearchImpl<K extends ResourceType, SearchReturnType>(
@@ -73,32 +73,53 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
   options?: SearchOptions
 ): [SearchReturnType | undefined, boolean, OperationOutcome | undefined] {
   const medplum = useMedplum();
-  const [lastSearchKey, setLastSearchKey] = useState<string>();
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SearchReturnType>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
   const searchKey = medplum.fhirSearchUrl(resourceType, query).toString();
-  const [debouncedSearchKey] = useDebouncedValue(searchKey, options?.debounceMs ?? DEFAULT_DEBOUNCE_MS, {
-    leading: true,
-  });
+  const searchValue = useMemo(
+    () => ({
+      resourceType,
+      query,
+    }),
+    // This is safe because the missing dependencies are encoded into `searchKey`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchKey]
+  );
+
+  const enabled = options?.enabled ?? true;
+  const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
+  const [debouncedSearchValue] = useDebouncedValue(searchValue, debounceMs, { leading: true });
 
   useEffect(() => {
-    if (debouncedSearchKey !== lastSearchKey) {
-      setLastSearchKey(debouncedSearchKey);
-      medplum[searchFn](resourceType, query)
-        .then((res) => {
+    if (!enabled) {
+      return () => {};
+    }
+
+    setLoading(true);
+
+    let active = true;
+    medplum[searchFn](debouncedSearchValue.resourceType, debouncedSearchValue.query)
+      .then((res) => {
+        if (active) {
           setLoading(false);
           setResult(res as SearchReturnType);
           setOutcome(allOk);
-        })
-        .catch((err) => {
+        }
+      })
+      .catch((err) => {
+        if (active) {
           setLoading(false);
           setResult(undefined);
           setOutcome(normalizeOperationOutcome(err));
-        });
-    }
-  }, [medplum, searchFn, resourceType, query, lastSearchKey, debouncedSearchKey]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [medplum, searchFn, debouncedSearchValue, enabled]);
 
   return [result, loading, outcome];
 }
