@@ -92,14 +92,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const timerRef = useRef<number>(timer);
   const abortControllerRef = useRef<AbortController>(abortController);
   const autoSubmitRef = useRef<boolean>(autoSubmit);
-  const optionsRef = useRef(options);
-
   useLayoutEffect(() => {
     searchRef.current = search;
     timerRef.current = timer;
     abortControllerRef.current = abortController;
     autoSubmitRef.current = autoSubmit;
-    optionsRef.current = options;
   });
 
   const handleTimer = useCallback((): void => {
