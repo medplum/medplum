@@ -382,7 +382,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                                 Unable to parse tool call
                               </Text>
                             );
-
                           })}
                         </Stack>
                       </div>
@@ -671,4 +670,3 @@ const METHOD_COLORS: Record<string, string> = {
 function getMethodColor(method: string | undefined): string {
   return METHOD_COLORS[method ?? ''] ?? 'gray';
 }
-
