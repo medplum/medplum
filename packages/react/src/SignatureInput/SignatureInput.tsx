@@ -8,7 +8,7 @@ import type { Reference, Signature } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import SignaturePad from 'signature_pad';
 
 export interface SignatureInputProps extends PaperProps {
@@ -26,7 +26,9 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
   const signaturePadRef = useRef<SignaturePad>(null);
 
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  useLayoutEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   useEffect(() => {
     function handleEndStroke(): void {

@@ -94,13 +94,6 @@ export async function handler(
 
   const apiKey = secrets['OPENAI_API_KEY']?.valueString;
   if (!apiKey) {
-    console.error('OPENAI_API_KEY is missing from secrets');
-    if (responseStream) {
-      responseStream.startStreaming(200, { 'Content-Type': 'text/event-stream' });
-      responseStream.write('data: {"error":"OPENAI_API_KEY missing"}\n\n');
-      responseStream.end();
-      return undefined;
-    }
     return {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'OPENAI_API_KEY is required' } }],
