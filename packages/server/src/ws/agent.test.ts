@@ -6,6 +6,8 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'superwstest';
+import type { AgentInfo } from '../agent/utils';
+import { AgentConnectionState } from '../agent/utils';
 import { initApp, shutdownApp } from '../app';
 import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
@@ -13,8 +15,6 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
-import type { AgentInfo } from './utils';
-import { AgentConnectionState } from './utils';
 
 const app = express();
 let config: MedplumServerConfig;

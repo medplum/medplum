@@ -18,7 +18,7 @@ export interface ResourceDiffRowProps {
 export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
   const { name, path, property, originalValue, revisedValue } = props;
   const isAttachmentType = !!property?.type?.find((t) => t.code === 'Attachment');
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(isAttachmentType);
+  const [isCollapsed, setIsCollapsed] = useState(isAttachmentType);
   const toggleCollapse = (): void => setIsCollapsed((prev) => !prev);
 
   return (

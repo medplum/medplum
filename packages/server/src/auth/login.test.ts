@@ -541,7 +541,7 @@ describe('Login', () => {
     expect(res.body.login).toBeUndefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
-    expect(res.body.issue[0].details.text).toBe('Profile not active');
+    expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
   test('Success with no origin', async () => {

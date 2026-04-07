@@ -1760,7 +1760,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
     const promise = new ReadablePromise(
-      this.search<RT>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
+      this.search(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
     this.setCacheEntry(cacheKey, promise, options);
     return promise;
@@ -1799,7 +1799,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(this.search<RT>(resourceType, query, options).then(bundleToResourceArray));
+    const promise = new ReadablePromise(this.search(resourceType, query, options).then(bundleToResourceArray));
     this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
@@ -3805,7 +3805,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     };
 
     // Execute the batch request
-    const response = await this.post<Bundle>(this.fhirBaseUrl, batch);
+    const response = await this.post(this.fhirBaseUrl, batch);
 
     // Process the response
     for (let i = 0; i < entries.length; i++) {
@@ -4336,16 +4336,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (isContextVersionRequired(event)) {
       return this.post(
         this.fhircastHubUrl,
-        createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
+        createFhircastMessagePayload(topic, event, context, versionId as string),
         ContentType.JSON
       );
     }
     assertContextVersionOptional(event);
-    return this.post(
-      this.fhircastHubUrl,
-      createFhircastMessagePayload<typeof event>(topic, event, context),
-      ContentType.JSON
-    );
+    return this.post(this.fhircastHubUrl, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**
@@ -4582,9 +4578,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return;
     }
     this.subscriptionManager.removeCriteria(criteria, subscriptionProps);
-    if (this.subscriptionManager.getCriteriaCount() === 0) {
-      this.subscriptionManager.closeWebSocket();
-    }
   }
 
   /**

@@ -17,7 +17,7 @@ export interface ResourceHistoryTableProps {
 
 export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Element {
   const medplum = useMedplum();
-  const [value, setValue] = useState<Bundle | undefined>(props.history);
+  const [value, setValue] = useState(props.history);
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {

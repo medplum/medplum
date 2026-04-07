@@ -3,14 +3,14 @@
 import { Group, Title } from '@mantine/core';
 import { MedplumLink } from '@medplum/react';
 import type { JSX } from 'react';
-import { ResourceMemberTable } from './ResourceMemberTable';
+import { MemberTable } from './MembersTable';
 
 export function BotsPage(): JSX.Element {
   return (
     <>
-      <Title>ProjectMemberships for Bots</Title>
-      <ResourceMemberTable
-        resourceType="Bot"
+      <Title>Bots</Title>
+      <MemberTable
+        profileTypeOptions={[{ label: 'Bot', value: 'Bot' }]}
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
       />
       <Group justify="flex-end">

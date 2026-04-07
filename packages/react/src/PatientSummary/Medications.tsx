@@ -22,7 +22,7 @@ export interface MedicationsProps {
 
 export function Medications(props: MedicationsProps): JSX.Element {
   const medplum = useMedplum();
-  const [medicationRequests, setMedicationRequests] = useState<MedicationRequest[]>(props.medicationRequests);
+  const [medicationRequests, setMedicationRequests] = useState(props.medicationRequests);
   const [editMedication, setEditMedication] = useState<MedicationRequest>();
   const [opened, { open, close }] = useDisclosure(false);
 

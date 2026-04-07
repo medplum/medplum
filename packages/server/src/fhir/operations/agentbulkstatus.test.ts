@@ -288,7 +288,7 @@ function expectBundleToContainStatusEntry(bundle: Bundle<Parameters>, agent: Age
       parameter: expect.arrayContaining<ParametersParameter>([
         expect.objectContaining<ParametersParameter>({
           name: 'agent',
-          resource: expect.objectContaining<Agent>(agent),
+          resource: expect.objectContaining(agent),
         }),
         expect.objectContaining<ParametersParameter>({
           name: 'result',
