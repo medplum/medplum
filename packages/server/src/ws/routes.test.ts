@@ -3,14 +3,14 @@
 import { sleep } from '@medplum/core';
 import type { Express } from 'express';
 import express from 'express';
-import type { Server } from 'http';
-import type { AddressInfo } from 'net';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import request from 'superwstest';
 import WebSocket from 'ws';
-import { initApp, shutdownApp } from './app';
-import { loadTestConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
-import { withTestContext } from './test.setup';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
+import { withTestContext } from '../test.setup';
 
 describe('WebSockets', () => {
   let app: Express;
