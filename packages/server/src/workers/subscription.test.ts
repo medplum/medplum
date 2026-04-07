@@ -48,9 +48,9 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getPubSubRedisSubscriber } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
+import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
 import { addSubscriptionJobs, execSubscriptionJob, initSubscriptionWorker } from './subscription';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
