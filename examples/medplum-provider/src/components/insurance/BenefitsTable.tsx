@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Stack, Table, Text } from '@mantine/core';
+import { Box, Stack, Table } from '@mantine/core';
 import { formatMoney } from '@medplum/core';
 import type { CoverageEligibilityResponse, CoverageEligibilityResponseInsuranceItemBenefit } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -10,9 +10,6 @@ export type BenefitTableItem = NonNullable<NonNullable<CoverageEligibilityRespon
 export function BenefitsTable({ items }: { items: BenefitTableItem }): JSX.Element {
   return (
     <Stack gap="xs">
-      <Text fw={600} size="sm">
-        Benefits
-      </Text>
       <Box style={{ overflowX: 'auto' }}>
         <Table striped withTableBorder withColumnBorders fz="sm">
           <Table.Thead>
