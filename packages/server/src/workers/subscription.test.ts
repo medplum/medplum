@@ -35,6 +35,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
@@ -47,11 +48,11 @@ import {
   getUserActiveWebSocketSubscriptionCount,
   setActiveSubscription,
 } from '../pubsub';
-import { getPubSubRedisSubscriber } from '../redis';
 import * as redisModule from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
+import { getPubSubRedisSubscriber } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
+import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
 import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
 import {
@@ -63,6 +64,10 @@ import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils
 import * as workerUtils from './utils';
 
 jest.mock('node-fetch');
+jest.mock('../constants', () => ({
+  ...jest.requireActual('../constants'),
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
+}));
 const mockBullmq = jest.mocked(bullmqModule);
 
 describe('Subscription Worker', () => {
@@ -1935,7 +1940,7 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
-      await subscriber.subscribe('medplum:subscriptions:r4:websockets');
+      await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
     });
 
     afterAll(async () => {
@@ -3105,7 +3110,7 @@ describe('Subscription Worker', () => {
         readResource: jest.fn().mockResolvedValue({
           resourceType: 'Project',
           id: projectId,
-          systemSetting: [{ name: 'subscriptionAutoDisable', valueString: '[{\"maxConsecutiveFailures\":\"bad\"}]' }],
+          systemSetting: [{ name: 'subscriptionAutoDisable', valueString: '[{"maxConsecutiveFailures":"bad"}]' }],
         }),
       } as unknown as SystemRepository;
 
@@ -3151,7 +3156,11 @@ describe('Subscription Worker', () => {
         zadd: jest.fn().mockReturnThis(),
         zcount: jest.fn().mockReturnThis(),
         expire: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([[null, 0], [null, 1], [new Error('zcount failed'), null]]),
+        exec: jest.fn().mockResolvedValue([
+          [null, 0],
+          [null, 1],
+          [new Error('zcount failed'), null],
+        ]),
       };
 
       const redisSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({

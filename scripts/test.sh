@@ -9,45 +9,43 @@ set -x
 # Set node options
 export NODE_OPTIONS='--max-old-space-size=8192'
 
-# Clear old code coverage data
-rm -rf coverage
-mkdir -p coverage/packages
-mkdir -p coverage/combined
+# Set coverage flag unless NO_COVERAGE is set
+if [ -z "$NO_COVERAGE" ]; then
+  COVERAGE_FLAG="--coverage"
+
+  # Clear old code coverage data
+  rm -rf coverage
+  mkdir -p coverage/packages
+  mkdir -p coverage/combined
+else
+  COVERAGE_FLAG=""
+fi
+
+# Build
+# We want to build all packages and examples so they are cached when we run test for them later
+npx turbo run build --filter=!@medplum/docs
 
 # Seed the database
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
 # On a normal developer machine, this is run only rarely when setting up a new database
 # This test must be run first, and cannot be run concurrently with other tests
-SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- --coverage
-cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
-
-# Build
-npm run build
+SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- $COVERAGE_FLAG
+if [ -z "$NO_COVERAGE" ]; then
+  cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
+fi
 
 # Test
-# Run them separately because code coverage is resource intensive
+# Even though docs do not have a "test" action, we still will build the docs via the
+# global "build" job unless we filter it out
+npx turbo run test --concurrency=1 --filter=!@medplum/docs -- $COVERAGE_FLAG
 
-for dir in `ls packages`; do
-  if test -f "packages/$dir/package.json" && grep -q "\"test\":" "packages/$dir/package.json"; then
-    pushd packages/$dir
-    npm t -- --coverage
-    popd
-  fi
-done
+if [ -z "$NO_COVERAGE" ]; then
+  # Find all coverage-final.json files in packages subdirectories
+  for coverage_file in packages/*/coverage/coverage-final.json; do
+    package=$(echo "$coverage_file" | sed -E 's/packages\/([^/]+)\/coverage.*/\1/')
+    cp "$coverage_file" "coverage/packages/coverage-$package.json"
+  done
 
-for dir in `ls examples`; do
-  if test -f "examples/$dir/package.json" && grep -q "\"test\":" "examples/$dir/package.json"; then
-    pushd examples/$dir
-    npm t -- --coverage
-    popd
-  fi
-done
-
-# Find all coverage-final.json files in packages subdirectories
-for coverage_file in packages/*/coverage/coverage-final.json; do
-  package=$(echo "$coverage_file" | sed -E 's/packages\/([^/]+)\/coverage.*/\1/')
-  cp "$coverage_file" "coverage/packages/coverage-$package.json"
-done
-
-npx nyc merge coverage/packages coverage/combined/coverage.json
-npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
+  npx nyc merge coverage/packages coverage/combined/coverage.json
+  npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
+fi

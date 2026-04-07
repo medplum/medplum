@@ -4,7 +4,7 @@ import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { trimTrailingEmptyElements } from '@medplum/core';
 import type { Address } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
@@ -26,9 +26,6 @@ export type AddressInputProps = ComplexTypeInputProps<Address>;
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue || {});
 
-  const valueRef = useRef(value);
-  valueRef.current = value;
-
   const { getExtendedProps } = useContext(ElementsContext);
   const [useProps, typeProps, line1Props, line2Props, cityProps, stateProps, postalCodeProps] = useMemo(
     () =>
@@ -42,39 +39,39 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
   // e.g. US Core Patient Profile
 
-  function setValueWrapper(newValue: Address): void {
-    setValue(newValue);
+  function setValueWrapper(newValue: Partial<Address>): void {
+    setValue((prevValue) => ({ ...prevValue, ...newValue }));
     if (props.onChange) {
-      props.onChange(newValue);
+      props.onChange({ ...value, ...newValue });
     }
   }
 
   function setUse(use: 'home' | 'work' | 'temp' | 'old' | 'billing'): void {
-    setValueWrapper({ ...valueRef.current, use });
+    setValueWrapper({ use });
   }
 
   function setType(type: 'postal' | 'physical' | 'both'): void {
-    setValueWrapper({ ...valueRef.current, type });
+    setValueWrapper({ type });
   }
 
   function setLine1(line1: string): void {
-    setValueWrapper(setLine(valueRef.current || {}, 0, line1));
+    setValueWrapper(setLine(value, 0, line1));
   }
 
   function setLine2(line2: string): void {
-    setValueWrapper(setLine(valueRef.current || {}, 1, line2));
+    setValueWrapper(setLine(value, 1, line2));
   }
 
   function setCity(city: string): void {
-    setValueWrapper({ ...valueRef.current, city });
+    setValueWrapper({ city });
   }
 
   function setState(state: string): void {
-    setValueWrapper({ ...valueRef.current, state });
+    setValueWrapper({ state });
   }
 
   function setPostalCode(postalCode: string): void {
-    setValueWrapper({ ...valueRef.current, postalCode });
+    setValueWrapper({ postalCode });
   }
 
   return (

@@ -25,7 +25,7 @@ import type {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
@@ -53,9 +53,6 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     setSelectedKey(undefined);
   }
 
-  const valueRef = useRef<PlanDefinition>(value);
-  valueRef.current = value;
-
   useEffect(() => {
     medplum
       .requestSchema('PlanDefinition')
@@ -78,10 +75,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }
 
   function changeProperty(property: string, newValue: any): void {
-    setValue({
-      ...valueRef.current,
-      [property]: newValue,
-    } as PlanDefinition);
+    setValue((prevValue) => ({ ...prevValue, [property]: newValue }) as PlanDefinition);
   }
 
   return (
@@ -117,22 +111,17 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const actionsRef = useRef(props.actions);
-  actionsRef.current = props.actions;
-
   function changeAction(changedAction: PlanDefinitionAction): void {
-    props.onChange(
-      (actionsRef.current as PlanDefinition[]).map((i) => (i.id === changedAction.id ? changedAction : i))
-    );
+    props.onChange(props.actions.map((i) => (i.id === changedAction.id ? changedAction : i)));
   }
 
   function addAction(addedAction: PlanDefinitionAction): void {
-    props.onChange([...(actionsRef.current as PlanDefinition[]), addedAction]);
+    props.onChange([...props.actions, addedAction]);
     props.setSelectedKey(addedAction.id);
   }
 
   function removeAction(removedAction: PlanDefinitionAction): void {
-    props.onChange((actionsRef.current as PlanDefinition[]).filter((i) => i !== removedAction));
+    props.onChange(props.actions.filter((i) => i !== removedAction));
   }
 
   return (

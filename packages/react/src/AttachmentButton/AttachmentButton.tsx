@@ -78,6 +78,7 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
         ref={fileInputRef}
         onChange={(e) => onFileChange(e)}
       />
+      {/* eslint-disable-next-line react-hooks/refs */}
       {props.children({ onClick, disabled: props.disabled })}
     </>
   );

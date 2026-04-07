@@ -41,6 +41,7 @@ import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -54,9 +55,9 @@ import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
   getSubscriptionAutoDisableTriggers,
@@ -376,7 +377,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 

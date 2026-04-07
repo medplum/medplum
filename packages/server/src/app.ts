@@ -57,9 +57,9 @@ import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
-import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { closeWebSockets, initWebSockets } from './ws/routes';
 
 let server: http.Server | undefined = undefined;
 
@@ -171,6 +171,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
   await initAppServices(config);
   server = http.createServer(app);
+  server.on('connect', (req, socket) => {
+    socket.write('HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+    socket.end();
+  });
   initWebSockets(server);
 
   app.set('etag', false);

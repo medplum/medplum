@@ -9,6 +9,7 @@ import crypto, { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
@@ -171,7 +172,7 @@ async function setupSubscriptionHandler(): Promise<void> {
       }
     }
   });
-  await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
+  await redisSubscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
 }
 
 function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
