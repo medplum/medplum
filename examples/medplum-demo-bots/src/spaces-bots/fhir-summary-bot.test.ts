@@ -32,7 +32,7 @@ describe('fhir-summary-bot', () => {
 
   test('returns OperationOutcome when messages parameter is missing', async () => {
     const input: Parameters = { resourceType: 'Parameters', parameter: [] };
-    const result = await handler(medplum, { bot, input, contentType });
+    const result = await handler(medplum, { bot, input, contentType, secrets: {} });
     expect(result).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'messages parameter is required' } }],
@@ -47,7 +47,7 @@ describe('fhir-summary-bot', () => {
     vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Summarize patient' }]);
-    const result = await handler(medplum, { bot, input, contentType });
+    const result = await handler(medplum, { bot, input, contentType, secrets: {} });
 
     expect(result).toEqual(aiResponse);
   });
@@ -57,7 +57,7 @@ describe('fhir-summary-bot', () => {
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Summarize results' }]);
-    await handler(medplum, { bot, input, contentType });
+    await handler(medplum, { bot, input, contentType, secrets: {} });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
@@ -84,6 +84,7 @@ describe('fhir-summary-bot', () => {
       bot,
       input: makeInput([{ role: 'user', content: 'Hello' }], 'gpt-4o'),
       contentType,
+      secrets: {},
     });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
