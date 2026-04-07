@@ -75,7 +75,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }
 
   function changeProperty(property: string, newValue: any): void {
-    setValue((prevValue) => ({ ...prevValue, [property]: newValue } as PlanDefinition));
+    setValue((prevValue) => ({ ...prevValue, [property]: newValue }) as PlanDefinition);
   }
 
   return (
