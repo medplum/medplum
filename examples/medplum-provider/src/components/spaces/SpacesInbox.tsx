@@ -332,13 +332,22 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                             }
                             if (args) {
                               return (
-                                <Group key={tcIdx} gap="xs" align="center" wrap="nowrap" className={classes.toolCallGroup}>
-                                  <Badge size="sm" color={getMethodColor(args.method)} variant="filled" className={classes.toolCallBadge}>
+                                <Group
+                                  key={tcIdx}
+                                  gap="xs"
+                                  align="center"
+                                  wrap="nowrap"
+                                  className={classes.toolCallGroup}
+                                >
+                                  <Badge
+                                    size="sm"
+                                    color={getMethodColor(args.method)}
+                                    variant="filled"
+                                    className={classes.toolCallBadge}
+                                  >
                                     {args.method ?? 'CALL'}
                                   </Badge>
-                                  <Code className={classes.toolCallPath}>
-                                    {args.path ?? tc.function.name}
-                                  </Code>
+                                  <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
                                 </Group>
                               );
                             }
@@ -377,10 +386,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                           </Text>
                         </Group>
                         <Collapse in={isExpanded}>
-                          <Code
-                            block
-                            className={classes.toolResponseCode}
-                          >
+                          <Code block className={classes.toolResponseCode}>
                             {prettyContent}
                           </Code>
                         </Collapse>
