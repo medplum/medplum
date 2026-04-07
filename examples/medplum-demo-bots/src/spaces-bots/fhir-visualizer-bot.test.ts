@@ -6,7 +6,6 @@ import { handler } from './fhir-visualizer-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
-const secrets = { OPENAI_API_KEY: { name: 'OPENAI_API_KEY', valueString: 'test-key' } };
 
 function makeInput(messages: object[], fhirData?: object[], model?: string): Parameters {
   return {
@@ -32,18 +31,9 @@ describe('fhir-visualizer-bot', () => {
     });
   });
 
-  test('returns OperationOutcome when OPENAI_API_KEY is missing', async () => {
-    const input = makeInput([{ role: 'user', content: 'Show chart' }]);
-    const result = await handler(medplum, { bot, input, contentType, secrets: {} });
-    expect(result).toMatchObject({
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', details: { text: expect.stringContaining('OPENAI_API_KEY') } }],
-    });
-  });
-
   test('returns OperationOutcome when messages parameter is missing', async () => {
     const input: Parameters = { resourceType: 'Parameters', parameter: [] };
-    const result = await handler(medplum, { bot, input, contentType, secrets });
+    const result = await handler(medplum, { bot, input, contentType });
     expect(result).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'messages parameter is required' } }],
@@ -59,7 +49,7 @@ describe('fhir-visualizer-bot', () => {
 
     const fhirData = [{ resourceType: 'Observation', valueQuantity: { value: 120 } }];
     const input = makeInput([{ role: 'user', content: 'Show vitals chart' }], fhirData);
-    const result = await handler(medplum, { bot, input, contentType, secrets });
+    const result = await handler(medplum, { bot, input, contentType });
 
     expect(result).toEqual(aiResponse);
   });
@@ -70,7 +60,7 @@ describe('fhir-visualizer-bot', () => {
 
     const fhirData = [{ resourceType: 'Observation', id: 'obs-1' }];
     const input = makeInput([{ role: 'user', content: 'Visualize' }], fhirData);
-    await handler(medplum, { bot, input, contentType, secrets });
+    await handler(medplum, { bot, input, contentType });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
@@ -84,7 +74,7 @@ describe('fhir-visualizer-bot', () => {
     vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Show chart' }]);
-    const result = await handler(medplum, { bot, input, contentType, secrets });
+    const result = await handler(medplum, { bot, input, contentType });
 
     expect(result).toBeDefined();
   });
@@ -93,7 +83,7 @@ describe('fhir-visualizer-bot', () => {
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
-    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }]), contentType, secrets });
+    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }]), contentType });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     expect(callArgs.parameter?.find((p) => p.name === 'model')?.valueString).toBe('gpt-4o');
@@ -107,7 +97,6 @@ describe('fhir-visualizer-bot', () => {
       bot,
       input: makeInput([{ role: 'user', content: 'Hello' }], undefined, 'gpt-4'),
       contentType,
-      secrets,
     });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
@@ -127,7 +116,7 @@ describe('fhir-visualizer-bot', () => {
         ],
       },
     ];
-    await handler(medplum, { bot, input: makeInput(messages), contentType, secrets });
+    await handler(medplum, { bot, input: makeInput(messages), contentType });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');

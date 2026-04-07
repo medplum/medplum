@@ -6,7 +6,6 @@ import { handler } from './fhir-translator-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
-const secrets = { OPENAI_API_KEY: { name: 'OPENAI_API_KEY', valueString: 'test-key' } };
 
 const SYSTEM_PROMPT = 'You are a FHIR Request Translator.';
 const PROFILE_CONTEXT_TEMPLATE = '## CURRENT USER CONTEXT:\nRef: {{ref}}';
@@ -37,17 +36,10 @@ describe('fhir-translator-bot', () => {
     medplum = new MockClient();
   });
 
-  test('throws when OPENAI_API_KEY secret is missing', async () => {
-    const input = makeInput([{ role: 'user', content: 'Find patient John' }]);
-    await expect(handler(medplum, { bot, input, contentType, secrets: {} })).rejects.toThrow(
-      'OPENAI_API_KEY is required'
-    );
-  });
-
   test('throws when messages parameter is missing', async () => {
     mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const input: Parameters = { resourceType: 'Parameters', parameter: [] };
-    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+    await expect(handler(medplum, { bot, input, contentType })).rejects.toThrow(
       'messages parameter is required'
     );
   });
@@ -55,7 +47,7 @@ describe('fhir-translator-bot', () => {
   test('throws when system prompt Communication is missing', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(undefined);
     const input = makeInput([{ role: 'user', content: 'Hello' }]);
-    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+    await expect(handler(medplum, { bot, input, contentType })).rejects.toThrow(
       'ai-fhir-request-tools system prompt is not available'
     );
   });
@@ -63,7 +55,7 @@ describe('fhir-translator-bot', () => {
   test('throws when profile context template (payload[1]) is missing', async () => {
     mockSystemPromptCommunication(medplum); // no payload[1]
     const input = makeInput([{ role: 'user', content: 'Hello' }]);
-    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+    await expect(handler(medplum, { bot, input, contentType })).rejects.toThrow(
       'ai-fhir-request-tools profile context template is not available'
     );
   });
@@ -77,7 +69,7 @@ describe('fhir-translator-bot', () => {
     vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Hello' }]);
-    const result = await handler(medplum, { bot, input, contentType, secrets });
+    const result = await handler(medplum, { bot, input, contentType });
 
     expect(result.parameter?.find((p) => p.name === 'visualize')?.valueBoolean).toBe(false);
   });
@@ -94,7 +86,7 @@ describe('fhir-translator-bot', () => {
     vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Find patient John' }]);
-    const result = await handler(medplum, { bot, input, contentType, secrets });
+    const result = await handler(medplum, { bot, input, contentType });
 
     expect(result.parameter?.find((p) => p.name === 'visualize')?.valueBoolean).toBe(false);
   });
@@ -116,7 +108,7 @@ describe('fhir-translator-bot', () => {
     vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Show growth chart' }]);
-    const result = await handler(medplum, { bot, input, contentType, secrets });
+    const result = await handler(medplum, { bot, input, contentType });
 
     expect(result.parameter?.find((p) => p.name === 'visualize')?.valueBoolean).toBe(true);
   });
@@ -134,7 +126,7 @@ describe('fhir-translator-bot', () => {
       },
     ];
     const input = makeInput(messages);
-    await handler(medplum, { bot, input, contentType, secrets });
+    await handler(medplum, { bot, input, contentType });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
@@ -147,7 +139,7 @@ describe('fhir-translator-bot', () => {
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
-    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }]), contentType, secrets });
+    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }]), contentType });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     expect(callArgs.parameter?.find((p) => p.name === 'model')?.valueString).toBe('gpt-4');
@@ -162,7 +154,6 @@ describe('fhir-translator-bot', () => {
       bot,
       input: makeInput([{ role: 'user', content: 'Hello' }], 'gpt-4o'),
       contentType,
-      secrets,
     });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
@@ -175,7 +166,7 @@ describe('fhir-translator-bot', () => {
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
     const input = makeInput([{ role: 'user', content: 'Find patient' }]);
-    await handler(medplum, { bot, input, contentType, secrets });
+    await handler(medplum, { bot, input, contentType });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
@@ -194,7 +185,6 @@ describe('fhir-translator-bot', () => {
       bot,
       input,
       contentType,
-      secrets,
       requester: { reference: 'Practitioner/abc' },
     });
 
