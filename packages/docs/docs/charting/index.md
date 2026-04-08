@@ -126,7 +126,7 @@ flowchart BT
 
 ## Placing Orders
 
-Placing orders requires constructing the right resources, which can be created directly or via [`Questionnaires`](/docs/api/fhir/resources/questionnaire) and [`Bots`](/docs/api/fhir/medplum/bot). Refer to our section on [Labs and Imaging](/docs/labs-imaging/index.md) or [Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders) for more details.
+Placing orders requires constructing the right resources, which can be created directly or via [`Questionnaires`](/docs/api/fhir/resources/questionnaire) and [`Bots`](/docs/api/fhir/medplum/bot). Refer to our section on [Labs and Imaging](/docs/labs-imaging) or [Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders) for more details.
 
 ## Reference
 
