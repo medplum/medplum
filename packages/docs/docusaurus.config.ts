@@ -45,6 +45,10 @@ const config: Config = {
             from: '/docs/communications/task-based-message-response-tracking-and-routing',
             to: '/docs/communications/message-response-tracking-and-routing',
           },
+          {
+            from: '/docs/charting/ordering-labs-imaging',
+            to: '/docs/labs-imaging/ordering-labs-imaging',
+          },
         ],
       },
     ],
