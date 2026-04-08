@@ -6,7 +6,7 @@ import { handler } from './fhir-translator-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
-const secrets = {}
+const secrets = {};
 
 const SYSTEM_PROMPT = 'You are a FHIR Request Translator.';
 const PROFILE_CONTEXT_TEMPLATE = '## CURRENT USER CONTEXT:\nRef: {{ref}}';

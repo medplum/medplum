@@ -6,7 +6,7 @@ import { handler } from './fhir-summary-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
-const secrets = {}
+const secrets = {};
 
 function makeInput(messages: object[], model?: string): Parameters {
   return {
