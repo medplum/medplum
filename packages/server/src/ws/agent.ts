@@ -8,6 +8,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
+import type { AgentInfo } from '../agent/utils';
+import { AgentConnectionState } from '../agent/utils';
 import { executeBot } from '../bots/execute';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
@@ -15,8 +17,6 @@ import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import { publish } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
-import type { AgentInfo } from './utils';
-import { AgentConnectionState } from './utils';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 

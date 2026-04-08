@@ -105,7 +105,6 @@ import {
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
-import { checkWebSocketSubscriptionLimit } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -125,6 +124,7 @@ import { invariant } from '../util/invariant';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import type { HumanNameResource } from './lookups/humanname';

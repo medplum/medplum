@@ -10,7 +10,7 @@ import {
   useQuestionnaireForm,
 } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { SignatureInput } from '../SignatureInput/SignatureInput';
@@ -34,7 +34,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const medplum = useMedplum();
   const [signatureRequiredSubmitted, setSignatureRequiredSubmitted] = useState(false);
   const propsRef = useRef(props);
-  propsRef.current = props;
+  useLayoutEffect(() => {
+    propsRef.current = props;
+  });
 
   const onFormChange = useCallback((response: QuestionnaireResponse) => {
     setSignatureRequiredSubmitted(false);
@@ -51,7 +53,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     onChange: onFormChange,
   });
   const formStateRef = useRef(formState);
-  formStateRef.current = formState;
+  useLayoutEffect(() => {
+    formStateRef.current = formState;
+  });
 
   const isSignatureRequired = useMemo(() => {
     if (formState.loading) {

@@ -59,6 +59,7 @@ import {
   isValidHostname,
   lazy,
   mapByIdentifier,
+  NOOP,
   parseReference,
   preciseEquals,
   preciseGreaterThan,
@@ -1611,6 +1612,10 @@ describe('Core Utils', () => {
     expect(isValidHostname('https://foo.com')).toStrictEqual(false);
     expect(isValidHostname('foo_-bar_-')).toStrictEqual(false);
     expect(isValidHostname('foo | rm -rf /')).toStrictEqual(false);
+  });
+
+  test('NOOP', () => {
+    expect(NOOP()).toBeUndefined();
   });
 });
 
