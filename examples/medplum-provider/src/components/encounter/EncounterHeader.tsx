@@ -136,7 +136,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
               leftSection={<IconShieldCheck size={16} />}
               onClick={handleCheckEligibility}
             >
-              Check Insurance Eligibility
+              Insurance Eligibility
             </Button>
             {status === 'cancelled' || status === 'finished' ? (
               <>

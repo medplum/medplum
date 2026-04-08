@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
-import { formatDate } from '@medplum/core';
+import { formatDateTime } from '@medplum/core';
 import type { CoverageEligibilityRequest } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
@@ -30,7 +30,7 @@ export function EligibilityListItem({ request, isSelected, href }: EligibilityLi
             {purposes}
           </Text>
           <Text size="sm" c="dimmed">
-            {formatDate(request.created)}
+            {formatDateTime(request.created)}
           </Text>
         </Stack>
       </Group>
