@@ -6,6 +6,7 @@ import type {
   Duration,
   HealthcareService,
   HealthcareServiceAvailableTime,
+  Period,
   Schedule,
 } from '@medplum/fhirtypes';
 
@@ -25,6 +26,28 @@ type HardDuration = {
   unit: DurationUnit;
 };
 
+// Similar to a Temporal.PlainTime; represents a time without a date or time
+// zone, as seen in the FHIR `time` type. Segments may be zero padded.
+type WallClockTime = `${number}:${number}:${number}`;
+
+// Nested extension types for `availability`, encoding the R5 `Availability` datatype
+// in valid R4 extension form. Note: `daysOfWeek` repeats once per day value.
+type AvailabilityR4AvailableTime = {
+  url: 'availableTime';
+  extension: (
+    | { url: 'daysOfWeek'; valueCode: DayOfWeek }
+    | { url: 'allDay'; valueBoolean: boolean }
+    | { url: 'availableStartTime'; valueTime: WallClockTime }
+    | { url: 'availableEndTime'; valueTime: WallClockTime }
+  )[];
+};
+
+// Typed for completeness / future use; not yet processed by parseSchedulingParametersExtensions.
+type AvailabilityR4NotAvailableTime = {
+  url: 'notAvailableTime';
+  extension: ({ url: 'description'; valueString: string } | { url: 'during'; valuePeriod: Period })[];
+};
+
 // The allowed nested extensions
 export type SchedulingParametersExtensionExtension =
   | { url: 'bufferBefore'; valueDuration: HardDuration }
@@ -36,14 +59,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'timezone'; valueCode: string }
   | {
       url: 'availability';
-      valueTiming: {
-        repeat: {
-          dayOfWeek: DayOfWeek[];
-          timeOfDay: `${number}:${number}:${number}`[];
-          duration: number;
-          durationUnit: 'h' | 'min' | 'd' | 'wk';
-        };
-      };
+      extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
     };
 
 export type SchedulingParametersExtension = {
@@ -55,8 +71,8 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 type SchedulingParametersAvailability = {
   dayOfWeek: DayOfWeek[];
-  timeOfDay: `${number}:${number}:${number}`[];
-  duration: number; // minutes
+  availableStartTime: WallClockTime;
+  availableEndTime: WallClockTime;
 };
 
 export type SchedulingParameters = {
@@ -177,6 +193,41 @@ export function chooseSchedulingParameters(
   return [];
 }
 
+// Convert a single availability extension into SchedulingParametersAvailability entries.
+// notAvailableTime sub-extensions are ignored for now.
+function extractAvailabilityR4(ext: {
+  url: 'availability';
+  extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
+}): SchedulingParametersAvailability[] {
+  return ext.extension
+    .filter((sub) => sub.url === 'availableTime')
+    .map((availTime) => {
+      const dayOfWeek = availTime.extension.filter((e) => e.url === 'daysOfWeek').map((e) => e.valueCode);
+
+      const allDay = availTime.extension.find((e) => e.url === 'allDay')?.valueBoolean;
+      if (allDay) {
+        // FHIR doesn't allow representing end-of-day as `24:00:00` in a time
+        //
+        // We follow a convention where when end <= start, we treat it as
+        // belonging to the next day. In other words, this availability is from
+        // the start of the given weekdays to the start of the subsequent day.
+        //
+        // Note that we don't use a sentinel value like `23:59:59`, as we don't
+        // want to introduce a 1sec gap in availability; some events are
+        // scheduled to cross that boundary.
+        return { dayOfWeek, availableStartTime: '00:00:00' as const, availableEndTime: '00:00:00' as const };
+      }
+
+      const start = availTime.extension.find((e) => e.url === 'availableStartTime')?.valueTime;
+      const end = availTime.extension.find((e) => e.url === 'availableEndTime')?.valueTime;
+      if (start && end) {
+        return { dayOfWeek, availableStartTime: start, availableEndTime: end };
+      }
+      return undefined;
+    })
+    .filter(isDefined);
+}
+
 // Convert HealthcareService.availability entries into a format matching
 // our extension.availability values
 function extractAvailability(
@@ -185,20 +236,16 @@ function extractAvailability(
   if (availableTime.allDay) {
     return {
       dayOfWeek: availableTime.daysOfWeek ?? [],
-      timeOfDay: ['00:00:00'],
-      duration: 60 * 24,
+      availableStartTime: '00:00:00',
+      availableEndTime: '00:00:00',
     };
   }
 
   if (availableTime.availableStartTime && availableTime.availableEndTime) {
-    // Intentionally ignoring seconds, as we schedule at Minute granularity.
-    const [startHour, startMinute, _startSecond] = availableTime.availableStartTime.split(':').map(Number);
-    const [endHour, endMinute, _endSecond] = availableTime.availableEndTime.split(':').map(Number);
-    const duration = (endHour - startHour) * 60 + endMinute - startMinute;
     return {
       dayOfWeek: availableTime.daysOfWeek ?? [],
-      timeOfDay: [availableTime.availableStartTime as `${number}:${number}:${number}`],
-      duration,
+      availableStartTime: availableTime.availableStartTime as WallClockTime,
+      availableEndTime: availableTime.availableEndTime as WallClockTime,
     };
   }
 
@@ -229,22 +276,16 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
       resource.resourceType
     );
 
-    // `availability` is required in Schedule, not allowed in HealthcareService
-    // (where we read from HealthcareService.availableTimes instead)
+    // `availability` is required in Schedule, and not allowed in
+    // HealthcareService (where we read from availableTime instead).
     const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
-    const availabilityConstraint = resource.resourceType === 'Schedule' ? atLeastOne : exactlyZero;
-    availabilityConstraint(rawAvailability, 'availability', resource.resourceType);
+    if (resource.resourceType === 'Schedule') {
+      atLeastOne(rawAvailability, 'availability', resource.resourceType);
+    } else {
+      exactlyZero(rawAvailability, 'availability', resource.resourceType);
+    }
 
-    const availability =
-      resourceParameters.availability ??
-      rawAvailability.map((ext) => ({
-        dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
-        timeOfDay: ext.valueTiming.repeat.timeOfDay,
-        duration: durationToMinutes({
-          value: ext.valueTiming.repeat.duration,
-          unit: ext.valueTiming.repeat.durationUnit,
-        }),
-      }));
+    const availability = resourceParameters.availability ?? rawAvailability.flatMap(extractAvailabilityR4);
 
     const bufferBefore = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferBefore'),

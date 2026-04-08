@@ -12,7 +12,6 @@ import type {
   Project,
   Schedule,
   Slot,
-  Timing,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
@@ -20,6 +19,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import { createTestProject } from '../../test.setup';
+import type { SchedulingParametersExtensionExtension } from './utils/scheduling-parameters';
 
 const app = express();
 const request = supertest(app);
@@ -30,30 +30,66 @@ type AvailabilityOptions = {
   alignmentInterval?: number;
   alignmentOffset?: number;
   duration?: number;
-  availability: Timing['repeat'];
+  availability: SchedulingParametersExtensionExtension;
   timezone?: string;
 };
 
 const fourDayWorkWeek = {
-  dayOfWeek: ['mon', 'tue', 'wed', 'thu'],
-  timeOfDay: ['09:30:00', '13:15:00'],
-  duration: 3,
-  durationUnit: 'h',
-} satisfies Timing['repeat'];
+  url: 'availability',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'mon' },
+        { url: 'daysOfWeek', valueCode: 'tue' },
+        { url: 'daysOfWeek', valueCode: 'wed' },
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'availableStartTime', valueTime: '09:30:00' },
+        { url: 'availableEndTime', valueTime: '12:30:00' },
+      ],
+    },
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'mon' },
+        { url: 'daysOfWeek', valueCode: 'tue' },
+        { url: 'daysOfWeek', valueCode: 'wed' },
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'availableStartTime', valueTime: '13:15:00' },
+        { url: 'availableEndTime', valueTime: '16:15:00' },
+      ],
+    },
+  ],
+} satisfies SchedulingParametersExtensionExtension;
 
 const twoDaySchedule = {
-  dayOfWeek: ['thu', 'fri'],
-  timeOfDay: ['12:00:00'],
-  duration: 8,
-  durationUnit: 'h',
-} satisfies Timing['repeat'];
+  url: 'availability',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'daysOfWeek', valueCode: 'fri' },
+        { url: 'availableStartTime', valueTime: '12:00:00' },
+        { url: 'availableEndTime', valueTime: '20:00:00' },
+      ],
+    },
+  ],
+} satisfies SchedulingParametersExtensionExtension;
 
 const fridayOnly = {
-  dayOfWeek: ['fri'],
-  timeOfDay: ['10:30:00'],
-  duration: 8,
-  durationUnit: 'h',
-} satisfies Timing['repeat'];
+  url: 'availability',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'fri' },
+        { url: 'availableStartTime', valueTime: '10:30:00' },
+        { url: 'availableEndTime', valueTime: '18:30:00' },
+      ],
+    },
+  ],
+} satisfies SchedulingParametersExtensionExtension;
 
 describe('Schedule/:id/$find', () => {
   let location: Location;
@@ -96,10 +132,7 @@ describe('Schedule/:id/$find', () => {
       } satisfies Extension;
 
       if (availability) {
-        extension.extension.push({
-          url: 'availability',
-          valueTiming: { repeat: availability },
-        });
+        extension.extension.push(availability);
       }
 
       if (timezone) {
@@ -916,7 +949,7 @@ describe('Schedule/:id/$find', () => {
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
-            { url: 'availability', valueTiming: { repeat: twoDaySchedule } },
+            twoDaySchedule,
             { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
             { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'office-visit' }] } },
           ],
