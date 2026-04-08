@@ -120,7 +120,7 @@ The **Insurance Eligibility Bot** will execute the eligibility check by sending 
 ```ts
 const response = await medplum.executeBot(
     {
-      system: 'https://www.medplum.com/',
+      system: 'https://www.medplum.com/bots',
       value: 'eligibility',
     },
     coverageEligibilityRequest
