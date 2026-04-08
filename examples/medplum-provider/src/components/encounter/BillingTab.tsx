@@ -137,7 +137,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
 
-
   const processCandidResponse = useCallback((result: CandidBotResponse): void => {
     const encounterId = result?.fullEncounter?.encounterId;
     if (encounterId) {
@@ -330,36 +329,38 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         return;
       }
 
-    setSubmitting(true);
-    debouncedUpdateClaim.cancel();
-    try {
-      const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
-      showNotification({
-        title: 'Claim Submitted',
-        message: result?.message || 'Claim successfully submitted to Candid Health',
-        color: 'green',
-      });
-      const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
-      setClaim(updatedClaim);
-      await fetchCandidEncounter();
-    } catch (err) {
-      let errorMessage: string | undefined;
+      setSubmitting(true);
+      debouncedUpdateClaim.cancel();
       try {
-        const parsed = JSON.parse((err as Error).message);
-        errorMessage = parsed?.errorMessage;
-        notifications.show({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: errorMessage,
+        const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
+        showNotification({
+          title: 'Claim Submitted',
+          message: result?.message || 'Claim successfully submitted to Candid Health',
+          color: 'green',
         });
-      } catch {
-        showErrorNotification(err);
+        const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
+        setClaim(updatedClaim);
+        await fetchCandidEncounter();
+      } catch (err) {
+        let errorMessage: string | undefined;
+        try {
+          const parsed = JSON.parse((err as Error).message);
+          errorMessage = parsed?.errorMessage;
+          notifications.show({
+            color: 'red',
+            icon: <IconCircleOff />,
+            title: 'Error',
+            message: errorMessage,
+          });
+        } catch {
+          showErrorNotification(err);
+        }
+      } finally {
+        setSubmitting(false);
       }
-    } finally {
-      setSubmitting(false);
-    }
-  }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
+    },
+    [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
+  );
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
@@ -502,8 +503,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
           {billingBot && (
-
-<>
+            <>
               <SubmitClaimModal
                 opened={confirmModalOpen}
                 submitting={submitting}
@@ -517,20 +517,20 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmSubmit}
               />
-            <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
-              <Button
-                component="div"
-                variant="outline"
-                leftSection={<IconSend size={16} />}
-                loading={submitting}
-                onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
-                disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
-                data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
-              >
-                Submit Claim
-              </Button>
-            </Tooltip>
-</  >
+              <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
+                <Button
+                  component="div"
+                  variant="outline"
+                  leftSection={<IconSend size={16} />}
+                  loading={submitting}
+                  onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
+                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                  data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
+                >
+                  Submit Claim
+                </Button>
+              </Tooltip>
+            </>
           )}
           {billingBot === null && (
             <Button

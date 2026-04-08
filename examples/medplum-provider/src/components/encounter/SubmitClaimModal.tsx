@@ -1,27 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Box,
-  Button,
-  Card,
-  Checkbox,
-  Divider,
-  Grid,
-  Group,
-  Modal,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatHumanName } from '@medplum/core';
-import type {
-  ChargeItem,
-  Condition,
-  Coverage,
-  Encounter,
-  Patient,
-  Practitioner,
-} from '@medplum/fhirtypes';
+import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner } from '@medplum/fhirtypes';
 import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -59,7 +41,11 @@ interface CoverageCardProps {
 
 const CoverageCard = ({ coverage, selected, onToggle }: CoverageCardProps): JSX.Element => {
   return (
-    <Card withBorder p="xs" style={{ borderColor: selected ? 'var(--mantine-color-blue-6)' : undefined, borderWidth: 2 }}>
+    <Card
+      withBorder
+      p="xs"
+      style={{ borderColor: selected ? 'var(--mantine-color-blue-6)' : undefined, borderWidth: 2 }}
+    >
       <Group justify="space-between" mb={6}>
         <Text size="xs" tt="uppercase" fw={600} c="dimmed">
           Coverage
@@ -202,12 +188,7 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
               Coverage on file
             </Text>
             {insuranceCoverages.length > 1 && (
-              <Text
-                size="xs"
-                c="blue"
-                style={{ cursor: 'pointer' }}
-                onClick={() => toggleCoverageAll()}
-              >
+              <Text size="xs" c="blue" style={{ cursor: 'pointer' }} onClick={() => toggleCoverageAll()}>
                 {selectedIds.size === insuranceCoverages.length ? 'Deselect all' : 'Select all'}
               </Text>
             )}
