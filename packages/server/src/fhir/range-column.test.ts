@@ -40,6 +40,7 @@ describe('buildRangeColumns', () => {
     expect(columns.__targetDate).toStrictEqual(
       `{[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z),[2028-01-31T00:00:00.000Z,2028-02-01T00:00:00.000Z)}`
     );
+    expect(columns.__targetDateSort).toStrictEqual('2026-01-01T00:00:00.000Z');
   });
 
   test('single date time', () => {
@@ -64,6 +65,7 @@ describe('buildRangeColumns', () => {
     buildRangeColumns(valueDate, impl, columns, resource);
 
     expect(columns.__valueDate).toStrictEqual(`[2026-04-01T12:34:56.000Z,2026-04-01T12:34:57.000Z)`);
+    expect(columns.__valueDateSort).toStrictEqual('2026-04-01T12:34:56.000Z');
   });
 
   test('explicit Period', () => {
@@ -91,6 +93,7 @@ describe('buildRangeColumns', () => {
     buildRangeColumns(valueDate, impl, columns, resource);
 
     expect(columns.__valueDate).toStrictEqual(`[2026-04-04T12:34:56.000Z,2026-04-18T11:22:33.456Z]`);
+    expect(columns.__valueDateSort).toStrictEqual('2026-04-04T12:34:56.000Z');
   });
 
   test('one-sided Period', () => {
@@ -117,6 +120,7 @@ describe('buildRangeColumns', () => {
     buildRangeColumns(valueDate, impl, columns, resource);
 
     expect(columns.__valueDate).toStrictEqual(`(,2026-04-18T11:22:33.456Z]`);
+    expect(columns.__valueDateSort).toStrictEqual('2026-04-18T11:22:33.456Z');
   });
 
   test('multi number range', () => {
@@ -162,6 +166,7 @@ describe('buildRangeColumns', () => {
     buildRangeColumns(probability, impl, columns, resource);
 
     expect(columns.__probability).toStrictEqual(`{[0.005,0.005],[0.001,0.0049],[0.00002,)}`);
+    expect(columns.__probabilitySort).toStrictEqual(0.00002);
   });
 });
 

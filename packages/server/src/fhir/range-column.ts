@@ -22,9 +22,9 @@ export function buildRangeColumns(
   resource: Resource
 ): void {
   if (searchParam.type === 'date') {
-    columns[impl.rangeColumnName] = extractDateTimeParameter(searchParam, impl, resource);
+    extractDateTimeParameter(searchParam, impl, resource, columns);
   } else if (searchParam.type === 'number') {
-    columns[impl.rangeColumnName] = extractNumberParameter(searchParam, impl, resource);
+    extractNumberParameter(searchParam, impl, resource, columns);
   } else {
     throw new Error('Unsupported search parameter type for range column: ' + searchParam.type);
   }
@@ -33,20 +33,31 @@ export function buildRangeColumns(
 function extractDateTimeParameter(
   searchParam: SearchParameter,
   impl: RangeColumnSearchParameterImplementation,
-  resource: Resource
-): string | undefined {
+  resource: Resource,
+  columns: Record<string, any>
+): void {
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
   const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
   if (!typedValues.length) {
-    return undefined;
+    return;
   }
 
   if (impl.array) {
-    const values = typedValues.map((v) => formatRange(buildDateTimeRange(v)));
-    return `{${values.join(',')}}`;
+    let lowest: Date | undefined;
+    const values = typedValues.map((v) => {
+      const range = buildDateTimeRange(v);
+      const lowerBound = range.left ?? range.right;
+      if (!lowest || (lowerBound && lowest > lowerBound)) {
+        lowest = lowerBound;
+      }
+      return formatRange(range);
+    });
+    columns[impl.rangeColumnName] = `{${values.join(',')}}`;
+    columns[impl.sortColumnName] = lowest?.toISOString();
   } else {
-    const value = formatRange(buildDateTimeRange(typedValues[0]));
-    return value;
+    const range = buildDateTimeRange(typedValues[0]);
+    columns[impl.rangeColumnName] = formatRange(range);
+    columns[impl.sortColumnName] = range.left?.toISOString() ?? range.right?.toISOString();
   }
 }
 
@@ -111,20 +122,32 @@ function formatEndpoint(e: any): string {
 function extractNumberParameter(
   searchParam: SearchParameter,
   impl: RangeColumnSearchParameterImplementation,
-  resource: Resource
-): string | undefined {
+  resource: Resource,
+  columns: Record<string, any>
+): void {
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
   const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
   if (!typedValues.length) {
-    return undefined;
+    return;
   }
 
   if (impl.array) {
-    const values = typedValues.map((v) => formatRange(buildNumericRange(v)));
-    return `{${values.join(',')}}`;
+    let lowest: number | undefined;
+    const values = typedValues.map((v) => {
+      const range = buildNumericRange(v);
+      const lowerBound = range.left ?? range.right;
+      if (lowest === undefined || (lowerBound !== undefined && lowest > lowerBound)) {
+        lowest = lowerBound;
+      }
+      return formatRange(range);
+    });
+    columns[impl.rangeColumnName] = `{${values.join(',')}}`;
+    columns[impl.sortColumnName] = lowest;
   } else {
-    const value = formatRange(buildNumericRange(typedValues[0]));
-    return value;
+    const range = buildNumericRange(typedValues[0]);
+    const value = formatRange(range);
+    columns[impl.rangeColumnName] = value;
+    columns[impl.sortColumnName] = range.left ?? range.right;
   }
 }
 

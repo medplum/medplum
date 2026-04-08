@@ -49,7 +49,7 @@ import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
-import { buildRangeColumnsSearchFilter } from './range-column';
+import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
@@ -1047,6 +1047,15 @@ function buildSearchFilterExpression(
     case SearchStrategies.LOOKUP_TABLE:
       return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
     case SearchStrategies.RANGE_COLUMN:
+      if (param.id === 'MeasureReport-period') {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          impl as unknown as ColumnSearchParameterImplementation,
+          filter
+        );
+      }
       return buildRangeColumnsSearchFilter(resourceType, table, param, filter);
     default:
       return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
@@ -1568,7 +1577,7 @@ function addOrderByClause(
   if (impl.searchStrategy === SearchStrategies.TOKEN_COLUMN) {
     addTokenColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
-    // TODO
+    addRangeColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === SearchStrategies.LOOKUP_TABLE) {
     impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {

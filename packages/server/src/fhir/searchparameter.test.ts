@@ -49,7 +49,7 @@ describe('SearchParameterImplementation', () => {
     // expression: 'Patient.birthDate'
     const birthDateParam = indexedSearchParams.find((e) => e.id === 'individual-birthdate') as SearchParameter;
     const impl = getSearchParameterImplementation('Patient', birthDateParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('birthdate');
   });
 
@@ -57,7 +57,7 @@ describe('SearchParameterImplementation', () => {
     // expression: 'ServiceRequest.authoredOn'
     const authoredParam = indexedSearchParams.find((e) => e.id === 'ServiceRequest-authored') as SearchParameter;
     const impl = getSearchParameterImplementation('ServiceRequest', authoredParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('authored');
   });
 
@@ -120,7 +120,7 @@ describe('SearchParameterImplementation', () => {
     // expression: '(Observation.value as dateTime) | (Observation.value as Period)',
     const valueDateParam = indexedSearchParams.find((e) => e.id === 'Observation-value-date') as SearchParameter;
     const impl = getSearchParameterImplementation('Observation', valueDateParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('valueDate');
   });
 
@@ -138,7 +138,7 @@ describe('SearchParameterImplementation', () => {
     // expression: 'AllergyIntolerance.recordedDate | CarePlan.period | CareTeam.period | ClinicalImpression.date | Composition.date | Consent.dateTime | DiagnosticReport.effective | Encounter.period | EpisodeOfCare.period | FamilyMemberHistory.date | Flag.period | Immunization.occurrence | List.date | Observation.effective | Procedure.performed | (RiskAssessment.occurrence as dateTime) | SupplyRequest.authoredOn',
     const clinicalDateParam = indexedSearchParams.find((e) => e.id === 'clinical-date') as SearchParameter;
     const impl = getSearchParameterImplementation('Encounter', clinicalDateParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('date');
   });
 
@@ -206,7 +206,7 @@ describe('SearchParameterImplementation', () => {
   test('us-core-condition-asserted-date', () => {
     const searchParam = indexedSearchParams.find((e) => e.id === 'us-core-condition-asserted-date') as SearchParameter;
     const impl = getSearchParameterImplementation('Condition', searchParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('assertedDate');
   });
 
@@ -302,4 +302,11 @@ function expectTokenColumnImplementation(
 ): asserts impl is TokenColumnSearchParameterImplementation {
   expect(impl).toBeDefined();
   expect(impl?.searchStrategy).toBe(SearchStrategies.TOKEN_COLUMN);
+}
+
+function assertRangeColumnImplementation(
+  impl: SearchParameterImplementation | undefined
+): asserts impl is ColumnSearchParameterImplementation {
+  expect(impl).toBeDefined();
+  expect(impl?.searchStrategy).toBe(SearchStrategies.RANGE_COLUMN);
 }
