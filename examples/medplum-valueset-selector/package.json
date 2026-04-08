@@ -35,7 +35,7 @@
     "react-dom": "19.2.4",
     "react-router": "7.14.0",
     "typescript": "6.0.2",
-    "vite": "8.0.3"
+    "vite": "8.0.5"
   },
   "packageManager": "npm@10.9.8",
   "engines": {
