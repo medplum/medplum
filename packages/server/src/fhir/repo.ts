@@ -340,8 +340,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
    * 12. 12/01/25 - Added search param `Bot-cds-hook` (https://github.com/medplum/medplum/pull/7933)
    * 13. 01/05/25 - Added search params: ActivityDefinition-code, Communication-priority, Communication-priority-order, ProjectMembership-active (https://github.com/medplum/medplum/pull/8160)
+   * 14. 04/08/26 - Added search params: ProjectMembership-admin, Practitioner-qualification-code (https://github.com/medplum/medplum/pull/8919) and sort inline array columns
    */
-  static readonly VERSION: number = 13;
+  static readonly VERSION: number = 14;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
