@@ -436,7 +436,10 @@ function getSearchParameterIndexes(
       ];
     case 'range-column':
       return [
-        { columns: [impl.rangeColumnName, { expression: impl.sortColumnName, name: 'sorted' }], indexType: 'gist' },
+        {
+          columns: [impl.rangeColumnName, { expression: escapeIdentifier(impl.sortColumnName), name: 'sorted' }],
+          indexType: 'gist',
+        },
       ];
     case 'column': {
       const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
