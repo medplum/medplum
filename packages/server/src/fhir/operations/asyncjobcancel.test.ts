@@ -50,7 +50,7 @@ describe('AsyncJob/$cancel', () => {
       .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res2.body).toMatchObject(allOk);
 
     const res3 = await request(app)
       .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
@@ -87,7 +87,7 @@ describe('AsyncJob/$cancel', () => {
       .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res2.body).toMatchObject(allOk);
 
     const res3 = await request(app)
       .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
@@ -126,7 +126,7 @@ describe('AsyncJob/$cancel', () => {
     expect(res2.status).toStrictEqual(400);
 
     const outcome = res2.body as OperationOutcome;
-    expect(outcome).toMatchObject<OperationOutcome>(
+    expect(outcome).toMatchObject(
       badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${status}'`)
     );
   });

@@ -3,7 +3,6 @@
 import {
   allOk,
   badRequest,
-  codeableConceptMatchesToken,
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
@@ -11,14 +10,13 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, CodeableConcept, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, HealthcareService, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
-import type { SchedulingParameters } from './utils/scheduling-parameters';
-import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
+import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const findOperation = {
   resourceType: 'OperationDefinition',
@@ -28,12 +26,12 @@ const findOperation = {
   code: 'find',
   resource: ['Schedule'],
   system: false,
-  type: true,
+  type: false,
   instance: true,
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type', type: 'string', min: 1, max: '*' },
+    { use: 'in', name: 'service-type', type: 'string', min: 1, max: '1' },
     { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
@@ -45,26 +43,6 @@ type FindParameters = {
   'service-type': string;
   _count?: number;
 };
-
-// Given scheduling parameter descriptions, and an array of input service types, return
-// [SchedulingParameters, serviceType] pairs.
-//
-// - Each schedulingParameters description is returned at most once
-function filterByServiceTypes(
-  schedulingParameters: SchedulingParameters[],
-  serviceTypeTokens: string[]
-): [SchedulingParameters, CodeableConcept][] {
-  const results: [SchedulingParameters, CodeableConcept][] = [];
-  for (const params of schedulingParameters) {
-    const serviceType = params.serviceType.find((codeableConcept) =>
-      serviceTypeTokens.some((token) => codeableConceptMatchesToken(codeableConcept, token))
-    );
-    if (serviceType) {
-      results.push([params, serviceType]);
-    }
-  }
-  return results;
-}
 
 /**
  * Handles HTTP requests for the Schedule $find operation.
@@ -81,7 +59,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const { start, end, _count } = params;
 
   // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypeTokens = params['service-type']?.split(',');
+  const serviceTypeTokens = params['service-type'].split(',');
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
@@ -103,7 +81,18 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedule, slots] = await Promise.all([
+  const healthcareServiceSearch: Promise<HealthcareService[]> = ctx.repo.searchResources<HealthcareService>({
+    resourceType: 'HealthcareService',
+    filters: [
+      {
+        code: 'service-type',
+        operator: Operator.EQUALS,
+        value: serviceTypeTokens.join(','),
+      },
+    ],
+  });
+
+  const [schedule, slots, healthcareServices] = await Promise.all([
     ctx.repo.readResource<Schedule>('Schedule', req.params.id),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
@@ -133,6 +122,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
+    healthcareServiceSearch,
   ]);
 
   // If we filled a full search page of slots, then there may be slots we
@@ -152,15 +142,13 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     );
   }
 
-  const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-  const matchingSchedulingParameters = filterByServiceTypes(allSchedulingParameters, serviceTypeTokens);
-
-  if (matchingSchedulingParameters.length === 0) {
+  const schedulingParameters = chooseSchedulingParameters(schedule, healthcareServices, serviceTypeTokens);
+  if (schedulingParameters.length === 0) {
     throw new OperationOutcomeError(badRequest('No scheduling parameters found for the requested service type(s)'));
   }
 
   const resultSlots: Slot[] = flatMapMax(
-    matchingSchedulingParameters,
+    schedulingParameters,
     ([schedulingParameters, serviceType], _idx, maxCount) => {
       // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
       const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;

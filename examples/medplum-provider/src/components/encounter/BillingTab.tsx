@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Card, Flex, Group, Menu, Skeleton, Stack } from '@mantine/core';
+import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
+import { notifications, showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
@@ -17,10 +17,9 @@ import type {
   Media,
   Patient,
   Practitioner,
-  PractitionerRole,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
+import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -88,17 +87,15 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
-  const [eligibilityBot, setEligibilityBot] = useState<WithId<Bot> | null | undefined>(undefined);
-  const [practitionerRole, setPractitionerRole] = useState<WithId<PractitionerRole> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
   const [candidClaimAmount, setCandidClaimAmount] = useState<number | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
   const [backgroundChecking, setBackgroundChecking] = useState(false);
-  const conditionsRef = useRef<Condition[]>(conditions);
+  const conditionsRef = useRef(conditions);
   conditionsRef.current = conditions;
-  const claimRef = useRef<WithId<Claim> | undefined>(claim);
+  const claimRef = useRef(claim);
   claimRef.current = claim;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);
@@ -140,23 +137,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
 
-  useEffect(() => {
-    medplum
-      .searchOne('Bot', { identifier: 'https://www.medplum.com/bots|eligibility' })
-      .then((bot) => setEligibilityBot(bot ?? null))
-      .catch(() => setEligibilityBot(null));
-  }, [medplum]);
-
-  useEffect(() => {
-    if (!practitioner) {
-      setPractitionerRole(null);
-      return;
-    }
-    medplum
-      .searchOne('PractitionerRole', { practitioner: getReferenceString(practitioner) })
-      .then((role) => setPractitionerRole(role ?? null))
-      .catch(() => setPractitionerRole(null));
-  }, [medplum, practitioner]);
 
   const processCandidResponse = useCallback((result: CandidBotResponse): void => {
     const encounterId = result?.fullEncounter?.encounterId;
@@ -350,33 +330,53 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         return;
       }
 
-      setSubmitting(true);
-      debouncedUpdateClaim.cancel();
+    setSubmitting(true);
+    debouncedUpdateClaim.cancel();
+    try {
+      const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
+      showNotification({
+        title: 'Claim Submitted',
+        message: result?.message || 'Claim successfully submitted to Candid Health',
+        color: 'green',
+      });
+      const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
+      setClaim(updatedClaim);
+      await fetchCandidEncounter();
+    } catch (err) {
+      let errorMessage: string | undefined;
       try {
-        const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
-        showNotification({
-          title: 'Claim Submitted',
-          message: result?.message || 'Claim successfully submitted to Candid Health',
-          color: 'green',
+        const parsed = JSON.parse((err as Error).message);
+        errorMessage = parsed?.errorMessage;
+        notifications.show({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: errorMessage,
         });
-        const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
-        setClaim(updatedClaim);
-        await fetchCandidEncounter();
-      } catch (err) {
+      } catch {
         showErrorNotification(err);
-      } finally {
-        setSubmitting(false);
       }
-    },
-    [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
-  );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
+
+  const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
     <Menu shadow="md" width={200}>
       <Menu.Target>
-        <Button variant="outline" leftSection={<IconDownload size={16} />} disabled={disabled}>
-          Export Claim
-        </Button>
+        <Tooltip label={LOCKED_TOOLTIP} disabled={!disabled}>
+          <Button
+            component="div"
+            variant="outline"
+            leftSection={<IconDownload size={16} />}
+            disabled={disabled}
+            data-disabled={disabled || undefined}
+          >
+            Export Claim
+          </Button>
+        </Tooltip>
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>Export Options</Menu.Label>
@@ -462,6 +462,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [claim, coverages, debouncedUpdateClaim, medplum, patient, setClaim, submitClaim]
   );
 
+  const handleSubmitClaimClick = useCallback((): void => {
+    if (!conditions.length) {
+      showNotification({
+        title: 'Missing Diagnosis',
+        message: 'Please add at least one diagnosis before submitting a claim',
+        color: 'red',
+      });
+      return;
+    }
+    setConfirmModalOpen(true);
+  }, [conditions]);
+
   const renderClaimCard = (): JSX.Element | null => {
     if (!claim) {
       return null;
@@ -490,7 +502,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
           {billingBot && (
-            <>
+
+<>
               <SubmitClaimModal
                 opened={confirmModalOpen}
                 submitting={submitting}
@@ -500,21 +513,24 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 encounter={encounter}
                 conditions={conditions}
                 practitioner={practitioner}
-                practitionerRole={practitionerRole}
                 chargeItems={chargeItems}
-                eligibilityBot={eligibilityBot}
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmSubmit}
               />
+            <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
               <Button
+                component="div"
                 variant="outline"
                 leftSection={<IconSend size={16} />}
-                onClick={() => setConfirmModalOpen(true)}
+                loading={submitting}
+                onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
                 disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
               >
                 Submit Claim
               </Button>
-            </>
+            </Tooltip>
+</  >
           )}
           {billingBot === null && (
             <Button

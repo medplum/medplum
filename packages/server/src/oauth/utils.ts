@@ -349,6 +349,11 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
       operator: Operator.EQUALS,
       value: login.user.reference,
     },
+    {
+      code: 'active',
+      operator: Operator.NOT,
+      value: 'false',
+    },
   ];
 
   if (login.project?.reference) {
@@ -489,7 +494,7 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource<Login>(updatedLogin);
+  return globalSystemRepo.updateResource(updatedLogin);
 }
 
 /**

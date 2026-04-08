@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProjectMembership } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
-import { hasDoseSpotIdentifier } from './utils';
+import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from './utils';
 
 describe('utils', () => {
   describe('hasDoseSpotIdentifier', () => {
@@ -171,6 +171,79 @@ describe('utils', () => {
       };
 
       expect(hasDoseSpotIdentifier(membership)).toBe(false);
+    });
+  });
+
+  describe('hasScriptSureIdentifier', () => {
+    test('returns true when membership has ScriptSure identifier', () => {
+      const membership: ProjectMembership = {
+        resourceType: 'ProjectMembership',
+        id: 'membership-1',
+        identifier: [
+          {
+            system: 'https://spa.scriptsure.com',
+            value: '42',
+          },
+        ],
+        project: { id: 'project-1' },
+        user: { id: 'user-1' },
+        profile: { id: 'profile-1' },
+      };
+
+      expect(hasScriptSureIdentifier(membership)).toBe(true);
+    });
+
+    test('returns false when membership has no ScriptSure identifier', () => {
+      const membership: ProjectMembership = {
+        resourceType: 'ProjectMembership',
+        id: 'membership-1',
+        identifier: [
+          {
+            system: 'http://dosespot.com/identifier',
+            value: 'user-123',
+          },
+        ],
+        project: { id: 'project-1' },
+        user: { id: 'user-1' },
+        profile: { id: 'profile-1' },
+      };
+
+      expect(hasScriptSureIdentifier(membership)).toBe(false);
+    });
+
+    test('returns false when membership is undefined', () => {
+      expect(hasScriptSureIdentifier(undefined)).toBe(false);
+    });
+
+    test('returns false when identifier array is empty', () => {
+      const membership: ProjectMembership = {
+        resourceType: 'ProjectMembership',
+        id: 'membership-1',
+        identifier: [],
+        project: { id: 'project-1' },
+        user: { id: 'user-1' },
+        profile: { id: 'profile-1' },
+      };
+
+      expect(hasScriptSureIdentifier(membership)).toBe(false);
+    });
+
+    test('returns true when identifier system contains "scriptsure" as substring', () => {
+      const membership: ProjectMembership = {
+        resourceType: 'ProjectMembership',
+        id: 'membership-1',
+        identifier: [
+          {
+            system: 'https://ssu.scriptsure.com/chart',
+            value: '99',
+          },
+        ],
+        project: { id: 'project-1' },
+        user: { id: 'user-1' },
+        profile: { id: 'profile-1' },
+      };
+
+      expect(hasScriptSureIdentifier(membership)).toBe(true);
     });
   });
 });

@@ -417,7 +417,7 @@ export async function createSubscriptionAuditEvent(
   for (const destination of finalDestinations) {
     switch (destination) {
       case 'resource':
-        await systemRepo.createResource<AuditEvent>(auditEvent);
+        await systemRepo.createResource(auditEvent);
         break;
       case 'log':
         logAuditEvent(auditEvent);

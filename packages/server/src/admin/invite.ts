@@ -217,7 +217,7 @@ async function upsertProfileResource(
     } as ProfileResource;
 
     if (email) {
-      const { resource: result, outcome } = await systemRepo.conditionalCreate<ProfileResource>(resource, {
+      const { resource: result, outcome } = await systemRepo.conditionalCreate(resource, {
         resourceType,
         filters: [
           {

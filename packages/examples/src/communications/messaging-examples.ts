@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Many identifiers below exist only for documentation extraction (MedplumCodeBlock selectBlocks).
+// They are marked with `void` so TypeScript noUnusedLocals stays satisfied.
 
 // start-block imports
 import type { BotEvent } from '@medplum/core';
@@ -136,6 +139,7 @@ if (readStateBlock?.extension) {
 
 // start-block createReadReceiptTaskTs
 // Option C: Create a read-receipt Task when a message is sent (e.g. in a Bot)
+// Task.code is required; https://medplum.com/task-codes is a docs convention (not a hosted CodeSystem). Use a URI you own in production, or keep this string project-wide for consistency with the examples below.
 const readReceiptTask = await medplum.createResource({
   resourceType: 'Task',
   status: 'requested',
@@ -210,6 +214,95 @@ await medplum.searchResources('Communication', {
 });
 // end-block loadDraftsTs
 
+// start-block retractMessageTs
+await medplum.patchResource('Communication', 'original-message-id', [
+  { op: 'replace', path: '/status', value: 'entered-in-error' },
+]);
+// end-block retractMessageTs
+
+// start-block createCorrectedMessageTs
+const originalSender = { reference: 'Practitioner/example-sender', display: 'Example Sender' };
+const correctedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' }],
+  inResponseTo: [{ reference: 'Communication/original-message-id' }],
+  sender: originalSender,
+  payload: [{ contentString: 'Updated: The appointment is at 3 PM, not 2 PM.' }],
+  sent: new Date().toISOString(),
+  category: [
+    {
+      coding: [
+        {
+          system: 'https://medplum.com/CodeSystem/communication-category',
+          code: 'correction',
+          display: 'Correction',
+        },
+      ],
+    },
+  ],
+});
+console.log(correctedMessage);
+// end-block createCorrectedMessageTs
+
+// start-block localStorageDraftTs
+const draftStorageKey = `draft-${threadHeader.id}`;
+const composedText = 'User composed text';
+localStorage.setItem(draftStorageKey, composedText);
+const restoredDraft = localStorage.getItem(draftStorageKey);
+if (restoredDraft) {
+  console.log(restoredDraft);
+}
+localStorage.removeItem(draftStorageKey);
+// end-block localStorageDraftTs
+
+// start-block createServerDraftTs
+const draftBody = 'Draft body';
+const serverDraft = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'preparation',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  sender: { reference: `Practitioner/${currentUser.id}` },
+  payload: [{ contentString: draftBody }],
+});
+console.log(serverDraft);
+// end-block createServerDraftTs
+
+// start-block patchServerDraftTs
+const draftResourceId = 'example-draft-communication-id';
+const revisedDraftText = 'Revised draft body';
+await medplum.patchResource('Communication', draftResourceId, [
+  { op: 'replace', path: '/payload', value: [{ contentString: revisedDraftText }] },
+]);
+// end-block patchServerDraftTs
+
+// start-block promoteDraftTs
+// Also patch in topic, subject, and recipient if they were not set when the draft was created
+await medplum.patchResource('Communication', 'example-draft-communication-id', [
+  { op: 'replace', path: '/status', value: 'in-progress' },
+  { op: 'add', path: '/sent', value: new Date().toISOString() },
+  { op: 'add', path: '/topic', value: threadHeader.topic },
+  { op: 'add', path: '/subject', value: threadHeader.subject },
+  { op: 'add', path: '/recipient', value: [{ reference: 'Practitioner/doctor-gregory-house' }] },
+]);
+// end-block promoteDraftTs
+
+// start-block staleDraftCleanupTs
+const staleDraftCutoff = new Date();
+staleDraftCutoff.setDate(staleDraftCutoff.getDate() - 30);
+const staleDrafts = await medplum.searchResources('Communication', {
+  status: 'preparation',
+  _lastUpdated: `lt${staleDraftCutoff.toISOString()}`,
+});
+for (const stale of staleDrafts) {
+  await medplum.deleteResource('Communication', stale.id);
+}
+console.log(staleDrafts.length);
+// end-block staleDraftCleanupTs
+
 /*
 // start-block loadDraftsCli
 medplum get 'Communication?sender=Practitioner/{currentUserId}&status=preparation'
@@ -262,6 +355,110 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
   -H 'content-type: application/fhir+json'
 // end-block queryMessagesInThreadCurl
 */
+
+(async (): Promise<void> => {
+  // start-block creatingFirstThreadClientCredentialsTs
+  // Client credentials before FHIR calls; use real id/secret from Project Admin → Clients.
+  const medplum = new MedplumClient({ baseUrl: 'https://api.medplum.com/' });
+  const profile = await medplum.startClientLogin('YOUR_CLIENT_ID', 'YOUR_CLIENT_SECRET');
+  console.log(profile);
+  // end-block creatingFirstThreadClientCredentialsTs
+})().catch(console.error);
+
+// start-block verifyWalkthroughReferencesTs
+await medplum.readResource('Patient', 'homer-simpson');
+await medplum.readResource('Practitioner', 'doctor-alice-smith');
+// end-block verifyWalkthroughReferencesTs
+
+// start-block createYourFirstThreadHeaderAndFirstMessageTs
+// Thread header (no payload, no partOf) plus the first child message from the clinician.
+// Provider–patient thread: replace Patient and Practitioner references with real ids from your project.
+// Fixed `sent` values match the April 10th topic and sort predictably in examples; use real timestamps in production.
+const createdThreadHeader = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  // Thread header lists every participant in recipient (including the sender) so inbox-style queries work; see Messaging Data Model.
+  recipient: [
+    { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  ],
+  // Optional in FHIR; included here so the header aligns with message times when demonstrating _sort=sent.
+  sent: '2024-04-10T09:00:00.000Z',
+});
+
+const walkthroughFirstMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+  payload: [
+    {
+      contentString:
+        'Hi Homer — we received your lab specimen and processing has started. We will message you here when results are ready.',
+    },
+  ],
+  sent: '2024-04-10T10:00:00.000Z',
+});
+// end-block createYourFirstThreadHeaderAndFirstMessageTs
+// eslint-disable-next-line no-void
+void createdThreadHeader;
+// eslint-disable-next-line no-void
+void walkthroughFirstMessage;
+
+// start-block createYourFirstThreadReplyFromAnotherUserTs
+// In production this createResource call would run as another user (e.g. patient portal) with their own MedplumClient session.
+// It is shown in the same file so you can try the thread end-to-end; use the same `createdThreadHeader.id` from the step above.
+const walkthroughSecondMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  sender: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  recipient: [{ reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' }],
+  payload: [
+    {
+      contentString: 'Thanks — will the results be ready by the end of the week?',
+    },
+  ],
+  sent: '2024-04-10T10:05:00.000Z',
+});
+// end-block createYourFirstThreadReplyFromAnotherUserTs
+// eslint-disable-next-line no-void
+void walkthroughSecondMessage;
+
+// start-block createYourFirstThreadReplyInResponseToTs
+// Use when the user explicitly replies to one message (not required for linear chat).
+// Continues createdThreadHeader and walkthroughSecondMessage from the header, first message, and patient reply steps above.
+const walkthroughReplyInResponseTo = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+  payload: [{ contentString: 'Yes — we expect your results by Thursday. We will notify you here.' }],
+  sent: '2024-04-10T10:15:00.000Z',
+  inResponseTo: [{ reference: `Communication/${walkthroughSecondMessage.id}` }],
+});
+// end-block createYourFirstThreadReplyInResponseToTs
+// eslint-disable-next-line no-void
+void walkthroughReplyInResponseTo;
 
 // start-block filterByPatientTs
 // Filter threads to a specific patient
@@ -1104,6 +1301,101 @@ const categoryExampleCommunications: Communication =
 // end-block communicationCategories
 
 console.log(categoryExampleCommunications);
+
+// start-block asyncEncountersCreateSessionEncounterTs
+// Single-patient session: set Encounter.subject to that patient. Replace references with real ids from your project.
+const asyncEncountersSessionEncounter = await medplum.createResource({
+  resourceType: 'Encounter',
+  status: 'in-progress',
+  class: {
+    system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+    code: 'VR',
+    display: 'virtual',
+  },
+  subject: { reference: 'Patient/homer-simpson' },
+  participant: [
+    {
+      individual: { reference: 'Practitioner/doctor-alice-smith' },
+    },
+  ],
+});
+console.log(asyncEncountersSessionEncounter);
+// end-block asyncEncountersCreateSessionEncounterTs
+
+// start-block asyncEncountersLinkThreadHeaderEncounterTs
+// Link only the thread header: child messages inherit encounter context via Communication.partOf → header.
+// Uses the session Encounter created above and an existing thread header Communication.
+const asyncEncountersLinkedHeader = await medplum.patchResource('Communication', threadHeader.id, [
+  { op: 'add', path: '/encounter', value: { reference: `Encounter/${asyncEncountersSessionEncounter.id}` } },
+]);
+console.log(asyncEncountersLinkedHeader);
+// end-block asyncEncountersLinkThreadHeaderEncounterTs
+
+// start-block asyncEncountersChildMedicalEncounterTs
+// Multi-patient session: one child Encounter per patient; thread header stays linked to the session Encounter.
+const asyncEncountersChildEncounter = await medplum.createResource({
+  resourceType: 'Encounter',
+  status: 'in-progress',
+  class: {
+    system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+    code: 'VR',
+    display: 'virtual',
+  },
+  subject: { reference: 'Patient/bart-simpson' },
+  partOf: { reference: `Encounter/${asyncEncountersSessionEncounter.id}` },
+  reasonCode: [
+    {
+      coding: [{ system: SNOMED, code: '38341003', display: 'Hypertensive disorder, systemic arterial' }],
+    },
+  ],
+  type: [
+    {
+      coding: [
+        {
+          system: 'https://medplum.com/fhir/CodeSystem/encounter-type',
+          code: 'medical-encounter',
+          display: 'Medical Encounter',
+        },
+      ],
+    },
+  ],
+});
+console.log(asyncEncountersChildEncounter);
+// end-block asyncEncountersChildMedicalEncounterTs
+
+// start-block asyncEncountersVerifySearchesTs
+// List virtual (VR) encounters; find thread headers linked to a specific session Encounter.
+const asyncEncountersVirtualList = await medplum.searchResources('Encounter', {
+  class: 'http://terminology.hl7.org/CodeSystem/v3-ActCode|VR',
+});
+console.log(asyncEncountersVirtualList);
+
+const asyncEncountersThreadsForSession = await medplum.searchResources('Communication', {
+  encounter: `Encounter/${asyncEncountersSessionEncounter.id}`,
+  'part-of:missing': true,
+});
+console.log(asyncEncountersThreadsForSession);
+// end-block asyncEncountersVerifySearchesTs
+
+/*
+// start-block asyncEncountersVerifySearchesCli
+medplum get 'Encounter?class=http://terminology.hl7.org/CodeSystem/v3-ActCode|VR'
+medplum get 'Communication?encounter=Encounter/{sessionEncounterId}&part-of:missing=true'
+// end-block asyncEncountersVerifySearchesCli
+
+// start-block asyncEncountersVerifySearchesCurl
+curl -G 'https://api.medplum.com/fhir/R4/Encounter' \
+  --data-urlencode 'class=http://terminology.hl7.org/CodeSystem/v3-ActCode|VR' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+
+curl -G 'https://api.medplum.com/fhir/R4/Communication' \
+  --data-urlencode 'encounter=Encounter/{sessionEncounterId}' \
+  --data-urlencode 'part-of:missing=true' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block asyncEncountersVerifySearchesCurl
+*/
 
 // start-block threadLifecycleCloseHeaderTs
 await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'completed' }]);

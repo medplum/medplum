@@ -1,0 +1,160 @@
+---
+sidebar_position: 5
+title: Message Editing and Drafts
+tags: [communications, messaging, drafts, editing]
+keywords: [draft, preparation, entered-in-error, correction, inResponseTo, payload, patchResource]
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Message Editing and Drafts
+
+This page covers two workflows: correcting a message that has already been sent, and saving draft messages before sending. The editing section presents both a compliance-focused retract-and-correct pattern and a simpler in-place update alternative. The drafts section covers browser-only and cross-device persistence strategies.
+
+## Message Editing and Correction
+
+The recommended approach for healthcare messaging is the "retract and correct" pattern: mark the original as an error, then create a new [`Communication`](/docs/api/fhir/resources/communication) with the corrected content. This preserves an explicit audit trail, which is important for clinical and compliance scenarios.
+
+:::note Alternative for less regulated contexts
+
+If your use case does not require explicit error marking (for example, internal team chat), you can update the [`Communication`](/docs/api/fhir/resources/communication) `payload` in place using `patchResource`. FHIR version history (`meta.versionId`) still preserves every previous version, so the audit trail exists — it is just not surfaced via `status`. Choose the approach that matches your compliance requirements.
+
+The key difference is searchability: retract-and-correct makes edits discoverable via search (`Communication?status=entered-in-error` finds retracted messages, `Communication?category=correction` finds corrections). In-place updates make edit history only accessible via `_history`, which is not searchable. If you need to answer "show me all edited messages" without walking version history, use retract-and-correct.
+
+:::
+
+### Retract the Original Message
+
+Mark the original message as `entered-in-error`:
+
+<MedplumCodeBlock language="ts" selectBlocks="retractMessageTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+### Create the Corrected Message
+
+Create a new [`Communication`](/docs/api/fhir/resources/communication) with the corrected content. Use `inResponseTo` to link it to the original, and tag it with a `correction` category. Carry forward `topic`, `subject`, and `recipient` from the original message so the correction is discoverable via the same searches:
+
+<MedplumCodeBlock language="ts" selectBlocks="createCorrectedMessageTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+The original message content is always preserved in the resource's version history (`meta.versionId`), accessible via the Medplum App's History tab.
+
+### Displaying Corrections
+
+| Approach            | How it works                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Hide + replace      | Filter out `entered-in-error` messages. Show the correction in the original's position (use `inResponseTo` to find the link). |
+| Show with indicator | Display the original with a strikethrough or "this message was edited" label. Show the correction below it.                   |
+
+:::caution
+
+`entered-in-error` messages still appear in search results unless you explicitly filter them out with `status:not=entered-in-error` in your message queries.
+
+:::
+
+## Draft Messages
+
+Draft messages let users compose a message and return to it later before sending.
+
+### Single-Device Drafts (Browser Storage)
+
+For the simplest case, save draft text to browser storage keyed by thread ID:
+
+<MedplumCodeBlock language="ts" selectBlocks="localStorageDraftTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+In your UI, bind the restored string to your composer state (for example, a React `useState` setter) instead of logging it.
+
+This is fast and requires no server round-trips, but the draft is lost if the user switches devices or clears browser storage.
+
+:::note Server-side rendering
+
+If your app uses server-side rendering (for example, Next.js), guard `localStorage` access behind a `typeof window !== 'undefined'` check to avoid errors during SSR.
+
+:::
+
+### Cross-Device Drafts (Server-Side)
+
+For drafts that persist across devices, use `Communication.status = "preparation"`:
+
+<MedplumCodeBlock language="ts" selectBlocks="createServerDraftTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Update the draft as the user types (debounce to avoid excessive requests):
+
+<MedplumCodeBlock language="ts" selectBlocks="patchServerDraftTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+When the user sends the message, promote the draft. At this point, also ensure `topic`, `subject`, and `recipient` are populated if they were not set when the draft was first created:
+
+<MedplumCodeBlock language="ts" selectBlocks="promoteDraftTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::tip Draft attachments
+
+Draft [`Communication`](/docs/api/fhir/resources/communication) resources support the same `payload` types as sent messages, including `contentAttachment` and `contentReference`. If your composer allows file uploads before send, add the attachment to the draft's `payload` array alongside or instead of `contentString`.
+
+:::
+
+### Loading Drafts
+
+Query for the current user's drafts across all threads:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="loadDraftsTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="loadDraftsCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="loadDraftsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+:::caution
+
+Other users should never see your drafts. When loading messages for a thread, filter with `status:not=preparation` to exclude all drafts. Only load drafts via a sender-scoped query for the current user.
+
+:::
+
+:::tip Draft cleanup
+
+Server-side drafts can accumulate over time if users start composing but never send. Set up a cron-triggered Bot to purge `preparation` [`Communication`](/docs/api/fhir/resources/communication) resources older than a threshold (for example, 30 days). For large numbers of stale drafts, batch the deletes using `medplum.executeBatch()` with a Transaction Bundle for better performance.
+
+<MedplumCodeBlock language="ts" selectBlocks="staleDraftCleanupTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+See [Cron Jobs for Bots](/docs/bots/bot-cron-job) for scheduling setup.
+
+:::
+
+## In Your UI
+
+For corrections, choose one of the two display approaches in the table above. If you use "hide + replace," query with `status:not=entered-in-error` and use the correction's `inResponseTo` reference to position it where the original appeared. If you use "show with indicator," render the retracted message with a visual label (for example strikethrough text or an "edited" badge) and display the correction inline below it.
+
+For drafts, show an auto-saving indicator in the composer when using server-side drafts so users know their work is persisted. In the thread list, consider showing a "draft" badge next to threads where the current user has an unsent `preparation` Communication so they can resume composing.
+
+## See Also
+
+- [Searching and Querying Threads](/docs/communications/searching-and-querying-threads) — filtering messages by `status` in thread queries
+- [Sending Messages and Attachments](/docs/communications/sending-messages-and-attachments)
+- [Messaging Data Model](/docs/communications/messaging-data-model) — thread structure, `Communication` lifecycle, and `topic` on child messages
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API
+- [Bots](/docs/bots/bot-basics)

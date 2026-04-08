@@ -888,21 +888,6 @@
             }
           },
           {
-            "id" : "ClientApplication.redirectUri",
-            "path" : "ClientApplication.redirectUri",
-            "definition" : "@deprecated This field is deprecated. Use redirectUris instead.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "uri"
-            }],
-            "base": {
-              "path" : "ClientApplication.redirectUri",
-              "min" : 0,
-              "max" : "1"
-            }
-          },
-          {
             "id" : "ClientApplication.redirectUris",
             "path" : "ClientApplication.redirectUris",
             "definition" : "Optional redirect URI array used when redirecting a client back to the client application.",
@@ -1077,6 +1062,36 @@
               "path" : "ClientApplication.defaultScope",
               "min" : 0,
               "max" : "*"
+            }
+          },
+          {
+            "id" : "ClientApplication.certificateTrustStore",
+            "path" : "ClientApplication.certificateTrustStore",
+            "definition" : "Optional PEM-formatted certificates that are allowed to authenticate to this service via mutual TLS. Supports both Certificate Authorities (CAs) and self-signed certificates. Multiple certificates can be included.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.certificateTrustStore",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.redirectUri",
+            "path" : "ClientApplication.redirectUri",
+            "definition" : "@deprecated This field is deprecated. Use redirectUris instead.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base": {
+              "path" : "ClientApplication.redirectUri",
+              "min" : 0,
+              "max" : "1"
             }
           }
         ]

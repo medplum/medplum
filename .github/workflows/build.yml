@@ -37,6 +37,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
@@ -91,6 +94,9 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
@@ -181,9 +187,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       redis:
         image: redis:${{ matrix.redis-version }}
         options: >-
@@ -193,9 +196,6 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -205,6 +205,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
@@ -245,6 +248,9 @@ jobs:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
+          SERVER_TEST_CACHE_KEY: NODE${{ matrix.node-version }}-PG${{ matrix.pg-version }}-REDIS${{ matrix.redis-version }}
+          NO_COVERAGE: ${{ case(matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7, '', '1') }}
+
       - name: Coveralls GitHub Action
         if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
@@ -254,7 +260,7 @@ jobs:
       - name: SonarCloud Scan
         if: ${{ github.event_name != 'merge_group' && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
-        uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
+        uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -289,9 +295,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       redis:
         image: redis:${{ matrix.redis-version }}
         options: >-
@@ -301,9 +304,6 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -313,6 +313,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
@@ -413,6 +416,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:

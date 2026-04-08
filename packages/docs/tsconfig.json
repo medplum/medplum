@@ -6,5 +6,5 @@
     "esModuleInterop": true,
     "strictNullChecks": true
   },
-  "include": ["blog", "docs", "src"]
+  "include": ["./blog", "./docs", "./src"]
 }
