@@ -21,10 +21,6 @@ else
   COVERAGE_FLAG=""
 fi
 
-# Build
-# We want to build all packages and examples so they are cached when we run test for them later
-npx turbo run build --filter=!@medplum/docs
-
 # Seed the database
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
 # On a normal developer machine, this is run only rarely when setting up a new database
@@ -37,7 +33,7 @@ fi
 # Test
 # Even though docs do not have a "test" action, we still will build the docs via the
 # global "build" job unless we filter it out
-npx turbo run test --concurrency=1 --filter=!@medplum/docs -- $COVERAGE_FLAG
+npx turbo run test --concurrency=1 --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAG
 
 if [ -z "$NO_COVERAGE" ]; then
   # Find all coverage-final.json files in packages subdirectories
