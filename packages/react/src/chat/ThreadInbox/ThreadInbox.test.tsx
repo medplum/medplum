@@ -6,7 +6,7 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as reactHooks from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-import { render, screen, userEvent, waitFor } from '../../test-utils/render';
+import { act, render, screen, userEvent, waitFor } from '../../test-utils/render';
 import { ThreadInbox } from './ThreadInbox';
 
 jest.mock('@medplum/react-hooks', () => ({
@@ -25,6 +25,7 @@ const mockCommunication: Communication | undefined = {
 const mockOnNew = jest.fn();
 const mockGetThreadUri = jest.fn((topic: Communication) => `/Message/${topic.id}`);
 const mockOnChange = jest.fn();
+const mockNavigate = jest.fn();
 
 describe('ThreadInbox', () => {
   let medplum: MockClient;
@@ -33,6 +34,7 @@ describe('ThreadInbox', () => {
     medplum = new MockClient();
     jest.clearAllMocks();
     jest.mocked(reactHooks.useSubscription).mockClear();
+    mockNavigate.mockClear();
 
     medplum.search = jest.fn().mockResolvedValue({
       resourceType: 'Bundle',
@@ -45,28 +47,39 @@ describe('ThreadInbox', () => {
     });
   });
 
-  const setup = (props?: { threadId?: string; showPatientSummary?: boolean; subject?: typeof HomerSimpson }): void => {
-    render(
-      <>
-        <Notifications />
-        <ThreadInbox
-          query="_sort=-_lastUpdated"
-          threadId={props?.threadId}
-          showPatientSummary={props?.showPatientSummary ?? false}
-          subject={props?.subject}
-          onNew={mockOnNew}
-          getThreadUri={mockGetThreadUri}
-          onChange={mockOnChange}
-          inProgressUri="/Communication?status=in-progress"
-          completedUri="/Communication?status=completed"
-        />
-      </>,
-      ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      )
-    );
+  const setup = async (props?: {
+    threadId?: string;
+    showPatientSummary?: boolean;
+    subject?: typeof HomerSimpson;
+  }): Promise<void> => {
+    await act(async () => {
+      render(
+        <>
+          <Notifications />
+          <ThreadInbox
+            query="_sort=-_lastUpdated"
+            threadId={props?.threadId}
+            showPatientSummary={props?.showPatientSummary ?? false}
+            subject={props?.subject}
+            onNew={mockOnNew}
+            getThreadUri={mockGetThreadUri}
+            onChange={mockOnChange}
+            inProgressUri="/Communication?status=in-progress"
+            completedUri="/Communication?status=completed"
+          />
+        </>,
+        ({ children }) => (
+          <MemoryRouter>
+            <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+              {children}
+            </MedplumProvider>
+          </MemoryRouter>
+        )
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
   };
 
   test('renders filter buttons and new message button', async () => {
@@ -85,7 +98,7 @@ describe('ThreadInbox', () => {
 
   test('shows loading skeletons when loading', async () => {
     medplum.search = jest.fn().mockImplementation(() => new Promise(() => {}));
-    setup();
+    await setup();
 
     await waitFor(() => {
       const skeletons = document.querySelectorAll('.mantine-Skeleton-root');
@@ -156,7 +169,7 @@ describe('ThreadInbox', () => {
       })
     );
 
-    setup();
+    await setup();
 
     await waitFor(
       () => {
@@ -168,14 +181,14 @@ describe('ThreadInbox', () => {
   });
 
   test('shows no messages state when no thread is selected', async () => {
-    setup();
+    await setup();
     await waitFor(() => {
       expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
     });
   });
 
   test('shows empty messages state when no messages are found', async () => {
-    setup();
+    await setup();
     await waitFor(
       () => {
         expect(screen.getByText('No messages found')).toBeInTheDocument();
@@ -194,7 +207,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -220,7 +233,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ showPatientSummary: true, threadId: 'comm-123' });
+    await setup({ showPatientSummary: true, threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -243,7 +256,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ showPatientSummary: false, threadId: 'comm-123' });
+    await setup({ showPatientSummary: false, threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -255,7 +268,7 @@ describe('ThreadInbox', () => {
 
   test('opens new topic dialog when plus button is clicked', async () => {
     const user = userEvent.setup();
-    setup();
+    await setup();
 
     const iconButtons = screen.getAllByRole('button', { name: '' });
     const plusButton = iconButtons[iconButtons.length - 1];
@@ -268,7 +281,7 @@ describe('ThreadInbox', () => {
 
   test('closes new topic dialog when close is clicked', async () => {
     const user = userEvent.setup();
-    setup();
+    await setup();
 
     const iconButtons = screen.getAllByRole('button', { name: '' });
     const plusButton = iconButtons[iconButtons.length - 1];
@@ -299,7 +312,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -312,7 +325,7 @@ describe('ThreadInbox', () => {
 
   test('changes status filter to completed when Completed button is clicked', async () => {
     const user = userEvent.setup();
-    setup();
+    await setup();
 
     const completedButton = screen.getByText('Completed');
     await user.click(completedButton);
@@ -333,7 +346,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -364,7 +377,7 @@ describe('ThreadInbox', () => {
 
     const updateResourceSpy = jest.spyOn(medplum, 'updateResource');
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -401,7 +414,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -424,7 +437,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -448,7 +461,7 @@ describe('ThreadInbox', () => {
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
     medplum.updateResource = jest.fn().mockRejectedValue(new Error('Status update failed'));
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -485,7 +498,7 @@ describe('ThreadInbox', () => {
     });
     medplum.graphql = jest.fn().mockResolvedValue({ data: { CommunicationList: [] } });
 
-    setup();
+    await setup();
 
     await waitFor(
       () => {

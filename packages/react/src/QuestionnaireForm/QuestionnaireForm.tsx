@@ -10,7 +10,7 @@ import {
   useQuestionnaireForm,
 } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { SignatureInput } from '../SignatureInput/SignatureInput';
@@ -34,13 +34,13 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const medplum = useMedplum();
   const [signatureRequiredSubmitted, setSignatureRequiredSubmitted] = useState(false);
   const propsRef = useRef(props);
+  const pendingChangeRef = useRef<QuestionnaireResponse | undefined>(undefined);
   useLayoutEffect(() => {
     propsRef.current = props;
   });
 
   const onFormChange = useCallback((response: QuestionnaireResponse) => {
-    setSignatureRequiredSubmitted(false);
-    propsRef.current.onChange?.(response);
+    pendingChangeRef.current = response;
   }, []);
 
   const formState = useQuestionnaireForm({
@@ -55,6 +55,17 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const formStateRef = useRef(formState);
   useLayoutEffect(() => {
     formStateRef.current = formState;
+  });
+
+  useEffect(() => {
+    const pendingChange = pendingChangeRef.current;
+    if (!pendingChange) {
+      return;
+    }
+
+    pendingChangeRef.current = undefined;
+    setSignatureRequiredSubmitted(false);
+    propsRef.current.onChange?.(pendingChange);
   });
 
   const isSignatureRequired = useMemo(() => {
