@@ -237,7 +237,10 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         <DetailField label="Type" value={getCoverageType(coverage)} />
         <DetailField label="Patient ID" value={coverage.subscriberId ?? coverage.identifier?.[0]?.value ?? '—'} />
         <DetailField label="Group Number" value={getGroupNumber(coverage)} />
-        <DetailField label="Effective Date" value={coverage.period?.start ? formatDateTime(coverage.period.start) : '—'} />
+        <DetailField
+          label="Effective Date"
+          value={coverage.period?.start ? formatDateTime(coverage.period.start) : '—'}
+        />
         <DetailField label="End Date" value={coverage.period?.end ? formatDateTime(coverage.period.end) : '—'} />
       </SimpleGrid>
 
