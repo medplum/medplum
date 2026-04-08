@@ -115,16 +115,18 @@ If you are using an Organization from the Medplum Payer Directory, it will have 
 
 ## Executing the Eligibility Check
 
-The **Insurance Eligibility Bot** will execute the eligibility check by sending the CoverageEligibilityRequest resource to the Stedi API.
+Once you have created and stored your `CoverageEligibilityRequest`, invoke the `$check-eligibility` operation on it. The **Insurance Eligibility Bot** will execute the eligibility check by sending the request to the Stedi API and return a `CoverageEligibilityResponse`.
 
 ```ts
-const response = await medplum.executeBot(
-    {
-      system: 'https://www.medplum.com/',
-      value: 'eligibility',
-    },
-    coverageEligibilityRequest
+const response = await medplum.post(
+  medplum.fhirUrl('CoverageEligibilityRequest', coverageEligibilityRequest.id, '$check-eligibility')
 );
+```
+
+Or via the FHIR REST API:
+
+```http
+POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$check-eligibility
 ```
 
 ### Stedi sandbox testing
