@@ -37,11 +37,12 @@ describe('FindPane', () => {
     text: 'Follow-up Visit',
   };
 
-  const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): WithId<Schedule> => ({
+  const createScheduleWithServiceTypes = (serviceTypes: CodeableConcept[]): WithId<Schedule> => ({
     resourceType: 'Schedule',
     id: 'schedule-1',
     actor: [{ reference: 'Practitioner/practitioner-1' }],
     active: true,
+    serviceType: serviceTypes,
     extension: serviceTypes.map((st) => ({
       url: SchedulingParametersURI,
       extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
@@ -72,7 +73,7 @@ describe('FindPane', () => {
     },
   ];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
 
@@ -89,6 +90,34 @@ describe('FindPane', () => {
         );
       }
       return originalGet(url, options);
+    });
+
+    await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Annual Checkup',
+      type: [serviceType1],
+      extension: [
+        { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }] },
+      ],
+    });
+
+    await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Follow-up Visit',
+      type: [serviceType2],
+      extension: [
+        { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }] },
+      ],
+    });
+
+    await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Non-schedulable type',
+      type: [
+        {
+          coding: [{ code: 'not-available' }],
+        },
+      ],
     });
   });
 
@@ -121,7 +150,8 @@ describe('FindPane', () => {
     );
   };
 
-  test('it renders null when there are no schedulable service types', async () => {
+  test('it renders null when there are no schedulable service types on the Schedule', async () => {
+    // schedule.serviceType is missing, no schedulable services
     const schedule = {
       resourceType: 'Schedule',
       id: 'schedule-123',
@@ -142,7 +172,7 @@ describe('FindPane', () => {
       expect(screen.getByText('Schedule…')).toBeInTheDocument();
     });
 
-    test('renders service type buttons for each scheduling parameter', async () => {
+    test('renders a button for each scheduleable HealthcareService', async () => {
       await act(async () => {
         setup();
       });
@@ -152,7 +182,7 @@ describe('FindPane', () => {
     });
   });
 
-  describe('Service Type Selection', () => {
+  describe('HealthcareService Selection', () => {
     test('fetches slots when a service type is selected', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -176,7 +206,7 @@ describe('FindPane', () => {
       );
     });
 
-    test('displays service type name after selection', async () => {
+    test('displays service name after selection', async () => {
       const user = userEvent.setup();
 
       await act(async () => {
@@ -200,8 +230,9 @@ describe('FindPane', () => {
 
       // Slots should be rendered as buttons with formatted date/time
       const buttons = screen.getAllByRole('button');
-      // At least dismiss button + slot buttons
-      expect(buttons.length).toBeGreaterThanOrEqual(2);
+
+      // 1 dismiss button + 2 slot buttons
+      expect(buttons.length).toEqual(3);
     });
   });
 
@@ -234,8 +265,8 @@ describe('FindPane', () => {
     });
   });
 
-  describe('Auto-Selection with Single Service Type', () => {
-    test('auto-selects when there is exactly one service type', async () => {
+  describe('Auto-Selection with Single Service', () => {
+    test('auto-selects when there is exactly one schedulable service', async () => {
       const schedule = createScheduleWithServiceTypes([serviceType1]);
 
       await act(async () => {
@@ -303,11 +334,12 @@ describe('FindPane', () => {
   describe('Error Handling', () => {
     test('shows error notification when fetch fails', async () => {
       const user = userEvent.setup();
-      medplum.get = vi.fn().mockRejectedValue(new Error('Network error'));
 
       await act(async () => {
         setup();
       });
+
+      medplum.get = vi.fn().mockRejectedValue(new Error('Network error'));
 
       await user.click(screen.getByText('Annual Checkup'));
       expect(medplum.get).toHaveBeenCalled();
@@ -403,25 +435,6 @@ describe('FindPane', () => {
       await act(async () => setup({ schedule }));
 
       await waitFor(() => expect(screen.getByText('Therapy Session')).toBeInTheDocument());
-    });
-
-    test('deduplicates service types that appear in both HealthcareService and Schedule', async () => {
-      // serviceType1 exists in both the HealthcareService and the Schedule
-      await medplum.createResource<HealthcareService>({
-        resourceType: 'HealthcareService',
-        id: 'hs-1',
-        type: [serviceType1],
-        extension: [{ url: SchedulingParametersURI }],
-      });
-
-      const schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-
-      await act(async () => setup({ schedule }));
-
-      // serviceType1 should appear only once
-      await waitFor(() => expect(screen.getAllByText('Annual Checkup')).toHaveLength(1));
-      // serviceType2 is schedule-only and should still appear
-      expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
     });
 
     test('ignores HealthcareService resources without scheduling parameters', async () => {
