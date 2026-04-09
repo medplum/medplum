@@ -4,7 +4,7 @@ import { Button, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, useMedplum, useSearchResources } from '@medplum/react';
+import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,7 @@ import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
 import { hasSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
+import { extractReferencesFromCodeableReferenceLike } from '../../utils/servicetype';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -46,24 +47,30 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const medplum = useMedplum();
   const [slots, setSlots] = useState<readonly Slot[] | undefined>(undefined);
   const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
-  const [selectedHealthcareService, setSelectedHealthcareService] = useState<HealthcareService | undefined>();
+  const [selectedHealthcareService, setSelectedHealthcareService] = useState<WithId<HealthcareService> | undefined>();
   const { schedule, range, onSuccess } = props;
 
-  const serviceTypeSearch = useMemo(() => {
-    const tokenSet = new Set<string>();
-    for (const concept of schedule.serviceType ?? EMPTY) {
-      for (const coding of concept.coding ?? EMPTY) {
-        tokenSet.add(`${coding.system ?? ''}|${coding.code ?? ''}`);
-      }
-    }
-    return [...tokenSet].join(',');
-  }, [schedule]);
+  const [healthcareServices, setHealthcareServices] = useState<WithId<HealthcareService>[] | undefined>();
 
-  const [healthcareServices] = useSearchResources<'HealthcareService'>(
-    'HealthcareService',
-    `service-type=${serviceTypeSearch}`,
-    { enabled: serviceTypeSearch !== '' }
-  );
+  useEffect(() => {
+    const seen = new Set<string>();
+    const allRefs = extractReferencesFromCodeableReferenceLike(schedule.serviceType);
+    const refs = allRefs.filter((ref) => {
+      if (!ref.reference) {
+        return false;
+      }
+      if (seen.has(ref.reference)) {
+        return false;
+      }
+      seen.add(ref.reference);
+      return true;
+    });
+
+    Promise.all(refs.map((ref) => medplum.readReference(ref))).then(
+      (services) => setHealthcareServices(services),
+      (err) => showErrorNotification(err)
+    );
+  }, [medplum, schedule]);
 
   const scheduleableServices = useMemo(
     () => healthcareServices?.filter((service) => hasSchedulingParameters(service)),
@@ -86,10 +93,6 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
       return () => {};
     }
 
-    const serviceTypeParam = (selectedHealthcareService.type ?? EMPTY)
-      .flatMap((concept) => (concept.coding ?? EMPTY).map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`))
-      .join(',');
-
     // Compute search range
     const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
     const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + ONE_WEEK_MS);
@@ -102,7 +105,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     const params = new URLSearchParams({
       start,
       end,
-      'service-type': serviceTypeParam,
+      'service-type-reference': `HealthcareService/${selectedHealthcareService.id}`,
     });
 
     medplum

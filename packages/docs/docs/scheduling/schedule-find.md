@@ -11,7 +11,7 @@ The `$find` operation is currently in alpha. It supports only Schedules with a s
 
 :::
 
-The `$find` operation returns a bundle of available (free) [`Slot`](/docs/api/fhir/resources/slot) resources for a given [`Schedule`](/docs/api/fhir/resources/schedule) within a specified time range. Slots are computed dynamically from the Schedule's [`SchedulingParameters`](/docs/scheduling/defining-availability) extension — no Slots need to be pre-generated.
+The `$find` operation takes a [`Schedule`](/docs/api/fhir/resources/schedule) and a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) and returns a bundle of available (free) [`Slot`](/docs/api/fhir/resources/slot) resources within a specified time range. Slots are computed dynamically from the Schedule's [`SchedulingParameters`](/docs/scheduling/defining-availability) extension — no Slots need to be pre-generated.
 
 ## Use Cases
 
@@ -44,8 +44,7 @@ const result = await medplum.post(
     parameter: [
       { name: 'start', valueDateTime: '2026-03-10T09:00:00-05:00' },
       { name: 'end', valueDateTime: '2026-03-10T17:00:00-05:00' },
-      // Optional: filter by service type (format: "system|code")
-      { name: 'service-type', valueString: 'http://example.org/appointment-types|office-visit' },
+      { name: 'service-type-reference', valueReference: { reference: "HealthcareService/my-healthcareservice-id"},
       // Optional: limit number of results
       { name: '_count', valueInteger: 10 },
     ],
@@ -68,6 +67,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
     "parameter": [
       { "name": "start", "valueDateTime": "2026-03-10T09:00:00-05:00" },
       { "name": "end",   "valueDateTime": "2026-03-10T17:00:00-05:00" }
+      { name: "service-type-reference", "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"},
     ]
   }'
 ```
@@ -77,19 +77,19 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
 
 ## Parameters
 
-| Name           | Type       | Description                                                                                  | Required |
-| -------------- | ---------- | ---------------------------------------------------------------------------------------------| -------- |
-| `start`        | `dateTime` | Start of the search window (inclusive)                                                       | Yes      |
-| `end`          | `dateTime` | End of the search window (inclusive)                                                         | Yes      |
-| `service-type` | `string`   | Filter slots by service type. Format: `system\|code`. Multiple codes can be comma-separated. | Yes      |
-| `_count`       | `integer`  | Maximum number of Slot resources to return. Defaults to 20. Maximum is 1000.                 | No       |
+| Name                     | Type                             | Description                                                                                  | Required |
+| ------------------------ | -------------------------------- | ---------------------------------------------------------------------------------------------| -------- |
+| `start`                  | `dateTime`                       | Start of the search window (inclusive)                                                       | Yes      |
+| `end`                    | `dateTime`                       | End of the search window (inclusive)                                                         | Yes      |
+| `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
+| `_count`                 | `integer`                        | Maximum number of Slot resources to return. Defaults to 20. Maximum is 1000.                 | No       |
 
 ### Constraints
 
 - `start` must be before `end`
 - The search window cannot exceed **31 days**
 - The Schedule must have exactly **one actor** reference
-- The Schedule's `serviceType` field must match the requested service-type
+- The Schedule's `serviceType` field must match the requested HealthcareService.type
 - The actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 
 ## Output
@@ -118,7 +118,15 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
               "serviceType": [
                 {
                   "coding": [
-                    { "code": "office-visit" }
+                    {
+                      "code": "office-visit"
+                    }
+                  ],
+                  "extension": [
+                    {
+                      "url": "https://medplum.com/fhir/service-type-reference",
+                      "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
+                    }
                   ]
                 }
               ]
@@ -135,6 +143,12 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
                 {
                   "coding": [
                     { "code": "office-visit" }
+                  ]
+                  "extension": [
+                    {
+                      "url": "https://medplum.com/fhir/service-type-reference",
+                      "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
+                    }
                   ]
                 }
               ]
@@ -198,7 +212,7 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 }
 ```
 
-### Schedule Does not have the requested service-type in `Schedule.serviceType`
+### `Schedule.serviceType` does not match `HealthcareService.type`
 
 ```json
 {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { codeableConceptMatchesToken, EMPTY, getExtensionValue, isDefined } from '@medplum/core';
+import { EMPTY, getExtensionValue, isDefined } from '@medplum/core';
 import type { CodeableConcept, Resource, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
@@ -269,8 +269,4 @@ export function applyExistingSlots(params: {
   );
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
   return removeAvailability(allAvailability, busySlotIntervals);
-}
-
-export function serviceTypeMatchesTokens(serviceType: CodeableConcept[], tokens: string[]): boolean {
-  return tokens.some((token) => serviceType.some((concept) => codeableConceptMatchesToken(concept, token)));
 }

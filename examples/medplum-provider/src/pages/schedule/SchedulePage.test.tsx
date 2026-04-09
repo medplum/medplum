@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import { createReference, ReadablePromise } from '@medplum/core';
 import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
@@ -10,6 +11,7 @@ import { act, getByText, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { SchedulePage } from './SchedulePage';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
@@ -58,6 +60,7 @@ describe('SchedulePage', () => {
             <Routes>
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule/:id/settings" element={<div>Settings Page</div>} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -305,10 +308,47 @@ describe('SchedulePage', () => {
       });
     });
   });
+
+  describe('Settings gear icon', () => {
+    test('gear icon is hidden when the schedule lacks SchedulingParameters', async () => {
+      await act(async () => setup());
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: 'Schedule settings' })).not.toBeInTheDocument();
+    });
+
+    test('gear icon is visible when the schedule has SchedulingParameters', async () => {
+      const scheduleWithParams = {
+        ...mockSchedule,
+        extension: [{ url: SchedulingParametersURI }],
+      };
+      await medplum.updateResource(scheduleWithParams);
+      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
+
+      await act(async () => setup());
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+
+      expect(screen.getByRole('button', { name: 'Schedule settings' })).toBeInTheDocument();
+    });
+
+    test('clicking the gear icon navigates to the schedule settings page', async () => {
+      const user = userEvent.setup();
+      const scheduleWithParams = {
+        ...mockSchedule,
+        extension: [{ url: SchedulingParametersURI }],
+      };
+      await medplum.updateResource(scheduleWithParams);
+      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
+
+      await act(async () => setup());
+      await user.click(screen.getByRole('button', { name: 'Schedule settings' }));
+      await waitFor(() => expect(screen.getByText('Settings Page')).toBeInTheDocument());
+    });
+  });
 });
 
 describe('$find/$book component integration tests', () => {
   let medplum: MockClient;
+  let healthcareService: WithId<HealthcareService>;
 
   const serviceType1: CodeableConcept = {
     coding: [
@@ -331,7 +371,7 @@ describe('$find/$book component integration tests', () => {
       value: 800,
     });
 
-    await medplum.createResource<HealthcareService>({
+    healthcareService = await medplum.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       name: 'Annual Checkup',
       type: [serviceType1],
@@ -369,7 +409,7 @@ describe('$find/$book component integration tests', () => {
     // Add scheduling parameter extension to Alice's schedule
     await medplum.updateResource({
       ...DrAliceSmithSchedule,
-      serviceType: [serviceType1],
+      serviceType: toCodeableReferenceLike(healthcareService),
       extension: [
         {
           url: SchedulingParametersURI,
