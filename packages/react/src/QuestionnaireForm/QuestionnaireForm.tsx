@@ -57,6 +57,23 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     formStateRef.current = formState;
   });
 
+  // Intentionally run after every commit.
+  //
+  // `useQuestionnaireForm` currently invokes its `onChange` callback while the form
+  // is rendering/initializing. Calling `setState` directly from that callback caused
+  // React to warn that `QuestionnaireForm` was updating a parent during render.
+  //
+  // To avoid that render-phase update, `onFormChange` stages the latest response in
+  // `pendingChangeRef`, and this effect flushes it after commit. The effect clears
+  // the ref before calling `setSignatureRequiredSubmitted(false)`, so the state
+  // update does not create an infinite loop: the rerender triggered by `setState`
+  // immediately exits because there is no longer a pending change to flush.
+  //
+  // A more complete fix would be to move `useQuestionnaireForm`'s `onChange`
+  // emission out of render entirely. Until then, this effect must run on every
+  // commit so it can detect newly staged ref-based changes that do not participate
+  // in React's dependency tracking.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const pendingChange = pendingChangeRef.current;
     if (!pendingChange) {
