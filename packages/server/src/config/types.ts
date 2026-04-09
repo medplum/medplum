@@ -104,6 +104,7 @@ export interface MedplumServerConfig {
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
+  defaultLoginRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */

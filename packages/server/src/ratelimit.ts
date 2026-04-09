@@ -9,13 +9,48 @@ import type { MedplumServerConfig } from './config/types';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRateLimitRedis } from './redis';
 
+// There are three separate rate limits:
+// 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints
+// 2. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
+// 3. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
+
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
 // That meant that the rate limit was per server instance, rather than per server cluster
 // The value was primarily tuned for one particular cluster with 6 server instances
 // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
-const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
-const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
+
+interface RateLimitCategoryConfig {
+  readonly name: string;
+  readonly serverConfigKey: keyof MedplumServerConfig;
+  readonly systemSettingName: string;
+  readonly defaultLimitPerMinute: number;
+  readonly matchesUrl: (url: string) => boolean;
+}
+
+const categories: RateLimitCategoryConfig[] = [
+  {
+    name: 'login',
+    serverConfigKey: 'defaultLoginRateLimit',
+    systemSettingName: 'loginRateLimit',
+    defaultLimitPerMinute: 5,
+    matchesUrl: (url: string) => url === '/auth/login' || url === '/auth/newuser' || url === '/auth/newproject',
+  },
+  {
+    name: 'auth',
+    serverConfigKey: 'defaultAuthRateLimit',
+    systemSettingName: 'authRateLimit',
+    defaultLimitPerMinute: 1200,
+    matchesUrl: (url: string) => (url.startsWith('/auth/') || url.startsWith('/oauth2/')) && url !== '/auth/me',
+  },
+  {
+    name: 'default',
+    serverConfigKey: 'defaultRateLimit',
+    systemSettingName: 'rateLimit',
+    defaultLimitPerMinute: 60_000,
+    matchesUrl: (_url: string) => true, // Applies to all other paths
+  },
+];
 
 type InMemoryBlock = {
   result: RateLimiterRes;
@@ -78,7 +113,9 @@ export function getRateLimiter(req: Request, config?: MedplumServerConfig): Rate
 }
 
 function getRateLimitKey(req: Request): string {
-  return (req.ip as string) + (isAuthRequest(req) ? ':auth' : '');
+  const category = getRateLimitCategory(req);
+  const categoryKey = category.name;
+  return (req.ip as string) + (categoryKey === 'default' ? '' : `:${categoryKey}`);
 }
 
 function addRateLimitHeader(result: RateLimiterRes, res: Response): void {
@@ -90,27 +127,18 @@ export function closeRateLimiter(): void {
   handler = undefined;
 }
 
-function isAuthRequest(req: Request): boolean {
-  // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
-  // These URLs have a different rate limit than the rest of the API
-  if (req.originalUrl === '/auth/me') {
-    return false; // Read-only URL doesn't need the same rate limit protection
-  }
-  return req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
-}
-
 function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): number {
-  const isAuthUrl = isAuthRequest(req);
-  let limit: number;
-  if (isAuthUrl) {
-    limit = config?.defaultAuthRateLimit ?? DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE;
-  } else {
-    limit = config?.defaultRateLimit ?? DEFAULT_RATE_LIMIT_PER_MINUTE;
+  const category = getRateLimitCategory(req);
+  let limit: number = category.defaultLimitPerMinute;
+
+  const serverConfigKey = category.serverConfigKey;
+  if (config && typeof config[serverConfigKey] === 'number') {
+    limit = config[serverConfigKey];
   }
 
   const ctx = getRequestContext();
   if (ctx instanceof AuthenticatedRequestContext) {
-    const systemSettingName = isAuthUrl ? 'authRateLimit' : 'rateLimit';
+    const systemSettingName = category.systemSettingName;
     const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
     if (systemSetting?.valueInteger) {
       limit = systemSetting.valueInteger;
@@ -118,4 +146,14 @@ function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): num
   }
 
   return limit;
+}
+
+function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
+  const url = req.originalUrl;
+  for (const category of categories) {
+    if (category.matchesUrl(url)) {
+      return category;
+    }
+  }
+  return categories[categories.length - 1]; // Default category is the last one in the list
 }
