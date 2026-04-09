@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, ScrollArea, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
-import { formatDate, formatPeriod } from '@medplum/core';
+import { formatDateTime, formatPeriod } from '@medplum/core';
 import type {
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
@@ -31,7 +31,7 @@ export function EligibilityDetails({ request, response, loadingResponse }: Eligi
 
 function getServicedDateText(request: CoverageEligibilityRequest): string {
   if (request.servicedDate) {
-    return formatDate(request.servicedDate);
+    return formatDateTime(request.servicedDate);
   }
   if (request.servicedPeriod) {
     return formatPeriod(request.servicedPeriod);
@@ -45,7 +45,7 @@ function RequestSection({ request }: { request: CoverageEligibilityRequest }): J
       <Title order={5}>Eligibility Request</Title>
       <Table>
         <Table.Tbody>
-          <DetailRow label="Created" value={formatDate(request.created)} />
+          <DetailRow label="Created" value={formatDateTime(request.created)} />
           <DetailRow label="Purpose" value={request.purpose?.map(formatPurpose).join(', ') ?? '—'} />
           <DetailRow label="Serviced Date" value={getServicedDateText(request)} />
           <DetailRow label="Insurer" value={request.insurer?.display ?? request.insurer?.reference ?? '—'} />
@@ -94,7 +94,7 @@ function ResponseSection({
           <DetailRow label="Outcome" value={formatOutcome(response.outcome)} />
           {response.disposition && <DetailRow label="Disposition" value={response.disposition} />}
           <DetailRow label="Insurer" value={response.insurer?.display ?? response.insurer?.reference ?? '—'} />
-          <DetailRow label="Created" value={formatDate(response.created)} />
+          <DetailRow label="Created" value={formatDateTime(response.created)} />
         </Table.Tbody>
       </Table>
       {response.insurance?.map((insurance, index) => (
