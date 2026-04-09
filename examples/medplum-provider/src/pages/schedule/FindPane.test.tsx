@@ -11,42 +11,23 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { FindPane } from './FindPane';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
+const ServiceTypeReferenceURI = 'https://medlpum.com/fhir/service-type-reference';
 
 describe('FindPane', () => {
   let medplum: MockClient;
+  let healthcareService: WithId<HealthcareService>;
+  let healthcareService2: WithId<HealthcareService>;
 
-  const serviceType1: CodeableConcept = {
-    coding: [
-      {
-        system: 'http://example.com/service-types',
-        code: 'checkup',
-      },
-    ],
-    text: 'Annual Checkup',
-  };
-
-  const serviceType2: CodeableConcept = {
-    coding: [
-      {
-        code: 'followup',
-      },
-    ],
-    text: 'Follow-up Visit',
-  };
-
-  const createScheduleWithServiceTypes = (serviceTypes: CodeableConcept[]): WithId<Schedule> => ({
+  const createScheduleWithServices = (services: WithId<HealthcareService>[]): WithId<Schedule> => ({
     resourceType: 'Schedule',
     id: 'schedule-1',
     actor: [{ reference: 'Practitioner/practitioner-1' }],
     active: true,
-    serviceType: serviceTypes,
-    extension: serviceTypes.map((st) => ({
-      url: SchedulingParametersURI,
-      extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
-    })),
+    serviceType: services.flatMap(toCodeableReferenceLike),
   });
 
   const defaultRange = {
@@ -92,19 +73,19 @@ describe('FindPane', () => {
       return originalGet(url, options);
     });
 
-    await medplum.createResource<HealthcareService>({
+    healthcareService = await medplum.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       name: 'Annual Checkup',
-      type: [serviceType1],
+      type: [{ coding: [{ system: ServiceTypeReferenceURI, code: 'checkup' }], text: 'Annual Checkup' }],
       extension: [
         { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }] },
       ],
     });
 
-    await medplum.createResource<HealthcareService>({
+    healthcareService2 = await medplum.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       name: 'Follow-up Visit',
-      type: [serviceType2],
+      type: [{ coding: [{ code: 'followup' }], text: 'Follow-up Visit' }],
       extension: [
         { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }] },
       ],
@@ -131,7 +112,7 @@ describe('FindPane', () => {
 
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
     const {
-      schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]),
+      schedule = createScheduleWithServices([healthcareService, healthcareService2]),
       range = defaultRange,
       onSuccess = vi.fn(),
     } = options;
@@ -199,9 +180,11 @@ describe('FindPane', () => {
         expect.any(Object)
       );
 
-      // check that it was called with the service-type parameter
+      // check that it was called with the service-type-reference parameter
       expect(medplum.get).toHaveBeenCalledWith(
-        expect.stringContaining(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`),
+        expect.stringContaining(
+          `service-type-reference=${encodeURIComponent(`HealthcareService/${healthcareService.id}`)}`
+        ),
         expect.any(Object)
       );
     });
@@ -267,7 +250,7 @@ describe('FindPane', () => {
 
   describe('Auto-Selection with Single Service', () => {
     test('auto-selects when there is exactly one schedulable service', async () => {
-      const schedule = createScheduleWithServiceTypes([serviceType1]);
+      const schedule = createScheduleWithServices([healthcareService]);
 
       await act(async () => {
         setup({ schedule });
@@ -282,7 +265,7 @@ describe('FindPane', () => {
     });
 
     test('does not show dismiss button when auto-selected with single option', async () => {
-      const schedule = createScheduleWithServiceTypes([serviceType1]);
+      const schedule = createScheduleWithServices([healthcareService]);
 
       await act(async () => {
         setup({ schedule });
@@ -370,44 +353,6 @@ describe('FindPane', () => {
       expect(callUrl).toContain('start=');
       expect(callUrl).toContain('end=');
     });
-
-    test('uses `system|code` style for service-type parameter', async () => {
-      const user = userEvent.setup();
-      const range = {
-        start: new Date('2024-02-01T00:00:00Z'),
-        end: new Date('2024-02-07T23:59:59Z'),
-      };
-
-      await act(async () => {
-        setup({ range });
-      });
-
-      await user.click(screen.getByText('Annual Checkup'));
-
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls
-        .map((call) => call[0])
-        .find((url) => url.toString().includes('$find'));
-      expect(callUrl).toContain(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`);
-    });
-
-    test('service-type parameters with no system component use "|code" style', async () => {
-      const user = userEvent.setup();
-      const range = {
-        start: new Date('2024-02-01T00:00:00Z'),
-        end: new Date('2024-02-07T23:59:59Z'),
-      };
-
-      await act(async () => {
-        setup({ range });
-      });
-
-      await user.click(screen.getByText('Follow-up Visit'));
-
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls
-        .map((call) => call[0])
-        .find((url) => url.toString().includes('$find'));
-      expect(callUrl).toContain(`service-type=${encodeURIComponent('|followup')}`);
-    });
   });
 
   describe('HealthcareService Integration', () => {
@@ -417,9 +362,8 @@ describe('FindPane', () => {
     };
 
     test('shows service types from HealthcareService resources', async () => {
-      await medplum.createResource<HealthcareService>({
+      const hs = await medplum.createResource<HealthcareService>({
         resourceType: 'HealthcareService',
-        id: 'hs-1',
         type: [healthcareServiceType],
         extension: [{ url: SchedulingParametersURI }],
       });
@@ -429,7 +373,7 @@ describe('FindPane', () => {
         id: 'schedule-123',
         actor: [{ reference: 'Practitioner/practitioner-123' }],
         active: true,
-        serviceType: [healthcareServiceType],
+        serviceType: toCodeableReferenceLike(hs),
       } satisfies Schedule;
 
       await act(async () => setup({ schedule }));
@@ -472,6 +416,75 @@ describe('FindPane', () => {
         expect.any(String),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
+    });
+  });
+
+  describe('Reference deduplication', () => {
+    test('shows a service only once when its multiple type codings produce duplicate references', async () => {
+      // A service with 2 types produces 2 CodeableConcept entries via toCodeableReferenceLike,
+      // both carrying a reference to the same HealthcareService.
+      const multiTypeService = await medplum.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        name: 'Multi-Type Service',
+        type: [
+          { coding: [{ code: 'type-a' }], text: 'Type A' },
+          { coding: [{ code: 'type-b' }], text: 'Type B' },
+        ],
+        extension: [
+          { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }] },
+        ],
+      });
+
+      // toCodeableReferenceLike produces one concept per type entry, each referencing the same service
+      const schedule = createScheduleWithServices([multiTypeService]);
+      expect(schedule.serviceType).toHaveLength(2); // confirm two entries in serviceType
+
+      const readRefSpy = vi.spyOn(medplum, 'readReference');
+
+      await act(async () => setup({ schedule }));
+
+      // Service button appears exactly once
+      await waitFor(() => expect(screen.getByText('Multi-Type Service')).toBeInTheDocument());
+      expect(screen.getAllByText('Multi-Type Service')).toHaveLength(1);
+
+      // readReference was called once for HealthcareService (deduplicated)
+      const hsCalls = readRefSpy.mock.calls.filter(([ref]) =>
+        (ref as { reference?: string }).reference?.startsWith('HealthcareService/')
+      );
+      expect(hsCalls).toHaveLength(1);
+    });
+
+    test('skips serviceType concepts that have no reference field without crashing', async () => {
+      // Build a schedule with one valid concept and one malformed concept (extension with no reference).
+      const validServiceTypes = toCodeableReferenceLike(healthcareService);
+      const malformedConcept = {
+        extension: [
+          {
+            url: ServiceTypeReferenceURI,
+            valueReference: {}, // intentionally missing `reference`
+          },
+        ],
+      };
+
+      const schedule: WithId<Schedule> = {
+        resourceType: 'Schedule',
+        id: 'schedule-dedup',
+        actor: [{ reference: 'Practitioner/practitioner-1' }],
+        active: true,
+        serviceType: [...validServiceTypes, malformedConcept],
+      };
+
+      const readRefSpy = vi.spyOn(medplum, 'readReference');
+
+      await act(async () => setup({ schedule }));
+
+      // The valid service still appears; no crash from the malformed concept
+      await waitFor(() => expect(screen.getByText('Annual Checkup')).toBeInTheDocument());
+
+      // readReference was NOT called for the malformed concept (which has no reference string)
+      const calls = readRefSpy.mock.calls;
+      const calledRefs = calls.map(([ref]) => (ref as { reference?: string }).reference);
+      expect(calledRefs.every((r) => r && r.length > 0)).toBe(true);
     });
   });
 });

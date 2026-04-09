@@ -1,3 +1,6 @@
+import ExampleCode from '!!raw-loader!@site/../examples/src/scheduling/index.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Scheduling
 
 :::info
@@ -6,11 +9,28 @@ Medplum Scheduling is currently in alpha.
 
 Welcome to the Medplum Scheduling documentation. We currently support a range of scheduling operations that are available via the FHIR API. The following sections walk through the FHIR resources that are used to model scheduling and how the operations interact with them.
 
-**We like to separate scheduling into three main steps:**
+**We like to separate scheduling into four main steps:**
 
 ---
 
-## Step 1: [Defining Availability](/docs/scheduling/defining-availability)
+## Step 1: Defining Service Types
+
+Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each type. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
+
+Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute.
+
+<details>
+  <summary>Referencing a HealthcareService</summary>
+
+  In future FHIR revisions, Schedule.serviceType will have type `CodeableReference(HealthcareService)`. In Medplum's R4 implementation, this is achieved by including an extension on a `CodeableConcept` in that attribute.
+
+  <MedplumCodeBlock language="ts" selectBlocks="scheduleServiceTypeLink">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+
+## Step 2: [Defining Availability](/docs/scheduling/defining-availability)
 
 The resources used to model availability for a provider, location, or device and the different service-specific scheduling parameters that can be defined.
 

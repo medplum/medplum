@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   badRequest,
   conflict,
@@ -24,9 +25,9 @@ import type {
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { invariant } from '../../util/invariant';
+import { extractReferencesFromCodeableReferenceLike } from '../../util/servicetype';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
-import type { SchedulingParameters } from './utils/scheduling-parameters';
 import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const bookOperation = {
@@ -77,33 +78,6 @@ function serviceTypeTokens(slots: Slot[]): string[] {
     }
   }
   return [...tokenSet.values()];
-}
-
-function chooseActiveParameters(
-  proposedSlot: Slot,
-  parameters: SchedulingParameters[],
-  actorTimeZone: string,
-  existingSlots: Slot[]
-): SchedulingParameters | undefined {
-  const startDate = new Date(proposedSlot.start);
-  const endDate = new Date(proposedSlot.end);
-  return parameters.find((params) => {
-    const timeZone = params.timezone ?? actorTimeZone;
-    const range = {
-      start: addMinutes(startDate, -1 * params.bufferBefore),
-      end: addMinutes(endDate, params.bufferAfter),
-    };
-    const availability = resolveAvailability(params, range, timeZone);
-    const result = applyExistingSlots({
-      availability,
-      slots: existingSlots,
-      range,
-      serviceType: proposedSlot.serviceType ?? EMPTY,
-    });
-    return result.some(
-      (interval) => interval.start.getTime() <= range.start.getTime() && interval.end.getTime() >= range.end.getTime()
-    );
-  });
 }
 
 /**
@@ -157,17 +131,43 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const actors = await ctx.repo.readReferences(schedules.flatMap((schedule) => schedule.actor));
   assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
 
-  // Collect all unique service type codes across all proposed slots, then fetch
-  // matching HealthcareService resources in a single query.
-  const allServiceTypes = serviceTypeTokens(proposedSlots);
+  let healthcareService: WithId<HealthcareService>;
+  // We expect that at most one unique serviceType reference will be found
+  const serviceRefs = proposedSlots.flatMap((slot) => extractReferencesFromCodeableReferenceLike(slot.serviceType));
+  const serviceRefString = assertAllMatch(
+    serviceRefs.map((ref) => ref.reference),
+    'Mismatched service types'
+  );
 
-  const healthcareServices: HealthcareService[] =
-    allServiceTypes.length > 0
-      ? await ctx.repo.searchResources<HealthcareService>({
-          resourceType: 'HealthcareService',
-          filters: [{ code: 'service-type', operator: Operator.EQUALS, value: allServiceTypes.join(',') }],
-        })
-      : [];
+  if (serviceRefString) {
+    healthcareService = await ctx.repo.readReference({ reference: serviceRefString });
+    if (!healthcareService) {
+      throw new OperationOutcomeError(badRequest('HealthcareService not found'));
+    }
+  } else {
+    // Collect all unique service type codes across all proposed slots, then fetch
+    // matching HealthcareService resources in a single query.
+    //
+    // Q: Do we support this style or require the CodeableReference style above?
+    const allServiceTypes = serviceTypeTokens(proposedSlots);
+
+    const healthcareServices: WithId<HealthcareService>[] =
+      allServiceTypes.length > 0
+        ? await ctx.repo.searchResources<HealthcareService>({
+            resourceType: 'HealthcareService',
+            filters: [{ code: 'service-type', operator: Operator.EQUALS, value: allServiceTypes.join(',') }],
+          })
+        : [];
+
+    if (healthcareServices.length === 0) {
+      throw new OperationOutcomeError(badRequest('No matching HealthcareService found'));
+    }
+
+    if (healthcareServices.length > 1) {
+      throw new OperationOutcomeError(badRequest('Multiple matching HealthcareServices found'));
+    }
+    healthcareService = healthcareServices[0];
+  }
 
   const bufferSlots: Slot[] = [];
 
@@ -187,24 +187,21 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               badRequest('No timezone specified', `Parameters.parameter[${index}].schedule.actor`)
             );
           }
-
-          const slotServiceTypes = serviceTypeTokens([proposedSlot]);
-
           const durationMinutes = (Date.parse(proposedSlot.end) - Date.parse(proposedSlot.start)) / 60000;
+          const parameters = chooseSchedulingParameters(schedule, healthcareService);
 
-          const parameters = chooseSchedulingParameters(schedule, healthcareServices, slotServiceTypes)
-            .map(([params]) => params)
-            .filter((params) => params.duration === durationMinutes);
-
-          if (parameters.length === 0) {
+          if (parameters?.duration !== durationMinutes) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
           }
 
-          const bufferBeforeMax = Math.max(...parameters.map((p) => p.bufferBefore));
-          const bufferAfterMax = Math.max(...parameters.map((p) => p.bufferAfter));
+          const timeZone = parameters.timezone ?? actorTimeZone;
 
-          const searchStart = addMinutes(startDate, -1 * bufferBeforeMax).toISOString();
-          const searchEnd = addMinutes(endDate, bufferAfterMax).toISOString();
+          const range = {
+            start: addMinutes(startDate, -1 * parameters.bufferBefore),
+            end: addMinutes(endDate, parameters.bufferAfter),
+          };
+          const searchStart = range.start.toISOString();
+          const searchEnd = range.end.toISOString();
 
           const existingSlots = await ctx.repo.searchResources<Slot>({
             resourceType: 'Slot',
@@ -249,28 +246,37 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(conflict('Requested time slot is no longer available'));
           }
 
-          const activeParameters = chooseActiveParameters(proposedSlot, parameters, actorTimeZone, existingSlots);
+          const availability = applyExistingSlots({
+            availability: resolveAvailability(parameters, range, timeZone),
+            slots: existingSlots,
+            range,
+            serviceType: healthcareService.type,
+          });
 
-          if (!activeParameters) {
+          const hasAvailability = availability.some(
+            (interval) => interval.start <= range.start && interval.end >= range.end
+          );
+
+          if (!hasAvailability) {
             throw new OperationOutcomeError(badRequest('No availability found at this time'));
           }
 
-          if (activeParameters.bufferBefore) {
+          if (parameters.bufferBefore) {
             bufferSlots.push({
               resourceType: 'Slot',
               status: 'busy-unavailable',
-              start: addMinutes(startDate, -1 * activeParameters.bufferBefore).toISOString(),
+              start: searchStart,
               end: startDate.toISOString(),
               schedule: proposedSlot.schedule,
             });
           }
 
-          if (activeParameters.bufferAfter) {
+          if (parameters.bufferAfter) {
             bufferSlots.push({
               resourceType: 'Slot',
               status: 'busy-unavailable',
               start: endDate.toISOString(),
-              end: addMinutes(endDate, activeParameters.bufferAfter).toISOString(),
+              end: searchEnd,
               schedule: proposedSlot.schedule,
             });
           }

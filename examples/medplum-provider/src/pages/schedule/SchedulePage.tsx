@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Drawer, Text } from '@mantine/core';
+import { ActionIcon, Box, Drawer, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
@@ -15,6 +16,7 @@ import { AppointmentDetails } from '../../components/schedule/AppointmentDetails
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
+import { hasSchedulingParameters } from '../../utils/scheduling';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
@@ -218,16 +220,27 @@ export function SchedulePage(): JSX.Element | null {
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
       <div className={classes.wrapper}>
-        <Box mb="sm" maw={320}>
-          <ReferenceInput
-            key={schedule?.id}
-            name="schedule-actor"
-            targetTypes={['Practitioner']}
-            placeholder="Switch schedule..."
-            defaultValue={schedule?.actor?.[0] as Reference<Practitioner>}
-            onChange={handleActorChange}
-          />
-        </Box>
+        <Group justify="space-between">
+          <Box mb="sm" w={320}>
+            <ReferenceInput
+              key={schedule?.id}
+              name="schedule-actor"
+              targetTypes={['Practitioner']}
+              placeholder="Switch schedule..."
+              defaultValue={schedule?.actor?.[0] as Reference<Practitioner>}
+              onChange={handleActorChange}
+            />
+          </Box>
+          {schedule && hasSchedulingParameters(schedule) && (
+            <ActionIcon
+              variant="subtle"
+              aria-label="Schedule settings"
+              onClick={() => navigate(`/Calendar/Schedule/${schedule.id}/settings`)}
+            >
+              <IconSettings />
+            </ActionIcon>
+          )}
+        </Group>
         <div className={classes.container}>
           <div className={classes.calendar}>
             <Calendar
