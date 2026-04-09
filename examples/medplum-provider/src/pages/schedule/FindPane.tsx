@@ -37,9 +37,20 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
   const { schedule, range, onSuccess } = props;
 
+  const serviceTypeSearch = useMemo(() => {
+    const tokenSet = new Set<string>();
+    for (const concept of schedule.serviceType ?? EMPTY) {
+      for (const coding of concept.coding ?? EMPTY) {
+        tokenSet.add(`${coding.system ?? ''}|${coding.code ?? ''}`);
+      }
+    }
+    return [...tokenSet].join(',');
+  }, [schedule]);
+
   const [healthcareServices] = useSearchResources<'HealthcareService'>(
     'HealthcareService',
-    'service-type:missing=false'
+    `service-type=${serviceTypeSearch}`,
+    { enabled: serviceTypeSearch !== '' }
   );
 
   const scheduleServiceTypes = useMemo(

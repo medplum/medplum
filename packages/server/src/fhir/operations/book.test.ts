@@ -1380,6 +1380,7 @@ describe('scheduling flow integration test', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(practitioner)],
+      serviceType: [officeVisit],
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',

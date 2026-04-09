@@ -397,6 +397,7 @@ describe('FindPane', () => {
         id: 'schedule-123',
         actor: [{ reference: 'Practitioner/practitioner-123' }],
         active: true,
+        serviceType: [healthcareServiceType],
       } satisfies Schedule;
 
       await act(async () => setup({ schedule }));
