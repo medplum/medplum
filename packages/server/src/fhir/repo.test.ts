@@ -53,8 +53,15 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
+import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import {
+  getGlobalSystemRepo,
+  getProjectSystemRepo,
+  getShardSystemRepo,
+  Repository,
+  setTypedPropertyValue,
+} from './repo';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -426,18 +433,36 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      try {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+          identifier: [],
+        });
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        identifier: [],
-      });
+        expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
 
-      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+        expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Patient',
+            id: patient.id,
+          }),
+          undefined,
+          expect.objectContaining({
+            interaction: 'create',
+            project: expect.objectContaining({
+              id: patient.meta?.project,
+            }),
+          })
+        );
 
-      // empty identifier array should removed when read from cache
-      const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
-      expect(readPatient.identifier).toBeUndefined();
+        // empty identifier array should removed when read from cache
+        const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
+        expect(readPatient.identifier).toBeUndefined();
+      } finally {
+        addBackgroundJobsSpy.mockRestore();
+      }
     }));
 
   test('Create Patient as Practitioner with no author', () =>
@@ -486,6 +511,43 @@ describe('FHIR Repo', () => {
       });
 
       expect(patient.meta?.author?.reference).toStrictEqual(author);
+    }));
+
+  test('Skip background jobs when configured', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      const repo = new Repository({
+        projects: [project],
+        currentProject: project,
+        extendedMode: true,
+        skipBackgroundJobs: true,
+        author: {
+          reference: 'Practitioner/' + randomUUID(),
+        },
+      });
+
+      expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
+      expect(
+        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+      ).toBe(true);
+
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.updateResource<Patient>({
+        ...patient,
+        active: true,
+      });
+
+      await repo.deleteResource('Patient', patient.id);
+
+      expect(addBackgroundJobsSpy).not.toHaveBeenCalled();
+      addBackgroundJobsSpy.mockRestore();
     }));
 
   test('Create resource with lastUpdated', () =>
