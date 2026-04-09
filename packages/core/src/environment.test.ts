@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import { vi } from 'vitest';
 import { getBuffer, getWindow, isBrowserEnvironment, isNodeEnvironment, locationUtils } from './environment';
 
 describe('Environment utils', () => {
   beforeAll(() => {
     // Suppress JSDOM warnings about location assignment
-    console.error = jest.fn();
+    console.error = vi.fn();
   });
 
   test('should run tests', () => {

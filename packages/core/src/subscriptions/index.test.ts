@@ -8,7 +8,8 @@ import type {
   SubscriptionChannel,
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
-import { WS } from 'jest-websocket-mock';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
 import type { CriteriaState, SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
@@ -17,14 +18,26 @@ import { Logger, LogLevel } from '../logger';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
+import type { DEFAULT_PING_INTERVAL_MS, UNREF_GRACE_PERIOD_MS, WS_SUB_TOKEN_REFRESH_INTERVAL_MS } from './constants';
 import { WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS } from './constants';
 import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
-  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
-  UNREF_GRACE_PERIOD_MS: 50,
-}));
+// fake type for eslint to avoid importing the actual module
+type SubscriptionsConstantsModule = {
+  DEFAULT_PING_INTERVAL_MS: typeof DEFAULT_PING_INTERVAL_MS;
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS: typeof WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS;
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: typeof WS_SUB_TOKEN_REFRESH_INTERVAL_MS;
+  UNREF_GRACE_PERIOD_MS: typeof UNREF_GRACE_PERIOD_MS;
+};
+
+vi.mock('./constants', async (importOriginal) => {
+  const mod = await importOriginal<SubscriptionsConstantsModule>();
+  return {
+    ...mod,
+    WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+    UNREF_GRACE_PERIOD_MS: 50,
+  };
+});
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -294,7 +307,7 @@ describe('SubscriptionManager', () => {
 
     test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       const manager1 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
@@ -397,7 +410,7 @@ describe('SubscriptionManager', () => {
 
     test('should track separate `Subscription` resources for same criteria with different `subscriptionProps`', async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
@@ -533,7 +546,7 @@ describe('SubscriptionManager', () => {
 
     test('should not throw when remove has been called on a criteria that is not known', () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
       expect(() => defaultManager.removeCriteria('DiagnosticReport')).not.toThrow();
       expect(console.warn).toHaveBeenCalledTimes(1);
       console.warn = originalWarn;
@@ -624,7 +637,7 @@ describe('SubscriptionManager', () => {
 
     test('should return the correct amount of criteria', async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
@@ -765,7 +778,7 @@ describe('SubscriptionManager', () => {
       expect(defaultManager.getWebSocket().readyState).toStrictEqual(WebSocket.CONNECTING);
 
       // Spy on reconnectWebSocket to verify it's not called
-      const reconnectSpy = jest.spyOn(defaultManager, 'reconnectWebSocket');
+      const reconnectSpy = vi.spyOn(defaultManager, 'reconnectWebSocket');
 
       // Call reconnectIfNeeded - should return immediately without reconnecting
       await defaultManager.reconnectIfNeeded();
@@ -842,7 +855,7 @@ describe('SubscriptionManager', () => {
 
     test("should warn when receiving notification for subscription we aren't expecting", async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       // @ts-expect-error We don't use defaultManager
       const _manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -909,7 +922,7 @@ describe('SubscriptionManager', () => {
 
     test('should emit `error` event when invalid message comes in over WebSocket', async () => {
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       await wsServer.connected;
 
@@ -951,7 +964,7 @@ describe('SubscriptionManager', () => {
       // TODO: Figure out why we are getting so many warnings around receiving messages for unknown subscriptions
       // This seems to happen only when running the whole test suite
       // In isolation, this console.warn mock reports 0 calls :thinking-face:
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('open', (event) => {
@@ -1338,7 +1351,7 @@ describe('SubscriptionManager', () => {
     });
 
     test('should rebind subscription when token is about to expire', async () => {
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       const EXPIRING_TOKEN = 'expiring-token-123';
       const REFRESHED_TOKEN = 'refreshed-token-456';
@@ -1435,7 +1448,7 @@ describe('SubscriptionManager', () => {
 
       // Mock rebindCriteriaEntry to reject so the outer .catch in checkTokenExpirations fires
       const rebindError = new Error('Unexpected rebind failure');
-      jest.spyOn(manager as any, 'rebindCriteriaEntry').mockRejectedValueOnce(rebindError);
+      vi.spyOn(manager as any, 'rebindCriteriaEntry').mockRejectedValueOnce(rebindError);
 
       const errorEventPromise = new Promise<SubscriptionEventMap['error']>((resolve) => {
         manager.getMasterEmitter().addEventListener('error', (event) => {
@@ -1458,7 +1471,7 @@ describe('SubscriptionManager', () => {
 
       // Defer the first createResource call so we can remove the criteria while the subscribe is in-flight.
       let resolveFirstCreate!: (value: { id: string }) => void;
-      const createSpy = jest.spyOn(medplum, 'createResource').mockImplementationOnce(
+      const createSpy = vi.spyOn(medplum, 'createResource').mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveFirstCreate = resolve as (value: { id: string }) => void;
@@ -1557,7 +1570,7 @@ describe('SubscriptionManager', () => {
       // During a refresh, subscriptionId is already set so createResource is skipped —
       // medplum.get is the first async gap.
       let resolveRefreshGet!: (value: Parameters) => void;
-      const getSpy = jest.spyOn(medplum, 'get').mockImplementationOnce(
+      const getSpy = vi.spyOn(medplum, 'get').mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveRefreshGet = resolve as (value: Parameters) => void;
@@ -1906,7 +1919,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         shouldMatch: false,
       },
     ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
-      const log = jest.fn();
+      const log = vi.fn();
 
       const subscription: Subscription = {
         id: '123',
