@@ -335,16 +335,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     subject: subjectReference,
     requester: requesterReference,
     performer: [performerReference],
-    reasonCode: diagnoses.map((concept) => ({
-      ...concept,
-      coding: concept.coding.map(({ system, version, code, display, userSelected }) => ({
-        system,
-        version,
-        code,
-        display,
-        userSelected,
-      })),
-    })),
+    reasonCode: diagnoses,
     category: [{ coding: [{ system: SNOMED, code: '108252007', display: 'Laboratory procedure' }] }],
     // individual test codes are included in the ServcieRequest referenced in supporting Info.
     // TBD what should go in the `code` field of the lab order. Leaving the tests there for now
