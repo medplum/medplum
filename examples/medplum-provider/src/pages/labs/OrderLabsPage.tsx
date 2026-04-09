@@ -23,6 +23,7 @@ import {
   useMedplum,
   useResource,
   ValueSetAutocomplete,
+  valueSetElementToCoding,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -204,10 +205,12 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
                 name="diagnoses"
                 maxValues={10}
-                onChange={(items) => {
-                  const codeableConcepts = items.map((item) => ({ coding: [item] })) as DiagnosisCodeableConcept[];
-                  setDiagnoses(codeableConcepts);
-                }}
+              onChange={(items) => {
+                const codeableConcepts = items.map((item) => ({
+                  coding: [valueSetElementToCoding(item)],
+                })) as DiagnosisCodeableConcept[];
+                setDiagnoses(codeableConcepts);
+              }}
               />
             </div>
             <Group align="flex-start" gap={48}>
