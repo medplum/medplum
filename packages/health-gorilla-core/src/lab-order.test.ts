@@ -314,6 +314,58 @@ describe('createLabOrderBundle', () => {
     ]);
   });
 
+  test<TestContext>('strips non-Coding fields from diagnoses (e.g. designation from ValueSetExpansionContains)', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+
+    const selectedTests: TestCoding[] = [{ code: TEST_CODES[0] } as TestCoding];
+    const testMetadata: Record<string, LabOrderTestMetadata> = { [TEST_CODES[0]]: {} };
+
+    // Simulate what ValueSetAutocomplete returns: a ValueSetExpansionContains with stray fields
+    // that are not valid on a FHIR Coding (designation, abstract, inactive, contains).
+    const diagnosisWithStrayFields = {
+      system: 'http://hl7.org/fhir/sid/icd-10-cm',
+      code: 'J06.9',
+      display: 'Acute upper respiratory infection, unspecified',
+      // stray ValueSetExpansionContains fields — not valid on Coding:
+      designation: [{ language: 'en', value: 'AURI' }],
+      abstract: false,
+      inactive: false,
+    };
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      performingLab,
+      selectedTests,
+      testMetadata,
+      diagnoses: [{ coding: [diagnosisWithStrayFields as any] }],
+      billingInformation: { billTo: 'patient' },
+    });
+
+    // The bundle should be valid and commit without FHIR schema errors
+    const txnResponse = await medplum.executeBatch(bundle);
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+    expectToBeDefined(orderServiceRequest.reasonCode);
+
+    const coding = orderServiceRequest.reasonCode?.[0]?.coding?.[0];
+    expectToBeDefined(coding);
+
+    // Only valid Coding fields should be present
+    expect(coding.system).toBe('http://hl7.org/fhir/sid/icd-10-cm');
+    expect(coding.code).toBe('J06.9');
+    expect(coding.display).toBe('Acute upper respiratory infection, unspecified');
+    expect((coding as any).designation).toBeUndefined();
+    expect((coding as any).abstract).toBeUndefined();
+    expect((coding as any).inactive).toBeUndefined();
+  });
+
   test<TestContext>('requesting location', async (ctx) => {
     const { medplum, patient, requester, performingLab } = ctx;
     const requestingOrg = { resourceType: 'Organization', id: 'org-123' } satisfies Organization;
