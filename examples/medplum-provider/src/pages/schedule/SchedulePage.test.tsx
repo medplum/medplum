@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { createReference, ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, getByText, render, screen, waitFor } from '@testing-library/react';
@@ -310,6 +310,16 @@ describe('SchedulePage', () => {
 describe('$find/$book component integration tests', () => {
   let medplum: MockClient;
 
+  const serviceType1: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'checkup',
+      },
+    ],
+    text: 'Annual Checkup',
+  };
+
   beforeEach(async () => {
     medplum = new MockClient({ profile: DrAliceSmith });
     vi.clearAllMocks();
@@ -319,6 +329,15 @@ describe('$find/$book component integration tests', () => {
       writable: true,
       configurable: true,
       value: 800,
+    });
+
+    await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Annual Checkup',
+      type: [serviceType1],
+      extension: [
+        { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }] },
+      ],
     });
   });
 
@@ -338,16 +357,6 @@ describe('$find/$book component integration tests', () => {
     );
   };
 
-  const serviceType1: CodeableConcept = {
-    coding: [
-      {
-        system: 'http://example.com/service-types',
-        code: 'checkup',
-      },
-    ],
-    text: 'Annual Checkup',
-  };
-
   test('Adds new appointments and slots after ScheduleFindPane $book success', async () => {
     // set system clock so the week we are creating an event for is visible in the big calendar
     vi.setSystemTime('2024-01-15');
@@ -360,6 +369,7 @@ describe('$find/$book component integration tests', () => {
     // Add scheduling parameter extension to Alice's schedule
     await medplum.updateResource({
       ...DrAliceSmithSchedule,
+      serviceType: [serviceType1],
       extension: [
         {
           url: SchedulingParametersURI,
