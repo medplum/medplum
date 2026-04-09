@@ -23,7 +23,6 @@ import {
   useMedplum,
   useResource,
   ValueSetAutocomplete,
-  valueSetElementToCoding,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -207,7 +206,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 maxValues={10}
               onChange={(items) => {
                 const codeableConcepts = items.map((item) => ({
-                  coding: [valueSetElementToCoding(item)],
+                  coding: [{ system: item.system, version: item.version, code: item.code, display: item.display }],
                 })) as DiagnosisCodeableConcept[];
                 setDiagnoses(codeableConcepts);
               }}
