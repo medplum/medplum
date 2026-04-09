@@ -236,6 +236,16 @@ describe('App', () => {
       // Request should be logged
       expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
     });
+
+    test('Route parsing error', async () => {
+      const accessToken = await initTestAuth();
+      const res1 = await request(app)
+        .get('/fhir/R4/Organization/%account')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send();
+      expect(res1.status).toBe(400);
+    });
   });
 
   test('Internal Server Error', async () => {
