@@ -150,7 +150,8 @@ function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): num
 
 function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
   const url = req.originalUrl;
-  for (const category of categories) {
+  for (let i = 0; i < categories.length - 1; i++) {
+    const category = categories[i];
     if (category.matchesUrl(url)) {
       return category;
     }
