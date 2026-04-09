@@ -204,12 +204,12 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
                 name="diagnoses"
                 maxValues={10}
-              onChange={(items) => {
-                const codeableConcepts = items.map((item) => ({
-                  coding: [{ system: item.system, version: item.version, code: item.code, display: item.display }],
-                })) as DiagnosisCodeableConcept[];
-                setDiagnoses(codeableConcepts);
-              }}
+                onChange={(items) => {
+                  const codeableConcepts = items.map((item) => ({
+                    coding: [{ system: item.system, version: item.version, code: item.code, display: item.display }],
+                  })) as DiagnosisCodeableConcept[];
+                  setDiagnoses(codeableConcepts);
+                }}
               />
             </div>
             <Group align="flex-start" gap={48}>
