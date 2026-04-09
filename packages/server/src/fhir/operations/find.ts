@@ -15,7 +15,13 @@ import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
+import {
+  applyExistingSlots,
+  getTimeZone,
+  resolveAvailability,
+  serviceTypeMatchesTokens,
+  TimezoneExtensionURI,
+} from './utils/scheduling';
 import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const findOperation = {
@@ -87,7 +93,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
       {
         code: 'service-type',
         operator: Operator.EQUALS,
-        value: serviceTypeTokens.join(','),
+        value: params['service-type'],
       },
     ],
   });
@@ -124,6 +130,10 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     }),
     healthcareServiceSearch,
   ]);
+
+  if (!schedule.serviceType || !serviceTypeMatchesTokens(schedule.serviceType, serviceTypeTokens)) {
+    throw new OperationOutcomeError(badRequest('Schedule is not scheduleable for requested service type'));
+  }
 
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.

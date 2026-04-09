@@ -89,6 +89,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
 - `start` must be before `end`
 - The search window cannot exceed **31 days**
 - The Schedule must have exactly **one actor** reference
+- The Schedule's `serviceType` field must match the requested service-type
 - The actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 
 ## Output
@@ -197,6 +198,14 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 }
 ```
 
+### Schedule Does not have the requested service-type in `Schedule.serviceType`
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Schedule is not scheduleable for requested service type" } }]
+}
+```
 ## Related
 
 - [Appointment `$book`](/docs/scheduling/appointment-book) - Book one of the returned Slots

@@ -179,6 +179,8 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
+The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute.
+
 Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
 ```tsx
@@ -186,6 +188,14 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ]
+    }
+  ],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
@@ -243,6 +253,14 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ]
+    }
+  ],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
@@ -464,6 +482,20 @@ Here is an example of a Schedule with multiple service types, each with its own 
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Cardiac Surgery",
+      "coding": [
+        { "code": "cardiac-surgery" }
+      ]
+    },
+    {
+      "text": "Call Center Availability",
+      "coding": [
+        { "code": "call-center-availability" }
+      ]
+    }
+  ],
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
@@ -623,6 +655,15 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
     "start": "2025-01-01T00:00:00Z",
     "end": "2025-12-31T23:59:59Z"
   },
+  "serviceType": [
+    // This entry will allow using the office-visit shared HealthcareService definitions
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ]
+    }
+  ],
   "extension": [
     // No values here, everything is inherited from shared definitions
   ]
@@ -706,6 +747,8 @@ This HealthcareService defines a 60-minute new patient visit with 15-minute buff
 
 This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers and 10-minute alignment intervals for more frequent scheduling.
 
+It defines default availability of Monday-Friday, 9am-5pm.
+
 ```tsx
 {
   "resourceType": "HealthcareService",
@@ -718,6 +761,11 @@ This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers
       "display": "Follow-up Visit"
     }]
   },
+  "availableTime": [{
+    "daysOfWeek": ["mon","tue","wed","thu","fri"],
+    "availableStartTime": "09:00:00",
+    "availableEndTime": "17:00:00",
+  }],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
@@ -741,7 +789,9 @@ This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers
 <details>
 <summary>Schedule: Multi-Service with Overrides</summary>
 
-This Schedule shows how to configure default availability for all services (Mon-Fri 9am-5pm), then override new patient visits to only be available on Tuesday and Thursday mornings (9am-1pm).
+This schedule declares in its `serviceType` array that it can be booked for New Patient visits and Follow-Up visits.
+
+This Schedule will use the default availability for the "Follow-Up" service (Mon-Fri 9am-5pm), then override new patient visits to only be available on Tuesday and Thursday mornings (9am-1pm).
 
 ```tsx
 {
@@ -753,6 +803,26 @@ This Schedule shows how to configure default availability for all services (Mon-
     "start": "2025-01-01T00:00:00Z",
     "end": "2025-12-31T23:59:59Z"
   },
+  "serviceType": [
+    {
+      "text": "New Patient Visit",
+      "coding": [
+        {
+          "system": "http://example.org/appointment-types",
+          "code": "new-patient-visit"
+        }
+      ]
+    },
+    {
+      "text": "Follow-up Visit",
+      "coding": [
+        {
+          "system": "http://example.org/appointment-types",
+          "code": "follow-up"
+        }
+      ]
+    }
+  ],
   "extension": [
     // New patient visits only on Tuesday and Thursday mornings
     {
@@ -761,7 +831,10 @@ This Schedule shows how to configure default availability for all services (Mon-
         {
           "url": "serviceType",
           "valueCodeableConcept": {
-            "coding": [{"code": "new-patient-visit"}]
+            "coding": [{
+              "system": "http://example.org/appointment-types",
+              "code": "new-patient-visit"
+            }]
           }
         },
         {
@@ -939,6 +1012,9 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
     "reference": "Location/or-3",
     "display": "Operating Room 3"
   }],
+  "serviceType": [
+    {"coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]}
+  ],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [

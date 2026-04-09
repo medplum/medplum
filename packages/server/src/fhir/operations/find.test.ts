@@ -161,11 +161,15 @@ describe('Schedule/:id/$find', () => {
     availability: Record<string, AvailabilityOptions>,
     opts?: { actor?: Schedule['actor'] }
   ): Promise<Schedule> {
+    const serviceType: CodeableConcept[] = Object.keys(availability).map((code) => ({
+      coding: [{ system: 'http://example.com', code }],
+    }));
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: opts?.actor ?? [createReference(practitioner)],
       extension: makeSchedulingExtension(availability),
+      serviceType,
     });
   }
 
@@ -795,7 +799,12 @@ describe('Schedule/:id/$find', () => {
         ],
       });
 
-      const schedule = await makeSchedule({});
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.id },
+        actor: [createReference(practitioner)],
+        serviceType: [{ coding: [{ system: 'http://example.com', code }] }],
+      });
 
       const response = await request
         .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
@@ -933,7 +942,7 @@ describe('Schedule/:id/$find', () => {
           code: 'invalid',
           severity: 'error',
           details: {
-            text: 'No scheduling parameters found for the requested service type(s)',
+            text: 'Schedule is not scheduleable for requested service type',
           },
         },
       ],
@@ -945,6 +954,7 @@ describe('Schedule/:id/$find', () => {
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: [createReference(practitioner)],
+      serviceType: [{ coding: [{ code: 'office-visit' }] }],
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
