@@ -55,7 +55,13 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import {
+  getGlobalSystemRepo,
+  getProjectSystemRepo,
+  getShardSystemRepo,
+  Repository,
+  setTypedPropertyValue,
+} from './repo';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -522,9 +528,9 @@ describe('FHIR Repo', () => {
       });
 
       expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
-      expect(getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs).toBe(
-        true
-      );
+      expect(
+        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+      ).toBe(true);
 
       const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
