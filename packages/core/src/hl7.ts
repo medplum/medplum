@@ -87,6 +87,8 @@ export class Hl7Context {
 export class Hl7Message {
   readonly context: Hl7Context;
   readonly segments: Hl7Segment[];
+  private segmentsByName: Map<string, Hl7Segment[]>;
+  private cachedString: string | undefined;
 
   /**
    * Creates a new HL7 message.
@@ -96,6 +98,8 @@ export class Hl7Message {
   constructor(segments: Hl7Segment[], context = new Hl7Context()) {
     this.context = context;
     this.segments = segments;
+    this.segmentsByName = buildSegmentMap(segments);
+    this.bindSegments();
   }
 
   /**
@@ -140,7 +144,7 @@ export class Hl7Message {
     if (typeof index === 'number') {
       return this.segments[index];
     }
-    return this.segments.find((s) => s.name === index);
+    return this.segmentsByName.get(index)?.[0];
   }
 
   /**
@@ -149,7 +153,7 @@ export class Hl7Message {
    * @returns An array of HL7 segments with the specified name.
    */
   getAllSegments(name: string): Hl7Segment[] {
-    return this.segments.filter((s) => s.name === name);
+    return this.segmentsByName.get(name) ?? [];
   }
 
   /**
@@ -157,7 +161,8 @@ export class Hl7Message {
    * @returns The HL7 message as a string.
    */
   toString(): string {
-    return this.segments.map((s) => s.toString()).join(this.context.segmentSeparator);
+    this.cachedString ??= this.segments.map((s) => s.toString()).join(this.context.segmentSeparator);
+    return this.cachedString;
   }
 
   /**
@@ -237,10 +242,12 @@ export class Hl7Message {
       text.charAt(6), // Escape character, recommended "\"
       text.charAt(7) // Subcomponent separator, recommended "&"
     );
-    return new Hl7Message(
+    const msg = new Hl7Message(
       text.split(/[\r\n]+/).map((line) => Hl7Segment.parse(line, context)),
       context
     );
+    msg.cachedString = text;
+    return msg;
   }
 
   /**
@@ -273,9 +280,11 @@ export class Hl7Message {
       if (index >= this.segments.length) {
         // Append as last segment
         this.segments.push(segment);
+        this.invalidateCache();
         return true;
       }
       this.segments[index] = segment;
+      this.invalidateCache();
       return true;
     }
 
@@ -285,10 +294,39 @@ export class Hl7Message {
     }
     if (existingIndex !== -1) {
       this.segments[existingIndex] = segment;
+      this.invalidateCache();
       return true;
     }
     return false;
   }
+
+  private invalidateCache(): void {
+    this.segmentsByName = buildSegmentMap(this.segments);
+    this.cachedString = undefined;
+    this.bindSegments();
+  }
+
+  private bindSegments(): void {
+    const callback = (): void => {
+      this.cachedString = undefined;
+    };
+    for (const segment of this.segments) {
+      segment.onModified = callback;
+    }
+  }
+}
+
+function buildSegmentMap(segments: Hl7Segment[]): Map<string, Hl7Segment[]> {
+  const map = new Map<string, Hl7Segment[]>();
+  for (const segment of segments) {
+    const existing = map.get(segment.name);
+    if (existing) {
+      existing.push(segment);
+    } else {
+      map.set(segment.name, [segment]);
+    }
+  }
+  return map;
 }
 
 /**
@@ -300,6 +338,10 @@ export class Hl7Segment {
   readonly context: Hl7Context;
   readonly name: string;
   readonly fields: Hl7Field[];
+  /** @internal */
+  cachedString: string | undefined;
+  /** @internal */
+  onModified?: () => void;
 
   /**
    * Creates a new HL7 segment.
@@ -314,6 +356,7 @@ export class Hl7Segment {
       this.fields = fields;
     }
     this.name = this.fields[0].components[0][0];
+    this.bindFields();
   }
 
   /**
@@ -385,7 +428,8 @@ export class Hl7Segment {
    * @returns The HL7 segment as a string.
    */
   toString(): string {
-    return this.fields.map((f) => f.toString()).join(this.context.fieldSeparator);
+    this.cachedString ??= this.fields.map((f) => f.toString()).join(this.context.fieldSeparator);
+    return this.cachedString;
   }
 
   /**
@@ -395,10 +439,12 @@ export class Hl7Segment {
    * @returns The parsed HL7 segment.
    */
   static parse(text: string, context = new Hl7Context()): Hl7Segment {
-    return new Hl7Segment(
+    const segment = new Hl7Segment(
       text.split(context.fieldSeparator).map((f) => Hl7Field.parse(f, context)),
       context
     );
+    segment.cachedString = text;
+    return segment;
   }
 
   /**
@@ -427,6 +473,7 @@ export class Hl7Segment {
           this.fields.push(new Hl7Field([['']], this.context));
         }
         this.fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+        this.invalidateCache();
         return true;
       }
     }
@@ -436,6 +483,7 @@ export class Hl7Segment {
       this.fields.push(new Hl7Field([['']], this.context));
     }
     this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+    this.invalidateCache();
     return true;
   }
 
@@ -455,7 +503,27 @@ export class Hl7Segment {
     if (!field) {
       return false;
     }
-    return field.setComponent(component, value, subcomponent, repetition);
+    const result = field.setComponent(component, value, subcomponent, repetition);
+    if (result) {
+      this.cachedString = undefined;
+    }
+    return result;
+  }
+
+  private invalidateCache(): void {
+    this.cachedString = undefined;
+    this.bindFields();
+    this.onModified?.();
+  }
+
+  private bindFields(): void {
+    const callback = (): void => {
+      this.cachedString = undefined;
+      this.onModified?.();
+    };
+    for (const field of this.fields) {
+      field.onModified = callback;
+    }
   }
 }
 
@@ -466,6 +534,9 @@ export class Hl7Segment {
 export class Hl7Field {
   readonly context: Hl7Context;
   readonly components: string[][];
+  /** @internal */
+  onModified?: () => void;
+  private cachedString: string | undefined;
 
   /**
    * Creates a new HL7 field.
@@ -518,7 +589,10 @@ export class Hl7Field {
    * @returns The HL7 field as a string.
    */
   toString(): string {
-    return this.components.map((r) => r.join(this.context.componentSeparator)).join(this.context.repetitionSeparator);
+    this.cachedString ??= this.components
+      .map((r) => r.join(this.context.componentSeparator))
+      .join(this.context.repetitionSeparator);
+    return this.cachedString;
   }
 
   /**
@@ -528,10 +602,12 @@ export class Hl7Field {
    * @returns The parsed HL7 field.
    */
   static parse(text: string, context = new Hl7Context()): Hl7Field {
-    return new Hl7Field(
+    const field = new Hl7Field(
       text.split(context.repetitionSeparator).map((r) => r.split(context.componentSeparator)),
       context
     );
+    field.cachedString = text;
+    return field;
   }
 
   /**
@@ -555,10 +631,12 @@ export class Hl7Field {
       }
     }
 
-    if (subcomponent !== undefined) {
-      if (subcomponent < 0) {
-        return false;
-      }
+    if (subcomponent === undefined) {
+      // Handle regular component setting
+      this.components[repetition][component - 1] = value;
+    } else if (subcomponent < 0) {
+      return false;
+    } else {
       // Handle subcomponent setting
       const currentValue = this.components[repetition][component - 1] || '';
       const subcomponents = currentValue.split(this.context.subcomponentSeparator);
@@ -570,12 +648,15 @@ export class Hl7Field {
 
       subcomponents[subcomponent] = value;
       this.components[repetition][component - 1] = subcomponents.join(this.context.subcomponentSeparator);
-    } else {
-      // Handle regular component setting
-      this.components[repetition][component - 1] = value;
     }
 
+    this.invalidateCache();
     return true;
+  }
+
+  private invalidateCache(): void {
+    this.cachedString = undefined;
+    this.onModified?.();
   }
 }
 

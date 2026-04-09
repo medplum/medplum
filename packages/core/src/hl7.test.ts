@@ -679,3 +679,339 @@ describe('HL7 Setter Functions', () => {
     });
   });
 });
+
+describe('Hl7Message.getAllSegments with segment map', () => {
+  test('Returns segments by name from map', () => {
+    const text =
+      'MSH|^~\\&|cobas pro||host||20240102030405||OUL^R22^OUL_R22|12345|P|2.5.1\r' +
+      'PID|||||^^^^^^U|||U\r' +
+      'OBX|1|NM|GLU||100|mg/dL\r' +
+      'OBX|2|NM|HGB||14.5|g/dL\r' +
+      'OBX|3|NM|WBC||7.2|10*3/uL';
+    const msg = Hl7Message.parse(text);
+
+    const obxs = msg.getAllSegments('OBX');
+    expect(obxs).toHaveLength(3);
+    expect(obxs[0].getField(1).toString()).toBe('1');
+    expect(obxs[1].getField(1).toString()).toBe('2');
+    expect(obxs[2].getField(1).toString()).toBe('3');
+  });
+
+  test('Returns empty array for non-existent segment name', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5';
+    const msg = Hl7Message.parse(text);
+    expect(msg.getAllSegments('ZZZ')).toEqual([]);
+  });
+
+  test('Returns single-element array for unique segment', () => {
+    const text =
+      'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' +
+      'PID|1||12345^^^MRN';
+    const msg = Hl7Message.parse(text);
+
+    const pids = msg.getAllSegments('PID');
+    expect(pids).toHaveLength(1);
+    expect(pids[0].getField(1).toString()).toBe('1');
+  });
+
+  test('getSegment by name uses segment map', () => {
+    const text =
+      'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' +
+      'PID|1||12345^^^MRN\r' +
+      'PV1|1|O';
+    const msg = Hl7Message.parse(text);
+
+    expect(msg.getSegment('PID')?.name).toBe('PID');
+    expect(msg.getSegment('PV1')?.getField(2).toString()).toBe('O');
+    expect(msg.getSegment('ZZZ')).toBeUndefined();
+  });
+
+  test('Segment map is invalidated after setSegment', () => {
+    const context = new Hl7Context();
+    const msg = new Hl7Message([
+      new Hl7Segment(['MSH', '^~\\&', 'APP'], context),
+      new Hl7Segment(['PID', '1', 'OLD'], context),
+    ]);
+
+    expect(msg.getAllSegments('PID')).toHaveLength(1);
+    expect(msg.getAllSegments('PID')[0].getField(2).toString()).toBe('OLD');
+
+    const newPid = new Hl7Segment(['PID', '1', 'NEW'], context);
+    msg.setSegment(1, newPid);
+
+    expect(msg.getAllSegments('PID')).toHaveLength(1);
+    expect(msg.getAllSegments('PID')[0].getField(2).toString()).toBe('NEW');
+  });
+
+  test('Segment map handles appended segment via setSegment', () => {
+    const context = new Hl7Context();
+    const msg = new Hl7Message([new Hl7Segment(['MSH', '^~\\&', 'APP'], context)]);
+
+    expect(msg.getAllSegments('OBX')).toEqual([]);
+
+    msg.setSegment(99, new Hl7Segment(['OBX', '1', 'NM', 'GLU'], context));
+    expect(msg.getAllSegments('OBX')).toHaveLength(1);
+  });
+
+  test('getSegment returns the first segment when multiple exist', () => {
+    const text =
+      'MSH|^~\\&|APP||FAC||20240101||OUL^R22|1|P|2.5\r' +
+      'OBX|1|NM|GLU||100|mg/dL\r' +
+      'OBX|2|NM|HGB||14.5|g/dL';
+    const msg = Hl7Message.parse(text);
+
+    const first = msg.getSegment('OBX');
+    expect(first?.getField(1).toString()).toBe('1');
+  });
+
+  test('Segment map updates when setSegment replaces with a different segment name', () => {
+    const context = new Hl7Context();
+    const msg = new Hl7Message([
+      new Hl7Segment(['MSH', '^~\\&', 'APP'], context),
+      new Hl7Segment(['PID', '1', 'PATIENT'], context),
+    ]);
+
+    expect(msg.getAllSegments('PID')).toHaveLength(1);
+    expect(msg.getAllSegments('NK1')).toEqual([]);
+
+    // Replace PID at index 1 with NK1
+    msg.setSegment(1, new Hl7Segment(['NK1', '1', 'CONTACT'], context));
+
+    expect(msg.getAllSegments('PID')).toEqual([]);
+    expect(msg.getAllSegments('NK1')).toHaveLength(1);
+    expect(msg.getSegment('NK1')?.getField(2).toString()).toBe('CONTACT');
+  });
+});
+
+describe('Hl7Message.toString caching', () => {
+  test('Parsed message returns original string without rebuilding', () => {
+    const text =
+      'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
+      'MSA|AA|9B38584D|Everything was okay dokay!|';
+    const msg = Hl7Message.parse(text);
+
+    // First call returns original text
+    expect(msg.toString()).toBe(text);
+    // Second call returns same result
+    expect(msg.toString()).toBe(text);
+  });
+
+  test('Manually constructed message caches result after first toString', () => {
+    const context = new Hl7Context();
+    const msg = new Hl7Message([
+      new Hl7Segment(['MSH', '^~\\&', 'APP', 'FAC'], context),
+      new Hl7Segment(['PID', '1', '12345'], context),
+    ]);
+
+    // First call builds and caches the string
+    const result1 = msg.toString();
+    expect(result1).toBe('MSH|^~\\&|APP|FAC\rPID|1|12345');
+
+    // Second call returns cached result
+    const result2 = msg.toString();
+    expect(result2).toBe(result1);
+  });
+
+  test('Cache is invalidated after setSegment', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD_MRN';
+    const msg = Hl7Message.parse(text);
+
+    // Cached from parse
+    expect(msg.toString()).toBe(text);
+
+    // Mutate
+    const context = msg.context;
+    msg.setSegment('PID', new Hl7Segment(['PID', '1', '', 'NEW_MRN'], context));
+
+    // Cache invalidated — rebuilt string reflects the change
+    const updated = msg.toString();
+    expect(updated).not.toBe(text);
+    expect(updated).toContain('NEW_MRN');
+
+    // Subsequent call returns same cached result
+    expect(msg.toString()).toBe(updated);
+  });
+
+  test('Cache is invalidated when segment field is modified via setField', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD_MRN';
+    const msg = Hl7Message.parse(text);
+
+    expect(msg.toString()).toBe(text);
+
+    const pid = msg.getSegment('PID') as Hl7Segment;
+    pid.setField(3, 'NEW_MRN');
+
+    const updated = msg.toString();
+    expect(updated).not.toBe(text);
+    expect(updated).toContain('NEW_MRN');
+  });
+
+  test('Cache is invalidated when segment component is modified via setComponent', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD^VALUE';
+    const msg = Hl7Message.parse(text);
+
+    expect(msg.toString()).toBe(text);
+
+    const pid = msg.getSegment('PID') as Hl7Segment;
+    pid.setComponent(3, 1, 'NEW');
+
+    const updated = msg.toString();
+    expect(updated).not.toBe(text);
+    expect(updated).toContain('NEW^VALUE');
+  });
+
+  test('Cache is invalidated when field is modified directly via getField().setComponent()', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD^COMP2';
+    const msg = Hl7Message.parse(text);
+
+    expect(msg.toString()).toBe(text);
+
+    // Mutate a field directly, bypassing Hl7Segment.setComponent
+    const pid = msg.getSegment('PID') as Hl7Segment;
+    const field = pid.getField(3);
+    field.setComponent(1, 'NEW');
+
+    const updated = msg.toString();
+    expect(updated).not.toBe(text);
+    expect(updated).toContain('NEW^COMP2');
+  });
+
+  test('Newly added segment via setSegment also invalidates cache on mutation', () => {
+    const context = new Hl7Context();
+    const msg = new Hl7Message([
+      new Hl7Segment(['MSH', '^~\\&', 'APP'], context),
+      new Hl7Segment(['PID', '1', 'ORIG'], context),
+    ]);
+
+    const first = msg.toString();
+
+    // Replace with a new segment
+    const newPid = new Hl7Segment(['PID', '1', 'REPLACED'], context);
+    msg.setSegment(1, newPid);
+
+    const afterReplace = msg.toString();
+    expect(afterReplace).not.toBe(first);
+
+    // Now mutate the new segment directly
+    newPid.setField(2, 'MUTATED');
+    const afterMutate = msg.toString();
+    expect(afterMutate).not.toBe(afterReplace);
+    expect(afterMutate).toContain('MUTATED');
+  });
+
+  test('Field added via setField on a bound segment also invalidates message cache', () => {
+    const context = new Hl7Context();
+    const msg = new Hl7Message([
+      new Hl7Segment(['MSH', '^~\\&', 'APP'], context),
+      new Hl7Segment(['PID', '1', 'VAL'], context),
+    ]);
+
+    const first = msg.toString();
+
+    // Add a new field to the segment
+    const pid = msg.getSegment('PID') as Hl7Segment;
+    pid.setField(3, 'ADDED');
+    const afterAdd = msg.toString();
+    expect(afterAdd).not.toBe(first);
+
+    // Now mutate the newly added field directly
+    pid.getField(3).setComponent(1, 'CHANGED');
+    const afterFieldMutate = msg.toString();
+    expect(afterFieldMutate).not.toBe(afterAdd);
+    expect(afterFieldMutate).toContain('CHANGED');
+  });
+});
+
+describe('Hl7Segment.toString caching', () => {
+  test('Parsed message seeds caches on child segments and fields', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||MRN^^^AUTH||DOE^JOHN';
+    const msg = Hl7Message.parse(text);
+
+    // Segment toString returns original segment text
+    const pid = msg.getSegment('PID') as Hl7Segment;
+    expect(pid.toString()).toBe('PID|1||MRN^^^AUTH||DOE^JOHN');
+
+    // Field toString returns original field text
+    expect(pid.getField(3).toString()).toBe('MRN^^^AUTH');
+    expect(pid.getField(5).toString()).toBe('DOE^JOHN');
+  });
+
+  test('Parsed segment returns original string without rebuilding', () => {
+    const text = 'PID|1||12345^^^MRN||DOE^JOHN';
+    const segment = Hl7Segment.parse(text);
+    expect(segment.toString()).toBe(text);
+    expect(segment.toString()).toBe(text);
+  });
+
+  test('Manually constructed segment caches after first toString', () => {
+    const segment = new Hl7Segment(['PID', '1', '12345']);
+    const result = segment.toString();
+    expect(result).toBe('PID|1|12345');
+    expect(segment.toString()).toBe(result);
+  });
+
+  test('Segment cache is invalidated by setField', () => {
+    const segment = Hl7Segment.parse('PID|1||OLD_MRN');
+    expect(segment.toString()).toBe('PID|1||OLD_MRN');
+
+    segment.setField(3, 'NEW_MRN');
+    const updated = segment.toString();
+    expect(updated).toContain('NEW_MRN');
+    expect(segment.toString()).toBe(updated);
+  });
+
+  test('Segment cache is invalidated by setComponent', () => {
+    const segment = Hl7Segment.parse('PID|1||OLD^COMP');
+    expect(segment.toString()).toBe('PID|1||OLD^COMP');
+
+    segment.setComponent(3, 1, 'NEW');
+    const updated = segment.toString();
+    expect(updated).toContain('NEW^COMP');
+    expect(segment.toString()).toBe(updated);
+  });
+
+  test('Standalone segment cache is invalidated by direct field mutation', () => {
+    const segment = Hl7Segment.parse('PID|1||OLD^COMP');
+    expect(segment.toString()).toBe('PID|1||OLD^COMP');
+
+    segment.getField(3).setComponent(1, 'DIRECT');
+    const updated = segment.toString();
+    expect(updated).toContain('DIRECT^COMP');
+  });
+});
+
+describe('Hl7Field.toString caching', () => {
+  test('Parsed field returns original string without rebuilding', () => {
+    const text = 'x1^x2^x3~y1^y2^y3';
+    const field = Hl7Field.parse(text);
+    expect(field.toString()).toBe(text);
+    expect(field.toString()).toBe(text);
+  });
+
+  test('Manually constructed field caches after first toString', () => {
+    const field = new Hl7Field([['a', 'b'], ['c', 'd']]);
+    const result = field.toString();
+    expect(result).toBe('a^b~c^d');
+    expect(field.toString()).toBe(result);
+  });
+
+  test('Field cache is invalidated by setComponent', () => {
+    const field = Hl7Field.parse('OLD^comp2');
+    expect(field.toString()).toBe('OLD^comp2');
+
+    field.setComponent(1, 'NEW');
+    const updated = field.toString();
+    expect(updated).toBe('NEW^comp2');
+    expect(field.toString()).toBe(updated);
+  });
+
+  test('Field cache is invalidated by subcomponent mutation', () => {
+    const field = Hl7Field.parse('a&b&c^comp2');
+    expect(field.toString()).toBe('a&b&c^comp2');
+
+    field.setComponent(1, 'NEW', 1);
+    const updated = field.toString();
+    expect(updated).toBe('a&NEW&c^comp2');
+    expect(field.toString()).toBe(updated);
+  });
+});
