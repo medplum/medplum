@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ActionIcon,
-  Avatar,
+  Badge,
   Box,
   CloseButton,
   Code,
+  Collapse,
   Group,
   Paper,
   ScrollArea,
@@ -55,7 +56,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
-  const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);
+  const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
@@ -65,6 +66,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
   const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
+  const [expandedResponses, setExpandedResponses] = useState(new Set<number>());
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
@@ -181,6 +183,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setInput('');
     setCurrentFhirRequest(undefined);
     setStreamingContent(undefined);
+    setComponentPreview(undefined);
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
@@ -206,6 +209,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         onComponentStreamChunk: (chunk) => {
           if (!componentStreamOpenedRef.current) {
             setSelectedResource(undefined);
+            setSelectedResources(undefined);
             setComponentPanelOpen(true);
             componentStreamOpenedRef.current = true;
           }
@@ -243,9 +247,19 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const visibleMessages = messages.filter(
-    (m) => m.role !== 'system' && m.role !== 'tool' && !(m.role === 'assistant' && m.tool_calls)
-  );
+  const toggleResponse = (index: number): void => {
+    setExpandedResponses((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const visibleMessages = messages.filter((m) => m.role !== 'system');
 
   return (
     <>
@@ -300,107 +314,171 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           ) : (
             <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
               <Stack gap="xl" p="xs">
-                {visibleMessages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={cx(
-                      classes.messageWrapper,
-                      message.role === 'user' ? classes.userMessage : classes.assistantMessage
-                    )}
-                  >
-                    <Group align="flex-start" gap="sm" mb={4}>
-                      {message.role === 'assistant' && (
-                        <Avatar radius="xl" size="sm" color="blue">
-                          <IconRobot size={14} />
-                        </Avatar>
-                      )}
-                      <Text fw={600} size="sm" c="dimmed">
-                        {message.role === 'user' ? 'You' : 'AI Assistant'}
-                      </Text>
-                    </Group>
-                    {message.content && (
-                      <div className={classes.messageContent}>
-                        <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                {visibleMessages.map((message, index) => {
+                  // FHIR tool call — show method + path
+                  if (message.role === 'assistant' && message.tool_calls && !message.content) {
+                    return (
+                      <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
+                        <Stack gap={6}>
+                          {message.tool_calls.map((tc, tcIdx) => {
+                            let args: { method?: string; path?: string } | undefined;
+                            try {
+                              args =
+                                typeof tc.function.arguments === 'string'
+                                  ? JSON.parse(tc.function.arguments)
+                                  : tc.function.arguments;
+                            } catch {
+                              /* ignore */
+                            }
+                            if (args) {
+                              return (
+                                <Group
+                                  key={tcIdx}
+                                  gap="xs"
+                                  align="center"
+                                  wrap="nowrap"
+                                  className={classes.toolCallGroup}
+                                >
+                                  <Badge
+                                    size="sm"
+                                    color={getMethodColor(args.method)}
+                                    variant="filled"
+                                    className={classes.toolCallBadge}
+                                  >
+                                    {args.method ?? 'CALL'}
+                                  </Badge>
+                                  <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
+                                </Group>
+                              );
+                            }
+                            return (
+                              <Text key={tcIdx} size="xs" c="dimmed" fs="italic">
+                                Unable to parse tool call
+                              </Text>
+                            );
+                          })}
+                        </Stack>
                       </div>
-                    )}
-                    {message.componentCode && (
-                      <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
-                        <Paper
-                          withBorder
-                          p="sm"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => {
-                            setSelectedResource(undefined);
-                            setSelectedResources(undefined);
-                            setComponentPreview({
-                              code: message.componentCode as string,
-                              resources: message.resources,
-                            });
-                            setComponentPanelOpen(true);
-                          }}
+                    );
+                  }
+
+                  // Tool response — collapsible JSON
+                  if (message.role === 'tool') {
+                    const isExpanded = expandedResponses.has(index);
+                    let prettyContent = message.content ?? '';
+                    try {
+                      prettyContent = JSON.stringify(JSON.parse(message.content ?? ''), null, 2);
+                    } catch {
+                      /* use raw */
+                    }
+                    return (
+                      <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
+                        <Group
+                          gap="xs"
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                          onClick={() => toggleResponse(index)}
                         >
-                          <Group gap="sm" wrap="nowrap">
-                            <ThemeIcon size="lg" variant="light" color="violet">
-                              <IconCode size={20} />
-                            </ThemeIcon>
-                            <Text size="sm" fw={600} c="violet.7">
-                              View Component
-                            </Text>
-                          </Group>
-                        </Paper>
-                      </Stack>
-                    )}
-                    {message.resources && message.resources.length > 0 && !message.componentCode && (
-                      <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
-                        {message.resources.length <= 2 ? (
-                          message.resources.map((resourceRef, idx) => (
-                            <ResourceBox
-                              key={idx}
-                              resourceReference={resourceRef}
-                              onClick={(ref) => {
-                                setComponentPanelOpen(false);
-                                setResourceFromComponent(false);
-                                setSelectedResources(undefined);
-                                setSelectedResource(ref);
-                              }}
-                            />
-                          ))
-                        ) : (
+                          <Text size="xs" fw={500} c="dimmed">
+                            Response
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {isExpanded ? '▲' : '▼'}
+                          </Text>
+                        </Group>
+                        <Collapse in={isExpanded}>
+                          <Code block className={classes.toolResponseCode}>
+                            {prettyContent}
+                          </Code>
+                        </Collapse>
+                      </div>
+                    );
+                  }
+
+                  // Standard user / assistant messages
+                  return (
+                    <div
+                      key={index}
+                      className={cx(
+                        classes.messageWrapper,
+                        message.role === 'user' ? classes.userMessage : classes.assistantMessage
+                      )}
+                    >
+                      {message.content && (
+                        <div className={classes.messageContent}>
+                          <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                        </div>
+                      )}
+                      {message.componentCode && (
+                        <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
                           <Paper
                             withBorder
                             p="sm"
                             style={{ cursor: 'pointer' }}
                             onClick={() => {
-                              setComponentPanelOpen(false);
                               setSelectedResource(undefined);
-                              setResourceFromComponent(false);
-                              setSelectedResources(message.resources);
+                              setSelectedResources(undefined);
+                              setComponentPreview({
+                                code: message.componentCode as string,
+                                resources: message.resources,
+                              });
+                              setComponentPanelOpen(true);
                             }}
                           >
                             <Group gap="sm" wrap="nowrap">
                               <ThemeIcon size="lg" variant="light" color="violet">
-                                <IconList size={20} />
+                                <IconCode size={20} />
                               </ThemeIcon>
                               <Text size="sm" fw={600} c="violet.7">
-                                {message.resources.length} results
+                                View Component
                               </Text>
                             </Group>
                           </Paper>
-                        )}
-                      </Stack>
-                    )}
-                  </div>
-                ))}
+                        </Stack>
+                      )}
+                      {message.resources && message.resources.length > 0 && !message.componentCode && (
+                        <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
+                          {message.resources.length <= 2 ? (
+                            message.resources.map((resourceRef, idx) => (
+                              <ResourceBox
+                                key={idx}
+                                resourceReference={resourceRef}
+                                onClick={(ref) => {
+                                  setComponentPanelOpen(false);
+                                  setResourceFromComponent(false);
+                                  setSelectedResources(undefined);
+                                  setSelectedResource(ref);
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Paper
+                              withBorder
+                              p="sm"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => {
+                                setComponentPanelOpen(false);
+                                setSelectedResource(undefined);
+                                setResourceFromComponent(false);
+                                setSelectedResources(message.resources);
+                              }}
+                            >
+                              <Group gap="sm" wrap="nowrap">
+                                <ThemeIcon size="lg" variant="light" color="violet">
+                                  <IconList size={20} />
+                                </ThemeIcon>
+                                <Text size="sm" fw={600} c="violet.7">
+                                  {message.resources.length} results
+                                </Text>
+                              </Group>
+                            </Paper>
+                          )}
+                        </Stack>
+                      )}
+                    </div>
+                  );
+                })}
                 {loading && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                    <Group align="flex-start" gap="sm" mb={4}>
-                      <Avatar radius="xl" size="sm" color="blue">
-                        <IconRobot size={14} />
-                      </Avatar>
-                      <Text fw={600} size="sm" c="dimmed">
-                        AI Assistant
-                      </Text>
-                    </Group>
                     <div className={classes.messageContent}>
                       {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
                       {!streamingContent && currentFhirRequest && (
@@ -546,4 +624,15 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       )}
     </>
   );
+}
+
+const METHOD_COLORS: Record<string, string> = {
+  GET: 'blue',
+  POST: 'green',
+  PUT: 'orange',
+  DELETE: 'red',
+};
+
+function getMethodColor(method: string | undefined): string {
+  return METHOD_COLORS[method ?? ''] ?? 'gray';
 }

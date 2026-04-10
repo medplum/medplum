@@ -72,10 +72,15 @@ export const initDispatchWorker: WorkerInitializer = (config, options?: WorkerIn
  * Returns the dispatch queue instance.
  * This is used by the unit tests.
  *
- * @returns The dispatch queue (if available).
+ * @returns The dispatch queue.
+ * @throws Error if the dispatch queue is not initialized.
  */
-export function getDispatchQueue(): Queue<DispatchJobData> | undefined {
-  return queueRegistry.get(queueName);
+export function getDispatchQueue(): Queue<DispatchJobData> {
+  const queue = queueRegistry.get<DispatchJobData>(queueName);
+  if (!queue) {
+    throw new Error(`${queueName} is not initialized; call initWorkers() before enqueuing dispatch jobs`);
+  }
+  return queue;
 }
 
 /**
@@ -107,10 +112,7 @@ export async function addDispatchJobs(
  * @param job - The dispatch job details.
  */
 async function addDispatchJobData(job: DispatchJobData): Promise<void> {
-  const queue = getDispatchQueue();
-  if (queue) {
-    await queue.add(jobName, job);
-  }
+  await getDispatchQueue().add(jobName, job);
 }
 
 /**

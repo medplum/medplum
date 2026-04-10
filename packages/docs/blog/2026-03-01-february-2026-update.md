@@ -96,7 +96,7 @@ Developers can now define [custom FHIR operations](/docs/bots/custom-fhir-operat
 - **Membership label filtering in profile chooser** — The profile selection form can now filter memberships by label, contributed by [jeffrey-peterson-vanna](https://github.com/jeffrey-peterson-vanna)
 - **Operation to refresh reference display strings** — A new operation allows refreshing cached display strings on resource references, keeping display data current after resource updates ([Matt Willer](https://github.com/mattwiller))
 - **Native bcrypt for improved authentication performance** — Switched from the pure-JavaScript `bcryptjs` library to native bcrypt bindings, significantly improving password hashing throughput ([Cody Ebberson](https://github.com/codyebberson))
-- **Configurable CDS services URL** — The Clinical Decision Support (CDS) Hooks service URL is now configurable, enabling integration with custom CDS endpoints. CDS Hooks support is part of Medplum's [HTI-4 compliance initiative](/docs/compliance/hti-4), which covers payer interoperability requirements ahead of the January 2027 enforcement date. ([Cody Ebberson](https://github.com/codyebberson))
+- **Configurable CDS services URL** — The Clinical Decision Support (CDS) Hooks service URL is now configurable, enabling integration with custom CDS endpoints. CDS Hooks support is part of Medplum's [HTI-4/CMS-0057-F compliance initiative](/docs/compliance/hti-4), which covers payer interoperability requirements ahead of the January 2027 enforcement date. ([Cody Ebberson](https://github.com/codyebberson))
 
 ## Documentation
 
@@ -110,7 +110,7 @@ February's documentation work was substantial, with a major restoration of SDK d
 - **New documentation for custom and bot operations** — Full coverage of [custom FHIR operations](/docs/bots/custom-fhir-operations), including instance-level and system-level patterns
 - **Project and system administration operations** — New reference pages for [admin operations](/docs/self-hosting/super-admin-guide)
 - **Data export and import operations** — Documented the [Bulk Data Export](/docs/api/fhir/operations/bulk-fhir), [C-CDA Export](/docs/api/fhir/operations/ccda-export), [Claim Export](/docs/api/fhir/operations/claim-export), and [CSV export](/docs/api/fhir/operations/csv) API operations
-- **Clinical decision support operations** — New reference for CDS Hooks operations, part of Medplum's [HTI-4 compliance initiative](/docs/compliance/hti-4)
+- **Clinical decision support operations** — New reference for CDS Hooks operations, part of Medplum's [HTI-4/CMS-0057-F compliance initiative](/docs/compliance/hti-4)
 
 **Subscriptions**
 

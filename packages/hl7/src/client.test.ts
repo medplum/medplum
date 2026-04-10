@@ -8,29 +8,9 @@ import { Hl7Client } from './client';
 import type { Hl7Connection } from './connection';
 import type { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
-import { MockServer, MockSocket } from './test-utils';
+import { getFreePort, MockServer, MockSocket } from './test-utils';
 
 describe('Hl7Client', () => {
-  // Used only for tests that need a free port number with *nothing* listening on it.
-  // For tests that start an Hl7Server, prefer `server.start(0)` which returns the OS-assigned
-  // port and never has a release-then-rebind window.
-  async function getFreePort(): Promise<number> {
-    return new Promise((resolve, reject) => {
-      const server = createServer();
-      server.listen(0, () => {
-        const { port } = server.address() as { port: number };
-        server.close((err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(port);
-          }
-        });
-      });
-      server.on('error', reject);
-    });
-  }
-
   describe('sendAndWait', () => {
     let port: number;
     const defaultResponseCb = (message: Hl7Message): Hl7Message => {

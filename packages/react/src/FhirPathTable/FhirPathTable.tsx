@@ -5,7 +5,7 @@ import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { ChangeEvent, JSX, MouseEvent } from 'react';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
@@ -45,12 +45,6 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const [response, setResponse] = useState<SmartSearchResponse | undefined>();
   const [selected, setSelected] = useState<{ [id: string]: boolean }>({});
 
-  const responseRef = useRef<SmartSearchResponse>(response);
-  responseRef.current = response;
-
-  const selectedRef = useRef<{ [id: string]: boolean }>({});
-  selectedRef.current = selected;
-
   useEffect(() => {
     setOutcome(undefined);
     medplum
@@ -64,7 +58,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
 
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
-    const newSelected = { ...selectedRef.current };
+    const newSelected = { ...selected };
     if (checked) {
       newSelected[id] = true;
     } else {
@@ -79,7 +73,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
-    const resources = responseRef.current?.data.ResourceList;
+    const resources = response?.data.ResourceList;
     if (checked && resources) {
       resources.forEach((resource) => {
         if (resource.id) {
@@ -91,12 +85,12 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   }
 
   function isAllSelected(): boolean {
-    const resources = responseRef.current?.data.ResourceList;
+    const resources = response?.data.ResourceList;
     if (!resources || resources.length === 0) {
       return false;
     }
     for (const resource of resources) {
-      if (resource.id && !selectedRef.current[resource.id]) {
+      if (resource.id && !selected[resource.id]) {
         return false;
       }
     }
@@ -196,9 +190,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
         </div>
       )}
       {props.onBulk && (
-        <Button onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selectedRef.current))}>
-          Bulk...
-        </Button>
+        <Button onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selected))}>Bulk...</Button>
       )}
     </div>
   );

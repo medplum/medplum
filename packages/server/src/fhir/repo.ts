@@ -105,7 +105,6 @@ import {
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
-import { checkWebSocketSubscriptionLimit } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -125,6 +124,7 @@ import { invariant } from '../util/invariant';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import type { HumanNameResource } from './lookups/humanname';
@@ -253,6 +253,11 @@ export interface RepositoryContext {
    * 3) "compartment" - References to all compartments the resource is in.
    */
   extendedMode?: boolean;
+
+  /**
+   * Optional flag to skip scheduling background jobs for writes.
+   */
+  skipBackgroundJobs?: boolean;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -350,7 +355,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
-    return createSystemRepository(this.shardId, this.conn);
+    return createSystemRepository(this.shardId, this.conn, {
+      skipBackgroundJobs: this.context.skipBackgroundJobs,
+    });
   }
 
   setMode(mode: RepositoryMode): void {
@@ -890,10 +897,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
-    await this.postCommit(async () => {
-      const project = await this.getProjectById(projectId);
-      await addBackgroundJobs(result, existing, { project, interaction });
-    });
+    if (!this.context.skipBackgroundJobs) {
+      await this.postCommit(async () => {
+        const project = await this.getProjectById(projectId);
+        await addBackgroundJobs(result, existing, { project, interaction });
+      });
+    }
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
@@ -1383,10 +1392,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
             __version: -1,
           };
 
-          if (resourceType !== 'Binary') {
-            columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
-          }
-
           for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
             this.buildColumn({ resourceType } as Resource, columns, searchParam);
           }
@@ -1411,10 +1416,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      await addBackgroundJobs(resource, resource, {
-        project: await this.getProjectById(resource.meta?.project),
-        interaction: 'delete',
-      });
+      if (!this.context.skipBackgroundJobs) {
+        await addBackgroundJobs(resource, resource, {
+          project: await this.getProjectById(resource.meta?.project),
+          interaction: 'delete',
+        });
+      }
     } catch (err) {
       const durationMs = Date.now() - startTime;
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {
@@ -2925,15 +2932,23 @@ function getProfileCacheKey(projectId: string, url: string): string {
 
 export class SystemRepository extends Repository {}
 
+type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
+
 /**
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
  * @param conn - Optional database connection for transaction support.
+ * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
-function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepository {
+function createSystemRepository(
+  shardId: string,
+  conn?: PoolClient,
+  contextDefaults?: SystemRepositoryContextDefaults
+): SystemRepository {
   return new SystemRepository(
     {
+      ...contextDefaults,
       shardId,
       superAdmin: true,
       strictMode: true,
@@ -2970,10 +2985,14 @@ mostly intended for system-level, super-admin triggered operations against a par
  * - Cross-project operations by super admins
  *
  * @param client - Option database client connection to use in new Repository.
+ * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the global shard.
  */
-export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
-  return createSystemRepository(GLOBAL_SHARD_ID, client);
+export function getGlobalSystemRepo(
+  client?: PoolClient,
+  contextDefaults?: SystemRepositoryContextDefaults
+): SystemRepository {
+  return createSystemRepository(GLOBAL_SHARD_ID, client, contextDefaults);
 }
 
 /**
@@ -2982,10 +3001,15 @@ export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
  * or `getGlobalSystemRepo` if intentionally working in the global shard.
  * @param shardId - The shard ID. Currently ignored.
  * @param client - Option database client connection to use in new Repository.
+ * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the specified shard.
  */
-export function getShardSystemRepo(shardId: string, client?: PoolClient): SystemRepository {
-  return createSystemRepository(shardId, client);
+export function getShardSystemRepo(
+  shardId: string,
+  client?: PoolClient,
+  contextDefaults?: SystemRepositoryContextDefaults
+): SystemRepository {
+  return createSystemRepository(shardId, client, contextDefaults);
 }
 
 /**

@@ -12,10 +12,11 @@ These [Communications](/docs/api/fhir/resources/communication) can also be struc
 - [Searching and querying message threads](/docs/communications/searching-and-querying-threads)
 - [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing)
 - [Message attachments](/docs/communications/sending-messages-and-attachments)
+- [Message editing and drafts](/docs/communications/message-editing-and-drafts)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
 - [Messaging automations](/docs/communications/messaging-automations)
+- [Omni-channel messaging](/docs/communications/external-messaging-integration-patterns) (SMS, email, webhooks)
 - [Asynchronous encounters](/docs/communications/async-encounters)
-- Omni-channel messaging
 - Real-time notifications using Websockets
 
 Check out our [Contact Center Demo](https://github.com/medplum/medplum-chat-demo) for an in-depth example of a provider messaging app.

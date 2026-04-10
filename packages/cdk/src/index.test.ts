@@ -539,4 +539,19 @@ describe('Infra', () => {
     await expect(main({ config: filename })).resolves.not.toThrow();
     await unlink(filename);
   });
+
+  test('mTLS', async () => {
+    const filename = await writeConfig('./medplum.mtls.config.json', {
+      ...baseConfig,
+      name: 'mtls',
+      stackName: 'MedplumMtlsStack',
+      mtlsDomainName: 'mtls.medplum.com',
+      mtlsSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+      mtlsInternetFacing: true,
+      mtlsWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumMtlsIpSet',
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
 });

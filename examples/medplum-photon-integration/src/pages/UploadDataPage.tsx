@@ -20,7 +20,7 @@ export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
-  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
 
   const { dataType } = useParams();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';

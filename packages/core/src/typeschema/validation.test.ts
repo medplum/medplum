@@ -377,7 +377,7 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => validateResource(patient, { profile: patientProfile })).toThrow(
-      new Error('Missing required property (Patient.telecom[0].system)')
+      new OperationOutcomeError(validationError('Missing required property', ['Patient.telecom[0].system']))
     );
   });
 
@@ -460,7 +460,7 @@ describe('FHIR resource validation', () => {
 
   // This test is failing because we do not recursively validate extensions. In this case,
   // US Core Race requires the `text` extension, so not having it should fail validation.
-  test.failing('Nested extensions are not yet validated', () => {
+  test.fails('Nested extensions are not yet validated', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       name: [{ given: ['New'], family: 'User' }],
@@ -773,7 +773,7 @@ describe('FHIR resource validation', () => {
     // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
     // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
     // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
-    test.failing('Populated but missing required Condition.category', () => {
+    test.fails('Populated but missing required Condition.category', () => {
       const conditionWrongCategory = deepClone(baseCondition);
       conditionWrongCategory.category = [
         {
@@ -831,7 +831,7 @@ describe('FHIR resource validation', () => {
   test('Additional properties', () => {
     expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Patient)).toThrow(
-      new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
+      new OperationOutcomeError(validationError('Invalid additional property "fakeProperty"', ['Patient.fakeProperty']))
     );
   });
 
@@ -1983,7 +1983,10 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(invalidFullUrlBdl)).toThrow(
       new OperationOutcomeError(
         validationError(
-          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference`,
+          ['Bundle.entry[0]'],
+          'invariant',
+          '{"fhirpath":"fullUrl.exists() implies fullUrl.contains(\'/_history/\').not()"}'
         )
       )
     );

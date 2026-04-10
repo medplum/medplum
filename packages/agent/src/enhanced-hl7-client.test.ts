@@ -4,22 +4,10 @@ import type { ILogger } from '@medplum/core';
 import { Hl7Message, TypedEventTarget } from '@medplum/core';
 import { Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
-import { createMockLogger } from './test-utils';
+import { createMockLogger, getFreePort } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 describe('EnhancedHl7Client', () => {
-  const usedPorts = [] as number[];
-
-  // Helper function to get a random port number
-  function getRandomPort(): number {
-    let port = Math.floor(Math.random() * 10000) + 40000;
-    while (usedPorts.includes(port)) {
-      port = Math.floor(Math.random() * 10000) + 40000;
-    }
-    usedPorts.push(port);
-    return port;
-  }
-
   let mockHeartbeatEmitter: HeartbeatEmitter;
   let mockLogger: ILogger;
 
@@ -30,7 +18,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('send with tracking off', () => {
     test('Send does not record stats when tracking is off', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -60,7 +48,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('sendAndWait with tracking off', () => {
     test('SendAndWait does not record stats when tracking is off', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -91,7 +79,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('send with tracking on', () => {
     test('Send records message sent when tracking is on', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -127,7 +115,7 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('Send does not record stats when message has no control ID', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -163,7 +151,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('sendAndWait with tracking on', () => {
     test('SendAndWait records RTT when tracking is on', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -206,7 +194,7 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('sendAndWait records multiple RTT samples', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -247,7 +235,7 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('sendAndWait does not record stats when message has no control ID', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {
           connection.send(message.buildAck());
@@ -284,9 +272,10 @@ describe('EnhancedHl7Client', () => {
 
   describe('startTrackingStats', () => {
     test('Does not start tracking if already tracking', async () => {
+      const port = await getFreePort();
       const client = new EnhancedHl7Client({
         host: 'localhost',
-        port: 9999,
+        port,
         log: mockLogger,
       });
 
@@ -314,9 +303,10 @@ describe('EnhancedHl7Client', () => {
 
   describe('stopTrackingStats', () => {
     test('Calls cleanup on stats tracker when stopping', async () => {
+      const port = await getFreePort();
       const client = new EnhancedHl7Client({
         host: 'localhost',
-        port: 9999,
+        port,
         log: mockLogger,
       });
 
@@ -336,9 +326,10 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('Does not error when stopping tracking when not tracking', async () => {
+      const port = await getFreePort();
       const client = new EnhancedHl7Client({
         host: 'localhost',
-        port: 9999,
+        port,
         log: mockLogger,
       });
 
@@ -353,7 +344,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('sendAndWait with returnAck options', () => {
     test('Passes returnAck option to parent sendAndWait', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
 
       // Server sends CA first, then AA after a delay
       const server = new Hl7Server((connection) => {
@@ -393,7 +384,7 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('Default returnAck behavior returns first ACK (CA)', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
 
       // Server sends CA first, then AA after a delay
       const server = new Hl7Server((connection) => {
@@ -433,7 +424,7 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('sendAndWait records stats correctly with returnAck options', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
 
       const server = new Hl7Server((connection) => {
         connection.addEventListener('message', ({ message }) => {

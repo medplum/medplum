@@ -64,6 +64,8 @@ export interface MedplumServerConfig {
   maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
+  /** Optional base64-encoded 256-bit key for S3 SSE-C (Server-Side Encryption with Customer-Provided Keys) */
+  sseCustomerKey?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
@@ -165,10 +167,35 @@ export interface MedplumServerConfig {
   mfaAuthenticatorWindow?: number;
 
   /**
+   * Optional configuration for automatically disabling subscriptions after repeated failures.
+   * Each trigger defines a threshold: if a subscription accumulates `maxConsecutiveFailures`
+   * final failures (after all retries exhausted) within `timeWindowSeconds`, it is set to status "off".
+   * Multiple triggers are evaluated independently — the subscription is disabled if ANY trigger fires.
+   * Can be overridden per project via `Project.systemSetting[name="subscriptionAutoDisable"].valueString`.
+   */
+  subscriptionAutoDisable?: SubscriptionAutoDisableTrigger[];
+
+  /**
    * Optional configuration for background worker pools.
    * Allows running separate server pools for HTTP request serving vs. background job processing.
    */
   workers?: MedplumWorkersConfig;
+
+  /**
+   * Optional mTLS certificate header for incoming requests.
+   * If set, the server will attempt to extract the client certificate from the specified header.
+   * Header name should be all lowercase.
+   * For AWS ALB in "pass through" mode, this should be set to "x-amzn-mtls-clientcert".
+   * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
+   */
+  mtlsCertHeader?: string;
+}
+
+export interface SubscriptionAutoDisableTrigger {
+  /** Number of final failures (after all retries exhausted) required to auto-disable. */
+  maxConsecutiveFailures: number;
+  /** Time window in seconds for counting failures. */
+  timeWindowSeconds: number;
 }
 
 export interface ArrayColumnPaddingConfig {

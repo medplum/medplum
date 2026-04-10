@@ -167,7 +167,7 @@ describe('Resource $graph', () => {
         name: [{ given: ['Graph'], family: 'Demo' }],
       } as Patient);
 
-      await createResource<GraphDefinition>({
+      await createResource({
         resourceType: 'GraphDefinition',
         status: 'active',
         name: graphName,

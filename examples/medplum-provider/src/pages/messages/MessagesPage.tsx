@@ -3,12 +3,12 @@
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
 import type { Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { ThreadInbox } from '@medplum/react';
+import { createPharmaciesSection, getDefaultSections, ThreadInbox } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 import classes from './MessagesPage.module.css';
 /**
@@ -20,6 +20,7 @@ export function MessagesPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const medplum = useMedplum();
+  const PharmacyDialogComponent = usePharmacyDialog();
 
   const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
@@ -60,6 +61,12 @@ export function MessagesPage(): JSX.Element {
   const inProgressUri = `/Communication${formatSearchQuery(buildStatusSearch('in-progress'))}`;
   const completedUri = `/Communication${formatSearchQuery(buildStatusSearch('completed'))}`;
 
+  const sections = useMemo(
+    () =>
+      getDefaultSections().map((s) => (s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s)),
+    [PharmacyDialogComponent]
+  );
+
   const onNew = (message: Communication): void => {
     navigate(getThreadUri(message))?.catch(console.error);
   };
@@ -81,7 +88,7 @@ export function MessagesPage(): JSX.Element {
         threadId={messageId}
         query={formatSearchQuery(parsedSearch).substring(1)}
         showPatientSummary={true}
-        pharmacyDialogComponent={DoseSpotPharmacyDialog}
+        sections={sections}
         allowPatientSelection={true}
         onNew={onNew}
         getThreadUri={getThreadUri}

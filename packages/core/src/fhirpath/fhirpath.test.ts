@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { LOINC, SNOMED, UCUM } from '../constants';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
@@ -563,7 +564,7 @@ const diagnosticReport = {
 
 describe('FHIRPath Test Suite', () => {
   beforeAll(() => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   });

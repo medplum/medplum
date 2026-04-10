@@ -39,7 +39,7 @@ function onlyPractitioner(schedule: Schedule): Reference<Practitioner> | undefin
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const medplum = useMedplum();
 
-  const [month, setMonth] = useState<Date>(getStartMonth());
+  const [month, setMonth] = useState(getStartMonth());
   const [date, setDate] = useState<Date>();
   const [actor, setActor] = useState<Reference<Practitioner> | undefined>();
   const [slots, setSlots] = useState<Slot[]>();

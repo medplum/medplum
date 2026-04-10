@@ -33,13 +33,13 @@ export function PatientPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient>();
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [bpReadings, setBpReadings] = useState<Observation[]>([]);
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [latestWeight, setLatestWeight] = useState<Observation>();
   const [latestBmi, setLatestBmi] = useState<Observation>();
-  const [isMedplumFlow, setIsMedplumFlow] = useState<boolean>(false);
+  const [isMedplumFlow, setIsMedplumFlow] = useState(false);
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {

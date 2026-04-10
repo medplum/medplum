@@ -2189,19 +2189,16 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const dropDown = screen.getByText('choice');
-
     await act(async () => {
-      fireEvent.click(dropDown);
+      fireEvent.click(screen.getByLabelText('Yes'));
     });
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'Yes' });
+      fireEvent.click(screen.getByLabelText('No'));
     });
 
-    await act(async () => {
-      fireEvent.change(dropDown, { target: 'No' });
-    });
+    expect(screen.getByLabelText('Yes')).toBeChecked();
+    expect(screen.getByLabelText('No')).toBeChecked();
   });
 
   test('Multi Select Code shows with no data', async () => {

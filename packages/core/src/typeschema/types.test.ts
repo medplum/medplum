@@ -5,7 +5,6 @@ import type { Bundle, Observation, StructureDefinition } from '@medplum/fhirtype
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { LOINC } from '../constants';
-import type { TypedValue } from '../types';
 import type { InternalSchemaElement, InternalTypeSchema, SlicingRules } from './types';
 import {
   getDataType,
@@ -54,7 +53,7 @@ describe('FHIR resource and data type representations', () => {
     expect(profile.elements['status'].binding?.valueSet).toStrictEqual(
       'http://hl7.org/fhir/ValueSet/observation-status|4.0.1'
     );
-    expect(profile.elements['code'].pattern).toMatchObject<TypedValue>({
+    expect(profile.elements['code'].pattern).toMatchObject({
       type: 'CodeableConcept',
       value: {
         coding: [

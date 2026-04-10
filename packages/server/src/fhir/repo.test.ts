@@ -55,8 +55,15 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { PostgresError, SelectQuery } from './sql';
+import {
+  getGlobalSystemRepo,
+  getProjectSystemRepo,
+  getShardSystemRepo,
+  Repository,
+  setTypedPropertyValue,
+} from './repo';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -348,7 +355,7 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
 
-      const patient2 = await systemRepo.updateResource<Patient>({
+      const patient2 = await systemRepo.updateResource({
         ...(patient1 as Patient),
       });
 
@@ -427,18 +434,36 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      try {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+          identifier: [],
+        });
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        identifier: [],
-      });
+        expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
 
-      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+        expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Patient',
+            id: patient.id,
+          }),
+          undefined,
+          expect.objectContaining({
+            interaction: 'create',
+            project: expect.objectContaining({
+              id: patient.meta?.project,
+            }),
+          })
+        );
 
-      // empty identifier array should removed when read from cache
-      const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
-      expect(readPatient.identifier).toBeUndefined();
+        // empty identifier array should removed when read from cache
+        const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
+        expect(readPatient.identifier).toBeUndefined();
+      } finally {
+        addBackgroundJobsSpy.mockRestore();
+      }
     }));
 
   test('Create Patient as Practitioner with no author', () =>
@@ -487,6 +512,43 @@ describe('FHIR Repo', () => {
       });
 
       expect(patient.meta?.author?.reference).toStrictEqual(author);
+    }));
+
+  test('Skip background jobs when configured', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      const repo = new Repository({
+        projects: [project],
+        currentProject: project,
+        extendedMode: true,
+        skipBackgroundJobs: true,
+        author: {
+          reference: 'Practitioner/' + randomUUID(),
+        },
+      });
+
+      expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
+      expect(
+        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+      ).toBe(true);
+
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.updateResource<Patient>({
+        ...patient,
+        active: true,
+      });
+
+      await repo.deleteResource('Patient', patient.id);
+
+      expect(addBackgroundJobsSpy).not.toHaveBeenCalled();
+      addBackgroundJobsSpy.mockRestore();
     }));
 
   test('Create resource with lastUpdated', () =>
@@ -567,7 +629,7 @@ describe('FHIR Repo', () => {
       expect((rest as Patient).id).toBeUndefined();
 
       try {
-        await systemRepo.updateResource<Patient>(rest);
+        await systemRepo.updateResource(rest);
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
@@ -1013,7 +1075,7 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      const profile = await repo.createResource<StructureDefinition>({
+      const profile = await repo.createResource({
         ...usCorePatientProfile,
         url: 'urn:uuid:' + randomUUID(),
       });
@@ -1100,7 +1162,7 @@ describe('FHIR Repo', () => {
       assert(commLang.binding.strength === 'extensible');
       commLang.binding.strength = 'required';
 
-      profile = await repo.createResource<StructureDefinition>({
+      profile = await repo.createResource({
         ...modifiedPatientProfile,
         url: 'urn:uuid:' + randomUUID(),
       });
@@ -1391,7 +1453,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow(/did not match any resources/);
+      await expect(systemRepo.createResource(patient)).rejects.toThrow(/did not match any resources/);
     }));
 
   test('Conditional reference resolution multiple matches', async () =>
@@ -1412,7 +1474,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+      await expect(systemRepo.createResource(patient)).rejects.toThrow();
     }));
 
   test('Conditional reference replaced before validation', async () =>
@@ -1422,7 +1484,7 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         identifier: [{ value: mrn }],
       };
-      await systemRepo.createResource<Patient>(patient);
+      await systemRepo.createResource(patient);
 
       const serviceRequest = {
         resourceType: 'ServiceRequest',
@@ -1792,7 +1854,7 @@ describe('FHIR Repo', () => {
 
       await repo.withTransaction(async (client) => {
         const querySpy = jest.spyOn(client, 'query');
-        await repo.createResource<Patient>(patient);
+        await repo.createResource(patient);
         const calls = querySpy.mock.calls;
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
