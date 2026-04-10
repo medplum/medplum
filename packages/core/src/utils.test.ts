@@ -11,6 +11,7 @@ import type {
   Resource,
   User,
 } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
@@ -1403,7 +1404,7 @@ describe('Core Utils', () => {
 
     controller.abort();
 
-    await expect(promise).rejects.toThrow('The operation was aborted');
+    await expect(promise).rejects.toThrow('This operation was aborted');
   });
 
   test('splitN', () => {
@@ -1419,7 +1420,7 @@ describe('Core Utils', () => {
   });
 
   test('lazy', () => {
-    const mockFn = jest.fn().mockReturnValue('test result');
+    const mockFn = vi.fn().mockReturnValue('test result');
     const lazyFn = lazy(mockFn);
 
     // the mock function should not have been called
