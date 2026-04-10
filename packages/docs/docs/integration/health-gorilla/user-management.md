@@ -26,7 +26,7 @@ If a practitioner has multiple names (e.g., a maiden name), you can add multiple
 
 ### Email Sync and Precedence
 
-Health Gorilla considers emails to be globally unique across all tenants. Therefore, adding an email address that is already shared by another Health Gorilla Practitioner will fail.
+**Health Gorilla considers emails to be globally unique across all tenants.** Therefore, adding an email address that is already shared by another Health Gorilla Practitioner will fail.
 
 The sync bot handles this by:
 
