@@ -23,7 +23,12 @@ When enrolling a new practitioner, Health Gorilla requires the name to match the
 *   It searches Health Gorilla by NPI to find the existing record.
 *   It compares the name in Medplum against the name found in Health Gorilla.
 *   **Family Name**: Must match exactly (case-insensitive, ignoring leading/trailing whitespace). Suffixes or titles (like "DNP, MSN, APRN") should not be included in the family name unless they are part of the legal name in the NPI registry.
-*   **Given Name**: The first given name in Health Gorilla must match either the entire given name string in Medplum or one of the space-separated parts of the given name in Medplum (case-insensitive).
+*   **Given Name**: The matching logic for given names is specifically designed to handle variations in middle names and spacing.
+    *   **Health Gorilla Side**: The bot only looks at the *first* element in Health Gorilla's `name.given` array (`hgName.given[0]`).
+    *   **Medplum Side**: The bot joins all elements in Medplum's `name.given` array into a single space-separated string.
+    *   **Match Conditions**: A match is successful if either:
+        1.  The joined Medplum given name exactly matches the first Health Gorilla given name (case-insensitive).
+        2.  *Any* individual space-separated word in the joined Medplum given name matches the first Health Gorilla given name (case-insensitive).
 
 If a practitioner has multiple names (e.g., a maiden name), you can add multiple names to the Medplum `Practitioner` resource and set the `use` field appropriately. The bot will check against all names provided in Medplum to find a match with Health Gorilla.
 
