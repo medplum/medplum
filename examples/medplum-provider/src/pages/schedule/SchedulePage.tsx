@@ -169,20 +169,17 @@ export function SchedulePage(): JSX.Element | null {
       }
 
       try {
-        const encounters = await medplum.searchResources('Encounter', [
-          ['appointment', reference],
-          ['_count', '1'],
-        ]);
+        const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
 
-        if (encounters.length === 0) {
+        if (!encounter) {
           setAppointmentDetails(appointment);
           appointmentDetailsHandlers.open();
           return;
         }
 
-        const patient = encounters?.[0]?.subject;
+        const patient = encounter.subject;
         if (patient?.reference) {
-          await navigate(`/${patient.reference}/Encounter/${encounters?.[0]?.id}`);
+          await navigate(`/${patient.reference}/Encounter/${encounter.id}`);
         }
       } catch (error) {
         showErrorNotification(error);
