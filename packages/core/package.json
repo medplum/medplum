@@ -60,7 +60,6 @@
     "@medplum/definitions": "5.1.7",
     "@medplum/fhirtypes": "5.1.7",
     "fast-check": "4.6.0",
-    "@fast-check/jest": "2.2.0",
     "@fast-check/vitest": "0.4.0"
   },
   "peerDependencies": {
