@@ -55,7 +55,6 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { PostgresError, SelectQuery } from './sql';
 import {
   getGlobalSystemRepo,
   getProjectSystemRepo,
@@ -63,7 +62,7 @@ import {
   Repository,
   setTypedPropertyValue,
 } from './repo';
-import { SelectQuery } from './sql';
+import { PostgresError, SelectQuery } from './sql';
 
 jest.mock('hibp');
 
