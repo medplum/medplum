@@ -15,6 +15,12 @@ export const SchedulingTransientIdentifier = {
   get(resource: Resource) {
     return getIdentifier(resource, MedplumSchedulingTransientIdentifierURI);
   },
+
+  remove(resource: Resource & { identifier?: Identifier[] }) {
+    resource.identifier = resource.identifier?.filter(
+      (identifier) => identifier.system !== MedplumSchedulingTransientIdentifierURI
+    );
+  },
 };
 
 export function serviceTypesFromSchedulingParameters(schedule: Schedule): CodeableConcept[] {
