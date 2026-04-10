@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -77,11 +77,19 @@ describe('FindPane', () => {
     vi.clearAllMocks();
 
     // Mock the $find operation
-    medplum.get = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: mockSlots.map((slot) => ({ resource: slot })),
-    } as Bundle<Slot>);
+    const originalGet = medplum.get.bind(medplum);
+    medplum.get = vi.fn().mockImplementation((url, options) => {
+      if (url.toString().includes('$find')) {
+        return new ReadablePromise(
+          Promise.resolve({
+            resourceType: 'Bundle',
+            type: 'searchset',
+            entry: mockSlots.map((slot) => ({ resource: slot })),
+          })
+        );
+      }
+      return originalGet(url, options);
+    });
   });
 
   type SetupOptions = {
@@ -376,44 +384,13 @@ describe('FindPane', () => {
       text: 'Therapy Session',
     };
 
-    // Spy on searchResources to return controlled HealthcareService data.
-    // MockClient's MemoryRepository doesn't have HealthcareService search
-    // parameters indexed, so we can't rely on it filtering by service-type.
-    const mockHealthcareServiceSearch = (healthcareServices: WithId<HealthcareService>[]): void => {
-      const bundle: Bundle<WithId<HealthcareService>> = {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: healthcareServices.map((resource) => ({ resource })),
-      } as const;
-
-      const resourceArray = Object.assign([...healthcareServices], { bundle });
-
-      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType) => {
-        if (resourceType === 'HealthcareService') {
-          return new ReadablePromise(Promise.resolve(resourceArray));
-        }
-        return new ReadablePromise(
-          Promise.resolve(
-            Object.assign([], {
-              bundle: {
-                resourceType: 'Bundle',
-                type: 'searchset',
-              } as const,
-            })
-          )
-        );
-      });
-    };
-
     test('shows service types from HealthcareService resources', async () => {
-      mockHealthcareServiceSearch([
-        {
-          resourceType: 'HealthcareService',
-          id: 'hs-1',
-          type: [healthcareServiceType],
-          extension: [{ url: SchedulingParametersURI }],
-        },
-      ]);
+      await medplum.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        id: 'hs-1',
+        type: [healthcareServiceType],
+        extension: [{ url: SchedulingParametersURI }],
+      });
 
       const schedule = {
         resourceType: 'Schedule',
@@ -429,14 +406,12 @@ describe('FindPane', () => {
 
     test('deduplicates service types that appear in both HealthcareService and Schedule', async () => {
       // serviceType1 exists in both the HealthcareService and the Schedule
-      mockHealthcareServiceSearch([
-        {
-          resourceType: 'HealthcareService',
-          id: 'hs-1',
-          type: [serviceType1],
-          extension: [{ url: SchedulingParametersURI }],
-        },
-      ]);
+      await medplum.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        id: 'hs-1',
+        type: [serviceType1],
+        extension: [{ url: SchedulingParametersURI }],
+      });
 
       const schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]);
 
@@ -449,14 +424,12 @@ describe('FindPane', () => {
     });
 
     test('ignores HealthcareService resources without scheduling parameters', async () => {
-      mockHealthcareServiceSearch([
-        {
-          resourceType: 'HealthcareService',
-          id: 'hs-no-params',
-          type: [healthcareServiceType],
-          // no SchedulingParameters extension
-        },
-      ]);
+      await medplum.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        id: 'hs-no-params',
+        type: [healthcareServiceType],
+        // no SchedulingParameters extension
+      });
 
       const schedule = {
         resourceType: 'Schedule',
