@@ -25,7 +25,7 @@ export interface DoseSpotAccess {
  * 1. Whether the user already has a DoseSpot identifier (already enrolled)
  * 2. Whether the user has a PractitionerRole authorizing DoseSpot enrollment
  *
- * Returns access flags that control UI visibility and self-enrollment behavior.
+ * @returns Access flags that control UI visibility and self-enrollment behavior.
  */
 export function useDoseSpotAccess(): DoseSpotAccess {
   const medplum = useMedplum();
