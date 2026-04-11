@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, formatHumanName, formatPeriod } from '@medplum/core';
-import type { Appointment, Coding, Patient, PlanDefinition, Reference } from '@medplum/fhirtypes';
+import { createReference, formatHumanName, formatPeriod, isReference } from '@medplum/core';
+import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodingInput, Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
 import { useResource } from '@medplum/react-hooks';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
@@ -81,17 +81,33 @@ export function AppointmentDetails(props: {
   const medplum = useMedplum();
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
-  const participantRef = props.appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
-  const patientParticipant = useResource(participantRef?.actor as Reference<Patient> | undefined);
+
+  // Extract references to a Patient and a Practitioner from `Appointment.participants`; we expect
+  // one of each.
+  const participants = props.appointment.participant.map((p) => p.actor);
+  const patientRef = participants.find((r) => isReference<Patient>(r, 'Patient'));
+  const practitionerRef = participants.find((r) => isReference<Practitioner>(r, 'Practitioner'));
+
+  const patient = useResource(patientRef);
   const navigate = useNavigate();
 
   const handleSubmit = useCallback(async () => {
-    if (!patientParticipant) {
+    if (!patient) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
         title: 'Error',
-        message: 'Participant not loaded',
+        message: 'Patient not loaded',
+      });
+      return;
+    }
+
+    if (!practitionerRef) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Appointment has no Practitioner participant',
       });
       return;
     }
@@ -110,37 +126,47 @@ export function AppointmentDetails(props: {
       const encounter = await createEncounter(
         medplum,
         encounterClass,
-        patientParticipant,
+        patient,
         planDefinition,
-        props.appointment
+        props.appointment,
+        practitionerRef
       );
 
-      navigate(`/Patient/${patientParticipant.id}/Encounter/${encounter.id}`)?.catch(console.error);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
       showErrorNotification(err);
     }
-  }, [medplum, patientParticipant, encounterClass, planDefinition, props.appointment, navigate]);
+  }, [medplum, patient, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
 
   return (
     <Stack gap="md">
       <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
 
-      {!participantRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onUpdate} />}
+      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onUpdate} />}
 
-      {!!patientParticipant && (
+      {!!patient && (
         <>
           <Group align="center" gap="sm">
-            <MedplumLink to={patientParticipant}>
-              <ResourceAvatar value={patientParticipant} size={48} radius={48} />
+            <MedplumLink to={patient}>
+              <ResourceAvatar value={patient} size={48} radius={48} />
             </MedplumLink>
-            <MedplumLink to={patientParticipant} fw={800} size="lg">
-              {formatHumanName(patientParticipant.name?.[0])}
+            <MedplumLink to={patient} fw={800} size="lg">
+              {formatHumanName(patient.name?.[0])}
             </MedplumLink>
           </Group>
           <div>
             <h3>Set Up Encounter</h3>
             <Form onSubmit={handleSubmit}>
               <Stack gap="md">
+                <ResourceInput<Practitioner>
+                  name="practitioner"
+                  resourceType="Practitioner"
+                  label="Practitioner"
+                  defaultValue={practitionerRef}
+                  disabled={true}
+                  required={true}
+                />
+
                 <CodingInput
                   name="class"
                   label="Encounter Class"

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
-import type { Coding, Encounter, PlanDefinition } from '@medplum/fhirtypes';
+import { isResource, normalizeErrorString } from '@medplum/core';
+import type { Coding, Encounter, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodeInput, CodingInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -25,9 +25,16 @@ export const EncounterModal = (): JSX.Element => {
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>(() => {
+    const profile = medplum.getProfile();
+    if (isResource<Practitioner>(profile, 'Practitioner')) {
+      return profile;
+    }
+    return undefined;
+  });
 
   const handleCreateEncounter = async (): Promise<void> => {
-    if (!patient || !encounterClass || !start || !end || !status || !planDefinitionData) {
+    if (!patient || !encounterClass || !start || !end || !status || !planDefinitionData || !practitioner) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
@@ -40,8 +47,15 @@ export const EncounterModal = (): JSX.Element => {
     setIsLoading(true);
 
     try {
-      const appointment = await createAppointment(medplum, start, end, patient);
-      const encounter = await createEncounter(medplum, encounterClass, patient, planDefinitionData, appointment);
+      const appointment = await createAppointment(medplum, start, end, patient, practitioner);
+      const encounter = await createEncounter(
+        medplum,
+        encounterClass,
+        patient,
+        planDefinitionData,
+        appointment,
+        practitioner
+      );
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
@@ -68,11 +82,21 @@ export const EncounterModal = (): JSX.Element => {
             <Grid.Col span={6} pr="md">
               <Stack gap="md">
                 <ResourceInput
+                  label="Patient"
                   resourceType="Patient"
                   name="Patient-id"
                   defaultValue={patient}
                   disabled={true}
                   required={true}
+                />
+
+                <ResourceInput
+                  label="Practitioner"
+                  resourceType="Practitioner"
+                  name="Practitioner-id"
+                  defaultValue={practitioner}
+                  required={true}
+                  onChange={(value) => setPractitioner(value)}
                 />
 
                 <DateTimeInput
