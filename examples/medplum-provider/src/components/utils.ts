@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProjectMembership } from '@medplum/fhirtypes';
 
-const DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM = 'https://dosespot.com/practitionerrole-type';
+/**
+ * The system URL used on PractitionerRole.code to authorize DoseSpot enrollment.
+ * Exported for reuse in hooks and tests.
+ */
+export const DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM = 'https://dosespot.com/practitionerrole-type';
 
 /**
  * Returns true if the profile has a DoseSpot identifier.
@@ -19,7 +23,14 @@ export function hasDoseSpotIdentifier(membership: ProjectMembership | undefined)
 }
 
 /**
- * The system URL used on PractitionerRole.code to authorize DoseSpot enrollment.
- * Exported for reuse in hooks and tests.
+ * Returns true if the profile has a ScriptSure identifier.
+ *
+ * Uses the same pattern as DoseSpot — checks for a ScriptSure platform URL
+ * in the membership identifiers, indicating the user is enrolled.
+ *
+ * @param membership - The current user's project membership.
+ * @returns True if the profile has a ScriptSure identifier.
  */
-export { DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM };
+export function hasScriptSureIdentifier(membership: ProjectMembership | undefined): boolean {
+  return !!membership?.identifier?.some((i) => i.system?.includes('scriptsure'));
+}

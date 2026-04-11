@@ -92,6 +92,41 @@ The below table includes a list of sample documents for PDF's provided by Health
 | [Sample ABN](https://drive.google.com/file/d/1l6VbtqdlkDbCJr_DPQwfKOpoaRo2giTM/view?usp=drive_link) | Sample ABN document, for Medicare patients. | 
 | [Sample Req with multiple insurance](https://drive.google.com/file/d/1QMrLkP71ysQEMIi3EOKx0BWeJOATUeCw/view?usp=drive_link) | Requisition for patients with multiple insurance. | 
 
+## Migrating to Health Gorilla Labs
+
+When migrating your existing lab workflows to the Medplum Health Gorilla integration, there are several steps and phases to ensure a smooth transition.
+
+### Customer Requirements
+
+To begin the setup process, you will need to provide the following to the Medplum team:
+
+- **Lab Account Numbers**: Obtain and share your Quest or Labcorp account numbers.
+- **Temporary Access**: Provide a Forward Deployed Engineer (FDE) with temporary access to your Medplum project to install the necessary bots and resources.
+
+### Migration Phases
+
+Migrations are typically rolled out in phases to minimize disruption to your clinical operations:
+
+#### 1. Receive-Only Mode
+
+Often, the first step is to enable the integration in **"receive-only" mode**. This allows you to start receiving structured FHIR results into your Medplum system while continuing to place orders through your existing system or legacy EMR.
+
+#### 2. Syncing Placeholder Orders
+
+When operating in receive-only mode, incoming results will lack a corresponding order in Medplum, which normally results in [`unsolicited-diagnostic-report` or `unknown-patient` issues](./receiving-results.md#resolving-orders-with-results).
+
+To avoid this and ensure results are properly matched to the correct patient:
+
+- **Sync Placeholder Orders**: You should sync at least "placeholder" orders (`ServiceRequest` resources) from your legacy system into Medplum.
+- **Include Identifiers**: Ensure these placeholder orders include an order ID (such as a Placer or Accession number) that can be matched against the incoming results.
+- **Link to Patients**: Point these placeholder orders to a valid `Patient` resource in Medplum.
+
+By doing this, the `receive-from-health-gorilla` bot will successfully match the incoming result's Placer/Accession number to the placeholder order, automatically linking the result to the correct patient and avoiding unsolicited reports.
+
+#### 3. Ordering from Medplum
+
+In the final phase, you transition to placing lab orders directly from your Medplum application. To accelerate the development of the ordering interface, you can use the [`useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react) from the `@medplum/health-gorilla-react` package. This headless UI hook helps manage the complex state required for creating an order, including searching and selecting lab tests, answering Ask on Entry (AOE) questions, and completing the order workflow.
+
 ## Glossary
 
 In a lab implementation, you'll see the following abbreviations.

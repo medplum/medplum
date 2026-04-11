@@ -11,6 +11,7 @@ export interface PostDeployJobData {
   readonly asyncJobId: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  readonly skipInFirstBootMode?: boolean;
 }
 
 export type PostDeployJobRunResult = 'finished' | 'interrupted' | 'ineligible';

@@ -38,7 +38,10 @@ import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
+import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
+import type { SubscriptionAutoDisableTrigger } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -52,9 +55,14 @@ import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import type { SubEventsOptions } from '../ws/subscriptions';
+import {
+  clearSubscriptionFailures,
+  getSubscriptionAutoDisableTriggers,
+  recordSubscriptionFailure,
+} from './subscription-failure-tracker';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -369,7 +377,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -593,8 +601,10 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     } else {
       await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
+    // Success - reset the failure counter
+    await clearSubscriptionFailures(subscription.id);
   } catch (err) {
-    await catchJobError(subscription, job, err);
+    await catchJobError(systemRepo, subscription, job, err);
   }
 }
 
@@ -830,7 +840,12 @@ async function execBot(
   });
 }
 
-async function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): Promise<void> {
+async function catchJobError(
+  systemRepo: SystemRepository,
+  subscription: WithId<Subscription>,
+  job: Job<SubscriptionJobData>,
+  err: unknown
+): Promise<void> {
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
       ?.valueInteger ?? DEFAULT_ATTEMPTS;
@@ -846,6 +861,59 @@ async function catchJobError(subscription: Subscription, job: Job<SubscriptionJo
 
     throw err;
   }
-  // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+
+  // All retries exhausted - record as a final failure for auto-disable tracking
   globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
+  const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+  const result = await recordSubscriptionFailure(subscription.id, triggers);
+  if (result) {
+    await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
+  }
+}
+
+async function autoDisableSubscription(
+  systemRepo: SystemRepository,
+  trigger: SubscriptionAutoDisableTrigger,
+  subscription: WithId<Subscription>,
+  failureCount: number
+): Promise<void> {
+  try {
+    const errorMessage = `Automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`;
+
+    // Use a transaction with a JSON Patch test operation to atomically:
+    // 1. Verify the subscription is still active (test op fails if not, rolling back the transaction)
+    // 2. Disable the subscription and record the error
+    // 3. Create the AuditEvent
+    const patch: Operation[] = [
+      { op: 'test', path: '/status', value: 'active' },
+      { op: 'replace', path: '/status', value: 'off' },
+      { op: 'add', path: '/error', value: errorMessage },
+    ];
+
+    await systemRepo.withTransaction(async () => {
+      await systemRepo.patchResource('Subscription', subscription.id, patch);
+
+      await createSubscriptionAuditEvent(
+        systemRepo,
+        subscription,
+        new Date().toISOString(),
+        AuditEventOutcome.SeriousFailure,
+        errorMessage,
+        subscription
+      );
+    });
+
+    await clearSubscriptionFailures(subscription.id);
+
+    globalLogger.warn('Subscription auto-disabled due to repeated failures', {
+      subscription: subscription.id,
+      project: subscription.meta?.project,
+      failureCount,
+    });
+  } catch (err) {
+    globalLogger.warn('Failed to auto-disable subscription', {
+      subscription: subscription.id,
+      error: err,
+    });
+  }
 }

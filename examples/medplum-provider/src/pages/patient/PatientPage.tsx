@@ -15,7 +15,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Location } from 'react-router';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { useDoseSpotAccess } from '../../hooks/useDoseSpotAccess';
 import { usePatient } from '../../hooks/usePatient';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
@@ -41,6 +41,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
+  const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
   const tabs = getPatientPageTabs(membership, hasDoseSpotAccess);
   const [currentTab, setCurrentTab] = useState<string>(() => {
@@ -82,9 +83,9 @@ export function PatientPage(): JSX.Element {
   const sections = useMemo(
     () =>
       getDefaultSections(() => setIsLabsModalOpen(true)).map((s) =>
-        s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
+        s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
       ),
-    [setIsLabsModalOpen]
+    [setIsLabsModalOpen, PharmacyDialogComponent]
   );
 
   if (outcome && !isOk(outcome)) {

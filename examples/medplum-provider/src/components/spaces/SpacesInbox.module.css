@@ -160,21 +160,6 @@
   border-color: var(--mantine-color-blue-3);
 }
 
-/* Drag handle between chat and resource panels */
-.dragHandle {
-  width: 5px;
-  cursor: col-resize;
-  background-color: transparent;
-  flex-shrink: 0;
-  transition: background-color 0.15s ease;
-  position: relative;
-  z-index: 10;
-}
-
-.dragHandle:hover {
-  background-color: var(--mantine-color-blue-4);
-}
-
 /* Resource Panel */
 .resourcePanel {
   flex: 1;
@@ -194,6 +179,32 @@
   justify-content: space-between;
   align-items: center;
   background-color: var(--mantine-color-gray-0);
+}
+
+/* Tool calls */
+.toolCallGroup {
+  min-width: 0;
+}
+
+.toolCallBadge {
+  flex-shrink: 0;
+}
+
+.toolCallPath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Tool response */
+.toolResponseCode {
+  max-height: 300px;
+  overflow: auto;
+  margin-top: 6px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 /* Utilities */

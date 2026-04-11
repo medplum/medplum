@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Patient, ProjectMembership } from '@medplum/fhirtypes';
-import { hasDoseSpotIdentifier } from '../../components/utils';
+import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../../components/utils';
 
 export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
@@ -36,7 +36,7 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 
 /**
  * Returns the patient page tabs filtered based on user permissions.
- * Filters out the DoseSpot tab if the user doesn't have DoseSpot access.
+ * Filters out e-prescribing tabs if the user doesn't have the corresponding integration access.
  *
  * @param membership - The current user's project membership.
  * @param hasDoseSpotAccess - Optional override for DoseSpot access check.
@@ -50,7 +50,16 @@ export function getPatientPageTabs(
   hasDoseSpotAccess?: boolean
 ): PatientPageTabInfo[] {
   const hasDoseSpot = hasDoseSpotAccess ?? hasDoseSpotIdentifier(membership);
-  return PatientPageTabs.filter((tab) => tab.id !== 'dosespot' || hasDoseSpot);
+  const hasScriptSure = hasScriptSureIdentifier(membership);
+  return PatientPageTabs.filter((tab) => {
+    if (tab.id === 'dosespot') {
+      return hasDoseSpot;
+    }
+    if (tab.id === 'scriptsure') {
+      return hasScriptSure;
+    }
+    return true;
+  });
 }
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
@@ -72,6 +81,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Meds',
   },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
+  { id: 'scriptsure', url: 'scriptsure', label: 'ScriptSure' },
   {
     id: 'labs',
     url: 'ServiceRequest',

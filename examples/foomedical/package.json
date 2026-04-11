@@ -1,6 +1,6 @@
 {
   "name": "foomedical",
-  "version": "5.1.6",
+  "version": "5.1.7",
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
@@ -24,16 +24,16 @@
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@mantine/spotlight": "8.3.18",
-    "@medplum/core": "5.1.6",
-    "@medplum/eslint-config": "5.1.6",
-    "@medplum/fhirtypes": "5.1.6",
-    "@medplum/mock": "5.1.6",
-    "@medplum/react": "5.1.6",
-    "@tabler/icons-react": "3.41.0",
+    "@medplum/core": "5.1.7",
+    "@medplum/eslint-config": "5.1.7",
+    "@medplum/fhirtypes": "5.1.7",
+    "@medplum/mock": "5.1.7",
+    "@medplum/react": "5.1.7",
+    "@tabler/icons-react": "3.41.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@types/jest": "30.0.0",
-    "@types/node": "22.19.15",
+    "@types/node": "22.19.17",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
@@ -49,11 +49,11 @@
     "react": "19.2.4",
     "react-chartjs-2": "5.3.1",
     "react-dom": "19.2.4",
-    "react-router": "7.13.2",
+    "react-router": "7.14.0",
     "typescript": "6.0.2",
     "vite": "8.0.3"
   },
-  "packageManager": "npm@10.9.7",
+  "packageManager": "npm@10.9.8",
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
   }

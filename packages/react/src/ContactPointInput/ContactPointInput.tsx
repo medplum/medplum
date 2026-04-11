@@ -3,7 +3,7 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import type { ContactPoint } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
@@ -16,9 +16,6 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const { path, outcome } = props;
   const { elementsByPath, getExtendedProps } = useContext(ElementsContext);
   const [contactPoint, setContactPoint] = useState(props.defaultValue);
-
-  const ref = useRef<ContactPoint>(contactPoint);
-  ref.current = contactPoint;
 
   const [systemElement, useElement, valueElement] = useMemo(
     () => ['system', 'use', 'value'].map((field) => elementsByPath[path + '.' + field]),
@@ -40,7 +37,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   }
 
   function setSystem(system: 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other'): void {
-    const newValue: ContactPoint = { ...ref.current, system };
+    const newValue: ContactPoint = { ...contactPoint, system };
     if (!system) {
       delete newValue.system;
     }
@@ -48,7 +45,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   }
 
   function setUse(use: 'home' | 'work' | 'temp' | 'old' | 'mobile'): void {
-    const newValue: ContactPoint = { ...ref.current, use };
+    const newValue: ContactPoint = { ...contactPoint, use };
     if (!use) {
       delete newValue.use;
     }
@@ -56,7 +53,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   }
 
   function setValue(value: string): void {
-    const newValue: ContactPoint = { ...ref.current, value };
+    const newValue: ContactPoint = { ...contactPoint, value };
     if (!value) {
       delete newValue.value;
     }
