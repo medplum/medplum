@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
+import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 type UpdateAppointmentFormProps = {
   appointment: Appointment;
@@ -156,6 +157,9 @@ export function AppointmentDetails(props: {
                   onChange={setPlanDefinition}
                   required={true}
                 />
+
+                <PlanDefinitionSummary planDefinition={planDefinition} />
+
                 <Button fullWidth type="submit" disabled={!planDefinition || !encounterClass}>
                   Apply
                 </Button>

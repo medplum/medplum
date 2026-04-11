@@ -9,6 +9,7 @@ import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { PlanDefinitionSummary } from '../../components/plandefinition/PlanDefinitionSummary';
 import { usePatient } from '../../hooks/usePatient';
 import { createAppointment, createEncounter } from '../../utils/encounter';
 import classes from './EncounterModal.module.css';
@@ -136,6 +137,8 @@ export const EncounterModal = (): JSX.Element => {
                   onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
                   required={true}
                 />
+
+                <PlanDefinitionSummary planDefinition={planDefinitionData} />
               </Card>
             </Grid.Col>
           </Grid>
