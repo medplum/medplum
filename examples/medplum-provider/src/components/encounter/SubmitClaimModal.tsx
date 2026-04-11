@@ -12,7 +12,7 @@ import { isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
 type BillingType = 'insurance' | 'self-pay';
 
 function getPayerName(coverage: WithId<Coverage>): string {
-  return coverage.payor?.find(p) => p.display)?.display ?? 'Unknown Payer';
+  return coverage.payor?.find((p) => p.display)?.display ?? 'Unknown Payer';
 }
 
 function getMemberId(coverage: WithId<Coverage>): string {
