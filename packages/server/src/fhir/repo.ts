@@ -161,6 +161,11 @@ import { buildTokenColumns } from './token-column';
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
 
+type CallbackFrame = {
+  pre: number;
+  post: number;
+};
+
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
  * In practice, there will be one Repository per HTTP request.
@@ -292,6 +297,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
+  private callbackStack: CallbackFrame[] = [];
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -2589,6 +2595,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
+    this.pushCallbackFrame();
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
@@ -2606,10 +2613,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await conn.query('COMMIT');
       this.transactionDepth--;
       this.releaseConnection();
+      this.clearCallbackStack();
       await this.processPostCommit();
     } else {
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
+      this.popCallbackFrame();
     }
   }
 
@@ -2619,10 +2628,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
       this.transactionDepth--;
+      this.truncateCommitCallbacks();
       this.releaseConnection(error);
     } else {
       await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
+      this.truncateCommitCallbacks();
     }
   }
 
@@ -2681,6 +2692,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       } else {
         getLogger().error('Error processing post-commit callback', { err });
       }
+    }
+  }
+
+  private pushCallbackFrame(): void {
+    this.callbackStack.push({
+      pre: this.preCommitCallbacks.length,
+      post: this.postCommitCallbacks.length,
+    });
+  }
+
+  private popCallbackFrame(): CallbackFrame {
+    const frame = this.callbackStack.pop();
+
+    if (!frame) {
+      throw new Error('No callback frame');
+    }
+
+    return frame;
+  }
+
+  private clearCallbackStack(): void {
+    this.callbackStack = [];
+  }
+
+  private truncateCommitCallbacks(): void {
+    const frame = this.popCallbackFrame();
+    if (frame.pre !== this.preCommitCallbacks.length) {
+      this.preCommitCallbacks = this.preCommitCallbacks.slice(0, frame.pre);
+    }
+    if (frame.post !== this.postCommitCallbacks.length) {
+      this.postCommitCallbacks = this.postCommitCallbacks.slice(0, frame.post);
     }
   }
 
