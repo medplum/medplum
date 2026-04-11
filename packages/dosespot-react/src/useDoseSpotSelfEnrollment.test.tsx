@@ -9,13 +9,23 @@ import { DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotSelfEnrollmentOptions, DoseSpotSelfEnrollmentResult } from './useDoseSpotSelfEnrollment';
 import { useDoseSpotSelfEnrollment } from './useDoseSpotSelfEnrollment';
 
+function formatEnrollmentTestError(err: unknown): string {
+  if (err instanceof Error) {
+    return `Error: ${err.message}`;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  return 'Unknown error';
+}
+
 function TestComponent({ options }: { options?: DoseSpotSelfEnrollmentOptions }): JSX.Element {
   const { result, loading, error } = useDoseSpotSelfEnrollment(options);
   return (
     <div>
       <div>loading: {String(loading)}</div>
       <div>status: {result?.status ?? 'none'}</div>
-      <div>error: {error ? String(error) : 'none'}</div>
+      <div>error: {error ? formatEnrollmentTestError(error) : 'none'}</div>
       <div>nextSteps: {result?.nextSteps?.join('; ') ?? 'none'}</div>
     </div>
   );
