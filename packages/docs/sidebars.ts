@@ -408,6 +408,10 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
+      id: 'integration/cds-hooks',
+    },
+    {
+      type: 'doc',
       id: 'integration/c-cda',
     },
     {
