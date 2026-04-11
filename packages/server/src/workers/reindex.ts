@@ -22,9 +22,8 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
-import { getPostDeployVersion } from '../migration-sql';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
-import { MigrationVersion } from '../migrations/migration-versions';
+import { isFirstBootMode } from '../migrations/migration-utils';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -170,8 +169,7 @@ export class ReindexJob {
   }
 
   private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
-    const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
-    if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
+    if (Boolean(asyncJob.dataVersion) && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,

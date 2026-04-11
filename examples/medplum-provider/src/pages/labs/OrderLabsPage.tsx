@@ -205,7 +205,9 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {
-                  const codeableConcepts = items.map((item) => ({ coding: [item] })) as DiagnosisCodeableConcept[];
+                  const codeableConcepts = items.map((item) => ({
+                    coding: [{ system: item.system, version: item.version, code: item.code, display: item.display }],
+                  })) as DiagnosisCodeableConcept[];
                   setDiagnoses(codeableConcepts);
                 }}
               />

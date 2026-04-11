@@ -46,6 +46,11 @@ export async function getPendingPostDeployMigration(client: Pool | PoolClient): 
   return MigrationVersion.NONE;
 }
 
+export async function isFirstBootMode(client: Pool | PoolClient): Promise<boolean> {
+  const postDeployVersion = await getPostDeployVersion(client);
+  return postDeployVersion === MigrationVersion.FIRST_BOOT;
+}
+
 export function getPreDeployMigration(migrationNumber: number): PreDeployMigration {
   // Get the pre-deploy migration from the pre-deploy migrations module
   const migration = (preDeployMigrations as Record<string, PreDeployMigration>)['v' + migrationNumber];
