@@ -3,11 +3,7 @@
 import type { EPrescribingIFrameOptions } from '@medplum/react-hooks';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
-import {
-  DOSESPOT_IFRAME_BOT,
-  DOSESPOT_PATIENT_SYNC_BOT,
-  DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
-} from './common';
+import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotSelfEnrollmentResult } from './useDoseSpotSelfEnrollment';
 
 export interface DoseSpotIFrameOptions extends EPrescribingIFrameOptions {

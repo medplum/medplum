@@ -77,8 +77,6 @@ export function useDoseSpotAccess(): DoseSpotAccess {
 
 function hasDoseSpotPractitionerRole(roles: PractitionerRole[]): boolean {
   return roles.some((role) =>
-    role.code?.some((cc) =>
-      cc.coding?.some((c) => c.system === DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM)
-    )
+    role.code?.some((cc) => cc.coding?.some((c) => c.system === DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM))
   );
 }

@@ -6,11 +6,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '@testing-library/react';
 import type { JSX } from 'react';
 import { vi } from 'vitest';
-import {
-  DOSESPOT_IFRAME_BOT,
-  DOSESPOT_PATIENT_SYNC_BOT,
-  DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
-} from './common';
+import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotIFrameOptions } from './useDoseSpotIFrame';
 import { useDoseSpotIFrame } from './useDoseSpotIFrame';
 
