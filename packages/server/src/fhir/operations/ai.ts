@@ -121,7 +121,7 @@ export async function aiOperation(
 
   const apiKey = ctx.project.secret?.find((s) => s.name === 'OPENAI_API_KEY')?.valueString;
   if (!apiKey) {
-    return [badRequest('OpenAI API key not configured in project settings')];
+    return [badRequest('OpenAI API key not configured in project secrets')];
   }
 
   const params = parseInputParameters<AIOperationParameters>(operation, req);
