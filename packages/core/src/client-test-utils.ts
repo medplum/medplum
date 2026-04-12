@@ -15,7 +15,7 @@ import { ensureNoLeadingSlash } from './utils';
 
 export function mockFetch(
   status: number,
-  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
+  body: OperationOutcome | Resource | Record<string, unknown> | ((url: string, options?: any) => any),
   contentType = ContentType.FHIR_JSON
 ): FetchLike & Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
