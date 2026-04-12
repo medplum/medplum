@@ -349,7 +349,7 @@ describe('AI Operation', () => {
 
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
-      'OpenAI API key not configured in project settings'
+      'OpenAI API key not configured in project secrets'
     );
   });
 
