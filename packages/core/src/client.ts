@@ -2882,7 +2882,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *    Binary uploads and the actual entries from the batch response
    *
    * **Important:** This is **not** a true FHIR transaction. Binary uploads happen outside the
-   * batch/transaction scope, so a partial failure may leave orphaned Binary resources.
+   * batch/transaction scope, so a partial failure (e.g. `createBinary` succeeding but
+   * `executeBatch` failing) may leave orphaned `Binary` resources on the server. Callers that
+   * require transactional guarantees should implement their own rollback / cleanup logic by
+   * catching errors thrown from this method and deleting any successfully uploaded `Binary`
+   * resources before retrying.
    *
    * @category Batch
    * @param bundle - The FHIR batch/transaction bundle, which may contain Binary create entries.
@@ -4892,7 +4896,7 @@ export function rewriteResourceReferences(obj: unknown, map: Map<string, string>
 function base64ToUint8Array(base64: string): Uint8Array {
   if (isBrowserEnvironment()) {
     const binaryString = window.atob(base64);
-    return Uint8Array.from(binaryString, (c) => c.codePointAt(0) as number);
+    return Uint8Array.from(binaryString, (c) => c.codePointAt(0) ?? 0);
   }
   const BufferConstructor = getBuffer();
   if (BufferConstructor) {
