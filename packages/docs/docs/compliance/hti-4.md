@@ -58,5 +58,6 @@ A parallel CMS rule (CMS-0057-F) forces payers to build the other side of the FH
 - [DaVinci Payer Data Exchange (PDex) US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/STU1.0.1/)
 - [ONC API Resource Guide](https://onc-healthit.github.io/api-resource-guide/)
 - [Medplum Bulk FHIR Implementation](/docs/api/fhir/operations/bulk-fhir)
+- [CDS Hooks](/docs/integration/cds-hooks)
 - [DaVinci IG for Notifications](http://hl7.org/fhir/us/davinci-alerts/)
 - [DaVinci Project](https://confluence.hl7.org/display/DVP)
