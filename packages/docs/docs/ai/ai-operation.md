@@ -385,7 +385,7 @@ if (toolCallsParam?.valueString) {
       "severity": "error",
       "code": "invalid",
       "details": {
-        "text": "OpenAI API key not configured in project settings"
+        "text": "OpenAI API key not configured in project secrets"
       }
     }
   ]
