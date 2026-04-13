@@ -78,7 +78,6 @@ describe('ThreadInbox', () => {
       );
 
       await Promise.resolve();
-      await Promise.resolve();
     });
   };
 
