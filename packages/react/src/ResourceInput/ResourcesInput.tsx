@@ -171,7 +171,7 @@ export function ResourcesInput<T extends Resource = Resource>(props: ResourcesIn
       Promise.allSettled(
         items.map((item): Promise<T> => {
           if (isResource(item)) {
-            return Promise.resolve(item as T);
+            return Promise.resolve(item);
           }
           if (isReference(item) && isPopulated(item)) {
             return medplum.readReference(item as Reference<T>);
