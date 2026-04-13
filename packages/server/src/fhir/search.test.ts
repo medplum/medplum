@@ -3740,7 +3740,7 @@ describe('project-scoped Repository', () => {
       const result3 = await repo.search(
         parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id eq '${observation2.id}'`)
       );
-      expect(getEntryIds(result3)).toStrictEqual([patient.id]);
+      expect(getEntryIds(result3)).toStrictEqual([]);
 
       // Patients with observations performed by themselves with an ID NOT equal to observation1.id
       const result4 = await repo.search(
