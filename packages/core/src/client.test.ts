@@ -30,7 +30,7 @@ import type {
   NewProjectRequest,
   NewUserRequest,
 } from './client';
-import { DEFAULT_ACCEPT, MedplumClient, binaryOptionsFromEntry } from './client';
+import { DEFAULT_ACCEPT, MedplumClient } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
 import * as environment from './environment';
@@ -2990,35 +2990,6 @@ describe('Client', () => {
         const result = await client2.executeBatchWithBinary(inputBundle);
         expect(result.entry).toHaveLength(1);
         expect(result.entry?.[0].response?.location).toBe('Binary/only-binary');
-      });
-    });
-
-    describe('binaryOptionsFromEntry', () => {
-      test('converts a valid Binary entry to CreateBinaryOptions', () => {
-        const entry: BundleEntry = {
-          fullUrl: 'urn:uuid:1',
-          resource: { resourceType: 'Binary', contentType: ContentType.TEXT, data: encodeBase64('hello') },
-          request: { method: 'POST', url: 'Binary' },
-        };
-        const opts = binaryOptionsFromEntry(entry);
-        expect(opts.contentType).toBe(ContentType.TEXT);
-        expect(opts.data).toBeInstanceOf(Uint8Array);
-      });
-
-      test('throws if contentType is missing', () => {
-        const entry: BundleEntry = {
-          resource: { resourceType: 'Binary', data: encodeBase64('hello') },
-          request: { method: 'POST', url: 'Binary' },
-        };
-        expect(() => binaryOptionsFromEntry(entry)).toThrow('contentType');
-      });
-
-      test('throws if data is missing', () => {
-        const entry: BundleEntry = {
-          resource: { resourceType: 'Binary', contentType: ContentType.TEXT },
-          request: { method: 'POST', url: 'Binary' },
-        };
-        expect(() => binaryOptionsFromEntry(entry)).toThrow('data');
       });
     });
   });

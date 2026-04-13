@@ -11,6 +11,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import {
+  binaryOptionsFromEntry,
   convertContainedResourcesToBundle,
   convertToTransactionBundle,
   findResourceInBundle,
@@ -18,6 +19,8 @@ import {
   reorderBundle,
   rewriteResourceReferences,
 } from './bundle';
+import { ContentType } from './contenttype';
+import { encodeBase64 } from './base64';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -691,5 +694,35 @@ describe('rewriteResourceReferences', () => {
     expect(rewriteResourceReferences('urn:uuid:old', map)).toBe('urn:uuid:old');
     expect(rewriteResourceReferences(42, map)).toBe(42);
     expect(rewriteResourceReferences(null, map)).toBeNull();
+  });
+});
+
+
+describe('binaryOptionsFromEntry', () => {
+  test('converts a valid Binary entry to CreateBinaryOptions', () => {
+    const entry: BundleEntry = {
+      fullUrl: 'urn:uuid:1',
+      resource: { resourceType: 'Binary', contentType: ContentType.TEXT, data: encodeBase64('hello') },
+      request: { method: 'POST', url: 'Binary' },
+    };
+    const opts = binaryOptionsFromEntry(entry);
+    expect(opts.contentType).toBe(ContentType.TEXT);
+    expect(opts.data).toBeInstanceOf(Uint8Array);
+  });
+
+  test('throws if contentType is missing', () => {
+    const entry: BundleEntry = {
+      resource: { resourceType: 'Binary', data: encodeBase64('hello') },
+      request: { method: 'POST', url: 'Binary' },
+    };
+    expect(() => binaryOptionsFromEntry(entry)).toThrow('contentType');
+  });
+
+  test('throws if data is missing', () => {
+    const entry: BundleEntry = {
+      resource: { resourceType: 'Binary', contentType: ContentType.TEXT },
+      request: { method: 'POST', url: 'Binary' },
+    };
+    expect(() => binaryOptionsFromEntry(entry)).toThrow('data');
   });
 });

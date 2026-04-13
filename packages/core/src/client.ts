@@ -40,7 +40,7 @@ import type {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import type { ReturnAckCategory } from './agent';
 import { encodeBase64 } from './base64';
-import { base64ToUint8Array, isBinaryCreateEntry, rewriteResourceReferences } from './bundle';
+import { executeBatchWithBinary as executeBatchWithBinaryHelper } from './bundle';
 import { LRUCache } from './cache';
 import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
 import { ContentType } from './contenttype';
@@ -2897,63 +2897,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * from the batch/transaction response.
    */
   async executeBatchWithBinary(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
-    const entries = bundle.entry ?? [];
-
-    // Split entries into Binary creates and everything else, preserving original indices
-    const binaryEntries: { index: number; entry: BundleEntry }[] = [];
-    const otherEntries: { index: number; entry: BundleEntry }[] = [];
-
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      if (isBinaryCreateEntry(entry)) {
-        binaryEntries.push({ index: i, entry });
-      } else {
-        otherEntries.push({ index: i, entry });
-      }
-    }
-
-    // Upload each Binary and build a fullUrl → "Binary/{id}" reference map
-    const fullUrlToReference = new Map<string, string>();
-    const binaryResults: { index: number; resource: WithId<Binary> }[] = [];
-
-    for (const { index, entry } of binaryEntries) {
-      const { fullUrl } = entry;
-      if (!fullUrl) {
-        throw new Error('Binary entry is missing fullUrl, which is required for reference rewriting');
-      }
-      const binaryOptions = binaryOptionsFromEntry(entry);
-      const result = await this.createBinary(binaryOptions);
-      fullUrlToReference.set(fullUrl, `Binary/${result.id}`);
-      binaryResults.push({ index, resource: result });
-    }
-
-    // Rewrite references in the non-Binary entries and execute the shadow bundle
-    const rewrittenOtherEntries = otherEntries.map(({ index, entry }) => ({
-      index,
-      entry: rewriteResourceReferences(entry, fullUrlToReference) as BundleEntry,
-    }));
-
-    const shadowBundle: Bundle = { ...bundle, entry: rewrittenOtherEntries.map(({ entry }) => entry) };
-    const batchResponse = await this.executeBatch(shadowBundle, options);
-    const batchResponseEntries = batchResponse.entry ?? [];
-
-    // Reconstruct the response in the original entry order
-    const responseEntries: BundleEntry[] = new Array(entries.length);
-
-    for (let i = 0; i < binaryResults.length; i++) {
-      const { index, resource } = binaryResults[i];
-      responseEntries[index] = {
-        response: { status: '201 Created', location: `Binary/${resource.id}` },
-        resource,
-      };
-    }
-
-    for (let i = 0; i < rewrittenOtherEntries.length; i++) {
-      const { index } = rewrittenOtherEntries[i];
-      responseEntries[index] = batchResponseEntries[i] ?? {};
-    }
-
-    return { resourceType: 'Bundle', type: 'batch-response', entry: responseEntries };
+    return executeBatchWithBinaryHelper(this, bundle, options);
   }
 
   /**
@@ -4820,27 +4764,4 @@ export function normalizeCreatePdfOptions(
 
 function isRetryable(response: Response): boolean {
   return response.status === 429 || response.status >= 500;
-}
-
-/**
- * Converts a Binary Bundle entry into {@link CreateBinaryOptions} suitable for {@link MedplumClient.createBinary}.
- *
- * The `Binary.data` field (base64-encoded bytes) is decoded to a `Uint8Array`.
- * @param entry - A Bundle entry whose resource is a FHIR `Binary`.
- * @returns The corresponding `CreateBinaryOptions`.
- * @throws Error if `contentType` or `data` is missing from the Binary resource.
- */
-export function binaryOptionsFromEntry(entry: BundleEntry): CreateBinaryOptions {
-  const binary = entry.resource as Binary;
-  if (!binary.contentType) {
-    throw new Error('Binary resource is missing contentType');
-  }
-  if (!binary.data) {
-    throw new Error('Binary resource is missing data');
-  }
-  return {
-    data: base64ToUint8Array(binary.data),
-    contentType: binary.contentType,
-    securityContext: binary.securityContext,
-  };
 }
