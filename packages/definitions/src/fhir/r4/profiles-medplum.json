@@ -290,7 +290,7 @@
           {
             "id" : "Project.defaultPatientAccessPolicy",
             "path" : "Project.defaultPatientAccessPolicy",
-            "definition" : "The default access policy for patients using open registration.",
+            "definition" : "@deprecated Use defaultAccessPolicy for Patient profile type instead. The default access policy for patients using open registration.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -301,6 +301,55 @@
               "path" : "Project.defaultPatientAccessPolicy",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "Project.defaultAccessPolicy",
+            "path" : "Project.defaultAccessPolicy",
+            "definition" : "Default parameterized access policies applied when creating a project membership for a given profile resource type, if the membership does not specify access or accessPolicy.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "Project.defaultAccessPolicy",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Project.defaultAccessPolicy.resourceType",
+            "path" : "Project.defaultAccessPolicy.resourceType",
+            "definition" : "Profile resource type this default applies to (Patient, Practitioner, or RelatedPerson).",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "Project.defaultAccessPolicy.resourceType",
+              "min" : 1,
+              "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
+            }
+          },
+          {
+            "id" : "Project.defaultAccessPolicy.access",
+            "path" : "Project.defaultAccessPolicy.access",
+            "definition" : "Parameterized access policies to apply for this profile type when creating a membership.",
+            "min" : 1,
+            "max" : "*",
+            "type" : [{
+              "code" : "ParameterizedAccess"
+            }],
+            "base" : {
+              "path" : "Project.defaultAccessPolicy.access",
+              "min" : 1,
+              "max" : "*"
             }
           },
           {
@@ -1439,6 +1488,136 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/ParameterizedAccessParameter",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "ParameterizedAccessParameter",
+      "name" : "ParameterizedAccessParameter",
+      "url" : "https://medplum.com/fhir/StructureDefinition/ParameterizedAccessParameter",
+      "status" : "active",
+      "kind" : "complex-type",
+      "abstract" : false,
+      "type" : "ParameterizedAccessParameter",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/Element",
+      "description" : "A named parameter value for a parameterized access policy.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "ParameterizedAccessParameter",
+            "path" : "ParameterizedAccessParameter",
+            "definition" : "A named parameter value for a parameterized access policy.",
+            "min" : 0,
+            "max" : "*",
+            "base": {
+              "path" : "ParameterizedAccessParameter",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ParameterizedAccessParameter.name",
+            "path" : "ParameterizedAccessParameter.name",
+            "definition" : "The unique name of the parameter.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base": {
+              "path" : "ParameterizedAccessParameter.name",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ParameterizedAccessParameter.value[x]",
+            "path" : "ParameterizedAccessParameter.value[x]",
+            "short" : "Value of the parameter.",
+            "definition" : "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+            "min" : 1,
+            "max" : "1",
+            "type" : [
+            {
+              "code" : "string"
+            },
+            {
+              "code" : "Reference"
+            }],
+            "base": {
+              "path" : "ParameterizedAccessParameter.value[x]",
+              "min" : 1,
+              "max" : "1"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/ParameterizedAccess",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "ParameterizedAccess",
+      "name" : "ParameterizedAccess",
+      "url" : "https://medplum.com/fhir/StructureDefinition/ParameterizedAccess",
+      "status" : "active",
+      "kind" : "complex-type",
+      "abstract" : false,
+      "type" : "ParameterizedAccess",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/Element",
+      "description" : "Extended access configuration using a parameterized access policy.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "ParameterizedAccess",
+            "path" : "ParameterizedAccess",
+            "definition" : "Extended access configuration using a parameterized access policy.",
+            "min" : 0,
+            "max" : "*",
+            "base": {
+              "path" : "ParameterizedAccess",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ParameterizedAccess.policy",
+            "path" : "ParameterizedAccess.policy",
+            "definition" : "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [
+              {
+                "code" : "Reference",
+                "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+              }
+            ],
+            "base": {
+              "path" : "ParameterizedAccess.policy",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ParameterizedAccess.parameter",
+            "path" : "ParameterizedAccess.parameter",
+            "definition" : "Named parameter values substituted into the policy template.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "ParameterizedAccessParameter"
+            }],
+            "base": {
+              "path" : "ParameterizedAccess.parameter",
+              "min" : 0,
+              "max" : "*"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/StructureDefinition/ProjectMembership",
     "resource" : {
       "resourceType" : "StructureDefinition",
@@ -1749,80 +1928,12 @@
             "min" : 0,
             "max" : "*",
             "type" : [{
-              "code" : "BackboneElement"
+              "code" : "ParameterizedAccess"
             }],
             "base": {
               "path" : "ProjectMembership.access",
               "min" : 0,
               "max" : "*"
-            }
-          },
-          {
-            "id" : "ProjectMembership.access.policy",
-            "path" : "ProjectMembership.access.policy",
-            "definition" : "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
-            "min" : 1,
-            "max" : "1",
-            "type" : [
-              {
-                "code" : "Reference",
-                "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
-              }
-            ],
-            "base": {
-              "path" : "ProjectMembership.access.policy",
-              "min" : 1,
-              "max" : "1"
-            }
-          },
-          {
-            "id" : "ProjectMembership.access.parameter",
-            "path" : "ProjectMembership.access.parameter",
-            "definition" : "User options that control the display of the application.",
-            "min" : 0,
-            "max" : "*",
-            "type" : [{
-              "code" : "BackboneElement"
-            }],
-            "base": {
-              "path" : "ProjectMembership.access.parameter",
-              "min" : 0,
-              "max" : "*"
-            }
-          },
-          {
-            "id" : "ProjectMembership.access.parameter.name",
-            "path" : "ProjectMembership.access.parameter.name",
-            "definition" : "The unique name of the parameter.",
-            "min" : 1,
-            "max" : "1",
-            "type" : [{
-              "code" : "code"
-            }],
-            "base": {
-              "path" : "ProjectMembership.access.parameter.name",
-              "min" : 1,
-              "max" : "1"
-            }
-          },
-          {
-            "id" : "ProjectMembership.access.parameter.value[x]",
-            "path" : "ProjectMembership.access.parameter.value[x]",
-            "short" : "Value of the parameter.",
-            "definition" : "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-            "min" : 1,
-            "max" : "1",
-            "type" : [
-            {
-              "code" : "string"
-            },
-            {
-              "code" : "Reference"
-            }],
-            "base": {
-              "path" : "ProjectMembership.access.parameter.value[x]",
-              "min" : 1,
-              "max" : "1"
             }
           },
           {

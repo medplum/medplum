@@ -12129,6 +12129,39 @@
           ]
         },
         {
+          "id": "Project.defaultAccessPolicy",
+          "path": "Project.defaultAccessPolicy",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Project.defaultAccessPolicy.resourceType",
+          "path": "Project.defaultAccessPolicy.resourceType",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Project.defaultAccessPolicy.access",
+          "path": "Project.defaultAccessPolicy.access",
+          "min": 1,
+          "max": "*",
+          "type": [
+            {
+              "code": "ParameterizedAccess"
+            }
+          ]
+        },
+        {
           "id": "Project.setting",
           "path": "Project.setting",
           "min": 0,

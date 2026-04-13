@@ -19,9 +19,9 @@ import type {
   AccessPolicyResource,
   Bot,
   ClientApplication,
+  ParameterizedAccess,
   Project,
   ProjectMembership,
-  ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
@@ -133,7 +133,7 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
  * @returns The parameterized compound access policy.
  */
 export async function buildAccessPolicy(membership: ProjectMembership): Promise<PopulatedAccessPolicy> {
-  const access: ProjectMembershipAccess[] = [];
+  const access: ParameterizedAccess[] = [];
   if (membership.accessPolicy) {
     access.push({ policy: membership.accessPolicy });
   }
@@ -194,7 +194,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  */
 async function buildAccessPolicyResources(
   systemRepo: SystemRepository,
-  access: ProjectMembershipAccess,
+  access: ParameterizedAccess,
   profile: Reference<ProfileResource>,
   accessPolicyMap: Map<string, AccessPolicy>
 ): Promise<AccessPolicy> {

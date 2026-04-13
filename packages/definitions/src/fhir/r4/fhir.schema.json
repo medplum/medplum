@@ -196,7 +196,10 @@
       "BotCdsService": "#/definitions/BotCdsService",
       "Package": "#/definitions/Package",
       "PackageRelease": "#/definitions/PackageRelease",
-      "PackageInstallation": "#/definitions/PackageInstallation"
+      "PackageInstallation": "#/definitions/PackageInstallation",
+      "ProjectDefaultAccessPolicy": "#/definitions/ProjectDefaultAccessPolicy",
+      "ParameterizedAccessParameter": "#/definitions/ParameterizedAccessParameter",
+      "ParameterizedAccess": "#/definitions/ParameterizedAccess"
     }
   },
   "oneOf": [
@@ -775,6 +778,15 @@
     },
     {
       "$ref": "#/definitions/PackageInstallation"
+    },
+    {
+      "$ref": "#/definitions/ProjectDefaultAccessPolicy"
+    },
+    {
+      "$ref": "#/definitions/ParameterizedAccessParameter"
+    },
+    {
+      "$ref": "#/definitions/ParameterizedAccess"
     }
   ],
   "definitions": {
@@ -1355,6 +1367,15 @@
         },
         {
           "$ref": "#/definitions/PackageInstallation"
+        },
+        {
+          "$ref": "#/definitions/ProjectDefaultAccessPolicy"
+        },
+        {
+          "$ref": "#/definitions/ParameterizedAccessParameter"
+        },
+        {
+          "$ref": "#/definitions/ParameterizedAccess"
         }
       ]
     },
@@ -61414,8 +61435,15 @@
           "type": "array"
         },
         "defaultPatientAccessPolicy": {
-          "description": "The default access policy for patients using open registration.",
+          "description": "@deprecated Use defaultAccessPolicy for Patient profile type instead. The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
+        },
+        "defaultAccessPolicy": {
+          "description": "Default parameterized access policies applied when creating a project membership for a given profile resource type, if the membership does not specify access or accessPolicy.",
+          "items": {
+            "$ref": "#/definitions/ProjectDefaultAccessPolicy"
+          },
+          "type": "array"
         },
         "setting": {
           "description": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior.",
@@ -61784,7 +61812,7 @@
         "access": {
           "description": "Extended access configuration using parameterized access policies.",
           "items": {
-            "$ref": "#/definitions/ProjectMembershipAccess"
+            "$ref": "#/definitions/ParameterizedAccess"
           },
           "type": "array"
         },
@@ -65022,6 +65050,217 @@
         "version",
         "status",
         "installedBy"
+      ]
+    },
+    "ProjectDefaultAccessPolicy": {
+      "description": "Default parameterized access policies applied when creating a project membership for a given profile resource type, if the membership does not specify access or accessPolicy.",
+      "properties": {
+        "resourceType": {
+          "description": "Profile resource type this default applies to (Patient, Practitioner, or RelatedPerson).",
+          "enum": [
+            "Account",
+            "ActivityDefinition",
+            "AdverseEvent",
+            "AllergyIntolerance",
+            "Appointment",
+            "AppointmentResponse",
+            "AuditEvent",
+            "Basic",
+            "Binary",
+            "BiologicallyDerivedProduct",
+            "BodyStructure",
+            "Bundle",
+            "CapabilityStatement",
+            "CarePlan",
+            "CareTeam",
+            "CatalogEntry",
+            "ChargeItem",
+            "ChargeItemDefinition",
+            "Claim",
+            "ClaimResponse",
+            "ClinicalImpression",
+            "CodeSystem",
+            "Communication",
+            "CommunicationRequest",
+            "CompartmentDefinition",
+            "Composition",
+            "ConceptMap",
+            "Condition",
+            "Consent",
+            "Contract",
+            "Coverage",
+            "CoverageEligibilityRequest",
+            "CoverageEligibilityResponse",
+            "DetectedIssue",
+            "Device",
+            "DeviceDefinition",
+            "DeviceMetric",
+            "DeviceRequest",
+            "DeviceUseStatement",
+            "DiagnosticReport",
+            "DocumentManifest",
+            "DocumentReference",
+            "DomainResource",
+            "EffectEvidenceSynthesis",
+            "Encounter",
+            "Endpoint",
+            "EnrollmentRequest",
+            "EnrollmentResponse",
+            "EpisodeOfCare",
+            "EventDefinition",
+            "Evidence",
+            "EvidenceVariable",
+            "ExampleScenario",
+            "ExplanationOfBenefit",
+            "FamilyMemberHistory",
+            "Flag",
+            "Goal",
+            "GraphDefinition",
+            "Group",
+            "GuidanceResponse",
+            "HealthcareService",
+            "ImagingStudy",
+            "Immunization",
+            "ImmunizationEvaluation",
+            "ImmunizationRecommendation",
+            "ImplementationGuide",
+            "InsurancePlan",
+            "Invoice",
+            "Library",
+            "Linkage",
+            "List",
+            "Location",
+            "Measure",
+            "MeasureReport",
+            "Media",
+            "Medication",
+            "MedicationAdministration",
+            "MedicationDispense",
+            "MedicationKnowledge",
+            "MedicationRequest",
+            "MedicationStatement",
+            "MedicinalProduct",
+            "MedicinalProductAuthorization",
+            "MedicinalProductContraindication",
+            "MedicinalProductIndication",
+            "MedicinalProductIngredient",
+            "MedicinalProductInteraction",
+            "MedicinalProductManufactured",
+            "MedicinalProductPackaged",
+            "MedicinalProductPharmaceutical",
+            "MedicinalProductUndesirableEffect",
+            "MessageDefinition",
+            "MessageHeader",
+            "MolecularSequence",
+            "NamingSystem",
+            "NutritionOrder",
+            "Observation",
+            "ObservationDefinition",
+            "OperationDefinition",
+            "OperationOutcome",
+            "Organization",
+            "OrganizationAffiliation",
+            "Parameters",
+            "Patient",
+            "PaymentNotice",
+            "PaymentReconciliation",
+            "Person",
+            "PlanDefinition",
+            "Practitioner",
+            "PractitionerRole",
+            "Procedure",
+            "Provenance",
+            "Questionnaire",
+            "QuestionnaireResponse",
+            "RelatedPerson",
+            "RequestGroup",
+            "ResearchDefinition",
+            "ResearchElementDefinition",
+            "ResearchStudy",
+            "ResearchSubject",
+            "Resource",
+            "RiskAssessment",
+            "RiskEvidenceSynthesis",
+            "Schedule",
+            "SearchParameter",
+            "ServiceRequest",
+            "Slot",
+            "Specimen",
+            "SpecimenDefinition",
+            "StructureDefinition",
+            "StructureMap",
+            "Subscription",
+            "Substance",
+            "SubstanceNucleicAcid",
+            "SubstancePolymer",
+            "SubstanceProtein",
+            "SubstanceReferenceInformation",
+            "SubstanceSourceMaterial",
+            "SubstanceSpecification",
+            "SupplyDelivery",
+            "SupplyRequest",
+            "Task",
+            "TerminologyCapabilities",
+            "TestReport",
+            "TestScript",
+            "ValueSet",
+            "VerificationResult",
+            "VisionPrescription"
+          ]
+        },
+        "access": {
+          "description": "Parameterized access policies to apply for this profile type when creating a membership.",
+          "items": {
+            "$ref": "#/definitions/ParameterizedAccess"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "access"
+      ]
+    },
+    "ParameterizedAccessParameter": {
+      "description": "A named parameter value for a parameterized access policy.",
+      "properties": {
+        "name": {
+          "description": "The unique name of the parameter.",
+          "$ref": "#/definitions/code"
+        },
+        "valueString": {
+          "description": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/string"
+        },
+        "valueReference": {
+          "description": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    },
+    "ParameterizedAccess": {
+      "description": "Extended access configuration using a parameterized access policy.",
+      "properties": {
+        "policy": {
+          "description": "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
+          "$ref": "#/definitions/Reference"
+        },
+        "parameter": {
+          "description": "Named parameter values substituted into the policy template.",
+          "items": {
+            "$ref": "#/definitions/ParameterizedAccessParameter"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "policy"
       ]
     }
   }

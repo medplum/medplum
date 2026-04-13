@@ -4293,5 +4293,49 @@
         ]
       }
     }
+  },
+  "ParameterizedAccessParameter": {
+    "elements": {
+      "name": {
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "value[x]": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          },
+          {
+            "code": "Reference"
+          }
+        ]
+      }
+    }
+  },
+  "ParameterizedAccess": {
+    "elements": {
+      "policy": {
+        "min": 1,
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+          }
+        ]
+      },
+      "parameter": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "ParameterizedAccessParameter"
+          }
+        ]
+      }
+    }
   }
 }

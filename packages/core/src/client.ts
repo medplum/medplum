@@ -21,9 +21,9 @@ import type {
   OperationOutcome,
   Patient,
   Practitioner,
+  ParameterizedAccess,
   Project,
   ProjectMembership,
-  ProjectMembershipAccess,
   ProjectSetting,
   Reference,
   RelatedPerson,
@@ -619,7 +619,7 @@ export interface InviteRequest {
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
-  access?: ProjectMembershipAccess[];
+  access?: ParameterizedAccess[];
   /** @deprecated Use membership.admin instead. */
   admin?: boolean;
 }
