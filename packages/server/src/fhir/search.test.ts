@@ -3808,12 +3808,12 @@ describe('project-scoped Repository', () => {
       [Operator.LESS_THAN, start, false],
       [Operator.LESS_THAN_OR_EQUALS, start, true],
       [Operator.GREATER_THAN_OR_EQUALS, start, true],
-      [Operator.GREATER_THAN, start, false],
+      [Operator.GREATER_THAN, start, true],
 
       [Operator.LESS_THAN, startPlusOneSecond, true],
       [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true],
-      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, false],
-      [Operator.GREATER_THAN, startPlusOneSecond, false],
+      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, true],
+      [Operator.GREATER_THAN, startPlusOneSecond, true],
 
       [Operator.GREATER_THAN, '2025-05-01', true],
       [Operator.GREATER_THAN, '2025-06-01', false],

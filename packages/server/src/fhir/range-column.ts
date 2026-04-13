@@ -7,6 +7,7 @@ import type { RangeColumnSearchParameterImplementation } from './searchparameter
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
 import { Column, ColumnType, Condition, Negation } from './sql';
+import { shouldTokenExistForMissingOrPresent } from './tokens';
 
 type Interval<T extends number | Date> = {
   left?: T;
@@ -229,11 +230,12 @@ export function buildRangeColumnsSearchFilter(
   }
   const column = new Column(tableName, impl.rangeColumnName);
   switch (filter.operator) {
+    case Operator.EXACT: // Alias needed for _filter search
     case Operator.EQUALS:
-      return new Condition(column, 'RANGE_OVERLAPS', formatRange(range));
+      return new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType);
     case Operator.NOT:
     case Operator.NOT_EQUALS:
-      return new Negation(new Condition(column, 'RANGE_OVERLAPS', formatRange(range)));
+      return new Negation(new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType));
     case Operator.LESS_THAN:
       return new Condition(
         column,
@@ -266,6 +268,11 @@ export function buildRangeColumnsSearchFilter(
       return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', formatRange(range), colType);
     case Operator.ENDS_BEFORE:
       return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', formatRange(range), colType);
+    case Operator.MISSING:
+    case Operator.PRESENT: {
+      const shouldExist = shouldTokenExistForMissingOrPresent(filter.operator, filter.value);
+      return new Condition(column, shouldExist ? '!=' : '=', null);
+    }
     default:
       throw new Error(`Unknown FHIR operator: ${filter.operator}`);
   }
