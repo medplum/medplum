@@ -173,7 +173,7 @@ export function ResourcesInput<T extends Resource = Resource>(props: ResourcesIn
           if (isResource(item)) {
             return Promise.resolve(item);
           }
-          if (isReference(item) && isPopulated(item)) {
+          if (isReference(item)) {
             return medplum.readReference(item as Reference<T>);
           }
           return Promise.reject(new Error('Not a resolvable item'));
