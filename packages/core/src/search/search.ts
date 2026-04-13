@@ -304,7 +304,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     default: {
       const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
       if (param) {
-        searchRequest.filters = append(searchRequest.filters, parseParameter(param, modifier, value));
+        searchRequest.filters = append(searchRequest.filters, parseParameter(param, Operator.EQUALS, modifier, value));
       } else {
         searchRequest.filters = append(searchRequest.filters, parseUnknownParameter(code, modifier, value));
       }
@@ -330,11 +330,16 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
 }
 
 const presenceOperators: Operator[] = [Operator.MISSING, Operator.PRESENT];
-export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
-  if (presenceOperators.includes(modifier as Operator)) {
+export function parseParameter(
+  searchParam: SearchParameter,
+  operator: Operator,
+  modifier: string,
+  value: string
+): Filter {
+  if (presenceOperators.includes((modifier as Operator) || operator)) {
     return {
       code: searchParam.code,
-      operator: modifier as Operator,
+      operator: (modifier as Operator) || operator,
       value,
     };
   }
@@ -363,15 +368,7 @@ export function parseParameter(searchParam: SearchParameter, modifier: string, v
           badRequest(`Invalid format for ${searchParam.type} search parameter: ${value}`)
         );
       }
-      let operator = parseModifier(modifier);
-      if (!operator) {
-        if (modifier === Operator.NOT_EQUALS) {
-          operator = Operator.NOT_EQUALS;
-        } else {
-          operator = Operator.EQUALS;
-        }
-      }
-      return { code: searchParam.code, operator: operator, value };
+      return { code: searchParam.code, operator: parseModifier(modifier) ?? operator, value };
     }
     default:
       throw new Error('Unrecognized search parameter type: ' + searchParam.type);
