@@ -182,8 +182,7 @@ export function ResourcesInput<T extends Resource = Resource>(props: ResourcesIn
         .then((settled) => {
           if (!cancelled) {
             setDefaultResources(
-              (settled as PromiseSettledResult<T>[])
-                .filter((r): r is PromiseFulfilledResult<T> => r.status === 'fulfilled')
+              settled.filter((r) => r.status === 'fulfilled')
                 .map((r) => r.value)
             );
           }
