@@ -21,9 +21,9 @@ This category is for user-facing applications that connect directly to Medplum. 
 
 | Method | **Choose to...** |
 | :--- | :--- | 
-| [Medplum as IDP](./medplum-as-idp.md) | (default) **Get going fast**, and don't have external compliance requirements. |
-| [External IDP](./external-identity-providers.mdx) | Connect to an external IDP, like [Google Auth](./google-auth.md), Auth0, or AWS Cognito. | 
-| [Domain-level IDP](./domain-level-identity-providers.md) | Use your enterprise, domain-level **corporate identity solution.** |
+| [Medplum as IDP](./medplum-as-idp) | (default) **Get going fast**, and don't have external compliance requirements. |
+| [External IDP](./external-identity-providers.mdx) | Connect to an external IDP, like [Google Auth](./google-auth), Auth0, or AWS Cognito. | 
+| [Domain-level IDP](./domain-level-identity-providers) | Use your enterprise, domain-level **corporate identity solution.** |
 
 ## Server-side Authentication
 
@@ -42,8 +42,8 @@ Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow yo
 
 See our [User Management](/docs/user-management/) section for more information: 
   * scoping users, and distinguishing [Project vs Server Scoped users](/docs/user-management/project-vs-server-scoped-users.mdx)
-  * enabling [Open Patient Registration](/docs/user-management/open-patient-registration.md)
-  * using [External ID's](/docs/user-management/external-ids.md)
+  * enabling [Open Patient Registration](/docs/user-management/open-patient-registration)
+  * using [External ID's](/docs/user-management/external-ids)
   * creating [Custom Emails](/docs/user-management/custom-emails.mdx) for user invites 
   
 -----

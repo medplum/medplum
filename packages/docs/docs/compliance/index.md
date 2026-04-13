@@ -12,15 +12,15 @@ This is a living document, and we continually update our resources. We welcome f
 
 ## Compliance Resources
 
-- [ONC Certification](onc.md)
-- [CLIA/CAP](clia-cap.md)
-- [SOC2 Type II](soc2.md)
-- [HIPAA compliance](hipaa.md)
-- [CFR Part 11](cfr11.md)
-- [ISO 9001](iso9001.md)
-- [HTI-4/CMS-0057-F](hti-4.md)
-- [Good Manufacturing Practices (GMP)](gmp.md)
-- [HITRUST](hitrust.md)
+- [ONC Certification](onc)
+- [CLIA/CAP](clia-cap)
+- [SOC2 Type II](soc2)
+- [HIPAA compliance](hipaa)
+- [CFR Part 11](cfr11)
+- [ISO 9001](iso9001)
+- [HTI-4/CMS-0057-F](hti-4)
+- [Good Manufacturing Practices (GMP)](gmp)
+- [HITRUST](hitrust)
 - ISO 27001 Certification (coming soon)
 
 ## Materials and Usage

@@ -13,7 +13,7 @@ Need help? This is an advanced integration. [Contact our team](mailto:info+healt
 
 This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering. 
 
-For more information about the FHIR resources involved in the integration, see [Sending Orders](./sending-orders.md) and [Receiving Results](./receiving-results.md). See our [Changelog](./hg-changelog.md) for information about integration upgrades. 
+For more information about the FHIR resources involved in the integration, see [Sending Orders](./sending-orders) and [Receiving Results](./receiving-results). See our [Changelog](./hg-changelog) for information about integration upgrades. 
 
 ## Prerequisites 
 
@@ -58,7 +58,7 @@ Information on how to systemize the collection of this information is included b
 
 ### Select performing lab 
 
-In order to use Health Gorilla's integration, you must retain an account number with the lab directly. This can be done programmatically (see [Sending Orders](./sending-orders.md) for more details). 
+In order to use Health Gorilla's integration, you must retain an account number with the lab directly. This can be done programmatically (see [Sending Orders](./sending-orders) for more details). 
 
 ### Choose a lab panel 
 
@@ -66,7 +66,7 @@ To standardize the labs or the sets of labs (i.e. blood glucose level, standard 
 
 ### Ensuring Coverage are collected 
 
-When attaching insurance information to the lab order, ensure that the correct Coverage resource is attached. See [Sending Orders](./sending-orders.md) for more details. 
+When attaching insurance information to the lab order, ensure that the correct Coverage resource is attached. See [Sending Orders](./sending-orders) for more details. 
 
 ### Show ABN and capture diagnosis codes for Medicare patients
 
