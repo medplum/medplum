@@ -5590,28 +5590,26 @@ function getEntryIds(result: Bundle<WithId<Resource>>): string[] {
 
 describe('parseChainedParameter', () => {
   beforeAll(async () => {
-    await loadTestConfig();
     loadStructureDefinitions();
   });
-  test('reverse chained search with prefix operators', () =>
-    withTestContext(async () => {
-      const searchRequest = parseSearchRequest('Patient?_has:EpisodeOfCare:patient:date=ge2026-04-01');
-      expect(searchRequest.filters?.length).toStrictEqual(1);
-      const filter = searchRequest.filters?.[0];
-      assert(filter);
+  test('reverse chained search with prefix operators', () => {
+    const searchRequest = parseSearchRequest('Patient?_has:EpisodeOfCare:patient:date=ge2026-04-01');
+    expect(searchRequest.filters?.length).toStrictEqual(1);
+    const filter = searchRequest.filters?.[0];
+    assert(filter);
 
-      const chain = parseChainedParameter(searchRequest.resourceType, filter);
-      expect(chain.chain.length).toStrictEqual(1);
-      expect(chain.chain[0]).toMatchObject<Partial<ChainedSearchLink>>({
-        originType: 'Patient',
-        targetType: 'EpisodeOfCare',
-        code: 'patient',
-        direction: Direction.REVERSE,
-      });
-      expect(chain.filter).toMatchObject<Partial<Filter>>({
-        code: 'date',
-        operator: Operator.GREATER_THAN_OR_EQUALS,
-        value: '2026-04-01',
-      });
-    }));
+    const chain = parseChainedParameter(searchRequest.resourceType, filter);
+    expect(chain.chain.length).toStrictEqual(1);
+    expect(chain.chain[0]).toMatchObject<Partial<ChainedSearchLink>>({
+      originType: 'Patient',
+      targetType: 'EpisodeOfCare',
+      code: 'patient',
+      direction: Direction.REVERSE,
+    });
+    expect(chain.filter).toMatchObject<Partial<Filter>>({
+      code: 'date',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: '2026-04-01',
+    });
+  });
 });
