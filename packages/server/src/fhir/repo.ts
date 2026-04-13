@@ -1921,7 +1921,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         return;
       } else {
         // Default to previous column implementation
-        impl = {...impl, searchStrategy: 'column'}
+        impl = { ...impl, searchStrategy: 'column' };
       }
     }
 
