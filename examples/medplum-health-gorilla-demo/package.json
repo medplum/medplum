@@ -15,9 +15,9 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@mantine/core": "9.0.1",
-    "@mantine/notifications": "9.0.1",
-    "@mantine/spotlight": "9.0.1",
+    "@mantine/core": "8.3.18",
+    "@mantine/notifications": "8.3.18",
+    "@mantine/spotlight": "8.3.18",
     "@medplum/core": "5.1.7",
     "@medplum/eslint-config": "5.1.7",
     "@medplum/health-gorilla-core": "5.1.7",
