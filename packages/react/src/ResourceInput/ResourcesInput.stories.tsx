@@ -20,11 +20,7 @@ export const Empty = (): JSX.Element => (
 
 export const WithDefaultResources = (): JSX.Element => (
   <Document>
-    <ResourcesInput
-      name="foo"
-      resourceType="Patient"
-      defaultValue={[HomerSimpson, MargeSimpson]}
-    />
+    <ResourcesInput name="foo" resourceType="Patient" defaultValue={[HomerSimpson, MargeSimpson]} />
   </Document>
 );
 
@@ -50,12 +46,7 @@ export const ManyDefaults = (): JSX.Element => (
 
 export const Disabled = (): JSX.Element => (
   <Document>
-    <ResourcesInput
-      disabled
-      name="foo"
-      resourceType="Patient"
-      defaultValue={[HomerSimpson, MargeSimpson]}
-    />
+    <ResourcesInput disabled name="foo" resourceType="Patient" defaultValue={[HomerSimpson, MargeSimpson]} />
   </Document>
 );
 
@@ -73,12 +64,7 @@ export const WithMaxValues = (): JSX.Element => (
 
 export const WithLabel = (): JSX.Element => (
   <Document>
-    <ResourcesInput
-      name="foo"
-      resourceType="Patient"
-      defaultValue={[HomerSimpson, MargeSimpson]}
-      label="Patients"
-    />
+    <ResourcesInput name="foo" resourceType="Patient" defaultValue={[HomerSimpson, MargeSimpson]} label="Patients" />
   </Document>
 );
 
