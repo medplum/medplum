@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
-import { getDisplayString, getReferenceString, isPopulated, isReference, isResource } from '@medplum/core';
+import { getDisplayString, getReferenceString, isReference, isResource } from '@medplum/core';
 import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -181,10 +181,7 @@ export function ResourcesInput<T extends Resource = Resource>(props: ResourcesIn
       )
         .then((settled) => {
           if (!cancelled) {
-            setDefaultResources(
-              settled.filter((r) => r.status === 'fulfilled')
-                .map((r) => r.value)
-            );
+            setDefaultResources(settled.filter((r) => r.status === 'fulfilled').map((r) => r.value));
           }
         })
         .catch(() => {});
