@@ -19,10 +19,10 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@mantine/core": "8.3.18",
-    "@mantine/hooks": "8.3.18",
-    "@mantine/notifications": "8.3.18",
-    "@mantine/spotlight": "8.3.18",
+    "@mantine/core": "9.0.1",
+    "@mantine/hooks": "9.0.1",
+    "@mantine/notifications": "9.0.1",
+    "@mantine/spotlight": "9.0.1",
     "@medplum/core": "5.1.7",
     "@medplum/definitions": "5.1.7",
     "@medplum/eslint-config": "5.1.7",
