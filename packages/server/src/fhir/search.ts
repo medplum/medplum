@@ -97,12 +97,12 @@ interface Cursor {
 }
 
 /** Linking direction for chained search. */
-const Direction = {
+export const Direction = {
   FORWARD: 1,
   REVERSE: -1,
 } as const;
 
-interface ChainedSearchLink {
+export interface ChainedSearchLink {
   originType: string;
   targetType: string;
   code: string;
@@ -971,7 +971,7 @@ export function buildSearchExpression(
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
     const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
-      expressions.push(expr);
+    expressions.push(expr);
   }
   if (expressions.length === 0) {
     return undefined;
@@ -1792,7 +1792,7 @@ function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink,
   ]);
 }
 
-function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
+export function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
   let currentResourceType = resourceType;
   const parts = splitChainedSearch(searchFilter.code);
 

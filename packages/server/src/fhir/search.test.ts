@@ -5,6 +5,7 @@ import {
   createReference,
   getReferenceString,
   getSearchParameter,
+  isDefined,
   LOINC,
   normalizeErrorString,
   Operator,
@@ -50,6 +51,7 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -57,10 +59,12 @@ import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
-import { clampEstimateCount, getCount } from './search';
+import type { ChainedSearchLink } from './search';
+import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
+import { loadStructureDefinitions } from './structure';
 
 jest.mock('hibp');
 
@@ -3681,6 +3685,12 @@ describe('project-scoped Repository', () => {
         identifier: [{ system: 'http://example.com/mrn', value: mrn }],
       });
 
+      // Patient not expected to match any searches
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: 'no-match' }],
+      });
+
       const practitioner = await repo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         name: [{ given: ['Yves'] }],
@@ -3718,23 +3728,31 @@ describe('project-scoped Repository', () => {
       });
 
       expect(result.entry).toHaveLength(2);
-      expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual(
-        expect.arrayContaining([observation1.id, observation2.id])
+      expect(getEntryIds(result)).toStrictEqual(expect.arrayContaining([observation1.id, observation2.id]));
+
+      // Patients with observations performed by themselves with an ID equal to observation1.id
+      const result2 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id eq '${observation1.id}'`)
       );
+      expect(getEntryIds(result2)).toStrictEqual([patient.id]);
 
-      const result2 = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_filter',
-            operator: Operator.EQUALS,
-            value: `_has:Observation:performer:_id ne '${observation2.id}'`,
-          },
-        ],
-      });
+      // Patients with observations performed by themselves with an ID equal to observation2.id
+      const result3 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id eq '${observation2.id}'`)
+      );
+      expect(getEntryIds(result3)).toStrictEqual([patient.id]);
 
-      expect(result2.entry).toHaveLength(1);
-      expect(result2.entry?.[0].resource?.id).toStrictEqual(patient.id);
+      // Patients with observations performed by themselves with an ID NOT equal to observation1.id
+      const result4 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id ne '${observation1.id}'`)
+      );
+      expect(getEntryIds(result4)).toStrictEqual([]);
+
+      // Patients with observations performed by themselves with an ID NOT equal to observation2.id
+      const result5 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id ne '${observation2.id}'`)
+      );
+      expect(getEntryIds(result5)).toStrictEqual([patient.id]);
     }));
 
   test('reverse chain with prefix modifier', async () =>
@@ -3755,19 +3773,8 @@ describe('project-scoped Repository', () => {
         valueQuantity: { value: 101, code: '[degF]', system: UCUM },
       });
 
-      const result = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_has:Observation:subject:value-quantity',
-            operator: Operator.EQUALS,
-            value: 'gt100',
-          },
-        ],
-      });
-
-      expect(result.entry).toHaveLength(1);
-      expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+      const result = await repo.search(parseSearchRequest('Patient?_has:Observation:subject:value-quantity=gt100'));
+      expect(getEntryIds(result)).toStrictEqual([patient.id]);
     }));
 
   test('Lookup table exact match with comma disjunction', () =>
@@ -5575,4 +5582,36 @@ describe('systemRepo', () => {
       })
     );
   });
+});
+
+function getEntryIds(result: Bundle<WithId<Resource>>): string[] {
+  return result.entry?.map((e) => e.resource?.id).filter(isDefined) ?? [];
+}
+
+describe('parseChainedParameter', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+    loadStructureDefinitions();
+  });
+  test('reverse chained search with prefix operators', () =>
+    withTestContext(async () => {
+      const searchRequest = parseSearchRequest('Patient?_has:EpisodeOfCare:patient:date=ge2026-04-01');
+      expect(searchRequest.filters?.length).toStrictEqual(1);
+      const filter = searchRequest.filters?.[0];
+      assert(filter);
+
+      const chain = parseChainedParameter(searchRequest.resourceType, filter);
+      expect(chain.chain.length).toStrictEqual(1);
+      expect(chain.chain[0]).toMatchObject<Partial<ChainedSearchLink>>({
+        originType: 'Patient',
+        targetType: 'EpisodeOfCare',
+        code: 'patient',
+        direction: Direction.REVERSE,
+      });
+      expect(chain.filter).toMatchObject<Partial<Filter>>({
+        code: 'date',
+        operator: Operator.GREATER_THAN_OR_EQUALS,
+        value: '2026-04-01',
+      });
+    }));
 });
