@@ -37,9 +37,9 @@ function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Elem
   return <>(Unnamed HealthcareService)</>;
 }
 
-// Allows selection of a ServiceType found in the schedule's
-// SchedulingParameters extensions, and runs a `$find` operation to look for
-// upcoming slots that can be used to book an Appointment of that type.
+// Allows selection of a schedulable HealthcareService that matches
+// `props.schedule.serviceType`. Uses $find to look for available appointment
+// times. On selection, uses $book to create an appointment.
 //
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element | null {
