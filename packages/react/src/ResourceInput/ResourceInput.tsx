@@ -24,7 +24,6 @@ export interface ResourceInputProps<T extends Resource = Resource> {
 }
 
 /**
- * @deprecated Use ResourcesInput instead, which supports multiple default and selected values.
  * @param props - The props for the ResourceInput component.
  * @returns The ResourceInput component.
  */
