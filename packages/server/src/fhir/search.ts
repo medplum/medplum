@@ -1047,6 +1047,9 @@ function buildSearchFilterExpression(
     case SearchStrategies.LOOKUP_TABLE:
       return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
     case SearchStrategies.RANGE_COLUMN:
+      if (!repo.supportsRangeSearch()) {
+        return buildNormalSearchFilterExpression(resourceType, table, param, {...impl, searchStrategy: 'column'}, filter);
+      }
       if (param.id === 'MeasureReport-period') {
         return buildNormalSearchFilterExpression(
           resourceType,

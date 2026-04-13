@@ -143,7 +143,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { getSearchParameterImplementation, lookupTables, SearchStrategies } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
@@ -1890,7 +1890,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    let impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
       if (impl.sortColumnName) {
         columns[impl.sortColumnName] = truncateTextColumn(
@@ -1908,16 +1908,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       });
       return;
     }
-    if (impl.searchStrategy === 'range-column') {
-      buildRangeColumns(searchParam, impl, columns, resource);
+    if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+      if (this.supportsRangeSearch()) {
+        buildRangeColumns(searchParam, impl, columns, resource);
 
-      // Handle special case for "MeasureReport-period"
-      // This is a trial for using "tstzrange" columns for date/time ranges.
-      // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
-      if (searchParam.id === 'MeasureReport-period') {
-        columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+        // Handle special case for "MeasureReport-period"
+        // This is a trial for using "tstzrange" columns for date/time ranges.
+        // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+        if (searchParam.id === 'MeasureReport-period') {
+          columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+        }
+        return;
+      } else {
+        // Default to previous column implementation
+        impl = {...impl, searchStrategy: 'column'}
       }
-      return;
     }
 
     impl satisfies ColumnSearchParameterImplementation;
@@ -1927,6 +1932,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     } else {
       columns[impl.columnName] = columnValues[0];
     }
+  }
+
+  supportsRangeSearch(): boolean {
+    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
   }
 
   /**

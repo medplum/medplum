@@ -190,6 +190,8 @@ export interface MedplumServerConfig {
    * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
    */
   mtlsCertHeader?: string;
+
+  rangeSearch?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
