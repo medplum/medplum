@@ -31,14 +31,14 @@
     "@medplum/mock": "5.1.7",
     "@types/node": "22.19.17",
     "@types/ssh2-sftp-client": "9.0.6",
-    "@vitest/coverage-v8": "4.1.2",
-    "@vitest/ui": "4.1.2",
+    "@vitest/coverage-v8": "4.1.4",
+    "@vitest/ui": "4.1.4",
     "commander": "12.1.0",
-    "dotenv": "17.4.0",
+    "dotenv": "17.4.1",
     "esbuild": "0.28.0",
     "fast-glob": "3.3.3",
     "tsx": "4.21.0",
     "typescript": "6.0.2",
-    "vitest": "4.1.2"
+    "vitest": "4.1.4"
   }
 }

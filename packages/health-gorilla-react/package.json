@@ -72,11 +72,11 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
-    "jsdom": "29.0.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "jsdom": "29.0.2",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "react-router": "7.14.0",
-    "vitest": "4.1.2"
+    "vitest": "4.1.4"
   },
   "peerDependencies": {
     "@medplum/core": "5.1.7",
