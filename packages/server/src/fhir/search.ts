@@ -970,17 +970,8 @@ export function buildSearchExpression(
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    let expr: Expression | undefined;
-    if (isChainedSearchFilter(filter)) {
-      const chain = parseChainedParameter(searchRequest.resourceType, filter);
-      expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
-    } else {
-      expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
-    }
-
-    if (expr) {
+    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
       expressions.push(expr);
-    }
   }
   if (expressions.length === 0) {
     return undefined;
@@ -1015,7 +1006,7 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest('Search filter value cannot contain null bytes'));
   }
 
-  if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
+  if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
