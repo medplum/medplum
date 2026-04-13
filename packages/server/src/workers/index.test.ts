@@ -112,5 +112,31 @@ describe('Workers', () => {
       expect(cronSpy).toHaveBeenCalledTimes(0);
       expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
     });
+
+    test('Missing dispatch queue is logged', async () => {
+      const resource: WithId<Patient> = {
+        resourceType: 'Patient',
+        id: '123',
+        meta: {
+          versionId: '1',
+        },
+      };
+
+      const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      jest.spyOn(queueRegistry, 'get').mockReturnValue(undefined);
+
+      await addBackgroundJobs(resource, undefined, {} as BackgroundJobContext);
+
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Error adding dispatch jobs',
+        expect.objectContaining({
+          resourceType: 'Patient',
+          resource: '123',
+          err: expect.objectContaining({
+            message: 'DispatchQueue is not initialized; call initWorkers() before enqueuing dispatch jobs',
+          }),
+        })
+      );
+    });
   });
 });

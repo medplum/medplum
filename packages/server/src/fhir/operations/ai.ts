@@ -31,14 +31,6 @@ const operation: OperationDefinition = {
       documentation: 'JSON string containing the conversation messages array',
     },
     {
-      name: 'apiKey',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'OpenAI API key',
-    },
-    {
       name: 'model',
       use: 'in',
       min: 1,
@@ -75,7 +67,6 @@ const operation: OperationDefinition = {
 
 type AIOperationParameters = {
   messages: string;
-  apiKey: string;
   model: string;
   tools?: string;
 };
@@ -128,6 +119,11 @@ export async function aiOperation(
     return [forbidden];
   }
 
+  const apiKey = ctx.project.secret?.find((s) => s.name === 'OPENAI_API_KEY')?.valueString;
+  if (!apiKey) {
+    return [badRequest('OpenAI API key not configured in project secrets')];
+  }
+
   const params = parseInputParameters<AIOperationParameters>(operation, req);
   let messages: any[];
   try {
@@ -160,7 +156,7 @@ export async function aiOperation(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    await streamAIToClient(messages, params.apiKey, params.model, tools, res);
+    await streamAIToClient(messages, apiKey, params.model, tools, res);
     res.end();
 
     // Return undefined for streaming - response already sent
@@ -168,7 +164,7 @@ export async function aiOperation(
   }
 
   try {
-    const result = (await callAI(messages, params.apiKey, params.model, tools)) as {
+    const result = (await callAI(messages, apiKey, params.model, tools)) as {
       content: string | null;
       tool_calls: any[];
     };

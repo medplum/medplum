@@ -156,6 +156,11 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, unsupportedMediaType);
     return;
   }
+  if (err instanceof URIError && 'status' in err && err.status === 400) {
+    // the router package sets err.status to 400 when decodeURIComponent throws a URIError
+    sendOutcome(res, badRequest(err.message));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
@@ -239,10 +244,10 @@ export async function initAppServices(config: MedplumServerConfig): Promise<void
   loadStructureDefinitions();
   initRedis(config);
   await initDatabase(config);
+  initWorkers(config);
   await seedDatabase(config);
   await initKeys(config);
   initBinaryStorage(config.binaryStorage);
-  initWorkers(config);
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();

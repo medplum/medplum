@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "5.1.6",
+  "version": "5.1.7",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -43,7 +43,6 @@
     "@babel/preset-env": "7.29.2",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
-    "@fast-check/jest": "2.2.0",
     "@jest/globals": "30.3.0",
     "@jest/types": "30.3.0",
     "@microsoft/api-documenter": "7.29.10",
@@ -76,7 +75,9 @@
     "tsx": "4.21.0",
     "turbo": "2.9.3",
     "typescript": "6.0.2",
-    "vite": "8.0.3"
+    "vite": "8.0.3",
+    "vitest": "4.1.2",
+    "vitest-websocket-mock": "0.5.0"
   },
   "packageManager": "npm@10.9.8",
   "engines": {

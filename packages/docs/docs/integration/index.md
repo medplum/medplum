@@ -188,6 +188,12 @@ Medplum provides templates and playbooks for common medical integrations.
       <td><a href="/docs/integration/smart-app-launch">SMART App Launch</a></td>
     </tr>
     <tr>
+      <td>CDS Hooks</td>
+      <td>EHR</td>
+      <td>Contextual CDS service discovery and invocation</td>
+      <td><a href="/docs/integration/cds-hooks">CDS Hooks</a></td>
+    </tr>
+    <tr>
       <td>FHIRcast</td>
       <td>Radiology</td>
       <td>Event driven workflow for workstations</td>

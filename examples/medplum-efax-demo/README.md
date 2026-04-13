@@ -41,6 +41,8 @@ This example application demonstrates how to use Medplum's custom FHIR operation
 
 ## Sending a Fax
 
+Recipient fax numbers must be in **E.164** format: a leading `+` and country calling code (e.g. `+1` for US/Canada), then the number—eFax requires this; a local number without a country code may fail.
+
 The demo creates resources sequentially when sending a fax:
 
 ```typescript

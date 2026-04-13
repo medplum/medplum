@@ -263,7 +263,7 @@ export function LandingPage(): JSX.Element {
               <Link to="/docs" className={styles.ctaWhiteButton}>
                 See Documentation
               </Link>
-              <Link to="https://cal.com/team/medplum/30min" className={styles.purpleButton}>
+              <Link to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" className={styles.purpleButton}>
                 Book a Demo
               </Link>
             </div>

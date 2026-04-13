@@ -401,7 +401,7 @@ The Plan component maps to the order resources in FHIR. Depending on what the cl
 | Ongoing care strategy    | [`CarePlan`](/docs/api/fhir/resources/careplan)                                         |
 | Referral                 | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) with appropriate `category` |
 
-For details on placing orders, see [Ordering Labs and Imaging](/docs/charting/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
+For details on placing orders, see [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
 
 ## Signing and Locking Notes
 
@@ -452,5 +452,5 @@ Once the full note is complete and reviewed, the `ClinicalImpression` status sho
 - [`Condition` resource reference](/docs/api/fhir/resources/condition)
 - [Capturing Vital Signs](/docs/charting/capturing-vital-signs)
 - [Representing Diagnoses](/docs/charting/representing-diagnoses)
-- [Ordering Labs and Imaging](/docs/charting/ordering-labs-imaging)
+- [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging)
 - [medplum-provider example app](https://github.com/medplum/medplum/tree/main/examples/medplum-provider)

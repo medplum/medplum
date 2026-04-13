@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import type { Bundle } from '@medplum/fhirtypes';
-import { LOINC, SNOMED, UCUM } from '../constants';
+import type { Bundle, Practitioner } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
+import { HTTP_HL7_ORG, LOINC, SNOMED, UCUM } from '../constants';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
@@ -563,7 +564,7 @@ const diagnosticReport = {
 
 describe('FHIRPath Test Suite', () => {
   beforeAll(() => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   });
@@ -3470,7 +3471,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testExtension', () => {
+  describe('testExtension', () => {
     test('testExtension1', () => {
       expect(
         evalFhirPath(
@@ -3480,7 +3481,7 @@ describe('FHIRPath Test Suite', () => {
       ).toStrictEqual([true]);
     });
 
-    test('testExtension2', () => {
+    test.skip('testExtension2', () => {
       expect(evalFhirPath('Patient.birthDate.extension(%`ext-patient-birthTime`).exists()', patient)).toStrictEqual([
         true,
       ]);
@@ -3493,6 +3494,70 @@ describe('FHIRPath Test Suite', () => {
           patient
         )
       ).toStrictEqual([true]);
+    });
+
+    test('davinci', () => {
+      const practitioner: Practitioner = {
+        resourceType: 'Practitioner',
+        qualification: [
+          {
+            code: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/v2-0360',
+                  code: 'CA',
+                },
+              ],
+            },
+            extension: [
+              {
+                url: HTTP_HL7_ORG + '/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification',
+                extension: [
+                  {
+                    // the 'code' extension comes from https://hl7.org/fhir/us/davinci-pdex-plan-net/STU1.2/StructureDefinition-qualification.html
+                    // which is a different extension ('qualification' vs' practitioner-qualification')
+                    // but adding here to ensure codes from a different codeable concept extension are not included in the result
+                    url: 'code',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'http://terminology.hl7.org/CodeSystem/v2-0360',
+                          code: 'BS',
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    url: 'whereValid',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'https://www.usps.com/',
+                          code: 'CA',
+                        },
+                        {
+                          system: 'https://www.usps.com/',
+                          code: 'MA',
+                        },
+                        {
+                          system: 'https://www.usps.com/',
+                          code: 'TX',
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      expect(
+        evalFhirPath(
+          `Practitioner.qualification.extension.where(url='${HTTP_HL7_ORG}/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification').extension.where(url='whereValid').value.coding.code`,
+          practitioner
+        )
+      ).toStrictEqual(['CA', 'MA', 'TX']);
     });
   });
 

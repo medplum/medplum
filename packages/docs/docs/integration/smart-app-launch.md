@@ -113,6 +113,7 @@ In addition to supporting Smart app launch from the [Medplum app](/docs/app), im
 ## Related Reading
 
 - [SMART Scopes](/docs/access/smart-scopes) access control guide
+- [CDS Hooks](/docs/integration/cds-hooks) for standards-based clinical decision support invocation
 - [SMART-on-FHIR sample application](https://github.com/medplum/medplum/tree/main/examples/medplum-smart-on-fhir-demo) on GitHub
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
 - [ONC Compliance Documentation](/docs/compliance/onc)
