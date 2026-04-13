@@ -14,7 +14,9 @@ import {
   convertContainedResourcesToBundle,
   convertToTransactionBundle,
   findResourceInBundle,
+  isBinaryCreateEntry,
   reorderBundle,
+  rewriteResourceReferences,
 } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
@@ -614,5 +616,80 @@ describe('Bundle tests', () => {
         id: '123',
       });
     });
+  });
+});
+
+describe('isBinaryCreateEntry', () => {
+  test('returns true for valid Binary create entry', () => {
+    const entry: BundleEntry = {
+      fullUrl: 'urn:uuid:1',
+      resource: { resourceType: 'Binary', contentType: 'text/plain', data: 'aGVsbG8=' },
+      request: { method: 'POST', url: 'Binary' },
+    };
+    expect(isBinaryCreateEntry(entry)).toBe(true);
+  });
+
+  test('returns false for non-POST method', () => {
+    const entry: BundleEntry = {
+      resource: { resourceType: 'Binary', contentType: 'text/plain', data: 'aGVsbG8=' },
+      request: { method: 'PUT', url: 'Binary' },
+    };
+    expect(isBinaryCreateEntry(entry)).toBe(false);
+  });
+
+  test('returns false for non-Binary resource type', () => {
+    const entry: BundleEntry = {
+      resource: { resourceType: 'Patient' },
+      request: { method: 'POST', url: 'Binary' },
+    };
+    expect(isBinaryCreateEntry(entry)).toBe(false);
+  });
+
+  test('returns false for non-Binary URL', () => {
+    const entry: BundleEntry = {
+      resource: { resourceType: 'Binary', contentType: 'text/plain', data: 'aGVsbG8=' },
+      request: { method: 'POST', url: 'Patient' },
+    };
+    expect(isBinaryCreateEntry(entry)).toBe(false);
+  });
+});
+
+describe('rewriteResourceReferences', () => {
+  const map = new Map([['urn:uuid:old', 'Binary/new123']]);
+
+  test('rewrites Reference.reference', () => {
+    const obj = { reference: 'urn:uuid:old' };
+    expect(rewriteResourceReferences(obj, map)).toEqual({ reference: 'Binary/new123' });
+  });
+
+  test('rewrites Attachment.url', () => {
+    const obj = { url: 'urn:uuid:old', contentType: 'text/plain' };
+    expect(rewriteResourceReferences(obj, map)).toEqual({ url: 'Binary/new123', contentType: 'text/plain' });
+  });
+
+  test('does not rewrite non-matching values', () => {
+    const obj = { reference: 'urn:uuid:other' };
+    expect(rewriteResourceReferences(obj, map)).toEqual({ reference: 'urn:uuid:other' });
+  });
+
+  test('does not do substring replacement', () => {
+    const obj = { reference: 'urn:uuid:old/extra' };
+    expect(rewriteResourceReferences(obj, map)).toEqual({ reference: 'urn:uuid:old/extra' });
+  });
+
+  test('traverses arrays', () => {
+    const obj = [{ reference: 'urn:uuid:old' }, { reference: 'keep' }];
+    expect(rewriteResourceReferences(obj, map)).toEqual([{ reference: 'Binary/new123' }, { reference: 'keep' }]);
+  });
+
+  test('traverses nested objects', () => {
+    const obj = { content: [{ attachment: { url: 'urn:uuid:old' } }] };
+    expect(rewriteResourceReferences(obj, map)).toEqual({ content: [{ attachment: { url: 'Binary/new123' } }] });
+  });
+
+  test('leaves primitives untouched', () => {
+    expect(rewriteResourceReferences('urn:uuid:old', map)).toBe('urn:uuid:old');
+    expect(rewriteResourceReferences(42, map)).toBe(42);
+    expect(rewriteResourceReferences(null, map)).toBeNull();
   });
 });

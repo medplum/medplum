@@ -40,11 +40,12 @@ import type {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import type { ReturnAckCategory } from './agent';
 import { encodeBase64 } from './base64';
+import { base64ToUint8Array, isBinaryCreateEntry, rewriteResourceReferences } from './bundle';
 import { LRUCache } from './cache';
 import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
-import { getBuffer, isBrowserEnvironment, locationUtils } from './environment';
+import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
 import type {
   CurrentContext,
@@ -4822,20 +4823,6 @@ function isRetryable(response: Response): boolean {
 }
 
 /**
- * Returns true if the given Bundle entry represents a Binary create operation
- * (i.e. a POST request to `Binary` with a `Binary` resource payload).
- * @param entry - The Bundle entry to check.
- * @returns True if the entry is a Binary create entry.
- */
-export function isBinaryCreateEntry(entry: BundleEntry): boolean {
-  return (
-    entry.request?.method === 'POST' &&
-    entry.request?.url === 'Binary' &&
-    entry.resource?.resourceType === 'Binary'
-  );
-}
-
-/**
  * Converts a Binary Bundle entry into {@link CreateBinaryOptions} suitable for {@link MedplumClient.createBinary}.
  *
  * The `Binary.data` field (base64-encoded bytes) is decoded to a `Uint8Array`.
@@ -4856,51 +4843,4 @@ export function binaryOptionsFromEntry(entry: BundleEntry): CreateBinaryOptions 
     contentType: binary.contentType,
     securityContext: binary.securityContext,
   };
-}
-
-/**
- * Recursively rewrites `Reference.reference` and `Attachment.url` fields in an object tree,
- * replacing any value that exactly matches a key in the provided map with the corresponding value.
- *
- * Only exact matches of full-URL strings are replaced (no substring replacement).
- * @param obj - The object (or primitive) to traverse.
- * @param map - A map from old reference strings (e.g. `urn:uuid:…`) to new reference strings (e.g. `Binary/{id}`).
- * @returns The same structure with references rewritten.
- */
-export function rewriteResourceReferences(obj: unknown, map: Map<string, string>): unknown {
-  if (Array.isArray(obj)) {
-    return obj.map((item) => rewriteResourceReferences(item, map));
-  }
-  if (obj !== null && typeof obj === 'object') {
-    const record = obj as Record<string, unknown>;
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(record)) {
-      const value = record[key];
-      if (typeof value === 'string' && (key === 'reference' || key === 'url')) {
-        result[key] = map.get(value) ?? value;
-      } else {
-        result[key] = rewriteResourceReferences(value, map);
-      }
-    }
-    return result;
-  }
-  return obj;
-}
-
-/**
- * Decodes a base64-encoded string to a `Uint8Array` of raw bytes.
- * Works in both browser and Node.js environments.
- * @param base64 - The base64-encoded string.
- * @returns The decoded bytes.
- */
-function base64ToUint8Array(base64: string): Uint8Array {
-  if (isBrowserEnvironment()) {
-    const binaryString = window.atob(base64);
-    return Uint8Array.from(binaryString, (c) => c.codePointAt(0) ?? 0);
-  }
-  const BufferConstructor = getBuffer();
-  if (BufferConstructor) {
-    return new Uint8Array(BufferConstructor.from(base64, 'base64'));
-  }
-  throw new Error('Unable to decode base64: no suitable runtime available');
 }
