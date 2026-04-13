@@ -195,7 +195,7 @@ export function ResourcesInput<T extends Resource = Resource>(props: ResourcesIn
       cancelled = true;
     };
   }, [medplum]);
-  
+
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<T[]> => {
       const searchCode = getSearchParamForResourceType(resourceType);
