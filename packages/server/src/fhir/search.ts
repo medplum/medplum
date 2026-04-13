@@ -1813,7 +1813,7 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
         if (!searchParam) {
           throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
         }
-        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
+        filter = parseParameter(searchParam, searchFilter.operator, modifier, searchFilter.value);
       }
     } else {
       const link = parseChainLink(part, currentResourceType);

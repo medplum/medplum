@@ -1,18 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import assert from 'node:assert';
 import { Operator } from '../search/search';
 import { parseFilterParameter } from './parse';
 import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
 
 describe('_filter Parameter parser', () => {
-  test('Simple comparison', () => {
-    const result = parseFilterParameter('name co "pet"');
-    expect(result).toBeInstanceOf(FhirFilterComparison);
-
-    const comp = result as FhirFilterComparison;
-    expect(comp.path).toBe('name');
-    expect(comp.operator).toBe(Operator.CONTAINS);
-    expect(comp.value).toBe('pet');
+  test.each<[string, string, FhirFilterComparison]>([
+    ['simple comparison', 'name co "pet"', { path: 'name', operator: Operator.CONTAINS, value: 'pet' }],
+    [
+      'system and code',
+      'code eq http://loinc.org|1234-5',
+      { path: 'code', operator: Operator.EXACT, value: 'http://loinc.org|1234-5' },
+    ],
+    [
+      'identifier search',
+      'performer identifier https://example.com/1234',
+      { path: 'performer', operator: Operator.IDENTIFIER, value: 'https://example.com/1234' },
+    ],
+    ['Starts with', 'name sw ali', { path: 'name', operator: Operator.STARTS_WITH, value: 'ali' }],
+    [
+      'Raw token with leading digits',
+      'identifier eq 123_abc',
+      { path: 'identifier', operator: Operator.EXACT, value: '123_abc' },
+    ],
+    [
+      'Reverse chained search',
+      "_has:Observation:patient:_id ne ''",
+      { path: '_has:Observation:patient:_id', operator: Operator.NOT_EQUALS, value: '' },
+    ],
+  ])('%s', (_, filter, expected) => {
+    const result = parseFilterParameter(filter);
+    assert(result instanceof FhirFilterComparison);
+    expect(result).toMatchObject(expected);
   });
 
   test('Negation', () => {
@@ -200,49 +220,7 @@ describe('_filter Parameter parser', () => {
     expect(fourth.value).toBe('456');
   });
 
-  test('Observation with system and code', () => {
-    const result = parseFilterParameter('code eq http://loinc.org|1234-5');
-    expect(result).toBeInstanceOf(FhirFilterComparison);
-
-    const comp = result as FhirFilterComparison;
-    expect(comp.path).toBe('code');
-    expect(comp.operator).toBe(Operator.EXACT);
-    expect(comp.value).toBe('http://loinc.org|1234-5');
-  });
-
-  test('Identifier search', () => {
-    const result = parseFilterParameter('performer identifier https://example.com/1234');
-    expect(result).toBeInstanceOf(FhirFilterComparison);
-
-    const comp = result as FhirFilterComparison;
-    expect(comp.path).toBe('performer');
-    expect(comp.operator).toBe(Operator.IDENTIFIER);
-    expect(comp.value).toBe('https://example.com/1234');
-  });
-
-  test('Starts with', () => {
-    const result = parseFilterParameter('name sw ali');
-    expect(result).toBeInstanceOf(FhirFilterComparison);
-
-    const comp = result as FhirFilterComparison;
-    expect(comp.operator).toEqual(Operator.STARTS_WITH);
-  });
-
   test('Unsupported search operator', () => {
     expect(() => parseFilterParameter('name ew ali')).toThrow('Invalid operator: ew');
-  });
-
-  test('Reverse chained search', () => {
-    const result = parseFilterParameter(`_has:Observation:patient:_id ne ''`);
-    expect(result).toBeInstanceOf(FhirFilterComparison);
-    expect((result as FhirFilterComparison).operator).toBe(Operator.NOT_EQUALS);
-  });
-
-  test('parse raw token with leading digits', () => {
-    const result = parseFilterParameter('identifier eq 123_abc');
-    expect(result).toBeInstanceOf(FhirFilterComparison);
-
-    const comp = result as FhirFilterComparison;
-    expect(comp.value).toEqual('123_abc');
   });
 });
