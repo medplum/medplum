@@ -8,8 +8,8 @@ import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { CoverageRequestInbox } from '../../components/insurance/CoverageRequestInbox';
 
-export function CoveragePage(): JSX.Element {
-  const { patientId = '', coverageId, requestId } = useParams();
+export function CoveragePage(): JSX.Element | null {
+  const { patientId, coverageId, requestId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,11 +30,16 @@ export function CoveragePage(): JSX.Element {
 
   // Redirect once to the normalized URL (replace so back-button still works).
   useEffect(() => {
-    if (needsRedirect) {
-      const base = coverageId ? `/Patient/${patientId}/Coverage/${coverageId}` : `/Patient/${patientId}/Coverage`;
-      navigate(`${base}?${normalizedSearch}`, { replace: true })?.catch(console.error);
+    if (!patientId || !needsRedirect) {
+      return;
     }
+    const base = coverageId ? `/Patient/${patientId}/Coverage/${coverageId}` : `/Patient/${patientId}/Coverage`;
+    navigate(`${base}?${normalizedSearch}`, { replace: true })?.catch(console.error);
   }, [needsRedirect, normalizedSearch, navigate, patientId, coverageId]);
+
+  if (!patientId) {
+    return null;
+  }
 
   const getRequestHref = (coverage: Coverage, request: CoverageEligibilityRequest): string =>
     `/Patient/${patientId}/Coverage/${coverage.id}/CoverageEligibilityRequest/${request.id}?${normalizedSearch}`;

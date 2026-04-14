@@ -61,7 +61,7 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
     setCoverageLoading(true);
     medplum
       .readResource('Coverage', coverageId)
-      .then((c) => setCoverage(c))
+      .then(setCoverage)
       .catch(showErrorNotification)
       .finally(() => setCoverageLoading(false));
   }, [medplum, coverageId]);
@@ -94,6 +94,11 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
   useEffect(() => {
     fetchRequests().catch(showErrorNotification);
   }, [fetchRequests]);
+
+  const handlePageChange = (page: number): void => {
+    const offset = (page - 1) * itemsPerPage;
+    onChange({ ...currentSearch, offset });
+  };
 
   const handleCheckEligibility = async (): Promise<void> => {
     if (!eligibilityBot) {
@@ -200,10 +205,7 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
                   <Pagination
                     value={currentPage}
                     total={Math.ceil(total / itemsPerPage)}
-                    onChange={(page) => {
-                      const offset = (page - 1) * itemsPerPage;
-                      onChange({ ...currentSearch, offset });
-                    }}
+                    onChange={handlePageChange}
                     size="sm"
                     siblings={1}
                     boundaries={1}
