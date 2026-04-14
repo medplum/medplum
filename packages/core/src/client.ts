@@ -3239,6 +3239,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise to the response body as a blob.
    */
   async download(url: URL | string, options: MedplumRequestOptions = {}): Promise<Blob> {
+    const response = await this.downloadResponse(url, options);
+    return response.blob();
+  }
+
+  /**
+   * Downloads the URL as a Response. Can accept binary URLs in the form of `Binary/{id}` as well.
+   * @category Read
+   * @param url - The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
+   * @param options - Optional fetch request init options.
+   * @returns Promise to the response body as a Response.
+   */
+  async downloadResponse(url: URL | string, options: MedplumRequestOptions = {}): Promise<Response> {
     if (this.refreshPromise) {
       await this.refreshPromise;
     }
@@ -3258,8 +3270,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetchWithRetry(url.toString(), options);
-    return response.blob();
+    return this.fetchWithRetry(url.toString(), options);
   }
 
   /**

@@ -205,6 +205,7 @@ export function App(): JSX.Element | null {
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path="Coverage" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId/CoverageEligibilityRequest/:requestId" element={<CoveragePage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
