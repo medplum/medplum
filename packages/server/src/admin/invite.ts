@@ -20,7 +20,7 @@ import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
+import { bcryptHashPassword, createProjectMembership, getDefaultMembershipAccessFields } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
@@ -261,6 +261,22 @@ async function upsertProfileResource(
  * @param project - The project to validate against.
  * @throws OperationOutcomeError if any access policy is invalid.
  */
+function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
+  if (request.accessPolicy !== undefined) {
+    return true;
+  }
+  if (request.access !== undefined) {
+    return true;
+  }
+  if (request.membership?.accessPolicy !== undefined) {
+    return true;
+  }
+  if (request.membership?.access !== undefined) {
+    return true;
+  }
+  return false;
+}
+
 async function validateAccessPolicies(
   systemRepo: SystemRepository,
   request: ServerInviteRequest,
@@ -273,6 +289,10 @@ async function validateAccessPolicies(
     references.push(request.accessPolicy);
   }
 
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
+  }
+
   if (Array.isArray(request.access)) {
     for (const access of request.access) {
       if (access.policy) {
@@ -283,6 +303,18 @@ async function validateAccessPolicies(
 
   if (Array.isArray(request.membership?.access)) {
     for (const access of request.membership.access) {
+      if (access.policy) {
+        references.push(access.policy);
+      }
+    }
+  }
+
+  if (!inviteRequestHasExplicitAccess(request)) {
+    const defaults = getDefaultMembershipAccessFields(project, request.resourceType);
+    if (defaults.accessPolicy) {
+      references.push(defaults.accessPolicy);
+    }
+    for (const access of defaults.access ?? []) {
       if (access.policy) {
         references.push(access.policy);
       }

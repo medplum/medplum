@@ -24,6 +24,9 @@ import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+import { getDefaultMembershipAccessFields } from './membershipDefaults';
+
+export { getDefaultMembershipAccessFields, projectHasDefaultPatientAccess } from './membershipDefaults';
 
 export async function createProfile(
   systemRepo: SystemRepository,
@@ -57,6 +60,19 @@ export async function createProfile(
   return result;
 }
 
+function membershipDetailsHaveExplicitAccess(details?: Partial<ProjectMembership>): boolean {
+  if (!details) {
+    return false;
+  }
+  if (details.accessPolicy !== undefined) {
+    return true;
+  }
+  if (details.access !== undefined) {
+    return true;
+  }
+  return false;
+}
+
 export async function createProjectMembership(
   systemRepo: SystemRepository,
   user: User,
@@ -67,7 +83,12 @@ export async function createProjectMembership(
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
+  const defaults = membershipDetailsHaveExplicitAccess(details)
+    ? {}
+    : getDefaultMembershipAccessFields(project, profile.resourceType);
+
   const result = await systemRepo.createResource<ProjectMembership>({
+    ...defaults,
     ...details,
     resourceType: 'ProjectMembership',
     project: createReference(project),

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest, WithId } from '@medplum/core';
 import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
-import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
+import { projectHasDefaultPatientAccess } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { patchObject } from '../util/patch';
@@ -83,12 +84,8 @@ export async function createScimUser(
 ): Promise<ScimUser> {
   const resourceType = getScimUserResourceType(scimUser);
 
-  let accessPolicy: Reference<AccessPolicy> | undefined = undefined;
-  if (resourceType === 'Patient') {
-    accessPolicy = project.defaultPatientAccessPolicy;
-    if (!accessPolicy) {
-      throw new OperationOutcomeError(badRequest('Missing defaultPatientAccessPolicy'));
-    }
+  if (resourceType === 'Patient' && !projectHasDefaultPatientAccess(project)) {
+    throw new OperationOutcomeError(badRequest('Missing default access policy for Patient'));
   }
 
   const { user, membership } = await inviteUser({
@@ -100,7 +97,6 @@ export async function createScimUser(
     externalId: scimUser.externalId,
     sendEmail: false,
     membership: {
-      accessPolicy,
       invitedBy,
       userName: scimUser.userName,
     },
