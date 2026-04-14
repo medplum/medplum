@@ -302,9 +302,7 @@ export function findResourceInBundle<K extends ResourceType>(
  */
 export function isBinaryCreateEntry(entry: BundleEntry): boolean {
   return (
-    entry.request?.method === 'POST' &&
-    entry.request?.url === 'Binary' &&
-    entry.resource?.resourceType === 'Binary'
+    entry.request?.method === 'POST' && entry.request?.url === 'Binary' && entry.resource?.resourceType === 'Binary'
   );
 }
 
@@ -449,8 +447,7 @@ export async function executeBatchWithBinary(
   // Reconstruct the response in the original entry order
   const responseEntries: BundleEntry[] = new Array(entries.length);
 
-  for (let i = 0; i < binaryResults.length; i++) {
-    const { index, resource } = binaryResults[i];
+  for (const { index, resource } of binaryResults) {
     responseEntries[index] = {
       response: { status: '201 Created', location: `Binary/${resource.id}` },
       resource,
