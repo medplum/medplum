@@ -1561,7 +1561,7 @@ describe('Batch and Transaction processing', () => {
 
     await expect(jobResult).resolves.toBe(undefined);
     // Rate limits should not actually be consumed
-    expect(consumeMock).toHaveBeenCalledTimes(0); 
+    expect(consumeMock).toHaveBeenCalledTimes(0);
 
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);

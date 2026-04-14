@@ -442,7 +442,6 @@ describe('Patient Set Accounts Operation', () => {
     );
   });
 
-
   test('Removes account without extended header', async () => {
     const setTwo = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
