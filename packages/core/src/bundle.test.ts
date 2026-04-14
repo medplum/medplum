@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Binary,
   Bundle,
   BundleEntry,
   DiagnosticReport,
@@ -711,7 +712,7 @@ describe('binaryOptionsFromEntry', () => {
 
   test('throws if contentType is missing', () => {
     const entry: BundleEntry = {
-      resource: { resourceType: 'Binary', data: encodeBase64('hello'), contentType: 'text/plain' },
+      resource: { resourceType: 'Binary', data: encodeBase64('hello') } as Binary,
       request: { method: 'POST', url: 'Binary' },
     };
     expect(() => binaryOptionsFromEntry(entry)).toThrow('contentType');
