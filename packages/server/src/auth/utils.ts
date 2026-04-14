@@ -83,13 +83,19 @@ export async function createProjectMembership(
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
-  const defaults = membershipDetailsHaveExplicitAccess(details)
+  // Strip keys that are explicitly set to undefined so they don't overwrite defaults
+  // (callers like invite.ts spread all fields unconditionally with undefined values).
+  const cleanDetails = details
+    ? (Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined)) as Partial<ProjectMembership>)
+    : {};
+
+  const defaults = membershipDetailsHaveExplicitAccess(cleanDetails)
     ? {}
     : getDefaultMembershipAccessFields(project, profile.resourceType);
 
   const result = await systemRepo.createResource<ProjectMembership>({
     ...defaults,
-    ...details,
+    ...cleanDetails,
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),

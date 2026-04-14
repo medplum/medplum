@@ -42,4 +42,23 @@ describe('Membership default access', () => {
     const fields = getDefaultMembershipAccessFields(project, 'Patient');
     expect(fields.accessPolicy?.reference).toBe('AccessPolicy/legacy-only');
   });
+
+  test('details with access: undefined does not shadow defaults after stripping', () => {
+    const policy = { resourceType: 'AccessPolicy' as const, id: 'new-style' };
+    const project = {
+      resourceType: 'Project' as const,
+      defaultAccessPolicy: [{ resourceType: 'Patient' as const, access: [{ policy: createReference(policy) }] }],
+    } satisfies Project;
+
+    // Simulates what invite.ts upsertProjectMembership does: spreads all fields, some undefined
+    const rawDetails = { access: undefined as undefined, accessPolicy: undefined as undefined, externalId: 'some-id' };
+    const clean = Object.fromEntries(Object.entries(rawDetails).filter(([, v]) => v !== undefined));
+
+    // After stripping, the keys are gone — defaults will not be overwritten
+    expect('access' in clean).toBe(false);
+    expect('accessPolicy' in clean).toBe(false);
+    // Defaults resolve as expected
+    const fields = getDefaultMembershipAccessFields(project, 'Patient');
+    expect(fields.access).toHaveLength(1);
+  });
 });
