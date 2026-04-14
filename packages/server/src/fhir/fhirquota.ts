@@ -6,6 +6,7 @@ import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import type { AuthState } from '../oauth/middleware';
+import { getConfig } from '../config/loader';
 
 type InMemoryBlock = {
   result: RateLimiterRes;
@@ -82,6 +83,13 @@ export class FhirRateLimiter {
    * @param points - Number of rate limit points to consume
    */
   async consume(points: number): Promise<void> {
+    if (this.async) {
+      // Do not enforce rate limits in async context; instead, slow down the consumer
+      // in proportion to the weight of the operation being performed
+      await sleep(points * (getConfig().asyncDelayScaling ?? 1));
+      return;
+    }
+
     // If user is already over the limit, just block
     if (this.current && this.current.remainingPoints <= 0) {
       await this.block(points, this.current);
@@ -155,17 +163,9 @@ export class FhirRateLimiter {
     if (this.enabled) {
       blockedUsers.set(this.userKey, { result, resetTimestamp: Date.now() + result.msBeforeNext });
 
-      if (this.async) {
-        // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
-        const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));
-        await sleep(waitMs);
-        await this.consumeImpl(points);
-      } else {
-        // Block synchronous request
-        const outcome = deepClone(tooManyRequests);
-        outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
-        throw new OperationOutcomeError(outcome);
-      }
+      const outcome = deepClone(tooManyRequests);
+      outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
+      throw new OperationOutcomeError(outcome);
     }
   }
 
