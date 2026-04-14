@@ -2875,10 +2875,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * inefficient base64 encoding, no streaming support). This method pre-processes the Bundle by:
    *
    * 1. Extracting `Binary` create entries (POST to `Binary` with base64 `data`)
-   * 2. Uploading them individually via {@link createBinary} (streaming-friendly)
+   * 2. Uploading them individually via createBinary (streaming-friendly)
    * 3. Rewriting all `Reference.reference` and `Attachment.url` fields in the remaining entries
    *    that reference those Binary `fullUrl` values
-   * 4. Executing the remaining Bundle via {@link executeBatch}
+   * 4. Executing the remaining Bundle via executeBatch
    * 5. Returning a merged response Bundle that includes synthetic response entries for the
    *    Binary uploads and the actual entries from the batch response
    *
@@ -2891,7 +2891,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * @category Batch
    * @param bundle - The FHIR batch/transaction bundle, which may contain Binary create entries.
-   * @param options - Optional fetch options passed to {@link executeBatch}.
+   * @param options - Optional fetch options passed to executeBatch.
    * @returns A synthetic merged response Bundle. This is not a strict FHIR-compliant transaction
    * response: the first entries correspond to the Binary uploads and the remaining entries come
    * from the batch/transaction response.

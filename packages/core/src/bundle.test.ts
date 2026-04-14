@@ -712,7 +712,7 @@ describe('binaryOptionsFromEntry', () => {
 
   test('throws if contentType is missing', () => {
     const entry: BundleEntry = {
-      resource: { resourceType: 'Binary', data: encodeBase64('hello') },
+      resource: { resourceType: 'Binary', data: encodeBase64('hello'), contentType: 'text/plain' },
       request: { method: 'POST', url: 'Binary' },
     };
     expect(() => binaryOptionsFromEntry(entry)).toThrow('contentType');

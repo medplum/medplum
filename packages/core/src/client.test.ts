@@ -2969,8 +2969,6 @@ describe('Client', () => {
 
       test('handles bundle with only Binary entries', async () => {
         const binaryResource: Binary = { resourceType: 'Binary', id: 'only-binary', contentType: ContentType.TEXT };
-        const fetch = vi.fn(() => Promise.resolve(mockFetchResponse(201, binaryResource)));
-        const client = new MedplumClient({ fetch });
 
         const emptyBatchResponse: Bundle = { resourceType: 'Bundle', type: 'batch-response', entry: [] };
         const fetchWithFallback = vi.fn((url: string) => {
