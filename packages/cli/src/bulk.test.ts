@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, created, MedplumClient } from '@medplum/core';
+import { ReadableStream } from 'node:stream/web';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
 import { getUnsupportedExtension } from './utils';
@@ -25,21 +26,31 @@ jest.mock('node:readline', () => ({
   }),
 }));
 
-jest.mock('node:fs', () => ({
-  createReadStream: jest.fn(),
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  writeFile: jest.fn((path, data, callback) => {
-    callback();
-  }),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: jest.fn(async () => '{}'),
-  },
-}));
+jest.mock('node:fs', () => {
+  const actualStream = jest.requireActual('node:stream');
+  const { PassThrough } = actualStream;
+  const writtenChunks: Buffer[] = [];
+  return {
+    createReadStream: jest.fn(),
+    createWriteStream: jest.fn().mockImplementation(() => {
+      const stream = new PassThrough();
+      stream.on('data', (chunk: Buffer) => writtenChunks.push(Buffer.from(chunk)));
+      return stream;
+    }),
+    existsSync: jest.fn(),
+    readFileSync: jest.fn(),
+    writeFileSync: jest.fn(),
+    writeFile: jest.fn((path, data, callback) => {
+      callback();
+    }),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: jest.fn(async () => '{}'),
+    },
+  };
+});
 
 let medplum: MedplumClient;
 
@@ -165,11 +176,18 @@ describe('CLI Bulk Commands', () => {
     });
 
     test('system', async () => {
-      const medplumDownloadSpy = jest.spyOn(medplum, 'download').mockImplementation((): any => {
-        return {
-          text: jest.fn(),
-        };
-      });
+      const medplumDownloadSpy = jest.spyOn(medplum, 'downloadResponse').mockImplementation(
+        async (): Promise<Response> =>
+          ({
+            ok: true,
+            body: new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode('download data'));
+                controller.close();
+              },
+            }),
+          }) as Response
+      );
       await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
       expect(medplumDownloadSpy).toHaveBeenCalled();
       expect(console.log).toHaveBeenCalledWith(
@@ -183,11 +201,18 @@ describe('CLI Bulk Commands', () => {
     });
 
     test('with --target-directory', async () => {
-      const medplumDownloadSpy = jest.spyOn(medplum, 'download').mockImplementation((): any => {
-        return {
-          text: jest.fn(),
-        };
-      });
+      const medplumDownloadSpy = jest.spyOn(medplum, 'downloadResponse').mockImplementation(
+        async (): Promise<Response> =>
+          ({
+            ok: true,
+            body: new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode('download data'));
+                controller.close();
+              },
+            }),
+          }) as Response
+      );
       const testDirectory = 'testtargetdirectory';
       await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient', '--target-directory', testDirectory]);
       expect(medplumDownloadSpy).toHaveBeenCalled();
