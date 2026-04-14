@@ -5,8 +5,8 @@ import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } fr
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import type { AuthState } from '../oauth/middleware';
 import { getConfig } from '../config/loader';
+import type { AuthState } from '../oauth/middleware';
 
 type InMemoryBlock = {
   result: RateLimiterRes;
