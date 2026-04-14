@@ -148,7 +148,9 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly maxValues?: number;
 }
 
-export function MultiResourceInput<T extends Resource = Resource>(props: MultiResourceInputProps<T>): JSX.Element | null {
+export function MultiResourceInput<T extends Resource = Resource>(
+  props: MultiResourceInputProps<T>
+): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, searchCriteria } = props;
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;

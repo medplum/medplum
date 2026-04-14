@@ -64,7 +64,12 @@ export const WithMaxValues = (): JSX.Element => (
 
 export const WithLabel = (): JSX.Element => (
   <Document>
-    <MultiResourceInput name="foo" resourceType="Patient" defaultValue={[HomerSimpson, MargeSimpson]} label="Patients" />
+    <MultiResourceInput
+      name="foo"
+      resourceType="Patient"
+      defaultValue={[HomerSimpson, MargeSimpson]}
+      label="Patients"
+    />
   </Document>
 );
 
