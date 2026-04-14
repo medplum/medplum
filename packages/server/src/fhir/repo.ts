@@ -1288,7 +1288,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     await this.batchWriteLookupTables(conn, resources, false);
-    await this.batchWriteResources(conn, resources);
+    // Exclude 'content' from the upsert merge: reindexing updates search columns only,
+    // never the stored resource content. This avoids unnecessary TOAST table churn.
+    await this.batchWriteResources(conn, resources, ['content']);
   }
 
   /**
@@ -1782,7 +1784,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
   }
 
-  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  private async batchWriteResources(
+    client: PoolClient,
+    resources: Resource[],
+    mergeExcludeColumns?: string[]
+  ): Promise<void> {
     if (!resources.length) {
       return;
     }
@@ -1791,7 +1797,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       resources[0].resourceType,
       resources.map((r) => this.buildResourceRow(r))
     )
-      .mergeOnConflict()
+      .mergeOnConflict(undefined, undefined, mergeExcludeColumns)
       .execute(client);
   }
 

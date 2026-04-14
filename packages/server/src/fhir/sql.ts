@@ -1049,6 +1049,7 @@ export class InsertQuery extends BaseQuery {
   private returnColumns?: string[];
   private conflictColumns?: string[];
   private conflictCondition?: Condition;
+  private mergeExcludeColumns?: string[];
   private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
@@ -1060,10 +1061,13 @@ export class InsertQuery extends BaseQuery {
     }
   }
 
-  mergeOnConflict(columns?: string[], where?: Condition): this {
+  mergeOnConflict(columns?: string[], where?: Condition, excludeColumns?: string[]): this {
     this.conflictColumns = columns ?? ['id'];
     if (where) {
       this.conflictCondition = where;
+    }
+    if (excludeColumns) {
+      this.mergeExcludeColumns = excludeColumns;
     }
     return this;
   }
@@ -1163,7 +1167,7 @@ export class InsertQuery extends BaseQuery {
     const columns = Object.keys(this.values[0]);
     let first = true;
     for (const columnName of columns) {
-      if (this.conflictColumns.includes(columnName)) {
+      if (this.conflictColumns.includes(columnName) || this.mergeExcludeColumns?.includes(columnName)) {
         continue;
       }
       if (!first) {
