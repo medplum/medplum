@@ -75,12 +75,10 @@ export class MockConsole {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  count(label?: string): undefined {
-  }
+  count(label?: string): undefined {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  countReset(label?: string): undefined {
-  }
+  countReset(label?: string): undefined {}
 
   toString(): string {
     return this.messages.join('\n');
