@@ -265,16 +265,16 @@ function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
   if (request.skipDefaultAccessPolicy) {
     return true;
   }
-  if (request.accessPolicy != null) {
+  if (request.accessPolicy !== undefined && request.accessPolicy !== null) {
     return true;
   }
-  if (request.access != null) {
+  if (request.access !== undefined && request.access !== null) {
     return true;
   }
-  if (request.membership?.accessPolicy != null) {
+  if (request.membership?.accessPolicy !== undefined && request.membership.accessPolicy !== null) {
     return true;
   }
-  if (request.membership?.access != null) {
+  if (request.membership?.access !== undefined && request.membership.access !== null) {
     return true;
   }
   return false;

@@ -64,10 +64,7 @@ function membershipDetailsHaveExplicitAccess(details?: Partial<ProjectMembership
   if (!details) {
     return false;
   }
-  if (details.accessPolicy != null) {
-    return true;
-  }
-  if (details.access != null) {
+  if (!!details.accessPolicy || !!details.access) {
     return true;
   }
   return false;
@@ -88,7 +85,7 @@ export async function createProjectMembership(
   // invite.ts spreads all request fields unconditionally (many are null/undefined);
   // callers that want "no policy" must pass an explicit non-null value such as [].
   const cleanDetails = details
-    ? (Object.fromEntries(Object.entries(details).filter(([, v]) => v != null)) as Partial<ProjectMembership>)
+    ? (Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined && v !== null)) as Partial<ProjectMembership>)
     : {};
 
   const skipDefaults = options?.skipDefaultAccessPolicy || membershipDetailsHaveExplicitAccess(cleanDetails);

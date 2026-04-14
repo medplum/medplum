@@ -95,8 +95,8 @@ test-results/
 playwright-report/
 playwright/.cache/
 
-# Cursor (keep .cursor/scripts versioned; other agent metadata stays local)
-.cursor/*
+# Cursor (local agent / editor metadata — do not commit)
+.cursor/
 
 # Claude
 .claude/
