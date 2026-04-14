@@ -38,7 +38,7 @@ bulkExportCommand
     const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since, { pollStatusOnAccepted: true });
 
-    for (const { type, url } of response.output ?? []) {
+    for (const { type, url } of response.output ?? EMPTY) {
       const fileUrl = new URL(url);
       const fileName = `${type}_${fileUrl.pathname}`.replaceAll(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
       const path = resolve(targetDirectory ?? '', fileName);
