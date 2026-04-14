@@ -1560,7 +1560,8 @@ describe('Batch and Transaction processing', () => {
     // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
 
     await expect(jobResult).resolves.toBe(undefined);
-    expect(consumeMock).toHaveBeenCalledTimes(10);
+    // Rate limits should not actually be consumed
+    expect(consumeMock).toHaveBeenCalledTimes(0); 
 
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
