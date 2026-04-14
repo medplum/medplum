@@ -222,7 +222,9 @@ describe('CoverageRequestInbox', () => {
     test('shows eligibility response details when a request is selected', async () => {
       medplum.search = vi.fn().mockResolvedValue(makeRequestBundle([mockRequest]));
       medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'CoverageEligibilityResponse') { return Promise.resolve(mockResponse); }
+        if (resourceType === 'CoverageEligibilityResponse') {
+          return Promise.resolve(mockResponse);
+        }
         return Promise.resolve(undefined);
       }) as typeof medplum.searchOne;
       await setup(medplum, { coverageId: COVERAGE_ID, requestId: REQUEST_ID });
