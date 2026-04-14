@@ -254,12 +254,9 @@ async function upsertProfileResource(
 }
 
 /**
- * Validates that all access policy references exist and belong to the project.
- * Uses batch reading to validate all policies in a single database query.
- * @param systemRepo - The system repository.
- * @param request - The invite request containing access policy references.
- * @param project - The project to validate against.
- * @throws OperationOutcomeError if any access policy is invalid.
+ * Returns true when the invite specifies explicit access policies or opts out of project defaults.
+ * @param request - The invite request.
+ * @returns True when explicit access is set or `skipDefaultAccessPolicy` is enabled.
  */
 function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
   if (request.skipDefaultAccessPolicy) {
@@ -280,6 +277,15 @@ function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
   return false;
 }
 
+/**
+ * Validates that all access policy references exist and belong to the project.
+ * Uses batch reading to validate all policies in a single database query.
+ * @param systemRepo - The system repository.
+ * @param request - The invite request containing access policy references.
+ * @param project - The project to validate against.
+ * @returns A promise that resolves when validation completes.
+ * @throws OperationOutcomeError if any access policy is invalid.
+ */
 async function validateAccessPolicies(
   systemRepo: SystemRepository,
   request: ServerInviteRequest,

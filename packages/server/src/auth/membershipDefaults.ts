@@ -14,6 +14,9 @@ function cloneParameterizedAccessList(access: ParameterizedAccess[]): Parameteri
  * Default {@link ProjectMembership.accessPolicy} / {@link ProjectMembership.access}
  * when creating a membership without explicit access, from {@link Project.defaultAccessPolicy}
  * and legacy {@link Project.defaultPatientAccessPolicy} (Patient only).
+ * @param project - The project whose defaults apply.
+ * @param profileResourceType - Profile type for the new membership (Patient, Practitioner, etc.).
+ * @returns Fields to merge into the new membership (may be empty).
  */
 export function getDefaultMembershipAccessFields(
   project: Project,
@@ -30,7 +33,11 @@ export function getDefaultMembershipAccessFields(
   return result;
 }
 
-/** True when open patient registration can resolve a default access policy for new Patient memberships. */
+/**
+ * True when open patient registration can resolve a default access policy for new Patient memberships.
+ * @param project - The project to inspect.
+ * @returns Whether a default patient access policy is configured.
+ */
 export function projectHasDefaultPatientAccess(project: Project): boolean {
   const d = getDefaultMembershipAccessFields(project, 'Patient');
   return d.accessPolicy !== undefined || (d.access !== undefined && d.access.length > 0);

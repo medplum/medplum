@@ -93,7 +93,7 @@ documentation for more information.
 | `defaultAccessPolicy`        | Optional defaults for new [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) records when the membership does not set `access` or `accessPolicy`. Each entry targets a profile [`resourceType`](https://hl7.org/fhir/R4/valueset-resource-types.html) (for example `Patient` or `Practitioner`) and supplies one or more [`ParameterizedAccess`](/docs/api/fhir/medplum/projectmembership) blocks (policy template plus parameters). See [Project Settings](/docs/self-hosting/project-settings#default-access-policies) for precedence with legacy `defaultPatientAccessPolicy`. |         |
 | `defaultPatientAccessPolicy` | **Deprecated.** Single default [`AccessPolicy`](/docs/access/access-policies) reference for new **Patient** memberships when no `defaultAccessPolicy` entry applies. Still honored for backward compatibility. Prefer `defaultAccessPolicy` with `resourceType` `Patient` and [`ParameterizedAccess`](/docs/api/fhir/medplum/projectmembership). Required for [open patient registration](/docs/user-management/open-patient-registration) only when no equivalent `defaultAccessPolicy` row is configured. |         |
 
-## Default access policies {#default-access-policies}
+## Default access policies {/* #default-access-policies */}
 
 When a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) is created without `access` or `accessPolicy`, the server fills in defaults from the [`Project`](/docs/api/fhir/medplum/project):
 

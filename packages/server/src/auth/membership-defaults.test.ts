@@ -51,7 +51,7 @@ describe('Membership default access', () => {
     } satisfies Project;
 
     // Simulates what invite.ts spreads: all fields present, access/accessPolicy are undefined
-    const rawDetails = { access: undefined as undefined, accessPolicy: undefined as undefined, externalId: 'some-id' };
+    const rawDetails = { access: undefined, accessPolicy: undefined, externalId: 'some-id' };
     const clean = Object.fromEntries(Object.entries(rawDetails).filter(([, v]) => v !== undefined && v !== null));
 
     // After stripping, the keys are gone — defaults will not be overwritten
@@ -70,7 +70,7 @@ describe('Membership default access', () => {
     } satisfies Project;
 
     // null in JSON body must not bypass defaults — callers use [] for explicit "no policy"
-    const rawDetails = { access: null as null, accessPolicy: null as null, externalId: 'some-id' };
+    const rawDetails = { access: null, accessPolicy: null, externalId: 'some-id' };
     const clean = Object.fromEntries(Object.entries(rawDetails).filter(([, v]) => v !== undefined && v !== null));
 
     expect('access' in clean).toBe(false);
