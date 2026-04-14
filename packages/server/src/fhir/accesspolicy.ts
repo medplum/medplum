@@ -300,14 +300,17 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push(
       {
         resourceType: 'ProjectMembership',
+        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
         readonlyFields: ['project', 'user'],
       },
       {
         resourceType: 'UserSecurityRequest',
+        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
         readonly: true,
       },
       {
         resourceType: 'User',
+        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
       },
