@@ -1428,4 +1428,58 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
   });
+
+  test('skipDefaultAccessPolicy: true bypasses project default access policy', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Create a default access policy for the project
+    const policyRes = await request(app)
+      .post('/fhir/R4/AccessPolicy')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ resourceType: 'AccessPolicy', name: 'Default Policy', resource: [{ resourceType: 'Patient' }] });
+    expect(policyRes.status).toBe(201);
+    const policy = policyRes.body;
+
+    // Set the project defaultAccessPolicy for Practitioners
+    await request(app)
+      .patch('/fhir/R4/Project/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send([
+        {
+          op: 'add',
+          path: '/defaultAccessPolicy',
+          value: [{ resourceType: 'Practitioner', access: [{ policy: createReference(policy) }] }],
+        },
+      ])
+      .expect(200);
+
+    // Invite Bob with skipDefaultAccessPolicy — membership should have no access/accessPolicy
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+        skipDefaultAccessPolicy: true,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ProjectMembership');
+    expect(res.body.access).toBeUndefined();
+    expect(res.body.accessPolicy).toBeUndefined();
+  });
 });

@@ -616,6 +616,13 @@ export interface InviteRequest {
   upsert?: boolean;
   forceNewMembership?: boolean;
   mfaRequired?: boolean;
+  /**
+   * When true, the project's default access policy (Project.defaultAccessPolicy /
+   * Project.defaultPatientAccessPolicy) is NOT applied to the new membership, even
+   * if no explicit access policy is provided.  Use this to intentionally create a
+   * membership with no access policy at all.
+   */
+  skipDefaultAccessPolicy?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */

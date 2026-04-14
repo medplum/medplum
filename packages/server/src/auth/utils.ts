@@ -64,10 +64,10 @@ function membershipDetailsHaveExplicitAccess(details?: Partial<ProjectMembership
   if (!details) {
     return false;
   }
-  if (details.accessPolicy !== undefined) {
+  if (details.accessPolicy != null) {
     return true;
   }
-  if (details.access !== undefined) {
+  if (details.access != null) {
     return true;
   }
   return false;
@@ -78,20 +78,21 @@ export async function createProjectMembership(
   user: User,
   project: Project,
   profile: ProfileResource,
-  details?: Partial<ProjectMembership>
+  details?: Partial<ProjectMembership>,
+  options?: { skipDefaultAccessPolicy?: boolean }
 ): Promise<WithId<ProjectMembership>> {
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
-  // Strip keys that are explicitly set to undefined so they don't overwrite defaults
-  // (callers like invite.ts spread all fields unconditionally with undefined values).
+  // Strip null/undefined values so they don't overwrite defaults.
+  // invite.ts spreads all request fields unconditionally (many are null/undefined);
+  // callers that want "no policy" must pass an explicit non-null value such as [].
   const cleanDetails = details
-    ? (Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined)) as Partial<ProjectMembership>)
+    ? (Object.fromEntries(Object.entries(details).filter(([, v]) => v != null)) as Partial<ProjectMembership>)
     : {};
 
-  const defaults = membershipDetailsHaveExplicitAccess(cleanDetails)
-    ? {}
-    : getDefaultMembershipAccessFields(project, profile.resourceType);
+  const skipDefaults = options?.skipDefaultAccessPolicy || membershipDetailsHaveExplicitAccess(cleanDetails);
+  const defaults = skipDefaults ? {} : getDefaultMembershipAccessFields(project, profile.resourceType);
 
   const result = await systemRepo.createResource<ProjectMembership>({
     ...defaults,

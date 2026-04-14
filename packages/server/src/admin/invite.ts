@@ -262,16 +262,19 @@ async function upsertProfileResource(
  * @throws OperationOutcomeError if any access policy is invalid.
  */
 function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
-  if (request.accessPolicy !== undefined) {
+  if (request.skipDefaultAccessPolicy) {
     return true;
   }
-  if (request.access !== undefined) {
+  if (request.accessPolicy != null) {
     return true;
   }
-  if (request.membership?.accessPolicy !== undefined) {
+  if (request.access != null) {
     return true;
   }
-  if (request.membership?.access !== undefined) {
+  if (request.membership?.accessPolicy != null) {
+    return true;
+  }
+  if (request.membership?.access != null) {
     return true;
   }
   return false;
@@ -370,8 +373,10 @@ async function upsertProjectMembership(
     ...request.membership,
   };
 
+  const membershipOptions = { skipDefaultAccessPolicy: request.skipDefaultAccessPolicy };
+
   if (request.forceNewMembership) {
-    return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+    return createProjectMembership(systemRepo, user, project, profile, partialMembership, membershipOptions);
   }
 
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
@@ -401,7 +406,7 @@ async function upsertProjectMembership(
           profile: createReference(profile),
         });
       } else {
-        return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+        return createProjectMembership(systemRepo, user, project, profile, partialMembership, membershipOptions);
       }
     },
     { serializable: true }

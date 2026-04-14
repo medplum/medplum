@@ -50,14 +50,31 @@ describe('Membership default access', () => {
       defaultAccessPolicy: [{ resourceType: 'Patient' as const, access: [{ policy: createReference(policy) }] }],
     } satisfies Project;
 
-    // Simulates what invite.ts upsertProjectMembership does: spreads all fields, some undefined
+    // Simulates what invite.ts spreads: all fields present, access/accessPolicy are undefined
     const rawDetails = { access: undefined as undefined, accessPolicy: undefined as undefined, externalId: 'some-id' };
-    const clean = Object.fromEntries(Object.entries(rawDetails).filter(([, v]) => v !== undefined));
+    const clean = Object.fromEntries(Object.entries(rawDetails).filter(([, v]) => v != null));
 
     // After stripping, the keys are gone — defaults will not be overwritten
     expect('access' in clean).toBe(false);
     expect('accessPolicy' in clean).toBe(false);
     // Defaults resolve as expected
+    const fields = getDefaultMembershipAccessFields(project, 'Patient');
+    expect(fields.access).toHaveLength(1);
+  });
+
+  test('details with access: null does not shadow defaults (null treated same as undefined)', () => {
+    const policy = { resourceType: 'AccessPolicy' as const, id: 'new-style' };
+    const project = {
+      resourceType: 'Project' as const,
+      defaultAccessPolicy: [{ resourceType: 'Patient' as const, access: [{ policy: createReference(policy) }] }],
+    } satisfies Project;
+
+    // null in JSON body must not bypass defaults — callers use [] for explicit "no policy"
+    const rawDetails = { access: null as null, accessPolicy: null as null, externalId: 'some-id' };
+    const clean = Object.fromEntries(Object.entries(rawDetails).filter(([, v]) => v != null));
+
+    expect('access' in clean).toBe(false);
+    expect('accessPolicy' in clean).toBe(false);
     const fields = getDefaultMembershipAccessFields(project, 'Patient');
     expect(fields.access).toHaveLength(1);
   });

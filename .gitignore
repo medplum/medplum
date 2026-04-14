@@ -97,8 +97,6 @@ playwright/.cache/
 
 # Cursor (keep .cursor/scripts versioned; other agent metadata stays local)
 .cursor/*
-!.cursor/scripts/
-!.cursor/scripts/**
 
 # Claude
 .claude/
