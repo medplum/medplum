@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
-import type { ResourceArray, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type {
   Bot,
@@ -10,7 +10,6 @@ import type {
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
   PractitionerRole,
-  Resource,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -95,15 +94,6 @@ function makeRequestBundle(
   };
 }
 
-function makeResourceArray<T extends Resource>(resources: WithId<T>[]): ResourceArray<WithId<T>> {
-  const bundle: Bundle<WithId<T>> = {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry: resources.map((resource) => ({ resource })),
-  };
-  return Object.assign([...resources], { bundle }) as ResourceArray<WithId<T>>;
-}
-
 // ── Test setup ────────────────────────────────────────────────────────────────
 
 const defaultProps = {
@@ -140,10 +130,7 @@ describe('CoverageRequestInbox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     medplum = new MockClient();
-    // medplum.search is used for CoverageEligibilityRequest (returns Bundle with total for pagination)
     medplum.search = vi.fn().mockResolvedValue(makeRequestBundle([]));
-    // medplum.searchResources is used for CoverageEligibilityResponse
-    medplum.searchResources = vi.fn().mockResolvedValue(makeResourceArray([]));
     medplum.readResource = vi.fn().mockResolvedValue(mockUHCCoverage) as typeof medplum.readResource;
     medplum.searchOne = vi.fn().mockResolvedValue(undefined) as typeof medplum.searchOne;
   });
@@ -234,7 +221,10 @@ describe('CoverageRequestInbox', () => {
 
     test('shows eligibility response details when a request is selected', async () => {
       medplum.search = vi.fn().mockResolvedValue(makeRequestBundle([mockRequest]));
-      medplum.searchResources = vi.fn().mockResolvedValue(makeResourceArray([mockResponse]));
+      medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
+        if (resourceType === 'CoverageEligibilityResponse') { return Promise.resolve(mockResponse); }
+        return Promise.resolve(undefined);
+      }) as typeof medplum.searchOne;
       await setup(medplum, { coverageId: COVERAGE_ID, requestId: REQUEST_ID });
       expect(screen.getByText('Eligibility Request')).toBeInTheDocument();
       await waitFor(() => expect(screen.getByText('Complete')).toBeInTheDocument());
