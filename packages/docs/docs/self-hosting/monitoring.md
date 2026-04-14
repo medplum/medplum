@@ -19,7 +19,7 @@ Monitoring metrics are organized by layer in your stack, from highest-level user
 
 ## Server-Level Metrics
 
-These metrics come directly from the Medplum server and provide the most comprehensive view of application behavior. Specifically, these are OpenTelemetry metrics, and the exact names of those metrics are included below; see [our OTel doc](./opentelemetry.md) for a configuration guide and more details. 
+These metrics come directly from the Medplum server and provide the most comprehensive view of application behavior. Specifically, these are OpenTelemetry metrics, and the exact names of those metrics are included below; see [our OTel doc](./opentelemetry) for a configuration guide and more details. 
 
 ### Connection Health
 **Round-Trip Time (RTT)** tracks network latency between the server and PostgreSQL (`medplum.db.healthcheckRTT`), as well as the server and Redis (`medplum.redis.healthcheckRTT`). Spikes indicate connectivity issues or performance bottlenecks that can slow down the entire application.
