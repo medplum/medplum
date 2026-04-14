@@ -102,6 +102,14 @@ When a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) is create
 
 Open patient registration, SCIM Patient provisioning, and ordinary invites all rely on this behavior when callers omit explicit access.
 
+### Manual smoke test (CLI)
+
+For a self-hosted or local stack, you can exercise `defaultAccessPolicy` with `curl` and `jq` using the script **`.cursor/scripts/test-default-access-policies.sh`** in the Medplum repository (requires Super Admin or equivalent credentials that can `PATCH` the tenant `Project` and `POST` an `AccessPolicy`). Run `--verify-only` after the first run to print the configured project slice without mutating resources.
+
+### Foo Medical and other sample apps
+
+If you run the [Foo Medical](https://github.com/medplum/medplum-foomedical) (or similar) demo against a local server, enable patient self-registration by configuring **either** `defaultAccessPolicy` for `Patient` **or** the legacy `defaultPatientAccessPolicy`, then repeat the demo’s sign-up flow and confirm the new `ProjectMembership` received the expected `access` / `accessPolicy` in the FHIR `ProjectMembership` resource.
+
 ## Project Secrets
 
 Each [`Project`](/docs/api/fhir/medplum/project) can store a set of key/value pairs to store configuration values, such as API keys, needed by Bots.
