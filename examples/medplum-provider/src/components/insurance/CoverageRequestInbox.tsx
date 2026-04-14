@@ -1,26 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Box,
-  Center,
-  Divider,
-  Flex,
-  Pagination,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { Box, Center, Divider, Flex, Pagination, Paper, ScrollArea, Skeleton, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
-import type {
-  Coverage,
-  CoverageEligibilityRequest,
-  Organization,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { Coverage, CoverageEligibilityRequest, Organization, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useSearchOne } from '@medplum/react';
 import { IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -28,9 +12,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { CoverageDetailPanel } from './CoverageDetailPanel';
+import classes from './CoverageDetailPanel.module.css';
 import { CoverageSummary } from './CoverageSummary';
 import { EligibilityListItem } from './EligibilityListItem';
-import classes from './CoverageDetailPanel.module.css';
 
 export interface CoverageRequestInboxProps {
   readonly query: string;

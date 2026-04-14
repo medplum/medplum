@@ -31,9 +31,7 @@ export function CoveragePage(): JSX.Element {
   // Redirect once to the normalized URL (replace so back-button still works).
   useEffect(() => {
     if (needsRedirect) {
-      const base = coverageId
-        ? `/Patient/${patientId}/Coverage/${coverageId}`
-        : `/Patient/${patientId}/Coverage`;
+      const base = coverageId ? `/Patient/${patientId}/Coverage/${coverageId}` : `/Patient/${patientId}/Coverage`;
       navigate(`${base}?${normalizedSearch}`, { replace: true })?.catch(console.error);
     }
   }, [needsRedirect, normalizedSearch, navigate, patientId, coverageId]);
@@ -42,9 +40,7 @@ export function CoveragePage(): JSX.Element {
     `/Patient/${patientId}/Coverage/${coverage.id}/CoverageEligibilityRequest/${request.id}?${normalizedSearch}`;
 
   const onChange = (search: SearchRequest): void => {
-    const base = coverageId
-      ? `/Patient/${patientId}/Coverage/${coverageId}`
-      : `/Patient/${patientId}/Coverage`;
+    const base = coverageId ? `/Patient/${patientId}/Coverage/${coverageId}` : `/Patient/${patientId}/Coverage`;
     navigate(`${base}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
