@@ -27,8 +27,8 @@ export function CoverageSummary(props: CoverageSummaryProps): JSX.Element {
     planName = planClass.name;
   } else if (coverage.type?.text) {
     planName = coverage.type.text;
-  } 
-  
+  }
+
   const subscriberId = coverage.subscriberId ?? coverage.identifier?.[0]?.value;
   const periodText = coverage.period ? formatPeriod(coverage.period) : undefined;
 
