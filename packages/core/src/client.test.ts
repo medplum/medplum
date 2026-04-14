@@ -2856,13 +2856,9 @@ describe('Client', () => {
 
         const fetch = vi.fn((url: string) => {
           if (url.includes('/Binary')) {
-            return Promise.resolve(
-              mockFetchResponse(201, binaryResource)
-            );
+            return Promise.resolve(mockFetchResponse(201, binaryResource));
           }
-          return Promise.resolve(
-            mockFetchResponse(200, batchResponseBundle)
-          );
+          return Promise.resolve(mockFetchResponse(200, batchResponseBundle));
         });
 
         const client = new MedplumClient({ fetch });

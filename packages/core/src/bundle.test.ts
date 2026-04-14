@@ -10,6 +10,7 @@ import type {
   Specimen,
 } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
+import { encodeBase64 } from './base64';
 import {
   binaryOptionsFromEntry,
   convertContainedResourcesToBundle,
@@ -20,7 +21,6 @@ import {
   rewriteResourceReferences,
 } from './bundle';
 import { ContentType } from './contenttype';
-import { encodeBase64 } from './base64';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -696,7 +696,6 @@ describe('rewriteResourceReferences', () => {
     expect(rewriteResourceReferences(null, map)).toBeNull();
   });
 });
-
 
 describe('binaryOptionsFromEntry', () => {
   test('converts a valid Binary entry to CreateBinaryOptions', () => {
