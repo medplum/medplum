@@ -6,7 +6,7 @@ import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
-import { render, screen, waitFor } from '../../test-utils/render';
+import { act, render, screen, waitFor } from '../../test-utils/render';
 import { ParticipantFilter } from './ParticipantFilter';
 
 const mockPractitioner: Practitioner = {
@@ -26,6 +26,14 @@ const mockOnFilterChange = jest.fn();
 describe('ParticipantFilter', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
   });
 
   const setup = async (
@@ -39,7 +47,7 @@ describe('ParticipantFilter', () => {
     await medplum.updateResource(mockPractitioner as WithId<Practitioner>);
     await medplum.updateResource(mockPatient as WithId<Patient>);
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     render(
       <ParticipantFilter selectedParticipants={selectedParticipants} onFilterChange={mockOnFilterChange} />,
       ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
@@ -96,7 +104,11 @@ describe('ParticipantFilter', () => {
     const button = screen.getByRole('button');
     await user.click(button);
 
-    const checkboxes = await screen.findAllByRole('checkbox');
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const checkboxes = document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
     expect(checkboxes[0]).not.toBeChecked();
   });
 
@@ -106,7 +118,11 @@ describe('ParticipantFilter', () => {
     const button = screen.getByRole('button');
     await user.click(button);
 
-    const checkboxes = await screen.findAllByRole('checkbox');
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const checkboxes = document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
     expect(checkboxes[0]).toBeChecked();
   });
 
@@ -355,7 +371,11 @@ describe('ParticipantFilter', () => {
     const button = screen.getByRole('button');
     await user.click(button);
 
-    const checkboxes = await screen.findAllByRole('checkbox');
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const checkboxes = document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
     expect(checkboxes[0]).toBeChecked();
     expect(checkboxes[1]).toBeChecked();
   });
@@ -451,7 +471,7 @@ describe('ParticipantFilter', () => {
     await user.click(button);
 
     await waitFor(() => {
-      const checkboxes = screen.getAllByRole('checkbox');
+      const checkboxes = document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
       expect(checkboxes).toHaveLength(1);
     });
   });
@@ -518,8 +538,8 @@ describe('ParticipantFilter', () => {
     const searchInput = screen.getByPlaceholderText('Search for a Patient or Practitioner...');
     await user.type(searchInput, '   ');
 
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 400);
+    await act(async () => {
+      jest.advanceTimersByTime(400);
     });
 
     expect(searchSpy).not.toHaveBeenCalled();

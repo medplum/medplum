@@ -70,10 +70,10 @@
     "@types/node": "22.19.17",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "dotenv": "17.4.0",
+    "dotenv": "17.4.1",
     "jest-websocket-mock": "2.5.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "typescript": "6.0.2"
   },
   "peerDependencies": {
