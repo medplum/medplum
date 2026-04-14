@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { showNotification } from '@mantine/notifications';
 import { isOk, normalizeErrorString } from '@medplum/core';
 import type { PractitionerRole } from '@medplum/fhirtypes';
 import { useMedplum, useSearchResources } from '@medplum/react';
-import { showNotification } from '@mantine/notifications';
 import { useEffect, useMemo } from 'react';
 import { DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM, hasDoseSpotIdentifier } from '../components/utils';
 

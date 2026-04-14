@@ -34,10 +34,10 @@ describe('useDoseSpotSelfEnrollment', () => {
     const onSuccess = vi.fn();
     vi.spyOn(medplum, 'executeBot').mockResolvedValueOnce(mockEnrollResult);
 
-    const { result } = renderHook(
-      (props: DoseSpotSelfEnrollmentOptions) => useDoseSpotSelfEnrollment(props),
-      { wrapper, initialProps: { onSuccess } }
-    );
+    const { result } = renderHook((props: DoseSpotSelfEnrollmentOptions) => useDoseSpotSelfEnrollment(props), {
+      wrapper,
+      initialProps: { onSuccess },
+    });
 
     await act(async () => {});
 
@@ -56,10 +56,10 @@ describe('useDoseSpotSelfEnrollment', () => {
     const mockError = new Error('Not authorized');
     vi.spyOn(medplum, 'executeBot').mockRejectedValueOnce(mockError);
 
-    const { result } = renderHook(
-      (props: DoseSpotSelfEnrollmentOptions) => useDoseSpotSelfEnrollment(props),
-      { wrapper, initialProps: { onError } }
-    );
+    const { result } = renderHook((props: DoseSpotSelfEnrollmentOptions) => useDoseSpotSelfEnrollment(props), {
+      wrapper,
+      initialProps: { onError },
+    });
 
     await act(async () => {});
 
