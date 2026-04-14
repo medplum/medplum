@@ -14,7 +14,7 @@ export interface CoverageSummaryProps {
 
 export function CoverageSummary(props: CoverageSummaryProps): JSX.Element {
   const { coverage: coverageRef, checking, onCheckEligibility } = props;
-  const coverage= useResource(coverageRef);
+  const coverage = useResource(coverageRef);
 
   if (!coverage) {
     return <Text>Loading...</Text>;
