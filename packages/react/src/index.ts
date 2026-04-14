@@ -125,7 +125,7 @@ export * from './ResourceForm/ResourceForm';
 export * from './ResourceForm/ResourceForm.utils';
 export * from './ResourceHistoryTable/ResourceHistoryTable';
 export * from './ResourceInput/ResourceInput';
-export * from './ResourceInput/ResourcesInput';
+export * from './ResourceInput/MultiResourceInput';
 export * from './ResourceName/ResourceName';
 export * from './ResourcePropertyDisplay/ResourcePropertyDisplay';
 export * from './ResourcePropertyInput/ResourcePropertyInput';

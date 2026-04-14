@@ -4,10 +4,10 @@ import type { Reference, Resource } from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { ResourcesInput } from './ResourcesInput';
+import { MultiResourceInput } from './MultiResourceInput';
 
 /**
- * @deprecated Use ResourcesInput instead, which supports multiple default and selected values.
+ * @deprecated Use MultiResourceInput instead, which supports multiple default and selected values.
  */
 export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
@@ -40,7 +40,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   );
 
   return (
-    <ResourcesInput<T>
+    <MultiResourceInput<T>
       resourceType={props.resourceType}
       name={props.name}
       defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
