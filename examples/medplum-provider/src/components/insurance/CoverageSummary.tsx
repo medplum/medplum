@@ -20,20 +20,34 @@ export function CoverageSummary(props: CoverageSummaryProps): JSX.Element {
     return <Text>Loading...</Text>;
   }
 
-  const payorName = coverage.payor?.[0]?.display ?? coverage.payor?.[0]?.reference ?? 'Unknown Payor';
-  const planName =
-    coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan')?.name ??
-    coverage.type?.text ??
-    coverage.type?.coding?.[0]?.display;
+  const payorNames = (coverage.payor ?? []).map((p) => p.display ?? p.reference ?? 'Unknown Payor');
+  const planClass = coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan');
+  let planName: string | undefined;
+  if (planClass?.name) {
+    planName = planClass.name;
+  } else if (coverage.type?.text) {
+    planName = coverage.type.text;
+  } 
+  
   const subscriberId = coverage.subscriberId ?? coverage.identifier?.[0]?.value;
   const periodText = coverage.period ? formatPeriod(coverage.period) : undefined;
 
   return (
     <Stack gap={4}>
       <Flex justify="space-between" align="flex-start" gap="xs">
-        <Title order={6} style={{ lineHeight: 1.3 }}>
-          {payorName}
-        </Title>
+        <Stack gap={2} style={{ minWidth: 0 }}>
+          {payorNames.length > 0 ? (
+            payorNames.map((name, i) => (
+              <Title key={i} order={6} style={{ lineHeight: 1.3 }}>
+                {name}
+              </Title>
+            ))
+          ) : (
+            <Title order={6} style={{ lineHeight: 1.3 }}>
+              Unknown Payor
+            </Title>
+          )}
+        </Stack>
         <Button size="xs" variant="filled" loading={checking} onClick={onCheckEligibility} style={{ flexShrink: 0 }}>
           Check Eligibility
         </Button>
