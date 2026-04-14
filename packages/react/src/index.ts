@@ -124,6 +124,7 @@ export * from './ResourceDiffTable/ResourceDiffTable';
 export * from './ResourceForm/ResourceForm';
 export * from './ResourceForm/ResourceForm.utils';
 export * from './ResourceHistoryTable/ResourceHistoryTable';
+export * from './ResourceInput/MultiResourceInput';
 export * from './ResourceInput/ResourceInput';
 export * from './ResourceName/ResourceName';
 export * from './ResourcePropertyDisplay/ResourcePropertyDisplay';

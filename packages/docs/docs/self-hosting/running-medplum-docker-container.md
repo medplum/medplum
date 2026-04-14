@@ -24,6 +24,6 @@ The container takes only one argument, the path to the config settings. The pref
 :::info Full-stack Docker setup
 
 If you are looking to get started fast or want to develop against a local copy of Medplum without downloading the repo,
-we also have a [full-stack Docker setup](/docs/self-hosting/running-full-medplum-stack-in-docker.md) that you can start up with just two commands!
+we also have a [full-stack Docker setup](/docs/self-hosting/running-full-medplum-stack-in-docker) that you can start up with just two commands!
 
 :::
