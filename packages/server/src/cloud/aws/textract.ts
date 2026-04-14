@@ -9,7 +9,7 @@ import {
 import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, DocumentReference, Media, Resource } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../../fhir/repo';
@@ -141,7 +141,7 @@ async function createBinaryAndMedia(
 
   await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(content));
 
-  const media = await repo.createResource<Media>({
+  const media = await repo.createResource({
     resourceType: 'Media',
     status: 'completed',
     content: {

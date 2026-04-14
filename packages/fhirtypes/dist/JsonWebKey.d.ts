@@ -5,10 +5,10 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * A JSON object that represents a cryptographic key. The members of the

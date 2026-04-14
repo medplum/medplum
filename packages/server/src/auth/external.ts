@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
+  concatUrls,
   ContentType,
   encodeBase64,
   OAuthGrantType,
@@ -9,12 +10,13 @@ import {
   OperationOutcomeError,
   parseJWTPayload,
 } from '@medplum/core';
-import type { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import type { ClientApplication, DomainConfiguration, IdentityProvider, Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
@@ -36,9 +38,10 @@ export interface ExternalAuthState {
   codeChallenge?: string;
   codeChallengeMethod?: CodeChallengeMethod;
   redirectUri?: string;
+  returnTo?: string;
 }
 
-export const externalCallbackHandler = async (req: Request, res: Response): Promise<void> => {
+export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
   const code = req.query.code as string;
   if (!code) {
     sendOutcome(res, badRequest('Missing code'));
@@ -54,12 +57,17 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   let body: ExternalAuthState;
   try {
     body = JSON.parse(state);
-  } catch (_err) {
+  } catch {
     sendOutcome(res, badRequest('Invalid state'));
     return;
   }
 
-  const { idp, client } = await getIdentityProvider(body);
+  let domainConfig: DomainConfiguration | undefined;
+  if (body.domain) {
+    domainConfig = await getDomainConfiguration(body.domain);
+  }
+
+  const { idp, client } = await getIdentityProvider(body, domainConfig);
   if (!idp) {
     sendOutcome(res, badRequest('Identity provider not found'));
     return;
@@ -101,7 +109,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     authMethod: 'external',
     email,
     externalId,
-    projectId: projectId,
+    projectId,
     clientId: body.clientId,
     scope: body.scope ?? 'openid offline',
     nonce: body.nonce ?? randomUUID(),
@@ -114,22 +122,25 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
   if (login.membership && body.redirectUri && client) {
     // Get the redirect URI from the client application
-    // Note that we're currently allowing partial matches for external auth.
-    // This is generally NOT recommended by the OAuth spec.
-    // However, we need to support it here for backwards compatibility with existing clients.
-    const redirectUri = getClientRedirectUri(client, body.redirectUri, true);
-    if (!redirectUri) {
-      sendOutcome(res, badRequest('Invalid redirect URI'));
-      return;
-    }
-    const exactRedirectUri = getClientRedirectUri(client, redirectUri);
-    if (!exactRedirectUri) {
+    let redirectUri = getClientRedirectUri(client, body.redirectUri);
+
+    if (!redirectUri && (await isDangerousRedirectUriPartialMatchAllowed(client))) {
+      // If projects have the allow-dangerous-redirect setting enabled, then we will allow partial matches for redirect URIs.
+      // This is generally NOT recommended by the OAuth spec.
+      // However, we need to support it here for backwards compatibility with existing clients.
+      redirectUri = getClientRedirectUri(client, body.redirectUri, true);
       getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
         clientId: client.id,
         requestedUri: body.redirectUri,
         partialMatchUri: redirectUri,
       });
     }
+
+    if (!redirectUri) {
+      sendOutcome(res, badRequest('Invalid redirect URI'));
+      return;
+    }
+
     const redirectUrl = new URL(redirectUri);
     redirectUrl.searchParams.set('login', login.id);
     redirectUrl.searchParams.set('code', login.code as string);
@@ -137,27 +148,37 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  const signInPage = login.launch ? 'oauth' : 'signin';
+  let signInPage: string;
+  if (isValidReturnToUrl(body.returnTo, domainConfig)) {
+    // This is the case for external auth with a returnTo URL specified in the state.
+    signInPage = body.returnTo;
+  } else {
+    // This is the fallback case for external auth without a client application or redirect URI.
+    signInPage = concatUrls(getConfig().appBaseUrl, login.launch ? 'oauth' : 'signin');
+  }
+
   const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
   redirectUrl.searchParams.set('login', login.id);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
   if (login.codeChallenge) {
-    redirectUrl.searchParams.set('code_challenge', login.codeChallenge as string);
+    redirectUrl.searchParams.set('code_challenge', login.codeChallenge);
   }
   if (login.codeChallengeMethod) {
     redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
   }
   res.redirect(redirectUrl.toString());
-};
+}
 
 /**
  * Tries to find the identity provider configuration.
  * @param state - The external auth state.
+ * @param domainConfig - The domain configuration.
  * @returns External identity provider definition if found.
  */
 async function getIdentityProvider(
-  state: ExternalAuthState
+  state: ExternalAuthState,
+  domainConfig: DomainConfiguration | undefined
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   let idp: IdentityProvider | undefined;
   let client: ClientApplication | undefined;
@@ -169,11 +190,8 @@ async function getIdentityProvider(
     }
   }
 
-  if (state.domain) {
-    const domainConfig = await getDomainConfiguration(state.domain);
-    if (domainConfig?.identityProvider) {
-      idp = domainConfig.identityProvider;
-    }
+  if (domainConfig?.identityProvider) {
+    idp = domainConfig.identityProvider;
   }
 
   return { idp, client };
@@ -206,15 +224,15 @@ async function verifyExternalCode(
   }
 
   if (idp.tokenAuthMethod === OAuthTokenAuthMethod.ClientSecretPost) {
-    params.append('client_id', idp.clientId as string);
-    params.append('client_secret', idp.clientSecret as string);
+    params.append('client_id', idp.clientId);
+    params.append('client_secret', idp.clientSecret);
   } else {
     // Default to client_secret_basic
     headers.Authorization = `Basic ${encodeBase64(idp.clientId + ':' + idp.clientSecret)}`;
   }
 
   try {
-    const response = await fetch(idp.tokenUrl as string, {
+    const response = await fetch(idp.tokenUrl, {
       method: 'POST',
       headers,
       body: params.toString(),
@@ -232,4 +250,49 @@ async function verifyExternalCode(
     globalLogger.warn('Unhandled error in external auth check', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+}
+
+/**
+ * Determines if the returnTo URL is valid based on the domain configuration.
+ * @param returnTo - The returnTo URL from the external auth state.
+ * @param domainConfig - The domain configuration for the external auth request.
+ * @returns True if the returnTo URL is valid, false otherwise.
+ */
+function isValidReturnToUrl(
+  returnTo: string | undefined,
+  domainConfig: DomainConfiguration | undefined
+): returnTo is string {
+  if (!returnTo) {
+    return false;
+  }
+
+  try {
+    const returnToUrl = new URL(returnTo);
+    return !!domainConfig?.allowedPostLoginRedirectUrls?.some((allowedUrl) => {
+      try {
+        const allowed = new URL(allowedUrl);
+        return (
+          returnToUrl.protocol === allowed.protocol &&
+          returnToUrl.hostname === allowed.hostname &&
+          returnToUrl.port === allowed.port &&
+          returnToUrl.pathname.startsWith(allowed.pathname)
+        );
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns true if the client application allows partial matching of redirect URIs, false otherwise.
+ * @param client - The client application.
+ * @returns True if partial matching is allowed, false otherwise.
+ */
+async function isDangerousRedirectUriPartialMatchAllowed(client: ClientApplication): Promise<boolean> {
+  const systemRepo = getGlobalSystemRepo();
+  const project = await systemRepo.readResource<Project>('Project', client.meta?.project as string);
+  return project.setting?.find((s) => s.name === 'allow-dangerous-redirect')?.valueBoolean === true;
 }

@@ -1,0 +1,70 @@
+---
+sidebar_position: 5
+title: Message Attachments
+tags: [communications, messaging, attachments]
+keywords: [payload, contentString, contentAttachment, contentReference, Binary, DocumentReference]
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
+import BinaryExampleCode from '!!raw-loader!@site/../examples/src/fhir-datastore/binary-data.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Message Attachments
+
+[`Communication.payload`](/docs/api/fhir/resources/communication) supports three content types. You can combine multiple entries in a single message.
+
+| Content Type        | Use Case                           | Example                                             |
+| ------------------- | ---------------------------------- | --------------------------------------------------- |
+| `contentString`     | Plain text messages                | `"The specimen has been received."`                 |
+| `contentAttachment` | Files (images, PDFs, documents)    | Lab report PDF, wound photo                         |
+| `contentReference`  | References to other FHIR resources | Link to a `DiagnosticReport` or `DocumentReference` |
+
+:::note
+If you use `@medplum/react`, [`ThreadChat`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadChat/ThreadChat.tsx) uploads files with `medplum.createDocumentReference()` and adds `payload[].contentReference` pointing at that [`DocumentReference`](/docs/api/fhir/resources/documentreference). The same FHIR pattern works from any client: create a `DocumentReference`, then reference it on the payload so each file is a first-class, searchable document (query by patient, type, and other document fields). The sections below focus on `createAttachment()` + `contentAttachment`, which attaches a file on the message without creating a separate `DocumentReference` resource.
+:::
+
+## Upload a file
+
+To attach a file to a message, use `medplum.createAttachment()` to upload the file and get an `Attachment` object, then pass it to `contentAttachment`. The next section shows the full example. For more on binary uploads and the difference between `createBinary()` and `createAttachment()`, see [Binary data](/docs/fhir-datastore/binary-data).
+
+## Send a message with an attachment
+
+Use `medplum.createAttachment()` to upload the file and get an `Attachment`, then pass it to `payload[].contentAttachment`. See [Referencing a Binary in an Attachment](/docs/fhir-datastore/binary-data#referencing-a-binary-in-an-attachment) for more detail.
+
+<MedplumCodeBlock language="ts" selectBlocks="messageAttachment">
+  {BinaryExampleCode}
+</MedplumCodeBlock>
+
+:::note
+If you already have a `Binary` resource (e.g. from `createBinary()`), use `url: getReferenceString(binary)` in the attachment. For new uploads in messages, we recommend `createAttachment()` so you get an `Attachment` object to pass directly to `contentAttachment`.
+:::
+
+## Send a message with both text and an attachment
+
+Create the attachment with `createAttachment()` as above, then include multiple entries in the `payload` array (e.g. `contentString` plus `contentAttachment`):
+
+<MedplumCodeBlock language="ts" selectBlocks="messageWithTextAndAttachment">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::caution
+`contentAttachment` stores metadata and a URL reference — not the file bytes themselves. The binary lives as a separate [`Binary`](/docs/api/fhir/resources/binary) resource. If you delete the Binary, the attachment URL will return a 404.
+:::
+
+## In your UI
+
+When rendering messages, iterate over the `payload` array and render each entry based on its type:
+
+- `contentString` — render as text
+- `contentAttachment` — render as a download link, inline image, or file preview based on `contentType`
+- `contentReference` — resolve the referenced resource and render appropriately; for a linked [`DocumentReference`](/docs/api/fhir/resources/documentreference), render from `content`
+
+For displaying or downloading attachment content (presigned URLs, media tags, and the download helper), see [Consuming a FHIR Binary in an Application](https://www.medplum.com/docs/fhir-datastore/binary-data#consuming-a-fhir-binary-in-an-application).
+
+If using `@medplum/react`, the [BaseChat component](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/BaseChat/BaseChat.tsx) handles attachment rendering. For other frameworks, check `contentType` to decide how to display each attachment.
+
+## See Also
+
+- [Messaging Data Model](/docs/communications/messaging-data-model) — thread structure and Communication elements
+- [Searching and Querying Threads](/docs/communications/searching-and-querying-threads) — thread list queries, filters, and subscriptions
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API

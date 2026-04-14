@@ -195,7 +195,7 @@ describe('BotEditor', () => {
 
     expect(screen.getByText('Saved')).toBeInTheDocument();
 
-    const check = await medplum.readResource('Bot', legacyBot.id as string);
+    const check = await medplum.readResource('Bot', legacyBot.id);
     expect(check.sourceCode).toBeDefined();
     expect(check.sourceCode?.url).toBeDefined();
   });
@@ -214,7 +214,7 @@ describe('BotEditor', () => {
     };
 
     // Change input type to HL7
-    const contentTypeInput = screen.getByDisplayValue('FHIR') as HTMLSelectElement;
+    const contentTypeInput = screen.getByDisplayValue('FHIR');
     await act(async () => {
       fireEvent.change(contentTypeInput, { target: { value: 'x-application/hl7-v2+er7' } });
     });

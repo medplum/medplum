@@ -7,7 +7,7 @@ import { connect } from 'node:net';
 import { Hl7Base } from './base';
 import type { SendAndWaitOptions } from './connection';
 import { Hl7Connection } from './connection';
-import { Hl7CloseEvent, Hl7ErrorEvent } from './events';
+import { Hl7CloseEvent, Hl7ErrorEvent, Hl7WarningEvent } from './events';
 
 export interface Hl7ClientOptions {
   host: string;
@@ -154,6 +154,10 @@ export class Hl7Client extends Hl7Base {
     connection.addEventListener('error', (event) => {
       this.dispatchEvent(new Hl7ErrorEvent(event.error));
     });
+
+    connection.addEventListener('warning', (event) => {
+      this.dispatchEvent(new Hl7WarningEvent(event.error));
+    });
   }
 
   private createDeferredConnectionPromise(): DeferredConnectionPromise {
@@ -210,6 +214,10 @@ export class Hl7Client extends Hl7Base {
       const connection = this.connection;
       delete this.connection;
       await connection.close();
+    } else {
+      // Emit close event because the connection will not be able to emit it for us
+      // Since it has not connected at this point
+      this.dispatchEvent(new Hl7CloseEvent());
     }
     // Close the socket if it exists
     if (this.socket) {

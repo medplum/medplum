@@ -119,7 +119,7 @@ export async function handlePhotonAuth(clientId?: string, clientSecret?: string)
       throw new Error(`HTTP Error! Status: ${response.status} ${response.statusText}`);
     }
 
-    const result = (await response.json()) as any;
+    const result = await response.json();
     return result.access_token as string;
   } catch (err) {
     throw new Error(normalizeErrorString(err));

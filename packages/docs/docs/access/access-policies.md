@@ -399,7 +399,7 @@ This access policy grants read-only access to all Patients that are within that 
 {
   "resourceType": "AccessPolicy",
   "name": "Patient Example",
-  // Any resource created or updated will be tagged with `meta.account` set to `Organization/abc-123`
+  // Any resource created will be tagged with `meta.account` set to `Organization/abc-123`
   "compartment": {
     "reference": "Organization/abc-123",
     "display": "Example Customer Organization"

@@ -268,6 +268,48 @@ describe('Config', () => {
       });
     });
 
+    test('Valid source config w/ empty array for `workers.enabled`', async () => {
+      const result = await normalizeInfraConfig({ ...baseConfig, workers: { enabled: [] } });
+      expect(result).toEqual<MedplumInfraConfig>({
+        name: 'MyMedplumApp',
+        stackName: 'MyFoomedicalStack',
+        accountNumber: 'medplum123',
+        region: 'us-east-1',
+        domainName: 'foomedical.com',
+        vpcId: 'abc-321123',
+        apiPort: 1337,
+        apiDomainName: 'api.foomedical.com',
+        apiSslCertArn: 'arn:foomedical_api_ssl_cert',
+        apiInternetFacing: true,
+        appDomainName: 'app.foomedical.com',
+        appSslCertArn: 'arn:abc-123',
+        appApiProxy: true,
+        storageBucketName: 'foomedical_storage_bucket',
+        storageDomainName: 'storage.foomedical.com',
+        storageSslCertArn: 'arn:def-123',
+        signingKeyId: 'key-abc123',
+        storagePublicKey: 'VERY_LONG_KEY',
+        baseUrl: 'foomedical.com',
+        maxAzs: 6,
+        rdsInstances: 10,
+        rdsInstanceType: 'big',
+        desiredServerCount: 0,
+        serverImage: 'arn:our-image',
+        serverMemory: 16384,
+        serverCpu: 4096,
+        clamscanEnabled: false,
+        clamscanLoggingBucket: 'no_logging',
+        clamscanLoggingPrefix: 'foo_',
+        skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
+        workers: {
+          enabled: [],
+        },
+      });
+    });
+
     test('Invalid system', async () => {
       await expect(
         // @ts-expect-error System is not valid
@@ -316,7 +358,7 @@ describe('Config', () => {
       expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toStrictEqual('medplum');
     });
     // Test [string, number] => number
-    test('Provided string, expected number => parseInt(string)', () => {
+    test('Provided string, expected number => Number.parseInt(string)', () => {
       expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toStrictEqual(20);
     });
     // Test [number, number] => rawValue

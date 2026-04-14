@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -77,8 +77,8 @@ describe('Set Password', () => {
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
-    const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const id = paths.at(-2);
+    const secret = paths.at(-1);
 
     const res3 = await request(app).post('/auth/setpassword').type('json').send({
       id,
@@ -125,8 +125,9 @@ describe('Set Password', () => {
       })
     );
 
+    const systemRepo = await getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
-      getSystemRepo().createResource<UserSecurityRequest>({
+      systemRepo.createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         meta: {
           project: project.id,
@@ -167,8 +168,9 @@ describe('Set Password', () => {
       })
     );
 
+    const systemRepo = await getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
-      getSystemRepo().createResource<UserSecurityRequest>({
+      systemRepo.createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         meta: {
           project: project.id,
@@ -247,8 +249,8 @@ describe('Set Password', () => {
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
-    const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const id = paths.at(-2);
+    const secret = paths.at(-1);
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);

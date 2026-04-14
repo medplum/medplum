@@ -1,43 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator } from '@medplum/core';
-import type {
-  AsyncJob,
-  AuditEvent,
-  AuditEventEntity,
-  Bot,
-  Coding,
-  Parameters,
-  Practitioner,
-  ProjectMembership,
-  Reference,
-  Resource,
-  Subscription,
-} from '@medplum/fhirtypes';
-import type { Job, Queue, Worker } from 'bullmq';
+import { getExtension, Operator } from '@medplum/core';
+import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
+import type { ConnectionOptions, Job, Queue, Worker } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
-import type { MedplumServerConfig } from '../config/types';
-import { buildTracingExtension } from '../context';
+import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import type { AuditEventOutcome } from '../util/auditevent';
+import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(
-  project: string,
+  projectId: string,
   profile: Reference
 ): Promise<WithId<ProjectMembership> | undefined> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
       {
         code: 'project',
         operator: Operator.EQUALS,
-        value: `Project/${project}`,
+        value: `Project/${projectId}`,
       },
       {
         code: 'profile',
@@ -46,80 +33,6 @@ export function findProjectMembership(
       },
     ],
   });
-}
-
-/**
- * Creates an AuditEvent for a subscription attempt.
- * @param resource - The resource that triggered the subscription.
- * @param startTime - The time the subscription attempt started.
- * @param outcome - The outcome code.
- * @param outcomeDesc - The outcome description text.
- * @param subscription - Optional rest-hook subscription.
- * @param bot - Optional bot that was executed.
- */
-export async function createAuditEvent(
-  resource: Resource,
-  startTime: string,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  subscription?: Subscription,
-  bot?: Bot
-): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const auditedEvent = subscription ?? resource;
-
-  await systemRepo.createResource<AuditEvent>({
-    resourceType: 'AuditEvent',
-    meta: {
-      project: auditedEvent.meta?.project,
-      account: auditedEvent.meta?.account,
-    },
-    period: {
-      start: startTime,
-      end: new Date().toISOString(),
-    },
-    recorded: new Date().toISOString(),
-    type: {
-      code: 'transmit',
-    },
-    agent: [
-      {
-        type: {
-          text: auditedEvent.resourceType,
-        },
-        requestor: false,
-      },
-    ],
-    source: {
-      observer: createReference(auditedEvent) as Reference as Reference<Practitioner>,
-    },
-    entity: createAuditEventEntities(resource, subscription, bot),
-    outcome,
-    outcomeDesc,
-    extension: buildTracingExtension(),
-  });
-}
-
-export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {
-  return flatMapFilter(resources, (v) => (isResourceWithId(v) ? createAuditEventEntity(v) : undefined));
-}
-
-export function createAuditEventEntity(resource: Resource): AuditEventEntity {
-  return {
-    what: createReference(resource),
-    role: getAuditEventEntityRole(resource),
-  };
-}
-
-export function getAuditEventEntityRole(resource: Resource): Coding {
-  switch (resource.resourceType) {
-    case 'Patient':
-      return { code: '1', display: 'Patient' };
-    case 'Subscription':
-      return { code: '9', display: 'Subscriber' };
-    default:
-      return { code: '4', display: 'Domain' };
-  }
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
@@ -133,7 +46,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
   }
 
   // Removing any white space
-  const codesTrimSpace = successCodes.valueString.replace(/ /g, '');
+  const codesTrimSpace = successCodes.valueString.replaceAll(' ', '');
   const listOfSuccessCodes = codesTrimSpace.split(',');
 
   for (const code of listOfSuccessCodes) {
@@ -198,10 +111,17 @@ export async function updateAsyncJobOutput(
   );
 }
 
-export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; worker: Worker; name: string };
+export interface WorkerInitializerOptions {
+  workerEnabled?: boolean;
+}
+
+export type WorkerInitializer = (
+  config: MedplumServerConfig,
+  options?: WorkerInitializerOptions
+) => { queue: Queue; worker: Worker | undefined; name: string };
 
 export interface QueueRegistry {
-  add(name: string, queue: Queue, worker: Worker): void;
+  add(name: string, queue: Queue, worker: Worker | undefined): void;
   get<T>(name: string): Queue<T> | undefined;
   isClosing(name: string): boolean | undefined;
   closeAll(): Promise<void>[];
@@ -217,18 +137,20 @@ export class DefaultQueueRegistry implements QueueRegistry {
     this.queueMap = Object.create(null);
   }
 
-  add(name: string, queue: Queue, worker: Worker): void {
+  add(name: string, queue: Queue, worker: Worker | undefined): void {
     if (this.queueMap[name]) {
       throw new Error(`Queue ${name} already registered`);
     }
 
     this.queueMap[name] = { queue, worker, isClosing: false };
 
-    worker.on('closing', () => {
-      if (this.queueMap[name]) {
-        this.queueMap[name].isClosing = true;
-      }
-    });
+    if (worker) {
+      worker.on('closing', () => {
+        if (this.queueMap[name]) {
+          this.queueMap[name].isClosing = true;
+        }
+      });
+    }
   }
 
   get<T>(name: string): Queue<T> | undefined {
@@ -350,4 +272,19 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
   // This is one of those "this should never happen" errors. job.token is expected to always be set
   // given the way we use bullmq.
   throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
+}
+
+export function getWorkerBullmqConfig(
+  config: MedplumServerConfig,
+  workerName: WorkerName
+): Partial<MedplumBullmqConfig> | undefined {
+  const perWorker = config.workers?.bullmq?.[workerName];
+  if (perWorker) {
+    return { ...config.bullmq, ...perWorker };
+  }
+  return config.bullmq;
+}
+
+export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {
+  return { ...(config.backgroundJobsRedis ?? config.redis), reconnectOnError };
 }

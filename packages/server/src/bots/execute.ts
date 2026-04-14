@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { runInLambda } from '../cloud/aws/execute';
+import { runInLambdaStreaming } from '../cloud/aws/executestreaming';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
-import { AuditEventOutcome } from '../util/auditevent';
+import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
 import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult } from './types';
-import { createAuditEvent, getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
+import { getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
 import { runInVmContext } from './vmcontext';
 
 /**
@@ -22,9 +23,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   let result: BotExecutionResult;
 
   const execStart = process.hrtime.bigint();
-  if (!(await isBotEnabled(bot))) {
-    result = { success: false, logResult: 'Bots not enabled' };
-  } else {
+  if (await isBotEnabled(bot)) {
     await writeBotInputToStorage(request);
 
     const context: BotExecutionContext = {
@@ -34,7 +33,13 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     };
 
     if (bot.runtimeVersion === 'awslambda') {
-      result = await runInLambda(context);
+      if (bot.streamingEnabled && request.responseStream) {
+        result = await runInLambdaStreaming(context);
+      } else if (bot.streamingEnabled) {
+        result = { success: false, logResult: 'Streaming bot requires Accept: text/event-stream header' };
+      } else {
+        result = await runInLambda(context);
+      }
     } else if (bot.runtimeVersion === 'vmcontext') {
       result = await runInVmContext(context);
     } else if (bot.runtimeVersion === 'fission') {
@@ -42,18 +47,19 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     } else {
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
+  } else {
+    result = { success: false, logResult: 'Bots not enabled' };
   }
   const executionTime = Number(process.hrtime.bigint() - execStart) / 1e9; // Report duration in seconds
 
   const attributes = { project: bot.meta?.project, bot: bot.id, outcome: result.success ? 'success' : 'failure' };
   recordHistogramValue('medplum.bot.execute.time', executionTime, { attributes });
 
-  await createAuditEvent(
+  await createBotAuditEvent(
     request,
     startTime,
     result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
     result.logResult
   );
-
   return result;
 }

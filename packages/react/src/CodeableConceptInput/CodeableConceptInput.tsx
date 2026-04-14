@@ -8,7 +8,8 @@ import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSet
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps
-  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
+  extends
+    Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
     ComplexTypeInputProps<CodeableConcept> {
   readonly onChange?: (value: CodeableConcept | undefined) => void;
 }
@@ -24,7 +25,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     valuePath: _valuePath,
     ...rest
   } = props;
-  const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
+  const [value, setValue] = useState(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newConcept = valueSetElementToCodeableConcept(newValues);

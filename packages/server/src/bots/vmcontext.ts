@@ -10,9 +10,10 @@ import {
 } from '@medplum/core';
 import type { Binary, Reference } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
@@ -26,7 +27,7 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * @returns The bot execution result.
  */
 export async function runInVmContext(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, input, contentType, traceId, headers } = request;
+  const { bot, input, contentType, traceId, headers, runAs } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -41,7 +42,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     return { success: false, logResult: 'Executable code is not a Binary' };
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = await getProjectSystemRepo(runAs.project);
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
@@ -50,10 +51,12 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require,
+    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
+    process,
     ContentType,
     Hl7Message,
     MedplumClient,
+    TextDecoder,
     TextEncoder,
     URL,
     URLSearchParams,
@@ -68,6 +71,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       traceId,
       headers,
       defaultHeaders: request.defaultHeaders,
+      responseStream: request.responseStream,
     },
   };
 
@@ -85,7 +89,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers, defaultHeaders } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, responseStream } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -102,7 +106,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
+      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }
@@ -122,7 +126,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   // Return the result of the code execution
   try {
-    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
+    const returnValue = await vm.runInNewContext(wrappedCode, sandbox, options);
     return {
       success: true,
       logResult: botConsole.toString(),

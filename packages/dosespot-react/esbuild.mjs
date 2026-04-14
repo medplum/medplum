@@ -15,7 +15,7 @@ const options = {
   logLevel: 'info',
   resolveExtensions: ['.ts', '.tsx'],
   target: 'es2021',
-  tsconfig: 'tsconfig.build.json',
+  tsconfig: 'tsconfig.json',
   minifyWhitespace: true,
   minifyIdentifiers: false,
   minifySyntax: true,

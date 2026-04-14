@@ -36,7 +36,7 @@ describe('Agent/$fetch-logs', () => {
       });
     });
 
-    const promises = Array.from({ length: NUM_DEFAULT_AGENTS }) as Promise<Response>[];
+    const promises: Promise<Response>[] = Array.from({ length: NUM_DEFAULT_AGENTS });
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
       promises[i] = request(app)
         .post('/fhir/R4/Agent')
@@ -154,9 +154,7 @@ describe('Agent/$fetch-logs', () => {
     expect(res.status).toBe(400);
     const outcome = res.body as OperationOutcome;
 
-    expect(outcome).toMatchObject<OperationOutcome>(
-      badRequest("Invalid value 'true' provided for integer parameter 'limit'")
-    );
+    expect(outcome).toMatchObject(badRequest("Invalid value 'true' provided for integer parameter 'limit'"));
   });
 });
 
@@ -168,7 +166,7 @@ function expectBundleToContainLogsEntry(bundle: Bundle<Parameters>, agent: Agent
       parameter: expect.arrayContaining<ParametersParameter>([
         expect.objectContaining<ParametersParameter>({
           name: 'agent',
-          resource: expect.objectContaining<Agent>(agent),
+          resource: expect.objectContaining(agent),
         }),
         expect.objectContaining<ParametersParameter>({
           name: 'result',

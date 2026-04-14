@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { BotResponseStream, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -8,8 +8,10 @@ import {
   isOk,
   isOperationOutcome,
   isResource,
+  notFound,
   OperationOutcomeError,
   Operator,
+  singularize,
 } from '@medplum/core';
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -24,7 +26,6 @@ import {
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
 import { sendFhirResponse } from '../response';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
@@ -42,20 +43,35 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 export const executeHandler = async (req: Request, res: Response): Promise<void> => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
-      const result = await executeOperation(req);
+      const result = await executeOperation(req, res);
       if (isOperationOutcome(result) && !isOk(result)) {
         throw new OperationOutcomeError(result);
       }
       return getOutParametersFromResult(result);
     });
   } else {
-    const result = await executeOperation(req);
+    const result = await executeOperation(req, res);
+
+    if (res.headersSent) {
+      if (!res.writableEnded) {
+        res.end();
+      }
+      return;
+    }
+
     if (isOperationOutcome(result)) {
       sendOutcome(res, result);
       return;
     }
 
     const responseBody = getResponseBodyFromResult(result);
+
+    // If the bot returned an error OperationOutcome, send it with proper HTTP status
+    if (isOperationOutcome(responseBody) && !isOk(responseBody)) {
+      sendOutcome(res, responseBody);
+      return;
+    }
+
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
     if (isResource(responseBody, 'Binary')) {
@@ -69,8 +85,9 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
   }
 };
 
-async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
+async function executeOperation(req: Request, res: Response): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
+
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
@@ -78,8 +95,26 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   }
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+
+  // Check if client accepts streaming and bot supports it
+  const acceptsStreaming = bot.streamingEnabled && req.header('Accept')?.includes('text/event-stream');
+  let responseStream: BotResponseStream | undefined = undefined;
+  if (acceptsStreaming) {
+    // Create a BotResponseStream that wraps the Express response.
+    // Bot must call startStreaming() before write() to commit headers.
+    responseStream = Object.assign(res, {
+      startStreaming: (statusCode: number, headers: Record<string, string>): void => {
+        if (!res.headersSent) {
+          res.status(statusCode);
+          for (const [key, value] of Object.entries(headers)) {
+            res.setHeader(key, value);
+          }
+          res.flushHeaders();
+        }
+      },
+    }) as BotResponseStream;
+  }
 
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
@@ -93,6 +128,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     headers: req.headers,
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
+    responseStream,
   });
 
   return result;
@@ -104,12 +140,12 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
  * If using "/Bot/$execute?identifier=...", then the bot is searched by identifier.
  * Otherwise, returns undefined.
  * @param req - The HTTP request.
- * @returns The bot, or undefined if not found.
+ * @returns The bot, or undefined if no ID or identifier is provided.
  */
 async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> {
   const ctx = getAuthenticatedContext();
   // Prefer to search by ID from path parameter
-  const { id } = req.params;
+  const id = singularize(req.params.id);
   if (id) {
     return ctx.repo.readResource<Bot>('Bot', id);
   }
@@ -117,10 +153,16 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return ctx.repo.searchOne<Bot>({
+    const bot = await ctx.repo.searchOne<Bot>({
       resourceType: 'Bot',
       filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
     });
+
+    if (!bot) {
+      throw new OperationOutcomeError(notFound);
+    }
+
+    return bot;
   }
 
   // If no bot ID or identifier, return undefined

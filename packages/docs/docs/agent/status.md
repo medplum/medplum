@@ -6,7 +6,7 @@ sidebar_position: 10
 
 Gets the status of a given agent. Useful for seeing whether an agent is connected and listing its current software version.
 
-> For querying multiple agent statuses at once, or using `SearchParameters` to select agents to query, see [Bulk Status](./bulk-status.md).
+> For querying multiple agent statuses at once, or using `SearchParameters` to select agents to query, see [Bulk Status](./bulk-status).
 
 ## Invoke the `$status` operation
 

@@ -4,6 +4,7 @@ import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
+import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
@@ -14,7 +15,7 @@ import { App } from './App';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  // baseUrl: 'http://localhost:8103/', // Uncomment this to run against the server on your localhost
+  baseUrl: sessionStorage.getItem('medplum_base_url') || import.meta.env.VITE_MEDPLUM_BASE_URL || undefined,
   cacheTime: 60000,
   autoBatchTime: 100,
 });

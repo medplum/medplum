@@ -14,12 +14,12 @@ import type { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import type { Repository } from '../repo';
-import { getSystemRepo } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -29,8 +29,7 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   await ctx.repo.readResource<Bot>('Bot', id);
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', id);
 
   // Validate that the request body has a code property
   // Or that the Bot already has executable code attached
@@ -101,7 +100,12 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
         timeout: await getLambdaTimeoutForBot(latestBot),
       });
     }
-    await deployLambda(latestBot, codeToDeploy as string);
+
+    if (latestBot.streamingEnabled) {
+      await deployLambdaStreaming(latestBot, codeToDeploy as string);
+    } else {
+      await deployLambda(latestBot, codeToDeploy as string);
+    }
   } else if (latestBot.runtimeVersion === 'fission') {
     await deployFissionBot(latestBot, codeToDeploy as string);
   }

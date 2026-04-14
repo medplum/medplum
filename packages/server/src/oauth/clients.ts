@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { MEDPLUM_CLI_CLIENT_ID } from '@medplum/core';
 import type { ClientApplication } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
@@ -33,8 +34,8 @@ function getStandardClients(): ClientApplication[] {
   return standardClients;
 }
 
-export function getStandardClientById(clientId: string): ClientApplication | undefined {
-  return getStandardClients().find((client) => client.id === clientId);
+export function getStandardClientById(clientId: string): WithId<ClientApplication> | undefined {
+  return getStandardClients().find((client) => client.id === clientId) as WithId<ClientApplication> | undefined;
 }
 
 export function getStandardClientByRedirectUri(redirectUri: string): ClientApplication | undefined {
@@ -65,12 +66,24 @@ export function getClientRedirectUri(
     if (uri === requestedUri) {
       return uri;
     }
-    if (allowPartial && requestedUri.startsWith(uri)) {
+    if (allowPartial && isAllowedPartialRedirectUri(uri, requestedUri)) {
       // This should be removed once all clients are migrated.
       return requestedUri;
     }
   }
   return undefined;
+}
+
+function isAllowedPartialRedirectUri(actualUri: string, requestedUri: string): boolean {
+  // This is a temporary workaround to allow partial matching of redirect URIs for legacy clients.
+  // It should be removed once all clients are migrated to use exact redirect URIs.
+  try {
+    const actualUrl = new URL(actualUri);
+    const requestedUrl = new URL(requestedUri);
+    return actualUrl.origin === requestedUrl.origin && requestedUrl.pathname.startsWith(actualUrl.pathname);
+  } catch {
+    return false;
+  }
 }
 
 /**

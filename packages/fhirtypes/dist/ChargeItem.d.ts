@@ -5,39 +5,39 @@
  * Do not edit manually.
  */
 
-import { Account } from './Account';
-import { Annotation } from './Annotation';
-import { CareTeam } from './CareTeam';
-import { CodeableConcept } from './CodeableConcept';
-import { Device } from './Device';
-import { DiagnosticReport } from './DiagnosticReport';
-import { Encounter } from './Encounter';
-import { EpisodeOfCare } from './EpisodeOfCare';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { ImagingStudy } from './ImagingStudy';
-import { Immunization } from './Immunization';
-import { Medication } from './Medication';
-import { MedicationAdministration } from './MedicationAdministration';
-import { MedicationDispense } from './MedicationDispense';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { Substance } from './Substance';
-import { SupplyDelivery } from './SupplyDelivery';
-import { Timing } from './Timing';
+import type { Account } from './Account.d.ts';
+import type { Annotation } from './Annotation.d.ts';
+import type { CareTeam } from './CareTeam.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { EpisodeOfCare } from './EpisodeOfCare.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { ImagingStudy } from './ImagingStudy.d.ts';
+import type { Immunization } from './Immunization.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { MedicationAdministration } from './MedicationAdministration.d.ts';
+import type { MedicationDispense } from './MedicationDispense.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Substance } from './Substance.d.ts';
+import type { SupplyDelivery } from './SupplyDelivery.d.ts';
+import type { Timing } from './Timing.d.ts';
 
 /**
  * The resource ChargeItem describes the provision of healthcare provider

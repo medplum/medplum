@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
-import { WS } from 'jest-websocket-mock';
-import type { SubscriptionEventMap } from '.';
+import type {
+  Bundle,
+  Communication,
+  Parameters,
+  Subscription,
+  SubscriptionChannel,
+  SubscriptionStatus,
+} from '@medplum/fhirtypes';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
+import type { CriteriaState, SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
@@ -10,7 +18,26 @@ import { Logger, LogLevel } from '../logger';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
+import type { DEFAULT_PING_INTERVAL_MS, UNREF_GRACE_PERIOD_MS, WS_SUB_TOKEN_REFRESH_INTERVAL_MS } from './constants';
+import { WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS } from './constants';
 import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
+
+// fake type for eslint to avoid importing the actual module
+type SubscriptionsConstantsModule = {
+  DEFAULT_PING_INTERVAL_MS: typeof DEFAULT_PING_INTERVAL_MS;
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS: typeof WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS;
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: typeof WS_SUB_TOKEN_REFRESH_INTERVAL_MS;
+  UNREF_GRACE_PERIOD_MS: typeof UNREF_GRACE_PERIOD_MS;
+};
+
+vi.mock('./constants', async (importOriginal) => {
+  const mod = await importOriginal<SubscriptionsConstantsModule>();
+  return {
+    ...mod,
+    WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+    UNREF_GRACE_PERIOD_MS: 50,
+  };
+});
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -88,7 +115,7 @@ describe('ReconnectingWebSocket', () => {
     await wsServer.connected;
     const receivedEvent = await new Promise<MessageEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('message', (event) => {
-        resolve(event as MessageEvent);
+        resolve(event);
       });
       wsServer.send({ med: 'plum' });
     });
@@ -280,7 +307,7 @@ describe('SubscriptionManager', () => {
 
     test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       const manager1 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
@@ -383,7 +410,7 @@ describe('SubscriptionManager', () => {
 
     test('should track separate `Subscription` resources for same criteria with different `subscriptionProps`', async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
@@ -453,7 +480,9 @@ describe('SubscriptionManager', () => {
       });
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      expect(console.warn).toHaveBeenCalledTimes(2);
+      // Wait for GC timers to fire and finalize unreferenced entries
+      await sleep(100);
+
       console.warn = originalWarn;
       medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
     });
@@ -517,7 +546,7 @@ describe('SubscriptionManager', () => {
 
     test('should not throw when remove has been called on a criteria that is not known', () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
       expect(() => defaultManager.removeCriteria('DiagnosticReport')).not.toThrow();
       expect(console.warn).toHaveBeenCalledTimes(1);
       console.warn = originalWarn;
@@ -608,7 +637,7 @@ describe('SubscriptionManager', () => {
 
     test('should return the correct amount of criteria', async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
@@ -636,7 +665,9 @@ describe('SubscriptionManager', () => {
       });
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      expect(console.warn).toHaveBeenCalledTimes(2);
+      // Wait for GC timers to fire and finalize unreferenced entries
+      await sleep(100);
+
       console.warn = originalWarn;
     });
   });
@@ -726,6 +757,42 @@ describe('SubscriptionManager', () => {
     });
   });
 
+  describe('reconnectIfNeeded()', () => {
+    let wsServer: WS;
+    let defaultManager: SubscriptionManager;
+
+    beforeEach(() => {
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+    });
+
+    afterEach(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
+      WS.clean();
+    });
+
+    test('should be a no-op if WebSocket is connecting', async () => {
+      // WebSocket starts in CONNECTING state before the server accepts the connection
+      expect(defaultManager.getWebSocket().readyState).toStrictEqual(WebSocket.CONNECTING);
+
+      // Spy on reconnectWebSocket to verify it's not called
+      const reconnectSpy = vi.spyOn(defaultManager, 'reconnectWebSocket');
+
+      // Call reconnectIfNeeded - should return immediately without reconnecting
+      await defaultManager.reconnectIfNeeded();
+
+      // Verify reconnectWebSocket was NOT called
+      expect(reconnectSpy).not.toHaveBeenCalled();
+
+      // WebSocket should still be in CONNECTING state (unchanged)
+      expect(defaultManager.getWebSocket().readyState).toStrictEqual(WebSocket.CONNECTING);
+
+      reconnectSpy.mockRestore();
+    });
+  });
+
   describe('Scenarios', () => {
     let medplum: MockMedplumClient;
     let wsServer: WS;
@@ -788,7 +855,7 @@ describe('SubscriptionManager', () => {
 
     test("should warn when receiving notification for subscription we aren't expecting", async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       // @ts-expect-error We don't use defaultManager
       const _manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -855,7 +922,7 @@ describe('SubscriptionManager', () => {
 
     test('should emit `error` event when invalid message comes in over WebSocket', async () => {
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       await wsServer.connected;
 
@@ -897,7 +964,7 @@ describe('SubscriptionManager', () => {
       // TODO: Figure out why we are getting so many warnings around receiving messages for unknown subscriptions
       // This seems to happen only when running the whole test suite
       // In isolation, this console.warn mock reports 0 calls :thinking-face:
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('open', (event) => {
@@ -972,6 +1039,8 @@ describe('SubscriptionManager', () => {
         });
       });
 
+      // Old token should be unbound before new bind
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
       // Make sure we establish the subscription
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
       // Give some time to add subscription to list on client
@@ -1063,6 +1132,125 @@ describe('SubscriptionManager', () => {
       expect(receivedClose).toStrictEqual(false);
     });
 
+    test('should reconnect WebSocket and receive messages after closeWebSocket and addCriteria', async () => {
+      // This test reproduces the bug where calling closeWebSocket (e.g., when a component
+      // using useSubscription unmounts and criteria count goes to 0) prevents future
+      // subscriptions from working when addCriteria is called again (e.g., component remounts)
+
+      const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      await wsServer.connected;
+
+      const receivedEvent1 = await receivedEvent1Promise;
+      expect(receivedEvent1?.type).toStrictEqual('open');
+
+      // Step 1: Add criteria and verify subscription works
+      const receivedEvent2Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      const emitter1 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      const receivedEvent2 = await receivedEvent2Promise;
+      expect(receivedEvent2.type).toStrictEqual('connect');
+
+      // Verify we can receive messages
+      const receivedEvent3Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
+        emitter1.addEventListener('message', (event) => {
+          resolve(event);
+        });
+      });
+
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, Medplum!');
+
+      const receivedEvent3 = await receivedEvent3Promise;
+      expect(receivedEvent3.type).toStrictEqual('message');
+
+      // Step 2: Remove criteria and close WebSocket (simulating component unmount)
+      // Note: We listen on masterSubEmitter because removeCriteria removes the criteria entry
+      // from the map, so the close event won't be dispatched to emitter1
+      const receivedClosePromise = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('close', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Remove criteria and close WebSocket (this is what happens when useSubscription unmounts
+      // and the debounce timeout fires - criteria count goes to 0 and closeWebSocket is called)
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // Close the WebSocket (simulating what the client does when criteria count hits 0)
+      defaultManager.closeWebSocket();
+
+      const receivedClose = await receivedClosePromise;
+      expect(receivedClose?.type).toStrictEqual('close');
+
+      await wsServer.closed;
+      WS.clean();
+
+      // Step 3: Set up a new WebSocket server and add criteria again (simulating component remount)
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+
+      const receivedEvent4Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Add criteria again - this should trigger a reconnect
+      const emitter2 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      // BUG: Without the fix, the WebSocket won't reconnect because:
+      // 1. closeWebSocket() sets shouldReconnect = false on the ReconnectingWebSocket
+      // 2. subscribeToCriteria() returns early because ws.readyState is CLOSED
+      // The fix should call reconnectWebSocket() when adding criteria to a closed WebSocket
+
+      const receivedEvent4 = await receivedEvent4Promise;
+      expect(receivedEvent4?.type).toStrictEqual('open');
+
+      await wsServer.connected;
+
+      const receivedEvent5Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        emitter2.addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Verify we receive the bind message for the new subscription
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      await sleep(100);
+      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+
+      const receivedEvent5 = await receivedEvent5Promise;
+      expect(receivedEvent5.type).toStrictEqual('connect');
+
+      // Step 4: Verify we can receive messages on the new subscription
+      const receivedEvent6Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
+        emitter2.addEventListener('message', (event) => {
+          resolve(event);
+        });
+      });
+
+      await sendSubscriptionMessage(wsServer, medplum, SECOND_SUBSCRIPTION_ID, 'Hello again after reconnect!');
+
+      const receivedEvent6 = await receivedEvent6Promise;
+      expect(receivedEvent6.type).toStrictEqual('message');
+    }, 30000);
+
     test('should reconnect WebSocket and refresh subscriptions when profile changes', async () => {
       const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('open', (event) => {
@@ -1125,9 +1313,8 @@ describe('SubscriptionManager', () => {
 
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
 
-      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
-
-      // Set profile to a new profile
+      // Set profile to a new profile — triggers reconnect, which reuses the existing
+      // Subscription resource (subscriptionId is preserved across reconnects)
       medplum.setProfile({ resourceType: 'Practitioner', id: generateId() });
 
       const receivedEvent5 = await receivedEvent5Promise;
@@ -1142,9 +1329,11 @@ describe('SubscriptionManager', () => {
       const emitter2 = defaultManager.addCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
 
+      // Old token unbound before new bind on reconnect
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
       await sleep(100);
-      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       const receivedEvent6 = await receivedEvent6Promise;
       expect(receivedEvent6.type).toStrictEqual('connect');
@@ -1155,62 +1344,421 @@ describe('SubscriptionManager', () => {
         });
       });
 
-      await sendSubscriptionMessage(wsServer, medplum, SECOND_SUBSCRIPTION_ID, 'Hello, Medplum!');
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, Medplum!');
 
       const receivedEvent7 = await receivedEvent7Promise;
       expect(receivedEvent7.type).toStrictEqual('message');
+    });
+
+    test('should rebind subscription when token is about to expire', async () => {
+      console.warn = vi.fn();
+
+      const EXPIRING_TOKEN = 'expiring-token-123';
+      const REFRESHED_TOKEN = 'refreshed-token-456';
+
+      let tokenCallCount = 0;
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        tokenCallCount++;
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'token', valueString: tokenCallCount === 1 ? EXPIRING_TOKEN : REFRESHED_TOKEN },
+            {
+              name: 'expiration',
+              // First call: token expires within WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS, triggering rebind
+              // Second call: token expires far in the future
+              valueDateTime:
+                tokenCallCount === 1
+                  ? new Date(Date.now() + WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS / 2).toISOString()
+                  : new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+          ],
+        } as Parameters;
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 60_000,
+      });
+
+      // Wait for this manager's WebSocket to open
+      await new Promise<void>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', () => resolve());
+      });
+
+      const emitter = manager.addCriteria('Communication');
+
+      // Set up connect listener before sending handshake (events fire synchronously)
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+
+      // Should receive initial bind with the expiring token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: EXPIRING_TOKEN } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      await connectPromise;
+
+      // Wait for the token refresh interval to fire and trigger rebind
+      await sleep(300);
+
+      // Should have rebound with the refreshed token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: REFRESHED_TOKEN } });
+
+      expect(tokenCallCount).toBe(2);
+
+      manager.closeWebSocket();
+    });
+
+    test('should emit error on master emitter when rebindCriteriaEntry rejects during token refresh', async () => {
+      const EXPIRING_TOKEN = 'expiring-token-123';
+
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'token', valueString: EXPIRING_TOKEN },
+            {
+              name: 'expiration',
+              // Token expires within the grace period so checkTokenExpirations triggers a rebind
+              valueDateTime: new Date(Date.now() + WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS / 2).toISOString(),
+            },
+            { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+          ],
+        } as Parameters;
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 60_000,
+      });
+
+      await new Promise<void>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', () => resolve());
+      });
+
+      const emitter = manager.addCriteria('Communication');
+
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: EXPIRING_TOKEN } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Mock rebindCriteriaEntry to reject so the outer .catch in checkTokenExpirations fires
+      const rebindError = new Error('Unexpected rebind failure');
+      vi.spyOn(manager as any, 'rebindCriteriaEntry').mockRejectedValueOnce(rebindError);
+
+      const errorEventPromise = new Promise<SubscriptionEventMap['error']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('error', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Wait for the token refresh interval (mocked to 150ms) to fire
+      await sleep(300);
+
+      const errorEvent = await errorEventPromise;
+      expect(errorEvent.type).toStrictEqual('error');
+      expect(errorEvent.payload).toBe(rebindError);
+
+      manager.closeWebSocket();
+    });
+
+    test('should restore pending entry when re-subscribing during in-flight subscribe', async () => {
+      await wsServer.connected;
+
+      // Defer the first createResource call so we can remove the criteria while the subscribe is in-flight.
+      let resolveFirstCreate!: (value: { id: string }) => void;
+      const createSpy = vi.spyOn(medplum, 'createResource').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirstCreate = resolve as (value: { id: string }) => void;
+          })
+      );
+
+      // 1. addCriteria kicks off subscribeToCriteria → rebindCriteriaEntry → createResource (deferred)
+      const emitter1 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      // 2. Remove while the first subscribe is still in-flight — refCount drops to 0
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // 3. Re-subscribe — rescues the entry (same emitter), kicks off a fresh subscribe
+      const emitter2 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+      expect(emitter2).toBe(emitter1);
+
+      // 4. Resolve the deferred createResource — first rebind detects generation mismatch
+      //    and bails, but the second rebind (from step 3) completes normally
+      resolveFirstCreate({ id: MOCK_SUBSCRIPTION_ID });
+      await sleep(0);
+
+      // The second subscribe chain completes → sends bind-with-token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+
+      // 5. Send handshake → state transitions to 'active'
+      const connectPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        emitter2.addEventListener('connect', (event) => resolve(event));
+      });
+
+      await sleep(100);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      const connectEvent = await connectPromise;
+      expect(connectEvent.type).toStrictEqual('connect');
+      expect(connectEvent.payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+
+      // Verify the entry reached 'active' with the correct subscription
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
+        string,
+        { state: CriteriaState; token: string }
+      >;
+      const entry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
+      expect(entry).toBeDefined();
+      expect(entry?.state).toStrictEqual('active');
+      expect(entry?.token).toStrictEqual('token-123');
+
+      createSpy.mockRestore();
+    });
+
+    test('should unbind both old and new tokens when removeCriteria races with token refresh', async () => {
+      const INITIAL_TOKEN = 'initial-token';
+      const REFRESH_TOKEN = 'refresh-token';
+
+      let tokenCallCount = 0;
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        tokenCallCount++;
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'token', valueString: tokenCallCount === 1 ? INITIAL_TOKEN : REFRESH_TOKEN },
+            {
+              name: 'expiration',
+              // First call: token that will trigger refresh on next check
+              // Second call: normal long expiry
+              valueDateTime:
+                tokenCallCount === 1
+                  ? new Date(Date.now() + WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS / 2).toISOString()
+                  : new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+          ],
+        } as Parameters;
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 60_000,
+      });
+
+      await new Promise<void>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', () => resolve());
+      });
+
+      // Subscribe and wait until fully active
+      const emitter = manager.addCriteria('Communication');
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: INITIAL_TOKEN } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Intercept the refresh's $get-ws-binding-token call with a deferred promise.
+      // During a refresh, subscriptionId is already set so createResource is skipped —
+      // medplum.get is the first async gap.
+      let resolveRefreshGet!: (value: Parameters) => void;
+      const getSpy = vi.spyOn(medplum, 'get').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRefreshGet = resolve as (value: Parameters) => void;
+          }) as any
+      );
+
+      // Trigger the token refresh by advancing past the refresh interval
+      await sleep(300);
+
+      // removeCriteria while refresh is in-flight — the INITIAL_TOKEN will be unbound
+      // when the GC timer finalizes the unreferenced entry
+      manager.removeCriteria('Communication');
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: INITIAL_TOKEN } });
+
+      // Resolve the deferred $get-ws-binding-token — should detect refCount=0 (stale) and
+      // bail without binding or unbinding (the token was never bound, so the server has
+      // no active entry for it — unbinding is unnecessary)
+      resolveRefreshGet({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'token', valueString: REFRESH_TOKEN },
+          { name: 'expiration', valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString() },
+          { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+        ],
+      } as Parameters);
+      await sleep(0);
+
+      // Entry fully removed, nothing left in the lookup
+      const entriesBySubId = (manager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
+      expect(entriesBySubId.size).toStrictEqual(0);
+
+      getSpy.mockRestore();
+      manager.closeWebSocket();
+    });
+
+    test('should delay unbind and allow re-subscription to rescue entry during grace period', async () => {
+      await wsServer.connected;
+
+      const emitter = defaultManager.addCriteria('Communication');
+
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Remove criteria — refCount drops to 0, no immediate unbind
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // Verify the entry is marked for GC (refCount 0 with lastUnrefTime set)
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
+        string,
+        { refCount: number; lastUnrefTime?: number }
+      >;
+      const pendingEntry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
+      expect(pendingEntry).toBeDefined();
+      expect(pendingEntry?.refCount).toStrictEqual(0);
+      expect(pendingEntry?.lastUnrefTime).toBeDefined();
+
+      // Re-subscribe within the grace period — should rescue the entry
+      const restoredEmitter = defaultManager.addCriteria('Communication');
+      expect(restoredEmitter).toBe(emitter);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+      expect(pendingEntry?.refCount).toStrictEqual(1);
+      expect(pendingEntry?.lastUnrefTime).toBeUndefined();
+
+      // Wait past the delay — no unbind should be sent since the entry was rescued
+      await sleep(100);
+
+      // Entry should still be active, no unbind sent
+      const entry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
+      expect(entry).toBeDefined();
+      expect((entry as any)?.state).toStrictEqual('active');
+    });
+
+    test('should finalize unreferenced entry after grace period expires', async () => {
+      await wsServer.connected;
+
+      const emitter = defaultManager.addCriteria('Communication');
+
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Remove criteria — refCount drops to 0
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // Wait for the GC grace period to expire (mocked to 50ms)
+      await sleep(100);
+
+      // Entry should now be fully removed — unbind sent
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
+
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
+      expect(entriesBySubId.has(MOCK_SUBSCRIPTION_ID)).toStrictEqual(false);
+    });
+
+    test('should return same emitter with subscriptionProps when restoring pending entry', async () => {
+      await wsServer.connected;
+
+      const props: Partial<Subscription> = {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      };
+
+      const emitter = defaultManager.addCriteria('Communication', props);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      defaultManager.removeCriteria('Communication', props);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      const restoredEmitter = defaultManager.addCriteria('Communication', props);
+      expect(restoredEmitter).toBe(emitter);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
     });
   });
 });
 
 describe('resourceMatchesSubscriptionCriteria', () => {
-  test('should return true for a resource that matches the criteria', async () => {
-    const subscription: Subscription = {
-      resourceType: 'Subscription',
-      status: 'active',
-      reason: 'test subscription',
-      criteria: 'Communication',
-      channel: {
+  test.each([
+    [
+      {
         type: 'rest-hook',
         endpoint: 'Bot/123',
       },
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
-          valueString: '%previous.status = "in-progress" and %current.status = "completed"',
-        },
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-          valueCode: 'update',
-        },
-      ],
-    };
+      true,
+    ],
+    [{ type: 'websocket' }, true],
+    [{ type: 'email' }, false],
+    [{ type: 'message' }, false],
+    [{ type: 'sms' }, false],
+  ] as [SubscriptionChannel, boolean][])(
+    'should return true for a resource that matches the criteria with channel %j',
+    async (subChannel, expectedMatch) => {
+      const subscription: Subscription = {
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'test subscription',
+        criteria: 'Communication',
+        channel: subChannel,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+            valueString: '%previous.status = "in-progress" and %current.status = "completed"',
+          },
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'update',
+          },
+        ],
+      };
 
-    const result1 = await resourceMatchesSubscriptionCriteria({
-      resource: {
-        resourceType: 'Communication',
-        status: 'in-progress',
-      },
-      subscription,
-      context: { interaction: 'create' },
-      getPreviousResource: async () => undefined,
-    });
-    expect(result1).toBe(false);
+      const result1 = await resourceMatchesSubscriptionCriteria({
+        resource: {
+          resourceType: 'Communication',
+          status: 'in-progress',
+        },
+        subscription,
+        context: { interaction: 'create' },
+        getPreviousResource: async () => undefined,
+      });
+      expect(result1).toBe(false);
 
-    const result2 = await resourceMatchesSubscriptionCriteria({
-      resource: {
-        resourceType: 'Communication',
-        status: 'completed',
-      },
-      subscription,
-      context: { interaction: 'update' },
-      getPreviousResource: async () => ({
-        resourceType: 'Communication',
-        status: 'in-progress',
-      }),
-    });
-    expect(result2).toBe(true);
-  });
+      const result2 = await resourceMatchesSubscriptionCriteria({
+        resource: {
+          resourceType: 'Communication',
+          status: 'completed',
+        },
+        subscription,
+        context: { interaction: 'update' },
+        getPreviousResource: async () => ({
+          resourceType: 'Communication',
+          status: 'in-progress',
+        }),
+      });
+      expect(result2).toBe(expectedMatch);
+    }
+  );
 
   describe('Account matching logic', () => {
     const ORGANIZATION_ONE = { reference: 'Organization/123' };
@@ -1371,7 +1919,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         shouldMatch: false,
       },
     ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
-      const log = jest.fn();
+      const log = vi.fn();
 
       const subscription: Subscription = {
         id: '123',

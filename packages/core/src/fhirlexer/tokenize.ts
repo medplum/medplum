@@ -187,7 +187,7 @@ export class Tokenizer {
         this.advance();
         this.advance();
         this.advance();
-        return String.fromCodePoint(parseInt(hex, 16));
+        return String.fromCodePoint(Number.parseInt(hex, 16));
       }
       // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
       // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
@@ -268,17 +268,20 @@ export class Tokenizer {
       this.consumeWhile(() => /\d/.exec(this.curr()));
     }
 
-    if (this.curr() === '-' && this.dateTimeLiterals) {
+    const terminal = this.curr();
+    if (terminal === '-' && this.dateTimeLiterals) {
       // Rewind to one character before the start, and then treat as dateTime literal.
       this.pos.index = start - 1;
       return this.consumeDateTime();
-    }
-
-    if (this.curr() === ' ') {
+    } else if (terminal === ' ') {
       if (isUnitToken(this.peekToken())) {
         id = 'Quantity';
         this.consumeToken();
       }
+    } else if (terminal && /[a-zA-Z_$]/.exec(terminal)) {
+      // This cannot be a number, fall back to parsing as string
+      this.pos.index = start - 1;
+      return this.consumeString(' ');
     }
 
     return this.buildToken(id, this.str.substring(start, this.pos.index));

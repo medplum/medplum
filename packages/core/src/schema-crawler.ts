@@ -127,7 +127,7 @@ export class SchemaCrawler {
   }
 
   private get elementsContext(): ElementsContextType {
-    return this.elementsContextStack[this.elementsContextStack.length - 1];
+    return this.elementsContextStack.at(-1) as ElementsContextType;
   }
 
   crawlElement(element: InternalSchemaElement, key: string, path: string): void {

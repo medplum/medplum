@@ -1,0 +1,43 @@
+.header {
+  background-color: var(--mantine-color-blue-0);
+}
+
+[data-mantine-color-scheme="dark"] .header {
+  background-color: var(--mantine-color-dark-6);
+}
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--mantine-spacing-md);
+}
+
+@media (max-width: 600px) {
+  .vitalsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vitalCard {
+  text-align: center;
+}
+
+.vitalValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--mantine-color-blue-7);
+  line-height: 1.2;
+}
+
+.vitalUnit {
+  font-size: 0.75rem;
+  color: var(--mantine-color-gray-6);
+}
+
+.vitalLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mantine-color-gray-5);
+  margin-bottom: 4px;
+}

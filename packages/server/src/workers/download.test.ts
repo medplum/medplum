@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { Media } from '@medplum/fhirtypes';
-import type { Job } from 'bullmq';
+import type { DocumentReference, Media } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
@@ -10,7 +9,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import { execDownloadJob, getDownloadQueue } from './download';
+import { findAndExecDownloadJob, mockFetchResponse } from './test-utils';
 
 jest.mock('node-fetch');
 
@@ -38,9 +37,6 @@ describe('Download Worker', () => {
       async () => {
         const url = 'https://example.com/download';
 
-        const queue = getDownloadQueue() as any;
-        queue.add.mockClear();
-
         const media = await repo.createResource<Media>({
           resourceType: 'Media',
           status: 'completed',
@@ -50,7 +46,6 @@ describe('Download Worker', () => {
           },
         });
         expect(media).toBeDefined();
-        expect(queue.add).toHaveBeenCalled();
 
         const body = new Readable();
         body.push('foo');
@@ -69,8 +64,7 @@ describe('Download Worker', () => {
           body,
         }));
 
-        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-        await execDownloadJob(job);
+        await findAndExecDownloadJob(media, 'create');
 
         expect(fetch).toHaveBeenCalledWith(url, {
           headers: {
@@ -78,15 +72,16 @@ describe('Download Worker', () => {
             traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
           },
         });
+
+        const updatedMedia = await repo.readResource<Media>('Media', media.id);
+        expect(updatedMedia.content?.url).toMatch(/^Binary\//);
+        expect(updatedMedia.meta?.author?.reference).toBe('system');
       },
       { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
     ));
 
   test('Ignore media missing URL', () =>
     withTestContext(async () => {
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -96,14 +91,11 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore HTTP URL', () =>
     withTestContext(async () => {
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -113,16 +105,13 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Retry on 400', () =>
     withTestContext(async () => {
       const url = 'https://example.com/download';
 
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -132,23 +121,20 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 400 }));
+      (fetch as unknown as jest.Mock)
+        .mockImplementationOnce(() => mockFetchResponse(400, 'Bad Request'))
+        .mockImplementationOnce(() => mockFetchResponse(200, ''));
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-
-      // If the job throws, then the QueueScheduler will retry
-      await expect(execDownloadJob(job)).rejects.toThrow();
+      const jobs = await findAndExecDownloadJob(media, 'create');
+      expect(jobs).toHaveLength(2);
+      expect(fetch).toHaveBeenCalledTimes(2);
     }));
 
   test('Retry on exception', () =>
     withTestContext(async () => {
       const url = 'https://example.com/download';
 
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -158,23 +144,20 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => {
-        throw new Error();
-      });
+      (fetch as unknown as jest.Mock)
+        .mockImplementationOnce(() => {
+          throw new Error();
+        })
+        .mockImplementationOnce(() => mockFetchResponse(200, ''));
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-
-      // If the job throws, then the QueueScheduler will retry
-      await expect(execDownloadJob(job)).rejects.toThrow();
+      const jobs = await findAndExecDownloadJob(media, 'create');
+      expect(jobs).toHaveLength(2);
+      expect(fetch).toHaveBeenCalledTimes(2);
     }));
 
   test('Stop retries if Resource deleted', () =>
     withTestContext(async () => {
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -184,14 +167,11 @@ describe('Download Worker', () => {
         },
       });
 
-      expect(queue.add).toHaveBeenCalled();
-
       // At this point the job should be in the queue
       // But let's delete the resource
       await repo.deleteResource('Media', media.id);
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execDownloadJob(job);
+      await findAndExecDownloadJob(media, 'create');
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
@@ -199,9 +179,6 @@ describe('Download Worker', () => {
 
   test('Stop if URL changed', () =>
     withTestContext(async () => {
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -211,7 +188,6 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
 
       // At this point the job should be in the queue
       // But let's change the URL to an internal Binary resource
@@ -223,8 +199,7 @@ describe('Download Worker', () => {
         },
       });
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execDownloadJob(job);
+      await findAndExecDownloadJob(media, 'create');
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
@@ -235,9 +210,6 @@ describe('Download Worker', () => {
       const config = getConfig();
       config.autoDownloadEnabled = false;
 
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -247,7 +219,7 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore if disabled in project', () =>
@@ -264,9 +236,6 @@ describe('Download Worker', () => {
         },
       });
 
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -276,7 +245,7 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore if matches URL prefix', () =>
@@ -293,9 +262,6 @@ describe('Download Worker', () => {
         },
       });
 
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media1 = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -305,7 +271,7 @@ describe('Download Worker', () => {
         },
       });
       expect(media1).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      await expect(findAndExecDownloadJob(media1, 'create')).rejects.toThrow('Job not found');
 
       // Ensure that other URLs still work
       const media2 = await repo.createResource<Media>({
@@ -317,7 +283,7 @@ describe('Download Worker', () => {
         },
       });
       expect(media2).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
+      await findAndExecDownloadJob(media2, 'create');
     }));
 
   test('Ignore if does not match allowed URL prefix', () =>
@@ -334,9 +300,6 @@ describe('Download Worker', () => {
         },
       });
 
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
-
       const media1 = await repo.createResource<Media>({
         resourceType: 'Media',
         status: 'completed',
@@ -346,7 +309,7 @@ describe('Download Worker', () => {
         },
       });
       expect(media1).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      await expect(findAndExecDownloadJob(media1, 'create')).rejects.toThrow('Job not found');
 
       // Ensure that other URLs still work
       const media2 = await repo.createResource<Media>({
@@ -358,15 +321,12 @@ describe('Download Worker', () => {
         },
       });
       expect(media2).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
+      await findAndExecDownloadJob(media2, 'create');
     }));
 
   test('Stop retries if auto download disabled', () =>
     withTestContext(async () => {
       const { project, repo } = await createTestProject({ withRepo: true });
-
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
 
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
@@ -377,7 +337,6 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
 
       // At this point the job should be in the queue
       // But let's disable auto download in the project
@@ -386,19 +345,114 @@ describe('Download Worker', () => {
         setting: [{ name: 'autoDownloadEnabled', valueBoolean: false }],
       });
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execDownloadJob(job);
+      await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
     }));
 
+  test('Does not enqueue when mutating non-URL fields', () =>
+    withTestContext(async () => {
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      await findAndExecDownloadJob(media, 'create');
+
+      await repo.updateResource<Media>({
+        ...media,
+        status: 'in-progress',
+      });
+
+      await findAndExecDownloadJob(media, 'update');
+    }));
+
+  test('Updates only matching attachment paths', () =>
+    withTestContext(async () => {
+      const firstUrl = 'https://example.com/download-1';
+      const secondUrl = 'https://example.com/download-2';
+
+      const doc = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              contentType: ContentType.TEXT,
+              url: firstUrl,
+            },
+          },
+          {
+            attachment: {
+              contentType: ContentType.TEXT,
+              url: secondUrl,
+            },
+          },
+        ],
+      });
+      expect(doc).toBeDefined();
+
+      const body1 = new Readable();
+      body1.push('foo1');
+      body1.push(null);
+
+      const body2 = new Readable();
+      body2.push('foo2');
+      body2.push(null);
+
+      (fetch as unknown as jest.Mock).mockImplementation((url: string) =>
+        url === firstUrl
+          ? {
+              status: 200,
+              headers: {
+                get(name: string): string | undefined {
+                  return {
+                    'content-disposition': 'attachment; filename=download-1',
+                    'content-type': ContentType.TEXT,
+                  }[name];
+                },
+              },
+              body: body1,
+            }
+          : {
+              status: 200,
+              headers: {
+                get(name: string): string | undefined {
+                  return {
+                    'content-disposition': 'attachment; filename=download-2',
+                    'content-type': ContentType.TEXT,
+                  }[name];
+                },
+              },
+              body: body2,
+            }
+      );
+
+      const jobs1 = await findAndExecDownloadJob(doc, 'create', firstUrl);
+      expect(jobs1).toHaveLength(1);
+
+      const afterFirstDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
+      expect(afterFirstDownload.content?.[0]?.attachment?.url).toMatch(/^Binary\//);
+      expect(afterFirstDownload.content?.[1]?.attachment?.url).toBe(secondUrl);
+      expect(afterFirstDownload.meta?.author?.reference).toBe('system');
+
+      const jobs2 = await findAndExecDownloadJob(doc, 'create', secondUrl);
+      expect(jobs2).toHaveLength(1);
+
+      const afterSecondDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
+      expect(afterSecondDownload.content?.[0]?.attachment?.url).toBe(afterFirstDownload.content[0].attachment.url);
+      expect(afterSecondDownload.content?.[1]?.attachment?.url).toMatch(/^Binary\//);
+      expect(afterSecondDownload.meta?.author?.reference).toBe('system');
+    }));
+
   test('Stop retries if auto download disabled', () =>
     withTestContext(async () => {
       const { project, repo } = await createTestProject({ withRepo: true });
-
-      const queue = getDownloadQueue() as any;
-      queue.add.mockClear();
 
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
@@ -409,7 +463,6 @@ describe('Download Worker', () => {
         },
       });
       expect(media).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
 
       // At this point the job should be in the queue
       // But let's disable auto download in the project
@@ -418,8 +471,7 @@ describe('Download Worker', () => {
         setting: [{ name: 'autoDownloadIgnoredUrlPrefixes', valueString: 'https://example.com' }],
       });
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execDownloadJob(job);
+      await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();

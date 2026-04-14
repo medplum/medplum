@@ -7,6 +7,8 @@ import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
+import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import { getIssuesForExpression } from '../utils/outcomes';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
 
@@ -41,15 +43,17 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
       medplum
         .processCode(response.code)
         .then(() => onSuccess())
-        .catch(console.log);
+        .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     } else if (response.login) {
       setLogin(response.login);
     }
   }
 
+  const issues = getIssuesForExpression(outcome, undefined);
+
   return (
-    <Document width={450}>
-      {outcome && <pre>{JSON.stringify(outcome, null, 2)}</pre>}
+    <Document width={400} px="xl" py="xl" bdrs="md">
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       {!login && (
         <NewUserForm
           projectId={projectId as string}

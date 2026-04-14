@@ -1,21 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
+import {
+  badRequest,
+  ContentType,
+  parseLogLevel,
+  unsupportedMediaType,
+  warnIfNewerVersionAvailable,
+} from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import { json, Router, text, urlencoded } from 'express';
-import { rmSync } from 'fs';
-import http from 'http';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { rmSync } from 'node:fs';
+import http from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { adminRouter } from './admin/routes';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
+import { cdsRouter } from './cds/routes';
 import { getConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
-import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
+import {
+  attachRequestContext,
+  AuthenticatedRequestContext,
+  closeRequestContext,
+  tryGetRequestContext,
+} from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
@@ -25,7 +37,7 @@ import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
-import { healthcheckHandler } from './healthcheck';
+import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
@@ -39,16 +51,15 @@ import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
-import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
-import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { closeWebSockets, initWebSockets } from './ws/routes';
 
 let server: http.Server | undefined = undefined;
 
@@ -141,6 +152,15 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('Stream not readable'));
     return;
   }
+  if (err.name === 'UnsupportedMediaTypeError') {
+    sendOutcome(res, unsupportedMediaType);
+    return;
+  }
+  if (err instanceof URIError && 'status' in err && err.status === 400) {
+    // the router package sets err.status to 400 when decodeURIComponent throws a URIError
+    sendOutcome(res, badRequest(err.message));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
@@ -156,6 +176,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
   await initAppServices(config);
   server = http.createServer(app);
+  server.on('connect', (req, socket) => {
+    socket.write('HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+    socket.end();
+  });
   initWebSockets(server);
 
   app.set('etag', false);
@@ -164,13 +188,11 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(standardHeaders);
   app.use(cors(corsOptions));
   app.use(compression());
-  app.use(attachRequestContext);
 
-  // Add logging middleware immediately after setting up request context, to ensure that
-  // any errors in later middleware don't skip the request logging
   if (config.logRequests) {
     app.use(loggingMiddleware);
   }
+  app.use(attachRequestContext);
 
   app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
@@ -196,6 +218,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);
   apiRouter.use('/auth/', authRouter);
+  apiRouter.use('/cds-services/', cdsRouter);
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);
@@ -217,26 +240,24 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export function initAppServices(config: MedplumServerConfig): Promise<void> {
+export async function initAppServices(config: MedplumServerConfig): Promise<void> {
   loadStructureDefinitions();
-  initRedis(config.redis);
-
-  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    await initDatabase(config);
-    await seedDatabase();
-    await initKeys(config);
-    initBinaryStorage(config.binaryStorage);
-    initWorkers(config);
-    initHeartbeat(config);
-    initOtelHeartbeat();
-    initServerRegistryHeartbeatListener();
-    await maybeAutoRunPendingPostDeployMigration();
-  });
+  initRedis(config);
+  await initDatabase(config);
+  initWorkers(config);
+  await seedDatabase(config);
+  await initKeys(config);
+  initBinaryStorage(config.binaryStorage);
+  initHeartbeat(config);
+  initOtelHeartbeat();
+  initServerRegistryHeartbeatListener();
+  await maybeAutoRunPendingPostDeployMigration();
 }
 
 export async function shutdownApp(): Promise<void> {
   cleanupOtelHeartbeat();
   cleanupHeartbeat();
+  cleanupReservedDatabaseConnections();
   await closeWebSockets();
   if (server) {
     await new Promise((resolve) => {
@@ -258,13 +279,12 @@ export async function shutdownApp(): Promise<void> {
 }
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  const ctx = getRequestContext();
   const start = new Date();
 
   res.on('close', () => {
+    const ctx = tryGetRequestContext();
     const duration = Date.now() - start.valueOf();
-
-    ctx.logger.info('Request served', {
+    getLogger().info('Request served', {
       durationMs: duration,
       ip: req.ip,
       method: req.method,

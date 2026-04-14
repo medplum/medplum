@@ -1,5 +1,7 @@
 # Labs & Imaging
 
+Lab orders and imaging results in FHIR follow a request-and-report pattern. A [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) represents the order, and a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) captures the results. Individual measurements are stored as [`Observation`](/docs/api/fhir/resources/observation) resources linked to the report.
+
 ```mermaid
 
 flowchart RL
@@ -38,7 +40,29 @@ flowchart RL
 
 | **Code System**                                                | **Description**                                                                                  |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Speciment`](/docs/api/fhir/resources/specimen) resource. |
+| [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Specimen`](/docs/api/fhir/resources/specimen) resource. |
 | [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
 | [SNOMED](https://www.snomed.org/)                              | Used to define [`Specimen`](/docs/api/fhir/resources/specimen) types and retrieval methods.      |
-| [LOINC](https://www.medplum.com/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
+| [LOINC](/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
+
+## Workflow Guides
+
+- [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging) — end-to-end ordering workflow including CPOE, `ServiceRequest` lifecycle, and logistics
+- [Results and Review](/docs/labs-imaging/results-and-review) — receiving, structuring, and interpreting diagnostic results
+
+## Configuration
+
+Catalog and coding setup for diagnostic ordering is covered under Clinical Configuration:
+
+- [Diagnostic Catalog](/docs/careplans/diagnostic-catalog) — defining test menus, panels, specimen requirements, and administrative resources (`ObservationDefinition`, `SpecimenDefinition`, `ActivityDefinition`, `PlanDefinition`)
+- [Observation Reference Ranges](/docs/careplans/reference-ranges) — configuring reference, critical, and absolute value ranges for observations
+- [LOINC Codes](/docs/careplans/loinc) — standardized coding for laboratory, clinical, and imaging observations
+
+## Integrations
+
+Medplum is provider-agnostic and supports connecting to lab and imaging providers of all types. The [Health Gorilla](/docs/integration/health-gorilla) integration is the most commonly used, providing:
+
+- [Sending Orders](/docs/integration/health-gorilla/sending-orders) — React components, bot-based order transmission, and AOE handling
+- [Receiving Results](/docs/integration/health-gorilla/receiving-results) — structured FHIR result synchronization from Quest, Labcorp, and regional labs
+
+For organizations connecting directly to a performing lab, see the [HL7 Interface](/docs/integration/hl7-interfacing) and [On-Prem Agent](/docs/agent) docs.

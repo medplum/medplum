@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10 } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import { CPT, EMPTY, getCodeBySystem, getIdentifier, getReferenceString, ICD10 } from '@medplum/core';
 import type {
   Address,
   Coverage,
@@ -134,7 +134,7 @@ async function submitCandidEncounter(candidCodedEncounter: any, apiKey: string, 
     headers: { 'Content-Type': 'application/json' },
   });
 
-  const bearerToken = ((await authResponse.json()) as any).access_token;
+  const bearerToken = (await authResponse.json()).access_token;
 
   // Send the CodedEncounter
   const encounterResponse = await fetch(CANDID_API_URL + '/coded_encounters', {
@@ -191,7 +191,7 @@ function convertInsuranceCard(coverage: Coverage | undefined): object | undefine
 
 // Convert the Coverage.type field to the Candid Health Source of Payment code
 // Assume the that coverage is the in the standard [NAHDO Source of Payment Typology](https://www.nahdo.org/sopt)
-function convertCoverageType(coverageType: Coverage['type'] | undefined): string {
+function convertCoverageType(coverageType: Coverage['type']): string {
   if (!coverageType) {
     return 'not_given';
   }
@@ -301,12 +301,7 @@ function convertCoverageType(coverageType: Coverage['type'] | undefined): string
 // Assume that the diagnosis is represented as a Cove
 function convertDiagnoses(encounter: Encounter): any[] {
   const result: any[] = [];
-
-  if (!encounter.reasonCode) {
-    return result;
-  }
-
-  for (const reason of encounter.reasonCode) {
+  for (const reason of encounter.reasonCode ?? EMPTY) {
     const code = reason.coding?.find((c) => c.system === ICD10);
     if (code) {
       result.push({
@@ -335,7 +330,7 @@ function convertAddress(address: Address | undefined): object | undefined {
   };
 }
 
-function convertGender(fhirGender: Patient['gender'] | undefined): string {
+function convertGender(fhirGender: Patient['gender']): string {
   if (!fhirGender) {
     return 'not_given';
   }

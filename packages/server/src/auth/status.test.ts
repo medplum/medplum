@@ -7,12 +7,12 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 
 describe('Status', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let user: User;
 
   beforeAll(async () => {

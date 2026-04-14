@@ -15,3 +15,16 @@ import type { ProjectMembership } from '@medplum/fhirtypes';
 export function hasDoseSpotIdentifier(membership: ProjectMembership | undefined): boolean {
   return !!membership?.identifier?.some((i) => i.system?.includes('dosespot'));
 }
+
+/**
+ * Returns true if the profile has a ScriptSure identifier.
+ *
+ * Uses the same pattern as DoseSpot — checks for a ScriptSure platform URL
+ * in the membership identifiers, indicating the user is enrolled.
+ *
+ * @param membership - The current user's project membership.
+ * @returns True if the profile has a ScriptSure identifier.
+ */
+export function hasScriptSureIdentifier(membership: ProjectMembership | undefined): boolean {
+  return !!membership?.identifier?.some((i) => i.system?.includes('scriptsure'));
+}

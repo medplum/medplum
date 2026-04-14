@@ -51,7 +51,7 @@ export function ask(text: string, defaultValue: string | number = ''): Promise<s
  */
 export async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
   const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     const answer = (await ask(str)) || defaultValue;
     if (options.includes(answer)) {
@@ -69,7 +69,7 @@ export async function choose(text: string, options: (string | number)[], default
  * @returns The selected value, or default value on empty selection.
  */
 export async function chooseInt(text: string, options: number[], defaultValue: number): Promise<number> {
-  return parseInt(
+  return Number.parseInt(
     await choose(
       text,
       options.map((o) => o.toString()),

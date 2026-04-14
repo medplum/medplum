@@ -44,7 +44,7 @@ aws lambda publish-layer-version \
   --layer-name "$BOT_LAYER_NAME" \
   --description "Medplum Bot Layer" \
   --license-info "Apache-2.0" \
-  --compatible-runtimes "nodejs20.x" \
+  --compatible-runtimes "nodejs22.x" \
   --zip-file fileb://medplum-bot-layer.zip
 
 # Pop back to original directory

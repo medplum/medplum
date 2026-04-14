@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -xe
+
 PACKAGES=(
   "agent"
   "app"
@@ -11,6 +13,7 @@ PACKAGES=(
   "core"
   "create-medplum"
   "definitions"
+  "dosespot-core"
   "dosespot-react"
   "eslint-config"
   "fhir-router"

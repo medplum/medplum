@@ -81,7 +81,9 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-EXCLUDE=""
+# ioredis - v5.9.x broke BullMQ, holding off on updating until late Jan 2026
+# pdfmake, @types/pdfmake - v0.3.x introduced breaking changes to the API
+EXCLUDE="ioredis pdfmake @types/pdfmake"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
@@ -89,18 +91,17 @@ if [ -n "$ADDITIONAL_EXCLUDES" ]; then
     EXCLUDE="$EXCLUDE $ADDITIONAL_EXCLUDES"
 fi
 
-# @mantine/* - Holding back Mantine 8 until Medplum 5
-# @storybook/* - Holding back Storybook 9 until Medplum 5
-# storybook-mantine-addon - Holding back until Mantine 8 is released
 # @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
-# eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
+# eslint - version 10 is incompatible with some plugins we use, holding back until we can upgrade all at once and test
 # hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@mantine/* @storybook/* @types/node commander eslint hibp jose node-fetch npm storybook storybook-* zod uuid"
+# otplib - version 13+ requires ESM, holding back until server supports ESM
+# temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp jose node-fetch npm zod uuid otplib temporal-polyfill"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -128,7 +129,7 @@ set +e
 gh pr view
 PR_VIEW_EXIT_CODE=$?
 
-# Set the -e flag back 
+# Set the -e flag back
 set -e
 
 if [ "$PR_VIEW_EXIT_CODE" -ne 0 ]; then
@@ -153,7 +154,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target greatest --pre 0 --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then

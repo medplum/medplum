@@ -19,11 +19,13 @@ export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Log
  * accessible to project administrators.
  */
 export const projectAdminResourceTypes = [
-  'PasswordChangeRequest',
-  'UserSecurityRequest',
+  'Package',
+  'PackageRelease',
+  'PackageInstallation',
   'Project',
   'ProjectMembership',
   'User',
+  'UserSecurityRequest',
 ];
 
 /**

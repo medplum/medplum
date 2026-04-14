@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "4.5.1",
+  "version": "5.1.7",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -17,7 +17,7 @@
     "build": "npm run copy-core-docs && docusaurus build",
     "clean": "docusaurus clear",
     "clear": "docusaurus clear",
-    "copy-core-docs": "rm -rf docs/sdk && node markdown-to-mdx.cjs ../core/dist/docs docs/sdk",
+    "copy-core-docs": "rm -rf docs/sdk && node markdown-to-mdx.mjs ../core/dist/docs docs/sdk",
     "deploy": "docusaurus deploy",
     "docusaurus": "docusaurus",
     "serve": "docusaurus serve",
@@ -40,32 +40,34 @@
     ]
   },
   "devDependencies": {
-    "@docusaurus/core": "3.8.1",
-    "@docusaurus/faster": "3.8.1",
-    "@docusaurus/module-type-aliases": "3.8.1",
-    "@docusaurus/preset-classic": "3.8.1",
-    "@docusaurus/theme-mermaid": "3.8.1",
-    "@docusaurus/tsconfig": "3.8.1",
-    "@docusaurus/types": "3.8.1",
+    "@docusaurus/core": "3.10.0",
+    "@docusaurus/faster": "3.10.0",
+    "@docusaurus/module-type-aliases": "3.10.0",
+    "@docusaurus/plugin-client-redirects": "3.10.0",
+    "@docusaurus/preset-classic": "3.10.0",
+    "@docusaurus/theme-mermaid": "3.10.0",
+    "@docusaurus/tsconfig": "3.10.0",
+    "@docusaurus/types": "3.10.0",
     "@mdx-js/react": "3.1.1",
-    "@medplum/core": "4.5.1",
-    "@medplum/fhirtypes": "4.5.1",
-    "@medplum/mock": "4.5.1",
+    "@medplum/core": "5.1.7",
+    "@medplum/fhirtypes": "5.1.7",
+    "@medplum/mock": "5.1.7",
     "@svgr/webpack": "8.1.0",
+    "@tabler/icons-react": "3.41.1",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
     "open-color": "1.9.1",
     "prism-react-renderer": "2.4.1",
     "raw-loader": "4.0.2",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "react-intersection-observer": "9.16.0",
-    "react-router": "7.9.4",
-    "react-router-dom": "7.9.4",
-    "typescript": "5.9.3",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-intersection-observer": "10.0.3",
+    "react-router": "7.14.0",
+    "react-router-dom": "7.14.0",
+    "typescript": "6.0.2",
     "url-loader": "4.1.1"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

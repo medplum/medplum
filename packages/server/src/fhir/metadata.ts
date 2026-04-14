@@ -183,11 +183,8 @@ const supportedSearchParams: CapabilityStatementRestResourceSearchParam[] = [
 ];
 
 let capabilityStatement: CapabilityStatement | undefined = undefined;
-
 export function getCapabilityStatement(): CapabilityStatement {
-  if (!capabilityStatement) {
-    capabilityStatement = buildCapabilityStatement();
-  }
+  capabilityStatement ??= buildCapabilityStatement();
   return capabilityStatement;
 }
 

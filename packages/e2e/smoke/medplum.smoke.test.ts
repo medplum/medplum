@@ -16,11 +16,11 @@ test.describe('Medplum App Smoke Tests', () => {
 
     // Make sure the sign in form is there
     await expect(page.locator('form')).toContainText('Email *');
-    await expect(page.getByRole('button', { name: 'Next' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Register' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
+    await expect(page.getByText('Register')).toBeVisible();
 
     // Navigate to sign up form
-    await page.getByRole('button', { name: 'Register' }).click();
+    await page.getByText('Register').click();
     await expect(page).toHaveURL('http://localhost:3000/register');
 
     // Fill out sign up form
@@ -29,11 +29,11 @@ test.describe('Medplum App Smoke Tests', () => {
     await page.getByPlaceholder('name@domain.com').fill('test@gmail.com');
     await page.getByLabel('Password *').fill('TestTest123%');
     await page.getByLabel('Remember me').check();
-    await page.getByRole('button', { name: 'Create account' }).click();
+    await page.getByRole('button', { name: 'Create Account' }).click();
 
     await expect(page).toHaveURL('http://localhost:3000/register');
     await page.getByPlaceholder('My Project').fill('Test Project');
-    await page.getByRole('button', { name: 'Create project' }).click();
+    await page.getByRole('button', { name: 'Create Project' }).click();
   });
 
   test('Sign in', async ({ page }) => {
@@ -84,9 +84,7 @@ test.describe('Medplum App Smoke Tests', () => {
     // Edit and upload image
     await page.getByRole('tab', { name: 'Edit' }).click();
     await expect(page.getByText('An identifier for this patient.', { exact: true })).toBeVisible();
-    await page
-      .getByTestId('upload-file-input')
-      .setInputFiles(path.resolve(__dirname, '../content', 'frodo_baggins.png'));
+    await page.getByTestId('upload-file-input').setInputFiles(path.resolve('./content/frodo_baggins.png'));
     await expect(page.getByTestId('attachment-image')).toBeVisible();
     await page.getByRole('button', { name: 'Update' }).click();
 
@@ -102,15 +100,15 @@ async function signIn(page: Page, email: string, password: string): Promise<void
 
   // Make sure the sign in form is there
   await expect(page.locator('form')).toContainText('Email *');
-  await expect(page.getByRole('button', { name: 'Next' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Register' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
+  await expect(page.getByText('Register')).toBeVisible();
 
   // Fill out sign in form
   await page.getByPlaceholder('name@domain.com').fill(email);
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByLabel('Password *').fill(password);
   await page.getByLabel('Remember me').check();
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign In' }).click();
 
   // Make sure we ended up on the right page
   await expect(page).toHaveURL(/^http:\/\/localhost:3000\/Patient\?/);

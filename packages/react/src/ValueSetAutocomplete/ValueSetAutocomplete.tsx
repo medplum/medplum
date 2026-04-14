@@ -10,8 +10,10 @@ import { forwardRef, useCallback } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 
-export interface ValueSetAutocompleteProps
-  extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
+export interface ValueSetAutocompleteProps extends Omit<
+  AsyncAutocompleteProps<ValueSetExpansionContains>,
+  'loadOptions' | 'toKey' | 'toOption'
+> {
   readonly binding: string | undefined;
   readonly creatable?: boolean;
   readonly clearable?: boolean;
@@ -65,10 +67,10 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       }
       const valueSet = await medplum.valueSetExpand(
         {
+          count: 10,
           ...expandParams,
           url: binding,
           filter: input,
-          count: 10,
         },
         { signal }
       );

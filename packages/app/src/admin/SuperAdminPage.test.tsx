@@ -19,7 +19,7 @@ describe('SuperAdminPage', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-          <MantineProvider>
+          <MantineProvider env="test">
             <Notifications />
             <AppRoutes />
           </MantineProvider>
@@ -74,16 +74,6 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
-  test('Start data migration', async () => {
-    setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Start Migration'));
-    });
-
-    expect(screen.getByText('Done')).toBeInTheDocument();
-  });
-
   test('Reindex resource type', async () => {
     setup();
 
@@ -96,6 +86,32 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Reindex form show/hide advanced options', async () => {
+    setup();
+
+    expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show Advanced Options'));
+    });
+
+    expect(screen.getByLabelText('Resources per batch')).toBeInTheDocument();
+    expect(screen.getByLabelText('Search query timeout (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Upsert query timeout (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Delay between batches (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Log progress every N resources')).toBeInTheDocument();
+    expect(screen.getByLabelText('End timestamp buffer (minutes)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Max iteration attempts')).toBeInTheDocument();
+
+    expect(screen.getByText('Hide Advanced Options')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Hide Advanced Options'));
+    });
+
+    expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
   });
 
   test('Purge resources', async () => {
@@ -285,6 +301,107 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });
 
+  describe('Clear All WebSocket Subscriptions', () => {
+    test('Clears all projects when no project selected', async () => {
+      medplum.router.add('POST', '$clear-all-ws-subs', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'pubSubKeysDeleted',
+                valueInteger: 1,
+              },
+              {
+                name: 'cacheKeysDeleted',
+                valueInteger: 1,
+              },
+            ],
+          },
+        ];
+      });
+      setup();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText(/Are you sure you want to completely clear/)).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-all-ws-subs', undefined);
+      expect(await screen.findByText('Done')).toBeInTheDocument();
+    });
+
+    test('Clears specific project when a project is selected', async () => {
+      const projectId = '11111111-1111-1111-1111-111111111111';
+      medplum.router.add('GET', 'Project', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'searchset',
+            entry: [{ resource: { resourceType: 'Project', id: projectId, name: 'Test Project' } }],
+          } as any,
+        ];
+      });
+      medplum.router.add('POST', '$clear-all-ws-subs', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'pubSubKeysDeleted',
+                valueInteger: 1,
+              },
+              {
+                name: 'cacheKeysDeleted',
+                valueInteger: 1,
+              },
+            ],
+          },
+        ];
+      });
+      setup();
+
+      // Select a project via the ReferenceInput
+      const input = screen.getByPlaceholderText('All projects');
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'Test' } });
+      });
+      // Advance the debounce timer so the dropdown populates
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText(/Are you sure you want to completely clear/)).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-all-ws-subs', {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'projectId', valueString: projectId }],
+      });
+    });
+  });
+
   describe('ExplainSearchForm', () => {
     test('Explain search with valid data', async () => {
       setup();
@@ -363,6 +480,55 @@ describe('SuperAdminPage', () => {
       );
     });
 
+    test('Explain search with total count checkbox', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM observation' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: 'Seq Scan on observation' },
+              { name: 'countEstimate', valueInteger: 12345 },
+              { name: 'countAccurate', valueInteger: 12300 },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Observation?code=85354-9' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Total count'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          count: true,
+          query: 'Observation?code=85354-9',
+          format: 'text',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+
+      expect(await screen.findByText('Counts')).toBeInTheDocument();
+      expect(await screen.findByText('Estimate: 12,345')).toBeInTheDocument();
+      expect(await screen.findByText('Accurate: 12,300')).toBeInTheDocument();
+    });
+
     test('Explain search validation - missing query', async () => {
       setup();
 
@@ -407,7 +573,7 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      const input = screen.getByPlaceholderText('ProjectMembership') as HTMLInputElement;
+      const input = screen.getByPlaceholderText('ProjectMembership');
 
       await act(async () => {
         fireEvent.change(input, {
@@ -510,9 +676,9 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      const projectInput = screen.getByPlaceholderText('Project') as HTMLInputElement;
-      const practitionerInput = screen.getByPlaceholderText('Practitioner or Patient') as HTMLInputElement;
-      const projectMembershipInput = screen.getByPlaceholderText('ProjectMembership') as HTMLInputElement;
+      const projectInput = screen.getByPlaceholderText('Project');
+      const practitionerInput = screen.getByPlaceholderText('Practitioner or Patient');
+      const projectMembershipInput = screen.getByPlaceholderText('ProjectMembership');
 
       // project input
       await act(async () => {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import net from 'node:net';
-import type { Hl7ConnectionOptions } from './connection';
+import type { EnhancedMode, Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
 /**
@@ -25,7 +25,7 @@ export class Hl7Server {
   readonly handler: (connection: Hl7Connection) => void;
   server?: net.Server;
   private encoding: string | undefined = undefined;
-  private enhancedMode = false;
+  private enhancedMode: EnhancedMode = undefined;
   private messagesPerMin: number | undefined = undefined;
   private readonly connections = new Set<Hl7Connection>();
 
@@ -33,15 +33,20 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  start(port: number, encoding?: string, enhancedMode?: boolean, options?: Hl7ConnectionOptions): void {
+  async start(
+    port: number,
+    encoding?: string,
+    enhancedMode?: EnhancedMode,
+    connectionOptions?: Hl7ConnectionOptions
+  ): Promise<number> {
     if (encoding) {
       this.setEncoding(encoding);
     }
     if (enhancedMode !== undefined) {
       this.setEnhancedMode(enhancedMode);
     }
-    if (options?.messagesPerMin !== undefined) {
-      this.setMessagesPerMin(options.messagesPerMin);
+    if (connectionOptions?.messagesPerMin !== undefined) {
+      this.setMessagesPerMin(connectionOptions.messagesPerMin);
     }
 
     const server = net.createServer((socket) => {
@@ -55,22 +60,32 @@ export class Hl7Server {
       });
     });
 
-    // Node errors have a code
-    const errorListener = async (e: Error & { code?: string }): Promise<void> => {
-      if (e?.code === 'EADDRINUSE') {
-        await sleep(50);
-        server.close();
-        server.listen(port);
-      }
-    };
-    server.on('error', errorListener);
+    return new Promise<number>((resolve, reject) => {
+      const listenOnPort = (port: number): void => {
+        server.listen(port, () => {
+          const boundPort = (server.address() as { port: number }).port;
+          resolve(boundPort);
+        });
+      };
 
-    server.once('listening', () => {
-      server.off('error', errorListener);
+      const errorListener = (e: Error & { code?: string }): void => {
+        if (e?.code === 'EADDRINUSE') {
+          server.close(() => sleep(50).then(() => listenOnPort(port)));
+        } else {
+          reject(e);
+        }
+      };
+
+      server.on('error', errorListener);
+
+      server.once('listening', () => {
+        server.off('error', errorListener);
+      });
+
+      listenOnPort(port);
+
+      this.server = server;
     });
-
-    server.listen(port);
-    this.server = server;
   }
 
   /**
@@ -117,11 +132,11 @@ export class Hl7Server {
     });
   }
 
-  setEnhancedMode(enhancedMode: boolean): void {
+  setEnhancedMode(enhancedMode: EnhancedMode): void {
     this.enhancedMode = enhancedMode;
   }
 
-  getEnhancedMode(): boolean {
+  getEnhancedMode(): EnhancedMode {
     return this.enhancedMode;
   }
 

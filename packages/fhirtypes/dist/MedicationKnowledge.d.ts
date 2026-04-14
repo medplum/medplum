@@ -5,24 +5,24 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { DetectedIssue } from './DetectedIssue';
-import { DocumentReference } from './DocumentReference';
-import { Dosage } from './Dosage';
-import { Duration } from './Duration';
-import { Extension } from './Extension';
-import { Media } from './Media';
-import { Medication } from './Medication';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { Narrative } from './Narrative';
-import { ObservationDefinition } from './ObservationDefinition';
-import { Organization } from './Organization';
-import { Quantity } from './Quantity';
-import { Ratio } from './Ratio';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { Substance } from './Substance';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { DetectedIssue } from './DetectedIssue.d.ts';
+import type { DocumentReference } from './DocumentReference.d.ts';
+import type { Dosage } from './Dosage.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Media } from './Media.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { ObservationDefinition } from './ObservationDefinition.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Ratio } from './Ratio.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Substance } from './Substance.d.ts';
 
 /**
  * Information about a medication that is used to support knowledge.

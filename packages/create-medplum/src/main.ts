@@ -43,7 +43,6 @@ async function prompt(
   validationFunc: (str: string) => boolean | string,
   validationMessage: string
 ): Promise<string> {
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const defaultPrompt = defaultValue ? ` (${defaultValue})` : '';
     const answer = (await terminal.question(`${question}${defaultPrompt}: `)) || defaultValue;
@@ -72,12 +71,12 @@ async function promptForConfig(): Promise<ProjectConfig> {
     'Enter number',
     '1',
     (str) => {
-      const num = parseInt(str, 10);
+      const num = Number.parseInt(str, 10);
       return num >= 1 && num <= STARTER_PROJECTS.length;
     },
     'Please enter a number between 1 and ' + STARTER_PROJECTS.length
   );
-  const starterProject = STARTER_PROJECTS[parseInt(answer, 10) - 1];
+  const starterProject = STARTER_PROJECTS[Number.parseInt(answer, 10) - 1];
 
   // Prompt the user for the project name
   const projectName = await prompt(

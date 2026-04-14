@@ -22,7 +22,7 @@ import {
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem';
@@ -123,8 +123,10 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  const itemRef = useRef<T>(props.item);
-  itemRef.current = props.item;
+  const itemRef = useRef(props.item);
+  useLayoutEffect(() => {
+    itemRef.current = props.item;
+  });
 
   function onClick(e: SyntheticEvent): void {
     killEvent(e);
@@ -137,7 +139,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function changeItem(changedItem: QuestionnaireItem): void {
-    const curr = itemRef.current as T;
+    const curr = itemRef.current;
     props.onChange({
       ...curr,
       item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
@@ -616,10 +618,10 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   }
   items.forEach((item) => {
     if (item.id?.match(/^id-\d+$/)) {
-      nextId = Math.max(nextId, parseInt(item.id.substring(3), 10) + 1);
+      nextId = Math.max(nextId, Number.parseInt(item.id.substring(3), 10) + 1);
     }
     if (item.linkId?.match(/^q\d+$/)) {
-      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1), 10) + 1);
+      nextLinkId = Math.max(nextLinkId, Number.parseInt(item.linkId.substring(1), 10) + 1);
     }
   });
   return items.map((item) => ({

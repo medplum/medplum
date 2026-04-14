@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Grid, Modal, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { Box, Button, Divider, Grid, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import type { CodeableConcept, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
@@ -14,8 +14,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 
 export interface NewTaskModalProps {
   opened: boolean;
@@ -28,12 +28,12 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [intent, setIntent] = useState<string>('order');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [intent, setIntent] = useState('order');
 
   const [status, setStatus] = useState<Task['status']>('draft');
-  const [priority, setPriority] = useState<string>('routine');
+  const [priority, setPriority] = useState('routine');
   const [assignee, setAssignee] = useState<Reference<Practitioner> | undefined>();
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [taskPatient, setTaskPatient] = useState<Reference<Patient> | undefined>();
@@ -41,7 +41,7 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
   const [taskCode, setTaskCode] = useState<CodeableConcept | undefined>();
   const [performerType, setPerformerType] = useState<CodeableConcept | undefined>();
 
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (): Promise<void> => {
     if (!title.trim()) {

@@ -1067,19 +1067,6 @@ export const Choices = (): JSX.Element => (
                   coding: [
                     {
                       system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
                       code: 'multi-select',
                       display: 'Multi select',
                     },
@@ -1699,6 +1686,20 @@ export const KitchenSink = (): JSX.Element => (
             text: 'Quantity',
           },
         ],
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: 'urn:iso-astm:E1762-95:2013',
+                  code: '1.2.840.10065.1.12.1.1',
+                  display: "Author's Signature",
+                },
+              ],
+            },
+          },
+        ],
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -2037,6 +2038,12 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
             type: 'quantity',
             text: 'Quantity',
           },
+          {
+            linkId: 'repeating-string',
+            type: 'string',
+            text: 'Repeating String',
+            repeats: true,
+          },
         ],
       }}
       questionnaireResponse={{
@@ -2190,6 +2197,22 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
                   value: 1,
                   unit: '2',
                 },
+              },
+            ],
+          },
+          {
+            id: 'id-29',
+            linkId: 'repeating-string',
+            text: 'Repeating String',
+            answer: [
+              {
+                valueString: 'First value',
+              },
+              {
+                valueString: 'Second value',
+              },
+              {
+                valueString: 'Third value',
               },
             ],
           },

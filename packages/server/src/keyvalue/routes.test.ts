@@ -6,8 +6,6 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthenticatedRequestContext } from '../context';
-import { requestContextStore } from '../request-context-store';
 import { MAX_ITEMS } from './store';
 
 describe('Key Value Routes', () => {
@@ -17,8 +15,6 @@ describe('Key Value Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
 
     // First, Alice creates a project
     const registration = await registerNew({

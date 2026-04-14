@@ -20,7 +20,7 @@ import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import type { ClientRequest, IncomingMessage, ServerResponse } from 'http';
+import type { ClientRequest, IncomingMessage, ServerResponse } from 'node:http';
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
@@ -130,10 +130,7 @@ export async function shutdownOpenTelemetry(): Promise<void> {
   }
 }
 
-if (require.main === undefined) {
-  // There are 2 ways that this file can be loaded:
-  // 1. As a "require" from the command line when starting the server
-  // 2. As an "import" from the unit tests
+if (process.env.NODE_ENV !== 'test') {
   // We want to initialize OpenTelemetry only when starting the server
   initOpenTelemetry();
 }

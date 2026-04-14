@@ -14,29 +14,10 @@ function Footer(): ReactNode {
   const columns = links as FooterColumnItem[];
   return (
     <footer className={clsx(ThemeClassNames.layout.footer.container, styles.footer, 'footer')}>
-      <div className="container container-fluid">
+      <div className={styles.footerInner}>
         <div className={styles.row}>
           <div className={styles.column}>
-            <LogoSvg width="159" height="34" className={styles.logoImage} />
-            <br />
-            <p>
-              Medplum's platform offers all you
-              <br />
-              need to build secure and compliant
-              <br />
-              healthcare apps.
-            </p>
-            <Link href="/security">
-              <img src="/img/compliance/soc.png" className="medplum-soc-compliance-image" loading="lazy" alt="SOC" />
-            </Link>
-            <Link href="/security">
-              <img
-                src="/img/compliance/hipaa.png"
-                className="medplum-hipaa-compliance-image"
-                loading="lazy"
-                alt="HIPAA"
-              />
-            </Link>
+            <LogoSvg width="159" height="34" className={styles.logoImage} style={{ marginBottom: '3rem' }} />
           </div>
           <div className={styles.column}>
             <div className={styles.row}>
@@ -59,8 +40,7 @@ function Footer(): ReactNode {
         </div>
         <hr className={styles.separator} />
         <div className={styles.row}>
-          <div className={styles.column}>{copyright}</div>
-          <div className={clsx(styles.column, styles.rightAligned)}>
+          <div className={styles.column}>
             <Link className={styles.bottomLink} to="/security">
               Security
             </Link>
@@ -71,6 +51,7 @@ function Footer(): ReactNode {
               Privacy Policy
             </Link>
           </div>
+          <div className={clsx(styles.column, styles.rightAligned)}>{copyright}</div>
         </div>
       </div>
     </footer>

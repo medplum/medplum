@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
-import { getReferenceString } from './utils';
+import { EMPTY, getReferenceString } from './utils';
 
 export type StatsFn = (data: number[]) => number | Quantity;
 export type QuantityUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
@@ -124,7 +124,9 @@ function codesOverlap(a: CodeableConcept, b: CodeableConcept): boolean {
 }
 
 export function expandSampledData(sample: SampledData): number[] {
-  return sample.data?.split(' ').map((d) => parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? [];
+  return (
+    sample.data?.split(' ').map((d) => Number.parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? []
+  );
 }
 
 function compressSampledData(data: number[], sampling?: SamplingInfo): string | undefined {
@@ -142,11 +144,9 @@ export function expandSampledObservation(obs: Observation): Observation[] {
   if (obs.valueSampledData) {
     results.push(...convertSampleToObservations(obs.valueSampledData, startTime, obs));
   }
-  if (obs.component) {
-    for (const component of obs.component) {
-      if (component.valueSampledData) {
-        results.push(...convertSampleToObservations(component.valueSampledData, startTime, { ...obs, ...component }));
-      }
+  for (const component of obs.component ?? EMPTY) {
+    if (component.valueSampledData) {
+      results.push(...convertSampleToObservations(component.valueSampledData, startTime, { ...obs, ...component }));
     }
   }
   return results;

@@ -1,26 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FileBuilder } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
-  FileBuilder,
+  EMPTY,
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  isPopulated,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { Client, escapeIdentifier } from 'pg';
+import assert from 'node:assert';
+import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import type { SearchParameterImplementation } from '../fhir/searchparameter';
+import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
-import { TokenArrayToTextFn } from '../fhir/sql';
+import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -40,12 +39,11 @@ import type {
   IndexType,
   MigrationAction,
   MigrationActionResult,
+  PhasalMigration,
   SchemaDefinition,
   TableDefinition,
 } from './types';
 import { SerialColumnTypes } from './types';
-
-const SCHEMA_DIR = resolve(__dirname, 'schema');
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
@@ -59,75 +57,22 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
   for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
     const bundle = readJson(filename) as Bundle<SearchParameter>;
     indexSearchParameterBundle(bundle);
-
-    if (!isPopulated(bundle.entry)) {
-      throw new Error('Empty search parameter bundle: ' + filename);
-    }
-  }
-}
-
-export async function main(): Promise<void> {
-  const dryRun = process.argv.includes('--dryRun');
-
-  indexStructureDefinitionsAndSearchParameters();
-
-  const dbClient = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'medplum',
-    user: 'medplum',
-    password: 'medplum',
-  });
-  const options: BuildMigrationOptions = {
-    dbClient,
-    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
-    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
-    dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
-    analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
-    writeSchema: process.argv.includes('--writeSchema'),
-    skipMigration: process.argv.includes('--skipMigration'),
-  };
-
-  if (!options.skipMigration) {
-    await dbClient.connect();
-
-    const b = new FileBuilder();
-    await buildMigration(b, options);
-
-    await dbClient.end();
-
-    if (dryRun) {
-      console.log(b.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-      rewriteMigrationExports();
-    }
-  }
-
-  if (options.writeSchema) {
-    const schemaBuilder = new FileBuilder();
-    buildSchema(schemaBuilder);
-    if (dryRun) {
-      console.log(schemaBuilder.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
-    }
   }
 }
 
 export type BuildMigrationOptions = {
   dbClient: DbClient;
   dropUnmatchedIndexes?: boolean;
-  skipPostDeployActions?: boolean;
-  allowPostDeployActions?: boolean;
   analyzeResourceTables?: boolean;
   writeSchema?: boolean;
   skipMigration?: boolean;
 };
 
-export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
-  const actions = await generateMigrationActions(options);
-  writeActionsToBuilder(b, actions);
+export function combine(migrations: PhasalMigration[]): PhasalMigration {
+  return {
+    preDeploy: migrations.flatMap((m) => m.preDeploy),
+    postDeploy: migrations.flatMap((m) => m.postDeploy),
+  };
 }
 
 export function buildSchema(builder: FileBuilder): void {
@@ -149,29 +94,18 @@ export function buildSchema(builder: FileBuilder): void {
   writeSchema(builder, actions);
 }
 
-export async function generateMigrationActions(options: BuildMigrationOptions): Promise<MigrationAction[]> {
-  const ctx: GenerateActionsContext = {
-    postDeployAction: (action, description) => {
-      if (options.skipPostDeployActions) {
-        console.log(`Skipping post-deploy migration for: ${description}`);
-        return;
-      }
-
-      if (!options.allowPostDeployActions) {
-        throw new Error(`Post-deploy migration required for: ${description}`);
-      }
-
-      action();
-    },
+export async function generateMigrationActions(options: BuildMigrationOptions): Promise<PhasalMigration> {
+  let actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
   };
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
-  const actions: MigrationAction[] = [];
 
   for (const targetFunction of targetDefinition.functions) {
     const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
     if (!startFunction) {
-      actions.push({
+      actions.preDeploy.push({
         type: 'CREATE_FUNCTION',
         name: targetFunction.name,
         createQuery: targetFunction.createQuery,
@@ -184,25 +118,26 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     if (startTable) {
       matchedStartTables.add(startTable);
-      actions.push(
-        ...generateColumnsActions(ctx, startTable, targetTable),
-        ...generateIndexesActions(ctx, startTable, targetTable, options),
-        ...generateConstraintsActions(ctx, startTable, targetTable)
-      );
+      actions = combine([
+        actions,
+        generateColumnsActions(startTable, targetTable),
+        generateIndexesActions(startTable, targetTable, options),
+        generateConstraintsActions(startTable, targetTable),
+      ]);
     } else {
-      actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+      actions.preDeploy.push({ type: 'CREATE_TABLE', definition: targetTable });
     }
   }
 
   for (const startTable of startDefinition.tables) {
     if (!matchedStartTables.has(startTable)) {
-      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+      actions.postDeploy.push({ type: 'DROP_TABLE', tableName: startTable.name });
     }
   }
 
   if (options.analyzeResourceTables) {
     for (const resourceType of getResourceTypes()) {
-      actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
+      actions.preDeploy.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
     }
   }
   return actions;
@@ -273,9 +208,7 @@ WHERE connamespace = 'public'::regnamespace AND conrelid IN($1::regclass) AND co
   for (const row of rs.rows) {
     if (row.contype === 'c') {
       const expressionMatch = /CHECK \((.*)\)/.exec(row.condef);
-      if (!expressionMatch) {
-        throw new Error('Could not parse check constraint expression from ' + row.condef);
-      }
+      assert(expressionMatch, 'Could not parse check constraint expression from ' + row.condef);
       cds.push({
         name: row.conname,
         type: 'check',
@@ -395,21 +328,19 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    if (!searchParam.base?.includes(resourceType as ResourceType)) {
-      throw new Error(
-        `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
-      );
-    }
+    assert(
+      searchParam.base?.includes(resourceType as ResourceType),
+      `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
+    );
 
     const impl = getSearchParameterImplementation(resourceType, searchParam);
     for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
-        if (!columnDefinitionsEqual(tableDefinition, existing, column)) {
-          throw new Error(
-            `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
-          );
-        }
+        assert(
+          columnDefinitionsEqual(tableDefinition, existing, column),
+          `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
+        );
         continue;
       }
       tableDefinition.columns.push(column);
@@ -436,9 +367,10 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
-      if (impl.type !== SearchParameterType.TEXT) {
-        throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
-      }
+      assert(
+        impl.type === SearchParameterType.TEXT,
+        'Expected SearchParameterDetails.type to be TEXT for token-column search strategy but got ' + impl.type
+      );
       const columns = [
         { name: impl.tokenColumnName, type: 'UUID[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
@@ -448,7 +380,7 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
       return columns;
     }
     case 'column':
-      return [getColumnDefinition(impl.columnName, impl)];
+      return [getColumnDefinition(impl)];
     case 'lookup-table': {
       if (impl.sortColumnName) {
         return [{ name: impl.sortColumnName, type: 'TEXT' }];
@@ -503,48 +435,14 @@ const additionalSearchColumns: { table: string; column: string; type: string; in
   { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
 ];
 
-function getColumnDefinition(name: string, impl: SearchParameterImplementation): ColumnDefinition {
-  let baseColumnType: string;
-  switch (impl.type) {
-    case SearchParameterType.BOOLEAN:
-      baseColumnType = 'BOOLEAN';
-      break;
-    case SearchParameterType.DATE:
-      baseColumnType = 'DATE';
-      break;
-    case SearchParameterType.DATETIME:
-      baseColumnType = 'TIMESTAMPTZ';
-      break;
-    case SearchParameterType.NUMBER:
-    case SearchParameterType.QUANTITY:
-      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
-        baseColumnType = 'INTEGER';
-      } else {
-        baseColumnType = 'DOUBLE PRECISION';
-      }
-      break;
-    default:
-      baseColumnType = 'TEXT';
-      break;
-  }
-
-  if (impl.searchStrategy === 'token-column') {
-    if (baseColumnType.toLocaleUpperCase() !== 'TEXT') {
-      throw new Error('Token columns must have TEXT column type');
-    }
-
-    return { name, type: 'TEXT[]' };
-  }
-
-  return { name, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
+function getColumnDefinition(impl: ColumnSearchParameterImplementation): ColumnDefinition {
+  return { name: impl.columnName, type: getSearchParamColumnType(impl), notNull: false };
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType): void {
   if (resourceType === 'UserConfiguration') {
     const nameCol = result.columns.find((c) => c.name === 'name');
-    if (!nameCol) {
-      throw new Error('Could not find UserConfiguration.name column');
-    }
+    assert(nameCol, 'Could not find UserConfiguration.name column');
     nameCol.defaultValue = "''::text";
   }
 
@@ -566,25 +464,19 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   // getSearchParameterDetails looks for
   if (resourceType === 'DomainConfiguration') {
     const domainIdx = result.indexes.find((i) => i.columns.length === 1 && i.columns[0] === 'domain');
-    if (!domainIdx) {
-      throw new Error('DomainConfiguration.domain index not found');
-    }
+    assert(domainIdx, 'Could not find DomainConfiguration.domain index');
     domainIdx.unique = true;
   }
 
   if (resourceType === 'ServiceRequest') {
     const orderDetail = result.columns.find((c) => c.name === 'orderDetail');
-    if (!orderDetail) {
-      throw new Error('Could not find ServiceRequest.orderDetail column');
-    }
+    assert(orderDetail, 'Could not find ServiceRequest.orderDetail column');
     orderDetail.defaultValue = "'{}'::text[]";
   }
 
   if (resourceType === 'ProjectMembership') {
     const profileCol = result.columns.find((c) => c.name === 'profile');
-    if (!profileCol) {
-      throw new Error('Could not find ProjectMembership.profile column');
-    }
+    assert(profileCol, 'Could not find ProjectMembership.profile column');
     profileCol.defaultValue = "''::text";
 
     result.indexes.push(
@@ -724,6 +616,7 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'display', type: 'TEXT' },
       { name: 'isSynonym', type: 'BOOLEAN', notNull: true },
       { name: 'synonymOf', type: 'BIGINT' },
+      { name: 'language', type: 'TEXT' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
@@ -987,15 +880,42 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
     }
   }
 }
-function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
-  b.append("import { PoolClient } from 'pg';");
+
+export function writePostDeployActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
+  b.append("import type { PoolClient } from 'pg';");
+  b.append("import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';");
+  b.append("import * as fns from '../migrate-functions';");
+  b.append("import type { MigrationActionResult } from '../types';");
+  b.append("import type { CustomPostDeployMigration } from './types';");
+  b.newLine();
+  b.append('export const migration: CustomPostDeployMigration = {');
+  b.append("  type: 'custom',");
+  b.append('  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),');
+  b.append('  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),');
+  b.append('};');
+  b.newLine();
+  b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
+  b.append('async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {');
+  b.indentCount++;
+  writeActionsToBuilder(b, actions);
+  b.indentCount--;
+  b.append('}');
+}
+
+export function writePreDeployActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
+  b.append("import type { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();
   b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
   b.append('const results: { name: string; durationMs: number }[] = []');
+  writeActionsToBuilder(b, actions);
+  b.indentCount--;
+  b.append('}');
+}
 
+export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
@@ -1076,93 +996,71 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
       }
     }
   }
-
-  b.indentCount--;
-  b.append('}');
 }
 
-function generateColumnsActions(
-  ctx: GenerateActionsContext,
-  startTable: TableDefinition,
-  targetTable: TableDefinition
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+function generateColumnsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
+  let actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
   for (const targetColumn of targetTable.columns) {
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
-      actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
+      actions.preDeploy.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startTable, startColumn, targetColumn)) {
-      actions.push(...generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn));
+      actions = combine([actions, generateAlterColumnActions(targetTable, startColumn, targetColumn)]);
     }
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      ctx.postDeployAction(() => {
-        actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
-      }, `Dropping column ${startColumn.name} from ${targetTable.name}`);
+      actions.postDeploy.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
     }
   }
   return actions;
 }
 
-type GenerateActionsContext = {
-  /**
-   * Guard function that should be called before writes of post-deploy actions.
-   * If `--skipPostDeploy` is provided, the action is skipped.
-   * If `--allowPostDeploy` is not provided, the action is performed.
-   * Otherwise, an error is thrown to halt the migration generation process.
-   * @param action - The post-deploy action to perform if the guard passes.
-   * @param description - A human-readable description of the action that is being checked
-   */
-  postDeployAction: (action: () => void, description: string) => void;
-};
-
 function generateAlterColumnActions(
-  ctx: GenerateActionsContext,
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+): PhasalMigration {
+  const actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
   if (startDef.defaultValue !== targetDef.defaultValue) {
-    ctx.postDeployAction(() => {
-      if (targetDef.defaultValue) {
-        actions.push({
-          type: 'ALTER_COLUMN_SET_DEFAULT',
-          tableName: tableDefinition.name,
-          columnName: targetDef.name,
-          defaultValue: targetDef.defaultValue,
-        });
-      } else {
-        actions.push({
-          type: 'ALTER_COLUMN_DROP_DEFAULT',
-          tableName: tableDefinition.name,
-          columnName: targetDef.name,
-        });
-      }
-    }, `Change default value of ${tableDefinition.name}.${targetDef.name}`);
+    if (targetDef.defaultValue) {
+      actions.postDeploy.push({
+        type: 'ALTER_COLUMN_SET_DEFAULT',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+        defaultValue: targetDef.defaultValue,
+      });
+    } else {
+      actions.postDeploy.push({
+        type: 'ALTER_COLUMN_DROP_DEFAULT',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+      });
+    }
   }
 
   if (startDef.notNull !== targetDef.notNull) {
-    ctx.postDeployAction(() => {
-      actions.push({
-        type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
-        tableName: tableDefinition.name,
-        columnName: targetDef.name,
-        notNull: targetDef.notNull ?? false,
-      });
-    }, `Change NOT NULL of ${tableDefinition.name}.${targetDef.name}`);
+    actions.postDeploy.push({
+      type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
+      tableName: tableDefinition.name,
+      columnName: targetDef.name,
+      notNull: targetDef.notNull ?? false,
+    });
   }
 
   if (startDef.type !== targetDef.type) {
-    ctx.postDeployAction(() => {
-      actions.push({
-        type: 'ALTER_COLUMN_TYPE',
-        tableName: tableDefinition.name,
-        columnName: targetDef.name,
-        columnType: targetDef.type,
-      });
-    }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
+    actions.postDeploy.push({
+      type: 'ALTER_COLUMN_TYPE',
+      tableName: tableDefinition.name,
+      columnName: targetDef.name,
+      columnType: targetDef.type,
+    });
   }
   return actions;
 }
@@ -1182,9 +1080,10 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
       parts.push('NOT NULL');
     }
     if (column.defaultValue) {
-      if (column.identity) {
-        throw new Error(`Cannot set default value on identity column ${tableDef.name}.${column.name}`);
-      }
+      assert(
+        column.identity === undefined,
+        `Cannot set default value on identity column ${tableDef.name}.${column.name}`
+      );
       parts.push(`DEFAULT ${column.defaultValue}`);
     }
     createTableLines.push(`  ${parts.join(' ')}`);
@@ -1194,12 +1093,9 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
     createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map(escapeMixedCaseIdentifier).join(', ')})`);
   }
 
-  for (const constraint of tableDef.constraints ?? []) {
-    if (constraint.type === 'check') {
-      createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
-    } else {
-      throw new Error(`Unsupported constraint type: ${constraint.type}`);
-    }
+  for (const constraint of tableDef.constraints ?? EMPTY) {
+    assert(constraint.type === 'check', `Unsupported constraint type: ${constraint.type}`);
+    createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
   }
 
   queries.push(
@@ -1259,12 +1155,14 @@ function getDropIndexQuery(indexName: string): string {
 }
 
 function generateIndexesActions(
-  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+): PhasalMigration {
+  const actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
 
   const matchedIndexes = new Set<IndexDefinition>();
   const seenIndexNames = new Set<string>();
@@ -1294,25 +1192,18 @@ function generateIndexesActions(
   }
   for (const targetIndex of [...targetTable.indexes, ...computedIndexes]) {
     const indexName = getIndexName(targetTable.name, targetIndex);
-    if (seenIndexNames.has(indexName)) {
-      throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
-    }
+    assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (startIndex) {
       matchedIndexes.add(startIndex);
     } else {
-      ctx.postDeployAction(
-        () => {
-          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
-            concurrent: true,
-            ifNotExists: true,
-          });
-          actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
-        },
-        `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
-      );
+      const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
+        concurrent: true,
+        ifNotExists: true,
+      });
+      actions.postDeploy.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
     }
   }
 
@@ -1324,51 +1215,44 @@ function generateIndexesActions(
       );
       if (options?.dropUnmatchedIndexes) {
         const indexName = parseIndexName(startIndex.indexdef ?? '');
-        if (!indexName) {
-          throw new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex });
-        }
-        actions.push({ type: 'DROP_INDEX', indexName });
+        assert(indexName, new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex }));
+        actions.preDeploy.push({ type: 'DROP_INDEX', indexName });
       }
     }
   }
   return actions;
 }
 
-function generateConstraintsActions(
-  ctx: GenerateActionsContext,
-  startTable: TableDefinition,
-  targetTable: TableDefinition
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
+  const actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
 
   const matchedConstraints = new Set<CheckConstraintDefinition>();
-  const seenConstraintNames = new Set<string>();
+  const seenNames = new Set<string>();
 
-  for (const targetConstraint of targetTable.constraints ?? []) {
-    if (seenConstraintNames.has(targetConstraint.name)) {
-      throw new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint });
-    }
-    seenConstraintNames.add(targetConstraint.name);
+  for (const targetConstraint of targetTable.constraints ?? EMPTY) {
+    assert(
+      !seenNames.has(targetConstraint.name),
+      new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint })
+    );
+    seenNames.add(targetConstraint.name);
 
     const startConstraint = startTable.constraints?.find((c) => constraintDefinitionsEqual(c, targetConstraint));
     if (startConstraint) {
       matchedConstraints.add(startConstraint);
     } else {
-      ctx.postDeployAction(
-        () => {
-          actions.push({
-            type: 'ADD_CONSTRAINT',
-            tableName: targetTable.name,
-            constraintName: targetConstraint.name,
-            constraintExpression: targetConstraint.expression,
-          });
-        },
-        `ADD CONSTRAINT ${escapeIdentifier(targetConstraint.name)} ON ${escapeIdentifier(targetTable.name)} ...`
-      );
+      actions.postDeploy.push({
+        type: 'ADD_CONSTRAINT',
+        tableName: targetTable.name,
+        constraintName: targetConstraint.name,
+        constraintExpression: targetConstraint.expression,
+      });
     }
   }
 
-  for (const startConstraint of startTable.constraints ?? []) {
+  for (const startConstraint of startTable.constraints ?? EMPTY) {
     if (!matchedConstraints.has(startConstraint)) {
       console.log(
         `[${startTable.name}] Existing constraint should not exist:`,
@@ -1396,10 +1280,7 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
     .join('_');
   indexName += '_' + (index.indexNameSuffix ?? 'idx');
 
-  if (indexName.length > 63) {
-    throw new Error('Index name too long: ' + indexName);
-  }
-
+  assert(indexName.length <= 63, 'Index name too long: ' + indexName);
   return indexName;
 }
 
@@ -1452,40 +1333,6 @@ function buildIndexSql(
   }
 
   return result;
-}
-
-function getMigrationFilenames(): string[] {
-  return readdirSync(SCHEMA_DIR).filter((filename) => /^v\d+\.ts$/.test(filename));
-}
-
-function getVersionFromFilename(filename: string): number {
-  return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
-}
-
-function getNextSchemaVersion(): number {
-  const [lastSchemaVersion] = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => b - a);
-
-  return lastSchemaVersion + 1;
-}
-
-function rewriteMigrationExports(): void {
-  const b = new FileBuilder();
-  const filenamesWithoutExt = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => a - b)
-    .map((version) => `v${version}`);
-  for (const filename of filenamesWithoutExt) {
-    b.append(`export * as ${filename} from './${filename}';`);
-    if (filename === 'v9') {
-      b.append('/* CAUTION: LOAD-BEARING COMMENT */');
-      b.append(
-        '/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */'
-      );
-    }
-  }
-  writeFileSync(`${SCHEMA_DIR}/index.ts`, b.toString(), { flag: 'w' });
 }
 
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
@@ -1570,11 +1417,4 @@ function ensureEndsWithSemicolon(query: string): string {
     return query;
   }
   return query + ';';
-}
-
-if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 }

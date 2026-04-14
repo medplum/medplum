@@ -19,9 +19,30 @@ export const TASK_STATUSES: Task['status'][] = [
   'accepted',
   'rejected',
   'ready',
-  'cancelled',
   'in-progress',
   'on-hold',
   'failed',
   'completed',
 ];
+
+export const TASK_STATUS_LABELS: Partial<Record<Task['status'], string>> = {
+  draft: 'Draft',
+  requested: 'Requested',
+  received: 'Received',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+  ready: 'Ready',
+  'in-progress': 'In Progress',
+  'on-hold': 'On Hold',
+  failed: 'Failed',
+  completed: 'Completed',
+};
+
+export const TASK_PRIORITIES: Task['priority'][] = ['routine', 'urgent', 'asap', 'stat'];
+
+export const TASK_PRIORITY_LABELS: Record<NonNullable<Task['priority']>, string> = {
+  routine: 'Routine',
+  urgent: 'Urgent',
+  asap: 'ASAP',
+  stat: 'Stat',
+};

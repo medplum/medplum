@@ -43,6 +43,10 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 - date of birth
 - name (first and last)
 
+:::warning Pediatric Patients (Under 18)
+For patients under 18 years of age, you **must** also sync Height and Weight as [Observations](/docs/api/fhir/resources/observation) using the correct LOINC codes. The sync will fail without these required vital signs. See the [Height and Weight for Pediatric Patients](#height-and-weight-for-pediatric-patients) section for more details.
+:::
+
 <details>
   <summary>See this example of a valid Patient that will be synced to DoseSpot</summary>
 
@@ -66,7 +70,7 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     {
       "system": "phone",
       "use": "home",
-      "value": "6175672093"//Required: cannot have a +1 prefix and must be 9 digits
+      "value": "6175672093"//Required: cannot have a +1 prefix or start with 555, and must be 10 digits
     }
   ],
   "address": [//Required
@@ -89,6 +93,101 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 }
 ```
 </details>
+
+### Height and Weight for Pediatric Patients
+
+For patients under 18 years of age, DoseSpot requires Height and Weight observations to be synced. These must be recorded as [Observation](/docs/api/fhir/resources/observation) resources with the correct LOINC codes.
+
+<details>
+  <summary>Example of a valid Height Observation for a pediatric patient</summary>
+
+```typescript
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs",
+          "display": "Vital Signs"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "8302-2",
+        "display": "Body height"
+      }
+    ],
+    "text": "Body height"
+  },
+  "subject": {
+    "reference": "Patient/123"
+  },
+  "effectiveDateTime": "2024-11-20T10:30:00Z",
+  "valueQuantity": {
+    "value": 59,
+    "unit": "cm",
+    "system": "http://unitsofmeasure.org",
+    "code": "cm"
+  }
+}
+```
+</details>
+
+<details>
+  <summary>Example of a valid Weight Observation for a pediatric patient</summary>
+
+```typescript
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs",
+          "display": "Vital Signs"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "29463-7",
+        "display": "Body weight"
+      }
+    ],
+    "text": "Body weight"
+  },
+  "subject": {
+    "reference": "Patient/123"
+  },
+  "effectiveDateTime": "2024-11-20T10:30:00Z",
+  "valueQuantity": {
+    "value": 99,
+    "unit": "kg",
+    "system": "http://unitsofmeasure.org",
+    "code": "kg"
+  }
+}
+```
+</details>
+
+:::tip Required LOINC Codes
+- **Height**: `8302-2` (Body height)
+- **Weight**: `29463-7` (Body weight)
+
+These specific LOINC codes are required for successful sync to DoseSpot.
+:::
 
 
 **2. Syncs [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) -> DoseSpot for DAI (Drug-Allergy-Interaction) checks**: You must have an [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource with the patient reference set. **[RxNorm](/docs/medications/medication-codes#rxnorm)** is recommended for best results with DoseSpot.
@@ -119,7 +218,6 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     }
   ]
   //...
-}
 }
 ```
 </details>
@@ -544,8 +642,235 @@ When working with DoseSpot integration, it's important to understand the differe
 
 - **`MedicationRequest?intent=original-order`** - Medication histories from SureScripts and other providers. These represent historical medication data that has been retrieved from external sources. The DoseSpot Medication History Bot creates these.
 
+## Add a Default Pharmacy
+
+### Summary
+
+To set a default pharmacy for patients in a clinic, we expose a bot that can add a default for all patients or a specific subset, with dry-run support.
+
+### Usage
+
+#### Basic Example
+```bash
+curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+      "pharmacyId": 12345
+  }'
+```
+
+#### With Specific Patients
+```bash
+curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+      "pharmacyId": 12345,
+      "patientIds": ["patient-id-1", "patient-id-2"],
+      "dryRun": false
+  }'
+```
+
+### Request Interface
+
+```typescript
+interface DoseSpotClinicDefaultPharmacyRequest {
+  pharmacyId: number;              // Required: DoseSpot pharmacy ID
+  patientIds?: string[];           // Optional: Specific patient IDs to process
+  dryRun?: boolean;                 // Optional: Preview mode (default: false)
+  maxPatients?: number;             // Optional: Max patients to process (default: 100)
+}
+```
+
+### Response Interface
+
+```typescript
+interface DoseSpotClinicDefaultPharmacyResponse {
+  success: boolean;
+  processedCount: number;
+  successCount: number;
+  errorCount: number;
+  errors: Array<{
+    patientId: string;
+    doseSpotPatientId?: number;
+    error: string;
+  }>;
+  message: string;
+}
+```
+
+## Enrolling Prescribers
+
+### Summary
+
+To enroll a prescriber in DoseSpot, you can use the **DoseSpot Enroll Prescriber Bot**. This bot creates a clinician record in DoseSpot for a Practitioner and automatically adds the DoseSpot clinician ID as an identifier to their ProjectMembership.
+
+### Prerequisites
+
+Before enrolling a prescriber, ensure:
+- The Practitioner resource exists in Medplum
+- The Practitioner has a corresponding ProjectMembership
+- The Practitioner has required information (name, NPI, contact information, etc.)
+- The ProjectMembership does not already have a DoseSpot identifier (the bot will prevent duplicate enrollment)
+
+### Required Practitioner Fields
+
+For successful enrollment, the Practitioner resource must include the following fields:
+
+#### Required Fields
+
+- **`name`** (at least one name entry)
+  - **`name.family`** - Last name (required)
+  - **`name.given`** - First name (at least one given name required)
+- **`birthDate`** - Date of birth
+- **`address`** (at least one address)
+  - **`address.line`** - Street address (at least one line required)
+  - **`address.city`** - City (required)
+  - **`address.state`** - State (required)
+  - **`address.postalCode`** - ZIP/postal code (required)
+- **`identifier`** with NPI
+  - **`identifier.system`** = `"http://hl7.org/fhir/sid/us-npi"` (required)
+  - **`identifier.value`** - NPI number (required, must be exactly 10 digits and pass validation)
+- **`telecom`** with email (`system: "email"`)
+- **`telecom`** with work phone (`system: "phone"`, `use: "work"`)
+- **`telecom`** with fax (`system: "fax"`)
+
+:::warning NPI Validation
+If an NPI identifier is present on the Practitioner resource, it **must** be valid (exactly 10 digits). The bot will throw an error if an invalid NPI is provided.
+:::
+
+<details>
+  <summary>Example of a Practitioner resource with all required fields</summary>
+
+```typescript
+{
+  "resourceType": "Practitioner",
+  "id": "practitioner-123",
+  "name": [
+    {
+      "prefix": ["Dr."],
+      "given": ["John"],
+      "family": "Doe" 
+    }
+  ],
+  "birthDate": "1975-05-15", 
+  "identifier": [
+    {
+      "system": "http://hl7.org/fhir/sid/us-npi", 
+      "value": "1234567893" // Required: exactly 10 digits
+    }
+  ],
+  "telecom": [
+    {
+      "system": "email",
+      "value": "john.doe@example.com" 
+    },
+    {
+      "system": "phone",
+      "use": "work",
+      "value": "555-123-4567" 
+    }
+  ],
+  "address": [ 
+    {
+      "line": ["123 Main St", "Suite 100"], // At least one line required
+      "city": "San Francisco", 
+      "state": "CA", 
+      "postalCode": "94102" 
+    }
+  ],
+  "active": true
+}
+```
+</details>
+
+### Usage
+
+#### Basic Example
+
+```typescript
+const DOSESPOT_ENROLL_PRESCRIBER_BOT: Identifier = {
+  system: 'https://www.medplum.com/bots',
+  value: 'dosespot-enroll-prescriber-bot',
+};
+
+const result = await medplum.execute(DOSESPOT_ENROLL_PRESCRIBER_BOT, {
+  practitionerId: 'practitioner-123',
+  practitionerRoleTypes: [1], // PrescribingClinician
+}) as {
+  doseSpotClinicianId: number;
+  projectMembership: ProjectMembership;
+};
+```
+
+### Response Interface
+
+```typescript
+interface DoseSpotEnrollPrescriberResponse {
+  doseSpotClinicianId: number;        // The DoseSpot clinician ID assigned to the prescriber
+  projectMembership: ProjectMembership; // Updated ProjectMembership with DoseSpot identifier
+}
+```
+
+### Available Clinician Role Types
+
+The `DoseSpotClinicianRoleType` enum includes the following values:
+
+| Value | Enum Name | Description |
+|-------|-----------|-------------|
+| 1 | PrescribingClinician | Prescriber who can write prescriptions |
+| 2 | ReportingClinician | Clinician who can report |
+| 3 | EpcsCoordinator | EPCS coordinator |
+| 4 | ClinicianAdmin | Clinic administrator |
+| 5 | PrescribingAgentClinician | Prescribing agent |
+| 6 | ProxyClinician | Proxy clinician |
+
+### Important Notes
+
+- The bot will throw an error if the Practitioner does not have a ProjectMembership
+- The bot will throw an error if the ProjectMembership already has a DoseSpot identifier
+- The Practitioner's NPI must be valid (10 digits) and will be validated
+- DEA numbers must match the format: `^[A-Za-z]{2}[0-9]{7}$` or similar patterns
+- Medical license numbers can be 0-35 characters
+- After successful enrollment, the DoseSpot clinician ID will be added to the ProjectMembership's `identifier` array with the system `https://dosespot.com/clinician-identifier`
+
 ## Processing DoseSpot Notifications
 
 You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
 
 See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`. 
+
+## Practitioner AccessPolicy 
+
+The following AccessPolicy can be used to ensure that practitioners have the correct permissions view and interact with the Dosespot iFrame. Please note that write access to `MedicationKnowledge` is only needed when a practitioner should be given permission to edit the [Dosespot clinic's favorite medications](./clinic-favorite-medications)
+
+```
+{
+  "resourceType": "AccessPolicy",
+  "name": "Dosespot Practitioner Example Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+    },
+    {
+      "resourceType": "MedicationRequest"
+    },
+    {
+      "resourceType": "AllergyIntolerance"
+    },
+    {
+      "resourceType": "Consent"
+    },
+    {
+      "resourceType": "ProjectMembership",
+      "readonly": true
+    },
+    {
+      "resourceType": "MedicationKnowledge",
+      "readonly": true
+    }
+    //...
+  ]
+}
+```

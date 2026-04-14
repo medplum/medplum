@@ -13,9 +13,9 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function CreateClientPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
-  const [name, setName] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [redirectUri, setRedirectUri] = useState<string>('');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [redirectUri, setRedirectUri] = useState('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [client, setClient] = useState<ClientApplication | undefined>(undefined);
@@ -32,8 +32,8 @@ export function CreateClientPage(): JSX.Element {
             accessPolicy,
           };
           medplum
-            .post('admin/projects/' + projectId + '/client', body)
-            .then((result: ClientApplication) => {
+            .post<ClientApplication>('admin/projects/' + projectId + '/client', body)
+            .then((result) => {
               medplum.invalidateSearches('ClientApplication');
               medplum.invalidateSearches('ProjectMembership');
               setClient(result);

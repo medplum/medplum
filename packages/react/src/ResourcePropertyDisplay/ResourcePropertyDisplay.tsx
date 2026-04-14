@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
 import type { InternalSchemaElement } from '@medplum/core';
-import { PropertyType, formatDateTime, formatPeriod, formatTiming, isEmpty } from '@medplum/core';
+import { PropertyType, formatDateTime, formatPeriod, formatTiming, formatWallTime, isEmpty } from '@medplum/core';
 import type { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -113,12 +113,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:
+    case PropertyType.xhtml:
       return <>{value}</>;
     case PropertyType.canonical:
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;
     case PropertyType.dateTime:
     case PropertyType.instant:
       return <>{formatDateTime(value)}</>;
+    case PropertyType.time:
+      return <>{formatWallTime(value)}</>;
     case PropertyType.markdown:
       return <pre>{value}</pre>;
     case PropertyType.Address:
@@ -157,7 +160,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay
@@ -169,7 +172,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       );
     case PropertyType.Extension:
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <ExtensionDisplay
@@ -182,10 +185,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       );
     default:
       if (!property) {
-        throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires element schema`);
       }
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay

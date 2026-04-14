@@ -58,6 +58,11 @@ export interface CheckConstraintDefinition {
   valid?: boolean;
 }
 
+export type PhasalMigration = {
+  preDeploy: MigrationAction[];
+  postDeploy: MigrationAction[];
+};
+
 export type MigrationAction =
   | { type: 'CREATE_FUNCTION'; name: string; createQuery: string }
   | { type: 'CREATE_TABLE'; definition: TableDefinition }

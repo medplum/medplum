@@ -5,6 +5,7 @@ import type { Atom, AtomContext } from '../fhirlexer/parse';
 import { InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType, isResource } from '../types';
+import { getTypedPropertyValueWithPath } from '../typeschema/crawler';
 import { functions } from './functions';
 import {
   booleanToTypedValue,
@@ -14,7 +15,6 @@ import {
   fhirPathEquals,
   fhirPathIs,
   fhirPathNot,
-  getTypedPropertyValue,
   isQuantity,
   removeDuplicates,
   singleton,
@@ -114,8 +114,7 @@ export class SymbolAtom implements Atom {
     if (isResource(input, this.name as ResourceType)) {
       return typedValue;
     }
-
-    return getTypedPropertyValue(typedValue, this.name);
+    return getTypedPropertyValueWithPath(typedValue, this.name);
   }
 
   toString(): string {

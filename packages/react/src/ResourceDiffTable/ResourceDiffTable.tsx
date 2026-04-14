@@ -171,6 +171,6 @@ function touchUpValue(
 }
 
 function fixArray(input: TypedValue[] | TypedValue, isArray: boolean): any {
-  const inputValue = (arrayify(input) as TypedValue[]).flatMap((v) => v.value);
+  const inputValue = arrayify(input).flatMap((v) => v.value);
   return isArray ? inputValue : inputValue[0];
 }

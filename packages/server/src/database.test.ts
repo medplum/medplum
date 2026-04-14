@@ -3,11 +3,20 @@
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
-import type { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
+import type {
+  ClientBase,
+  Pool,
+  PoolClient,
+  PoolConfig,
+  QueryArrayResult,
+  QueryConfig,
+  QueryResult,
+  QueryResultRow,
+} from 'pg';
 import pg from 'pg';
 import { Readable, Writable } from 'stream';
 import { loadConfig, loadTestConfig } from './config/loader';
-import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
+import type { MedplumDatabaseSslConfig } from './config/types';
 import {
   acquireAdvisoryLock,
   closeDatabase,
@@ -17,9 +26,11 @@ import {
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
+import { globalLogger } from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
-import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+import { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } from './migrations/migration-versions';
 
+const preDeployVersion = getPreDeployMigrationVersions().length;
 const latestVersion = getLatestPostDeployMigrationVersion();
 
 describe('Database config', () => {
@@ -37,7 +48,9 @@ describe('Database config', () => {
     poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
       class MockPoolClient extends Duplex implements PoolClient {
         release(): void {}
-        async connect(): Promise<void> {}
+        async connect(): Promise<ClientBase> {
+          return this;
+        }
         async query<R extends QueryResultRow = any, I = any[]>(sql: string | QueryConfig<I>): Promise<QueryResult<R>> {
           const result: QueryResult<R> = {
             command: '',
@@ -48,6 +61,9 @@ describe('Database config', () => {
           };
           if (sql === 'SELECT pg_try_advisory_lock($1)') {
             result.rows = [{ pg_try_advisory_lock: advisoryLockResponse } as unknown as R];
+          }
+          if (sql === mockQueries.GetVersionSql) {
+            result.rows = [{ version: preDeployVersion } as unknown as R];
           }
           if (sql === mockQueries.GetDataVersionSql) {
             result.rows = [{ dataVersion: latestVersion } as unknown as R];
@@ -118,6 +134,7 @@ describe('Database config', () => {
 
       return new MockPool();
     });
+    jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
   });
 
   afterAll(() => {
@@ -141,7 +158,7 @@ describe('Database config', () => {
     expect(config.database).toBeDefined();
 
     const configCopy = deepClone(config);
-    const databaseConfig = configCopy.database as MedplumDatabaseConfig;
+    const databaseConfig = configCopy.database;
     const sslConfig = {
       rejectUnauthorized: true,
       require: true,
@@ -172,7 +189,7 @@ describe('Database config', () => {
     const configCopy = deepClone(config);
     configCopy.databaseProxyEndpoint = 'test';
 
-    const databaseConfig = configCopy.database as MedplumDatabaseConfig;
+    const databaseConfig = configCopy.database;
 
     await initDatabase(configCopy);
     expect(poolSpy).toHaveBeenCalledTimes(1);
@@ -199,6 +216,41 @@ describe('Database config', () => {
     jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
+  });
+
+  test('Default connection settings', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = false;
+    await initDatabase(config);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: `-c statement_timeout=60000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
+      })
+    );
+  });
+
+  test('Custom query timeout', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = false;
+    config.database.queryTimeout = 5000;
+    await initDatabase(config);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: `-c statement_timeout=5000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
+      })
+    );
+  });
+
+  test('Disabled connection configuration', async () => {
+    const config = await loadTestConfig();
+    config.database.queryTimeout = 12345;
+    config.database.disableConnectionConfiguration = true;
+    await initDatabase(config);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: undefined,
+      })
+    );
   });
 
   test('getDefaultStatementTimeout', async () => {

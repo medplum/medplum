@@ -1289,6 +1289,12 @@
       "type": "composite",
       "description": "A use context type and value assigned to the activity definition",
       "expression": "ActivityDefinition.useContext"
+    },
+    {
+      "name": "code",
+      "type": "token",
+      "description": "The code(s) described by this ActivityDefinition",
+      "expression": "ActivityDefinition.code"
     }
   ]
 }

@@ -7,14 +7,19 @@ import {
   Condition,
   Constant,
   InsertQuery,
+  isValidColumnName,
+  isValidTableName,
+  MAX_INDEX_DATA_BYTES,
   Negation,
+  periodToRangeString,
+  resetSqlDebug,
   SelectQuery,
+  setSqlDebug,
   SqlBuilder,
+  truncateTextColumn,
   UnionAllBuilder,
   UpdateQuery,
   ValuesQuery,
-  isValidTableName,
-  periodToRangeString,
 } from './sql';
 
 describe('SqlBuilder', () => {
@@ -379,4 +384,103 @@ test('isValidTableName', () => {
   expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
   expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
   expect(isValidTableName('Observation History')).toStrictEqual(false);
+});
+
+test('isValidColumnName', () => {
+  expect(isValidColumnName('id')).toStrictEqual(true);
+  expect(isValidColumnName('ID')).toStrictEqual(true);
+  expect(isValidColumnName('lastUpdated')).toStrictEqual(true);
+  expect(isValidColumnName('__version')).toStrictEqual(true);
+
+  expect(isValidColumnName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+  expect(isValidColumnName('last-updated')).toStrictEqual(false);
+  expect(isValidColumnName('')).toStrictEqual(false);
+});
+
+test('debug', async () => {
+  const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+  const conn = {
+    query: jest.fn(() => ({ rows: [] })),
+  } as unknown as Client;
+
+  const query = new SelectQuery('MyTable').column('id');
+
+  async function executeQuery(): Promise<void> {
+    const sql = new SqlBuilder();
+    query.buildSql(sql);
+    await sql.execute(conn);
+  }
+
+  setSqlDebug('literally anything');
+
+  consoleLogSpy.mockClear();
+  await executeQuery();
+  expect(consoleLogSpy).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+
+  setSqlDebug(undefined);
+
+  consoleLogSpy.mockClear();
+  await executeQuery();
+  expect(consoleLogSpy).not.toHaveBeenCalled();
+
+  resetSqlDebug();
+});
+
+describe('truncateTextColumn', () => {
+  test('returns undefined for undefined', () => {
+    expect(truncateTextColumn(undefined)).toBeUndefined();
+  });
+
+  test('returns undefined for empty string', () => {
+    expect(truncateTextColumn('')).toBeUndefined();
+  });
+
+  test('returns short string unchanged', () => {
+    expect(truncateTextColumn('hello')).toBe('hello');
+  });
+
+  test('returns string at exactly MAX_INDEX_DATA_BYTES unchanged', () => {
+    const value = 'a'.repeat(MAX_INDEX_DATA_BYTES);
+    expect(truncateTextColumn(value)).toBe(value);
+  });
+
+  test('truncates ASCII string to maximum bytes, not a fixed character count', () => {
+    const value = 'a'.repeat(MAX_INDEX_DATA_BYTES + 1);
+    const result = truncateTextColumn(value) as string;
+    expect(result).toBeDefined();
+    expect(result.length).toBe(MAX_INDEX_DATA_BYTES);
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
+  });
+
+  test('truncates very long string', () => {
+    const value = 'a'.repeat(MAX_INDEX_DATA_BYTES * 2);
+    const result = truncateTextColumn(value) as string;
+    expect(result).toBeDefined();
+    expect(result.length).toBe(MAX_INDEX_DATA_BYTES);
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
+  });
+
+  test('handles multi-byte UTF-8 characters', () => {
+    const maxChars = MAX_INDEX_DATA_BYTES / 4; // 4 bytes per emoji
+    const fitting = '\u{1F600}'.repeat(maxChars);
+    expect(truncateTextColumn(fitting)).toBe(fitting);
+
+    const exceeding = '\u{1F600}'.repeat(maxChars + 1);
+    const result = truncateTextColumn(exceeding) as string;
+    expect(result).toBeDefined();
+    expect(result).toBe(fitting);
+    expect(Array.from(result).length).toBe(maxChars);
+    expect(new TextEncoder().encode(result).length).toBe(MAX_INDEX_DATA_BYTES);
+  });
+
+  test('handles mixed ASCII and multi-byte characters', () => {
+    const asciiLen = MAX_INDEX_DATA_BYTES - 4; // Leave room for one 4-byte emoji
+    const value = 'a'.repeat(asciiLen) + '\u{1F600}\u{1F600}';
+    const result = truncateTextColumn(value) as string;
+    expect(result).toBeDefined();
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
+    // Should keep all ASCII chars + 1 emoji (exactly MAX_INDEX_DATA_BYTES bytes)
+    expect(result).toBe('a'.repeat(asciiLen) + '\u{1F600}');
+  });
 });

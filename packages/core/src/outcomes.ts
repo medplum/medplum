@@ -13,6 +13,7 @@ const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
 const PRECONDITION_FAILED_ID = 'precondition-failed';
+const UNSUPPORTED_MEDIA_TYPE_ID = 'unsupported-media-type';
 const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
@@ -159,6 +160,20 @@ export const preconditionFailed: OperationOutcome = {
   ],
 };
 
+export const unsupportedMediaType: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: UNSUPPORTED_MEDIA_TYPE_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'not-supported',
+      details: {
+        text: 'Unsupported media type',
+      },
+    },
+  ],
+};
+
 export const multipleMatches: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: MULTIPLE_MATCHES_ID,
@@ -237,16 +252,23 @@ export function conflict(details: string, code?: string): OperationOutcome {
   };
 }
 
-export function validationError(details: string): OperationOutcome {
+export function validationError(
+  details: string,
+  expressions?: string[],
+  code?: IssueType,
+  diagnostics?: string
+): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     issue: [
       {
         severity: 'error',
-        code: 'structure',
+        code: code ?? 'structure',
         details: {
           text: details,
         },
+        ...(expressions ? { expression: expressions } : undefined),
+        ...(diagnostics ? { diagnostics } : undefined),
       },
     ],
   };
@@ -406,6 +428,8 @@ export function getStatus(outcome: OperationOutcome): number {
     case PRECONDITION_FAILED_ID:
     case MULTIPLE_MATCHES_ID:
       return 412;
+    case UNSUPPORTED_MEDIA_TYPE_ID:
+      return 415;
     case BUSINESS_RULE:
       return 422;
     case TOO_MANY_REQUESTS_ID:
@@ -431,10 +455,10 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
-  constructor(outcome: OperationOutcome, cause?: unknown) {
-    super(operationOutcomeToString(outcome));
+  constructor(outcome: OperationOutcome, options?: ErrorOptions) {
+    super(operationOutcomeToString(outcome), options);
+    this.name = 'OperationOutcomeError';
     this.outcome = outcome;
-    this.cause = cause;
   }
 }
 
@@ -478,7 +502,7 @@ export function normalizeErrorString(error: unknown): string {
 }
 
 /**
- * Returns a string represenation of the operation outcome.
+ * Returns a string representation of the operation outcome.
  * @param outcome - The operation outcome.
  * @returns The string representation of the operation outcome.
  */
@@ -488,7 +512,7 @@ export function operationOutcomeToString(outcome: OperationOutcome): string {
 }
 
 /**
- * Returns a string represenation of the operation outcome issue.
+ * Returns a string representation of the operation outcome issue.
  * @param issue - The operation outcome issue.
  * @returns The string representation of the operation outcome issue.
  */

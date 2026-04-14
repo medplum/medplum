@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
 
 /**
@@ -21,7 +21,7 @@ export async function handler(
   event: BotEvent<CoverageEligibilityRequest>
 ): Promise<CoverageEligibilityResponse> {
   // Get the request from the input
-  const request = event.input as CoverageEligibilityRequest;
+  const request = event.input;
   const serviceType = request.item?.[0].category?.coding?.[0];
 
   // Process the request. This is a dummy function that represents sending the request to a coverage clearinghouse
@@ -55,9 +55,7 @@ function processRequest(
     purpose: request.purpose,
     patient: request.patient,
     created: new Date().toISOString(),
-    request: {
-      reference: getReferenceString(request),
-    },
+    request: createReference(request),
     outcome: 'complete',
     insurer: request.insurer,
     insurance: [

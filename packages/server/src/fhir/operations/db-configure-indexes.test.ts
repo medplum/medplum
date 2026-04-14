@@ -9,7 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 
-describe('dbgetginindexes', () => {
+describe('db-configure-indexes', () => {
   const app = express();
 
   let accessToken: string;
@@ -85,7 +85,7 @@ describe('dbgetginindexes', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: 'tableName must be specified' },
+          details: { text: 'Expected 1..* value(s) for input parameter tableName, but 0 provided' },
         },
       ],
     });

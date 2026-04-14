@@ -1,0 +1,14 @@
+.list {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.link {
+  color: var(--mantine-color-text);
+  line-height: 1;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+}

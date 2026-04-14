@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
-import type { ProjectMembership } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import type { ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -11,6 +11,7 @@ import { initApp, shutdownApp } from '../app';
 import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
@@ -395,6 +396,110 @@ describe('Project Admin routes', () => {
         },
       ],
     });
+  });
+
+  test('Delete project-scoped user membership also deletes User resource', async () => {
+    // Register and create a project
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Delete project-scoped user project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite a project-scoped user (Patient is project-scoped by default)
+    const patientEmail = `patient${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'John',
+        lastName: 'Patient',
+        email: patientEmail,
+      });
+    expect(res2.status).toBe(200);
+
+    // Get the membership
+    const membersRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(membersRes.status).toBe(200);
+    const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
+    const patientMember = members.find(
+      (m) => m.profile?.reference?.startsWith('Patient/') && !m.admin
+    ) as ProjectMembership;
+    expect(patientMember).toBeDefined();
+
+    // Verify the user is project-scoped
+    const systemRepo = getGlobalSystemRepo();
+    const user = await systemRepo.readReference<User>(patientMember.user as any);
+    expect(user.project?.reference).toBe(getReferenceString(project));
+
+    // Delete the membership
+    const res3 = await request(app)
+      .delete('/admin/projects/' + project.id + '/members/' + patientMember.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+
+    // Verify the User resource was also deleted
+    await expect(systemRepo.readResource<User>('User', user.id)).rejects.toThrow();
+  });
+
+  test('Delete server-scoped user membership does not delete User resource', async () => {
+    // Register and create a project
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Delete server-scoped user project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite a server-scoped user (Practitioner is server-scoped by default)
+    const practitionerEmail = `practitioner${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Dr',
+        lastName: 'Practitioner',
+        email: practitionerEmail,
+        scope: 'server',
+      });
+    expect(res2.status).toBe(200);
+
+    // Get the membership
+    const membersRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(membersRes.status).toBe(200);
+    const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
+    const practitionerMember = members.find(
+      (m) => m.profile?.reference?.startsWith('Practitioner/') && !m.admin
+    ) as ProjectMembership;
+    expect(practitionerMember).toBeDefined();
+
+    // Verify the user is server-scoped (no project field)
+    const systemRepo = getGlobalSystemRepo();
+    const user = await systemRepo.readReference<User>(practitionerMember.user as any);
+    expect(user.project).toBeUndefined();
+
+    // Delete the membership
+    const res3 = await request(app)
+      .delete('/admin/projects/' + project.id + '/members/' + practitionerMember.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+
+    // Verify the User resource was NOT deleted (still exists)
+    const userAfterDelete = await systemRepo.readResource<User>('User', user.id);
+    expect(userAfterDelete.id).toBe(user.id);
   });
 
   test('Save project secrets', async () => {

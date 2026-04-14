@@ -5,6 +5,7 @@ import { XSI_URL } from './systems';
 import type { Ccda } from './types';
 
 const ARRAY_PATHS = [
+  'ClinicalDocument.participant',
   'ClinicalDocument.recordTarget',
 
   // Always arrays
@@ -37,6 +38,11 @@ const ARRAY_PATHS = [
 
   'code.translation',
   'value.translation',
+  'routeCode.translation',
+  'methodCode.translation',
+  'targetSiteCode.translation',
+  'approachSiteCode.translation',
+  'administrationUnitCode.translation',
 
   'section.entry',
 
@@ -86,7 +92,8 @@ export function convertXmlToCcda(xml: string): Ccda {
     attributeNamePrefix: '@_',
     parseAttributeValue: false,
     parseTagValue: false,
-    isArray: (_tagName, jPath, _isLeafNode, _isAttribute) => ARRAY_PATHS.some((p) => jPath.endsWith(p)),
+    jPath: true,
+    isArray: (_tagName, jPath, _isLeafNode, _isAttribute) => ARRAY_PATHS.some((p) => (jPath as string).endsWith(p)),
   });
 
   const parsedData = parser.parse(xml);
@@ -138,7 +145,7 @@ export function convertToCompactXml(obj: any): string {
     suppressBooleanAttributes: false,
     suppressEmptyNode: true,
   });
-  const xml = builder.build(obj) as string;
+  const xml = builder.build(obj);
   return xml
     .split('\n')
     .map((line: string) => line.trim())

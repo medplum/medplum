@@ -97,11 +97,11 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   private get schema(): InternalTypeSchema {
-    return this.schemaStack[this.schemaStack.length - 1];
+    return this.schemaStack.at(-1) as InternalTypeSchema;
   }
 
   private get value(): ValueContext {
-    return this.valueStack[this.valueStack.length - 1];
+    return this.valueStack.at(-1) as ValueContext;
   }
 
   onEnterSchema(schema: InternalTypeSchema): void {

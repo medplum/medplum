@@ -7,9 +7,11 @@ import fs, { writeFileSync } from 'fs';
 import type { DOMWindow } from 'jsdom';
 import { JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
-import fetch from 'node-fetch';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 import { resolve } from 'path/posix';
+import type { ReadableStream as WebReadableStream } from 'stream/web';
 import * as unzipper from 'unzipper';
 
 import type {
@@ -36,7 +38,7 @@ let documentedTypes: Record<string, DocumentationLocation>;
 let lowerCaseResourceNames: Record<string, string>;
 
 export async function main(): Promise<void> {
-  const outputFolder = path.resolve(__dirname, '..', 'output');
+  const outputFolder = path.resolve(import.meta.dirname, '..', 'output');
   if (!fs.existsSync(outputFolder)) {
     fs.mkdirSync(outputFolder);
   }
@@ -99,7 +101,7 @@ function buildDocsDefinitions(
 ): ResourceDocsProps[] {
   const results = [];
   for (const definition of definitions) {
-    results.push(buildDocsDefinition(definition, location, indexedSearchParams?.[definition.name as string]));
+    results.push(buildDocsDefinition(definition, location, indexedSearchParams?.[definition.name]));
   }
 
   return results;
@@ -111,7 +113,7 @@ function buildDocsDefinition(
   searchParameters?: SearchParameter[]
 ): ResourceDocsProps {
   const result = {
-    name: resourceDefinition.name as string,
+    name: resourceDefinition.name,
     location,
     description: resourceDefinition.description || '',
     properties: [] as PropertyDocInfo[],
@@ -119,7 +121,7 @@ function buildDocsDefinition(
   const elements = resourceDefinition.snapshot?.element || [];
   for (const element of elements) {
     const parts = element.path?.split('.') || [];
-    const name = parts[parts.length - 1];
+    const name = parts.at(-1) as string;
     const { path, min, max, short, definition, comment } = element;
     result.properties.push({
       name,
@@ -137,17 +139,8 @@ function buildDocsDefinition(
 
   if (searchParameters) {
     result.searchParameters = (searchParameters || []).map((param) => ({
-      name: param.name as string,
-      type: param.type as
-        | 'string'
-        | 'number'
-        | 'uri'
-        | 'date'
-        | 'token'
-        | 'reference'
-        | 'composite'
-        | 'quantity'
-        | 'special',
+      name: param.name,
+      type: param.type,
       description: getSearchParamDescription(param, result.name),
       expression: getExpressionForResourceType(result.name, param.expression || '') || (param.expression as string),
     }));
@@ -267,13 +260,13 @@ function writeDocs(
     const resourceType = definition.name;
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
+      resolve(import.meta.dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2) + '\n',
       'utf8'
     );
 
     writeFileSync(
-      resolve(__dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
+      resolve(import.meta.dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
       buildDocsMarkdown(i, definition, resourceIntroductions?.[resourceType]),
       'utf8'
     );
@@ -409,44 +402,42 @@ function rewriteLinksText(text: string | undefined): string {
  */
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
   console.info('Downloading FHIR Spec...');
-  return new Promise((resolve, reject) => {
-    fetch(downloadURL)
-      .then((response) => {
-        if (!response.ok) {
-          reject(new Error(`Error downloading file: ${response.status} ${response.statusText}`));
-          return;
+
+  const response = await fetch(downloadURL);
+  if (!response.ok) {
+    throw new Error(`Error downloading file: ${response.status} ${response.statusText}`);
+  }
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
+
+  // Download the zip file
+  const nodeReadable = Readable.fromWeb(response.body as WebReadableStream);
+  await pipeline(nodeReadable, fs.createWriteStream(zipFilePath));
+
+  // Extract the zip file
+  await new Promise<void>((resolve, reject) => {
+    fs.createReadStream(zipFilePath)
+      .pipe(unzipper.Parse())
+      .on('entry', function (entry) {
+        const fileName = entry.path;
+        const type = entry.type;
+        const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+
+        if (type === 'Directory') {
+          mkdirp.sync(fullPath);
+          entry.autodrain();
+        } else {
+          mkdirp.sync(path.dirname(fullPath));
+          entry.pipe(fs.createWriteStream(fullPath));
         }
-
-        const fileStream = fs.createWriteStream(zipFilePath);
-        response.body.pipe(fileStream);
-
-        // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
-        fileStream.on('finish', async () => {
-          fs.createReadStream(zipFilePath)
-            .pipe(unzipper.Parse())
-            .on('entry', function (entry) {
-              const fileName = entry.path;
-              const type = entry.type; // 'Directory' or 'File'
-              const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
-
-              if (type === 'Directory') {
-                mkdirp.sync(fullPath);
-                entry.autodrain();
-              } else {
-                mkdirp.sync(path.dirname(fullPath));
-                entry.pipe(fs.createWriteStream(fullPath));
-              }
-              console.info('\rDownloading FHIR Spec...');
-            })
-            .on('close', resolve)
-            .on('error', reject);
-        });
+        console.info('\rDownloading FHIR Spec...');
       })
-      .catch(() => {
-        reject(new Error('Error downloading or unzipping file'));
-      });
+      .on('close', resolve)
+      .on('error', reject);
   });
 }
+
 /**
  * For each core FHIR resource type, find the corresponding HTML page and extract the relevant introductory sections.
  * @param htmlDirectory - Directory containing HTML files for each resource ([resourceType].html)
@@ -477,7 +468,7 @@ function extractResourceDescriptions(
       for (const div of divs) {
         const h2 = div.querySelector('h2');
         if (h2) {
-          const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
+          const h2Text = h2.textContent?.toLowerCase().replaceAll(/\s/g, '') || '';
 
           const paragraphHTML = sanitizeNodeContent(div, dom.window);
 
@@ -617,9 +608,9 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
 async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
-  const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
-  const zipFile = path.resolve(__dirname, '..', 'output', 'fhir-spec.zip');
-  const outputFolder = path.resolve(__dirname, '..', 'output', 'fhir-spec');
+  const downloadURL = 'https://hl7.org/fhir/R4/fhir-spec.zip';
+  const zipFile = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec.zip');
+  const outputFolder = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');
   if (!fs.existsSync(outputFolder)) {
     return downloadAndUnzip(downloadURL, zipFile, outputFolder).then(() => {

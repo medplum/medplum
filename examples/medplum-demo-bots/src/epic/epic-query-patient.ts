@@ -22,7 +22,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   }
 
   // Handles unknown issue with newlines in private key
-  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replace(/\\n/g, '\n');
+  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replaceAll('\\n', '\n');
   if (!privateKeyString) {
     throw new Error('Missing EPIC_PRIVATE_KEY');
   }
@@ -105,7 +105,7 @@ async function createEpicPatient(
     return id;
   });
 
-  await epic.createResource<Patient>(patientToCreate);
+  await epic.createResource(patientToCreate);
   const epicPatient = await epic.searchOne('Patient', { identifier: ssnIdentifier });
 
   if (!epicPatient) {

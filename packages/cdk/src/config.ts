@@ -110,7 +110,7 @@ export class InfraConfigNormalizer {
       obj[key] = await this.fetchExternalSecret(currentVal);
     }
     // --- case 3: an array of:
-    else if (Array.isArray(currentVal) && currentVal.length) {
+    else if (Array.isArray(currentVal)) {
       obj[key] = await this.normalizeInfraConfigArray(currentVal);
     }
     // --- case 4: other object (recurse)
@@ -158,7 +158,7 @@ export function normalizeFetchedValue(
     }
     return normalized === 'true';
   } else if (typeOfVal === 'string' && expectedType === 'number') {
-    const parsed = parseInt(rawValue as string, 10);
+    const parsed = Number.parseInt(rawValue as string, 10);
     if (Number.isNaN(parsed)) {
       throw new OperationOutcomeError(
         validationError(`Invalid value found for key '${key}'; expected integer value but got '${rawValue}'`)

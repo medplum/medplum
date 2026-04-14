@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
-import type { PasswordChangeRequest, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { bcryptHashPassword } from './utils';
@@ -18,15 +18,9 @@ export const setPasswordValidator = makeValidationMiddleware([
 ]);
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
-  let securityRequest: UserSecurityRequest | PasswordChangeRequest;
+  const systemRepo = getGlobalSystemRepo();
 
-  // PasswordChangeRequest is deprecated but still supported. When it is removed, this try/catch can be removed
-  try {
-    securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
-  } catch (_err) {
-    securityRequest = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
-  }
+  const securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
   if (securityRequest.used) {
     sendOutcome(res, badRequest('Already used'));
@@ -38,12 +32,12 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  if (!timingSafeEqualStr(securityRequest.secret as string, req.body.secret)) {
+  if (!timingSafeEqualStr(securityRequest.secret, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
-  const user = await systemRepo.readReference(securityRequest.user as Reference<User>);
+  const user = await systemRepo.readReference(securityRequest.user);
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {
@@ -58,6 +52,6 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
 
 export async function setPassword(user: User, password: string): Promise<void> {
   const passwordHash = await bcryptHashPassword(password);
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   await systemRepo.updateResource<User>({ ...user, passwordHash });
 }

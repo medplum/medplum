@@ -99,10 +99,10 @@ sudo systemctl restart redis-server
 
 ## Install Node.js
 
-Add the Node.js v22.x Ubuntu repository:
+Add the Node.js v24.x Ubuntu repository:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash -
 ```
 
 Install Node.js
@@ -125,6 +125,40 @@ Install dependencies
 ```bash
 npm ci
 ```
+
+### Configure the app environment
+
+:::caution[Build-time configuration]
+
+The Medplum app is a Vite-based single-page application. Environment variables are **baked into the static build output** at compile time — they are not read at runtime. You must set these variables **before** running the build command.
+
+:::
+
+Create a `.env` file in `packages/app/` to configure your deployment. The only required variable is `MEDPLUM_BASE_URL`, which must point to your API server.
+
+```bash
+cat > packages/app/.env << 'EOF'
+# Required: URL of your Medplum API server
+MEDPLUM_BASE_URL=https://api.example.com/
+
+# Optional: Pre-fill a specific OAuth2 client ID for all logins
+MEDPLUM_CLIENT_ID=
+
+# Optional: Enable Google Sign-In (provide your Google OAuth2 client ID)
+GOOGLE_CLIENT_ID=
+
+# Optional: Enable reCAPTCHA on the sign-in page (provide your reCAPTCHA v3 site key)
+RECAPTCHA_SITE_KEY=
+
+# Optional: Allow new users to self-register (set to "false" to disable)
+MEDPLUM_REGISTER_ENABLED=true
+
+# Optional: Enable AWS Textract integration
+MEDPLUM_AWS_TEXTRACT_ENABLED=false
+EOF
+```
+
+Replace `https://api.example.com/` with your actual API domain. Leave optional variables empty to use their defaults.
 
 Build the server, app, and necessary dependencies
 
@@ -222,22 +256,50 @@ nohup npm run dev > server.log 2>&1 &
 
 ### Update Medplum app settings
 
-In the terminal that is running `app`, you now must update the `.env` file with your new domain:
+:::info
+
+If you already created `packages/app/.env` in the [Configure the app environment](#configure-the-app-environment) step above, verify that `MEDPLUM_BASE_URL` is set to your HTTPS domain. If you skipped that step or used `localhost`, update the value now — the URL is baked into the build output and must be correct before building.
+
+:::
+
+From the repo root, update `packages/app/.env` with your production API domain:
 
 ```bash
-echo "MEDPLUM_BASE_URL=https://api.example.com" > .env
+cat > packages/app/.env << 'EOF'
+# Required: URL of your Medplum API server
+MEDPLUM_BASE_URL=https://api.example.com/
+
+# Optional: Pre-fill a specific OAuth2 client ID for all logins
+MEDPLUM_CLIENT_ID=
+
+# Optional: Enable Google Sign-In (provide your Google OAuth2 client ID)
+GOOGLE_CLIENT_ID=
+
+# Optional: Enable reCAPTCHA on the sign-in page (provide your reCAPTCHA v3 site key)
+RECAPTCHA_SITE_KEY=
+
+# Optional: Allow new users to self-register (set to "false" to disable)
+MEDPLUM_REGISTER_ENABLED=true
+
+# Optional: Enable AWS Textract integration
+MEDPLUM_AWS_TEXTRACT_ENABLED=false
+EOF
 ```
 
 Build the app. This will generate a new version of the app in the `dist` directory:
 
 ```bash
+cd packages/app
 npm run build
+cd ../..
 ```
 
 Start the "preview" server:
 
 ```bash
+cd packages/app
 nohup npx vite preview > app.log 2>&1 &
+cd ../..
 ```
 
 ### Install Nginx and Certbot

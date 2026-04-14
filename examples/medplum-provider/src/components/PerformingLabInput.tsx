@@ -4,17 +4,24 @@ import { getDisplayString, getReferenceString } from '@medplum/core';
 import type { Patient, Resource } from '@medplum/fhirtypes';
 import type { LabOrderInputErrors, LabOrganization } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
-import { AsyncAutocomplete } from '@medplum/react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
+import { AsyncAutocomplete } from '@medplum/react';
 import type { JSX } from 'react';
+import { useEffect } from 'react';
 
 export type PractitionerInputProps = {
   patient: Patient | undefined;
+  performingLab?: LabOrganization | undefined;
   error?: NonNullable<LabOrderInputErrors['performingLab']>;
 };
 
-export function PerformingLabInput({ patient, error }: PractitionerInputProps): JSX.Element {
+export function PerformingLabInput({ patient, performingLab, error }: PractitionerInputProps): JSX.Element {
   const { searchAvailableLabs, setPerformingLab } = useHealthGorillaLabOrderContext();
+  useEffect(() => {
+    if (performingLab) {
+      setPerformingLab(performingLab);
+    }
+  }, [performingLab, setPerformingLab]);
   return (
     <AsyncAutocomplete<LabOrganization>
       required
@@ -22,6 +29,7 @@ export function PerformingLabInput({ patient, error }: PractitionerInputProps): 
       label="Performing lab"
       disabled={!patient}
       maxValues={1}
+      defaultValue={performingLab}
       loadOptions={searchAvailableLabs}
       toOption={resourceToOption}
       onChange={(item) => {

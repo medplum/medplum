@@ -97,14 +97,14 @@ function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
   try {
     return evalFhirPath(expression, resource);
   } catch (err) {
-    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), err);
+    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), { cause: err });
   }
 }
 
 function tryCsvEscape(input: unknown): string {
   try {
     return csvEscape(input);
-  } catch (_err) {
+  } catch {
     // Silently ignore malformed data in projects that do not use "strict" mode
     return '';
   }
@@ -137,9 +137,11 @@ function csvEscape(input: unknown): string {
       // ContactPoint
       return csvEscapeString((input as ContactPoint).value as string);
     }
-    if ('display' in input) {
-      // Reference
-      return csvEscapeString((input as Reference).display as string);
+    if ('reference' in input) {
+      // Reference - use display when present, otherwise the reference string (e.g. "AccessPolicy/123")
+      const ref = input as Reference;
+      const value = ref.display?.trim() || ref.reference || '';
+      return csvEscapeString(value);
     }
     if ('coding' in input) {
       // CodeableConcept
@@ -166,7 +168,7 @@ function csvEscape(input: unknown): string {
 const CSV_INJECTION_CHARS = ['=', '+', '-', '@'];
 
 function csvEscapeString(input: string): string {
-  let result = input.trim().replace(/"/g, '""');
+  let result = input.trim().replaceAll('"', '""');
   if (result.length > 0 && CSV_INJECTION_CHARS.includes(result[0])) {
     result = "'" + result;
   }

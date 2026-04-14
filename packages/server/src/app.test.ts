@@ -1,19 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, getReferenceString } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import { badRequest, ContentType, getReferenceString, unsupportedMediaType } from '@medplum/core';
+import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
+import { getProjectSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
-import { getRedis } from './redis';
+import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
+  let stdOutSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    stdOutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    stdOutSpy.mockRestore();
+  });
+
   test('Get HTTP config', async () => {
     const app = express();
     const config = await loadTestConfig();
@@ -106,30 +117,26 @@ describe('App', () => {
 
   describe('loggingMiddleware', () => {
     let app: express.Express;
-    let originalWrite: any;
 
     beforeEach(async () => {
       app = express();
       const config = await loadTestConfig();
       config.logLevel = 'info';
       config.logRequests = true;
-      originalWrite = process.stdout.write;
-      process.stdout.write = jest.fn();
       await initApp(app, config);
     });
 
     afterEach(async () => {
       await shutdownApp();
-      process.stdout.write = originalWrite;
     });
 
     test('X-Forwarded-For spoofing', async () => {
       const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
       expect(res.status).toBe(200);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
-      const logObj = JSON.parse(logLine);
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
       expect(logObj.ip).toBe('2.2.2.2');
     });
 
@@ -147,11 +154,10 @@ describe('App', () => {
         .send(patient);
       expect(res1.status).toBe(201);
       expect(res1.body).toMatchObject(patient);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const calls = (process.stdout.write as jest.Mock).mock.calls;
-      const logLine = calls[calls.length - 1][0];
-      const logObj = JSON.parse(logLine);
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
     });
 
@@ -198,12 +204,47 @@ describe('App', () => {
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(`>kjaysgdfsk;sdfgjsdrg<`); // Send malformed data that will fail in the body parser middleware
       expect(res1.status).toBe(400);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const calls = (process.stdout.write as jest.Mock).mock.calls;
-      const logLine = calls[calls.length - 1][0];
-      const logObj = JSON.parse(logLine);
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 400 });
+    });
+
+    test('Logs authentication error', async () => {
+      const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
+
+      // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
+      await (await getProjectSystemRepo(project)).deleteResource(membership.resourceType, membership.id);
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send();
+      expect(res1.status).toBe(400);
+      const outcome = res1.body as OperationOutcome;
+      const issue = outcome.issue[0];
+
+      // Error should be wrapped for presentation to user
+      expect(issue.details?.text).toStrictEqual('Authentication error');
+      expect(issue.diagnostics).toStrictEqual('OperationOutcomeError: Gone');
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      // Request should be logged
+      expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
+    });
+
+    test('Route parsing error', async () => {
+      const accessToken = await initTestAuth();
+      const res1 = await request(app)
+        .get('/fhir/R4/Organization/%account')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send();
+      expect(res1.status).toBe(400);
     });
   });
 
@@ -276,16 +317,31 @@ describe('App', () => {
     const config = await loadTestConfig();
     config.defaultRateLimit = 1;
 
-    const testRedisConfig = config.redis as TestRedisConfig;
-    testRedisConfig.db = 6; // Use different temp Redis instance for this test only
-    testRedisConfig.keyPrefix = 'server-rate-limit:';
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    expect(rateLimitRedisConfig).toBeDefined();
+    rateLimitRedisConfig.keyPrefix = 'server-rate-limit:';
     await initApp(app, config);
 
     const res = await request(app).get('/api/');
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('UnsupportedMediaTypeError', async () => {
+    const app = express();
+    app.get('/throw', () => {
+      const err = new Error('UnsupportedMediaTypeError');
+      err.name = 'UnsupportedMediaTypeError';
+      throw err;
+    });
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app).get('/throw');
+    expect(res.status).toBe(415);
+    expect(res.body).toMatchObject(unsupportedMediaType);
     expect(await shutdownApp()).toBeUndefined();
   });
 });

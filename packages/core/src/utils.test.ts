@@ -11,6 +11,7 @@ import type {
   Resource,
   User,
 } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
@@ -22,6 +23,8 @@ import {
   calculateAge,
   calculateAgeString,
   capitalize,
+  codeableConceptMatchesToken,
+  codingMatchesToken,
   concatUrls,
   createReference,
   deepClone,
@@ -48,6 +51,7 @@ import {
   getReferenceString,
   getWebSocketUrl,
   isComplexTypeCode,
+  isDefined,
   isEmpty,
   isLowerCase,
   isPopulated,
@@ -56,6 +60,7 @@ import {
   isValidHostname,
   lazy,
   mapByIdentifier,
+  NOOP,
   parseReference,
   preciseEquals,
   preciseGreaterThan,
@@ -67,6 +72,7 @@ import {
   setCodeBySystem,
   setIdentifier,
   singularize,
+  sleep,
   sortStringArray,
   splitN,
   stringify,
@@ -584,6 +590,30 @@ describe('Core Utils', () => {
       resourceType: 'Patient',
       identifier: [{ system: 'x', value: 'y' }],
     });
+
+    // New identifiers array with "use" attribute
+    const r5: Patient = { resourceType: 'Patient' };
+    setIdentifier(r5, 'x', 'y', { use: 'temp' });
+    expect(r5).toStrictEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y', use: 'temp' }] });
+
+    // Existing identifiers array, new Identifier with "use" attribute
+    const r6: Patient = { resourceType: 'Patient', identifier: [{ system: 'a', value: 'b' }] };
+    setIdentifier(r6, 'x', 'y', { use: 'usual' });
+    expect(r6).toStrictEqual({
+      resourceType: 'Patient',
+      identifier: [
+        { system: 'a', value: 'b' },
+        { system: 'x', value: 'y', use: 'usual' },
+      ],
+    });
+
+    // Existing identifiers array, update existing Identifier with new value and "use" attribute
+    const r7: Patient = { resourceType: 'Patient', identifier: [{ system: 'x', value: 'b' }] };
+    setIdentifier(r7, 'x', 'y', { use: 'secondary' });
+    expect(r7).toStrictEqual({
+      resourceType: 'Patient',
+      identifier: [{ system: 'x', value: 'y', use: 'secondary' }],
+    });
   });
 
   test('Get extension undefined value', () => {
@@ -850,6 +880,51 @@ describe('Core Utils', () => {
     expect(findCodeBySystem(categories, 'x')).toStrictEqual('1');
     expect(findCodeBySystem(categories, 'y')).toStrictEqual('2');
     expect(findCodeBySystem(categories, 'z')).toStrictEqual(undefined);
+  });
+
+  test('codingMatchesToken', () => {
+    expect(codingMatchesToken({ code: 'hello' }, 'hello')).toStrictEqual(true);
+    expect(codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'hello')).toStrictEqual(true);
+
+    expect(codingMatchesToken({ code: 'hello' }, 'world')).toStrictEqual(false);
+    expect(codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'world')).toStrictEqual(false);
+
+    expect(codingMatchesToken({ code: 'hello' }, '|hello')).toStrictEqual(true);
+    expect(codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, '|hello')).toStrictEqual(false);
+
+    expect(codingMatchesToken({ code: 'hello' }, 'https://example.com/fhir|')).toStrictEqual(false);
+    expect(
+      codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'https://example.com/fhir|')
+    ).toStrictEqual(true);
+
+    expect(codingMatchesToken({ code: 'hello' }, 'https://example.com/fhir|hello')).toStrictEqual(false);
+    expect(
+      codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'https://example.com/fhir|hello')
+    ).toStrictEqual(true);
+  });
+
+  test('codeableConceptMatchesToken', () => {
+    // true when there is one coding that matches
+    expect(codeableConceptMatchesToken({ coding: [{ code: 'hello' }] }, 'hello')).toEqual(true);
+
+    // returns true when there are multiple codings and at least one matches
+    expect(codeableConceptMatchesToken({ coding: [{ code: 'different' }, { code: 'hello' }] }, 'hello')).toEqual(true);
+
+    // returns false when no coding matches
+    expect(
+      codeableConceptMatchesToken(
+        {
+          coding: [
+            { code: 'different' },
+            { code: 'hello' }, // not a match: no `system` component
+          ],
+        },
+        'https://example.com/fhir|hello'
+      )
+    ).toEqual(false);
+
+    // returns false when the concept has no codings
+    expect(codeableConceptMatchesToken({}, 'hello')).toEqual(false);
   });
 
   test('Capitalize', () => {
@@ -1323,6 +1398,15 @@ describe('Core Utils', () => {
     expect(result).toStrictEqual(observations[0]);
   });
 
+  test('sleep with abort signal', async () => {
+    const controller = new AbortController();
+    const promise = sleep(100, { signal: controller.signal });
+
+    controller.abort();
+
+    await expect(promise).rejects.toThrow('This operation was aborted');
+  });
+
   test('splitN', () => {
     expect(
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
@@ -1336,7 +1420,7 @@ describe('Core Utils', () => {
   });
 
   test('lazy', () => {
-    const mockFn = jest.fn().mockReturnValue('test result');
+    const mockFn = vi.fn().mockReturnValue('test result');
     const lazyFn = lazy(mockFn);
 
     // the mock function should not have been called
@@ -1530,6 +1614,10 @@ describe('Core Utils', () => {
     expect(isValidHostname('foo_-bar_-')).toStrictEqual(false);
     expect(isValidHostname('foo | rm -rf /')).toStrictEqual(false);
   });
+
+  test('NOOP', () => {
+    expect(NOOP()).toBeUndefined();
+  });
 });
 
 describe('addProfileToResource', () => {
@@ -1659,4 +1747,19 @@ describe('escapeHtml', () => {
   test('Escapes …', () => expect(escapeHtml('…')).toStrictEqual('&hellip;'));
 
   test('Escapes tag', () => expect(escapeHtml('<foo>')).toStrictEqual('&lt;foo&gt;'));
+});
+
+describe('isDefined', () => {
+  test('is false for null values', () => expect(isDefined(null)).toStrictEqual(false));
+  test('is false for undefined values', () => expect(isDefined(undefined)).toStrictEqual(false));
+  test('is true for other falsey values', () => {
+    expect(isDefined('')).toStrictEqual(true);
+    expect(isDefined(0)).toStrictEqual(true);
+    expect(isDefined(false)).toStrictEqual(true);
+  });
+  test('when used in Array#filter it refines the type', () => {
+    const input: (number | null | undefined)[] = [0, undefined, 1, null, 2];
+    const result: number[] = input.filter(isDefined);
+    expect(result).toEqual([0, 1, 2]);
+  });
 });

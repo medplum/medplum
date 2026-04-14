@@ -7,10 +7,12 @@ import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';
 import { App } from './app';
+import { getFreePort } from './test-utils';
 
 const medplum = new MockClient();
 let bot: Bot;
 let endpoint: Endpoint;
+let port: number;
 
 describe('Byte Stream', () => {
   beforeAll(async () => {
@@ -22,10 +24,11 @@ describe('Byte Stream', () => {
 
     bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
+    port = await getFreePort();
     endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       status: 'active',
-      address: 'tcp://0.0.0.0:58000?startChar=%02&endChar=%03',
+      address: `tcp://0.0.0.0:${port}?startChar=%02&endChar=%03`,
       connectionType: { code: ContentType.OCTET_STREAM },
       payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
     });
@@ -85,7 +88,7 @@ describe('Byte Stream', () => {
     const testData = Buffer.from([0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]); // STX + "Hello" + ETX
 
     await new Promise<void>((resolve, reject) => {
-      client = net.createConnection({ port: 58000 }, () => {
+      client = net.createConnection({ port }, () => {
         client.write(testData);
       });
 
@@ -160,7 +163,7 @@ describe('Byte Stream', () => {
     const testData = Buffer.from([0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
 
     await new Promise<void>((resolve, reject) => {
-      client.connect(58000, 'localhost', () => {
+      client.connect(port, 'localhost', () => {
         client.write(testData);
         resolve();
       });
@@ -235,7 +238,7 @@ describe('Byte Stream', () => {
     const testData = Buffer.from([0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
 
     await new Promise<void>((resolve, reject) => {
-      client.connect(58000, 'localhost', () => {
+      client.connect(port, 'localhost', () => {
         client.write(testData);
         resolve();
       });
@@ -310,7 +313,7 @@ describe('Byte Stream', () => {
     ]);
 
     await new Promise<void>((resolve, reject) => {
-      client.connect(58000, 'localhost', () => {
+      client.connect(port, 'localhost', () => {
         client.write(testData);
         resolve();
       });
@@ -382,7 +385,7 @@ describe('Byte Stream', () => {
 
     // Send partial message first
     const partialData = Buffer.from([0x02, 0x48, 0x65]); // STX + "He"
-    client.connect(58000, 'localhost', () => {
+    client.connect(port, 'localhost', () => {
       client.write(partialData);
     });
 
@@ -433,10 +436,11 @@ describe('Byte Stream', () => {
     });
 
     // Create endpoint with missing startChar parameter
+    const invalidPort = await getFreePort();
     const invalidEndpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       status: 'active',
-      address: 'tcp://0.0.0.0:58020?startChar=%02', // Missing endChar
+      address: `tcp://0.0.0.0:${invalidPort}?startChar=%02`, // Missing endChar
       connectionType: { code: ContentType.JSON },
       payloadType: [{ coding: [{ code: ContentType.JSON }] }],
     });

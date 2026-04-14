@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * A human-readable summary of the resource conveying the essential

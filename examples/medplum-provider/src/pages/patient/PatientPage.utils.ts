@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, ProjectMembership } from '@medplum/fhirtypes';
+import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../../components/utils';
 
 export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
@@ -33,6 +34,26 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
   return result;
 }
 
+/**
+ * Returns the patient page tabs filtered based on user permissions.
+ * Filters out e-prescribing tabs if the user doesn't have the corresponding integration access.
+ * @param membership - The current user's project membership.
+ * @returns Filtered array of patient page tabs.
+ */
+export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
+  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  const hasScriptSure = hasScriptSureIdentifier(membership);
+  return PatientPageTabs.filter((tab) => {
+    if (tab.id === 'dosespot') {
+      return hasDoseSpot;
+    }
+    if (tab.id === 'scriptsure') {
+      return hasScriptSure;
+    }
+    return true;
+  });
+}
+
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
@@ -43,7 +64,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'tasks',
-    url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'Task',
     label: 'Tasks',
   },
   {
@@ -51,9 +72,11 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'MedicationRequest?_fields=medication[x],intent,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Meds',
   },
+  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
+  { id: 'scriptsure', url: 'scriptsure', label: 'ScriptSure' },
   {
     id: 'labs',
-    url: 'ServiceRequest?_fields=_lastUpdated,code,status,orderDetail,category&_offset=0&_sort=-_lastUpdated&category=108252007&patient=%patient.id',
+    url: 'ServiceRequest',
     label: 'Labs',
   },
   {
@@ -62,26 +85,15 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Devices',
   },
   {
-    id: 'diagnosticreports',
-    url: 'DiagnosticReport?_fields=_lastUpdated,category,code,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Reports',
-  },
-  {
     id: 'documentreference',
-    url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'DocumentReference?subject=%patient.id',
     label: 'Documents',
-  },
-  {
-    id: 'appointments',
-    url: 'Appointment?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Appointments',
   },
   {
     id: 'careplan',
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
-  { id: 'message', url: 'Message', label: 'Messages' },
-  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
+  { id: 'message', url: 'Communication', label: 'Messages' },
   { id: 'export', url: 'export', label: 'Export' },
 ];

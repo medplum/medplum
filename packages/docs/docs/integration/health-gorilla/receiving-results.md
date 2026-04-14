@@ -12,6 +12,7 @@ When Health Gorilla receives results from performing laboratories (Quest, Labcor
 
 Understanding how results are structured and connected is essential for building clinical workflows and displaying results to providers.
 
+
 | Concept                   | Description                                                                                                        |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Unsolicited Results       | Lab values delivered as machine-readable FHIR `Observations`                                                       |
@@ -19,6 +20,7 @@ Understanding how results are structured and connected is essential for building
 | Health Gorilla PDF Report | `DocumentReference` containing CLIA-certified lab report in a format that is consistent across all performing labs |
 | Clinical Lab PDF Report   | `DocumentReference` containing the original lab report delivered by the performing lab                             |
 | Structured Lab Results    | Lab values delivered as machine-readable FHIR `Observations`                                                       |
+
 
 ## FHIR Data Model
 
@@ -63,6 +65,8 @@ graph TD
     class SR serviceRequest
 ```
 
+
+
 ## Result Resource Types
 
 ### DiagnosticReport
@@ -74,7 +78,7 @@ The `DiagnosticReport` serves as the primary container for all results related t
 | Field                                | Description                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `DiagnosticReport.basedOn`           | References the original [order `ServiceRequest`](./sending-orders#order-structure) that generated this result                                                                                                                                                                                                                                                |
-| `DiagnosticReport.identifier`        | Contains multiple identifiers: <ul><li>Health Gorilla's unique identifier for the report</li><li>**Placer ID**: This is the _performing lab's_ order identifier. Also known as the "Lab reference id."</li><li>**Lab's accession number**: A unique identifier assigned by the performing laboratory to the specific _specimen_ when it is opened.</li></ul> |
+| `DiagnosticReport.identifier`        | Contains multiple identifiers: <ul><li>Health Gorilla's unique identifier for the report</li><li>**Placer ID**: The order identifier assigned by the _ordering system_ (e.g., your EMR).</li><li>**Filler ID**: The order identifier assigned by the _performing lab_.</li><li>**Lab's accession number**: A unique identifier assigned by the performing laboratory to the specific _specimen_ when it is received.</li></ul> |
 | `DiagnosticReport.result`            | Array of references to individual `Observation` resources containing lab values                                                                                                                                                                                                                                                                              |
 | `DiagnosticReport.presentedForm`     | References to PDF reports from Health Gorilla                                                                                                                                                                                                                                                                                                                |
 | `DiagnosticReport.status`            | Result status (`preliminary`, `final`, `amended`, `corrected`)                                                                                                                                                                                                                                                                                               |
@@ -184,6 +188,7 @@ Individual lab values are represented as `Observation` resources, with each test
 
 **Standard Lab Value Observations:**
 
+
 | Field                        | Description                                                                   |
 | ---------------------------- | ----------------------------------------------------------------------------- |
 | `Observation.code`           | LOINC code for the specific test                                              |
@@ -192,6 +197,7 @@ Individual lab values are represented as `Observation` resources, with each test
 | `Observation.interpretation` | Abnormal flags (High, Low, Critical, etc.)                                    |
 | `Observation.note`           | Additional clinical notes or comments about the test result                   |
 | `Observation.performer`      | `Organization` reference to the specific lab location that performed the test |
+
 
 ```js
 {
@@ -284,9 +290,11 @@ Individual lab values are represented as `Observation` resources, with each test
 **Clinical Lab Report Observation:**
 Health Gorilla creates a special observation called "clinical lab report" that serves as a bridge between structured data and the lab's branded PDF documentation.
 
+
 | Field                     | Description                                                                        |
 | ------------------------- | ---------------------------------------------------------------------------------- |
 | `Observation.derivedFrom` | References a `DocumentReference` with the lab's branded PDF (Quest, Labcorp, etc.) |
+
 
 ### DocumentReference
 
@@ -360,10 +368,12 @@ Currently, the main source of `DetectedIssues` are unsolicited reports (see belo
 
 **Common Issue Types:**
 
+
 | Issue Type             | Description                                                                 |
 | ---------------------- | --------------------------------------------------------------------------- |
 | **Unsolicited Report** | Results received for a patient without a corresponding order in your system |
 | **Unknown Patient**    | Results received for a patient not found in your patient database           |
+
 
 **Example Unsolicited Report:**
 
@@ -434,25 +444,24 @@ Health Gorilla returns detailed information about the performing laboratory for 
 }
 ```
 
+## Resolving Orders with Results {/* #resolving-orders-with-results */}
+
+When a result is received, Medplum attempts to match it to an existing order (`ServiceRequest`).
+
+**Processing Logic:**
+
+1. `receive-from-health-gorilla` first attempts to match the incoming result to an existing order by checking:
+   - `basedOn` references (which contain the requisition ID)
+   - **Accession number (`ACSN` identifier)**: A unique identifier assigned by the _performing laboratory_ (e.g., Quest, Labcorp) to the specific specimen(s) when they are received and logged into their system.
+   - **Placer number (`PLAC` identifier)**: The order ID assigned by the _ordering system_ (e.g., your EMR, Medplum, or the clinic) that placed the order.
+   - **Filler number (`FILL` identifier)**: The order ID assigned by the _fulfilling system_ (the performing laboratory) that carries out the order.
+2. If a matching order is found, the result is linked to that order. The patient associated with that order is used, preventing duplicate patients or `unknown-patient` issues.
+3. If no matching order is found, the result is considered "unsolicited". The bot then attempts to match the result to a patient using the patient's Health Gorilla identifier.
+4. If a matching patient exists, the result is imported normally, but without a `DiagnosticReport.basedOn` reference, and a `DetectedIssue` with code `unsolicited-diagnostic-report` is created.
+5. If no patient match is found, a new `Patient` resource is created using the demographic information provided by the lab, and a `DetectedIssue` with code `unknown-patient` is created.
+
 ## Lab-specific Behavior
 
 ### Quest
 
-- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource _in-place_. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.
-
-## Special Workflows
-
-### Unsolicited Reports
-
-Occasionally, laboratories send results without a corresponding order in the system. This typically occurs when:
-
-- Providers order tests directly through lab websites or phone calls
-- Reflex testing triggers additional tests beyond the original order
-
-**Processing Logic:**
-
-1. `receive-from-health-gorilla` attempts to match the result to a patient using the patient's Health Gorilla identifier
-2. If a matching patient exists, the result is imported normally, but without a `DiagnosticReport.basedOn` reference
-3. A `DetectedIssue` with code `unsolicited-diagnostic-report` is created
-4. If no patient match is found, a new `Patient` resource is created using the demographic information provided by the lab
-5. A `DetectedIssue` with code `unknown-patient` is created
+- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource *in-place*. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.

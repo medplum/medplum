@@ -4,6 +4,7 @@ import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
+import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { StrictMode } from 'react';
@@ -19,6 +20,7 @@ export async function initApp(): Promise<void> {
   const medplum = new MedplumClient({
     baseUrl: config.baseUrl,
     clientId: config.clientId,
+    storagePrefix: '@medplum:',
     cacheTime: 60000,
     autoBatchTime: 100,
     onUnauthenticated: () => {

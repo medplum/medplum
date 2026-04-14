@@ -13,7 +13,7 @@ export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'default
 
 export function CodeInput(props: CodeInputProps): JSX.Element {
   const { defaultValue, onChange, withHelpText, ...rest } = props;
-  const [value, setValue] = useState<string | undefined>(defaultValue);
+  const [value, setValue] = useState(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newValue = newValues[0];

@@ -6,7 +6,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
@@ -15,8 +15,10 @@ export interface AsyncAutocompleteOption<T> extends ComboboxItem {
   readonly resource: T;
 }
 
-export interface AsyncAutocompleteProps<T>
-  extends Omit<ComboboxProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
+export interface AsyncAutocompleteProps<T> extends Omit<
+  ComboboxProps,
+  'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'
+> {
   readonly name?: string;
   readonly label?: ReactNode;
   readonly description?: ReactNode;
@@ -78,29 +80,24 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
-  const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
+  const [selected, setSelected] = useState(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
   const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
-  const searchRef = useRef<string>(search);
-  searchRef.current = search;
-
+  const searchRef = useRef(search);
   const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>(undefined);
   const lastValueRef = useRef<string>(undefined);
-
   const timerRef = useRef<number>(timer);
-  timerRef.current = timer;
-
   const abortControllerRef = useRef<AbortController>(abortController);
-  abortControllerRef.current = abortController;
-
   const autoSubmitRef = useRef<boolean>(autoSubmit);
-  autoSubmitRef.current = autoSubmit;
-
-  const optionsRef = useRef<AsyncAutocompleteOption<T>[]>(options);
-  optionsRef.current = options;
+  useLayoutEffect(() => {
+    searchRef.current = search;
+    timerRef.current = timer;
+    abortControllerRef.current = abortController;
+    autoSubmitRef.current = autoSubmit;
+  });
 
   const handleTimer = useCallback((): void => {
     setTimer(undefined);

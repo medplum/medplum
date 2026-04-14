@@ -24,7 +24,7 @@ export async function handler(medplum: MedplumClient): Promise<boolean> {
   const currentDate = new Date();
   const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000).toISOString();
 
-  // Get all messages that are part of an active thread and older than 30 minutes. For more information on how threads work see https://www.medplum.com/docs/communications/organizing-communications
+  // Get all messages that are part of an active thread and older than 30 minutes. For more information on how threads work see https://www.medplum.com/docs/communications/messaging-data-model
   const messages: Communication[] = await medplum.searchResources('Communication', {
     sent: `lt${thirtyMinutesAgo}`,
     'part-of:Communication.status': 'in-progress',
@@ -61,7 +61,7 @@ export async function handler(medplum: MedplumClient): Promise<boolean> {
     // Check if there is already an existing task to respond to this message
     if (await checkNoExistingTask(medplum, threadHeader)) {
       // Get the most recent employee to respond to this thread, if anyone has
-      const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+      const sender = getMostRecentResponder(messages);
 
       // Define a task to respond to the message
       const task: Task = {

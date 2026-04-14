@@ -33,6 +33,7 @@ export interface HealthiePatient {
   sex: string;
   sexual_orientation: string;
   locations: HealthieLocation[];
+  dietitian_id?: string;
 }
 
 /**
@@ -168,7 +169,7 @@ export async function fetchHealthiePatientIdsPage(
   }
 
   const hasNextPage = users.length === pageSize;
-  const nextCursor = users.length > 0 ? users[users.length - 1].cursor : undefined;
+  const nextCursor = users.at(-1)?.cursor;
 
   return {
     users: users.map((user) => ({ id: user.id, updated_at: user.updated_at })),
@@ -200,6 +201,7 @@ export async function fetchHealthiePatients(
         gender_identity
         sex
         sexual_orientation
+        dietitian_id
         locations {
           zip
           line1

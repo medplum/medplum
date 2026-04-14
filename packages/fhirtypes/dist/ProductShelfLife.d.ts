@@ -5,10 +5,10 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Quantity } from './Quantity';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Quantity } from './Quantity.d.ts';
 
 /**
  * The shelf-life and storage information for a medicinal product item or

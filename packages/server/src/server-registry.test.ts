@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
 import { heartbeat } from './heartbeat';
-import { getRedis } from './redis';
+import { getCacheRedis } from './redis';
 import * as serverRegistry from './server-registry';
 import {
   cleanupServerRegistryHeartbeatListener,
@@ -27,9 +27,9 @@ describe('server-registry', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.setSystemTime(now);
+    jest.setSystemTime(now.getTime());
 
-    (getRedis as jest.Mock).mockReturnValue(mockRedis);
+    (getCacheRedis as jest.Mock).mockReturnValue(mockRedis);
     (randomUUID as jest.Mock).mockReturnValue(UUID);
   });
 

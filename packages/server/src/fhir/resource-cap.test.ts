@@ -7,10 +7,10 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getRedis } from '../redis';
+import { getRateLimitRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
-import { getSystemRepo } from './repo';
+import { getProjectSystemRepo } from './repo';
 
 describe('FHIR Resource Limits', () => {
   let app: Express;
@@ -31,7 +31,7 @@ describe('FHIR Resource Limits', () => {
   });
 
   afterEach(async () => {
-    await deleteRedisKeys(getRedis(), redisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), redisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 
@@ -79,7 +79,7 @@ describe('FHIR Resource Limits', () => {
       },
     });
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = await getProjectSystemRepo(project);
     await systemRepo.createResource({ resourceType: 'Patient', meta: { project: project.id } });
 
     const res = await request(app)

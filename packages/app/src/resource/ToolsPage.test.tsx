@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
-import { Notifications, cleanNotifications } from '@mantine/notifications';
+import { cleanNotifications } from '@mantine/notifications';
 import type { LogMessage } from '@medplum/core';
 import {
   ContentType,
@@ -17,12 +16,8 @@ import {
 } from '@medplum/core';
 import type { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
-import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, screen } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen } from '../test-utils/render';
 
 jest.mock('react-dom', () => ({
   ...jest.requireActual('react-dom'),
@@ -53,18 +48,7 @@ describe('ToolsPage', () => {
   let medplum: MockClient;
 
   function setup(url: string): void {
-    act(() => {
-      render(<AppRoutes />, {
-        wrapper: ({ children }) => (
-          <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider>
-              <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-              <Notifications />
-            </MantineProvider>
-          </MemoryRouter>
-        ),
-      });
-    });
+    renderAppRoutes(medplum, url);
   }
 
   beforeAll(async () => {

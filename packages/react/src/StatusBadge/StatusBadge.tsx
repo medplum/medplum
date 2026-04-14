@@ -77,7 +77,7 @@ export function StatusBadge(props: StatusBadgeProps): JSX.Element {
 
   return (
     <Badge color={props.color || statusToColor[status]} {...badgeProps}>
-      {status.replace(/-/g, ' ')}
+      {status.replaceAll('-', ' ')}
     </Badge>
   );
 }

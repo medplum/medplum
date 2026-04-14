@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Binary } from '@medplum/fhirtypes';
-import { createReadStream, createWriteStream, readFileSync } from 'fs';
-import { access, copyFile, mkdir } from 'fs/promises';
-import { resolve, sep } from 'path';
-import type { Readable } from 'stream';
-import { pipeline } from 'stream';
+import { createReadStream, createWriteStream, readFileSync } from 'node:fs';
+import { access, copyFile, mkdir } from 'node:fs/promises';
+import { resolve, sep } from 'node:path';
+import type { Readable } from 'node:stream';
+import { pipeline } from 'node:stream';
 import { getLogger } from '../logger';
+import type { PresignedUrlOptions } from './base';
 import { BaseBinaryStorage } from './base';
 import { generatePresignedUrl } from './presign';
 import type { BinarySource } from './types';
@@ -79,8 +80,8 @@ export class FileSystemStorage extends BaseBinaryStorage {
     await copyFile(sourcePath, destinationPath);
   }
 
-  async getPresignedUrl(binary: Binary): Promise<string> {
-    return generatePresignedUrl(binary);
+  async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
+    return generatePresignedUrl(binary, opts);
   }
 
   private async ensureDirForFileExists(filePath: string): Promise<void> {

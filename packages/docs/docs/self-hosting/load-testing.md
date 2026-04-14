@@ -119,7 +119,7 @@ At the time of that run, the Medplum staging server was configured with the bare
 | `serverMemory`       | 512        | The amount (in MiB) of memory used by the ECS/Fargate instance. For example, 512, 1024, 2048, 4096, etc. See [Task size](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size). |
 | `serverCpu`          | 256        | The number of cpu units used by the task. For example, 512, 1024, 2048, 4096, etc. See [Task size](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size).                       |
 
-(See full documentation on [CDK config settings](/docs/self-hosting/config-settings))
+(See full documentation on [CDK config settings](/docs/self-hosting/aws-cdk-settings))
 
 That's a single server with 512 MiB of RAM and 0.25 vCPU.
 

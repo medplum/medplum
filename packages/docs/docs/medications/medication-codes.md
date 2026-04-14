@@ -15,6 +15,12 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Medication Code Systems
 
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/phHMpxErOFc?si=V9HsHYOcfi7wzHKJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<br/>
+
 ## Introduction
 
 Medication codes play a fundamental role in crafting prescriptions, medication orders, and formularies. EHRs use standardized codes to describe medications to remove ambiguity, ensure patient safety, and streamline billing and analytics.

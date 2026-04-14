@@ -52,7 +52,7 @@ export async function handler(
     return undefined;
   }
 
-  const input = event.input as Event;
+  const input = event.input;
 
   switch (input.endpoint) {
     case 'get_lab_tests':
@@ -129,7 +129,7 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: answer.code,
           // valueString: question.type !== 'numeric' ? answer.value : undefined,
-          // valueInteger: question.type === 'numeric' ? parseFloat(answer.value) : undefined,
+          // valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),
     })),

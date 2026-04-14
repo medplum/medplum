@@ -5,37 +5,37 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CarePlan } from './CarePlan';
-import { CareTeam } from './CareTeam';
-import { ClaimResponse } from './ClaimResponse';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { Coverage } from './Coverage';
-import { DetectedIssue } from './DetectedIssue';
-import { Device } from './Device';
-import { Dosage } from './Dosage';
-import { Duration } from './Duration';
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { ImmunizationRecommendation } from './ImmunizationRecommendation';
-import { Medication } from './Medication';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Provenance } from './Provenance';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
+import type { Annotation } from './Annotation.d.ts';
+import type { CarePlan } from './CarePlan.d.ts';
+import type { CareTeam } from './CareTeam.d.ts';
+import type { ClaimResponse } from './ClaimResponse.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Coverage } from './Coverage.d.ts';
+import type { DetectedIssue } from './DetectedIssue.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Dosage } from './Dosage.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { ImmunizationRecommendation } from './ImmunizationRecommendation.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Provenance } from './Provenance.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
 
 /**
  * An order or request for both supply of the medication and the

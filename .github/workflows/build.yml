@@ -23,22 +23,25 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -84,15 +87,18 @@ jobs:
       eslint_errs: ${{ steps.fmt.outputs.eslint_errs }}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          node-version: 20
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -158,9 +164,9 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [20, 22]
-        pg-version: [13, 18]
-        redis-version: [6, 7]
+        node-version: [22, 24]
+        pg-version: [14, 18]
+        redis-version: [7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -192,15 +198,18 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -239,19 +248,73 @@ jobs:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
+          SERVER_TEST_CACHE_KEY: NODE${{ matrix.node-version }}-PG${{ matrix.pg-version }}-REDIS${{ matrix.redis-version }}
+          NO_COVERAGE: ${{ case(matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7, '', '1') }}
+
       - name: Coveralls GitHub Action
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 && (vars.SONAR_ENABLED == 'true' || github.ref == 'refs/heads/main') }}
         continue-on-error: true
-        uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
+        uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  test-examples:
+    name: Run example tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    strategy:
+      matrix:
+        node-version: [22, 24]
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_VERSION: ${{ matrix.node-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
+      - name: Cache node modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: install
+        name: Install deps
+        run: npm ci
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Test Examples
+        run: ./scripts/test-examples.sh
 
   e2e:
     name: Run e2e tests
@@ -260,9 +323,9 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [20, 22]
-        pg-version: [13, 18]
-        redis-version: [6, 7]
+        node-version: [22, 24]
+        pg-version: [14, 18]
+        redis-version: [7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -294,15 +357,18 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:
@@ -342,10 +408,10 @@ jobs:
       - name: Start server and app
         run: |
           pushd packages/server
-          npm run start &
+          npm start > server.log 2>&1 &
           popd
           pushd packages/app
-          npm run preview &
+          npm run preview > app.log 2>&1 &
           popd
         env:
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
@@ -358,6 +424,7 @@ jobs:
           until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
             if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
               echo "Max retries reached. Deployment not ready."
+              cat packages/server/server.log
               exit 1
             fi
             
@@ -372,7 +439,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7) }}
+        if: ${{ failure() || (matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
@@ -389,19 +456,22 @@ jobs:
       pull-requests: write
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: 20
+      NODE_VERSION: '22'
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
+          # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
+          # See: https://github.com/actions/setup-node/issues/328
+          package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         env:
           cache-name: cache-node-modules
         with:

@@ -3,8 +3,10 @@
   "compilerOptions": {
     "composite": true,
     "rootDir": "src",
-    "outDir": "dist",
-    "noEmit": false
+    "outDir": "dist/types",
+    "types": ["jest", "node"],
+    "noEmit": false,
+    "emitDeclarationOnly": true
   },
   "include": ["src/**/*.ts"]
 }

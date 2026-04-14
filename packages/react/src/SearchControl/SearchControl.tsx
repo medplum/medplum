@@ -20,7 +20,7 @@ import {
   isDataTypeLoaded,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -33,7 +33,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import type { ChangeEvent, JSX, MouseEvent } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -132,8 +132,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     filterDialogVisible: false,
   });
 
-  const stateRef = useRef<SearchControlState>(state);
-  stateRef.current = state;
+  const stateRef = useRef(state);
+  useLayoutEffect(() => {
+    stateRef.current = state;
+  });
 
   const total = memoizedSearch.total ?? 'accurate';
 
@@ -141,10 +143,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     (options?: RequestInit) => {
       setOutcome(undefined);
       medplum
-        .requestSchema(memoizedSearch.resourceType as ResourceType)
+        .requestSchema(memoizedSearch.resourceType)
         .then(() =>
           medplum.search(
-            memoizedSearch.resourceType as ResourceType,
+            memoizedSearch.resourceType,
             formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
             options
           )
@@ -204,7 +206,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   function isAllSelected(): boolean {
-    const state = stateRef.current;
     if (!state.searchResponse?.entry || state.searchResponse.entry.length === 0) {
       return false;
     }
@@ -488,7 +489,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFieldEditor
         key={`search-field-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
-        visible={stateRef.current.fieldEditorVisible}
+        visible={state.fieldEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
           setState({
@@ -506,7 +507,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFilterEditor
         key={`search-filter-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
-        visible={stateRef.current.filterEditorVisible}
+        visible={state.filterEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
           setState({
@@ -523,7 +524,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       />
       <SearchExportDialog
         key={`search-export-dialog-${state.dialogOpenTime}`}
-        visible={stateRef.current.exportDialogVisible}
+        visible={state.exportDialogVisible}
         exportCsv={props.onExportCsv}
         exportTransactionBundle={props.onExportTransactionBundle}
         onCancel={() => {
@@ -535,7 +536,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       />
       <SearchFilterValueDialog
         key={`search-filter-dialog-${state.dialogOpenTime}`}
-        visible={stateRef.current.filterDialogVisible}
+        visible={state.filterDialogVisible}
         title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}
         searchParam={state.filterDialogSearchParam}
@@ -558,21 +559,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     </div>
   );
 }
-
-/**
- * @deprecated
- *
- * The memoization `MemoizedSearchControl` provides has been merged into `SearchControl`. Previously the memoization was done via HOC but
- * it was proven that this wasn't effective for a large number of use cases, especially when:
- * 1. `search` was an inline static object, which would trigger the memo to recompute on every re-render of the parent component
- * 2. Any of the callbacks, such as `onClick` were not memoized via `useCallback`, which would result in the recomputation as well
- *
- * Scenario 1 also retriggered the effect that runs `loadResults` on change of the `search`, which was less than desirable.
- *
- * The memoization is now accomplished via checking deep equality of the incoming `search` prop in the body of the component, and setting a memoized
- * state whenever the incoming and current memoized value are not deeply equal. See: https://github.com/medplum/medplum/pull/5023
- */
-export const MemoizedSearchControl = SearchControl;
 
 interface FilterDescriptionProps {
   readonly resourceType: string;

@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * Base definition for all elements that are defined inside a resource -

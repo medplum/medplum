@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { Extension } from './Extension';
+import type { Attachment } from './Attachment.d.ts';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * Related artifacts such as additional documentation, justification, or

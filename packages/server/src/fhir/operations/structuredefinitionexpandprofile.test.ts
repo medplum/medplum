@@ -150,7 +150,7 @@ describe('StructureDefinition $expand-profile', () => {
       expect(bundle.entry?.some((entry) => entry.resource?.url === sdUrl)).toStrictEqual(true);
     }
 
-    const missingSdUrl = sdUrls[sdUrls.length - 1];
+    const missingSdUrl = sdUrls.at(-1);
     expect(bundle.entry?.some((entry) => entry.resource?.url === missingSdUrl)).toStrictEqual(false);
   });
 });

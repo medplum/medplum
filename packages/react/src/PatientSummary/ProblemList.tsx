@@ -23,7 +23,7 @@ export interface ProblemListProps {
 export function ProblemList(props: ProblemListProps): JSX.Element {
   const medplum = useMedplum();
   const { patient, encounter } = props;
-  const [problems, setProblems] = useState<Condition[]>(
+  const [problems, setProblems] = useState(
     props.problems.filter((c) => c.verificationStatus?.coding?.[0]?.code !== 'entered-in-error')
   );
   const [editCondition, setEditCondition] = useState<Condition>();

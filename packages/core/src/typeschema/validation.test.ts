@@ -27,6 +27,7 @@ import type {
   Questionnaire,
   QuestionnaireItem,
   Resource,
+  RiskAssessment,
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
@@ -43,6 +44,29 @@ import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
 import { validateResource, validateTypedValue } from './validation';
 
+const VALID_BP: Observation = {
+  resourceType: 'Observation',
+  status: 'final',
+  category: [
+    {
+      coding: [{ code: 'vital-signs', system: 'http://terminology.hl7.org/CodeSystem/observation-category' }],
+    },
+  ],
+  code: { coding: [{ code: '85354-9', system: LOINC }] },
+  subject: { reference: 'Patient/example' },
+  effectiveDateTime: '2023-05-31T17:03:45-07:00',
+  component: [
+    {
+      dataAbsentReason: { coding: [{ code: '8480-6', system: LOINC }] },
+      code: { coding: [{ code: '8480-6', system: LOINC }] },
+    },
+    {
+      dataAbsentReason: { coding: [{ code: '8480-6', system: LOINC }] },
+      code: { coding: [{ code: '8462-4', system: LOINC }] },
+    },
+  ],
+};
+
 describe('FHIR resource validation', () => {
   let typesBundle: Bundle;
   let resourcesBundle: Bundle;
@@ -52,8 +76,6 @@ describe('FHIR resource validation', () => {
   let smokingStatusProfile: StructureDefinition;
 
   beforeAll(() => {
-    console.log = jest.fn();
-
     typesBundle = readJson('fhir/r4/profiles-types.json') as Bundle;
     resourcesBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
     medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle;
@@ -178,70 +200,6 @@ describe('FHIR resource validation', () => {
   });
 
   describe('US Core Blood Pressure profile', () => {
-    const VALID_BP: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8462-4',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
     test('Valid resource under constraining profile', () => {
       const observation: Observation = deepClone(VALID_BP);
       expect(() => validateResource(observation, { profile: observationProfile })).not.toThrow();
@@ -419,7 +377,7 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => validateResource(patient, { profile: patientProfile })).toThrow(
-      new Error('Missing required property (Patient.telecom[0].system)')
+      new OperationOutcomeError(validationError('Missing required property', ['Patient.telecom[0].system']))
     );
   });
 
@@ -502,7 +460,7 @@ describe('FHIR resource validation', () => {
 
   // This test is failing because we do not recursively validate extensions. In this case,
   // US Core Race requires the `text` extension, so not having it should fail validation.
-  test.failing('Nested extensions are not yet validated', () => {
+  test.fails('Nested extensions are not yet validated', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       name: [{ given: ['New'], family: 'User' }],
@@ -815,7 +773,7 @@ describe('FHIR resource validation', () => {
     // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
     // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
     // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
-    test.failing('Populated but missing required Condition.category', () => {
+    test.fails('Populated but missing required Condition.category', () => {
       const conditionWrongCategory = deepClone(baseCondition);
       conditionWrongCategory.category = [
         {
@@ -873,7 +831,7 @@ describe('FHIR resource validation', () => {
   test('Additional properties', () => {
     expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Patient)).toThrow(
-      new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
+      new OperationOutcomeError(validationError('Invalid additional property "fakeProperty"', ['Patient.fakeProperty']))
     );
   });
 
@@ -1062,11 +1020,60 @@ describe('FHIR resource validation', () => {
     binary.data = 123 as unknown as string;
     expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
+    binary.data = '==';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
     binary.data = '===';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
+    binary.data = 'AAAA===';
     expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
+
+    // Long invalid base64 (valid chars but invalid char at end) don't cause catastrophic backtracking
+    binary.data = 'A'.repeat(10000) + '!'; // Invalid: '!' not in base64 alphabet
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+  });
+
+  test('Binary.data can exceed default when cap override is provided', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const cap = 2 * 1024 * 1024; // 2 MB cap
+    const buf = Buffer.alloc(cap, 1); // 2 MB decoded
+    binary.data = buf.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: cap })).not.toThrow();
+  });
+
+  test('Binary.data invalid object does not recurse', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.JSON };
+    // Intentionally invalid: data should be base64 string, not object
+    binary.data = { foo: 'bar' } as unknown as string;
+    expect(() => validateResource(binary)).toThrow('Invalid additional property "foo" (Binary.data.foo)');
+  });
+
+  test('base64Binary exceeds configured byte cap fails', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const bytes = Buffer.alloc(2 * 1024, 7); // 2 KB decoded
+    binary.data = bytes.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: 1024 })).toThrow('base64Binary exceeds 1024 bytes');
+  });
+
+  test('base64Binary decoded size equal to cap passes', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const cap = 1024;
+    const bytes = Buffer.alloc(cap, 1);
+    binary.data = bytes.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: cap })).not.toThrow();
+  });
+
+  test('Attachment.data respects base64Binary cap (fail > cap; pass == cap)', () => {
+    const cap = 1536; // 1.5 KB
+    const p1: Patient = { resourceType: 'Patient', photo: [{ data: Buffer.alloc(cap + 1).toString('base64') }] };
+    expect(() => validateResource(p1, { base64BinaryMaxBytes: cap })).toThrow('base64Binary exceeds 1536 bytes');
+
+    const p2: Patient = { resourceType: 'Patient', photo: [{ data: Buffer.alloc(cap).toString('base64') }] };
+    expect(() => validateResource(p2, { base64BinaryMaxBytes: cap })).not.toThrow();
   });
 
   test('boolean', () => {
@@ -1726,6 +1733,85 @@ describe('FHIR resource validation', () => {
     );
   });
 
+  describe('Value collection', () => {
+    // Test resource containing several required terminology bindings
+    const patient: Patient = {
+      resourceType: 'Patient',
+      id: 'example',
+      identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
+      active: true,
+      name: [
+        { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
+        { use: 'usual', given: ['Jim'] },
+        { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
+      ],
+      telecom: [
+        { use: 'home', system: 'url', value: 'http://example.com' },
+        { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
+        { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
+        { system: 'phone', value: '(03) 5555 8834', use: 'old' },
+      ],
+      gender: 'male',
+      birthDate: '1974-12-25',
+      address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
+      contact: [
+        {
+          name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
+          telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
+          address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
+          gender: 'female',
+        },
+      ],
+    };
+
+    // Flattened list of tokens expected from above Patient resource
+    const expectedTokens = [
+      { path: 'Patient.identifier[0].use', type: 'code', value: 'usual' },
+      { path: 'Patient.name[0].use', type: 'code', value: 'official' },
+      { path: 'Patient.name[1].use', type: 'code', value: 'usual' },
+      { path: 'Patient.name[2].use', type: 'code', value: 'maiden' },
+      { path: 'Patient.contact[0].name.use', type: 'code', value: 'usual' },
+      { path: 'Patient.telecom[0].system', type: 'code', value: 'url' },
+      { path: 'Patient.telecom[1].system', type: 'code', value: 'phone' },
+      { path: 'Patient.telecom[2].system', type: 'code', value: 'phone' },
+      { path: 'Patient.telecom[3].system', type: 'code', value: 'phone' },
+      { path: 'Patient.contact[0].telecom[0].system', type: 'code', value: 'phone' },
+      { path: 'Patient.telecom[0].use', type: 'code', value: 'home' },
+      { path: 'Patient.telecom[1].use', type: 'code', value: 'work' },
+      { path: 'Patient.telecom[2].use', type: 'code', value: 'mobile' },
+      { path: 'Patient.telecom[3].use', type: 'code', value: 'old' },
+      { path: 'Patient.contact[0].telecom[0].use', type: 'code', value: 'home' },
+      { path: 'Patient.gender', type: 'code', value: 'male' },
+      { path: 'Patient.address[0].use', type: 'code', value: 'home' },
+      { path: 'Patient.contact[0].address.use', type: 'code', value: 'home' },
+      { path: 'Patient.address[0].type', type: 'code', value: 'both' },
+      { path: 'Patient.contact[0].address.type', type: 'code', value: 'both' },
+      { path: 'Patient.contact[0].gender', type: 'code', value: 'female' },
+    ];
+
+    test('Gather tokens', () => {
+      const tokens = Object.create(null);
+      const issues = validateResource(patient, { collect: { tokens } });
+      expect(issues).toHaveLength(0);
+
+      const results = Object.values(tokens).flat();
+      expect(results).toStrictEqual(expect.arrayContaining(expectedTokens));
+      expect(results).toHaveLength(expectedTokens.length);
+    });
+
+    test('Gather tokens with profile', () => {
+      // US Core Patient profile does not add any new required terminology bindings;
+      // it should produce the same set as the base resource validation
+      const tokens = Object.create(null);
+      const issues = validateResource(patient, { collect: { tokens }, profile: patientProfile });
+      expect(issues).toHaveLength(0);
+
+      const results = Object.values(tokens).flat();
+      expect(results).toStrictEqual(expect.arrayContaining(expectedTokens));
+      expect(results).toHaveLength(expectedTokens.length);
+    });
+  });
+
   test('Element type code different than path', () => {
     // ClinicalDocument.realmCode
     // Source: https://github.com/HL7/CDA-core-sd/blob/master/input/resources/ClinicalDocument.xml
@@ -1740,20 +1826,8 @@ describe('FHIR resource validation', () => {
       type: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
       snapshot: {
         element: [
-          {
-            path: 'CS',
-          },
-          {
-            path: 'CS.code',
-            min: 0,
-            max: '1',
-            base: {
-              path: 'CD.code',
-              min: 0,
-              max: '1',
-            },
-            type: [{ code: 'code' }],
-          },
+          { path: 'CS' },
+          { path: 'CS.code', min: 0, max: '1', base: { path: 'CD.code', min: 0, max: '1' }, type: [{ code: 'code' }] },
         ],
       },
     };
@@ -1769,23 +1843,13 @@ describe('FHIR resource validation', () => {
       type: 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument',
       snapshot: {
         element: [
-          {
-            path: 'ClinicalDocument',
-          },
+          { path: 'ClinicalDocument' },
           {
             path: 'ClinicalDocument.realmCode',
             min: 0,
             max: '*',
-            base: {
-              path: 'ClinicalDocument.realmCode',
-              min: 0,
-              max: '*',
-            },
-            type: [
-              {
-                code: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
-              },
-            ],
+            base: { path: 'ClinicalDocument.realmCode', min: 0, max: '*' },
+            type: [{ code: 'http://hl7.org/cda/stds/core/StructureDefinition/CS' }],
           },
         ],
       },
@@ -1919,7 +1983,10 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(invalidFullUrlBdl)).toThrow(
       new OperationOutcomeError(
         validationError(
-          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference`,
+          ['Bundle.entry[0]'],
+          'invariant',
+          '{"fhirpath":"fullUrl.exists() implies fullUrl.contains(\'/_history/\').not()"}'
         )
       )
     );
@@ -1939,6 +2006,30 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
+  });
+
+  test('RiskAssessment ras-2', () => {
+    const ra1: RiskAssessment = {
+      resourceType: 'RiskAssessment',
+      status: 'preliminary',
+      subject: { reference: 'Patient/123' },
+      prediction: [
+        {
+          // probabilityDecimal: 0, // <--- without this optional property, constraint validation fails on ras-2
+          qualitativeRisk: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/risk-probability',
+                code: 'high',
+                display: 'High likelihood',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => validateResource(ra1)).not.toThrow();
   });
 });
 

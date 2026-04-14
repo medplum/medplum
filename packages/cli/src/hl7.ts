@@ -50,7 +50,7 @@ const listen = new MedplumCommand('listen')
       });
     });
 
-    server.start(Number.parseInt(port, 10), options.encoding);
+    await server.start(Number.parseInt(port, 10), options.encoding);
     console.log('Listening on port ' + port);
   });
 
