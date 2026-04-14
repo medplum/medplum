@@ -1,35 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '@testing-library/react';
-import type { JSX } from 'react';
+import { act, renderHook } from '@testing-library/react';
+import type { JSX, ReactNode } from 'react';
 import { vi } from 'vitest';
 import { DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotSelfEnrollmentOptions, DoseSpotSelfEnrollmentResult } from './useDoseSpotSelfEnrollment';
 import { useDoseSpotSelfEnrollment } from './useDoseSpotSelfEnrollment';
-
-function formatEnrollmentTestError(err: unknown): string {
-  if (err instanceof Error) {
-    return `Error: ${err.message}`;
-  }
-  if (typeof err === 'string') {
-    return err;
-  }
-  return 'Unknown error';
-}
-
-function TestComponent({ options }: { options?: DoseSpotSelfEnrollmentOptions }): JSX.Element {
-  const { result, loading, error } = useDoseSpotSelfEnrollment(options);
-  return (
-    <div>
-      <div>loading: {String(loading)}</div>
-      <div>status: {result?.status ?? 'none'}</div>
-      <div>error: {error ? formatEnrollmentTestError(error) : 'none'}</div>
-      <div>nextSteps: {result?.nextSteps?.join('; ') ?? 'none'}</div>
-    </div>
-  );
-}
 
 const mockEnrollResult: DoseSpotSelfEnrollmentResult = {
   status: 'created',
@@ -40,67 +19,65 @@ const mockEnrollResult: DoseSpotSelfEnrollmentResult = {
 };
 
 describe('useDoseSpotSelfEnrollment', () => {
+  let medplum: MedplumClient;
+
   beforeEach(() => {
     vi.resetAllMocks();
+    medplum = new MockClient();
   });
 
+  function wrapper({ children }: { children: ReactNode }): JSX.Element {
+    return <MedplumProvider medplum={medplum}>{children}</MedplumProvider>;
+  }
+
   test('successful enrollment', async () => {
-    const medplum = new MockClient();
     const onSuccess = vi.fn();
+    vi.spyOn(medplum, 'executeBot').mockResolvedValueOnce(mockEnrollResult);
 
-    medplum.executeBot = vi.fn().mockResolvedValueOnce(mockEnrollResult);
+    const { result } = renderHook(
+      (props: DoseSpotSelfEnrollmentOptions) => useDoseSpotSelfEnrollment(props),
+      { wrapper, initialProps: { onSuccess } }
+    );
 
-    await act(async () => {
-      render(
-        <MedplumProvider medplum={medplum}>
-          <TestComponent options={{ onSuccess }} />
-        </MedplumProvider>
-      );
-    });
+    await act(async () => {});
 
     expect(medplum.executeBot).toHaveBeenCalledTimes(1);
     expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT, {});
     expect(onSuccess).toHaveBeenCalledWith(mockEnrollResult);
-    expect(screen.getByText('status: created')).toBeDefined();
-    expect(screen.getByText('loading: false')).toBeDefined();
-    expect(screen.getByText(/Sign the DoseSpot legal agreement/)).toBeDefined();
+    expect(result.current.result?.status).toBe('created');
+    expect(result.current.loading).toBe(false);
+    expect(result.current.result?.nextSteps).toContain(
+      'Sign the DoseSpot legal agreement in the iframe to continue enrollment.'
+    );
   });
 
   test('error handling', async () => {
-    const medplum = new MockClient();
     const onError = vi.fn();
     const mockError = new Error('Not authorized');
+    vi.spyOn(medplum, 'executeBot').mockRejectedValueOnce(mockError);
 
-    medplum.executeBot = vi.fn().mockRejectedValueOnce(mockError);
+    const { result } = renderHook(
+      (props: DoseSpotSelfEnrollmentOptions) => useDoseSpotSelfEnrollment(props),
+      { wrapper, initialProps: { onError } }
+    );
 
-    await act(async () => {
-      render(
-        <MedplumProvider medplum={medplum}>
-          <TestComponent options={{ onError }} />
-        </MedplumProvider>
-      );
-    });
+    await act(async () => {});
 
     expect(onError).toHaveBeenCalledWith(mockError);
-    expect(screen.getByText('status: none')).toBeDefined();
-    expect(screen.getByText('loading: false')).toBeDefined();
-    expect(screen.getByText(/Error: Not authorized/)).toBeDefined();
+    expect(result.current.result).toBeUndefined();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(mockError);
   });
 
   test('disabled does not call bot', async () => {
-    const medplum = new MockClient();
-    medplum.executeBot = vi.fn();
+    vi.spyOn(medplum, 'executeBot');
 
-    await act(async () => {
-      render(
-        <MedplumProvider medplum={medplum}>
-          <TestComponent options={{ enabled: false }} />
-        </MedplumProvider>
-      );
-    });
+    const { result } = renderHook(() => useDoseSpotSelfEnrollment({ enabled: false }), { wrapper });
+
+    await act(async () => {});
 
     expect(medplum.executeBot).not.toHaveBeenCalled();
-    expect(screen.getByText('status: none')).toBeDefined();
-    expect(screen.getByText('loading: false')).toBeDefined();
+    expect(result.current.result).toBeUndefined();
+    expect(result.current.loading).toBe(false);
   });
 });

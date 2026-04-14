@@ -43,7 +43,7 @@ export function PatientPage(): JSX.Element {
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
   const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
-  const tabs = getPatientPageTabs(membership, hasDoseSpotAccess);
+  const tabs = getPatientPageTabs(membership, { hasDoseSpotAccess });
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return (getTabFromLocation(location, tabs) ?? tabs[0]).id;
   });

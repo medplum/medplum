@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProjectMembership } from '@medplum/fhirtypes';
 import type { EPrescribingIFrameOptions } from '@medplum/react-hooks';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
@@ -49,42 +50,38 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
     let cancelled = false;
 
     const run = async (): Promise<void> => {
-      try {
-        if (selfEnroll && !hasDoseSpotIdentifier(medplum)) {
-          const enrollResult = (await medplum.executeBot(
-            DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
-            {}
-          )) as DoseSpotSelfEnrollmentResult;
-          if (cancelled) {
-            return;
-          }
-          onSelfEnrollSuccessRef.current?.(enrollResult);
-        }
-
-        if (patientId) {
-          await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
-          if (cancelled) {
-            return;
-          }
-          onPatientSyncSuccessRef.current?.();
-        }
-        const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId });
+      if (selfEnroll && !hasDoseSpotIdentifier(medplum.getProjectMembership())) {
+        const enrollResult = (await medplum.executeBot(
+          DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
+          {}
+        )) as DoseSpotSelfEnrollmentResult;
         if (cancelled) {
           return;
         }
-        if (result.url) {
-          setIframeUrl(result.url);
-          onIframeSuccessRef.current?.(result.url);
+        onSelfEnrollSuccessRef.current?.(enrollResult);
+      }
+
+      if (patientId) {
+        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
+        if (cancelled) {
+          return;
         }
-      } catch (err: unknown) {
-        if (!cancelled) {
-          onErrorRef.current?.(err);
-        }
+        onPatientSyncSuccessRef.current?.();
+      }
+      const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId });
+      if (cancelled) {
+        return;
+      }
+      if (result.url) {
+        setIframeUrl(result.url);
+        onIframeSuccessRef.current?.(result.url);
       }
     };
 
-    run().catch(() => {
-      // Handled via onErrorRef when !cancelled
+    run().catch((err: unknown) => {
+      if (!cancelled) {
+        onErrorRef.current?.(err);
+      }
     });
 
     return (): void => {
@@ -96,11 +93,11 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
 }
 
 /**
- * Checks whether the current user's ProjectMembership has a DoseSpot identifier.
+ * Checks whether a ProjectMembership has a DoseSpot identifier.
  *
- * @param medplum - Medplum client for the active session.
+ * @param membership - The project membership to check.
  * @returns True when membership identifiers include a DoseSpot system URL.
  */
-function hasDoseSpotIdentifier(medplum: ReturnType<typeof useMedplum>): boolean {
-  return !!medplum.getProjectMembership()?.identifier?.some((i) => i.system?.includes('dosespot'));
+function hasDoseSpotIdentifier(membership: ProjectMembership | undefined): boolean {
+  return !!membership?.identifier?.some((i) => i.system?.includes('dosespot'));
 }
