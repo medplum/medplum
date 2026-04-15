@@ -327,6 +327,12 @@
             "type" : [{
               "code" : "code"
             }],
+            "constraint" : [{
+              "key" : "dap-resource-type",
+              "severity" : "error",
+              "human" : "defaultAccessPolicy.resourceType must be Patient, Practitioner, or RelatedPerson",
+              "expression" : "$this = 'Patient' or $this = 'Practitioner' or $this = 'RelatedPerson'"
+            }],
             "base" : {
               "path" : "Project.defaultAccessPolicy.resourceType",
               "min" : 1,
