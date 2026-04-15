@@ -9,13 +9,12 @@ import TabItem from '@theme/TabItem';
 
 This guide explains how to enroll a new prescriber in DoseSpot via the Medplum **Enroll Prescriber Bot**, including the full workflow for enabling Electronic Prescriptions for Controlled Substances (EPCS).
 
-:::note Prerequisites
+:::note[Note Prerequisites]
 The user executing the bot must:
 
 1. Be an admin in your project (`ProjectMembership.admin`)
 2. Already have access to DoseSpot (DoseSpot identifier on their ProjectMembership)
 3. Have a Clinician Admin role type in DoseSpot (as specified in the `practitionerRoleTypes` parameter)
-
 :::
 
 ## Enrollment Workflow Overview
