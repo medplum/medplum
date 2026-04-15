@@ -1429,6 +1429,57 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res.body)).toContain('does not exist');
   });
 
+  test('Invite applies Project.defaultAccessPolicy when access is omitted', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const policyRes = await request(app)
+      .post('/fhir/R4/AccessPolicy')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ resourceType: 'AccessPolicy', name: 'Practitioner Default', resource: [{ resourceType: 'Patient' }] });
+    expect(policyRes.status).toBe(201);
+    const policy = policyRes.body;
+
+    await request(app)
+      .patch('/fhir/R4/Project/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send([
+        {
+          op: 'add',
+          path: '/defaultAccessPolicy',
+          value: [{ resourceType: 'Practitioner', access: [{ policy: createReference(policy) }] }],
+        },
+      ])
+      .expect(200);
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ProjectMembership');
+    expect(res.body.access).toHaveLength(1);
+    expect(res.body.access[0]?.policy?.reference).toBe(getReferenceString(policy));
+    expect(res.body.accessPolicy).toBeUndefined();
+  });
+
   test('skipDefaultAccessPolicy: true bypasses project default access policy', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
