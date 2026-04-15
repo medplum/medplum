@@ -131,32 +131,40 @@ curl -X POST https://api.medplum.com/oauth2/token \
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
-import { SignJWT, generateKeyPair, importPKCS8 } from 'jose';
+import { SignJWT, importPKCS8 } from 'jose';
 import { readFileSync } from 'fs';
 
 const CLIENT_ID = 'your-client-application-id';
 const TOKEN_URL = 'https://api.medplum.com/oauth2/token';
 
-// Load your private key (keep this secret!)
-const privateKeyPem = readFileSync('private.pem', 'utf8');
-const privateKey = await importPKCS8(privateKeyPem, 'ES384');
+// Must match your private key type: ES384 for a P-384 EC key, RS384 for an RSA key, etc.
+const ALG = 'ES384';
 
-// Build and sign the JWT
-const jwt = await new SignJWT({})
-  .setProtectedHeader({ alg: 'ES384' })
-  .setIssuedAt()
-  .setIssuer(CLIENT_ID)
-  .setSubject(CLIENT_ID)
-  .setAudience(TOKEN_URL)
-  .setExpirationTime('5m')
-  .sign(privateKey);
+async function main(): Promise<void> {
+  // Load your private key (keep this secret!)
+  const privateKeyPem = readFileSync('private.pem', 'utf8');
+  const privateKey = await importPKCS8(privateKeyPem, ALG);
 
-// Authenticate with Medplum
-const medplum = new MedplumClient();
-await medplum.startJwtAssertionLogin(jwt);
+  // Build and sign the JWT
+  const jwt = await new SignJWT({})
+    .setProtectedHeader({ alg: ALG })
+    .setIssuedAt()
+    .setIssuer(CLIENT_ID)
+    .setSubject(CLIENT_ID)
+    .setAudience(TOKEN_URL)
+    .setExpirationTime('5m')
+    .sign(privateKey);
 
-// Now make authenticated requests
-const patients = await medplum.searchResources('Patient');
+  // Authenticate with Medplum
+  const medplum = new MedplumClient();
+  await medplum.startJwtAssertionLogin(jwt);
+
+  // Now make authenticated requests
+  const patients = await medplum.searchResources('Patient');
+  console.log(patients);
+}
+
+main().catch(console.error);
 ```
 
   </TabItem>
@@ -188,6 +196,9 @@ payload = {
     'jti': str(uuid.uuid4()),
 }
 
+# The signing algorithm must match the key type:
+# - ES384 requires an EC private key (e.g. P-384)
+# - RSA private keys should use RS256 or RS384 instead
 signed_jwt = jwt.encode(payload, private_key, algorithm='ES384')
 
 response = requests.post(TOKEN_URL, data={
