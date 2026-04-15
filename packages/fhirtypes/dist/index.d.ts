@@ -162,6 +162,7 @@ export type * from './PractitionerRole.d.ts';
 export type * from './Procedure.d.ts';
 export type * from './ProdCharacteristic.d.ts';
 export type * from './ProductShelfLife.d.ts';
+export type * from './ProfileResource.d.ts';
 export type * from './Project.d.ts';
 export type * from './ProjectMembership.d.ts';
 export type * from './Provenance.d.ts';

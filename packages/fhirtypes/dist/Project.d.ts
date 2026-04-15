@@ -11,6 +11,7 @@ import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
 import type { ParameterizedAccess } from './ParameterizedAccess.d.ts';
+import type { ProfileResource } from './ProfileResource.d.ts';
 import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 import type { ResourceType } from './ResourceType.d.ts';
@@ -212,7 +213,7 @@ export interface ProjectDefaultAccessPolicy {
    * Profile resource type this default applies to (Patient, Practitioner,
    * or RelatedPerson).
    */
-  resourceType: ResourceType;
+  resourceType: ProfileResource['resourceType'];
 
   /**
    * Parameterized access policies to apply for this profile type when
