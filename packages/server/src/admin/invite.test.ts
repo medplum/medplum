@@ -1482,4 +1482,56 @@ describe('Admin Invite', () => {
     expect(res.body.access).toBeUndefined();
     expect(res.body.accessPolicy).toBeUndefined();
   });
+
+  test('skipDefaultAccessPolicy as a string is rejected by the validator', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@example.com`,
+        sendEmail: false,
+        skipDefaultAccessPolicy: 'false', // string, not boolean — must be rejected
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('access as a non-array is rejected by the validator', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@example.com`,
+        sendEmail: false,
+        access: 'not-an-array', // must be rejected
+      });
+
+    expect(res.status).toBe(400);
+  });
 });

@@ -42,6 +42,9 @@ export const inviteValidator = makeValidationMiddleware([
     ],
     { message: 'Either email or externalId is required' }
   ),
+  body('skipDefaultAccessPolicy').optional().isBoolean().withMessage('skipDefaultAccessPolicy must be a boolean'),
+  body('access').optional().isArray().withMessage('access must be an array'),
+  body('membership.access').optional().isArray().withMessage('membership.access must be an array'),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
@@ -259,19 +262,19 @@ async function upsertProfileResource(
  * @returns True when explicit access is set or `skipDefaultAccessPolicy` is enabled.
  */
 function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
-  if (request.skipDefaultAccessPolicy) {
+  if (request.skipDefaultAccessPolicy === true) {
     return true;
   }
   if (request.accessPolicy !== undefined && request.accessPolicy !== null) {
     return true;
   }
-  if (request.access !== undefined && request.access !== null) {
+  if (Array.isArray(request.access)) {
     return true;
   }
   if (request.membership?.accessPolicy !== undefined && request.membership.accessPolicy !== null) {
     return true;
   }
-  if (request.membership?.access !== undefined && request.membership.access !== null) {
+  if (Array.isArray(request.membership?.access)) {
     return true;
   }
   return false;
