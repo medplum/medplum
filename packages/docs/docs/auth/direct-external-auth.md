@@ -108,7 +108,8 @@ To find a user's `sub` value, decode the JWT from your IDP or check the IDP's us
 4. Searches for a `ProjectMembership` where `externalId` matches the `sub` value
 5. Returns auth credentials scoped to that membership
 
-:::caution Uniqueness
+:::caution 
+Uniqueness
 
 The `externalId` must be unique across all project memberships. If multiple memberships share the same `externalId`, authentication will fail with a `401` response to prevent ambiguity.
 
