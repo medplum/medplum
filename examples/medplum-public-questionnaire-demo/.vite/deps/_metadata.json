@@ -1,0 +1,82 @@
+{
+  "hash": "0807b0e4",
+  "configHash": "c453089c",
+  "lockfileHash": "1530700f",
+  "browserHash": "12425de1",
+  "optimized": {
+    "react": {
+      "src": "../../../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "806f2cf9",
+      "needsInterop": true
+    },
+    "react-dom": {
+      "src": "../../../../node_modules/react-dom/index.js",
+      "file": "react-dom.js",
+      "fileHash": "b7925966",
+      "needsInterop": true
+    },
+    "react/jsx-dev-runtime": {
+      "src": "../../../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "1f463a21",
+      "needsInterop": true
+    },
+    "react/jsx-runtime": {
+      "src": "../../../../node_modules/react/jsx-runtime.js",
+      "file": "react_jsx-runtime.js",
+      "fileHash": "13ea5a68",
+      "needsInterop": true
+    },
+    "@mantine/core": {
+      "src": "../../../../node_modules/@mantine/core/esm/index.mjs",
+      "file": "@mantine_core.js",
+      "fileHash": "f03093e3",
+      "needsInterop": false
+    },
+    "@mantine/hooks": {
+      "src": "../../../../node_modules/@mantine/hooks/esm/index.mjs",
+      "file": "@mantine_hooks.js",
+      "fileHash": "2ba05476",
+      "needsInterop": false
+    },
+    "@mantine/notifications": {
+      "src": "../../../../node_modules/@mantine/notifications/esm/index.mjs",
+      "file": "@mantine_notifications.js",
+      "fileHash": "2e5eb0e1",
+      "needsInterop": false
+    },
+    "@mantine/spotlight": {
+      "src": "../../../../node_modules/@mantine/spotlight/esm/index.mjs",
+      "file": "@mantine_spotlight.js",
+      "fileHash": "ce2216d1",
+      "needsInterop": false
+    },
+    "react-dom/client": {
+      "src": "../../../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "e8d2cda8",
+      "needsInterop": true
+    }
+  },
+  "chunks": {
+    "chunk-ZNRVVZUU": {
+      "file": "chunk-ZNRVVZUU.js"
+    },
+    "chunk-CXUBRP74": {
+      "file": "chunk-CXUBRP74.js"
+    },
+    "chunk-65KF4MGR": {
+      "file": "chunk-65KF4MGR.js"
+    },
+    "chunk-OY75SG2G": {
+      "file": "chunk-OY75SG2G.js"
+    },
+    "chunk-H6NSPMYC": {
+      "file": "chunk-H6NSPMYC.js"
+    },
+    "chunk-IIBV4UV7": {
+      "file": "chunk-IIBV4UV7.js"
+    }
+  }
+}
