@@ -1890,7 +1890,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    let impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
       if (impl.sortColumnName) {
         columns[impl.sortColumnName] = truncateTextColumn(
@@ -1909,7 +1909,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
     if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
-      if (this.supportsRangeSearch()) {
         buildRangeColumns(searchParam, impl, columns, resource);
 
         // Handle special case for "MeasureReport-period"
@@ -1919,10 +1918,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
         }
         return;
-      } else {
-        // Default to previous column implementation
-        impl = { ...impl, searchStrategy: 'column' };
-      }
     }
 
     impl satisfies ColumnSearchParameterImplementation;
