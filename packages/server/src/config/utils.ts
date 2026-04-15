@@ -184,6 +184,7 @@ const objectKeys = new Set([
   'ssl',
   'defaultProjectSystemSetting',
   'defaultOAuthClients',
+  'externalAuthProviders',
   'smtp',
   'arrayColumnPadding',
   'subscriptionAutoDisable',
