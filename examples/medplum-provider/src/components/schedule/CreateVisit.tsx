@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Card, Flex, Stack, Text, Title } from '@mantine/core';
+import { Button, Flex, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { Coding, Patient, PlanDefinition, PlanDefinitionAction, Schedule } from '@medplum/fhirtypes';
+import type { Coding, Patient, PlanDefinition, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
 import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -11,10 +11,11 @@ import { useNavigate } from 'react-router';
 import type { Range } from '../../types/scheduling';
 import { createAppointment, createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import classes from './CreateVisit.module.css';
+import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 interface CreateVisitProps {
   appointmentSlot: Range | undefined;
+  practitioner: Reference<Practitioner>;
   schedule?: Schedule;
 }
 
@@ -65,8 +66,15 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
     }
     setIsLoading(true);
     try {
-      const appointment = await createAppointment(medplum, start, end, patient, schedule);
-      const encounter = await createEncounter(medplum, encounterClass, patient, planDefinitionData, appointment);
+      const appointment = await createAppointment(medplum, start, end, patient, props.practitioner, schedule);
+      const encounter = await createEncounter(
+        medplum,
+        encounterClass,
+        patient,
+        planDefinitionData,
+        appointment,
+        props.practitioner
+      );
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Visit created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
@@ -86,6 +94,15 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
             </Title>
             <Text size="lg">{formattedSlotTime}</Text>
           </Stack>
+
+          <ResourceInput
+            label="Practitioner"
+            resourceType="Practitioner"
+            name="Practitioner-id"
+            required={true}
+            defaultValue={props.practitioner}
+            disabled={true}
+          />
 
           <ResourceInput
             label="Patient"
@@ -135,16 +152,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
           />
         </Stack>
 
-        {planDefinitionData?.action && planDefinitionData.action.length > 0 && (
-          <Card className={classes.planDefinition}>
-            <Stack gap={0}>
-              <Text fw={500}>Included Tasks</Text>
-              {planDefinitionData?.action?.map((action: PlanDefinitionAction) => (
-                <Text key={action.id}>- {action.title}</Text>
-              ))}
-            </Stack>
-          </Card>
-        )}
+        <PlanDefinitionSummary planDefinition={planDefinitionData} />
 
         <Button fullWidth mt="xl" type="submit" loading={isLoading} disabled={isLoading}>
           <IconCirclePlus /> <Text ml="xs">Create Visit</Text>

@@ -14,14 +14,10 @@ import {
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
 import classes from './TaskBoard.module.css';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
-
-const sectionsWithDoseSpot = getDefaultSections().map((s) =>
-  s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
-);
 
 interface TaskDetailPanelProps {
   task: Task | Reference<Task>;
@@ -32,6 +28,7 @@ interface TaskDetailPanelProps {
 export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null {
   const { task: taskProp, onTaskChange, onDeleteTask } = props;
   const medplum = useMedplum();
+  const PharmacyDialogComponent = usePharmacyDialog();
   const resolvedTask = useResource(taskProp);
   const [task, setTask] = useState<Task | undefined>(resolvedTask);
   const [activeTab, setActiveTab] = useState('properties');
@@ -134,7 +131,12 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
             )}
             {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
               <ScrollArea h="calc(100vh - 120px)">
-                <PatientSummary patient={selectedPatient} sections={sectionsWithDoseSpot} />
+                <PatientSummary
+                  patient={selectedPatient}
+                  sections={getDefaultSections().map((s) =>
+                    s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
+                  )}
+                />
               </ScrollArea>
             )}
           </Box>

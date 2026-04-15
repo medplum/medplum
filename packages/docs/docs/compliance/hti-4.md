@@ -1,4 +1,4 @@
-# HTI-4
+# HTI-4/CMS-0057-F
 
 The "Health Data, Technology, and Interoperability" (HTI-4) rule is a new ONC regulation finalized on July 31, 2025, becoming effective October 1, 2025. This rule modernizes the entire prescribing workflow by mandating new technical certifications across all certified health IT systems, shifting key interoperability functions from optional features to mandatory requirements for certification.
 
@@ -58,5 +58,6 @@ A parallel CMS rule (CMS-0057-F) forces payers to build the other side of the FH
 - [DaVinci Payer Data Exchange (PDex) US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/STU1.0.1/)
 - [ONC API Resource Guide](https://onc-healthit.github.io/api-resource-guide/)
 - [Medplum Bulk FHIR Implementation](/docs/api/fhir/operations/bulk-fhir)
+- [CDS Hooks](/docs/integration/cds-hooks)
 - [DaVinci IG for Notifications](http://hl7.org/fhir/us/davinci-alerts/)
 - [DaVinci Project](https://confluence.hl7.org/display/DVP)

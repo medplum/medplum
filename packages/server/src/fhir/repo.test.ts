@@ -53,9 +53,16 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
+import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
-import { SelectQuery } from './sql';
+import {
+  getGlobalSystemRepo,
+  getProjectSystemRepo,
+  getShardSystemRepo,
+  Repository,
+  setTypedPropertyValue,
+} from './repo';
+import { PostgresError, SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -426,18 +433,36 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      try {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+          identifier: [],
+        });
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        identifier: [],
-      });
+        expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
 
-      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+        expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Patient',
+            id: patient.id,
+          }),
+          undefined,
+          expect.objectContaining({
+            interaction: 'create',
+            project: expect.objectContaining({
+              id: patient.meta?.project,
+            }),
+          })
+        );
 
-      // empty identifier array should removed when read from cache
-      const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
-      expect(readPatient.identifier).toBeUndefined();
+        // empty identifier array should removed when read from cache
+        const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
+        expect(readPatient.identifier).toBeUndefined();
+      } finally {
+        addBackgroundJobsSpy.mockRestore();
+      }
     }));
 
   test('Create Patient as Practitioner with no author', () =>
@@ -486,6 +511,43 @@ describe('FHIR Repo', () => {
       });
 
       expect(patient.meta?.author?.reference).toStrictEqual(author);
+    }));
+
+  test('Skip background jobs when configured', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      const repo = new Repository({
+        projects: [project],
+        currentProject: project,
+        extendedMode: true,
+        skipBackgroundJobs: true,
+        author: {
+          reference: 'Practitioner/' + randomUUID(),
+        },
+      });
+
+      expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
+      expect(
+        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+      ).toBe(true);
+
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.updateResource<Patient>({
+        ...patient,
+        active: true,
+      });
+
+      await repo.deleteResource('Patient', patient.id);
+
+      expect(addBackgroundJobsSpy).not.toHaveBeenCalled();
+      addBackgroundJobsSpy.mockRestore();
     }));
 
   test('Create resource with lastUpdated', () =>
@@ -1624,6 +1686,45 @@ describe('FHIR Repo', () => {
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
 
+  test('Retry after create should not execute post-commit hooks from rollback', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs');
+      const patients: WithId<Patient>[] = [];
+      let shouldError = true;
+
+      const createdPatient = await repo.withTransaction(async () => {
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        patients.push(patient);
+
+        if (shouldError) {
+          shouldError = false;
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        }
+
+        return patient;
+      });
+
+      expect(patients).toHaveLength(2);
+      expect(createdPatient).toEqual(patients[1]);
+      expect(addBackgroundJobsSpy).toHaveBeenCalledTimes(1);
+      expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+        {
+          resourceType: 'Patient',
+          id: createdPatient.id,
+          meta: expect.any(Object),
+        },
+        undefined,
+        expect.any(Object)
+      );
+
+      await expect(repo.readResource('Patient', patients[0].id)).rejects.toMatchObject(
+        new OperationOutcomeError(notFound)
+      );
+
+      addBackgroundJobsSpy.mockRestore();
+    }));
+
   test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
       const { project, repo, login, membership } = await createTestProject({
@@ -1650,6 +1751,43 @@ describe('FHIR Repo', () => {
       expect(cachedPatient.meta?.project).toStrictEqual(project.id);
       expect(cachedPatient.gender).toStrictEqual('unknown');
     }));
+
+  test('Retry executes post-commit hook once from outer transaction', async () => {
+    const repo = systemRepo;
+    const postCommit = jest.fn();
+    let shouldError = true;
+
+    await repo.withTransaction(async () => {
+      await repo.postCommit(postCommit);
+
+      await repo.withTransaction(async () => {
+        if (shouldError) {
+          shouldError = false;
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        }
+      });
+    });
+
+    expect(postCommit).toHaveBeenCalledTimes(1);
+  });
+
+  test('Retry should not execute post-commit hook from rollback', async () => {
+    const repo = systemRepo;
+    const postCommit = jest.fn();
+
+    await repo.withTransaction(async () => {
+      try {
+        await repo.withTransaction(async () => {
+          await repo.postCommit(postCommit);
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        });
+      } catch {
+        // Ignore error
+      }
+    });
+
+    expect(postCommit).toHaveBeenCalledTimes(0);
+  });
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;

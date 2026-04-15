@@ -3,11 +3,12 @@
 import { ActionIcon, Box, Button, Flex, Group, Menu, Modal, Paper, SegmentedControl, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatHumanName } from '@medplum/core';
-import type { Encounter, Practitioner, Reference } from '@medplum/fhirtypes';
-import { IconChevronDown, IconLock, IconLockOpen } from '@tabler/icons-react';
+import type { Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { IconChevronDown, IconLock, IconLockOpen, IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { ChartNoteStatus } from '../../types/encounter';
+import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
 import { SignLockDialog } from './SignLockDialog';
 
 interface EncounterHeaderProps {
@@ -33,6 +34,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
   const [activeTab, setActiveTab] = useState('notes');
   const [confirmOpened, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
   const [signOpened, { open: openSign, close: closeSign }] = useDisclosure(false);
+  const [insuranceOpened, { open: openInsurance, close: closeInsurance }] = useDisclosure(false);
 
   const handleStatusChange = (newStatus: Encounter['status']): void => {
     if (newStatus === 'cancelled') {
@@ -66,6 +68,12 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     }
     openSign();
   };
+
+  const handleCheckEligibility = (): void => {
+    openInsurance();
+  };
+
+  const patientSubject = encounter.subject as Reference<Patient> | undefined;
 
   const practitionerName = practitioner?.name?.[0] ? formatHumanName(practitioner.name[0]) : 'Unknown Provider';
   const formattedDate = formatDate(encounter.period?.start);
@@ -120,6 +128,16 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             </Text>
           </Stack>
           <Group>
+            <Button
+              variant="light"
+              color="blue"
+              radius="xl"
+              size="sm"
+              leftSection={<IconShieldCheck size={16} />}
+              onClick={handleCheckEligibility}
+            >
+              Insurance Eligibility
+            </Button>
             {status === 'cancelled' || status === 'finished' ? (
               <>
                 {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
@@ -211,6 +229,10 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       <Modal opened={signOpened} onClose={closeSign} title="Signing As">
         <SignLockDialog onSign={onConfirmSign} />
       </Modal>
+
+      {patientSubject && (
+        <EncounterCoverageEligibilityModal patient={patientSubject} opened={insuranceOpened} onClose={closeInsurance} />
+      )}
     </>
   );
 };

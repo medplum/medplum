@@ -104,6 +104,7 @@ export interface MedplumServerConfig {
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
+  defaultLoginRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
@@ -167,6 +168,15 @@ export interface MedplumServerConfig {
   mfaAuthenticatorWindow?: number;
 
   /**
+   * Optional configuration for automatically disabling subscriptions after repeated failures.
+   * Each trigger defines a threshold: if a subscription accumulates `maxConsecutiveFailures`
+   * final failures (after all retries exhausted) within `timeWindowSeconds`, it is set to status "off".
+   * Multiple triggers are evaluated independently — the subscription is disabled if ANY trigger fires.
+   * Can be overridden per project via `Project.systemSetting[name="subscriptionAutoDisable"].valueString`.
+   */
+  subscriptionAutoDisable?: SubscriptionAutoDisableTrigger[];
+
+  /**
    * Optional configuration for background worker pools.
    * Allows running separate server pools for HTTP request serving vs. background job processing.
    */
@@ -180,6 +190,13 @@ export interface MedplumServerConfig {
    * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
    */
   mtlsCertHeader?: string;
+}
+
+export interface SubscriptionAutoDisableTrigger {
+  /** Number of final failures (after all retries exhausted) required to auto-disable. */
+  maxConsecutiveFailures: number;
+  /** Time window in seconds for counting failures. */
+  timeWindowSeconds: number;
 }
 
 export interface ArrayColumnPaddingConfig {

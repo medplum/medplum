@@ -38,7 +38,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
   );
 }
 
-function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
+export function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
   return {
     system: coding.system,
     code: coding.code,
@@ -46,7 +46,7 @@ function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
   };
 }
 
-function valueSetElementToCoding(element: ValueSetExpansionContains): Coding {
+export function valueSetElementToCoding(element: ValueSetExpansionContains): Coding {
   return {
     system: element.system,
     code: element.code,

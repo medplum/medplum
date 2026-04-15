@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WS } from 'jest-websocket-mock';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
 import { MedplumClient } from './client';
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
@@ -300,7 +302,7 @@ describe('FHIRcast', () => {
     let client: MedplumClient;
     let topic: string;
     let topicContext: CurrentContext<'DiagnosticReport'>;
-    let medplumGetSpy: jest.SpyInstance;
+    let medplumGetSpy: Mock;
 
     beforeAll(() => {
       topic = generateId();
@@ -326,7 +328,7 @@ describe('FHIRcast', () => {
         return { 'context.type': '', context: [] };
       });
       client = new MedplumClient({ fetch });
-      medplumGetSpy = jest.spyOn(client, 'get');
+      medplumGetSpy = vi.spyOn(client, 'get');
     });
 
     test('Get context for topic with context', async () => {

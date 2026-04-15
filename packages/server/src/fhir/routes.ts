@@ -59,6 +59,7 @@ import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
@@ -333,6 +334,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Resource $refresh-reference-display operation
   router.add('POST', '/:resourceType/:id/$refresh-reference-display', refreshReferenceDisplayHandler);
+
+  // Patient $match operation
+  router.add('POST', '/Patient/$match', patientMatchHandler);
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);

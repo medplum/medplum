@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import type { JSX } from 'react';
-import classes from './DoseSpotNotificationsPage.module.css';
+import classes from './EPrescribingPage.module.css';
 
 export function DoseSpotNotificationsPage(): JSX.Element {
   const iframeUrl = useDoseSpotIFrame({
