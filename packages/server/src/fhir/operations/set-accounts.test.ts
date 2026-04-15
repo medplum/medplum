@@ -20,7 +20,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { runInAsyncContext } from '../../context';
+import { runInAuthenticatedContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
@@ -421,10 +421,11 @@ describe('Patient Set Accounts Operation', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     queue.add.mockClear();
 
-    await runInAsyncContext(
+    await runInAuthenticatedContext(
       { login, membership, project, userConfig: {} as unknown as UserConfiguration },
       undefined,
       undefined,
+      { async: true },
       () => execSetAccountsJob(job)
     );
 

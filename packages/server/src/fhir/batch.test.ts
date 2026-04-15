@@ -24,7 +24,7 @@ import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { runInAsyncContext } from '../context';
+import { runInAuthenticatedContext } from '../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
@@ -1550,10 +1550,11 @@ describe('Batch and Transaction processing', () => {
       } as RateLimiterRes;
     });
 
-    const jobResult = runInAsyncContext(
+    const jobResult = runInAuthenticatedContext(
       { login, membership, project, userConfig: {} as unknown as UserConfiguration },
       undefined,
       undefined,
+      { async: true },
       () => execBatchJob(job)
     );
 
