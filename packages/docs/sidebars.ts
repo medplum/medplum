@@ -256,6 +256,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'auth/domain-level-identity-providers' },
         { type: 'html', value: '<strong class="menu__link">Server-side Auth</strong>' },
         { type: 'doc', id: 'auth/client-credentials' },
+        { type: 'doc', id: 'auth/client-assertion' },
         { type: 'doc', id: 'auth/on-behalf-of' },
         { type: 'doc', id: 'auth/mtls' },
         { type: 'html', value: '<strong class="menu__link">Miscellaneous</strong>' },
