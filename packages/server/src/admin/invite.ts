@@ -20,7 +20,12 @@ import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProjectMembership, getDefaultMembershipAccessFields } from '../auth/utils';
+import {
+  bcryptHashPassword,
+  createProjectMembership,
+  getDefaultMembershipAccessFields,
+  stripUndefinedAndNullFields,
+} from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
@@ -271,12 +276,14 @@ function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
   if (request.accessPolicy !== undefined && request.accessPolicy !== null) {
     return true;
   }
+  // `[]` is intentional: callers pass an empty array to mean "no parameterized access" (do not apply project defaults).
   if (Array.isArray(request.access)) {
     return true;
   }
   if (request.membership?.accessPolicy !== undefined && request.membership.accessPolicy !== null) {
     return true;
   }
+  // Same `[]` semantics as top-level `access` above.
   if (Array.isArray(request.membership?.access)) {
     return true;
   }
@@ -385,6 +392,8 @@ async function upsertProjectMembership(
     ...request.membership,
   };
 
+  // `skipDefaultAccessPolicy` only affects `createProjectMembership` (new rows). On upsert updates we merge
+  // `partialMembership` onto the existing resource directly — defaults are not re-applied and this flag is ignored.
   const membershipOptions = { skipDefaultAccessPolicy: request.skipDefaultAccessPolicy };
 
   if (request.forceNewMembership) {
@@ -408,9 +417,12 @@ async function upsertProjectMembership(
 
         // Update the existing membership
         // Be careful to preserve the critical properties: id, project, user, and profile
+        const cleanedPartial = stripUndefinedAndNullFields({
+          ...partialMembership,
+        } as Record<string, unknown>) as Partial<ProjectMembership>;
         return systemRepo.updateResource<ProjectMembership>({
           ...existingMembership,
-          ...partialMembership,
+          ...cleanedPartial,
           resourceType: 'ProjectMembership',
           id: existingMembership.id,
           project: createReference(project),

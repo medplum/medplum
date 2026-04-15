@@ -24,7 +24,9 @@ export function getDefaultMembershipAccessFields(
 ): Pick<ProjectMembership, 'accessPolicy' | 'access'> {
   const result: Pick<ProjectMembership, 'accessPolicy' | 'access'> = {};
   const entry = project.defaultAccessPolicy?.find((p) => p.resourceType === profileResourceType);
-  if (entry?.access?.length) {
+  // `Project.defaultAccessPolicy.access` is required (min = 1) in the StructureDefinition; keep a
+  // defensive `Array.isArray` guard for partially-validated or legacy stored data.
+  if (entry && Array.isArray(entry.access) && entry.access.length > 0) {
     result.access = cloneParameterizedAccessList(entry.access);
   }
   if (!result.access?.length && profileResourceType === 'Patient' && project.defaultPatientAccessPolicy) {

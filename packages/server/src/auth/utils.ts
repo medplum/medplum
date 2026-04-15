@@ -28,6 +28,14 @@ import { getDefaultMembershipAccessFields } from './membershipDefaults';
 
 export { getDefaultMembershipAccessFields, projectHasDefaultPatientAccess } from './membershipDefaults';
 
+/**
+ * Removes own properties whose values are `undefined` or `null` so merges / updates
+ * do not accidentally clear existing fields (JSON bodies often include explicit `null`).
+ */
+export function stripUndefinedAndNullFields<T extends Record<string, unknown>>(record: T): T {
+  return Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined && v !== null)) as T;
+}
+
 export async function createProfile(
   systemRepo: SystemRepository,
   project: Project,
@@ -61,13 +69,7 @@ export async function createProfile(
 }
 
 function membershipDetailsHaveExplicitAccess(details?: Partial<ProjectMembership>): boolean {
-  if (!details) {
-    return false;
-  }
-  if (!!details.accessPolicy || !!details.access) {
-    return true;
-  }
-  return false;
+  return !!details?.accessPolicy || !!details?.access;
 }
 
 export async function createProjectMembership(
@@ -85,7 +87,7 @@ export async function createProjectMembership(
   // invite.ts spreads all request fields unconditionally (many are null/undefined);
   // callers that want "no policy" must pass an explicit non-null value such as [].
   const cleanDetails = details
-    ? (Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined && v !== null)) as Partial<ProjectMembership>)
+    ? (stripUndefinedAndNullFields({ ...details } as Record<string, unknown>) as Partial<ProjectMembership>)
     : {};
 
   const skipDefaults = options?.skipDefaultAccessPolicy || membershipDetailsHaveExplicitAccess(cleanDetails);
