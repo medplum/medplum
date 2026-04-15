@@ -12,7 +12,7 @@ Mutual TLS (mTLS) is a client authentication mechanism built on top of standard 
 
 ## When to Use mTLS
 
-mTLS is an alternative to the standard [Client Credentials](./client-credentials.md) flow for machine-to-machine authentication. Consider mTLS when:
+mTLS is an alternative to the standard [Client Credentials](./client-credentials) flow for machine-to-machine authentication. Consider mTLS when:
 
 - A trading partner or payer **requires** it — mTLS is an optional but increasingly expected part of the [Da Vinci Prior Authorization Support (PAS)](https://hl7.org/fhir/us/davinci-pas/privacy.html) specification (HTI-4 / electronic prior auth), and some payers are making it mandatory.
 - You want to eliminate shared secrets entirely and rely solely on PKI for client authentication.
@@ -201,4 +201,4 @@ The `certificateTrustStore` field accepts one or more PEM-encoded certificates c
 
 - [RFC 8705 — OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens](https://datatracker.ietf.org/doc/html/rfc8705)
 - [Da Vinci PAS — Privacy, Safety, and Security](https://hl7.org/fhir/us/davinci-pas/privacy.html) (HTI-4 / electronic prior auth mTLS requirements)
-- [Client Credentials Flow](./client-credentials.md)
+- [Client Credentials Flow](./client-credentials)

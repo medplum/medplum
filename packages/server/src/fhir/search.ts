@@ -98,12 +98,12 @@ interface Cursor {
 }
 
 /** Linking direction for chained search. */
-const Direction = {
+export const Direction = {
   FORWARD: 1,
   REVERSE: -1,
 } as const;
 
-interface ChainedSearchLink {
+export interface ChainedSearchLink {
   originType: string;
   targetType: string;
   code: string;
@@ -971,17 +971,8 @@ export function buildSearchExpression(
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    let expr: Expression | undefined;
-    if (isChainedSearchFilter(filter)) {
-      const chain = parseChainedParameter(searchRequest.resourceType, filter);
-      expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
-    } else {
-      expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
-    }
-
-    if (expr) {
-      expressions.push(expr);
-    }
+    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    expressions.push(expr);
   }
   if (expressions.length === 0) {
     return undefined;
@@ -1016,7 +1007,7 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest('Search filter value cannot contain null bytes'));
   }
 
-  if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
+  if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
@@ -1212,8 +1203,11 @@ function trySpecialSearchParameter(
         filter
       );
     }
-    case '_filter':
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
+    case '_filter': {
+      const filterExpr = parseFilterParameter(filter.value);
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr);
+    }
+
     default:
       return undefined;
   }
@@ -1663,7 +1657,7 @@ function buildChainedSearch(
     const targetId = param.filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
       code,
-      operator: Operator.EQUALS,
+      operator: param.filter.operator,
       value: `${targetType}/${targetId}`,
     });
   }
@@ -1821,7 +1815,7 @@ function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink,
   ]);
 }
 
-function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
+export function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
   let currentResourceType = resourceType;
   const parts = splitChainedSearch(searchFilter.code);
 
@@ -1842,7 +1836,7 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
         if (!searchParam) {
           throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
         }
-        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
+        filter = parseParameter(searchParam, searchFilter.operator, modifier, searchFilter.value);
       }
     } else {
       const link = parseChainLink(part, currentResourceType);

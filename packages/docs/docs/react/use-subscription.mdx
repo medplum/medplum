@@ -171,7 +171,7 @@ Usage within `Expo` / `React Native` has some special considerations. See: [@med
 
 ## Subscription Extensions
 
-Any [Subscription extension](../subscriptions/subscription-extensions.md) supported by Medplum can be attached to a `Subscription`
+Any [Subscription extension](../subscriptions/subscription-extensions) supported by Medplum can be attached to a `Subscription`
 created by the `useSubscription` hook via a 3rd optional parameter to the hook, `options`, which takes an optional `subscriptionProps`.
 
 ```tsx
@@ -331,7 +331,7 @@ Note that `onWebSocketOpen`/`onWebSocketClose` are called once for the shared We
 ### `Error: WebSocket subscriptions not enabled for current project`
 
 Currently the WebSocket `Subscription` feature which is required to use the `useSubscription` hook is behind a feature flag.
-Locally, you can enable this feature flag by logging in as a [super admin](../self-hosting/super-admin-guide.md)
+Locally, you can enable this feature flag by logging in as a [super admin](../self-hosting/super-admin-guide)
 and enabling the `websocket-subscriptions` feature on your `Project` resource from `@medplum/app`.
 
 To get this feature enabled for your project on hosted Medplum (`app.medplum.com`), send an email to hello@medplum.com.
