@@ -7,7 +7,8 @@ tags: [auth]
 
 Medplum supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Medplum API directly.
 
-:::caution Self-Hosted Deployments Only
+:::caution
+Self-Hosted Deployments Only
 
 This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need this capability, please contact [Medplum support](/contact).
 
