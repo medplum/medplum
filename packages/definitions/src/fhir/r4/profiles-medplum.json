@@ -340,7 +340,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/profile-resource-types"
             }
           },
           {

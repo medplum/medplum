@@ -115,6 +115,27 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/profile-resource-types",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "profile-resource-types",
+        "url": "https://medplum.com/fhir/ValueSet/profile-resource-types",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/resource-types",
+              "concept": [
+                { "code": "Patient" },
+                { "code": "Practitioner" },
+                { "code": "RelatedPerson" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/project-feature",
       "resource": {
         "resourceType": "CodeSystem",
