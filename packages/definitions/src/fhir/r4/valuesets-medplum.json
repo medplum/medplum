@@ -199,27 +199,6 @@
       }
     },
     {
-      "fullUrl": "https://medplum.com/fhir/ValueSet/project-default-access-profile-type",
-      "resource": {
-        "resourceType": "ValueSet",
-        "id": "project-default-access-profile-type",
-        "url": "https://medplum.com/fhir/ValueSet/project-default-access-profile-type",
-        "status": "active",
-        "compose": {
-          "include": [
-            {
-              "system": "http://hl7.org/fhir/resource-types",
-              "concept": [
-                { "code": "Patient" },
-                { "code": "Practitioner" },
-                { "code": "RelatedPerson" }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-runtime-version",
       "resource": {
         "resourceType": "CodeSystem",

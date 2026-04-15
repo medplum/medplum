@@ -334,7 +334,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/project-default-access-profile-type"
+              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
             }
           },
           {

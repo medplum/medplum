@@ -212,7 +212,7 @@ export interface ProjectDefaultAccessPolicy {
    * Profile resource type this default applies to (Patient, Practitioner,
    * or RelatedPerson).
    */
-  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
+  resourceType: ResourceType;
 
   /**
    * Parameterized access policies to apply for this profile type when
