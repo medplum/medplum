@@ -803,12 +803,13 @@ describe('Project Admin routes', () => {
 
     const membershipId = inviteRes.body.id as string;
 
-    // Project A admin tries to reset MFA for Project B member — should be forbidden
+    // Project A admin tries to reset MFA for Project B member.
+    // ctx.repo is scoped to Project A so the membership is not visible → 404.
     const resetRes = await request(app)
       .post(`/admin/projects/${projectA.id}/members/${membershipId}/mfa/reset`)
       .set('Authorization', 'Bearer ' + tokenA)
       .send();
-    expect(resetRes.status).toBe(403);
+    expect(resetRes.status).toBe(404);
   });
 
   test('Reset MFA - non-admin is rejected', async () => {
@@ -835,20 +836,12 @@ describe('Project Admin routes', () => {
 
     const membershipId = inviteRes.body.id as string;
 
-    // Use a non-admin token from a different project
-    const { accessToken: nonAdminToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Leo',
-        lastName: 'Messi',
-        projectName: 'Leo Project',
-        email: `leo${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    // Add a non-admin member to the same project and use their token
+    const nonAdminUser = await withTestContext(() => addTestUser(project));
 
     const resetRes = await request(app)
       .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
-      .set('Authorization', 'Bearer ' + nonAdminToken)
+      .set('Authorization', 'Bearer ' + nonAdminUser.accessToken)
       .send();
     expect(resetRes.status).toBe(403);
   });
