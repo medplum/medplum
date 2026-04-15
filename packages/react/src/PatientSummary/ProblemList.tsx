@@ -20,7 +20,7 @@ export interface ProblemListProps {
   readonly onClickResource?: (resource: Condition) => void;
 }
 
-function getCodeKey(condition: Condition): string {
+function getCodeKey(condition: Condition): string | undefined {
   const coding = condition.code?.coding?.[0];
   if (coding?.system && coding?.code) {
     return `${coding.system}|${coding.code}`;
@@ -28,7 +28,7 @@ function getCodeKey(condition: Condition): string {
   if (coding?.code) {
     return coding.code;
   }
-  return condition.code?.text ?? condition.id ?? '';
+  return condition.code?.text ?? condition.id;
 }
 
 export function ProblemList(props: ProblemListProps): JSX.Element {
@@ -39,12 +39,13 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
   );
   const [editCondition, setEditCondition] = useState<Condition>();
   const [opened, { open, close }] = useDisclosure(false);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
 
   const groupedProblems = useMemo(() => {
     const groups = new Map<string, Condition[]>();
-    for (const problem of problems) {
-      const key = getCodeKey(problem);
+    for (let i = 0; i < problems.length; i++) {
+      const problem = problems[i];
+      const key = getCodeKey(problem) ?? `ungrouped-${i}`;
       const existing = groups.get(key);
       if (existing) {
         existing.push(problem);
@@ -93,12 +94,13 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
       >
         {problems.length > 0 ? (
           <Flex direction="column" gap={8}>
-            {groupedProblems.map(([key, group]) => {
+            {groupedProblems.map(([key, group], groupIndex) => {
               const isExpanded = expandedGroups.has(key);
               const displayProblems = isExpanded ? group : [group[0]];
+              const groupContentId = `problem-group-content-${groupIndex}`;
               return (
                 <Box key={key}>
-                  <Flex direction="column" gap={4}>
+                  <Flex direction="column" gap={4} id={groupContentId}>
                     {displayProblems.map((problem) => (
                       <SummaryItem
                         key={problem.id}
@@ -138,6 +140,8 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
                   {group.length > 1 && (
                     <UnstyledButton
                       onClick={() => toggleGroup(key)}
+                      aria-expanded={isExpanded}
+                      aria-controls={groupContentId}
                       pl={4}
                       pt={2}
                       style={{ fontSize: 'var(--mantine-font-size-xs)', color: 'var(--mantine-color-dimmed)' }}
