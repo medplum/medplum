@@ -4,13 +4,16 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import type {
   Bundle,
   BundleEntry,
+  Coding,
   DiagnosticReport,
   Observation,
+  Organization,
   Provenance,
   ProvenanceAgent,
   Reference,
   Task,
 } from '@medplum/fhirtypes';
+import { NEEDS_CODE_ASSIGNMENT_TAG, upsertMapping } from './code-mapping';
 
 /**
  * Finalize Parsed Report Bot
@@ -18,9 +21,14 @@ import type {
  * Triggered by a Subscription on Task update where status=completed
  * and code=review-parsed-report.
  *
- * Promotes contained Observations from the DiagnosticReport to standalone
- * resources, updates the DiagnosticReport status to final, and records
- * the reviewing practitioner in the Provenance.
+ * Responsibilities:
+ * 1. Apply any code assignments the reviewer provided in Task.output to contained
+ *    Observations that were marked `needs-code-assignment`.
+ * 2. Refuse to finalize if any Observation still lacks a code after applying output.
+ * 3. Promote contained Observations to standalone resources via a transaction bundle.
+ * 4. Upsert the reviewer's code assignments into the performing Organization's
+ *    ConceptMap, so future reports auto-map those test names.
+ * 5. Record the reviewing practitioner in the Provenance.
  *
  * Subscription Criteria: Task?status=completed&code=review-parsed-report
  */
@@ -36,7 +44,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Task>): Pr
     throw new Error(`Unexpected task code: ${taskCode}`);
   }
 
-  // Read the DiagnosticReport from the Task focus
   if (!task.focus?.reference) {
     throw new Error('Task has no focus reference');
   }
@@ -46,46 +53,158 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Task>): Pr
     throw new Error('DiagnosticReport has no contained resources to promote');
   }
 
-  // Build a transaction bundle that atomically:
-  // 1. Creates standalone Observations from contained resources
-  // 2. Updates the DiagnosticReport (removes contained, updates result references, sets status=final)
-  const bundle = buildFinalizationBundle(report);
+  // Parse the reviewer's code assignments from Task.output, keyed by test name (lowercase).
+  const codeAssignments = parseCodeAssignments(task);
 
-  console.log(`Finalizing DiagnosticReport/${report.id}: promoting ${report.contained.length} contained Observations`);
+  // Apply the assignments to the contained Observations.
+  const { observations: updatedObservations, unresolvedTests } = applyCodeAssignments(
+    report.contained.filter((r): r is Observation => r.resourceType === 'Observation'),
+    codeAssignments
+  );
+
+  if (unresolvedTests.length > 0) {
+    throw new Error(
+      `Cannot finalize: ${unresolvedTests.length} test(s) still lack a code assignment: ${unresolvedTests.join(', ')}`
+    );
+  }
+
+  // Build a transaction bundle that atomically promotes observations and updates the report.
+  const bundle = buildFinalizationBundle(report, updatedObservations);
+
+  console.log(`Finalizing DiagnosticReport/${report.id}: promoting ${updatedObservations.length} Observations`);
 
   const responseBundle = await medplum.executeBatch(bundle);
-
-  // Extract the created Observation IDs from the response
   const createdObservationIds = extractCreatedIds(responseBundle, 'Observation');
 
-  // Update Provenance to record the reviewer
+  // Upsert reviewer's assignments into the performing Organization's ConceptMap
+  // so that future reports from the same lab auto-map these test names.
+  await persistCodeAssignments(medplum, report, codeAssignments);
+
+  // Record the reviewer in the Provenance
   await updateProvenance(medplum, report, task);
 
-  console.log(`Finalized DiagnosticReport/${report.id} with ${createdObservationIds.length} standalone Observations`);
+  console.log(
+    `Finalized DiagnosticReport/${report.id} with ${createdObservationIds.length} standalone Observations; ` +
+      `${codeAssignments.size} code assignment(s) added to mapping table`
+  );
 
-  // Return the updated report
   return medplum.readResource('DiagnosticReport', report.id!);
+}
+
+/**
+ * Parse code assignments from Task.output into a Map keyed by lowercase test name.
+ *
+ * Expected Task.output shape per assignment:
+ *   {
+ *     type: { text: <testName>, coding: [{ code: 'code-assignment' }] },
+ *     valueCoding: { system: 'http://loinc.org', code: '2345-7', display: '...' }
+ *   }
+ */
+function parseCodeAssignments(task: Task): Map<string, Coding> {
+  const assignments = new Map<string, Coding>();
+  for (const output of task.output || []) {
+    const isCodeAssignment = output.type?.coding?.some((c) => c.code === 'code-assignment');
+    if (!isCodeAssignment) {
+      continue;
+    }
+    const testName = output.type?.text;
+    const coding = output.valueCoding;
+    if (testName && coding?.code && coding.system) {
+      assignments.set(testName.toLowerCase().trim(), coding);
+    }
+  }
+  return assignments;
+}
+
+/**
+ * Apply reviewer-supplied codes to contained Observations and identify which
+ * tests (if any) remain unmapped.
+ */
+function applyCodeAssignments(
+  observations: Observation[],
+  assignments: Map<string, Coding>
+): { observations: Observation[]; unresolvedTests: string[] } {
+  const unresolvedTests: string[] = [];
+  const updated: Observation[] = observations.map((obs) => {
+    const needsAssignment = obs.meta?.tag?.some(
+      (tag) => tag.system === NEEDS_CODE_ASSIGNMENT_TAG.system && tag.code === NEEDS_CODE_ASSIGNMENT_TAG.code
+    );
+    if (!needsAssignment) {
+      return obs;
+    }
+
+    const testName = obs.code?.text || '';
+    const assignedCoding = assignments.get(testName.toLowerCase().trim());
+
+    if (!assignedCoding) {
+      unresolvedTests.push(testName);
+      return obs;
+    }
+
+    // Apply the code and remove the needs-code-assignment tag
+    const remainingTags = (obs.meta?.tag || []).filter(
+      (tag) => !(tag.system === NEEDS_CODE_ASSIGNMENT_TAG.system && tag.code === NEEDS_CODE_ASSIGNMENT_TAG.code)
+    );
+    return {
+      ...obs,
+      code: {
+        ...obs.code,
+        coding: [assignedCoding],
+      },
+      meta: remainingTags.length > 0 ? { ...obs.meta, tag: remainingTags } : undefined,
+    };
+  });
+
+  return { observations: updated, unresolvedTests };
+}
+
+/**
+ * Upsert reviewer's code assignments into the performing Organization's ConceptMap.
+ * This is how the mapping table self-improves over time: each human assignment becomes
+ * an auto-map for the next report from the same lab.
+ */
+async function persistCodeAssignments(
+  medplum: MedplumClient,
+  report: DiagnosticReport,
+  assignments: Map<string, Coding>
+): Promise<void> {
+  if (assignments.size === 0) {
+    return;
+  }
+
+  const performerRef = report.performer?.[0];
+  if (!performerRef?.reference || !performerRef.reference.startsWith('Organization/')) {
+    console.warn('Cannot persist code assignments: DiagnosticReport has no Organization performer');
+    return;
+  }
+
+  const organization = await medplum.readReference<Organization>(performerRef as Reference<Organization>);
+
+  for (const [testName, coding] of assignments) {
+    if (!coding.system || !coding.code) {
+      continue;
+    }
+    await upsertMapping(medplum, organization, testName, {
+      system: coding.system,
+      code: coding.code,
+      display: coding.display,
+    });
+  }
 }
 
 /**
  * Build a FHIR transaction Bundle that promotes contained Observations
  * to standalone resources and updates the DiagnosticReport.
  */
-function buildFinalizationBundle(report: DiagnosticReport): Bundle {
+function buildFinalizationBundle(report: DiagnosticReport, observations: Observation[]): Bundle {
   const entries: BundleEntry[] = [];
   const containedIdToFullUrl: Record<string, string> = {};
 
-  // Create entries for each contained Observation
-  const containedObservations = (report.contained || []).filter(
-    (r): r is Observation => r.resourceType === 'Observation'
-  );
-
-  for (const obs of containedObservations) {
+  for (const obs of observations) {
     const containedId = obs.id!;
     const fullUrl = `urn:uuid:obs-${containedId}`;
     containedIdToFullUrl[`#${containedId}`] = fullUrl;
 
-    // Remove the contained-specific id and set status to final
     const standaloneObs: Observation = {
       ...obs,
       id: undefined,
@@ -102,11 +221,9 @@ function buildFinalizationBundle(report: DiagnosticReport): Bundle {
     });
   }
 
-  // Update the DiagnosticReport: remove contained, update references, set status=final
   const updatedReport: DiagnosticReport = {
     ...report,
     status: 'final',
-    contained: undefined,
     result: report.result?.map((ref) => {
       const fullUrl = containedIdToFullUrl[ref.reference!];
       if (fullUrl) {
@@ -116,7 +233,6 @@ function buildFinalizationBundle(report: DiagnosticReport): Bundle {
     }),
   };
 
-  // Remove the contained field entirely
   delete (updatedReport as unknown as Record<string, unknown>).contained;
 
   entries.push({
@@ -142,7 +258,6 @@ function extractCreatedIds(responseBundle: Bundle, resourceType: string): string
     .filter((entry) => entry.response?.location?.startsWith(`${resourceType}/`))
     .map((entry) => {
       const location = entry.response!.location!;
-      // Location format: "ResourceType/id/_history/version"
       const parts = location.split('/');
       return parts[1];
     });
@@ -152,7 +267,6 @@ function extractCreatedIds(responseBundle: Bundle, resourceType: string): string
  * Update the Provenance resource to include the reviewing practitioner as an agent.
  */
 async function updateProvenance(medplum: MedplumClient, report: DiagnosticReport, task: Task): Promise<void> {
-  // Find the Provenance resource targeting this DiagnosticReport
   const provenances = await medplum.searchResources('Provenance', {
     target: `DiagnosticReport/${report.id}`,
   });
@@ -164,7 +278,6 @@ async function updateProvenance(medplum: MedplumClient, report: DiagnosticReport
 
   const provenance = provenances[0] as Provenance;
 
-  // Add the reviewer (Task owner) as a verifier agent
   if (task.owner) {
     const verifierAgent: ProvenanceAgent = {
       type: {

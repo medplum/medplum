@@ -3,13 +3,16 @@
 import { LOINC, UCUM } from '@medplum/core';
 import type {
   CodeableConcept,
+  Coding,
   Observation,
   Organization,
   Patient,
   Quantity,
   Reference,
 } from '@medplum/fhirtypes';
-import type { DocumentParsingProvider, ParsedTestResult } from './types';
+import type { CodeResolution } from './code-mapping';
+import { NEEDS_CODE_ASSIGNMENT_TAG, SUGGESTED_CODING_EXTENSION_URL } from './code-mapping';
+import type { ParsedTestResult } from './types';
 
 const INTERPRETATION_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation';
 
@@ -170,30 +173,6 @@ export const COMMON_LOINC_CODES: Record<string, CodeableConcept> = {
 };
 
 /**
- * Attempt to map a test name to a LOINC CodeableConcept.
- * Falls back to a text-only code if no LOINC match is found.
- */
-export function mapToLoincCode(testName: string, testCode?: string): CodeableConcept {
-  // If a LOINC code was explicitly provided by the parser, use it
-  if (testCode) {
-    return {
-      coding: [{ system: LOINC, code: testCode, display: testName }],
-      text: testName,
-    };
-  }
-
-  // Attempt a case-insensitive lookup
-  const normalized = testName.toLowerCase().trim();
-  const match = COMMON_LOINC_CODES[normalized];
-  if (match) {
-    return { ...match, text: testName };
-  }
-
-  // Fallback: text-only code (no LOINC coding)
-  return { text: testName };
-}
-
-/**
  * Parse a reference range string into FHIR Range low/high values.
  */
 export function parseReferenceRange(
@@ -239,22 +218,53 @@ export function parseReferenceRange(
 }
 
 /**
- * Build a contained Observation from a parsed test result.
+ * Build a contained Observation from a parsed test result and a pre-resolved code.
+ *
+ * The LLM's suggested testCode is NEVER applied to code.coding. It is stored only as an
+ * extension for the reviewer's reference. This forces all coding to flow through either
+ * a customer-maintained ConceptMap or the built-in default mapping table.
+ *
+ * When the code is unmapped, the Observation is tagged `needs-code-assignment` so the
+ * review workflow can surface it for human code assignment.
  */
 export function buildContainedObservation(
   result: ParsedTestResult,
   index: number,
   subject: Reference<Patient>,
-  performer: Reference<Organization>
+  performer: Reference<Organization>,
+  resolution: CodeResolution
 ): Observation {
   const observation: Observation = {
     resourceType: 'Observation',
     id: `obs-${index}`,
     status: 'preliminary',
-    code: mapToLoincCode(result.testName, result.testCode),
+    code: resolution.code,
     subject,
     performer: [performer],
   };
+
+  // If the test was not mapped, tag the Observation for human code assignment
+  if (!resolution.mapped) {
+    observation.meta = {
+      tag: [NEEDS_CODE_ASSIGNMENT_TAG],
+    };
+  }
+
+  // Store the LLM's suggested code as an extension (never applied to code.coding)
+  if (result.testCode) {
+    const suggestedCoding: Coding = {
+      system: LOINC,
+      code: result.testCode,
+      display: result.testName,
+    };
+    observation.extension = [
+      ...(observation.extension || []),
+      {
+        url: SUGGESTED_CODING_EXTENSION_URL,
+        valueCoding: suggestedCoding,
+      },
+    ];
+  }
 
   // Set value
   if (result.numericValue !== undefined) {
@@ -315,23 +325,3 @@ export function buildContainedObservation(
   return observation;
 }
 
-/**
- * Select the appropriate parsing provider based on configuration.
- */
-export function getParsingProvider(secrets: Record<string, { valueString?: string }>): DocumentParsingProvider {
-  const providerName = secrets['PARSING_PROVIDER']?.valueString;
-  if (!providerName) {
-    throw new Error('PARSING_PROVIDER secret is not configured');
-  }
-
-  // Dynamic import is not available in bot context, so we use a factory pattern.
-  // Callers should pass the provider directly or use this as a configuration check.
-  switch (providerName) {
-    case 'reducto':
-    case 'bedrock-data-automation':
-      // Return a stub that identifies the provider; actual implementation is passed by the bot
-      return { name: providerName } as DocumentParsingProvider;
-    default:
-      throw new Error(`Unknown parsing provider: ${providerName}. Expected 'reducto' or 'bedrock-data-automation'.`);
-  }
-}

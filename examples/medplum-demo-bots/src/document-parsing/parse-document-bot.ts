@@ -17,6 +17,8 @@ import type { DocumentParsingProvider, ParsedLabReport } from './types';
 import { ReductoProvider } from './providers/reducto';
 import { BedrockDataAutomationProvider } from './providers/bedrock-data-automation';
 import { buildContainedObservation } from './utils';
+import type { CodeResolution } from './code-mapping';
+import { resolveCoding } from './code-mapping';
 
 /**
  * Parse Document Bot
@@ -69,15 +71,34 @@ export async function handler(medplum: MedplumClient, event: BotEvent<DocumentRe
   // Find or create the performing Organization
   const performingOrg = await findOrCreatePerformingOrg(medplum, parsedReport);
 
+  // Resolve codes for each test result via:
+  //   1. Organization-scoped ConceptMap (customer-maintained, self-improving)
+  //   2. Built-in default mappings
+  // The LLM's suggested testCode is NEVER trusted — it's stored as an extension only.
+  const resolutions: CodeResolution[] = await Promise.all(
+    parsedReport.results.map((result) => resolveCoding(medplum, performingOrg.id, result.testName))
+  );
+  const unmappedCount = resolutions.filter((r) => !r.mapped).length;
+  if (unmappedCount > 0) {
+    console.log(`${unmappedCount} of ${resolutions.length} tests are unmapped and need human code assignment`);
+  }
+
   // Build contained Observations
   const subject = docRef.subject as Reference<Patient>;
   const performerRef = createReference(performingOrg);
   const containedObservations: Observation[] = parsedReport.results.map((result, index) =>
-    buildContainedObservation(result, index, subject, performerRef)
+    buildContainedObservation(result, index, subject, performerRef, resolutions[index])
   );
 
+  // Auto-approve is overridden when any test is unmapped — unmapped Observations
+  // must never reach `final` status without a human assigning a code.
+  const effectiveAutoApprove = autoApprove && unmappedCount === 0;
+  if (autoApprove && !effectiveAutoApprove) {
+    console.log('AUTO_APPROVE overridden: unmapped tests require human review');
+  }
+
   // Create the DiagnosticReport
-  const reportStatus = autoApprove ? 'final' : 'preliminary';
+  const reportStatus = effectiveAutoApprove ? 'final' : 'preliminary';
   const diagnosticReport = await medplum.createResource<DiagnosticReport>({
     resourceType: 'DiagnosticReport',
     status: reportStatus,

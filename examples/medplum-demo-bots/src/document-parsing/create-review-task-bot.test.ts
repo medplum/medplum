@@ -4,6 +4,7 @@ import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitio
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, DiagnosticReport, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { NEEDS_CODE_ASSIGNMENT_TAG, SUGGESTED_CODING_EXTENSION_URL } from './code-mapping';
 import { handler } from './create-review-task-bot';
 
 describe('Create Review Task Bot', () => {
@@ -78,6 +79,92 @@ describe('Create Review Task Bot', () => {
 
     // Verify performer type
     expect(task.performerType?.[0]?.coding?.[0]?.code).toBe('158965000');
+
+    // No unmapped observations in this report → no code-assignment inputs, routine priority
+    expect(task.priority).toBe('routine');
+    const codeAssignmentInputs = task.input?.filter((i) =>
+      i.type?.coding?.some((c) => c.code === 'code-assignment-request')
+    );
+    expect(codeAssignmentInputs).toHaveLength(0);
+
+    const unmappedCountInput = task.input?.find((i) => i.type?.text === 'unmappedCount');
+    expect(unmappedCountInput?.valueInteger).toBe(0);
+  });
+
+  test('Surfaces unmapped observations as code-assignment-request inputs', async () => {
+    const medplum = new MockClient();
+
+    const report: DiagnosticReport = await medplum.createResource({
+      resourceType: 'DiagnosticReport',
+      status: 'preliminary',
+      code: { text: 'Laboratory Report' },
+      subject: { reference: 'Patient/123' },
+      contained: [
+        {
+          resourceType: 'Observation',
+          id: 'obs-0',
+          status: 'preliminary',
+          code: { text: 'Glucose', coding: [{ system: 'http://loinc.org', code: '2345-7' }] },
+        },
+        {
+          resourceType: 'Observation',
+          id: 'obs-1',
+          status: 'preliminary',
+          code: { text: 'Custom Assay XYZ' },
+          meta: { tag: [NEEDS_CODE_ASSIGNMENT_TAG] },
+          extension: [
+            {
+              url: SUGGESTED_CODING_EXTENSION_URL,
+              valueCoding: {
+                system: 'http://loinc.org',
+                code: '99999-0',
+                display: 'Custom Assay XYZ',
+              },
+            },
+          ],
+        },
+        {
+          resourceType: 'Observation',
+          id: 'obs-2',
+          status: 'preliminary',
+          code: { text: 'Another Unknown Test' },
+          meta: { tag: [NEEDS_CODE_ASSIGNMENT_TAG] },
+        },
+      ],
+      result: [
+        { reference: '#obs-0', display: 'Glucose' },
+        { reference: '#obs-1', display: 'Custom Assay XYZ' },
+        { reference: '#obs-2', display: 'Another Unknown Test' },
+      ],
+    });
+
+    const task = await handler(medplum, {
+      bot: { reference: 'Bot/review-task-bot' },
+      input: report,
+      contentType: 'application/fhir+json',
+      secrets: {},
+    });
+
+    // Priority elevated due to unmapped tests
+    expect(task.priority).toBe('urgent');
+
+    const unmappedCountInput = task.input?.find((i) => i.type?.text === 'unmappedCount');
+    expect(unmappedCountInput?.valueInteger).toBe(2);
+
+    const codeAssignmentInputs = task.input?.filter((i) =>
+      i.type?.coding?.some((c) => c.code === 'code-assignment-request')
+    );
+    expect(codeAssignmentInputs).toHaveLength(2);
+
+    const xyzInput = codeAssignmentInputs?.find((i) => i.type?.text === 'Custom Assay XYZ');
+    expect(xyzInput?.valueString).toBe('Custom Assay XYZ');
+    const suggestion = xyzInput?.extension?.find((e) => e.url === SUGGESTED_CODING_EXTENSION_URL);
+    expect(suggestion?.valueCoding?.code).toBe('99999-0');
+
+    const unknownInput = codeAssignmentInputs?.find((i) => i.type?.text === 'Another Unknown Test');
+    expect(unknownInput?.valueString).toBe('Another Unknown Test');
+    // No LLM suggestion for this one
+    expect(unknownInput?.extension).toBeUndefined();
   });
 
   test('Throws on non-preliminary report', async () => {
