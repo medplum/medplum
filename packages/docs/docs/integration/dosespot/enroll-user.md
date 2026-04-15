@@ -75,11 +75,11 @@ The Practitioner resource must contain the following fields (extracted automatic
 
 | Field | Required | Description | Requirements |
 | :--- | :--- | :--- | :--- |
-| `name` | Yes | At least one name entry | - `family`: Last name (required)<br>- `given`: Array of given names (at least one required) |
+| `name` | Yes | At least one name entry | - `family`: Last name (required)\<br /\>- `given`: Array of given names (at least one required) |
 | `birthDate` | Yes | Date of birth | Date format (e.g., "1980-05-15") |
-| `identifier` | Yes | Must include an NPI identifier | - `system`: `"http://hl7.org/fhir/sid/us-npi"`<br>- `value`: Valid 10-digit NPI |
+| `identifier` | Yes | Must include an NPI identifier | - `system`: `"http://hl7.org/fhir/sid/us-npi"`\<br /\>- `value`: Valid 10-digit NPI |
 | `address` | Yes | Address information | Must include: line, city, state (2-letter code), postalCode |
-| `telecom` | Yes | Contact information | - Email: `system: "email"`<br>- Phone: `system: "phone"`, `use: "work"`<br>- Fax: `system: "fax", use: "work"` |
+| `telecom` | Yes | Contact information | - Email: `system: "email"`\<br /\>- Phone: `system: "phone"`, `use: "work"`\<br /\>- Fax: `system: "fax", use: "work"` |
 | `active` | Yes | Boolean indicating status | Defaults to `true` |
 
 ### DEA Number Identifier
