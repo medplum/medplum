@@ -104,6 +104,7 @@ To prevent this, you can use the `If-Match` header (or `ifMatch` option) to spec
 
 **For transaction bundles**, you can use version checking with `ifMatch` in bundle entry requests. See the [Version Checking in Transaction Bundle](/docs/fhir-datastore/fhir-batch-requests#preventing-lost-updates-with-version-checking) section for details.
 
+
 ## Patch Operation
 
 The `patch` operation is performed by sending an HTTP `PATCH` request, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.

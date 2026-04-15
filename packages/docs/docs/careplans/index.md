@@ -44,8 +44,8 @@ flowchart LR
 
 ## Key Code Systems
 
-| **Code System**                | **Description**                                                                          |
-| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Code System**                                       | **Description**                                                                          |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | [LOINC](/docs/careplans/loinc) | Used to define the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource. |
 
 ## Other Resources

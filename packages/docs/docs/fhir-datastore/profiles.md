@@ -77,9 +77,8 @@ Description: "A Patient profile that requires a birth date"
 ```
 
 This FSH definition creates a Patient profile that:
-
 - Requires exactly one birth date (`1..1`)
-- Requires at least one name (`1..*`)
+- Requires at least one name (`1..*`) 
 - Marks both fields as Must Support (`MS`)
 
 #### FSH Project Structure
@@ -110,14 +109,13 @@ To use FSH for creating Medplum profiles:
 For a complete working example, see the [Medplum FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles) which demonstrates FSH profile creation with Patient and HealthcareService examples.
 
 2. **Create SUSHI Configuration** (`sushi-config.yaml`):
-
    ```yaml
    id: medplum-example-profiles
    canonical: https://medplum.com/profiles/example-fsh-profiles
    version: 1.0.0
    name: MedplumExampleProfiles
-   title: 'Medplum Example FSH Profiles'
-   description: 'Example FHIR profiles for Medplum using FSH'
+   title: "Medplum Example FSH Profiles"
+   description: "Example FHIR profiles for Medplum using FSH"
    fhirVersion: 4.0.1
    copyrightYear: 2024+
    releaseLabel: STU1

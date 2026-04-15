@@ -16,13 +16,13 @@ How you populate `sender` and `recipient` on the thread header affects these que
 
 ## Search Query Cheat Sheet
 
-| Goal                     | Query                                                        | Notes                                                                                                                                                                                 |
-| ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All threads              | `Communication?part-of:missing=true`                         | Returns only thread headers                                                                                                                                                           |
-| Messages in a thread     | `Communication?part-of=Communication/{id}&_sort=sent`        | Sorted chronologically                                                                                                                                                                |
-| Threads for a patient    | Add `&subject=Patient/{id}` to any query above               | Filter by patient context                                                                                                                                                             |
-| Threads I participate in | Add `&recipient=Practitioner/{id}`                           | Header must list the creator in `recipient`; see [note below](#filter-by-current-user) and [modeling tip](/docs/communications/messaging-data-model#building-and-structuring-threads) |
-| Active threads only      | Add `&status:not=completed,entered-in-error,stopped,unknown` | Exclude closed threads                                                                                                                                                                |
+| Goal                        | Query                                                        | Notes                                         |
+| --------------------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| All threads                 | `Communication?part-of:missing=true`                         | Returns only thread headers                   |
+| Messages in a thread        | `Communication?part-of=Communication/{id}&_sort=sent`        | Sorted chronologically                        |
+| Threads for a patient       | Add `&subject=Patient/{id}` to any query above               | Filter by patient context                     |
+| Threads I participate in    | Add `&recipient=Practitioner/{id}`                           | Header must list the creator in `recipient`; see [note below](#filter-by-current-user) and [modeling tip](/docs/communications/messaging-data-model#building-and-structuring-threads) |
+| Active threads only         | Add `&status:not=completed,entered-in-error,stopped,unknown` | Exclude closed threads                        |
 
 ## Query for All Threads
 
@@ -155,15 +155,18 @@ When a notification arrives, append the new message to your local state. The not
 If using `@medplum/react`, the [useSubscription](/docs/react/use-subscription) hook handles connection management:
 
 ```tsx
-useSubscription(`Communication?part-of=Communication/${id}`, (bundle: Bundle) => {
-  const newMessage = bundle.entry?.find((e) => e.resource?.resourceType === 'Communication')?.resource as
-    | Communication
-    | undefined;
-  if (newMessage) {
-    // Show a toast or in-app notification for the new message
-    setMessages((prev) => [...prev, newMessage]);
+useSubscription(
+  `Communication?part-of=Communication/${id}`,
+  (bundle: Bundle) => {
+    const newMessage = bundle.entry?.find(
+      (e) => e.resource?.resourceType === 'Communication'
+    )?.resource as Communication | undefined;
+    if (newMessage) {
+      // Show a toast or in-app notification for the new message
+      setMessages((prev) => [...prev, newMessage]);
+    }
   }
-});
+);
 ```
 
 See the [useSubscription](/docs/react/use-subscription) documentation for WebSocket connection setup and reconnection handling.

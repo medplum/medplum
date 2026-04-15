@@ -19,7 +19,7 @@ The materials below can help prepare for your inspection.
 | Resource Name     | Description                                       | Access                                                                                               |
 | ----------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Checklist         | General Lab checklist                             | [Request Access](https://drive.google.com/file/d/1Km-VLLV4HJ0ZcL51rkQoY4MnxUHlSTKt/view?usp=sharing) |
-| Security Overview | General information on Medplum security practices | [medplum.com](/security)                                                                             |
+| Security Overview | General information on Medplum security practices | [medplum.com](/security)                                                      |
 
 ## Checklist
 
@@ -54,6 +54,7 @@ Review and refer to the following items in preparation for your inspection.
 - GEN.43837 Downtime Result Reporting Phase II
   - Refer to documentation on [availability](/security#availability)
 - GEN.20316 QMS Indicators of Quality - Phase II
+
   - Patient/Specimen Identification: Percent of patient wristbands with errors (ie, mislabels), percent of specimens with patient labeling errors (ie, mislabels), or percent of results with identification errors
     - [ ] The main field for recording issues is [Specimen.condition](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,condition&_offset=0&_sort=-_lastUpdated) should include codes from the [`SpecimenRejectionReason` code system](https://terminology.hl7.org/CodeSystem-v2-0490.html).
     - [ ] In this case the correct code for rejected specimen is `RI - Identification Problem`

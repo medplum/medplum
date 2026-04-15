@@ -23,10 +23,10 @@ When a user presents a JWT issued by a configured external auth provider, Medplu
 
 There are two ways to identify the user from the token:
 
-| Method        | JWT Claim  | Lookup                         | Best for                     |
-| :------------ | :--------- | :----------------------------- | :--------------------------- |
-| **FHIR User** | `fhirUser` | Profile reference or search    | SMART-on-FHIR compliant IDPs |
-| **Subject**   | `sub`      | `ProjectMembership.externalId` | Standard OIDC IDPs           |
+| Method | JWT Claim | Lookup | Best for |
+| :--- | :--- | :--- | :--- |
+| **FHIR User** | `fhirUser` | Profile reference or search | SMART-on-FHIR compliant IDPs |
+| **Subject** | `sub` | `ProjectMembership.externalId` | Standard OIDC IDPs |
 
 If both `fhirUser` and `sub` are present, the `fhirUser` claim takes precedence.
 
@@ -45,9 +45,9 @@ Add external auth providers to your Medplum server configuration:
 }
 ```
 
-| Field         | Description                                          |
-| :------------ | :--------------------------------------------------- |
-| `issuer`      | The `iss` claim value in JWTs from this IDP          |
+| Field | Description |
+| :--- | :--- |
+| `issuer` | The `iss` claim value in JWTs from this IDP |
 | `userInfoUrl` | The IDP's userinfo endpoint, used to validate tokens |
 
 ## Using the `fhirUser` Claim
@@ -128,11 +128,11 @@ Medplum caches external auth results in Redis for 1 hour to minimize calls to th
 
 ## Comparison with Token Exchange
 
-|                   | Direct External Auth                     | [Token Exchange](/docs/auth/token-exchange) |
-| :---------------- | :--------------------------------------- | :------------------------------------------ |
-| **Endpoint**      | `/oauth2/userinfo`                       | `/oauth2/token`                             |
-| **Configuration** | Server-level `externalAuthProviders`     | Per-`ClientApplication` identity provider   |
-| **Token format**  | Uses external JWT directly               | Exchanges for Medplum access token          |
-| **User lookup**   | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `useSubject` flag)      |
+| | Direct External Auth | [Token Exchange](/docs/auth/token-exchange) |
+| :--- | :--- | :--- |
+| **Endpoint** | `/oauth2/userinfo` | `/oauth2/token` |
+| **Configuration** | Server-level `externalAuthProviders` | Per-`ClientApplication` identity provider |
+| **Token format** | Uses external JWT directly | Exchanges for Medplum access token |
+| **User lookup** | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `useSubject` flag) |
 
 Choose **Direct External Auth** when you want to use external JWTs directly without an explicit token exchange step. Choose **Token Exchange** when you need a standard Medplum access token or when the auth flow is scoped to a specific `ClientApplication`.

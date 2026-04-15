@@ -64,6 +64,7 @@ The [User](/docs/api/fhir/medplum/user) resource is the main resource that repre
 
 See our guide on [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users) for more details.
 
+
 ### Profiles
 
 _Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [` ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource.

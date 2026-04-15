@@ -3,9 +3,9 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # CodeSystem $import
 
-Large standard terminologies like [**SNOMED CT**](https://www.snomed.org/what-is-snomed-ct)
-(350k+ codes) and [**LOINC**](https://loinc.org/about/) (100k+ codes) are too large to manage within a
-single FHIR resource. The `$import` operation bulk-loads codes, display names, and metadata into a
+Large standard terminologies like [**SNOMED CT**](https://www.snomed.org/what-is-snomed-ct) 
+(350k+ codes) and [**LOINC**](https://loinc.org/about/) (100k+ codes) are too large to manage within a 
+single FHIR resource. The `$import` operation bulk-loads codes, display names, and metadata into a 
 CodeSystem, enabling you to work with these essential terminologies efficiently.
 
 ## Use Cases
@@ -36,8 +36,8 @@ This operation is only available to Project Admins and Super Admins.
 | `designation` | `Part[]` (see below) | Additional synonyms or translations of codes' display text         | No              |
 
 :::note
-
-<sup>\*</sup> If `system` is not provided, the operation must be invoked on a specific `CodeSystem` instance by ID. :::
+<sup>\*</sup> If `system` is not provided, the operation must be invoked on a specific `CodeSystem` instance by ID.
+:::
 
 Each `property` parameter contains a `part` array with three nested parameters:
 

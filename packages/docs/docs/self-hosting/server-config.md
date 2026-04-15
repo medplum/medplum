@@ -290,11 +290,11 @@ Optional flag whether new user registration is enabled. See [Open Patient Regist
 
 Optional TOTP authenticator window for MFA token validation. This controls how many time steps (each 30 seconds) are accepted before and after the current time. A higher value is more lenient but less secure.
 
-| Value | Time Tolerance                |
-| ----- | ----------------------------- |
-| 0     | Only current 30-second window |
-| 1     | ±30 seconds (~90 sec total)   |
-| 2     | ±60 seconds (~150 sec total)  |
+| Value | Time Tolerance                     |
+| ----- | ---------------------------------- |
+| 0     | Only current 30-second window      |
+| 1     | ±30 seconds (~90 sec total)        |
+| 2     | ±60 seconds (~150 sec total)       |
 
 **Default:** `1`
 
@@ -573,10 +573,10 @@ Optional list of external authentication providers for [Direct External Authenti
 
 Each provider object has the following properties:
 
-| Property      | Type     | Description                                                         |
-| :------------ | :------- | :------------------------------------------------------------------ |
-| `issuer`      | `string` | The expected `iss` claim in JWTs from this IDP. Must match exactly. |
-| `userInfoUrl` | `string` | The IDP's userinfo endpoint URL, used to validate tokens.           |
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `issuer` | `string` | The expected `iss` claim in JWTs from this IDP. Must match exactly. |
+| `userInfoUrl` | `string` | The IDP's userinfo endpoint URL, used to validate tokens. |
 
 Example configuration:
 

@@ -1,21 +1,8 @@
 ---
 sidebar_position: 2
-title: 'Intake Questionnaires: Design and Extraction'
+title: "Intake Questionnaires: Design and Extraction"
 tags: [intake, questionnaire, SDC, bot, extraction]
-keywords:
-  [
-    Questionnaire,
-    QuestionnaireResponse,
-    linkId,
-    repeats,
-    group,
-    SDC,
-    extract,
-    bot,
-    getQuestionnaireAnswers,
-    getGroupRepeatedAnswers,
-    upsert,
-  ]
+keywords: [Questionnaire, QuestionnaireResponse, linkId, repeats, group, SDC, extract, bot, getQuestionnaireAnswers, getGroupRepeatedAnswers, upsert]
 ---
 
 # Intake Questionnaires: Design and Extraction
@@ -80,19 +67,19 @@ The linkId is the key that connects a Questionnaire item to its answer in the Qu
 
 The [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) uses linkIds that hint at both the target resource and the target field:
 
-| linkId                               | Target Resource     | Target Field                |
-| ------------------------------------ | ------------------- | --------------------------- |
-| `allergy-substance`                  | AllergyIntolerance  | `code`                      |
-| `allergy-reaction`                   | AllergyIntolerance  | `reaction.manifestation`    |
-| `allergy-onset`                      | AllergyIntolerance  | `onsetDateTime`             |
-| `medication-code`                    | MedicationRequest   | `medicationCodeableConcept` |
-| `medication-note`                    | MedicationRequest   | `note`                      |
-| `medical-history-problem`            | Condition           | `code`                      |
-| `medical-history-clinical-status`    | Condition           | `clinicalStatus`            |
-| `immunization-vaccine`               | Immunization        | `vaccineCode`               |
-| `immunization-date`                  | Immunization        | `occurrenceDateTime`        |
-| `family-member-history-problem`      | FamilyMemberHistory | `condition.code`            |
-| `family-member-history-relationship` | FamilyMemberHistory | `relationship`              |
+| linkId | Target Resource | Target Field |
+| --- | --- | --- |
+| `allergy-substance` | AllergyIntolerance | `code` |
+| `allergy-reaction` | AllergyIntolerance | `reaction.manifestation` |
+| `allergy-onset` | AllergyIntolerance | `onsetDateTime` |
+| `medication-code` | MedicationRequest | `medicationCodeableConcept` |
+| `medication-note` | MedicationRequest | `note` |
+| `medical-history-problem` | Condition | `code` |
+| `medical-history-clinical-status` | Condition | `clinicalStatus` |
+| `immunization-vaccine` | Immunization | `vaccineCode` |
+| `immunization-date` | Immunization | `occurrenceDateTime` |
+| `family-member-history-problem` | FamilyMemberHistory | `condition.code` |
+| `family-member-history-relationship` | FamilyMemberHistory | `relationship` |
 
 **Why this matters:** When your extraction logic (whether SDC or Bot) looks up `answers['allergy-substance']`, the linkId immediately tells you what resource and field it maps to. When conventions break down — for example, using generic names like `field1` or `question3` — the extraction logic becomes fragile and hard to maintain.
 
@@ -187,16 +174,16 @@ In production, intake responses may be resubmitted — whether due to user error
 
 Each resource type has a natural upsert key:
 
-| Resource            | Upsert Key (Search Params)          |
-| ------------------- | ----------------------------------- |
-| AllergyIntolerance  | `patient` + `code`                  |
-| MedicationRequest   | `subject` + `code`                  |
-| Condition           | `subject` + `code`                  |
+| Resource | Upsert Key (Search Params) |
+| --- | --- |
+| AllergyIntolerance | `patient` + `code` |
+| MedicationRequest | `subject` + `code` |
+| Condition | `subject` + `code` |
 | FamilyMemberHistory | `patient` + `code` + `relationship` |
-| Immunization        | `patient` + `vaccine-code` + `date` |
-| Coverage            | `beneficiary` + `payor`             |
-| CareTeam            | `name` + `subject`                  |
-| Observation         | `subject` + `code`                  |
+| Immunization | `patient` + `vaccine-code` + `date` |
+| Coverage | `beneficiary` + `payor` |
+| CareTeam | `name` + `subject` |
+| Observation | `subject` + `code` |
 
 ```ts
 await medplum.upsertResource(
@@ -225,13 +212,13 @@ The `policyRule` values shown below are examples based on HL7 consent policy cod
 
 ### Common Consent Types
 
-| Consent Type                | `scope`                         | `category`                           | `policyRule`                          |
-| --------------------------- | ------------------------------- | ------------------------------------ | ------------------------------------- |
-| Consent for Treatment       | `treatment`                     | `med` (Medical)                      | `cric` (Common Rule Informed Consent) |
-| Agreement to Pay            | `treatment`                     | `pay` (Payment)                      | `hipaa-self-pay`                      |
-| Notice of Privacy Practices | `patient-privacy`               | `nopp` (Notice of Privacy Practices) | `hipaa-npp`                           |
-| Advance Directives          | `adr` (Advanced Care Directive) | `acd` (Advanced Care Directive)      | Organization-specific                 |
-| Communication Preferences   | `patient-privacy`               | Consent Document (LOINC `59284-0`)   | Organization-specific                 |
+| Consent Type | `scope` | `category` | `policyRule` |
+| --- | --- | --- | --- |
+| Consent for Treatment | `treatment` | `med` (Medical) | `cric` (Common Rule Informed Consent) |
+| Agreement to Pay | `treatment` | `pay` (Payment) | `hipaa-self-pay` |
+| Notice of Privacy Practices | `patient-privacy` | `nopp` (Notice of Privacy Practices) | `hipaa-npp` |
+| Advance Directives | `adr` (Advanced Care Directive) | `acd` (Advanced Care Directive) | Organization-specific |
+| Communication Preferences | `patient-privacy` | Consent Document (LOINC `59284-0`) | Organization-specific |
 
 ### Consent Resource Shape
 
@@ -242,33 +229,25 @@ The `policyRule` values shown below are examples based on HL7 consent policy cod
   "patient": { "reference": "Patient/example" },
   "dateTime": "2026-03-15T10:30:00Z",
   "scope": {
-    "coding": [
-      {
-        "system": "http://terminology.hl7.org/CodeSystem/consentscope",
-        "code": "treatment",
-        "display": "Treatment"
-      }
-    ]
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/consentscope",
+      "code": "treatment",
+      "display": "Treatment"
+    }]
   },
-  "category": [
-    {
-      "coding": [
-        {
-          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-          "code": "med",
-          "display": "Medical"
-        }
-      ]
-    }
-  ],
+  "category": [{
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "med",
+      "display": "Medical"
+    }]
+  }],
   "policyRule": {
-    "coding": [
-      {
-        "system": "http://terminology.hl7.org/CodeSystem/consentpolicycodes",
-        "code": "cric",
-        "display": "Common Rule Informed Consent"
-      }
-    ]
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/consentpolicycodes",
+      "code": "cric",
+      "display": "Common Rule Informed Consent"
+    }]
   }
 }
 ```

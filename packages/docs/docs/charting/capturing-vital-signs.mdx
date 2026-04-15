@@ -16,7 +16,7 @@ Vital signs are stored as [`Observation`](/docs/api/fhir/resources/observation) 
 | **Element**        | **Description**                                                                                                                                                                                                                                              | **Code System**                                                                                     | **Example**                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | `status`           | The status of the result value. Indicates if the observation is preliminary or final, if it has been amended/corrected, or if it has an error or been cancelled.                                                                                             | [Observation status types](http://hl7.org/fhir/R4/valueset-observation-status.html)                 | registered                                       |
-| `code`             | The type of observation.                                                                                                                                                                                                                                     | [LOINC](/docs/careplans/loinc)                                                                      | [8867-4](https://loinc.org/8867-4/) – Heart Rate |
+| `code`             | The type of observation.                                                                                                                                                                                                                                     | [LOINC](/docs/careplans/loinc)                                               | [8867-4](https://loinc.org/8867-4/) – Heart Rate |
 | `subject`          | A reference to who/what the observation is about.                                                                                                                                                                                                            |                                                                                                     | Patient/homer-simpson                            |
 | `encounter`        | A reference to the `Encounter` or visit during which the observation was made.                                                                                                                                                                               |                                                                                                     | Encounter/example-appointment                    |
 | `basedOn`          | A plan or order that that prompted this observation to be made.                                                                                                                                                                                              |                                                                                                     | CarePlan/example-plan                            |
@@ -162,18 +162,18 @@ The `valueQuantity` field is stored as a `Quantity` type, which contains a `valu
 
 `Observation` resources can be measured in many different ways. To account for this, the `value[x]` fields provide multiple ways to account for different datatypes.
 
-| **`value[x]`**         | **Description**                                                               | **Datatype**                                                | **Application**                    | **Example**                                                                                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`value[x]`**         | **Description**                                                               | **Datatype**                                                                       | **Application**                    | **Example**                                                                                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `valueQuantity`        | Used for numeric measurements with a value and unit.                          | [Quantity](/docs/api/fhir/datatypes/quantity)               | Height                             | 177 cm                                                                                                                                       |
 | `valueCodeableConcept` | Used when the value is represented by a coded concept (e.g. LOINC or SNOMED). | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | HIV test interpretation            | [260385009](https://browser.ihtsdotools.org/?perspective=full&conceptId1=260385009&edition=MAIN/2023-07-31&release=&languages=en) – Negative |
-| `valueString`          | Used for text values that do not require a specific coding.                   | string                                                      | Pain level                         | mild pain                                                                                                                                    |
-| `valueBoolean`         | Used for binary observations, where the result is either true or false.       | boolean                                                     | Vaccination status                 | true                                                                                                                                         |
-| `valueInteger`         | Used for simple integer values with no units.                                 | number                                                      | Age                                | 28                                                                                                                                           |
+| `valueString`          | Used for text values that do not require a specific coding.                   | string                                                                             | Pain level                         | mild pain                                                                                                                                    |
+| `valueBoolean`         | Used for binary observations, where the result is either true or false.       | boolean                                                                            | Vaccination status                 | true                                                                                                                                         |
+| `valueInteger`         | Used for simple integer values with no units.                                 | number                                                                             | Age                                | 28                                                                                                                                           |
 | `valueRange`           | Used for observations that have a range as a result.                          | [Range](/docs/api/fhir/datatypes/range)                     | Body temperature                   | 98.0 – 98.7                                                                                                                                  |
 | `valueRatio`           | Used to represent ratios between two values as a result.                      | [Ratio](/docs/api/fhir/datatypes/ratio)                     | Height over body weight            | 177 cm / 75 kg                                                                                                                               |
 | `valueSampledData`     | Used to represent data that is sampled over a period of time.                 | [SampledData](/docs/api/fhir/datatypes/sampleddata)         | Glucose measurement                | 6 mmol/l                                                                                                                                     |
-| `valueTime`            | Used to represent the exact time an observation was made, without a date.     | string                                                      | Time heart rate returned to normal | 15:30:00                                                                                                                                     |
-| `valueDateTime`        | Used to represent the exact time and date an observation was made.            | string                                                      | Birth date and time                | 2023-07-24T13:22:00Z                                                                                                                         |
+| `valueTime`            | Used to represent the exact time an observation was made, without a date.     | string                                                                             | Time heart rate returned to normal | 15:30:00                                                                                                                                     |
+| `valueDateTime`        | Used to represent the exact time and date an observation was made.            | string                                                                             | Birth date and time                | 2023-07-24T13:22:00Z                                                                                                                         |
 | `valuePeriod`          | Used for observations that have a specific duration or period.                | [Period](/docs/api/fhir/datatypes/period)                   | Menstrual cycle duration           | 2023-05-12 – 2023-6-09                                                                                                                       |
 
 ## Using `valueSampledData` for Timeseries Data
@@ -183,7 +183,6 @@ The `valueSampledData` field is recommended for storing **dense timeseries obser
 ### When to Use `valueSampledData`
 
 Use `valueSampledData` when you have:
-
 - Multiple measurements taken at regular intervals (e.g., heart rate readings every minute)
 - Data from wearable devices or continuous monitoring equipment
 - Timeseries data that would otherwise require creating many individual `Observation` resources
@@ -193,7 +192,6 @@ Use `valueSampledData` when you have:
 **Medplum is not designed for large-scale wearables data ingestion.** While `valueSampledData` is suitable for moderate-frequency timeseries data (e.g., hourly or daily summaries), applications that need to store high-frequency data from many devices simultaneously (e.g., second-by-second readings from thousands of wearables) should consider using a dedicated data warehouse solution.
 
 For large-scale wearables data:
-
 - Use Medplum for clinical summaries and aggregated observations
 - Stream raw high-frequency data to a time-series database or data warehouse
 
@@ -202,7 +200,6 @@ For large-scale wearables data:
 ### Structure of `SampledData`
 
 The `SampledData` datatype includes:
-
 - `origin`: The base value and unit (as a `Quantity`)
 - `period`: The number of milliseconds between samples
 - `dimensions`: The number of values per sample period
@@ -266,7 +263,7 @@ const sampledData = {
   period: 60000,
   dimensions: 1,
   factor: 1,
-  data: '5 3 2 4 1',
+  data: '5 3 2 4 1'
 };
 
 const values = expandSampledData(sampledData);
@@ -282,13 +279,9 @@ import { expandSampledObservation } from '@medplum/core';
 
 const observation = {
   resourceType: 'Observation',
-  code: {
-    /* ... */
-  },
-  valueSampledData: {
-    /* ... */
-  },
-  effectiveDateTime: '2024-01-15T08:00:00Z',
+  code: { /* ... */ },
+  valueSampledData: { /* ... */ },
+  effectiveDateTime: '2024-01-15T08:00:00Z'
 };
 
 const expandedObservations = expandSampledObservation(observation);
@@ -304,9 +297,7 @@ Summarize multiple `Observation` resources into a single summary `Observation` w
 import { summarizeObservations, DataSampler } from '@medplum/core';
 
 // Option 1: Using summarizeObservations helper
-const observations = [
-  /* array of Observation resources */
-];
+const observations = [/* array of Observation resources */];
 const summary = summarizeObservations(
   observations,
   { text: 'Average Heart Rate' },
@@ -316,7 +307,7 @@ const summary = summarizeObservations(
 // Option 2: Using DataSampler class for more control
 const sampler = new DataSampler({
   code: { text: 'Heart Rate' },
-  unit: { unit: 'beats/min', code: '{Beats}/min' },
+  unit: { unit: 'beats/min', code: '{Beats}/min' }
 });
 
 sampler.addObservation(obs1);

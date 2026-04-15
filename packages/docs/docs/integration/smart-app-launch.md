@@ -61,7 +61,6 @@ You can specify identifier systems for `Patient`, `Encounter`, or both. When `la
 For this to work, your resources must have identifiers with the matching systems:
 
 **Patient with identifier:**
-
 ```json
 {
   "resourceType": "Patient",
@@ -76,7 +75,6 @@ For this to work, your resources must have identifiers with the matching systems
 ```
 
 **Encounter with identifier:**
-
 ```json
 {
   "resourceType": "Encounter",

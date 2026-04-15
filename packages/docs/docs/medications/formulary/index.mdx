@@ -19,7 +19,7 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 - How to annotate medications with the proper codes.
 - How to represent physical characteristics about the medication and its package.
 - How to categorize medications in the formulary.
-- How to represent compounded medications, including dose variations.
+- How to represent compounded medications, including dose variations. 
 - How to represent relationships between medications.
 
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
@@ -29,7 +29,7 @@ You can download the examples in this guide [here](./formulary-examples.json), a
 :::
 
 :::caution[A note on the Medication resource]
-You might be asking yourself, what is the difference between the `Medication` and `MedicationKnowledge` resources? Both resources hold information like medication manufacturer and ingredients, but `MedicationKnowledge` holds potentially critical information beyond that, like regulatory information related to controlled substances, packaging descriptions used by pharmacists, and administrative guidelines for both clinicians and patients. In general, we encourage the use of `MedicationKnowledge` rather than `Medication`.
+You might be asking yourself, what is the difference between the `Medication` and `MedicationKnowledge` resources? Both resources hold information like medication manufacturer and ingredients, but `MedicationKnowledge` holds potentially critical information beyond that, like regulatory information related to controlled substances, packaging descriptions used by pharmacists, and administrative guidelines for both clinicians and patients. In general, we encourage the use of `MedicationKnowledge` rather than `Medication`. 
 :::
 
 ## Medication Code
@@ -236,7 +236,7 @@ graph TD
     A --> C[Child: 1.7mg Dose<br/>3 mL Volume<br/>Weekly Administration]
     A --> D[Child: 1mg Dose<br/>1.6 mL Volume<br/>Weekly Administration]
 
-
+    
     style A fill:#e1f5fe
 
     style B fill:#e8f5e8
@@ -433,21 +433,18 @@ graph TD
 ### Key Considerations for Parent-Child Compounds
 
 **Parent Medication Features:**
-
 - Contains the complete ingredient list with base concentrations
 - Uses `relatedMedicationKnowledge` with type "child" to reference dose variations
 - Typically lacks specific administration guidelines (handled by children)
 - Serves as the master template for the compound family
 
 **Child Medication Features:**
-
 - References parent using `relatedMedicationKnowledge` with type "parent"
 - Contains specific volume amounts and administration instructions
 - Includes dose-specific coding and display names
 - May include additional metadata like days supply and patient instructions
 
 **Benefits of This Approach:**
-
 - Centralizes ingredient management in the parent
 - Allows for easy addition of new dose variations
 - Maintains clear relationships between related compounds

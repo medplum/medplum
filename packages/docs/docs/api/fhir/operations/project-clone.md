@@ -26,12 +26,12 @@ POST [base]/Project/[id]/$clone
 
 Parameters are passed in the request body as a JSON object (not as FHIR Parameters):
 
-| Parameter       | Type       | Description                                                                                       |
-| --------------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| `name`          | `string`   | (Optional) Name for the new project. If provided, updates the project name and related resources. |
-| `resourceTypes` | `string[]` | (Optional) Array of resource types to include. If empty, all resource types are cloned.           |
-| `includeIds`    | `string[]` | (Optional) Array of specific resource IDs to include. If empty, all resources are included.       |
-| `excludeIds`    | `string[]` | (Optional) Array of resource IDs to exclude from cloning.                                         |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string` | (Optional) Name for the new project. If provided, updates the project name and related resources. |
+| `resourceTypes` | `string[]` | (Optional) Array of resource types to include. If empty, all resource types are cloned. |
+| `includeIds` | `string[]` | (Optional) Array of specific resource IDs to include. If empty, all resources are included. |
+| `excludeIds` | `string[]` | (Optional) Array of resource IDs to exclude from cloning. |
 
 ## Output
 
@@ -126,10 +126,10 @@ The following resources are cloned (if `resourceTypes` is not specified):
 
 ## Error Responses
 
-| Status Code     | Description                                                 |
-| --------------- | ----------------------------------------------------------- |
+| Status Code | Description |
+|-------------|-------------|
 | `403 Forbidden` | User is not a super admin (requires self-hosted deployment) |
-| `404 Not Found` | Source project not found                                    |
+| `404 Not Found` | Source project not found |
 
 ## Notes
 

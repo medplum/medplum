@@ -37,17 +37,20 @@ import type { Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-const result = (await medplum.post(medplum.fhirUrl('Schedule', 'my-schedule-id', '$find'), {
-  resourceType: 'Parameters',
-  parameter: [
-    { name: 'start', valueDateTime: '2026-03-10T09:00:00-05:00' },
-    { name: 'end', valueDateTime: '2026-03-10T17:00:00-05:00' },
-    // Optional: filter by service type (format: "system|code")
-    { name: 'service-type', valueString: 'http://example.org/appointment-types|office-visit' },
-    // Optional: limit number of results
-    { name: '_count', valueInteger: 10 },
-  ],
-})) as Parameters;
+const result = await medplum.post(
+  medplum.fhirUrl('Schedule', 'my-schedule-id', '$find'),
+  {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'start', valueDateTime: '2026-03-10T09:00:00-05:00' },
+      { name: 'end', valueDateTime: '2026-03-10T17:00:00-05:00' },
+      // Optional: filter by service type (format: "system|code")
+      { name: 'service-type', valueString: 'http://example.org/appointment-types|office-visit' },
+      // Optional: limit number of results
+      { name: '_count', valueInteger: 10 },
+    ],
+  }
+) as Parameters;
 
 const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
 const slots = bundle.entry?.map((e) => e.resource as Slot) ?? [];
@@ -75,7 +78,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
 ## Parameters
 
 | Name           | Type       | Description                                                                                  | Required |
-| -------------- | ---------- | -------------------------------------------------------------------------------------------- | -------- |
+| -------------- | ---------- | ---------------------------------------------------------------------------------------------| -------- |
 | `start`        | `dateTime` | Start of the search window (inclusive)                                                       | Yes      |
 | `end`          | `dateTime` | End of the search window (inclusive)                                                         | Yes      |
 | `service-type` | `string`   | Filter slots by service type. Format: `system\|code`. Multiple codes can be comma-separated. | Yes      |
@@ -113,7 +116,9 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
               "schedule": { "reference": "Schedule/my-schedule-id" },
               "serviceType": [
                 {
-                  "coding": [{ "code": "office-visit" }]
+                  "coding": [
+                    { "code": "office-visit" }
+                  ]
                 }
               ]
             }
@@ -127,7 +132,9 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
               "schedule": { "reference": "Schedule/my-schedule-id" },
               "serviceType": [
                 {
-                  "coding": [{ "code": "office-visit" }]
+                  "coding": [
+                    { "code": "office-visit" }
+                  ]
                 }
               ]
             }
@@ -138,6 +145,7 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
   ]
 }
 ```
+
 
 ## Availability Logic
 
@@ -185,13 +193,7 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [
-    {
-      "severity": "error",
-      "code": "invalid",
-      "details": { "text": "$find only supported on schedules with exactly one actor" }
-    }
-  ]
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "$find only supported on schedules with exactly one actor" } }]
 }
 ```
 

@@ -25,50 +25,38 @@ Super administrators can enable bots via the Medplum App:
 :::
 
 ## Getting Started
-
 Learn the fundamentals of building and testing bots before deploying them to production.
-
 - [Bot Basics](/docs/bots/bot-basics)
 - [Unit Testing Bots](/docs/bots/unit-testing-bots)
 - [Running Bots Locally](/docs/bots/running-bots-locally)
 
 ## Bot Triggers & Invocation
-
 Configure how and when your bots execute, from scheduled tasks to real-time event responses.
-
 - [Cron Jobs for Bots](/docs/bots/bot-cron-job)
 - [Consuming Webhooks](/docs/bots/consuming-webhooks)
 - [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response)
 - [Custom FHIR Operations](/docs/bots/custom-fhir-operations)
 
 ## Common Use Cases & Patterns
-
 Implement frequently-needed functionality like file handling, document generation, and data transformation.
-
 - [Uploading Files](/docs/bots/file-uploads)
 - [Create a PDF](/docs/bots/creating-a-pdf)
 - [HL7 to FHIR](/docs/bots/hl7-into-fhir)
 
 ## Deployment & Infrastructure
-
 Deploy your bots to Medplum's cloud infrastructure or integrate with your existing AWS environment.
-
 - [Bots in Production](/docs/bots/bots-in-production)
 - [Running Bots on Fission](/docs/bots/running-bots-on-fission)
 - [External Lambda Functions](/docs/bots/external-function)
 - [Medplum Bot Layers](/docs/bots/bot-lambda-layer)
 
 ## Security & Permissions
-
 Manage sensitive credentials and control what actions your bots can perform.
-
 - [Bot Secrets](/docs/bots/bot-secrets)
 - [Run as User](/docs/bots/bot-run-as-user)
 
 ## Monitoring & Operations
-
 Track bot performance and troubleshoot issues in production environments.
-
 - [Monitoring Bots](/docs/bots/monitoring-bots)
 
 ## Reference

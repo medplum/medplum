@@ -37,59 +37,67 @@ import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-const result = (await medplum.post(medplum.fhirUrl('Appointment', '$book'), {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'slot',
-      resource: {
-        resourceType: 'Slot',
-        status: 'free',
-        start: '2026-03-10T09:00:00.000Z',
-        end: '2026-03-10T10:00:00.000Z',
-        schedule: { reference: 'Schedule/my-schedule-id' },
-      } satisfies Slot,
-    },
-    {
-      name: 'patient-reference',
-      valueReference: { reference: 'Patient/my-patient-id' },
-    },
-  ],
-})) as Parameters;
+const result = await medplum.post(
+  medplum.fhirUrl('Appointment', '$book'),
+  {
+    resourceType: 'Parameters',
+    parameter: [
+      {
+        name: 'slot',
+        resource: {
+          resourceType: 'Slot',
+          status: 'free',
+          start: '2026-03-10T09:00:00.000Z',
+          end: '2026-03-10T10:00:00.000Z',
+          schedule: { reference: 'Schedule/my-schedule-id' },
+        } satisfies Slot,
+      },
+      {
+        name: 'patient-reference',
+        valueReference: { reference: 'Patient/my-patient-id' },
+      },
+    ],
+  }
+) as Parameters;
 
 const bundle = result.parameter?.[0]?.resource as Bundle;
-const appointment = bundle.entry?.find((e) => e.resource?.resourceType === 'Appointment')?.resource as Appointment;
+const appointment = bundle.entry
+  ?.find((e) => e.resource?.resourceType === 'Appointment')
+  ?.resource as Appointment;
 ```
 
 For multi-resource bookings, add additional `slot` parameters — one per Schedule:
 
 ```typescript
-const result = (await medplum.post(medplum.fhirUrl('Appointment', '$book'), {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'slot',
-      resource: {
-        resourceType: 'Slot',
-        status: 'free',
-        start: '2026-03-11T08:00:00.000Z',
-        end: '2026-03-11T10:00:00.000Z',
-        schedule: { reference: 'Schedule/surgeon-schedule-id' },
-        serviceType: [{ coding: [{ code: 'bariatric-surgery' }] }],
-      } satisfies Slot,
-    },
-    {
-      name: 'slot',
-      resource: {
-        resourceType: 'Slot',
-        status: 'free',
-        start: '2026-03-11T08:00:00.000Z',
-        end: '2026-03-11T10:00:00.000Z',
-        schedule: { reference: 'Schedule/or-room-schedule-id' },
-      } satisfies Slot,
-    },
-  ],
-})) as Parameters;
+const result = await medplum.post(
+  medplum.fhirUrl('Appointment', '$book'),
+  {
+    resourceType: 'Parameters',
+    parameter: [
+      {
+        name: 'slot',
+        resource: {
+          resourceType: 'Slot',
+          status: 'free',
+          start: '2026-03-11T08:00:00.000Z',
+          end: '2026-03-11T10:00:00.000Z',
+          schedule: { reference: 'Schedule/surgeon-schedule-id' },
+          serviceType: [{ coding: [{ code: 'bariatric-surgery' }] }],
+        } satisfies Slot,
+      },
+      {
+        name: 'slot',
+        resource: {
+          resourceType: 'Slot',
+          status: 'free',
+          start: '2026-03-11T08:00:00.000Z',
+          end: '2026-03-11T10:00:00.000Z',
+          schedule: { reference: 'Schedule/or-room-schedule-id' },
+        } satisfies Slot,
+      },
+    ],
+  }
+) as Parameters;
 ```
 
 </TabItem>
@@ -125,10 +133,10 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
 
 ## Parameters
 
-| Name                | Type        | Description                                                                                                                                 | Required |
-| ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `slot`              | `Resource`  | A `Slot` resource describing the desired booking time. Must include `start`, `end`, and `schedule`. Repeatable for multi-resource bookings. | Yes (1+) |
-| `patient-reference` | `Reference` | Reference to a [`Patient`](/docs/api/fhir/resources/patient) to include as a participant on the Appointment                                 | No       |
+| Name               | Type        | Description                                                                                                               | Required |
+| ------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `slot`             | `Resource`  | A `Slot` resource describing the desired booking time. Must include `start`, `end`, and `schedule`. Repeatable for multi-resource bookings. | Yes (1+) |
+| `patient-reference`| `Reference` | Reference to a [`Patient`](/docs/api/fhir/resources/patient) to include as a participant on the Appointment               | No       |
 
 ### Multi-resource Bookings
 
@@ -241,9 +249,7 @@ The transaction uses serializable isolation to prevent double-booking under conc
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [
-    { "severity": "error", "code": "conflict", "details": { "text": "Requested time slot is no longer available" } }
-  ]
+  "issue": [{ "severity": "error", "code": "conflict", "details": { "text": "Requested time slot is no longer available" } }]
 }
 ```
 
@@ -270,9 +276,7 @@ The transaction uses serializable isolation to prevent double-booking under conc
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [
-    { "severity": "error", "code": "invalid", "details": { "text": "No matching scheduling parameters found" } }
-  ]
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "No matching scheduling parameters found" } }]
 }
 ```
 

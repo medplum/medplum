@@ -20,7 +20,7 @@ A single [Practitioner](/docs/api/fhir/resources/practitioner) may deliver more 
 
 For this model, each care service is modeled as a [HealthcareService](/docs/api/fhir/resources/healthcareservice) offering (for example registered nurse care management and dietitian services). Licensure is usually **per service and per jurisdiction**: the same person might be licensed as an RN in California and Maryland, and as a dietitian in Ohio and Oregon.
 
-You still need a clear way to answer _who is allowed to provide this service to this patient in this state?_—but that answer is **input to Schedule selection**, not something `$find` infers for you.
+You still need a clear way to answer *who is allowed to provide this service to this patient in this state?*—but that answer is **input to Schedule selection**, not something `$find` infers for you.
 
 ### Model each care service as a PractitionerRole
 
@@ -58,7 +58,10 @@ flowchart TD
   "id": "dr-smith-mental-health",
   "practitioner": { "reference": "Practitioner/dr-smith" },
   "healthcareService": [{ "reference": "HealthcareService/mental-health" }],
-  "location": [{ "reference": "Location/us-ca" }, { "reference": "Location/us-md" }],
+  "location": [
+    { "reference": "Location/us-ca" },
+    { "reference": "Location/us-md" }
+  ],
   "active": true
 }
 ```

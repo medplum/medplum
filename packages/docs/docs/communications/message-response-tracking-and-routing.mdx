@@ -39,12 +39,12 @@ flowchart TD
 
 | Element          | What It Does                                                                                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `focus`          | Links the [`Task`](/docs/api/fhir/resources/task) to the [`Communication`](/docs/api/fhir/resources/communication) thread header it's tracking                            |
+| `focus`          | Links the [`Task`](/docs/api/fhir/resources/task) to the [`Communication`](/docs/api/fhir/resources/communication) thread header it's tracking                                                                                                           |
 | `for`            | The patient this Task is about (mirrors `Communication.subject`)                                                                                                          |
-| `owner`          | Who is currently responsible — a [`Practitioner`](/docs/api/fhir/resources/practitioner) (individual). Cleared when rerouting to a pool.                                  |
+| `owner`          | Who is currently responsible — a [`Practitioner`](/docs/api/fhir/resources/practitioner) (individual). Cleared when rerouting to a pool.                                                                           |
 | `performerType`  | The type of provider who should handle this Task (e.g. "Health coach"). Used for pool-based routing — providers whose `PractitionerRole.code` matches can claim the Task. |
 | `requester`      | Who created or triggered the Task                                                                                                                                         |
-| `status`         | Task lifecycle: `requested` → `accepted` → `completed` (or `cancelled`)                                                                                                   |
+| `status`         | Task lifecycle: `requested` → `accepted` → `completed` (or `cancelled`)                                                                                                  |
 | `businessStatus` | Custom status for your workflow (e.g. `unassigned`, `claimed`, `escalated`)                                                                                               |
 | `priority`       | Urgency level: `routine`, `urgent`, `asap`, `stat`                                                                                                                        |
 | `output`         | References the response Communication that resolved the Task                                                                                                              |

@@ -8,7 +8,6 @@ sidebar_position: 10
 This guide covers how to configure availability using the `SchedulingParameters` extension — at both the actor level (per Schedule) and the service type level (via HealthcareService). It covers scheduling constraints, override behavior, timezone handling, and multi-resource scheduling patterns.
 
 The diagram below shows how availability can be defined at both
-
 - The [actor level](/docs/scheduling/defining-availability#actor-level-availability) (via Schedule)
 - The [service level](/docs/scheduling/defining-availability#service-level-availability) (via HealthcareService)
 
@@ -47,17 +46,17 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 #### Extension Fields Reference
 
-| Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                            | Behavior when not defined                                                              |
-| ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                   | N/A - must be specified                                                                |
-| `availability`      | [Nested extension](#availability-extension)                 | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time).                                                                                      | Time is implicitly available by default (unless blocked by Slots or other constraints) |
-| `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified    | Uses the timezone defined on the Schedule's actor reference                            |
-| `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                           | N/A - must be specified                                                                |
-| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires prep time before start to also be free                                                                                                                                  | No prep time required                                                                  |
-| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires cleanup time after end to also be free                                                                                                                                  | No cleanup time required                                                               |
-| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Start times must align to the interval (e.g., every 15 minutes)                                                                                                                  | Start times are not constrained by an interval grid                                    |
-| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional, and alignmentInterval must be defined | Shifts allowed start times by the offset relative to the interval (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50) | Grid anchored to :00 (no shift)                                                        |
-| `bookingLimit`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Both Schedule and HealthcareService | Optional                                        | Caps number of appointments per period (multiple entries can stack)                                                                                                              | No capacity cap for that period                                                        |
+| Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
+| ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
+| `availability`      | [Nested extension](#availability-extension)                 | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time).                                                                                          | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified        | Uses the timezone defined on the Schedule's actor reference                            |
+| `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
+| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires prep time before start to also be free                                                                                                                                      | No prep time required                                                                  |
+| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires cleanup time after end to also be free                                                                                                                                      | No cleanup time required                                                               |
+| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Start times must align to the interval (e.g., every 15 minutes)                                                                                                                      | Start times are not constrained by an interval grid                                    |
+| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional, and alignmentInterval must be defined | Shifts allowed start times by the offset relative to the interval (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)     | Grid anchored to :00 (no shift)                                                        |
+| `bookingLimit`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Both Schedule and HealthcareService | Optional                                        | Caps number of appointments per period (multiple entries can stack)                                                                                                                  | No capacity cap for that period                                                        |
 
 <details>
 <summary>Example of the `SchedulingParameters` extension</summary>
@@ -228,16 +227,16 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
 
 ### `availability` Extension
 
-The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape. It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type). This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
+The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
 
-| Sub-extension          | Type           | Description                                         | Repeatable |
-| ---------------------- | -------------- | --------------------------------------------------- | ---------- |
-| `availableTime`        | (nested)       | One entry per availability window                   | Yes        |
-| ↳ `daysOfWeek`         | `valueCode`    | One entry per day (`mon`–`sun`)                     | Yes        |
-| ↳ `allDay`             | `valueBoolean` | If `true`, window spans the full day                | No         |
-| ↳ `availableStartTime` | `valueTime`    | Opening time (not allowed when `allDay` is present) | No         |
-| ↳ `availableEndTime`   | `valueTime`    | Closing time (not allowed when `allDay` is present) | No         |
-| `notAvailableTime`     | (nested)       | Typed for future use; not yet processed             | Yes        |
+| Sub-extension         | Type          | Description                                          | Repeatable |
+| --------------------- | ------------- | ---------------------------------------------------- | ---------- |
+| `availableTime`       | (nested)      | One entry per availability window                    | Yes        |
+| ↳ `daysOfWeek`        | `valueCode`   | One entry per day (`mon`–`sun`)                      | Yes        |
+| ↳ `allDay`            | `valueBoolean`| If `true`, window spans the full day                 | No         |
+| ↳ `availableStartTime`| `valueTime`   | Opening time (not allowed  when `allDay` is present) | No         |
+| ↳ `availableEndTime`  | `valueTime`   | Closing time (not allowed  when `allDay` is present) | No         |
+| `notAvailableTime`    | (nested)      | Typed for future use; not yet processed              | Yes        |
 
 ```tsx
 {
@@ -445,6 +444,7 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 ```
 
 :::
+
 
 **Timezone Resolution Order:**
 
