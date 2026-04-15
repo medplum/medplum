@@ -23,7 +23,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 These patterns show how to bridge Medplum messaging to external channels (SMS, email, push notifications) using [Bots](/docs/bots/bot-basics) and on-demand [`$execute`](/docs/api/fhir/operations/bot-execute). For in-platform automations (Tasks, reminders, scheduling), see [Messaging Automations](/docs/communications/messaging-automations).
 
-:::note Prerequisites
+:::note[Prerequisites]
 
 Bots are an [advanced feature](/docs/bots/bot-basics) that may need to be enabled for your project.
 
@@ -51,7 +51,7 @@ After you create the in-app message, invoke the Bot with [`executeBot()`](/docs/
 
 The example uses [`createResourceIfNoneExist()`](/docs/sdk/core.medplumclient) with a stable application message id so a retry of the same send does not insert duplicate `Communication` rows. See [Bot $execute](/docs/api/fhir/operations/bot-execute) for authentication options, content types, and async execution.
 
-:::tip Processing Notification Bundles
+:::tip[Processing Notification Bundles]
 
 When you handle live updates (WebSocket `Subscription` notifications or similar), locate the new `Communication` by scanning `bundle.entry` for `resourceType === 'Communication'` instead of assuming a fixed entry index. See [Searching and Querying Threads](/docs/communications/searching-and-querying-threads#live-updates).
 
@@ -81,7 +81,7 @@ The snippet above only demonstrates sender resolution. It omits `partOf` on purp
 
 The conditional reference `Patient?phone=<number>` resolves to exactly one matching [`Patient`](/docs/api/fhir/resources/patient) at write time (no separate search in your Bot). For email, use `Patient?email=<address>`.
 
-:::caution Conditional References and the Whole `POST`
+:::caution[Conditional References and the Whole `POST`]
 
 If any conditional reference on the `Communication` you are creating does not resolve — zero matches or more than one match — the server rejects the entire create. There is no partial write. That applies to `sender` (for example `Patient?phone=...`) and, in Strategy 1 below, to `partOf` (for example `Communication?identifier=<system>|<conversationId>` matching how you indexed the thread header).
 
@@ -128,13 +128,13 @@ If the channel is stateless (basic SMS, email without thread headers), there may
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::tip Unknown Inbound Numbers
+:::tip[Unknown Inbound Numbers]
 
 The handler above returns quietly when no `Patient` matches the phone search. In production, log the raw number, write a dead-letter or audit record, or page an operator so retries and fraud attempts are visible.
 
 :::
 
-:::tip Modeling Thread Headers for Real Apps
+:::tip[Modeling Thread Headers for Real Apps]
 
 When you create a new thread from inbound SMS, consider setting `sender`, `recipient`, and `topic` consistently with [Messaging Data Model](/docs/communications/messaging-data-model) so inbox searches and access policies behave as expected.
 
@@ -148,9 +148,9 @@ Always create a new thread header for each inbound message. No matching logic. T
 | -------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | External conversation ID (conditional) | Platforms with conversation state (Twilio, email threads) | Cleanest and declarative; requires storing the external id on the header         |
 | Patient + active thread lookup         | Stateless SMS or simple email                             | Search logic in the Bot; ambiguous if several open threads exist for one patient |
-| New thread per message                 | One-off notifications                                     | Ongoing conversations become fragmented                                        |
+| New thread per message                 | One-off notifications                                     | Ongoing conversations become fragmented                                          |
 
-:::caution Webhook Retries and Duplicate Messages
+:::caution[Webhook Retries and Duplicate Messages]
 
 Providers such as Twilio and SendGrid often retry webhook delivery. The same inbound event can hit your Bot more than once. Store the provider’s message id (or similar) on the [`Communication`](/docs/api/fhir/resources/communication) as an [`identifier`](/docs/api/fhir/resources/communication) and create with [`createResourceIfNoneExist()`](/docs/sdk/core.medplumclient) or another conditional-create pattern so a retry does not insert a second identical message.
 

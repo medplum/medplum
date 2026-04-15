@@ -7,7 +7,7 @@ tags: [auth]
 
 Medplum supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Medplum API directly.
 
-:::caution Self-Hosted Deployments Only
+:::caution[Self-Hosted Deployments Only]
 
 This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need this capability, please contact [Medplum support](/contact).
 
@@ -23,10 +23,10 @@ When a user presents a JWT issued by a configured external auth provider, Medplu
 
 There are two ways to identify the user from the token:
 
-| Method | JWT Claim | Lookup | Best for |
-| :--- | :--- | :--- | :--- |
-| **FHIR User** | `fhirUser` | Profile reference or search | SMART-on-FHIR compliant IDPs |
-| **Subject** | `sub` | `ProjectMembership.externalId` | Standard OIDC IDPs |
+| Method        | JWT Claim  | Lookup                         | Best for                     |
+| :------------ | :--------- | :----------------------------- | :--------------------------- |
+| **FHIR User** | `fhirUser` | Profile reference or search    | SMART-on-FHIR compliant IDPs |
+| **Subject**   | `sub`      | `ProjectMembership.externalId` | Standard OIDC IDPs           |
 
 If both `fhirUser` and `sub` are present, the `fhirUser` claim takes precedence.
 
@@ -45,9 +45,9 @@ Add external auth providers to your Medplum server configuration:
 }
 ```
 
-| Field | Description |
-| :--- | :--- |
-| `issuer` | The `iss` claim value in JWTs from this IDP |
+| Field         | Description                                          |
+| :------------ | :--------------------------------------------------- |
+| `issuer`      | The `iss` claim value in JWTs from this IDP          |
 | `userInfoUrl` | The IDP's userinfo endpoint, used to validate tokens |
 
 ## Using the `fhirUser` Claim
@@ -107,7 +107,7 @@ To find a user's `sub` value, decode the JWT from your IDP or check the IDP's us
 4. Searches for a `ProjectMembership` where `externalId` matches the `sub` value
 5. Returns auth credentials scoped to that membership
 
-:::caution Uniqueness
+:::caution[Uniqueness]
 
 The `externalId` must be unique across all project memberships. If multiple memberships share the same `externalId`, authentication will fail with a `401` response to prevent ambiguity.
 
@@ -128,11 +128,11 @@ Medplum caches external auth results in Redis for 1 hour to minimize calls to th
 
 ## Comparison with Token Exchange
 
-| | Direct External Auth | [Token Exchange](/docs/auth/token-exchange) |
-| :--- | :--- | :--- |
-| **Endpoint** | `/oauth2/userinfo` | `/oauth2/token` |
-| **Configuration** | Server-level `externalAuthProviders` | Per-`ClientApplication` identity provider |
-| **Token format** | Uses external JWT directly | Exchanges for Medplum access token |
-| **User lookup** | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `useSubject` flag) |
+|                   | Direct External Auth                     | [Token Exchange](/docs/auth/token-exchange) |
+| :---------------- | :--------------------------------------- | :------------------------------------------ |
+| **Endpoint**      | `/oauth2/userinfo`                       | `/oauth2/token`                             |
+| **Configuration** | Server-level `externalAuthProviders`     | Per-`ClientApplication` identity provider   |
+| **Token format**  | Uses external JWT directly               | Exchanges for Medplum access token          |
+| **User lookup**   | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `useSubject` flag)      |
 
 Choose **Direct External Auth** when you want to use external JWTs directly without an explicit token exchange step. Choose **Token Exchange** when you need a standard Medplum access token or when the auth flow is scoped to a specific `ClientApplication`.

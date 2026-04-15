@@ -9,7 +9,7 @@ This page helps you choose the correct authentication method for your applicatio
 
 For **user-facing applications (web or mobile apps)**, use [_browser-based authentication_](#browser-based-authentication).
 
-:::caution Patient Login
+:::caution[Patient Login]
 The Medplum App (https://app.medplum.com) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Medplum SDK.
 :::
 

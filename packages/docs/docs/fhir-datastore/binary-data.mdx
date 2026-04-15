@@ -120,7 +120,7 @@ Once uploaded, the `Binary` resource can be referenced in various FHIR resources
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::caution Attachment Data
+:::caution[Attachment Data]
 When creating an [`Attachment`](/docs/api/fhir/datatypes/attachment), we recommend that you _do not_ use the `data` field to provide the full binary data string. This can make the attachment very large and can cause issues when making HTTP requests. See the [Handling External Files guide](/docs/charting/external-documents#example-creating-a-documentreference-for-a-binary-file) for an example of how to upload and reference [`Binary`](/docs/api/fhir/resources/binary) resources.
 :::
 
@@ -234,11 +234,9 @@ When configured for proxying, Medplum will continue to store your binary data in
 To enable the Medplum server as a binary content proxy, you need to set two key configuration properties in your Medplum server's configuration:
 
 1.  **`binaryStorage`**: This setting specifies your underlying storage solution. This is where the binary files will actually be stored.
-
     - **Examples:** `file:./binary/`, `s3:your-bucket-name`, `azure:your-container-name`, `gs:your-bucket-name`
 
 2.  **`storageBaseUrl`**: This setting tells Medplum the base URL for serving binary content. For server proxying, this should be your Medplum `baseUrl` followed by `/storage/`.
-
     - **Example:**
       If your `baseUrl` is `https://api.example.com/`, then `storageBaseUrl` should be `https://api.example.com/storage/`.
 

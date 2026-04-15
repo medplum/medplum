@@ -14,7 +14,7 @@ Visit management is at the heart of clinical documentation and patient care deli
 </div>
 <br/>
 
-:::info Prerequisites
+:::info[Prerequisites]
 Before following the guide below, make sure you have [data in your project](./getting-started#importing-data) (patients, practitioners, etc.) and that you are [signed in](/docs/provider#registering--signing-in) to Medplum Provider.
 :::
 
@@ -784,7 +784,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 
 </details>
 
-:::tip SDC Extraction
+:::tip[SDC Extraction]
 
 The Vital Signs Assessment questionnaire above uses [Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) patterns to automatically extract `Observation` resources from questionnaire responses. Each vital sign item includes:
 

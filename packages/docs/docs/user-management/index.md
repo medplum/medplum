@@ -64,7 +64,6 @@ The [User](/docs/api/fhir/medplum/user) resource is the main resource that repre
 
 See our guide on [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users) for more details.
 
-
 ### Profiles
 
 _Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [` ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource.
@@ -90,7 +89,7 @@ There are several `ProjectMembership.profile` resources that are related to prog
 
 The simplest way to create a project is to visit https://app.medplum.com/register and fill out the new project registration form.
 
-:::caution Note
+:::caution[Note]
 
 If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
 
@@ -161,7 +160,7 @@ Only administrators can invite users, and can do so on the [Invite](https://app.
 3. Create a ProjectMembership that links User, ProfileResource and access policy
 4. (Optional) send an email invite user
 
-:::danger Note
+:::danger[Note]
 
 Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner) or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that belong to [`ProjectMemberships`](/docs/api/fhir/medplum/projectmembership). This will cause the login to be non-functional. Do not edit or change the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources directly. If you do delete one of these resources, you will need to register a new project.
 

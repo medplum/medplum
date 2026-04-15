@@ -290,11 +290,11 @@ Optional flag whether new user registration is enabled. See [Open Patient Regist
 
 Optional TOTP authenticator window for MFA token validation. This controls how many time steps (each 30 seconds) are accepted before and after the current time. A higher value is more lenient but less secure.
 
-| Value | Time Tolerance                     |
-| ----- | ---------------------------------- |
-| 0     | Only current 30-second window      |
-| 1     | ±30 seconds (~90 sec total)        |
-| 2     | ±60 seconds (~150 sec total)       |
+| Value | Time Tolerance                |
+| ----- | ----------------------------- |
+| 0     | Only current 30-second window |
+| 1     | ±30 seconds (~90 sec total)   |
+| 2     | ±60 seconds (~150 sec total)  |
 
 **Default:** `1`
 
@@ -433,7 +433,7 @@ Limit for the total number of FHIR request that can be sent to to processed by t
 
 **Default:** `50000`
 
-:::tip Local Config
+:::tip[Local Config]
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
 
 To make changes to settings that affect your deployed Medplum App, you must _also_ make these changes to your local configuration json file.
@@ -573,10 +573,10 @@ Optional list of external authentication providers for [Direct External Authenti
 
 Each provider object has the following properties:
 
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `issuer` | `string` | The expected `iss` claim in JWTs from this IDP. Must match exactly. |
-| `userInfoUrl` | `string` | The IDP's userinfo endpoint URL, used to validate tokens. |
+| Property      | Type     | Description                                                         |
+| :------------ | :------- | :------------------------------------------------------------------ |
+| `issuer`      | `string` | The expected `iss` claim in JWTs from this IDP. Must match exactly. |
+| `userInfoUrl` | `string` | The IDP's userinfo endpoint URL, used to validate tokens.           |
 
 Example configuration:
 
@@ -671,7 +671,7 @@ Example `DatabaseSecrets` value:
 }
 ```
 
-:::note Query Timeout
+:::note[Query Timeout]
 The `queryTimeout` parameter controls how long the database will allow a query to run before terminating it. If this
 parameter is set too high, expensive queries will be allowed to run on the DB, potentially even after the associated
 request has returned a server timeout error. If set too low, some queries may start to fail if they hit the

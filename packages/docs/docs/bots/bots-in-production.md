@@ -11,7 +11,7 @@ Editing bots in the web editor is good for getting started quickly, but as Bots 
 - Writing unit tests for your bots
 - Deploying your bots as part of your CI/CD pipeline.
 
-:::note Bots in Local Development
+:::note[Bots in Local Development]
 
 If you want to run bots locally, you should use a VM Context. For more details see the [Running Bots Locally docs](/docs/bots/running-bots-locally).
 
@@ -65,7 +65,7 @@ MEDPLUM_CLIENT_ID=<YOUR_CLIENT_ID>
 MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
 ```
 
-:::danger Warning
+:::danger[Warning]
 
 **Your `.env` file should _never_ be checked into source control.**
 
@@ -167,7 +167,7 @@ Running this command does the following:
 3. Saves the bot to the associated project in the Medplum database
 4. Adds a bot entry to the `medplum.config.json` file in the `bots` array
 
-:::caution Note
+:::caution[Note]
 If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
 :::
 
@@ -222,7 +222,7 @@ Running this command does two things:
 1. Save the TypeScript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
 2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
 
-:::caution Note
+:::caution[Note]
 There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
 
 ```

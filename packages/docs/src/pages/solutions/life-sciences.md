@@ -2,12 +2,12 @@
 
 Highly customizable and integrated data management solution for clinical research and commercialization including:
 
-* Digital portal for patients to sign documents, import historical records and do assessments
-* Data management for research staff and clinicians
-* Ordering systems for diagnostics, equipment and medications
-* Assessment management and planning tools
+- Digital portal for patients to sign documents, import historical records and do assessments
+- Data management for research staff and clinicians
+- Ordering systems for diagnostics, equipment and medications
+- Assessment management and planning tools
 
-:::caution Note
+:::caution[Note]
 
 This section is under construction. Check back frequently for updates.
 
@@ -25,15 +25,15 @@ At the end of the day, great standards compliant data management, specifically f
 
 Here is a summary of common limitations and problems areas as they relate to the workflow in life sciences.
 
-| Work stream                      | Description                                                                                           | Problem Areas                                                                 |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Assessment Management            | COA, Lab panels, medical device management                                                            | Maintaining data, version history, usage, provenance for instruments          |
-| Schedule of Assessments          | Building a schedule of assessments protocol                                                           | Feedback, documentation and protocol re-use                                   |
-| Protocol Documentation           | Creating a protocol document, with references                                                         | Building a protocol that can be read by people, and imported into tools       |
-| Standards adherence              | Ensuring that data is produced adheres to industry standards                                          | Data from tools, such as NIH assessments or instruments |
-| User-facing software integration | COA, ePRO and other survey based instruments exist in many tools across platforms (iOS, Android, web) | Tracking versions and instruments across platforms, integrating responses     |
-| Media handling                   | Research often entails gathering images, videos, documents, binary files                              | EDC platforms have mixed support for binary data types                        |
-| EHR Integration                  | Clinical research often requires pulling medical history from existing EHRs, systems                  | Getting data out of the EHR, LIS or other systems                             |
+| Work stream                      | Description                                                                                           | Problem Areas                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Assessment Management            | COA, Lab panels, medical device management                                                            | Maintaining data, version history, usage, provenance for instruments      |
+| Schedule of Assessments          | Building a schedule of assessments protocol                                                           | Feedback, documentation and protocol re-use                               |
+| Protocol Documentation           | Creating a protocol document, with references                                                         | Building a protocol that can be read by people, and imported into tools   |
+| Standards adherence              | Ensuring that data is produced adheres to industry standards                                          | Data from tools, such as NIH assessments or instruments                   |
+| User-facing software integration | COA, ePRO and other survey based instruments exist in many tools across platforms (iOS, Android, web) | Tracking versions and instruments across platforms, integrating responses |
+| Media handling                   | Research often entails gathering images, videos, documents, binary files                              | EDC platforms have mixed support for binary data types                    |
+| EHR Integration                  | Clinical research often requires pulling medical history from existing EHRs, systems                  | Getting data out of the EHR, LIS or other systems                         |
 
 ## Planning
 
@@ -81,7 +81,7 @@ Overall, the [COVID-19 Data model sample](https://github.com/medplum/medplum/blo
 
 #### Ontologies and Terminology
 
-Clinical data captured via diagnostics or assessments of various kinds is most useful when tagged with standard ontologies.  Nedplum supports both custom and standard terminology which can be used for this purpose.
+Clinical data captured via diagnostics or assessments of various kinds is most useful when tagged with standard ontologies. Nedplum supports both custom and standard terminology which can be used for this purpose.
 
 #### Digital Technologies
 

@@ -94,7 +94,8 @@ The table below describes which patient attributes can be used to target referen
 
 <details>
   <summary>Example: Age and gender dependent reference ranges</summary>
-  The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
+  The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and
+  children.
   <MedplumCodeBlock language="ts" selectBlocks="testosterone">
     {ExampleCode}
   </MedplumCodeBlock>
@@ -106,7 +107,7 @@ For any range, if these demographic qualifiers are left unspecified, the system 
 
 :::
 
-:::tip Matching [`Patients`](/docs/api/fhir/resources/patient) to reference ranges
+:::tip[Matching [`Patients`](/docs/api/fhir/resources/patient) to reference ranges]
 
 The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk/core.findobservationinterval), [`findObservationReferenceRange`](/docs/sdk/core.findobservationreferencerange), and [`matchesRange`](/docs/sdk/core.matchesrange) to find reference ranges that match a particular patient.
 
@@ -114,6 +115,7 @@ The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk
   <summary>Example</summary>
 
 {' '}
+
 <MedplumCodeBlock language="ts" selectBlocks="findInterval">
   {ExampleCode}
 </MedplumCodeBlock>

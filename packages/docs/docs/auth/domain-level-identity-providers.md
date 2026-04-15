@@ -11,7 +11,7 @@ Once a DL-IDP is enabled for mydomain.com, any user that attempts to sign in wit
 
 This guide demonstrates how to set up a DL-IDP, using Okta as an example provider.
 
-:::caution Note
+:::caution[Note]
 
 Setting up DL-IDPs on the Medplum Hosted instance requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
 
@@ -92,7 +92,7 @@ Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) res
 - Leave "useSubject" **unchecked**
 - Set the `domain` field to the users' email domain (e.g. "mydomain.com") **in all lower-case**. Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
 
-:::caution Note
+:::caution[Note]
 
 Configuring a DL-IDP on the Medplum Hosted service requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
 

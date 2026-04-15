@@ -10,7 +10,7 @@ Medplum is an open source implementation of [SMART App Launch 2.0.0](https://www
 - Navigate to the "Edit" tab
 - Add the `JWKS URI`, `Redirect URI` and `Launch URI` to the Client Application and save
 
-:::tip SMART Launch Configuration
+:::tip[SMART Launch Configuration]
 The `launchUri` is the most critical field on the `ClientApplication` resource in the context of a SMART launch. This URI serves as the entry point where Medplum will redirect the user to initiate the authentication handshake.
 :::
 
@@ -61,6 +61,7 @@ You can specify identifier systems for `Patient`, `Encounter`, or both. When `la
 For this to work, your resources must have identifiers with the matching systems:
 
 **Patient with identifier:**
+
 ```json
 {
   "resourceType": "Patient",
@@ -75,6 +76,7 @@ For this to work, your resources must have identifiers with the matching systems
 ```
 
 **Encounter with identifier:**
+
 ```json
 {
   "resourceType": "Encounter",

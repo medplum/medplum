@@ -40,11 +40,11 @@ In specialties with a bounded set of conditions — like dermatology — patient
 
 Enter FHIR's purpose-built resources. The FHIR spec maps the SOAP framework directly onto specific resource types:
 
-| **SOAP**   | **FHIR Resource**                                                                                         | **Description**                               |
-| ---------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Subjective | [`Observation`](/docs/api/fhir/resources/observation)                                                     | Patient-reported symptoms and concerns        |
-| Objective  | [`Observation`](/docs/api/fhir/resources/observation)                                                     | Clinician-measured findings and vitals        |
-| Assessment | [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression)                                       | Clinical analysis, differential, and summary  |
+| **SOAP**   | **FHIR Resource**                                                                                                                                                               | **Description**                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Subjective | [`Observation`](/docs/api/fhir/resources/observation)                                                                                                                           | Patient-reported symptoms and concerns        |
+| Objective  | [`Observation`](/docs/api/fhir/resources/observation)                                                                                                                           | Clinician-measured findings and vitals        |
+| Assessment | [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression)                                                                                                             | Clinical analysis, differential, and summary  |
 | Plan       | [`CarePlan`](/docs/api/fhir/resources/careplan), [`ServiceRequest`](/docs/api/fhir/resources/servicerequest), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) | Treatment strategy, orders, and prescriptions |
 
 ## How It All Fits Together
@@ -348,7 +348,7 @@ For a deeper look at `Observation` resources and how to model measurements with 
 
 `ClinicalImpression` is the FHIR-native resource for recording a clinical assessment. Per the FHIR specification, it is literally the equivalent of the "A" in SOAP — it represents the clinician's summary, differential diagnosis, and overall impression formed during the encounter.
 
-:::tip Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?
+:::tip[Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?]
 
 Some implementations store the Assessment as a `DocumentReference` or leave it as a raw `QuestionnaireResponse`, treating the entire note as an opaque blob of text. `ClinicalImpression` is the recommended approach because it gives each part of the assessment a structured home — findings, differentials, and clinical reasoning are all discrete, searchable fields that other systems can consume. The goal is to maximize structured, codified data and minimize free-text wherever possible.
 
@@ -358,14 +358,14 @@ A `ClinicalImpression` is typically created at the start of an encounter with a 
 
 ### Key Fields
 
-| **Field**     | **Description**                                                                                       | **Example**                                             |
-| ------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `status`      | Lifecycle state of the impression.                                                                    | `in-progress`, `completed`                              |
-| `subject`     | Reference to the `Patient`.                                                                           | `Patient/homer-simpson`                                 |
-| `encounter`   | Reference to the `Encounter` during which the assessment was made.                                    | `Encounter/example-encounter`                           |
-| `date`        | When the assessment was made.                                                                         | `2024-01-15T10:00:00Z`                                  |
-| `description` | A short summary of the assessment.                                                                    | `Patient presents with fatigue and abdominal pain.`     |
-| `note`        | Free-text narrative of the clinical impression. `note[0].text` is typically used for the main note.  | `Likely gastritis. Rule out peptic ulcer. Will monitor.`|
+| **Field**     | **Description**                                                                                     | **Example**                                              |
+| ------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `status`      | Lifecycle state of the impression.                                                                  | `in-progress`, `completed`                               |
+| `subject`     | Reference to the `Patient`.                                                                         | `Patient/homer-simpson`                                  |
+| `encounter`   | Reference to the `Encounter` during which the assessment was made.                                  | `Encounter/example-encounter`                            |
+| `date`        | When the assessment was made.                                                                       | `2024-01-15T10:00:00Z`                                   |
+| `description` | A short summary of the assessment.                                                                  | `Patient presents with fatigue and abdominal pain.`      |
+| `note`        | Free-text narrative of the clinical impression. `note[0].text` is typically used for the main note. | `Likely gastritis. Rule out peptic ulcer. Will monitor.` |
 
 <details>
   <summary>Example: ClinicalImpression created at the start of an encounter</summary>
@@ -394,12 +394,12 @@ A `ClinicalImpression` often leads to a formal diagnosis, which is modeled as a 
 
 The Plan component maps to the order resources in FHIR. Depending on what the clinician intends to do, the appropriate resource will differ:
 
-| **Plan Action**          | **FHIR Resource**                                                                       |
-| ------------------------ | --------------------------------------------------------------------------------------- |
-| Lab or imaging order     | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)                             |
-| Medication prescription  | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest)                       |
-| Ongoing care strategy    | [`CarePlan`](/docs/api/fhir/resources/careplan)                                         |
-| Referral                 | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) with appropriate `category` |
+| **Plan Action**         | **FHIR Resource**                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Lab or imaging order    | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)                             |
+| Medication prescription | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest)                       |
+| Ongoing care strategy   | [`CarePlan`](/docs/api/fhir/resources/careplan)                                         |
+| Referral                | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) with appropriate `category` |
 
 For details on placing orders, see [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
 
@@ -443,7 +443,6 @@ Once the full note is complete and reviewed, the `ClinicalImpression` status sho
 ```
 
 </details>
-
 
 ## Reference
 

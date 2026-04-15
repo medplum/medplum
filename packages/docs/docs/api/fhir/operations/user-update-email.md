@@ -17,13 +17,13 @@ This operation updates both the [`User`](/docs/api/fhir/medplum/user) resource (
 POST [base]/User/[id]/$update-email
 ```
 
-:::warning Privileged Operation
+:::warning[Privileged Operation]
 
 This operation requires **Project Admin** privileges
 
 :::
 
-:::caution User vs Profile Email
+:::caution[User vs Profile Email]
 
 In Medplum, the `User.email` field controls authentication and login, while the profile resource's `telecom` field displays contact information. If you update only the profile resource email, users will not be able to log in with the new email address. Use this operation to update both atomically.
 
@@ -33,19 +33,21 @@ In Medplum, the `User.email` field controls authentication and login, while the 
 
 The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource containing:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `email` | `string` | Yes | The new email address to set on the User |
-| `updateProfileTelecom` | `boolean` | No | If `true`, also updates the email in the profile resource's `telecom` field (recommended). Default: `false` |
-| `skipEmailVerification` | `boolean` | No | If `true`, skips sending the verification email. Default: `false` |
+| Parameter               | Type      | Required | Description                                                                                                 |
+| ----------------------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `email`                 | `string`  | Yes      | The new email address to set on the User                                                                    |
+| `updateProfileTelecom`  | `boolean` | No       | If `true`, also updates the email in the profile resource's `telecom` field (recommended). Default: `false` |
+| `skipEmailVerification` | `boolean` | No       | If `true`, skips sending the verification email. Default: `false`                                           |
 
 ## Output
 
 The operation returns the updated [`User`](/docs/api/fhir/medplum/user) resource with:
+
 - `email` set to the new email address
 - `emailVerified` set to `false` (unless verification was skipped)
 
 If `updateProfileTelecom` is `true`:
+
 - Adds the new email to the profile's `telecom` array with `use: 'work'`
 - Marks the old email in `telecom` with `use: 'old'`
 
@@ -60,8 +62,8 @@ await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
   resourceType: 'Parameters',
   parameter: [
     { name: 'email', valueString: 'newemail@example.com' },
-    { name: 'updateProfileTelecom', valueBoolean: true }
-  ]
+    { name: 'updateProfileTelecom', valueBoolean: true },
+  ],
 });
 ```
 
@@ -101,7 +103,7 @@ To update a patient's email when you only have their Patient ID:
 ```typescript
 // Find the user via ProjectMembership
 const memberships = await medplum.searchResources('ProjectMembership', {
-  profile: profileReference
+  profile: profileReference,
 });
 const userId = memberships[0].user?.reference?.split('/')[1];
 
@@ -110,19 +112,19 @@ await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
   resourceType: 'Parameters',
   parameter: [
     { name: 'email', valueString: 'newemail@example.com' },
-    { name: 'updateProfileTelecom', valueBoolean: true }
-  ]
+    { name: 'updateProfileTelecom', valueBoolean: true },
+  ],
 });
 ```
 
 ## Error Responses
 
-| Status Code | Description |
-|-------------|-------------|
-| `200 OK` | Email successfully updated |
+| Status Code       | Description                                                               |
+| ----------------- | ------------------------------------------------------------------------- |
+| `200 OK`          | Email successfully updated                                                |
 | `400 Bad Request` | Invalid parameters or attempting to update profile for server-scoped user |
-| `403 Forbidden` | Insufficient permissions or user from different project |
-| `404 Not Found` | User not found |
+| `403 Forbidden`   | Insufficient permissions or user from different project                   |
+| `404 Not Found`   | User not found                                                            |
 
 ## See Also
 

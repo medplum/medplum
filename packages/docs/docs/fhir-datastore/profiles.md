@@ -77,8 +77,9 @@ Description: "A Patient profile that requires a birth date"
 ```
 
 This FSH definition creates a Patient profile that:
+
 - Requires exactly one birth date (`1..1`)
-- Requires at least one name (`1..*`) 
+- Requires at least one name (`1..*`)
 - Marks both fields as Must Support (`MS`)
 
 #### FSH Project Structure
@@ -109,13 +110,14 @@ To use FSH for creating Medplum profiles:
 For a complete working example, see the [Medplum FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles) which demonstrates FSH profile creation with Patient and HealthcareService examples.
 
 2. **Create SUSHI Configuration** (`sushi-config.yaml`):
+
    ```yaml
    id: medplum-example-profiles
    canonical: https://medplum.com/profiles/example-fsh-profiles
    version: 1.0.0
    name: MedplumExampleProfiles
-   title: "Medplum Example FSH Profiles"
-   description: "Example FHIR profiles for Medplum using FSH"
+   title: 'Medplum Example FSH Profiles'
+   description: 'Example FHIR profiles for Medplum using FSH'
    fhirVersion: 4.0.1
    copyrightYear: 2024+
    releaseLabel: STU1
@@ -357,7 +359,7 @@ In the above example, we have a [`Patient`](/docs/api/fhir/resources/patient) wi
 
 We then define the new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition). Here you would add any changes to the profile you want. Note that the `url` field is the same, except we have updated the version to `2.0.0.`.
 
-:::note Semantic Versioning in Profiles
+:::note[Semantic Versioning in Profiles]
 
 When updating FHIR profiles, you should use semantic versioning to assign values to your versions. In the above example, requiring a phone number is a breaking change as it may cause some resources to fail validation. Any backwards-incompatible changes should be considered major changes.
 

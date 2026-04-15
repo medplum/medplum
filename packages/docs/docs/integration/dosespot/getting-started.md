@@ -32,18 +32,20 @@ To use any of the hooks or Bots, you will first need to add your DoseSpot clinic
   ],
 }
 ```
+
 ## Syncing Patient and Displaying the DoseSpot Iframe
 
-To embed the DoseSpot eRx interface into Medplum and sync a patient's data to DoseSpot, you should use the [useDoseSpotIFrame](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/packages/dosespot-react/src/useDoseSpotIFrame.ts#L12) hook, called with *a specific patient*. It will handle the SSO into DoseSpot, returning a URL that can be embedded in an iframe and sync the patient by doing the following:
+To embed the DoseSpot eRx interface into Medplum and sync a patient's data to DoseSpot, you should use the [useDoseSpotIFrame](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/packages/dosespot-react/src/useDoseSpotIFrame.ts#L12) hook, called with _a specific patient_. It will handle the SSO into DoseSpot, returning a URL that can be embedded in an iframe and sync the patient by doing the following:
 
 **1. Syncs Patient -> DoseSpot**: If the patient has not yet been synced with DoseSpot, it will add an identifier with the system `http://dosespot.com/patient-id` to the [Patient](/docs/api/fhir/resources/patient) resource (if not already present). The patient must include a valid:
+
 - email address
 - 9 digit phone number with no +1 prefix
 - address
 - date of birth
 - name (first and last)
 
-:::warning Pediatric Patients (Under 18)
+:::warning[Pediatric Patients (Under 18)]
 For patients under 18 years of age, you **must** also sync Height and Weight as [Observations](/docs/api/fhir/resources/observation) using the correct LOINC codes. The sync will fail without these required vital signs. See the [Height and Weight for Pediatric Patients](#height-and-weight-for-pediatric-patients) section for more details.
 :::
 
@@ -84,7 +86,7 @@ For patients under 18 years of age, you **must** also sync Height and Weight as 
     }
   ],
   "birthDate": "1978-06-15",//Required
-  "identifier": [ 
+  "identifier": [
     { //This is added if the sync is successful
       "system": "https://dosespot.com/patient-id",
       "value": "78089260"
@@ -92,6 +94,7 @@ For patients under 18 years of age, you **must** also sync Height and Weight as 
   ]
 }
 ```
+
 </details>
 
 ### Height and Weight for Pediatric Patients
@@ -138,6 +141,7 @@ For patients under 18 years of age, DoseSpot requires Height and Weight observat
   }
 }
 ```
+
 </details>
 
 <details>
@@ -180,15 +184,16 @@ For patients under 18 years of age, DoseSpot requires Height and Weight observat
   }
 }
 ```
+
 </details>
 
-:::tip Required LOINC Codes
+:::tip[Required LOINC Codes]
+
 - **Height**: `8302-2` (Body height)
 - **Weight**: `29463-7` (Body weight)
 
 These specific LOINC codes are required for successful sync to DoseSpot.
 :::
-
 
 **2. Syncs [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) -> DoseSpot for DAI (Drug-Allergy-Interaction) checks**: You must have an [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource with the patient reference set. **[RxNorm](/docs/medications/medication-codes#rxnorm)** is recommended for best results with DoseSpot.
 
@@ -220,6 +225,7 @@ These specific LOINC codes are required for successful sync to DoseSpot.
   //...
 }
 ```
+
 </details>
 
 **3. Syncs any self-reported [MedicationRequest](/docs/api/fhir/resources/medicationrequest) -> DoseSpot for DDI (Drug-Drug-Interaction) checks**: For the MedicationRequest to be synced, you must create a MedicationRequest resource with `MedicationRequest.intent` set to `plan`. **[RxNorm](/docs/medications/medication-codes#rxnorm)** is recommended for best results with DoseSpot.
@@ -250,6 +256,7 @@ These specific LOINC codes are required for successful sync to DoseSpot.
   //...
 }
 ```
+
 </details>
 
 ### useDoseSpotIFrame
@@ -289,9 +296,9 @@ export function DoseSpotTab(): JSX.Element {
 
 See a more thorough implementation example from the Provider App's [DoseSpotTab.tsx](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/patient/DoseSpotTab.tsx).
 
-| `useDoseSpotIFrame({ patientId })` | `useDoseSpotIFrame({})` |
-| ------------------------------- | ---------------------------------------- |
-| ![patient-dosespot-iframe.png](/img/integrations/dosespot/patient-dosespot-iframe.png)   | ![notifications-dosespot-iframe.png](/img/integrations/dosespot/notifications-dosespot-iframe.png)    |
+| `useDoseSpotIFrame({ patientId })`                                                     | `useDoseSpotIFrame({})`                                                                            |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| ![patient-dosespot-iframe.png](/img/integrations/dosespot/patient-dosespot-iframe.png) | ![notifications-dosespot-iframe.png](/img/integrations/dosespot/notifications-dosespot-iframe.png) |
 
 ## Syncing Prescriptions
 
@@ -304,18 +311,19 @@ The Bot will create or update MedicationRequest resources in Medplum for the spe
 Example of executing the bot:
 
 ```typescript
-  const DOSESPOT_PRESCRIPTIONS_SYNC_BOT: Identifier = {
-    system: 'https://www.medplum.com/bots',
-    value: 'dosespot-prescriptions-sync-bot',
-  };
+const DOSESPOT_PRESCRIPTIONS_SYNC_BOT: Identifier = {
+  system: 'https://www.medplum.com/bots',
+  value: 'dosespot-prescriptions-sync-bot',
+};
 
-  const medicationRequests = await medplum.execute(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, {
-    patientId,
-    start: "2023-01-01",
-    end: "2025-01-01",
-    //raw: true //returns raw DoseSpot prescription data instead of creating and returning MedicationRequest resources
-  }) as MedicationRequest[];
+const medicationRequests = (await medplum.execute(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, {
+  patientId,
+  start: '2023-01-01',
+  end: '2025-01-01',
+  //raw: true //returns raw DoseSpot prescription data instead of creating and returning MedicationRequest resources
+})) as MedicationRequest[];
 ```
+
 For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
 
 <details>
@@ -386,73 +394,79 @@ For a more thorough example implementing this bot, see the Provider App's [DoseS
   //...
 }
 ```
+
 </details>
 
 ### Understanding the Prescription Status
 
 MedicationRequests that represent active prescriptions from DoseSpot capture status information in three different fields:
 
-#### 1. `MedicationRequest.status` 
+#### 1. `MedicationRequest.status`
+
 Medplum's interpretation of the prescription status, mapped to [MedicationRequest.status](https://www.hl7.org/fhir/medicationrequest-definitions.html#MedicationRequest.status) codes.
 
 <details>
   <summary>See the full list of status codes</summary>
 
-| status | Description |
-|------|-------------|
-| active | The prescription is active. |
-| on-hold | The prescription is on hold. |
-| cancelled | The prescription has been cancelled. |
-| completed | The prescription has been completed. |
+| status           | Description                                 |
+| ---------------- | ------------------------------------------- |
+| active           | The prescription is active.                 |
+| on-hold          | The prescription is on hold.                |
+| cancelled        | The prescription has been cancelled.        |
+| completed        | The prescription has been completed.        |
 | entered-in-error | The prescription has been entered in error. |
-| stopped | The prescription has been stopped. |
-| draft | The prescription is a draft. |
-| unknown | The status of the prescription is unknown. |
+| stopped          | The prescription has been stopped.          |
+| draft            | The prescription is a draft.                |
+| unknown          | The status of the prescription is unknown.  |
+
 </details>
 
+#### 2. `MedicationRequest.statusReason` _(system: https://dosespot.com/medication-status)_
 
-#### 2. `MedicationRequest.statusReason` _(system: https://dosespot.com/medication-status)_ 
 DoseSpot's status for the prescription. This is what determines `MedicationRequest.status`.
 
 <details>
   <summary>See the full list of statusReason codes</summary>
 
-| code | Description |
-|------|-------------|
-| Active | The prescription is active. |
-| Discontinued | The prescription has been discontinued. |
-| Deleted | The prescription has been deleted. |
-| Completed | The prescription has been completed. |
+| code            | Description                                          |
+| --------------- | ---------------------------------------------------- |
+| Active          | The prescription is active.                          |
+| Discontinued    | The prescription has been discontinued.              |
+| Deleted         | The prescription has been deleted.                   |
+| Completed       | The prescription has been completed.                 |
 | CancelRequested | The prescription has been requested to be cancelled. |
-| CancelPending | The prescription has been cancelled. |
-| Cancelled | The prescription has been cancelled. |
-| CancelDenied | The prescription has been cancelled. |
-| Changed | The prescription has been changed. |
-| FullFill | The prescription has been fully filled. |
-| PartialFill | The prescription has been partially filled. |
-| NoFill | The prescription has not been filled. |
+| CancelPending   | The prescription has been cancelled.                 |
+| Cancelled       | The prescription has been cancelled.                 |
+| CancelDenied    | The prescription has been cancelled.                 |
+| Changed         | The prescription has been changed.                   |
+| FullFill        | The prescription has been fully filled.              |
+| PartialFill     | The prescription has been partially filled.          |
+| NoFill          | The prescription has not been filled.                |
+
 </details>
 
-#### 3. `MedicationRequest.extension` _(url: https://dosespot.com/prescription-status)_ 
+#### 3. `MedicationRequest.extension` _(url: https://dosespot.com/prescription-status)_
+
 DoseSpot's more granular transmission status for this specific Rx Order.
 
 <details>
   <summary>See the full list of MedicationRequest.extension codes</summary>
 
-| valueCode | Description |
-|------|-------------|
-|Entered | The prescription has been entered. |
-|Printed | The prescription has been printed. |
-|Sending | The prescription is currently being sent. |
-|eRxSent | The prescription has been sent via eRx. |
-|Error | The prescription has an error. |
-|Deleted | The prescription has been deleted. |
-|Requested | The prescription has been requested. |
-|Edited | The prescription has been edited. |
-|EpcsError | The prescription has an Epcs error. |
-|EpcsSigned | The prescription has been signed by Epcs. |
-|ReadyToSign | The prescription is ready to be signed. |
-|PharmacyVerified | The prescription has been verified by the pharmacy. |
+| valueCode        | Description                                         |
+| ---------------- | --------------------------------------------------- |
+| Entered          | The prescription has been entered.                  |
+| Printed          | The prescription has been printed.                  |
+| Sending          | The prescription is currently being sent.           |
+| eRxSent          | The prescription has been sent via eRx.             |
+| Error            | The prescription has an error.                      |
+| Deleted          | The prescription has been deleted.                  |
+| Requested        | The prescription has been requested.                |
+| Edited           | The prescription has been edited.                   |
+| EpcsError        | The prescription has an Epcs error.                 |
+| EpcsSigned       | The prescription has been signed by Epcs.           |
+| ReadyToSign      | The prescription is ready to be signed.             |
+| PharmacyVerified | The prescription has been verified by the pharmacy. |
+
 </details>
 
 ### Syncing Med History - `DoseSpot Medication History Bot`
@@ -505,6 +519,7 @@ The Bot will create or update MedicationRequest resources in Medplum for the spe
   "active": true
 }
 ```
+
 </details>
 
 Example executing the bot:
@@ -515,13 +530,14 @@ const DOSESPOT_MEDICATION_HISTORY_BOT: Identifier = {
   value: 'dosespot-medication-history-bot',
 };
 
-const medicationRequests = await medplum.execute(DOSESPOT_MEDICATION_HISTORY_BOT, {
+const medicationRequests = (await medplum.execute(DOSESPOT_MEDICATION_HISTORY_BOT, {
   patientId,
-  start: "2023-01-01",
-  end: "2025-01-01",
+  start: '2023-01-01',
+  end: '2025-01-01',
   //raw: true //returns raw DoseSpot prescription data instead of creating and returning MedicationRequest resources
-}) as MedicationRequest[];
+})) as MedicationRequest[];
 ```
+
 For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
 
 <details>
@@ -605,8 +621,8 @@ For a more thorough example implementing this bot, see the Provider App's [DoseS
   //...
 }
 ```
-</details>
 
+</details>
 
 ### Understanding the Prescription and Medication History Data Flow
 
@@ -651,6 +667,7 @@ To set a default pharmacy for patients in a clinic, we expose a bot that can add
 ### Usage
 
 #### Basic Example
+
 ```bash
 curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
   -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
@@ -661,6 +678,7 @@ curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
 ```
 
 #### With Specific Patients
+
 ```bash
 curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
   -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
@@ -676,10 +694,10 @@ curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
 
 ```typescript
 interface DoseSpotClinicDefaultPharmacyRequest {
-  pharmacyId: number;              // Required: DoseSpot pharmacy ID
-  patientIds?: string[];           // Optional: Specific patient IDs to process
-  dryRun?: boolean;                 // Optional: Preview mode (default: false)
-  maxPatients?: number;             // Optional: Max patients to process (default: 100)
+  pharmacyId: number; // Required: DoseSpot pharmacy ID
+  patientIds?: string[]; // Optional: Specific patient IDs to process
+  dryRun?: boolean; // Optional: Preview mode (default: false)
+  maxPatients?: number; // Optional: Max patients to process (default: 100)
 }
 ```
 
@@ -709,6 +727,7 @@ To enroll a prescriber in DoseSpot, you can use the **DoseSpot Enroll Prescriber
 ### Prerequisites
 
 Before enrolling a prescriber, ensure:
+
 - The Practitioner resource exists in Medplum
 - The Practitioner has a corresponding ProjectMembership
 - The Practitioner has required information (name, NPI, contact information, etc.)
@@ -736,7 +755,7 @@ For successful enrollment, the Practitioner resource must include the following 
 - **`telecom`** with work phone (`system: "phone"`, `use: "work"`)
 - **`telecom`** with fax (`system: "fax"`)
 
-:::warning NPI Validation
+:::warning[NPI Validation]
 If an NPI identifier is present on the Practitioner resource, it **must** be valid (exactly 10 digits). The bot will throw an error if an invalid NPI is provided.
 :::
 
@@ -751,38 +770,39 @@ If an NPI identifier is present on the Practitioner resource, it **must** be val
     {
       "prefix": ["Dr."],
       "given": ["John"],
-      "family": "Doe" 
+      "family": "Doe"
     }
   ],
-  "birthDate": "1975-05-15", 
+  "birthDate": "1975-05-15",
   "identifier": [
     {
-      "system": "http://hl7.org/fhir/sid/us-npi", 
+      "system": "http://hl7.org/fhir/sid/us-npi",
       "value": "1234567893" // Required: exactly 10 digits
     }
   ],
   "telecom": [
     {
       "system": "email",
-      "value": "john.doe@example.com" 
+      "value": "john.doe@example.com"
     },
     {
       "system": "phone",
       "use": "work",
-      "value": "555-123-4567" 
+      "value": "555-123-4567"
     }
   ],
-  "address": [ 
+  "address": [
     {
       "line": ["123 Main St", "Suite 100"], // At least one line required
-      "city": "San Francisco", 
-      "state": "CA", 
-      "postalCode": "94102" 
+      "city": "San Francisco",
+      "state": "CA",
+      "postalCode": "94102"
     }
   ],
   "active": true
 }
 ```
+
 </details>
 
 ### Usage
@@ -795,10 +815,10 @@ const DOSESPOT_ENROLL_PRESCRIBER_BOT: Identifier = {
   value: 'dosespot-enroll-prescriber-bot',
 };
 
-const result = await medplum.execute(DOSESPOT_ENROLL_PRESCRIBER_BOT, {
+const result = (await medplum.execute(DOSESPOT_ENROLL_PRESCRIBER_BOT, {
   practitionerId: 'practitioner-123',
   practitionerRoleTypes: [1], // PrescribingClinician
-}) as {
+})) as {
   doseSpotClinicianId: number;
   projectMembership: ProjectMembership;
 };
@@ -808,7 +828,7 @@ const result = await medplum.execute(DOSESPOT_ENROLL_PRESCRIBER_BOT, {
 
 ```typescript
 interface DoseSpotEnrollPrescriberResponse {
-  doseSpotClinicianId: number;        // The DoseSpot clinician ID assigned to the prescriber
+  doseSpotClinicianId: number; // The DoseSpot clinician ID assigned to the prescriber
   projectMembership: ProjectMembership; // Updated ProjectMembership with DoseSpot identifier
 }
 ```
@@ -817,14 +837,14 @@ interface DoseSpotEnrollPrescriberResponse {
 
 The `DoseSpotClinicianRoleType` enum includes the following values:
 
-| Value | Enum Name | Description |
-|-------|-----------|-------------|
-| 1 | PrescribingClinician | Prescriber who can write prescriptions |
-| 2 | ReportingClinician | Clinician who can report |
-| 3 | EpcsCoordinator | EPCS coordinator |
-| 4 | ClinicianAdmin | Clinic administrator |
-| 5 | PrescribingAgentClinician | Prescribing agent |
-| 6 | ProxyClinician | Proxy clinician |
+| Value | Enum Name                 | Description                            |
+| ----- | ------------------------- | -------------------------------------- |
+| 1     | PrescribingClinician      | Prescriber who can write prescriptions |
+| 2     | ReportingClinician        | Clinician who can report               |
+| 3     | EpcsCoordinator           | EPCS coordinator                       |
+| 4     | ClinicianAdmin            | Clinic administrator                   |
+| 5     | PrescribingAgentClinician | Prescribing agent                      |
+| 6     | ProxyClinician            | Proxy clinician                        |
 
 ### Important Notes
 
@@ -839,9 +859,9 @@ The `DoseSpotClinicianRoleType` enum includes the following values:
 
 You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
 
-See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`. 
+See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`.
 
-## Practitioner AccessPolicy 
+## Practitioner AccessPolicy
 
 The following AccessPolicy can be used to ensure that practitioners have the correct permissions view and interact with the Dosespot iFrame. Please note that write access to `MedicationKnowledge` is only needed when a practitioner should be given permission to edit the [Dosespot clinic's favorite medications](./clinic-favorite-medications)
 

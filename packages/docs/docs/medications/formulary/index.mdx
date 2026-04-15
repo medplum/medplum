@@ -19,17 +19,17 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 - How to annotate medications with the proper codes.
 - How to represent physical characteristics about the medication and its package.
 - How to categorize medications in the formulary.
-- How to represent compounded medications, including dose variations. 
+- How to represent compounded medications, including dose variations.
 - How to represent relationships between medications.
 
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
 
-:::tip Sample Data
+:::tip[Sample Data]
 You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
 :::
 
-:::caution A note on the Medication resource
-You might be asking yourself, what is the difference between the `Medication` and `MedicationKnowledge` resources? Both resources hold information like medication manufacturer and ingredients, but `MedicationKnowledge` holds potentially critical information beyond that, like regulatory information related to controlled substances, packaging descriptions used by pharmacists, and administrative guidelines for both clinicians and patients. In general, we encourage the use of `MedicationKnowledge` rather than `Medication`. 
+:::caution[A note on the Medication resource]
+You might be asking yourself, what is the difference between the `Medication` and `MedicationKnowledge` resources? Both resources hold information like medication manufacturer and ingredients, but `MedicationKnowledge` holds potentially critical information beyond that, like regulatory information related to controlled substances, packaging descriptions used by pharmacists, and administrative guidelines for both clinicians and patients. In general, we encourage the use of `MedicationKnowledge` rather than `Medication`.
 :::
 
 ## Medication Code
@@ -75,7 +75,7 @@ RxNorm term types `SBD`, `BPCK`, and `SBDG` all refer to specific brand names fo
 
 In contrast, using generic term types (`SCD`, `GPCK`, `SCDG`) indicates that physicians may prescribe _any_ brand of the medication.
 
-:::tip Prescribable vs. Dispensable Medications
+:::tip[Prescribable vs. Dispensable Medications]
 
 While most Medplum applications will include _either_ generic _or_ branded versions of a medication, some advanced implementations may include both. This is especially common with providers that own their own pharmacy.
 
@@ -192,7 +192,7 @@ The table below summarizes the most important medication metadata elements.
 
 </details>
 
-:::caution A note about units
+:::caution[A note about units]
 
 All units for medication quantities are [UCUM units of measure](https://terminology.hl7.org/4.0.0/ValueSet-v3-UnitsOfMeasureCaseSensitive.html). This includes standard SI units, as well as non-standard healthcare units. A common unit for medications is `{tbl}`, which stands for "tablets", which is useful for quantifying the amount of medication in a package.
 
@@ -205,7 +205,7 @@ The `MedicationKnowledge.productType` field can be used to categorize the drug w
 - Whether a drug is generic or branded
 - Whether the drug requires a prescription (see: [Legal status of Supply](https://build.fhir.org/valueset-legal-status-of-supply.html))
 
-:::caution Representing Controlled Substance Schedules
+:::caution[Representing Controlled Substance Schedules]
 
 Certain medications, including narcotics, are classified into schedules based on the U.S. Controlled Substances Act (CSA). `MedicationKnowledge.regulatory.schedule` is used for specifying the regulatory schedule for any medications subject to these restrictions.
 
@@ -236,7 +236,7 @@ graph TD
     A --> C[Child: 1.7mg Dose<br/>3 mL Volume<br/>Weekly Administration]
     A --> D[Child: 1mg Dose<br/>1.6 mL Volume<br/>Weekly Administration]
 
-    
+
     style A fill:#e1f5fe
 
     style B fill:#e8f5e8
@@ -433,18 +433,21 @@ graph TD
 ### Key Considerations for Parent-Child Compounds
 
 **Parent Medication Features:**
+
 - Contains the complete ingredient list with base concentrations
 - Uses `relatedMedicationKnowledge` with type "child" to reference dose variations
 - Typically lacks specific administration guidelines (handled by children)
 - Serves as the master template for the compound family
 
 **Child Medication Features:**
+
 - References parent using `relatedMedicationKnowledge` with type "parent"
 - Contains specific volume amounts and administration instructions
 - Includes dose-specific coding and display names
 - May include additional metadata like days supply and patient instructions
 
 **Benefits of This Approach:**
+
 - Centralizes ingredient management in the parent
 - Allows for easy addition of new dose variations
 - Maintains clear relationships between related compounds

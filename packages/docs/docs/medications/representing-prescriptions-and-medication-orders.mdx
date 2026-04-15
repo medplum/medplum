@@ -48,7 +48,8 @@ Medication prescriptions should be represented in FHIR using the [`MedicationReq
   <tr>
     <td>dispenseRequest</td>
     <td>
-      Provides details about how the medication should be dispensed or supplied, including quantity, total number of refills, and more.
+      Provides details about how the medication should be dispensed or supplied, including quantity, total number of
+      refills, and more.
     </td>
     <td>
       <a href="#representing-dispense-instructions-and-fulfillment">See below</a>
@@ -173,7 +174,7 @@ These types of requests should be differentiated as outpatient vs. inpatient usi
 The instructions to the pharmacy on how the order should be dispensed should be included on the `MedicationRequest.dispenseRequest` field.
 
 | Element                  | Description                                                                                                                                                                                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
 | `authoredOn`             | The date on which this order was made.                                                                                                                                                                   |
 | `extension`              | The related MedicationDispense resources (see [Representing Dispense Fulfillments](#representing-dispense-fulfillments))                                                                                 |
 | `initialFill`            | The duration or quantity of the first dispense of the medication.                                                                                                                                        |
@@ -181,7 +182,7 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 | `dispenseInterval`       | The minimum amount of time between refills of the medication.                                                                                                                                            |
 | `validityPeriod`         | The period over which the prescription or order remains valid.                                                                                                                                           |
 | `numberOfRepeatsAllowed` | The number of times that the order may be refilled. Note that this does not include the initial dispense. If the value here is 3, the order can be refilled 3 times in addition to the initial dispense. |
-| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |                                                                                                                                   |
+| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |     |
 
 <details>
   <summary>Example: Dispense Instructions</summary>
@@ -192,17 +193,17 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 
 ### Representing Dispense Fulfillments
 
-The information related to fulfillment of a `MedicationRequest` should be stored on the [`MedicationDispense`](/docs/api/fhir/resources/medicationdispense) resource. If a `MedicationRequest` is refilled, there should be one `MedicationDispense` resource associated with the initial fill, and a MedicationDispense associated per each refill. 
+The information related to fulfillment of a `MedicationRequest` should be stored on the [`MedicationDispense`](/docs/api/fhir/resources/medicationdispense) resource. If a `MedicationRequest` is refilled, there should be one `MedicationDispense` resource associated with the initial fill, and a MedicationDispense associated per each refill.
 
-| Element                  | Description                                                                                                                                                                                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                 | The current status of this dispense. This can be used to help track shipping progress.                                                                                                                   |
-| `statusReason`           | The information related to the status of the dispense. An extension here can be used to record shipment tracking information (i.e. shipping company and tracking number).                                |
-| `whenPrepared`           | The date on which the pharmacy prepares the dispense.                                                                                                                                                    |
-| `whenHandedOver`         | The date on which the patient receives the dispense.                                                                                                                                                     |
-| `performer`              | The organization (i.e. Pharmacy) that dispenses the medication.                                                                                                                                          |
+| Element          | Description                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`         | The current status of this dispense. This can be used to help track shipping progress.                                                                                    |
+| `statusReason`   | The information related to the status of the dispense. An extension here can be used to record shipment tracking information (i.e. shipping company and tracking number). |
+| `whenPrepared`   | The date on which the pharmacy prepares the dispense.                                                                                                                     |
+| `whenHandedOver` | The date on which the patient receives the dispense.                                                                                                                      |
+| `performer`      | The organization (i.e. Pharmacy) that dispenses the medication.                                                                                                           |
 
-:::note Preferred Pharmacies
+:::note[Preferred Pharmacies]
 There is currently no community consensus on how to store a patient's preferred pharmacy in FHIR, but Medplum suggests one of two options:
 
 1. Add the information to a [`CareTeam`](/docs/api/fhir/resources/careteam) resource associated with the [`Patient`](/docs/api/fhir/resources/patient).
