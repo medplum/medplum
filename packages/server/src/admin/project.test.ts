@@ -707,14 +707,16 @@ describe('Project Admin routes', () => {
       });
     expect(inviteRes.status).toBe(200);
 
-    const membershipId = inviteRes.body.membership.id as string;
-    const userId = inviteRes.body.user.id as string;
+    // inviteRes.body is the ProjectMembership resource directly
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
 
     // Manually mark the user as MFA enrolled via systemRepo (bypassing access policy)
     const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
     await withTestContext(() =>
       systemRepo.updateResource<User>({
-        ...inviteRes.body.user,
+        ...invitedUser,
         mfaEnrolled: true,
         mfaSecret: 'TESTSECRET',
       })
@@ -756,7 +758,7 @@ describe('Project Admin routes', () => {
       });
     expect(inviteRes.status).toBe(200);
 
-    const membershipId = inviteRes.body.membership.id as string;
+    const membershipId = inviteRes.body.id as string;
 
     const resetRes = await request(app)
       .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
@@ -799,7 +801,7 @@ describe('Project Admin routes', () => {
       });
     expect(inviteRes.status).toBe(200);
 
-    const membershipId = inviteRes.body.membership.id as string;
+    const membershipId = inviteRes.body.id as string;
 
     // Project A admin tries to reset MFA for Project B member — should be forbidden
     const resetRes = await request(app)
@@ -831,7 +833,7 @@ describe('Project Admin routes', () => {
       });
     expect(inviteRes.status).toBe(200);
 
-    const membershipId = inviteRes.body.membership.id as string;
+    const membershipId = inviteRes.body.id as string;
 
     // Use a non-admin token from a different project
     const { accessToken: nonAdminToken } = await withTestContext(() =>
