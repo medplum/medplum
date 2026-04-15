@@ -42,7 +42,10 @@ export const inviteValidator = makeValidationMiddleware([
     ],
     { message: 'Either email or externalId is required' }
   ),
-  body('skipDefaultAccessPolicy').optional().isBoolean().withMessage('skipDefaultAccessPolicy must be a boolean'),
+  body('skipDefaultAccessPolicy')
+    .optional()
+    .isBoolean({ strict: true })
+    .withMessage('skipDefaultAccessPolicy must be a boolean'),
   body('access').optional().isArray().withMessage('access must be an array'),
   body('membership.access').optional().isArray().withMessage('membership.access must be an array'),
 ]);
