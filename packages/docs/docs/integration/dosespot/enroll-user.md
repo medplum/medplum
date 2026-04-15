@@ -315,7 +315,7 @@ The bot returns the following fields:
 | `doseSpotClinicianId` | `number`            | The DoseSpot clinician ID                                                                          |
 | `projectMembership`   | `ProjectMembership` | The updated ProjectMembership with DoseSpot identifier                                             |
 | `practitioner`        | `Practitioner`      | The updated Practitioner with registration status extension and EPCS qualification (if applicable) |
-| `registrationStatus`  | `string`            | Current DoseSpot registration status (e.g., `"Pending"`, `"IDPSuccess"`, `"TFAActivatedSuccess"`)  |
+| `registrationStatus`  | `string`            | <details><summary>Current DoseSpot registration status (all values)</summary>`"Pending"`<br/>`"RegistrationSuccess"`<br/>`"RegistrationError"`<br/>`"IDPSuccess"`<br/>`"IDPError"`<br/>`"TFAActivateInit"`<br/>`"TFAActivatedSuccess"`<br/>`"TFAActivatedError"`<br/>`"TFADeactivateInit"`<br/>`"TFADeactivatedSuccess"`<br/>`"TFADeactivatedError"`<br/>`"IDPInitializeSuccess"`</details> |
 | `idpInitialized`      | `boolean`           | Whether IDP was initialized in this run                                                            |
 | `tfaInitialized`      | `boolean`           | Whether TFA was initialized in this run                                                            |
 
