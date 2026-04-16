@@ -1,4 +1,5 @@
 {
+  "setupFilesAfterEnv": ["<rootDir>/src/jest.setup.ts"],
   "testEnvironment": "node",
   "testEnvironmentOptions": {
     "globalsCleanup": "on"
