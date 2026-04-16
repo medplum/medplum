@@ -1259,7 +1259,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
-      await this.writeShardSyncOutbox(client, resource);
+      if (this.shouldSyncResource(resource)) {
+        await this.writeShardSyncOutbox(client, resource);
+      }
     });
   }
 
@@ -1922,28 +1924,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resource: WithId<Resource>,
     versionId?: string
   ): Promise<void> {
-    if (this.shouldSyncResource(resource)) {
-      await new InsertQuery('shard_sync_outbox', [
-        {
-          resourceType: resource.resourceType,
-          resourceId: resource.id,
-          resourceVersionId: versionId ?? resource.meta?.versionId,
-        },
-      ]).execute(client);
-    }
+    await new InsertQuery('shard_sync_outbox', [
+      {
+        resourceType: resource.resourceType,
+        resourceId: resource.id,
+        resourceVersionId: versionId ?? resource.meta?.versionId,
+      },
+    ]).execute(client);
   }
 
   private shouldSyncResource(resource: WithId<Resource>): boolean {
     return (
-      this.shardId !== GLOBAL_SHARD_ID && // only sync from shards to global
-      SyncedResourceTypes.has(resource.resourceType) && // only sync synced resource types
-      resource.meta?.project !== r4ProjectId // the R4 project cannot be synced since it has a hard-coded Project.id
+      this.shardId !== GLOBAL_SHARD_ID && isSyncableResource(resource.resourceType, resource.id, resource.meta?.project)
     );
   }
 
   /**
    * Syncs a resource from a shard.
    * This is called by the shard sync worker to replicate SyncedResourceTypes.
+   * No-ops for resources that are not syncable (e.g., R4 project resources).
    * It performs the database write and cache update but does NOT
    * trigger background jobs, binary handling, or audit event logging.
    * @param resource - The resource to sync.
@@ -1951,6 +1950,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async syncResourceFromShard(resource: WithId<Resource>): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
+    }
+    if (!isSyncableResource(resource.resourceType, resource.id, resource.meta?.project)) {
+      return;
     }
     await this.ensureInTransaction(resource.resourceType, async (client) => {
       // SHARDING - check if the resource already exists with a newer version? How to determine if it's newer?
@@ -1965,6 +1967,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Syncs a soft-deletion of a resource from a shard.
+   * No-ops for resources that are not syncable (e.g., R4 project resources).
    * It performs the database writes but does NOT
    * trigger background jobs, binary handling, or audit event logging.
    * @param resourceType - The resource type.
@@ -1983,6 +1986,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    if (!isSyncableResource(resourceType, id, projectId)) {
+      return;
+    }
 
     await this.deleteCacheEntries(resourceType, [id]);
     await this.ensureInTransaction(resourceType, async (db) => {
@@ -1999,7 +2005,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-
+    if (!isSyncableResource(resourceType, id, undefined)) {
+      return;
+    }
     await this.deleteCacheEntries(resourceType, [id]);
     await this.ensureInTransaction(resourceType, async (db) => {
       await new DeleteQuery(resourceType).where('id', '=', id).execute(db);
@@ -2683,7 +2691,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertNotClosed();
     if (this.conn) {
       if (resourceType) {
-      this.assertShardAccess(resourceType);
+        this.assertShardAccess(resourceType);
       }
       // If in a transaction, then use the transaction client.
       return this.conn;
@@ -3177,6 +3185,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Already closed');
     }
   }
+}
+
+/**
+ * Returns true if the resource is eligible for cross-shard syncing.
+ * Checks resource type and excludes R4 project resources (which have a hard-coded Project.id
+ * shared across all shards).
+ * @param resourceType - The FHIR resource type.
+ * @param resourceId - The FHIR resource ID.
+ * @param projectId - The project ID from the resource's meta.
+ * @returns True if the resource should be synced.
+ */
+function isSyncableResource(resourceType: string, resourceId: string, projectId: string | undefined): boolean {
+  return (
+    SyncedResourceTypes.has(resourceType) && // Only expected resource types
+    !(resourceType === 'Project' && resourceId === r4ProjectId) && // Not the R4 project itself
+    projectId !== r4ProjectId // Nothing in the R4 project
+  );
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds

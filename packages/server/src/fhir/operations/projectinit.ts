@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
 import { badRequest, createReference, created } from '@medplum/core';
-import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CreateResourceOptions, FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   ClientApplication,
   OperationDefinition,
@@ -121,23 +121,28 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  * Handles creating a global stub for non-global shards.
  * @param systemRepo - The system repository determining which shard to write to.
  * @param project - The project properties to create.
+ * @param options - Optional resource creation options (e.g., assignedId for explicit IDs).
  * @returns The created project and its shard ID.
  */
 export async function createProjectResource(
   systemRepo: SystemRepository,
-  project: Project
+  project: Project,
+  options?: CreateResourceOptions
 ): Promise<{ project: WithId<Project>; shardId: string }> {
   const shardId = systemRepo.shardId;
   setProjectShard(shardId, project);
 
+  // avoid a transaction if already on the global shard
+  if (shardId === GLOBAL_SHARD_ID) {
+    return { project: await systemRepo.createResource(project, options), shardId };
+  }
+
   const created = await systemRepo.withTransaction(async () => {
-    const shardProject = await systemRepo.createResource<Project>(project);
-    if (shardId !== GLOBAL_SHARD_ID) {
-      // Utilize syncResourceFromShard to bootstrap the project on the global shard.
-      // This keeps getProjectAndProjectShardId and other Repository/sharing helpers happy
-      // during project initialization since shard-syncing will not have had a chance to run yet.
-      await getGlobalSystemRepo().syncResourceFromShard(shardProject);
-    }
+    const shardProject = await systemRepo.createResource(project, options);
+    // Utilize syncResourceFromShard to bootstrap the project on the global shard.
+    // This keeps getProjectAndProjectShardId and other Repository/sharing helpers happy
+    // during project initialization since shard-syncing will not have had a chance to run yet.
+    await getGlobalSystemRepo().syncResourceFromShard(shardProject);
     return shardProject;
   });
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { ClientApplication, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword, createProfile, createProjectMembership } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
@@ -15,7 +15,6 @@ import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 import type { ShardPool } from './sharding/sharding-types';
-import { setProjectShard } from './sharding/sharding-utils';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   // Ensure global shard is run first
@@ -47,9 +46,15 @@ export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerCo
     }
 
     await systemRepo.withTransaction(async () => {
-      const r4Project = await systemRepo.readResource<Project>('Project', r4ProjectId);
-      setProjectShard(pool.shardId, r4Project);
-      await systemRepo.updateResource<Project>(r4Project);
+      await createProjectResource(
+        systemRepo,
+        {
+          resourceType: 'Project',
+          id: r4ProjectId,
+          name: 'FHIR R4',
+        },
+        { assignedId: true }
+      );
 
       await createSuperAdmin(systemRepo, config);
 

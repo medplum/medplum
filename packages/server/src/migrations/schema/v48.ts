@@ -6,24 +6,13 @@
  * Do not edit manually.
  */
 
-import type { Project } from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { r4ProjectId } from '../../constants';
 
 export async function run(client: PoolClient): Promise<void> {
-  const r4Project: Project = {
-    resourceType: 'Project',
-    id: r4ProjectId,
-    meta: {
-      lastUpdated: new Date().toISOString(),
-    },
-    name: 'FHIR R4',
-  };
-
-  await client.query(
-    `INSERT INTO "Project" (id, content, "lastUpdated", compartments, name) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
-    [r4ProjectId, JSON.stringify(r4Project), r4Project.meta?.lastUpdated, [], r4Project.name]
-  );
+  // The R4 project is created by the seeder (seedDatabase) via createProjectResource,
+  // which handles shard assignment and cross-shard syncing.
+  // This migration only moves orphan resources into the R4 project for legacy databases.
   await moveOrphanResourcesIntoProject('StructureDefinition', r4ProjectId, client);
   await moveOrphanResourcesIntoProject('SearchParameter', r4ProjectId, client);
   await moveOrphanResourcesIntoProject('ValueSet', r4ProjectId, client);
