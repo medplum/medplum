@@ -31,6 +31,9 @@ export { getDefaultMembershipAccessFields, projectHasDefaultPatientAccess } from
 /**
  * Removes own properties whose values are `undefined` or `null` so merges / updates
  * do not accidentally clear existing fields (JSON bodies often include explicit `null`).
+ *
+ * @param record - Plain object to copy while omitting `undefined` and `null` values.
+ * @returns A shallow copy of `record` containing only defined, non-null properties.
  */
 export function stripUndefinedAndNullFields<T extends Record<string, unknown>>(record: T): T {
   return Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined && v !== null)) as T;
