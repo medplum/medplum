@@ -203,8 +203,7 @@ export class Hl7Message {
     if (!list) {
       return [];
     }
-    for (let i = 0; i < list.length; i++) {
-      const entry = list[i];
+    for (const entry of list) {
       if (typeof entry === 'string') {
         this.parseSegment(this._segments.indexOf(entry));
       }

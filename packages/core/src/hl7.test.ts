@@ -813,7 +813,7 @@ describe('Hl7Message.toString caching', () => {
   });
 
   test('Cache is invalidated after setSegment', () => {
-    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD_MRN';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||OLD_MRN';
     const msg = Hl7Message.parse(text);
 
     // Cached from parse
@@ -833,7 +833,7 @@ describe('Hl7Message.toString caching', () => {
   });
 
   test('Cache is invalidated when segment field is modified via setField', () => {
-    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD_MRN';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||OLD_MRN';
     const msg = Hl7Message.parse(text);
 
     expect(msg.toString()).toBe(text);
@@ -847,7 +847,7 @@ describe('Hl7Message.toString caching', () => {
   });
 
   test('Cache is invalidated when segment component is modified via setComponent', () => {
-    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD^VALUE';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||OLD^VALUE';
     const msg = Hl7Message.parse(text);
 
     expect(msg.toString()).toBe(text);
@@ -861,7 +861,7 @@ describe('Hl7Message.toString caching', () => {
   });
 
   test('Cache is invalidated when field is modified directly via getField().setComponent()', () => {
-    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||OLD^COMP2';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||OLD^COMP2';
     const msg = Hl7Message.parse(text);
 
     expect(msg.toString()).toBe(text);
@@ -924,7 +924,7 @@ describe('Hl7Message.toString caching', () => {
 
 describe('Hl7Segment.toString caching', () => {
   test('Parsed message seeds caches on child segments and fields', () => {
-    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' + 'PID|1||MRN^^^AUTH||DOE^JOHN';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||MRN^^^AUTH||DOE^JOHN';
     const msg = Hl7Message.parse(text);
 
     // Segment toString returns original segment text
@@ -1013,5 +1013,231 @@ describe('Hl7Field.toString caching', () => {
     const updated = field.toString();
     expect(updated).toBe('a&NEW&c^comp2');
     expect(field.toString()).toBe(updated);
+  });
+});
+
+describe('Hl7Message benchmark scenarios', () => {
+  // Mirrors the message shape used in the medplum-hl7-parsing-benchmark repo
+  // so the assertions here cover the same parse/getAllSegments/toString paths
+  // that the benchmark measures.
+  function buildSampleMessage(obxCount: number): string {
+    const segments = [
+      'MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ORU^R01|MSG00001|P|2.5.1',
+      'PID|1||123456^^^MRN||DOE^JOHN^A||19800101|M|||123 MAIN ST^^ANYTOWN^NY^12345||555-555-1234',
+      'PV1|1|I|ICU^101^A|E|||1234^SMITH^JAMES^A^^^MD',
+      'ORC|RE|ORD001|FIL001||CM',
+      'OBR|1|ORD001|FIL001|80053^COMPREHENSIVE METABOLIC PANEL^CPT|||20240218120000',
+    ];
+    for (let i = 1; i <= obxCount; i++) {
+      segments.push(`OBX|${i}|NM|${2000 + i}^Component ${i}^99LAB|1|42.0|mg/dL||N|||F`);
+    }
+    return segments.join('\r');
+  }
+
+  test.each([1, 10, 100])('parse → toString round-trips the input (%i OBX)', (count) => {
+    const text = buildSampleMessage(count);
+    const msg = Hl7Message.parse(text);
+    expect(msg.toString()).toBe(text);
+    // Repeat to make sure cache returns the same value
+    expect(msg.toString()).toBe(text);
+  });
+
+  test.each([1, 10, 100])("getAllSegments('OBX') returns the right OBX segments (%i OBX)", (count) => {
+    const text = buildSampleMessage(count);
+    const msg = Hl7Message.parse(text);
+    const obxs = msg.getAllSegments('OBX');
+    expect(obxs).toHaveLength(count);
+    for (let i = 0; i < count; i++) {
+      expect(obxs[i].name).toBe('OBX');
+      expect(obxs[i].getField(1).toString()).toBe(String(i + 1));
+      expect(obxs[i].getField(3).getComponent(1)).toBe(String(2000 + i + 1));
+      // Each parsed segment must round-trip back to the original line in the input.
+      expect(obxs[i].toString()).toBe(`OBX|${i + 1}|NM|${2001 + i}^Component ${i + 1}^99LAB|1|42.0|mg/dL||N|||F`);
+    }
+    // Touching segments through getAllSegments must not change the message-level toString.
+    expect(msg.toString()).toBe(text);
+  });
+
+  test("parse + getAllSegments('OBX') + toString round-trips the input unchanged", () => {
+    const text = buildSampleMessage(50);
+    const msg = Hl7Message.parse(text);
+
+    // getAllSegments triggers per-segment parsing but does not mutate, so the
+    // message-level cached string must still be the original input.
+    msg.getAllSegments('OBX');
+    expect(msg.toString()).toBe(text);
+    expect(msg.toString()).toBe(text);
+  });
+
+  test('mutating non-OBX fields produces the exact expected toString output', () => {
+    const text = buildSampleMessage(3);
+    const msg = Hl7Message.parse(text);
+
+    // Prime the cache so we know the post-mutation rebuild is doing real work.
+    expect(msg.toString()).toBe(text);
+
+    msg.getSegment('PID')?.setField(5, 'SMITH^JANE^B');
+    msg.getSegment('PV1')?.setField(3, 'ICU^202^B');
+    msg.getSegment('ORC')?.setField(2, 'ORD999');
+
+    const expected = [
+      'MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ORU^R01|MSG00001|P|2.5.1',
+      // PID.5 (the patient name field) is replaced; surrounding empty fields and trailing fields are unchanged
+      'PID|1||123456^^^MRN||SMITH^JANE^B||19800101|M|||123 MAIN ST^^ANYTOWN^NY^12345||555-555-1234',
+      'PV1|1|I|ICU^202^B|E|||1234^SMITH^JAMES^A^^^MD',
+      'ORC|RE|ORD999|FIL001||CM',
+      'OBR|1|ORD001|FIL001|80053^COMPREHENSIVE METABOLIC PANEL^CPT|||20240218120000',
+      'OBX|1|NM|2001^Component 1^99LAB|1|42.0|mg/dL||N|||F',
+      'OBX|2|NM|2002^Component 2^99LAB|1|42.0|mg/dL||N|||F',
+      'OBX|3|NM|2003^Component 3^99LAB|1|42.0|mg/dL||N|||F',
+    ].join('\r');
+
+    expect(msg.toString()).toBe(expected);
+    // And the result is now itself cached
+    expect(msg.toString()).toBe(expected);
+  });
+
+  test('mutating a single component in a field busts the cache up to the message', () => {
+    const text = buildSampleMessage(2);
+    const msg = Hl7Message.parse(text);
+    expect(msg.toString()).toBe(text);
+    // Repeat call before mutation — still identical to input
+    expect(msg.toString()).toBe(text);
+
+    // PID.5 = 'DOE^JOHN^A' — replace the first component (last name)
+    msg.getSegment('PID')?.getField(5).setComponent(1, 'NEWLAST');
+
+    const expected = text.replace('DOE^JOHN^A', 'NEWLAST^JOHN^A');
+    expect(msg.toString()).toBe(expected);
+    // Repeat call after mutation — cached value still matches expected
+    expect(msg.toString()).toBe(expected);
+  });
+
+  test('mutating a subcomponent busts the cache up to the message', () => {
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||a&b&c^comp2';
+    const msg = Hl7Message.parse(text);
+    expect(msg.toString()).toBe(text);
+    expect(msg.toString()).toBe(text);
+
+    msg.getSegment('PID')?.getField(3).setComponent(1, 'NEW', 1);
+    const expected = text.replace('a&b&c', 'a&NEW&c');
+    expect(msg.toString()).toBe(expected);
+    expect(msg.toString()).toBe(expected);
+  });
+
+  test('mutating an OBX segment leaves untouched segments emitted from their original strings', () => {
+    const text = buildSampleMessage(5);
+    const msg = Hl7Message.parse(text);
+    expect(msg.toString()).toBe(text);
+
+    // Touch a single OBX — only this segment's string form should change.
+    const obxs = msg.getAllSegments('OBX');
+    // Even after lazy parsing the OBX segments, the message toString is unchanged.
+    expect(msg.toString()).toBe(text);
+
+    obxs[2].setField(5, '99.9');
+
+    const expected = text.replace('OBX|3|NM|2003^Component 3^99LAB|1|42.0', 'OBX|3|NM|2003^Component 3^99LAB|1|99.9');
+    expect(msg.toString()).toBe(expected);
+    expect(msg.toString()).toBe(expected);
+
+    // The other OBX segments should still round-trip to their original line text.
+    for (let i = 0; i < obxs.length; i++) {
+      if (i === 2) {
+        continue;
+      }
+      expect(obxs[i].toString()).toBe(`OBX|${i + 1}|NM|${2001 + i}^Component ${i + 1}^99LAB|1|42.0|mg/dL||N|||F`);
+    }
+  });
+
+  test('subsequent toString() calls are at least 10x faster than the first after mutation', () => {
+    const text = buildSampleMessage(500);
+
+    // Warm up the parser, JIT, and lazy-parse paths so the measurement isn't
+    // dominated by one-off compilation cost.
+    for (let i = 0; i < 3; i++) {
+      const warm = Hl7Message.parse(text);
+      warm.getSegment('PID')?.setField(5, 'WARMUP');
+      warm.toString();
+      warm.toString();
+    }
+
+    const msg = Hl7Message.parse(text);
+    // toString before mutation must round-trip the original input.
+    expect(msg.toString()).toBe(text);
+
+    msg.getSegment('PID')?.setField(5, 'CHANGED');
+
+    // First toString() after mutation has to rebuild the message string.
+    const firstStart = process.hrtime.bigint();
+    const firstResult = msg.toString();
+    const firstNs = Number(process.hrtime.bigint() - firstStart);
+
+    // The rebuilt string must match the expected mutated form, not just be cached.
+    const expected = text.replace('DOE^JOHN^A', 'CHANGED');
+    expect(firstResult).toBe(expected);
+
+    // Subsequent calls should hit the cached string.
+    const repeats = 1000;
+    const subsequentStart = process.hrtime.bigint();
+    for (let i = 0; i < repeats; i++) {
+      msg.toString();
+    }
+    const subsequentNs = Number(process.hrtime.bigint() - subsequentStart) / repeats;
+
+    // Sanity: the cached value matches the rebuilt one and the expected mutation.
+    expect(msg.toString()).toBe(firstResult);
+    expect(msg.toString()).toBe(expected);
+
+    // Ratio assertion. Subsequent calls should be returning a cached string,
+    // which is dramatically faster than re-joining hundreds of segments.
+    const ratio = firstNs / Math.max(subsequentNs, 1);
+    expect(ratio).toBeGreaterThanOrEqual(10);
+  });
+
+  test('subsequent toString() calls on a manually constructed message are at least 10x faster than the first', () => {
+    // A manually constructed message has no cachedString seeded by parse, so
+    // the first toString() does the join work; subsequent calls hit the cache.
+    const context = new Hl7Context();
+    const segmentLines: string[] = ['MSH|^~\\&|APP|FAC'];
+    const buildSegments = (): Hl7Segment[] => {
+      const result: Hl7Segment[] = [new Hl7Segment(['MSH', '^~\\&', 'APP', 'FAC'], context)];
+      for (let i = 1; i <= 500; i++) {
+        result.push(new Hl7Segment(['OBX', String(i), 'NM', `${2000 + i}^Component ${i}^99LAB`, '1', '42.0'], context));
+      }
+      return result;
+    };
+    for (let i = 1; i <= 500; i++) {
+      segmentLines.push(`OBX|${i}|NM|${2000 + i}^Component ${i}^99LAB|1|42.0`);
+    }
+    const expected = segmentLines.join('\r');
+
+    // Warm up
+    for (let i = 0; i < 3; i++) {
+      new Hl7Message(buildSegments(), context).toString();
+    }
+
+    const msg = new Hl7Message(buildSegments(), context);
+
+    const firstStart = process.hrtime.bigint();
+    const firstResult = msg.toString();
+    const firstNs = Number(process.hrtime.bigint() - firstStart);
+
+    // The first toString must produce the canonical joined form.
+    expect(firstResult).toBe(expected);
+
+    const repeats = 1000;
+    const subsequentStart = process.hrtime.bigint();
+    for (let i = 0; i < repeats; i++) {
+      msg.toString();
+    }
+    const subsequentNs = Number(process.hrtime.bigint() - subsequentStart) / repeats;
+
+    // Cached values match the canonical form on every call.
+    expect(msg.toString()).toBe(firstResult);
+    expect(msg.toString()).toBe(expected);
+
+    const ratio = firstNs / Math.max(subsequentNs, 1);
+    expect(ratio).toBeGreaterThanOrEqual(10);
   });
 });
