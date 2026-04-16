@@ -7,7 +7,8 @@ tags: [auth]
 
 Medplum supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Medplum API directly.
 
-:::caution Self-Hosted Deployments Only
+:::caution
+Self-Hosted Deployments Only
 
 This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need this capability, please contact [Medplum support](/contact).
 
@@ -107,7 +108,8 @@ To find a user's `sub` value, decode the JWT from your IDP or check the IDP's us
 4. Searches for a `ProjectMembership` where `externalId` matches the `sub` value
 5. Returns auth credentials scoped to that membership
 
-:::caution Uniqueness
+:::caution 
+Uniqueness
 
 The `externalId` must be unique across all project memberships. If multiple memberships share the same `externalId`, authentication will fail with a `401` response to prevent ambiguity.
 
