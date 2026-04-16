@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
+import type { MedplumServerConfig } from './config/types';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -15,7 +18,6 @@ import {
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { seedDatabase } from './seed';
-import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { withTestContext } from './test.setup';
 
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
@@ -51,17 +53,22 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
+  let config: MedplumServerConfig;
   const originalConsoleLog = console.log;
   let consoleLogSpy: jest.SpyInstance;
 
   beforeAll(async () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn());
 
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     config.database.runMigrations = true;
     // Since BullMQ is not available in tests, disable automatically running post-deploy migrations
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
+    for (const shardConfig of Object.values(config.shards ?? {})) {
+      shardConfig.database.runMigrations = true;
+      shardConfig.database.disableRunPostDeployMigrations = true;
+    }
 
     console.log(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
@@ -78,11 +85,7 @@ describe('Seed', () => {
 
   test('Seeder completes successfully', () =>
     withTestContext(async () => {
-      const config = await loadTestConfig();
-
-      // Seeder was already run as part of `initAppServices`, but run it again
-      // incase it is ever removed from `initAppServices`
-      await seedDatabase(config);
+      // seedDatabase will have already been executed in beforeAll
 
       // Make sure all database migrations have run
       const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
@@ -97,15 +100,18 @@ describe('Seed', () => {
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
-      // Make sure the first project is a super admin
+      // One Super Admin project per shard on or synced to global
       const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
-      expect(rows.length).toBe(1);
+      const shardCount = config.shards ? Object.keys(config.shards).length : 1;
+      expect(rows.length).toBe(shardCount);
 
-      const project = JSON.parse(rows[0].content) as Project;
-      expect(project.superAdmin).toBe(true);
-      expect(project.strictMode).toBe(true);
+      for (const row of rows) {
+        const project = JSON.parse(row.content) as WithId<Project>;
+        expect(project.superAdmin).toBe(true);
+        expect(project.strictMode).toBe(true);
+      }
 
-      // Second time, seeder should silently ignore
+      // seedDatabase is idempotent
       await seedDatabase(config);
     }));
 });
