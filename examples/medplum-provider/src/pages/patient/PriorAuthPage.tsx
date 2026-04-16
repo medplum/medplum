@@ -111,7 +111,9 @@ export function PriorAuthPage(): JSX.Element {
           resourceType: 'Bundle',
           type: 'collection',
           entry: draftOrders
-            .filter((order): order is WithId<ServiceRequest> => order.id !== undefined && selectedOrders.includes(order.id))
+            .filter(
+              (order): order is WithId<ServiceRequest> => order.id !== undefined && selectedOrders.includes(order.id)
+            )
             .map((order) => ({
               resource: order,
             })),
