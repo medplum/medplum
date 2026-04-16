@@ -142,7 +142,6 @@ import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, lookupTables, SearchStrategies } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
@@ -1909,18 +1908,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
     if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
-        buildRangeColumns(searchParam, impl, columns, resource);
+      buildRangeColumns(searchParam, impl, columns, resource);
 
-        // Handle special case for "MeasureReport-period"
-        // This is a trial for using "tstzrange" columns for date/time ranges.
-        // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
-        if (searchParam.id === 'MeasureReport-period') {
-          columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
-        }
-        return;
+      // Handle special case for "MeasureReport-period"
+      // This is a trial for using "tstzrange" columns for date/time ranges.
+      // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+      if (searchParam.id === 'MeasureReport-period') {
+        columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+      }
+      // TODO: return here once migration is complete
     }
 
-    impl satisfies ColumnSearchParameterImplementation;
+    // TODO: Re-enable after migration
+    // impl satisfies ColumnSearchParameterImplementation;
     const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
     if (impl.array) {
       columns[impl.columnName] = columnValues.length > 0 ? columnValues : undefined;

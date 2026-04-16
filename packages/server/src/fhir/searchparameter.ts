@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchParameterDetails } from '@medplum/core';
-import { capitalize, getSearchParameterDetails } from '@medplum/core';
+import { capitalize, getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
@@ -111,7 +111,7 @@ function buildSearchParameterImplementation(
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  if (searchParam.type === 'date' || searchParam.type === 'number') {
+  if ((searchParam.type === 'date' && impl.type !== SearchParameterType.DATE) || searchParam.type === 'number') {
     const writeable = impl as Writeable<RangeColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'range-column';
 

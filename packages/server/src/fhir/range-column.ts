@@ -55,10 +55,12 @@ function extractDateTimeParameter(
     });
     columns[impl.rangeColumnName] = `{${values.join(',')}}`;
     columns[impl.sortColumnName] = lowest?.toISOString();
+    columns[impl.columnName] = typedValues.map((t) => t.value);
   } else {
     const range = buildDateTimeRange(typedValues[0]);
     columns[impl.rangeColumnName] = formatRange(range);
     columns[impl.sortColumnName] = range.left?.toISOString() ?? range.right?.toISOString();
+    columns[impl.columnName] = typedValues[0].value;
   }
 }
 

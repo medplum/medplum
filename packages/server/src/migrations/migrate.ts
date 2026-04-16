@@ -364,11 +364,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-const dateRangeTypes: readonly SearchParameterType[] = [
-  SearchParameterType.DATE,
-  SearchParameterType.DATETIME,
-  SearchParameterType.PERIOD,
-];
+const dateRangeTypes: readonly SearchParameterType[] = [SearchParameterType.DATETIME, SearchParameterType.PERIOD];
 const numericRangeTypes: readonly SearchParameterType[] = [SearchParameterType.NUMBER, SearchParameterType.QUANTITY];
 function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
