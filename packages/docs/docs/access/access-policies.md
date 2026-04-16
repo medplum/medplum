@@ -560,6 +560,36 @@ The [patient access policy](#patient-access) above can be combined with [policy 
 }
 ```
 
+### WebSocket Subscriptions (`useSubscription` Hook)
+
+To use the [`useSubscription`](/docs/react/use-subscription) hook, users need two things in their access policy:
+
+1. **Permission to create `Subscription` resources** — The hook creates an in-memory `Subscription` on behalf of the user. Use a criteria scoped to websocket subscriptions owned by the current user so that users can only manage their own subscriptions:
+
+   ```
+   Subscription?type=websocket&author=%user
+   ```
+
+2. **Read access to each subscribed resource type** — Users must also have `read` access for every resource type they intend to subscribe to. For example, if your app calls `useSubscription('Communication?...')`, the policy must grant at least `read` on `Communication`.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "WebSocket Subscription Policy",
+  "resource": [
+    {
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%user"
+    },
+    {
+      "resourceType": "Communication"
+    }
+  ]
+}
+```
+
+Add one entry per resource type your application subscribes to.
+
 ### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
 
 In Medplum, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Medplum server consolidates these resources into a single enforceable AccessPolicy.  
