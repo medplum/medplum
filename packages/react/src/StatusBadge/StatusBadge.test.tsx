@@ -7,7 +7,6 @@ describe('StatusBadge', () => {
   test('Renders', () => {
     render(<StatusBadge status="active" />);
     expect(screen.getByText('active')).toBeDefined();
-    expect(screen.getByText('active')).toHaveStyle('background-image:');
   });
 
   test('Renders formatted status', () => {

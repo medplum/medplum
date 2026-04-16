@@ -19,7 +19,8 @@ import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
-import { hasDoseSpotIdentifier } from './components/utils';
+import { hasScriptSureIdentifier } from './components/utils';
+import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -31,6 +32,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { CoveragePage } from './pages/patient/CoveragePage';
@@ -43,6 +45,7 @@ import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { PriorAuthPage } from './pages/patient/PriorAuthPage';
+import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
@@ -63,6 +66,9 @@ export function App(): JSX.Element | null {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
+  const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
+  const membership = medplum.getProjectMembership();
+  const hasScriptSure = hasScriptSureIdentifier(membership);
 
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
@@ -72,9 +78,6 @@ export function App(): JSX.Element | null {
   if (medplum.isLoading()) {
     return null;
   }
-
-  const membership = medplum.getProjectMembership();
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
 
   return (
     <AppShell
@@ -145,6 +148,15 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
+                  ...(hasScriptSure
+                    ? [
+                        {
+                          icon: <IconPill />,
+                          label: 'ScriptSure',
+                          href: '/scriptsure',
+                        },
+                      ]
+                    : []),
                 ],
               },
             ]
@@ -187,6 +199,7 @@ export function App(): JSX.Element | null {
                 <Route path="Task" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
+                {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="priorauth" element={<PriorAuthPage />} />
                 <Route path="export" element={<ExportTab />} />
@@ -194,6 +207,7 @@ export function App(): JSX.Element | null {
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path="Coverage" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId/CoverageEligibilityRequest/:requestId" element={<CoveragePage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
@@ -217,6 +231,7 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
+              {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

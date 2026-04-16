@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { createReference } from '@medplum/core';
 import type { Patient, Schedule } from '@medplum/fhirtypes';
-import { HomerSimpson, MockClient } from '@medplum/mock';
+import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -50,7 +51,11 @@ describe('CreateVisit', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} />
+            <CreateVisit
+              appointmentSlot={appointmentSlot}
+              schedule={schedule}
+              practitioner={createReference(DrAliceSmith)}
+            />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -176,7 +181,7 @@ describe('CreateVisit', () => {
             <MedplumProvider medplum={medplum}>
               <MantineProvider>
                 <Notifications />
-                <CreateVisit appointmentSlot={newSlotInfo} />
+                <CreateVisit appointmentSlot={newSlotInfo} practitioner={createReference(DrAliceSmith)} />
               </MantineProvider>
             </MedplumProvider>
           </MemoryRouter>

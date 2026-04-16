@@ -33,7 +33,7 @@ describe('Scheduler', () => {
   beforeAll(async () => {
     // Use a consistent base date for slot generation
     jest.useFakeTimers();
-    jest.setSystemTime(new Date('2023-11-03T00:00:00Z'));
+    jest.setSystemTime(new Date('2023-11-03T00:00:00Z').getTime());
     const slotDate = new Date();
 
     // Create mock slots for Dr. Bob's schedule
@@ -59,7 +59,7 @@ describe('Scheduler', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date('2023-11-03T00:00:00Z'));
+    jest.setSystemTime(new Date('2023-11-03T00:00:00Z').getTime());
   });
 
   afterEach(() => {

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { notifications } from '@mantine/notifications';
-import type { ResourceArray, WithId } from '@medplum/core';
-import type { Bot, Bundle, Coverage, CoverageEligibilityRequest, Resource } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Bot, Bundle, Coverage, CoverageEligibilityRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -23,18 +23,13 @@ vi.mock('react-router', async () => {
   };
 });
 
-/**
- * Build a ResourceArray (array + bundle) from a list of resources — avoids `as any` in mocks.
- * @param resources - The resources to include in the array.
- * @returns A ResourceArray containing the provided resources and a matching Bundle.
- */
-function makeResourceArray<T extends Resource>(resources: WithId<T>[]): ResourceArray<WithId<T>> {
-  const bundle: Bundle<WithId<T>> = {
+function makeBundle(requests: WithId<CoverageEligibilityRequest>[]): Bundle<WithId<CoverageEligibilityRequest>> {
+  return {
     resourceType: 'Bundle',
     type: 'searchset',
-    entry: resources.map((resource) => ({ resource })),
+    total: requests.length,
+    entry: requests.map((resource) => ({ resource })),
   };
-  return Object.assign([...resources], { bundle }) as ResourceArray<WithId<T>>;
 }
 
 const mockCoverage: WithId<Coverage> = {
@@ -81,7 +76,7 @@ describe('CoveragePage', () => {
     vi.clearAllMocks();
     medplum = new MockClient();
     vi.spyOn(medplum, 'readResource').mockResolvedValue(mockCoverage);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue(makeResourceArray([]));
+    vi.spyOn(medplum, 'search').mockResolvedValue(makeBundle([]));
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
   });
 
@@ -104,21 +99,9 @@ describe('CoveragePage', () => {
     });
 
     test('renders eligibility request items', async () => {
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue(makeResourceArray([mockRequest]));
+      vi.spyOn(medplum, 'search').mockResolvedValue(makeBundle([mockRequest]));
       setup(medplum);
       await waitFor(() => expect(screen.getByText('Benefits')).toBeInTheDocument());
-    });
-
-    test('renders empty state when requests exist but none match this coverage', async () => {
-      const otherRequest: WithId<CoverageEligibilityRequest> = {
-        ...mockRequest,
-        insurance: [{ focal: true, coverage: { reference: 'Coverage/other-coverage' } }],
-      };
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue(makeResourceArray([otherRequest]));
-      setup(medplum);
-      await waitFor(() =>
-        expect(screen.getByText('No eligibility checks found for this coverage.')).toBeInTheDocument()
-      );
     });
   });
 

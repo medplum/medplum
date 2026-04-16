@@ -33,8 +33,9 @@ import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
@@ -47,16 +48,26 @@ import {
   getUserActiveWebSocketSubscriptionCount,
   setActiveSubscription,
 } from '../pubsub';
+import * as redisModule from '../redis';
 import { getPubSubRedisSubscriber } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
+import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
-import { addSubscriptionJobs, execSubscriptionJob, initSubscriptionWorker } from './subscription';
+import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import {
+  clearSubscriptionFailures,
+  getSubscriptionAutoDisableTriggers,
+  recordSubscriptionFailure,
+} from './subscription-failure-tracker';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
 jest.mock('node-fetch');
+jest.mock('../constants', () => ({
+  ...jest.requireActual('../constants'),
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
+}));
 const mockBullmq = jest.mocked(bullmqModule);
 
 describe('Subscription Worker', () => {
@@ -1929,7 +1940,7 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
-      await subscriber.subscribe('medplum:subscriptions:r4:websockets');
+      await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
     });
 
     afterAll(async () => {
@@ -3020,6 +3031,496 @@ describe('Subscription Worker', () => {
         // And the entry should be cleaned up from the hash
         const activeSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
         expect(activeSubs[`Subscription/${expiredSub.id}`]).toBeUndefined();
+      }));
+  });
+
+  describe('Subscription auto-disable', () => {
+    let savedConfig: MedplumServerConfig['subscriptionAutoDisable'];
+
+    beforeEach(() => {
+      savedConfig = getConfig().subscriptionAutoDisable;
+    });
+
+    afterEach(() => {
+      getConfig().subscriptionAutoDisable = savedConfig;
+    });
+
+    async function setProjectSubscriptionAutoDisableOverride(valueString: string): Promise<WithId<Project>> {
+      return setProjectSubscriptionAutoDisableSystemSetting({ name: 'subscriptionAutoDisable', valueString });
+    }
+
+    async function setProjectSubscriptionAutoDisableSystemSetting(
+      setting: NonNullable<Project['systemSetting']>[number]
+    ): Promise<WithId<Project>> {
+      const project = repo.currentProject();
+      expect(project).toBeDefined();
+      if (!project) {
+        throw new Error('Project not found');
+      }
+
+      const systemSetting = [...(project.systemSetting ?? [])];
+      const existingIndex = systemSetting.findIndex((s) => s.name === setting.name);
+      if (existingIndex >= 0) {
+        systemSetting[existingIndex] = setting;
+      } else {
+        systemSetting.push(setting);
+      }
+
+      return systemRepo.updateResource<Project>({
+        ...project,
+        systemSetting,
+      });
+    }
+
+    test('Project systemSetting helper returns server config without project context', async () => {
+      getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+      await expect(getSubscriptionAutoDisableTriggers(systemRepo)).resolves.toStrictEqual(
+        getConfig().subscriptionAutoDisable
+      );
+    });
+
+    test('Project systemSetting helper returns server config when valueString is missing', async () => {
+      getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+      const projectId = randomUUID();
+      const mockedSystemRepo = {
+        readResource: jest.fn().mockResolvedValue({
+          resourceType: 'Project',
+          id: projectId,
+          systemSetting: [{ name: 'subscriptionAutoDisable' }],
+        }),
+      } as unknown as SystemRepository;
+
+      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      try {
+        await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
+          getConfig().subscriptionAutoDisable
+        );
+        expect(warnSpy).toHaveBeenCalledWith('Project subscription auto-disable override is missing valueString', {
+          project: projectId,
+        });
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    test('Project systemSetting helper returns server config when parsed payload is invalid', async () => {
+      getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+      const projectId = randomUUID();
+      const mockedSystemRepo = {
+        readResource: jest.fn().mockResolvedValue({
+          resourceType: 'Project',
+          id: projectId,
+          systemSetting: [{ name: 'subscriptionAutoDisable', valueString: '[{"maxConsecutiveFailures":"bad"}]' }],
+        }),
+      } as unknown as SystemRepository;
+
+      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      try {
+        await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
+          getConfig().subscriptionAutoDisable
+        );
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Project subscription auto-disable override is invalid; falling back to server config',
+          expect.objectContaining({ project: projectId, error: expect.any(Error) })
+        );
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    test('Project systemSetting helper returns server config when project lookup fails', async () => {
+      getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+      const projectId = randomUUID();
+      const mockedSystemRepo = {
+        readResource: jest.fn().mockRejectedValue(new Error('Project lookup failed')),
+      } as unknown as SystemRepository;
+
+      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      try {
+        await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
+          getConfig().subscriptionAutoDisable
+        );
+        expect(mockedSystemRepo.readResource).toHaveBeenCalledWith('Project', projectId);
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Failed to load project subscription auto-disable override; falling back to server config',
+          expect.objectContaining({ project: projectId, error: expect.any(Error) })
+        );
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    test('Subscription failure tracker ignores Redis zcount errors', async () => {
+      const pipeline = {
+        zremrangebyscore: jest.fn().mockReturnThis(),
+        zadd: jest.fn().mockReturnThis(),
+        zcount: jest.fn().mockReturnThis(),
+        expire: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          [null, 0],
+          [null, 1],
+          [new Error('zcount failed'), null],
+        ]),
+      };
+
+      const redisSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+        pipeline: jest.fn().mockReturnValue(pipeline),
+      } as any);
+
+      try {
+        await expect(
+          recordSubscriptionFailure('test-subscription', [{ maxConsecutiveFailures: 1, timeWindowSeconds: 600 }])
+        ).resolves.toBeUndefined();
+      } finally {
+        redisSpy.mockRestore();
+      }
+    });
+
+    test('Auto-disables subscription after threshold failures', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+
+        const url = 'https://example.com/auto-disable-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 3; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `AutoDisable${i}` }],
+          });
+          expect(patient).toBeDefined();
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        // Verify subscription was disabled
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toContain('Automatically disabled');
+
+        // Verify an AuditEvent was created
+        const auditEvents = await systemRepo.searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            { code: 'entity', operator: Operator.EQUALS, value: `Subscription/${subscription.id}` },
+            { code: 'outcome', operator: Operator.EQUALS, value: '8' }, // SeriousFailure
+          ],
+        });
+        expect(auditEvents.length).toBeGreaterThanOrEqual(1);
+      }));
+
+    test('Auto-disables subscription that already has an error value', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+
+        const url = 'https://example.com/existing-error-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          error: 'Some pre-existing error',
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 3; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `ExistingError${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        // Verify subscription was disabled and error was overwritten
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toContain('Automatically disabled');
+      }));
+
+    test('Failure counter resets on success', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+
+        const url = 'https://example.com/reset-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        // Fail twice
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `Reset${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        // Succeed once - should reset counter
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Test'], family: 'ResetSuccess' }],
+        });
+        await findAndExecSubscriptionJob(patient, 'create');
+
+        // Fail twice more (should not trigger auto-disable since counter was reset)
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `ResetAgain${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        // Subscription should still be active
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('active');
+      }));
+
+    test('Project systemSetting overrides server auto-disable config', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+        await setProjectSubscriptionAutoDisableOverride(
+          JSON.stringify([{ maxConsecutiveFailures: 2, timeWindowSeconds: 600 }])
+        );
+
+        const url = 'https://example.com/project-override-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `ProjectOverride${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toContain('after 2 consecutive failed events');
+      }));
+
+    test('Project systemSetting can disable server auto-disable config', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 2, timeWindowSeconds: 600 }];
+        await setProjectSubscriptionAutoDisableOverride(JSON.stringify([]));
+
+        const url = 'https://example.com/project-disable-override-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `ProjectDisableOverride${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('active');
+      }));
+
+    test('Invalid project systemSetting falls back to server auto-disable config', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 2, timeWindowSeconds: 600 }];
+        await setProjectSubscriptionAutoDisableOverride('not-json');
+
+        const url = 'https://example.com/project-invalid-override-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `ProjectInvalidOverride${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toContain('after 2 consecutive failed events');
+      }));
+
+    test('Patch test op prevents auto-disable when subscription is concurrently disabled', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+
+        const url = 'https://example.com/patch-test-op';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        let callCount = 0;
+        (fetch as unknown as jest.Mock).mockImplementation(async () => {
+          callCount++;
+          if (callCount === 3) {
+            // Simulate a concurrent process disabling the subscription after execSubscriptionJob
+            // has already loaded it (status was 'active') but before catchJobError runs the patch.
+            const current = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+            await systemRepo.updateResource<Subscription>({
+              ...current,
+              status: 'off',
+              error: 'Disabled by admin',
+            });
+          }
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 2; i++) {
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `PatchTest${i}` }],
+          });
+          await findAndExecSubscriptionJob(patient, 'create');
+        }
+
+        // The subscription was disabled during the second resource's first attempt,
+        // so subsequent resource changes should not enqueue a subscription job at all.
+        const thirdPatient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Test'], family: 'PatchTest2' }],
+        });
+        await expect(findAndExecSubscriptionJob(thirdPatient, 'create')).rejects.toThrow('Job not found');
+        expect(callCount).toBe(3);
+
+        // Verify the admin's error message was preserved, not overwritten by auto-disable
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toBe('Disabled by admin');
       }));
   });
 });

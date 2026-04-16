@@ -106,14 +106,19 @@ The "Get Care" page is configured to search for availability with service-type "
         },
         {
           "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["mon", "tue", "wed", "thu"],
-              "timeOfDay": ["09:00:00"],
-              "duration": 8,
-              "durationUnit": "h"
+          "extension": [
+            {
+              "url": "availableTime",
+              "extension": [
+                { "url": "daysOfWeek", "valueCode": "mon" },
+                { "url": "daysOfWeek", "valueCode": "tue" },
+                { "url": "daysOfWeek", "valueCode": "wed" },
+                { "url": "daysOfWeek", "valueCode": "thu" },
+                { "url": "availableStartTime", "valueTime": "09:00:00" },
+                { "url": "availableEndTime", "valueTime": "17:00:00" },
+              ]
             }
-          }
+          ]
         }
       ]
     }

@@ -7,6 +7,7 @@ import { Form, ResourceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
+import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
   slot: Slot;
@@ -23,11 +24,16 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
   const bookSlot = useCallback(
     async (patient: Patient) => {
       setLoading(true);
+
+      // Remove any transient identifiers we added for use in the UI before submitting
+      const bookSlot = { ...slot };
+      SchedulingTransientIdentifier.remove(bookSlot);
+
       try {
         const data = await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'slot', resource: slot },
+            { name: 'slot', resource: bookSlot },
             { name: 'patient-reference', valueReference: createReference(patient) },
           ],
         });
