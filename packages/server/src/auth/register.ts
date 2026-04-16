@@ -6,7 +6,9 @@ import type { ClientApplication, Login, Project, ProjectMembership, User } from 
 import { randomUUID } from 'node:crypto';
 import { createProject } from '../fhir/operations/projectinit';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
+import { drainShardSyncOutboxForTests } from '../test.setup';
 import { bcryptHashPassword } from './utils';
 
 /*
@@ -81,6 +83,10 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     createReference(profile as ProfileResource),
     { accessLifetime: client.accessTokenLifetime, refreshLifetime: client.refreshTokenLifetime }
   );
+
+  if (shardId !== GLOBAL_SHARD_ID) {
+    await drainShardSyncOutboxForTests(shardId);
+  }
 
   return {
     accessToken: token.accessToken,

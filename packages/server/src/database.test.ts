@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, sleep } from '@medplum/core';
+import assert from 'node:assert';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
 import type {
@@ -25,7 +26,7 @@ import {
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
-import { TEST_SHARD_ID } from './fhir/sharding';
+import { GLOBAL_SHARD_ID, TEST_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } from './migrations/migration-versions';
@@ -161,9 +162,7 @@ describe('Database config', () => {
 
   test('SSL config', async () => {
     const config = await loadConfig('file:test.config.json');
-    expect(config).toBeDefined();
-    expect(config.baseUrl).toBeDefined();
-    expect(config.database).toBeDefined();
+    assert(config.database);
 
     const configCopy = deepClone(config);
     const databaseConfig = configCopy.database;
@@ -186,15 +185,13 @@ describe('Database config', () => {
         user: databaseConfig.username,
         ssl: sslConfig,
       }),
-      shardId
+      config.defaultShardId
     );
   });
 
   test('RDS proxy', async () => {
     const config = await loadConfig('file:test.config.json');
-    expect(config).toBeDefined();
-    expect(config.baseUrl).toBeDefined();
-    expect(config.database).toBeDefined();
+    assert(config.database);
 
     const configCopy = deepClone(config);
     configCopy.databaseProxyEndpoint = 'test';
@@ -212,7 +209,7 @@ describe('Database config', () => {
         user: databaseConfig.username,
         ssl: { require: true },
       }),
-      shardId
+      config.defaultShardId
     );
   });
 
@@ -250,7 +247,7 @@ describe('Database config', () => {
       expect.objectContaining({
         options: `-c statement_timeout=5000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
       }),
-      shardId
+      GLOBAL_SHARD_ID // config.database maps to the global shard
     );
   });
 
@@ -263,7 +260,7 @@ describe('Database config', () => {
       expect.objectContaining({
         options: undefined,
       }),
-      shardId
+      GLOBAL_SHARD_ID // config.database maps to the global shard
     );
   });
 

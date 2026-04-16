@@ -84,6 +84,7 @@ import type {
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  User,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
@@ -105,7 +106,12 @@ import {
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
-import { getProjectAndProjectShardId, GlobalResourceTypes, SyncedResourceTypes } from '../sharding/sharding-utils';
+import {
+  getActiveShardId,
+  getProjectAndProjectShardId,
+  GlobalResourceTypes,
+  SyncedResourceTypes,
+} from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -464,6 +470,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+    // SHARDING - similar routing guards likely warranted for other SyncedResourceTypes
+    // (ProjectMembership, SmartAppLaunch, UserSecurityRequest, Binary, ClientApplication)
+    if (resource.resourceType === 'Project' && !getActiveShardId(resource)) {
+      throw new Error('Project must be created via createProjectResource');
+    }
+    if (resource.resourceType === 'User') {
+      const isProjectScoped = !!(resource as User).project;
+      if (isProjectScoped && this.shardId === GLOBAL_SHARD_ID) {
+        throw new Error('Project-scoped User must be created on a project shard, not global');
+      }
+      if (!isProjectScoped && this.shardId !== GLOBAL_SHARD_ID) {
+        throw new Error('Server-scoped User must be created on global shard, not a project shard');
+      }
+    }
+
     await this.rateLimiter()?.recordWrite();
     await this.resourceCap()?.created();
 

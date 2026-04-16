@@ -13,9 +13,11 @@ import type {
   ProjectMembership,
   Resource,
 } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import { generateKeyPairSync } from 'crypto';
 import type { Express } from 'express';
 import type Redis from 'ioredis';
+import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { setDefaultResultOrder } from 'node:dns';
@@ -28,12 +30,16 @@ import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
+import { createProjectResource } from './fhir/operations/projectinit';
 import type { RepositoryContext } from './fhir/repo';
-import { getProjectSystemRepo, getShardSystemRepo, Repository } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './fhir/repo';
+import { GLOBAL_SHARD_ID, TEST_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
+import { getActiveShardId } from './sharding/sharding-utils';
+import type { ShardSyncJobData } from './workers/shard-sync';
+import { execShardSyncJob } from './workers/shard-sync';
 
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
@@ -67,10 +73,10 @@ export type TestProjectResult<T extends TestProjectOptions> = {
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
-  const shardId = options?.shardId ?? PLACEHOLDER_SHARD_ID;
+  const shardId = options?.shardId ?? TEST_SHARD_ID;
   const systemRepo = getShardSystemRepo(shardId);
 
-  const project = await systemRepo.createResource<Project>({
+  const { project } = await createProjectResource(systemRepo, {
     resourceType: 'Project',
     name: 'Test Project',
     owner: {
@@ -133,7 +139,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
     if (options?.withAccessToken) {
       const scope = 'openid';
 
-      login = await systemRepo.createResource<Login>({
+      login = await getGlobalSystemRepo().createResource<Login>({
         resourceType: 'Login',
         authMethod: 'client',
         user: createReference(client),
@@ -174,6 +180,10 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
     }
   }
 
+  if (shardId !== GLOBAL_SHARD_ID) {
+    await drainShardSyncOutboxForTests(shardId);
+  }
+
   return {
     project,
     shardId,
@@ -184,6 +194,25 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
     accessToken,
     repo,
   } as TestProjectResult<T>;
+}
+
+/**
+ * Synchronously drains the shard sync outbox for the given shard.
+ *
+ * Tests use this to flush pending shard→global replication without relying on BullMQ,
+ * which is mocked in the test environment. `createTestProject` calls this automatically
+ * so its effects are fully settled on return; tests that create synced resources
+ * after `createTestProject` must call this explicitly before asserting on global state.
+ *
+ * Note: the outbox table is shared across Jest workers using the same shard database,
+ * so this helper may process rows enqueued by other concurrent tests. Assertions
+ * should target specific resources rather than outbox emptiness.
+ *
+ * @param shardId - The shard whose outbox should be drained.
+ */
+export async function drainShardSyncOutboxForTests(shardId: string): Promise<void> {
+  const job = { id: `drain-${shardId}`, data: { shardId } } as unknown as Job<ShardSyncJobData>;
+  await execShardSyncJob(job);
 }
 
 export async function createTestClient(options?: TestProjectOptions): Promise<WithId<ClientApplication>> {
@@ -222,6 +251,12 @@ export async function addTestUser(
   });
 
   const { user, profile } = inviteResponse;
+
+  const shardId = getActiveShardId(project);
+  assert(shardId);
+  if (shardId !== GLOBAL_SHARD_ID) {
+    await drainShardSyncOutboxForTests(shardId);
+  }
 
   const login = await tryLogin({
     authMethod: 'password',

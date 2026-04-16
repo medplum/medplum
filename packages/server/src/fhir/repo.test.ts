@@ -56,6 +56,7 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
+import { createProjectResource } from './operations/projectinit';
 import type { ColumnValue, SystemRepository } from './repo';
 import {
   compareColumnValues,
@@ -65,15 +66,14 @@ import {
   Repository,
   setTypedPropertyValue,
 } from './repo';
-import { TEST_SHARD_ID, TODO_SHARD_ID } from './sharding';
 import { PostgresError, SelectQuery } from './sql';
 
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
-  const testProjectShardId: string = TODO_SHARD_ID;
   const globalSystemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;
+  let testProjectShardId: string;
   let testProjectRepo: Repository;
   let systemRepo: SystemRepository;
 
@@ -85,10 +85,12 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    testProject = await globalSystemRepo.createResource({
+    const result = await createProjectResource(globalSystemRepo, {
       resourceType: 'Project',
-      id: randomUUID(),
     });
+    testProject = result.project;
+    testProjectShardId = result.shardId;
+
     systemRepo = await getProjectSystemRepo(testProject);
     testProjectRepo = new Repository({
       shardId: testProjectShardId,
@@ -348,7 +350,8 @@ describe('FHIR Repo', () => {
 
       const patientWithoutProject = { ...patient1 };
       delete (patientWithoutProject.meta as any).project;
-      const patient2 = await systemRepo.updateResource<Patient>(patientWithoutProject);
+      const projectSystemRepo = repo.getSystemRepo();
+      const patient2 = await projectSystemRepo.updateResource<Patient>(patientWithoutProject);
       expect(patient2.meta?.project).toBeDefined();
       expect(patient2.meta?.project).toStrictEqual(project.id);
     }));
@@ -438,7 +441,7 @@ describe('FHIR Repo', () => {
 
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
-      const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
+      const { client, repo, shardId } = await createTestProject({ withClient: true, withRepo: true });
       const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       try {
         const patient = await repo.createResource<Patient>({
@@ -450,6 +453,7 @@ describe('FHIR Repo', () => {
         expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
 
         expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+          shardId,
           expect.objectContaining({
             resourceType: 'Patient',
             id: patient.id,
@@ -1017,7 +1021,7 @@ describe('FHIR Repo', () => {
 
       // Create a login using super admin with a date in the distant past
       // This takes advantage of the fact that super admins can set meta.lastUpdated
-      const login = await systemRepo.createResource<Login>({
+      const login = await globalSystemRepo.createResource<Login>({
         resourceType: 'Login',
         meta: {
           lastUpdated: oldDate,
@@ -1678,7 +1682,7 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toStrictEqual('image/jpeg');
   });
-  async function getProjectIdColumn(id: string): Promise<string | null> {
+  async function getProjectIdColumn(systemRepo: SystemRepository, id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
     const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
     return (await projectIdQuery.execute(client))[0].projectId;
@@ -1688,15 +1692,19 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { project, repo } = await createTestProject({ withRepo: true });
 
+      const projectSystemRepo = repo.getSystemRepo();
+      // const projectSystemRepo = await getProjectSystemRepo(project);
+
       // Create a user in the project
       const user1 = await repo.createResource<User>({
         resourceType: 'User',
+        project: createReference(project),
         email: randomUUID() + '@example.com',
         firstName: randomUUID(),
         lastName: randomUUID(),
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
-      expect(await getProjectIdColumn(user1.id)).toStrictEqual(project.id);
+      expect(await getProjectIdColumn(projectSystemRepo, user1.id)).toStrictEqual(project.id);
 
       // Try to change the project as the normal user
       // Should silently fail, and preserve the meta.project
@@ -1705,16 +1713,16 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user2.meta?.project).toStrictEqual(project.id);
-      expect(await getProjectIdColumn(user2.id)).toStrictEqual(project.id);
+      expect(await getProjectIdColumn(projectSystemRepo, user2.id)).toStrictEqual(project.id);
 
       // Now try to change the project as the super admin
       // Should succeed
-      const user3 = await systemRepo.updateResource<User>({
+      const user3 = await projectSystemRepo.updateResource<User>({
         ...user2,
         meta: { project: undefined },
       });
       expect(user3.meta?.project).toBeUndefined();
-      expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
+      expect(await getProjectIdColumn(projectSystemRepo, user3.id)).toStrictEqual(systemResourceProjectId);
     }));
 
   test('Handles caching of profile from linked project', async () =>
@@ -1786,7 +1794,7 @@ describe('FHIR Repo', () => {
 
   test('Retry after create should not execute post-commit hooks from rollback', () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
+      const { repo, shardId } = await createTestProject({ withRepo: true });
       const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs');
       const patients: WithId<Patient>[] = [];
       let shouldError = true;
@@ -1807,6 +1815,7 @@ describe('FHIR Repo', () => {
       expect(createdPatient).toEqual(patients[1]);
       expect(addBackgroundJobsSpy).toHaveBeenCalledTimes(1);
       expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+        shardId,
         {
           resourceType: 'Patient',
           id: createdPatient.id,
@@ -2063,7 +2072,9 @@ describe('FHIR Repo', () => {
       const nonconformantUuid = '03a8d57b-91c2-e45f-c312-a7fe09c2d8e4';
 
       // cleanup if it exists so the test can run again successfully
-      await systemRepo.expungeResource('Patient', nonconformantUuid);
+      const projectSystemRepo = repo.getSystemRepo();
+      // const projectSystemRepo = await getProjectSystemRepo(project);
+      await projectSystemRepo.expungeResource('Patient', nonconformantUuid);
 
       const patient = await repo.createResource<Patient>(
         {
@@ -2203,7 +2214,7 @@ describe('FHIR Repo', () => {
     let project: WithId<Project>;
     let projectRepo: Repository;
     beforeAll(async () => {
-      ({ repo: projectRepo, project } = await createTestProject({ withRepo: true, shardId: TEST_SHARD_ID }));
+      ({ repo: projectRepo, project } = await createTestProject({ withRepo: true }));
     });
 
     test('transaction with multiple project resource types', async () => {

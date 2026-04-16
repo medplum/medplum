@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -180,7 +180,7 @@ describe('Google Auth', () => {
 
   test('Existing user for new project', async () => {
     const email = 'new-google-' + randomUUID() + '@example.com';
-    await systemRepo.createResource<User>({
+    await getGlobalSystemRepo().createResource<User>({
       resourceType: 'User',
       firstName: 'Google',
       lastName: 'Google',

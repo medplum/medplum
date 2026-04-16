@@ -11,6 +11,7 @@ import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
+import { createProjectResource } from './fhir/operations/projectinit';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
 import { TEST_SHARD_ID } from './fhir/sharding';
@@ -307,7 +308,7 @@ describe('Database migrations', () => {
 
     test('Existing data migration job in a project is ignored', () =>
       withTestContext(async () => {
-        const project = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+        const { project } = await createProjectResource(systemRepo, { resourceType: 'Project' });
 
         // Not using system repo to create the job so that AsyncJob is in a project
         const projectAsyncJob = await systemRepo.createResource<AsyncJob>({
@@ -582,7 +583,7 @@ describe('Database migrations', () => {
         profile: createReference(practitioner1),
       });
 
-      const login1 = await systemRepo.createResource<Login>({
+      const login1 = await getGlobalSystemRepo().createResource<Login>({
         resourceType: 'Login',
         authMethod: 'client',
         user: createReference(user1),

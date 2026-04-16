@@ -7,6 +7,7 @@ import type { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { createProjectResource } from '../fhir/operations/projectinit';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -178,7 +179,7 @@ describe('Cron Worker', () => {
       queue.upsertJobScheduler.mockClear();
 
       // Create one simple project with no advanced features enabled
-      const testProject = await systemRepo.createResource<Project>({
+      const { project: testProject } = await createProjectResource(systemRepo, {
         resourceType: 'Project',
         name: 'Test Project',
         owner: {

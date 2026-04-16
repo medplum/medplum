@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -420,7 +421,7 @@ describe('OAuth utils', () => {
       const { project, repo } = await createTestProject({ withRepo: true });
       const systemRepo = repo.getSystemRepo();
 
-      const user = await systemRepo.createResource<User>({
+      const user = await getGlobalSystemRepo().createResource<User>({
         resourceType: 'User',
         firstName: 'Test',
         lastName: 'User',
@@ -469,7 +470,7 @@ describe('OAuth utils', () => {
       const { project, repo } = await createTestProject({ withRepo: true });
       const systemRepo = repo.getSystemRepo();
 
-      const user = await systemRepo.createResource<User>({
+      const user = await getGlobalSystemRepo().createResource<User>({
         resourceType: 'User',
         firstName: 'Test',
         lastName: 'User',
@@ -545,7 +546,7 @@ describe('OAuth utils', () => {
       await withTestContext(async () => {
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
-        const user = await repo.createResource<User>({
+        const user = await getGlobalSystemRepo().createResource<User>({
           resourceType: 'User',
           email: userEmail,
           firstName: 'Test',
@@ -566,7 +567,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource({
+        const login = await getGlobalSystemRepo().createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -595,7 +596,7 @@ describe('OAuth utils', () => {
       await withTestContext(async () => {
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
-        const user = await systemRepo.createResource<User>({
+        const user = await getGlobalSystemRepo().createResource<User>({
           resourceType: 'User',
           email: userEmail,
           firstName: 'Test',
@@ -616,7 +617,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login without email scope
-        const login = await systemRepo.createResource({
+        const login = await getGlobalSystemRepo().createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -664,7 +665,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource({
+        const login = await getGlobalSystemRepo().createResource({
           resourceType: 'Login',
           authMethod: 'client',
           user: createReference(client),
@@ -693,7 +694,7 @@ describe('OAuth utils', () => {
     test('Access token does not include email when user has no email address', async () => {
       await withTestContext(async () => {
         // Create a User without email
-        const user = await systemRepo.createResource<User>({
+        const user = await getGlobalSystemRepo().createResource<User>({
           resourceType: 'User',
           firstName: 'Test',
           lastName: 'User',
@@ -714,7 +715,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource({
+        const login = await getGlobalSystemRepo().createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),

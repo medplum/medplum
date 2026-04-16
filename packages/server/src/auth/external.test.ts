@@ -12,7 +12,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -59,14 +59,14 @@ describe('External', () => {
       systemRepo = await getProjectSystemRepo(project);
 
       // Create a domain configuration with external identity provider
-      await systemRepo.createResource<DomainConfiguration>({
+      await getGlobalSystemRepo().createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain,
         identityProvider,
       });
 
       // Create a domain configuration without an external identity provider
-      await systemRepo.createResource<DomainConfiguration>({
+      await getGlobalSystemRepo().createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain: domain2,
       });
@@ -604,7 +604,7 @@ describe('External', () => {
 
     await withTestContext(async () => {
       // Create a new project and user for this test
-      const { project: testProject } = await registerNew({
+      await registerNew({
         firstName: 'External',
         lastName: 'Text',
         projectName: 'External Test Project - returnTo',
@@ -614,8 +614,7 @@ describe('External', () => {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
 
-      const testRepo = await getProjectSystemRepo(testProject);
-      await testRepo.createResource<DomainConfiguration>({
+      await getGlobalSystemRepo().createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain: testDomain,
         identityProvider,
@@ -672,7 +671,7 @@ describe('External', () => {
     const allowedReturnTo = 'https://myapp.example.com';
 
     await withTestContext(async () => {
-      const { project: testProject } = await registerNew({
+      await registerNew({
         firstName: 'External',
         lastName: 'Text',
         projectName: 'External Test Project - confused domain',
@@ -682,8 +681,7 @@ describe('External', () => {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
 
-      const testRepo = await getProjectSystemRepo(testProject);
-      await testRepo.createResource<DomainConfiguration>({
+      await getGlobalSystemRepo().createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain: testDomain,
         identityProvider,

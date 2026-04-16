@@ -44,7 +44,7 @@ export function getConfig(): ServerConfig {
  * @param configName - The medplum config identifier (comma-separated for multiple sources).
  * @returns The loaded configuration.
  */
-export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
+export async function loadConfig(configName: string): Promise<ServerConfig> {
   const segments = configName.split(',').filter((s) => s.length > 0);
   if (segments.length === 0) {
     throw new Error('Empty config name');
@@ -126,7 +126,7 @@ function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknow
  * @param sharded - Whether to load the sharded configuration.
  * @returns The configuration for tests.
  */
-export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerConfig> {
+export async function loadTestConfig(sharded?: boolean): Promise<ServerConfig> {
   sharded ??= true;
   const config = await loadConfig(sharded ? 'file:medplum-sharded.config.json' : 'file:medplum.config.json');
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
@@ -141,27 +141,35 @@ export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerCo
     username: 'medplum_test_readonly',
     password: 'medplum_test_readonly',
   };
-  config.redis.db = 7;
+
+  let _nextRedisDb = 4;
+  function nextRedisDb(): number {
+    if (_nextRedisDb > 15) {
+      throw new Error('Too many Redis databases');
+    }
+    return ++_nextRedisDb;
+  }
+
+  config.redis.db = nextRedisDb();
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   // cacheRedis stays on the default redis
-  if (!sharded) {
-    config.rateLimitRedis = {
-      ...config.redis,
-      db: 8,
-    };
-    config.pubSubRedis = {
-      ...config.redis,
-      db: 9,
-    };
-    config.backgroundJobsRedis = {
-      ...config.redis,
-      db: 10,
-    };
-  }
+  config.rateLimitRedis = {
+    ...config.redis,
+    db: nextRedisDb(),
+  };
+  config.pubSubRedis = {
+    ...config.redis,
+    db: nextRedisDb(),
+  };
+  config.backgroundJobsRedis = {
+    ...config.redis,
+    db: nextRedisDb(),
+  };
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+  config.shardSync = { delayBetweenBatchesMs: 0 };
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
@@ -171,11 +179,7 @@ export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerCo
       throw new Error('Sharded configuration requires shards');
     }
 
-    const highestUsedRedisDB = 10;
-    let shardCount = 0;
     for (const shardConfig of Object.values(config.shards)) {
-      shardCount++;
-
       shardConfig.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
       shardConfig.database.port = process.env['POSTGRES_PORT']
         ? Number.parseInt(process.env['POSTGRES_PORT'], 10)
@@ -188,10 +192,7 @@ export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerCo
         username: 'medplum_test_readonly',
         password: 'medplum_test_readonly',
       };
-      if (highestUsedRedisDB + shardCount > 15) {
-        throw new Error('Too many shards');
-      }
-      shardConfig.redis.db = highestUsedRedisDB + shardCount;
+      shardConfig.redis.db = nextRedisDb();
       shardConfig.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
     }
   }

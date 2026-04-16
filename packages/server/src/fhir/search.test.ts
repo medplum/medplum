@@ -38,7 +38,6 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
-  Project,
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
@@ -56,6 +55,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
+import { createProjectResource } from './operations/projectinit';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
@@ -5158,8 +5158,8 @@ describe('systemRepo', () => {
   test('Filter by _project', () =>
     withTestContext(async () => {
       const idValue = randomUUID();
-      const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
-      const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
+      const project1 = (await createProjectResource(systemRepo, { resourceType: 'Project' })).project.id;
+      const project2 = (await createProjectResource(systemRepo, { resourceType: 'Project' })).project.id;
 
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -5357,7 +5357,7 @@ describe('systemRepo', () => {
 
   test('Sort by _lastUpdated', () =>
     withTestContext(async () => {
-      const project = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
+      const project = (await createProjectResource(systemRepo, { resourceType: 'Project' })).project.id;
 
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -5432,7 +5432,7 @@ describe('systemRepo', () => {
 
   test('maxResourceVersion', () =>
     withTestContext(async () => {
-      const project: string = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
+      const project: string = (await createProjectResource(systemRepo, { resourceType: 'Project' })).project.id;
 
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',

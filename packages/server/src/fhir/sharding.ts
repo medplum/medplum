@@ -23,6 +23,7 @@ export const PLACEHOLDER_SHARD_ID = GLOBAL_SHARD_ID;
 export const TODO_SHARD_ID = GLOBAL_SHARD_ID;
 
 /**
- * Shard ID to use for testing purposes.
+ * Shard ID to use for testing purposes. Matches the default shard in medplum-sharded.config.json
+ * so that tests exercise the shard→global sync path by default.
  */
-export const TEST_SHARD_ID = GLOBAL_SHARD_ID;
+export const TEST_SHARD_ID = 'shard-1';

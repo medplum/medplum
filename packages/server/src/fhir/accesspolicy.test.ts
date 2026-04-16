@@ -41,6 +41,7 @@ import { loadTestConfig } from '../config/loader';
 import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
+import { createProjectResource } from './operations/projectinit';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 
@@ -1865,7 +1866,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin with access policy', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const { project } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test Project' });
       const { shardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const adminRepo = new Repository({
@@ -1952,7 +1953,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin cannot delete project', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({
+      const { project } = await createProjectResource(systemRepo, {
         resourceType: 'Project',
         name: 'Test Project',
         systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
@@ -1992,7 +1993,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin cannot modify protected fields', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({
+      const { project } = await createProjectResource(systemRepo, {
         resourceType: 'Project',
         name: 'Test Project',
         systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
@@ -2071,7 +2072,11 @@ describe('AccessPolicy', () => {
       // Try to create a new project
       // This should fail
       try {
-        await repo2.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+        await repo2.createResource<Project>({
+          resourceType: 'Project',
+          name: 'Test Project',
+          shard: [{ id: repo2.shardId }],
+        });
         throw new Error('Should not be able to create resource');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
@@ -2153,7 +2158,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin can modify meta.account', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const { project } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test Project' });
       const { shardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const adminMembership = await systemRepo.createResource<ProjectMembership>({
@@ -2267,7 +2272,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin can set multiple accounts', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const { project } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test Project' });
       const { shardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const adminMembership = await systemRepo.createResource<ProjectMembership>({
@@ -2451,7 +2456,7 @@ describe('AccessPolicy', () => {
 
   test('Mutex resource type policies with hidden fields', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const { project } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test1' });
       const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization', name: 'Test2' });
       const orgRef = createReference(org);
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -2538,7 +2543,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin check references', () =>
     withTestContext(async () => {
-      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const { project: project1 } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
         shardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
@@ -2549,7 +2554,7 @@ describe('AccessPolicy', () => {
         checkReferencesOnWrite: true,
       });
 
-      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
+      const { project: project2 } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
         shardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
@@ -2644,7 +2649,7 @@ describe('AccessPolicy', () => {
         resourceType: 'Patient',
       };
 
-      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const { project: project1 } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
         shardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
@@ -2655,7 +2660,7 @@ describe('AccessPolicy', () => {
         checkReferencesOnWrite: true,
       });
 
-      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
+      const { project: project2 } = await createProjectResource(systemRepo, { resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
         shardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },

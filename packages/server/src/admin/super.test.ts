@@ -9,7 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { Repository } from '../fhir/repo';
+import { getGlobalSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { TEST_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
@@ -58,7 +58,7 @@ describe('Super Admin routes', () => {
 
     const practitioner2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
-    const user1 = await systemRepo.createResource<User>({
+    const user1 = await getGlobalSystemRepo().createResource<User>({
       resourceType: 'User',
       firstName: 'Super',
       lastName: 'Admin',
@@ -66,7 +66,7 @@ describe('Super Admin routes', () => {
       passwordHash: 'abc',
     });
 
-    const user2 = await systemRepo.createResource<User>({
+    const user2 = await getGlobalSystemRepo().createResource<User>({
       resourceType: 'User',
       firstName: 'Normal',
       lastName: 'User',
@@ -88,7 +88,7 @@ describe('Super Admin routes', () => {
       profile: createReference(practitioner2),
     });
 
-    const login1 = await systemRepo.createResource<Login>({
+    const login1 = await getGlobalSystemRepo().createResource<Login>({
       resourceType: 'Login',
       authMethod: 'client',
       user: createReference(user1),
@@ -97,7 +97,7 @@ describe('Super Admin routes', () => {
       scope: 'openid',
     });
 
-    const login2 = await systemRepo.createResource<Login>({
+    const login2 = await getGlobalSystemRepo().createResource<Login>({
       resourceType: 'Login',
       authMethod: 'client',
       user: createReference(user2),
