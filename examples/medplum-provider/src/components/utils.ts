@@ -3,6 +3,12 @@
 import type { ProjectMembership } from '@medplum/fhirtypes';
 
 /**
+ * The system URL used on PractitionerRole.code to authorize DoseSpot enrollment.
+ * Exported for reuse in hooks and tests.
+ */
+export const DOSESPOT_PRACTITIONER_ROLE_TYPE_SYSTEM = 'https://dosespot.com/practitionerrole-type';
+
+/**
  * Returns true if the profile has a DoseSpot identifier.
  *
  * This is a crude approximation for demonstration purposes.
