@@ -42,6 +42,7 @@ graph TD
 
 Based on the availability defined in the previous step, we can now find available appointment slots. This is done via the `$find` operation.
 
+
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
 | [`$find`](/docs/scheduling/schedule-find) | Find available appointment slots | **Alpha** |

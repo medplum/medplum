@@ -21,7 +21,7 @@ const config: Config = {
   // https://github.com/facebook/docusaurus/issues/10556
   future: {
     v4: true,
-    experimental_faster: true,
+    faster: true,
   },
 
   // Even if you don't use internationalization, you can use this field to set
@@ -44,6 +44,10 @@ const config: Config = {
           {
             from: '/docs/communications/task-based-message-response-tracking-and-routing',
             to: '/docs/communications/message-response-tracking-and-routing',
+          },
+          {
+            from: '/docs/charting/ordering-labs-imaging',
+            to: '/docs/labs-imaging/ordering-labs-imaging',
           },
         ],
       },
@@ -135,7 +139,7 @@ const config: Config = {
           className: 'button button--outline button--primary navbar-btn navbar-btn-outlined',
         },
         {
-          to: 'https://cal.com/team/medplum/30min',
+          to: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a',
           label: 'Book a Demo',
           position: 'right',
           className: 'button button--primary navbar-btn navbar-btn-filled',
@@ -220,6 +224,10 @@ const config: Config = {
             {
               label: 'Brand',
               to: '/brand',
+            },
+            {
+              label: 'Book a Demo',
+              to: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a',
             },
           ],
         },

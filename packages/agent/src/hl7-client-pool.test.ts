@@ -7,6 +7,7 @@ import { Hl7Server, __getCtorCallCount, __resetCtorCallCount } from '@medplum/hl
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
+import { getFreePort } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 jest.mock('@medplum/hl7', () => {
@@ -73,9 +74,11 @@ function createFakeClient({
 
 describe('Hl7ClientPool', () => {
   let server: Hl7Server;
-  const port = 57200;
+  let port: number;
 
   beforeAll(async () => {
+    port = await getFreePort();
+
     server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
         connection.send(message.buildAck());

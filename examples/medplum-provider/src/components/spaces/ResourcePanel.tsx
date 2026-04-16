@@ -13,12 +13,8 @@ import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
 import { LabOrderDetails } from '../labs/LabOrderDetails';
 import { LabResultDetails } from '../labs/LabResultDetails';
-import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
 import { TaskDetailPanel } from '../tasks/TaskDetailPanel';
-
-const sectionsWithDoseSpot = getDefaultSections().map((s) =>
-  s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
-);
 
 interface ResourcePanelProps<T extends Resource = Resource> {
   resource: Reference<T> | T;
@@ -27,6 +23,11 @@ interface ResourcePanelProps<T extends Resource = Resource> {
 export function ResourcePanel<T extends Resource = Resource>(props: ResourcePanelProps<T>): JSX.Element | null {
   const { resource } = props;
   const displayResource = useResource(resource);
+  const PharmacyDialogComponent = usePharmacyDialog();
+
+  const sections = getDefaultSections().map((s) =>
+    s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
+  );
 
   const renderResourceContent = (): JSX.Element => {
     if (!displayResource) {
@@ -35,7 +36,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
     switch (displayResource.resourceType) {
       case 'Patient':
-        return <PatientSummary patient={displayResource} sections={sectionsWithDoseSpot} />;
+        return <PatientSummary patient={displayResource} sections={sections} />;
       case 'Task':
         return <TaskDetailPanel task={displayResource} />;
       case 'DiagnosticReport':

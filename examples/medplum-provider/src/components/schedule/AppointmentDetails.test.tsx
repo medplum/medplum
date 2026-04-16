@@ -311,7 +311,11 @@ describe('AppointmentDetails', () => {
       end: '2024-01-15T10:30:00Z',
       participant: [
         {
-          actor: { reference: `Patient/${patientId}` },
+          actor: { reference: `Patient/${patientId}`, display: 'Jane Doe' },
+          status: 'accepted',
+        },
+        {
+          actor: { reference: `Practitioner/practitioner-1`, display: 'Dr. Smith' },
           status: 'accepted',
         },
       ],

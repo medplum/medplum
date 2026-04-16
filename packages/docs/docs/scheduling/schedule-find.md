@@ -77,12 +77,12 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
 
 ## Parameters
 
-| Name           | Type       | Description                                                                                                                          | Required |
-| -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| `start`        | `dateTime` | Start of the search window (inclusive)                                                                                               | Yes      |
-| `end`          | `dateTime` | End of the search window (inclusive)                                                                                                 | Yes      |
-| `service-type` | `string`   | Filter slots by service type. Format: `system\|code`. Multiple codes can be comma-separated. Omit to return all available service types. | No       |
-| `_count`       | `integer`  | Maximum number of Slot resources to return. Defaults to 20. Maximum is 1000.                                                         | No       |
+| Name           | Type       | Description                                                                                  | Required |
+| -------------- | ---------- | ---------------------------------------------------------------------------------------------| -------- |
+| `start`        | `dateTime` | Start of the search window (inclusive)                                                       | Yes      |
+| `end`          | `dateTime` | End of the search window (inclusive)                                                         | Yes      |
+| `service-type` | `string`   | Filter slots by service type. Format: `system\|code`. Multiple codes can be comma-separated. | Yes      |
+| `_count`       | `integer`  | Maximum number of Slot resources to return. Defaults to 20. Maximum is 1000.                 | No       |
 
 ### Constraints
 
@@ -113,7 +113,14 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
               "status": "free",
               "start": "2026-03-10T09:00:00.000Z",
               "end": "2026-03-10T10:00:00.000Z",
-              "schedule": { "reference": "Schedule/my-schedule-id" }
+              "schedule": { "reference": "Schedule/my-schedule-id" },
+              "serviceType": [
+                {
+                  "coding": [
+                    { "code": "office-visit" }
+                  ]
+                }
+              ]
             }
           },
           {
@@ -122,7 +129,14 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
               "status": "free",
               "start": "2026-03-10T10:00:00.000Z",
               "end": "2026-03-10T11:00:00.000Z",
-              "schedule": { "reference": "Schedule/my-schedule-id" }
+              "schedule": { "reference": "Schedule/my-schedule-id" },
+              "serviceType": [
+                {
+                  "coding": [
+                    { "code": "office-visit" }
+                  ]
+                }
+              ]
             }
           }
         ]
@@ -132,7 +146,6 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
 }
 ```
 
-When `service-type` is specified, each returned Slot will include the matching `serviceType` field.
 
 ## Availability Logic
 
