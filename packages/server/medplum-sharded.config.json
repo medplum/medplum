@@ -28,7 +28,7 @@
         "disableRunPostDeployMigrations": false,
         "host": "localhost",
         "port": 5432,
-        "dbname": "medplum_shard_1",
+        "dbname": "medplum_test_shard_0",
         "username": "medplum",
         "password": "medplum"
       },

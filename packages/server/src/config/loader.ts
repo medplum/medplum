@@ -127,6 +127,7 @@ function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknow
  * @returns The configuration for tests.
  */
 export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerConfig> {
+  sharded ??= true;
   const config = await loadConfig(sharded ? 'file:medplum-sharded.config.json' : 'file:medplum.config.json');
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
@@ -179,7 +180,7 @@ export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerCo
       shardConfig.database.port = process.env['POSTGRES_PORT']
         ? Number.parseInt(process.env['POSTGRES_PORT'], 10)
         : 5432;
-      shardConfig.database.dbname = shardConfig.database.dbname?.replace('medplum', 'medplum_test');
+      // shardConfig.database.dbname = shardConfig.database.dbname?.replace('medplum', 'medplum_test');
       shardConfig.database.runMigrations = false;
       shardConfig.database.disableRunPostDeployMigrations = true;
       shardConfig.readonlyDatabase = {
