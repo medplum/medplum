@@ -65,7 +65,7 @@ import {
   Repository,
   setTypedPropertyValue,
 } from './repo';
-import { TODO_SHARD_ID } from './sharding';
+import { TEST_SHARD_ID, TODO_SHARD_ID } from './sharding';
 import { PostgresError, SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -2198,6 +2198,83 @@ describe('FHIR Repo', () => {
         client.release();
       }
     }));
+
+  describe.skip('assertShardAccess', () => {
+    let project: WithId<Project>;
+    let projectRepo: Repository;
+    beforeAll(async () => {
+      ({ repo: projectRepo, project } = await createTestProject({ withRepo: true, shardId: TEST_SHARD_ID }));
+    });
+
+    test('transaction with multiple project resource types', async () => {
+      let patient: WithId<Patient> = { resourceType: 'Patient', id: 'fake-patient-id' } as WithId<Patient>;
+      let organization: WithId<Organization> = {
+        resourceType: 'Organization',
+        id: 'fake-organization-id',
+      } as WithId<Organization>;
+      await projectRepo.withTransaction(async () => {
+        patient = await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+        organization = await projectRepo.createResource<Organization>({ resourceType: 'Organization' });
+      });
+      await expect(projectRepo.readResource('Patient', patient.id)).resolves.toMatchObject(patient);
+      await expect(projectRepo.readResource('Organization', organization.id)).resolves.toMatchObject(organization);
+    });
+
+    test('transaction with multiple global resource types', async () => {
+      let projectMembership: WithId<ProjectMembership> = {
+        resourceType: 'ProjectMembership',
+        id: 'fake-project-membership-id',
+      } as WithId<ProjectMembership>;
+      let user: WithId<User> = { resourceType: 'User', id: 'fake-user-id' } as WithId<User>;
+      await projectRepo.withTransaction(async () => {
+        user = await projectRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Real',
+          lastName: 'User',
+        });
+        projectMembership = await projectRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(project),
+          user: createReference(user),
+          profile: { reference: 'Practitioner/123' },
+        });
+      });
+      await expect(projectRepo.readResource('ProjectMembership', projectMembership.id)).resolves.toMatchObject(
+        projectMembership
+      );
+      await expect(projectRepo.readResource('User', user.id)).resolves.toMatchObject(user);
+    });
+
+    test('transaction with mixed project and global resource types', async () => {
+      // let patient: WithId<Patient> = { resourceType: 'Patient', id: 'fake-patient-id' } as WithId<Patient>;
+      // let user: WithId<User> = { resourceType: 'User', id: 'fake-user-id' } as WithId<User>;
+      let createdFirst = false;
+      const projectFirstTxn = projectRepo.withTransaction(async () => {
+        await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+        createdFirst = true;
+        await projectRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Real',
+          lastName: 'User',
+        });
+      });
+      await expect(projectFirstTxn).toThrow('Invalid database destination for resource type');
+      expect(createdFirst).toBe(true);
+
+      createdFirst = false;
+      const globalFirstTxn = systemRepo.withTransaction(async () => {
+        await systemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Real',
+          lastName: 'User',
+        });
+        createdFirst = true;
+        await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+      });
+      await expect(globalFirstTxn).toThrow('Invalid database destination for resource type');
+      expect(createdFirst).toBe(true);
+    });
+  });
 });
 
 describe('compareColumnValues', () => {
