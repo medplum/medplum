@@ -331,14 +331,6 @@ describe('Generator', () => {
           return expectedCols;
         }),
         {
-          name: '__birthdate',
-          type: 'TSTZRANGE',
-        },
-        {
-          name: '__birthdateSort',
-          type: 'TIMESTAMPTZ',
-        },
-        {
           name: '__deathDate',
           type: 'TSTZRANGE',
         },

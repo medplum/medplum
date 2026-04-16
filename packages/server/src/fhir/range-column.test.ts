@@ -3,7 +3,7 @@
 
 import type { Filter } from '@medplum/core';
 import { getSearchParameter, Operator } from '@medplum/core';
-import type { Goal, Observation, RiskAssessment } from '@medplum/fhirtypes';
+import type { AllergyIntolerance, Observation, RiskAssessment } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { buildRangeColumns, buildRangeColumnsSearchFilter } from './range-column';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
@@ -17,30 +17,40 @@ beforeAll(() => {
 
 describe('buildRangeColumns', () => {
   test('multi date range with mixed precision', () => {
-    const targetDate = getSearchParameter('Goal', 'target-date');
-    if (!targetDate) {
+    const onset = getSearchParameter('AllergyIntolerance', 'onset');
+    if (!onset) {
       throw new Error('Missing search parameter');
     }
-    const impl = getSearchParameterImplementation('Goal', targetDate) as RangeColumnSearchParameterImplementation;
+    const impl = getSearchParameterImplementation(
+      'AllergyIntolerance',
+      onset
+    ) as RangeColumnSearchParameterImplementation;
     expect(impl.searchStrategy).toStrictEqual('range-column');
-    expect(impl.rangeColumnName).toStrictEqual('__targetDate');
-    expect(impl.sortColumnName).toStrictEqual('__targetDateSort');
+    expect(impl.rangeColumnName).toStrictEqual('__onset');
+    expect(impl.sortColumnName).toStrictEqual('__onsetSort');
 
-    const resource: Goal = {
-      resourceType: 'Goal',
-      lifecycleStatus: 'planned',
-      description: { text: 'test' },
-      subject: { reference: `Patient/${randomUUID()}` },
-      target: [{ dueDate: '2026' }, { dueDate: '2028-01-31' }],
+    const resource: AllergyIntolerance = {
+      resourceType: 'AllergyIntolerance',
+      patient: { reference: `Patient/${randomUUID()}` },
+      reaction: [
+        {
+          manifestation: [{ text: 'Hives' }],
+          onset: '2026',
+        },
+        {
+          manifestation: [{ text: 'Swelling' }],
+          onset: '2028-01-31',
+        },
+      ],
     };
 
     const columns: Record<string, any> = {};
-    buildRangeColumns(targetDate, impl, columns, resource);
+    buildRangeColumns(onset, impl, columns, resource);
 
-    expect(columns.__targetDate).toStrictEqual(
+    expect(columns.__onset).toStrictEqual(
       `{[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z),[2028-01-31T00:00:00.000Z,2028-02-01T00:00:00.000Z)}`
     );
-    expect(columns.__targetDateSort).toStrictEqual('2026-01-01T00:00:00.000Z');
+    expect(columns.__onsetSort).toStrictEqual('2026-01-01T00:00:00.000Z');
   });
 
   test('single date time', () => {
@@ -195,7 +205,7 @@ describe('buildRangeColumnsSearchFilter', () => {
     [
       Operator.NOT_EQUALS,
       '2020',
-      'NOT ("Goal"."__targetDate" &&',
+      'NOT ("AllergyIntolerance"."__onset" &&',
       '[2020-01-01T00:00:00.000Z,2021-01-01T00:00:00.000Z)',
     ],
     [Operator.LESS_THAN, '2025-03-02T12:34:56Z', ' && $1', '(,2025-03-02T12:34:56.000Z)'],
@@ -205,15 +215,18 @@ describe('buildRangeColumnsSearchFilter', () => {
     [Operator.STARTS_AFTER, '2026-01-31', ' >> $1', '[2026-01-31T00:00:00.000Z,2026-02-01T00:00:00.000Z)'],
     [Operator.ENDS_BEFORE, '2024-02-29', ' << $1', '[2024-02-29T00:00:00.000Z,2024-03-01T00:00:00.000Z)'],
   ])('constructs filter condition correctly for date value: %s %s', (operator, value, expectedSql, range) => {
-    const targetDate = getSearchParameter('Goal', 'target-date');
-    if (!targetDate) {
+    const onset = getSearchParameter('AllergyIntolerance', 'onset');
+    if (!onset) {
       throw new Error('Missing search parameter');
     }
-    const impl = getSearchParameterImplementation('Goal', targetDate) as RangeColumnSearchParameterImplementation;
+    const impl = getSearchParameterImplementation(
+      'AllergyIntolerance',
+      onset
+    ) as RangeColumnSearchParameterImplementation;
     expect(impl.searchStrategy).toStrictEqual('range-column');
 
     const filter: Filter = { code: 'target-date', operator, value };
-    const condition = buildRangeColumnsSearchFilter('Goal', 'Goal', targetDate, filter);
+    const condition = buildRangeColumnsSearchFilter('AllergyIntolerance', 'AllergyIntolerance', onset, filter);
 
     const sql = new SqlBuilder();
     condition.buildSql(sql);
