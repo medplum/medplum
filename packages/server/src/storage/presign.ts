@@ -24,6 +24,10 @@ export async function generatePresignedUrl(binary: Binary, opts?: PresignedUrlOp
   dateLessThan.setHours(dateLessThan.getHours() + 1);
   result.searchParams.set('Expires', Math.floor(dateLessThan.getTime() / 1000).toString());
 
+  if (binary.meta?.project) {
+    result.searchParams.set('Project', binary.meta.project);
+  }
+
   const url = (opts?.upload ? 'PUT ' : 'GET ') + result.toString();
   if (config.signingKey) {
     const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
