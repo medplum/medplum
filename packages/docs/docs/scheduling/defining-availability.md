@@ -426,7 +426,7 @@ The `timezone` parameter allows you to specify different timezones for different
 }
 ```
 
-:::tip Adding a Timezone to an Actor
+:::tip[Adding a Timezone to an Actor]
 
 There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device), so you must add it via the FHIR timezone extension:
 
