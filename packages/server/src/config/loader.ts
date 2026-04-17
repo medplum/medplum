@@ -157,9 +157,6 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
-  config.failedLoginThrottleStartAttempt = 3;
-  config.failedLoginThrottleBaseDelayMs = 1; // 1ms base delay for tests to speed them up
-  config.failedLoginThrottleMaxDelayMs = 10; // 10ms max delay for tests to speed them up
   return config;
 }
 

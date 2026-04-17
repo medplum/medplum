@@ -158,15 +158,3 @@ function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
   }
   return categories[categories.length - 1]; // Default category is the last one in the list
 }
-
-/**
- * Returns the current rate limit state for the given request without consuming any points.
- * @param req - The request to peek the rate limit state for.
- * @param config - Optional server config.
- * @returns The current rate limit state, or null if no rate limit applies.
- */
-export function peekRateLimitState(req: Request, config?: MedplumServerConfig): Promise<RateLimiterRes | null> {
-  const rateLimiter = getRateLimiter(req, config);
-  const key = getRateLimitKey(req);
-  return rateLimiter.get(key);
-}

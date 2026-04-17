@@ -190,26 +190,6 @@ export interface MedplumServerConfig {
    * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
    */
   mtlsCertHeader?: string;
-
-  /**
-   * Number of failed login attempts before throttling kicks in.
-   * Default is 3, which means that after 3 failed attempts, the server will start introducing a delay before responding to further login attempts from the same IP address.
-   */
-  failedLoginThrottleStartAttempt?: number;
-
-  /**
-   * Base delay in milliseconds for throttling failed login attempts.
-   * Default is 1 second (1000 ms).
-   * The actual delay is calculated as `baseDelayMs * 2^numAttempts`, where `numAttempts` is the number of failed attempts from the same IP address.
-   */
-  failedLoginThrottleBaseDelayMs?: number;
-
-  /**
-   * Maximum delay in milliseconds for throttling failed login attempts.
-   * Default is 15 seconds (15000 ms).
-   * This caps the exponential backoff delay to prevent it from growing indefinitely.
-   */
-  failedLoginThrottleMaxDelayMs?: number;
 }
 
 export interface SubscriptionAutoDisableTrigger {

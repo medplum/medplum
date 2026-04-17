@@ -48,9 +48,6 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
   config.defaultMaxUserWebSocketSubscriptions ??= 20;
-  config.failedLoginThrottleStartAttempt ??= 3;
-  config.failedLoginThrottleBaseDelayMs ??= 1000;
-  config.failedLoginThrottleMaxDelayMs ??= 15000;
 
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
@@ -104,10 +101,7 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirQuota'
-  | 'failedLoginThrottleStartAttempt'
-  | 'failedLoginThrottleBaseDelayMs'
-  | 'failedLoginThrottleMaxDelayMs';
+  | 'defaultFhirQuota';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
@@ -127,9 +121,6 @@ const integerKeys = new Set([
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
   'fhirSearchMinLimit',
-  'failedLoginThrottleStartAttempt',
-  'failedLoginThrottleBaseDelayMs',
-  'failedLoginThrottleMaxDelayMs',
 
   'database.maxConnections',
   'database.port',
