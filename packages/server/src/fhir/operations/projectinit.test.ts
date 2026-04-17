@@ -13,7 +13,7 @@ import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -108,7 +108,7 @@ describe('Project $init', () => {
     expect(superAdminClientToken).toBeDefined();
 
     const doc = await withTestContext(() =>
-      getSystemRepo().createResource<Practitioner>({ resourceType: 'Practitioner' })
+      getGlobalSystemRepo().createResource<Practitioner>({ resourceType: 'Practitioner' })
     );
 
     const projectName = 'Test Init Project ' + randomUUID();

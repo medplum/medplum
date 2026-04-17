@@ -5,9 +5,9 @@
  * Do not edit manually.
  */
 
-import { Coding } from './Coding';
-import { Extension } from './Extension';
-import { Reference } from './Reference';
+import type { Coding } from './Coding.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Reference } from './Reference.d.ts';
 
 /**
  * The metadata about a resource. This is content in the resource that is

@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * An amount of money. With regard to precision, see [Decimal

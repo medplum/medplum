@@ -4,6 +4,7 @@ import {
   OperationOutcomeError,
   SearchParameterType,
   append,
+  badRequest,
   conflict,
   normalizeOperationOutcome,
   serverTimeout,
@@ -619,7 +620,27 @@ export const PostgresError = {
   SerializationFailure: '40001',
   QueryCanceled: '57014',
   InFailedSqlTransaction: '25P02',
+  DatetimeFieldOverflow: '22008',
 } as const;
+
+/**
+ * Checks whether an error represents a serialization conflict that can safely be retried.
+ * NOTE: Retrying a transaction must be done in full: the entire transaction block
+ * should be re-executed, in a new transaction. Nested transactions (savepoints) are
+ * NOT retryable per the Postgres docs; the caller must check transactionDepth separately.
+ * @param err - The error to check.
+ * @returns True if the error indicates a retryable transaction failure.
+ * @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
+ */
+export function isRetryableTransactionError(err: OperationOutcomeError): boolean {
+  if (err.outcome.issue.length !== 1) {
+    return false;
+  }
+  const issue = err.outcome.issue[0];
+  return Boolean(
+    issue.code === 'conflict' && issue.details?.coding?.some((c) => c.code === PostgresError.SerializationFailure)
+  );
+}
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
   if (err instanceof OperationOutcomeError) {
@@ -644,6 +665,9 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     case PostgresError.InFailedSqlTransaction:
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
       return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    case PostgresError.DatetimeFieldOverflow:
+      // Date/time value out of range (e.g. Feb 29 on a non-leap year) -> 400 Bad Request
+      return new OperationOutcomeError(badRequest(err.message), err);
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
@@ -1315,4 +1339,35 @@ export function getSearchParamColumnType(impl: ColumnSearchParameterImplementati
       baseColumnType = 'TEXT';
   }
   return impl.array ? baseColumnType + '[]' : baseColumnType;
+}
+
+// PostgreSQL btree index entries have a maximum size of 2704 bytes. The index tuple includes
+// a few bytes of overhead on top of the column data, but we use a more conservative limit
+// of 2048 bytes for the data payload to stay well within the btree maximum.
+export const MAX_INDEX_DATA_BYTES = 2048;
+const truncationEncoder = new TextEncoder();
+const truncationDecoder = new TextDecoder();
+const truncationBuffer = new Uint8Array(MAX_INDEX_DATA_BYTES);
+
+/**
+ * Apply a maximum string length to ensure the value can be stored in a btree-indexed column.
+ * Uses {@link TextEncoder.encodeInto} to write the longest valid UTF-8 prefix that fits
+ * within the byte limit, avoiding both partial multi-byte characters and unnecessarily
+ * aggressive truncation.
+ * @param value - The column value to truncate.
+ * @returns The possibly truncated column value.
+ */
+export function truncateTextColumn(value: string | null | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (truncationEncoder.encode(value).length <= MAX_INDEX_DATA_BYTES) {
+    return value;
+  }
+
+  // encodeInto writes as many complete UTF-8 characters as fit in the buffer,
+  // never producing a partial multi-byte sequence.
+  const { written } = truncationEncoder.encodeInto(value, truncationBuffer);
+  return truncationDecoder.decode(truncationBuffer.subarray(0, written));
 }

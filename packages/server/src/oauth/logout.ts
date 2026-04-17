@@ -4,13 +4,14 @@ import { allOk, resolveId } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { revokeLogin } from '../oauth/utils';
 
 export const logoutHandler = async (_req: Request, res: Response): Promise<void> => {
   const ctx = getAuthenticatedContext();
 
   // Mark the login as revoked
-  await revokeLogin(ctx.login);
+  await revokeLogin(getGlobalSystemRepo(), ctx.login);
 
   if (ctx.login.client) {
     const cookieName = 'medplum-' + resolveId(ctx.login.client);

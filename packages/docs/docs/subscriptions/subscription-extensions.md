@@ -65,11 +65,17 @@ Below are explanations of the different extensions Medplum Provides
 
 ## Interactions
 
-:::caution Note
+:::caution[Note]
 By default, FHIR Subscriptions will execute on "create" and "update" operations.
 :::
 
 You can use extensions as follows for more fine-grained control over when Subscriptions execute. To confirm if your Subscriptions are executing, navigate to `https://app.medplum.com/Subscription/<id>/event` to view related [AuditEvents](/docs/api/fhir/resources/auditevent). Note that if you configure the subscription to use `log`-only destination for AuditEvents (see [AuditEvent Destination](#auditevent-destination) below), these events will not appear in the UI.
+
+:::caution[Note]
+Only **one** `subscription-supported-interaction` extension is supported per Subscription. If you need to listen for multiple interaction types (e.g., both "create" and "update"), you should either use the default behavior (which fires on both "create" and "update") or create separate Subscription resources for each interaction type.
+
+Adding multiple `subscription-supported-interaction` extensions to a single Subscription will result in only the first one being evaluated, and the Subscription will revert to default behavior for any unrecognized configuration.
+:::
 
 ### Subscriptions for "create"-only or "update"-only events
 
@@ -117,7 +123,7 @@ You can also restrict the FHIR Subscription to only execute on "update", using t
 
 ### Subscriptions for "delete" events
 
-:::caution Note
+:::caution[Note]
 The delete interaction will contain a different response where configuration will be needed on the incoming data.
 :::
 
@@ -220,7 +226,11 @@ If your subscription failed or threw an error, you can configure it to attempt t
 
 To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
 
-The default number of attempts is 3.
+The default number of attempts is 4.
+
+:::caution[Note]
+Subscriptions with Bot endpoints will only execute once and will not retry on failure. The `subscription-max-attempts` extension only applies to rest-hook subscriptions with external HTTP endpoints.
+:::
 
 ```json
 {
@@ -247,7 +257,7 @@ HTTP status codes can be customized to determine the success of the subscription
 
 To add custom codes, use the `https://medplum.com/fhir/StructureDefinition/subscription-success-codes` extension with the valueString having a comma separated list of HTTP status codes for success (i.e., "200,201"). We also allow ranges (i.e., "200-399,404")
 
-:::caution Note
+:::caution[Note]
 If you use custom success codes, you will need to implement ALL of the HTTP status codes that are determined to be successful
 :::
 
@@ -278,7 +288,7 @@ By default, `AuditEvent` resources are saved to the database (`resource` destina
 
 Setting the destination to `log` will only emit `AuditEvent` details to your server logs (e.g., AWS CloudWatch, Datadog, etc.) without creating a FHIR resource in the database. This is useful for high-volume scenarios where you want to monitor subscription activity without impacting database performance.
 
-:::caution Note
+:::caution[Note]
 If you set the destination to `log` only, `AuditEvent` resources will not appear in the Medplum UI or be queryable via the API. They will only be available in your server logs.
 :::
 
@@ -362,7 +372,7 @@ Here is an example `Subscription` resource with a `fhir-path-criteria-expression
 }
 ```
 
-:::caution Note
+:::caution[Note]
 Upon the creation of a resource, there won't be a previous version of the resource: `%previous` will be empty.
 
 FHIRPath generally [treats empty values as "null"](https://www.hl7.org/fhirpath/#null-and-empty) and most operators

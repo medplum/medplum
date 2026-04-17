@@ -5,12 +5,12 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { Extension } from './Extension';
-import { IdentityProvider } from './IdentityProvider';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
+import type { Attachment } from './Attachment.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { IdentityProvider } from './IdentityProvider.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Medplum client application for automated access.
@@ -135,11 +135,6 @@ export interface ClientApplication {
   jwksUri?: string;
 
   /**
-   * @deprecated This field is deprecated. Use redirectUris instead.
-   */
-  redirectUri?: string;
-
-  /**
    * Optional redirect URI array used when redirecting a client back to the
    * client application.
    */
@@ -149,6 +144,14 @@ export interface ClientApplication {
    * Optional launch URI for SMART EHR launch sequence.
    */
   launchUri?: string;
+
+  /**
+   * Optional array of identifier systems to use in SMART launch context.
+   * When specified, the resource's identifier with the matching system
+   * will be included in the SmartAppLaunch resource's reference and
+   * returned to the SMART app in the token response.
+   */
+  launchIdentifierSystems?: ClientApplicationLaunchIdentifierSystems[];
 
   /**
    * Flag to make PKCE optional for this client application. PKCE is
@@ -184,6 +187,39 @@ export interface ClientApplication {
    * authorization request.
    */
   defaultScope?: string[];
+
+  /**
+   * Optional PEM-formatted certificates that are allowed to authenticate
+   * to this service via mutual TLS. Supports both Certificate Authorities
+   * (CAs) and self-signed certificates. Multiple certificates can be
+   * included.
+   */
+  certificateTrustStore?: string;
+
+  /**
+   * @deprecated This field is deprecated. Use redirectUris instead.
+   */
+  redirectUri?: string;
+}
+
+/**
+ * Optional array of identifier systems to use in SMART launch context.
+ * When specified, the resource's identifier with the matching system
+ * will be included in the SmartAppLaunch resource's reference and
+ * returned to the SMART app in the token response.
+ */
+export interface ClientApplicationLaunchIdentifierSystems {
+
+  /**
+   * The resource type for which to use the identifier system (e.g.,
+   * 'Patient', 'Encounter').
+   */
+  resourceType: string;
+
+  /**
+   * The identifier system URI to use for the specified resource type.
+   */
+  system: string;
 }
 
 /**

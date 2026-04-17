@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskStatusPanel } from './TaskStatusPanel';
 
 const mockTask: Task = {

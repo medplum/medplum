@@ -5,10 +5,10 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Resource } from './Resource';
-import { ResourceType } from './ResourceType';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ResourceType } from './ResourceType.d.ts';
 
 /**
  * A reference from one resource to another.

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { Condition } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Condition } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
 import ConditionItem from './ConditionItem';
 

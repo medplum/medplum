@@ -46,6 +46,84 @@ describe('isQuestionEnabled', () => {
     ).toBe(true);
   });
 
+  test('questionnaire-hidden extension hides question', () => {
+    expect(
+      isQuestionEnabled(
+        {
+          linkId: 'q3',
+          type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+              valueBoolean: true,
+            },
+          ],
+        },
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [],
+        }
+      )
+    ).toBe(false);
+  });
+
+  test('questionnaire-hidden extension with false does not hide question', () => {
+    expect(
+      isQuestionEnabled(
+        {
+          linkId: 'q3',
+          type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+              valueBoolean: false,
+            },
+          ],
+        },
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [],
+        }
+      )
+    ).toBe(true);
+  });
+
+  test('questionnaire-hidden takes precedence over enableWhen', () => {
+    expect(
+      isQuestionEnabled(
+        {
+          linkId: 'q3',
+          type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+              valueBoolean: true,
+            },
+          ],
+          enableWhen: [
+            {
+              question: 'q1',
+              operator: '=',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }],
+            },
+          ],
+        }
+      )
+    ).toBe(false);
+  });
+
   test('enableBehavior=any, match', () => {
     expect(
       isQuestionEnabled(

@@ -1,0 +1,280 @@
+---
+sidebar_position: 2
+title: "Intake Questionnaires: Design and Extraction"
+tags: [intake, questionnaire, SDC, bot, extraction]
+keywords: [Questionnaire, QuestionnaireResponse, linkId, repeats, group, SDC, extract, bot, getQuestionnaireAnswers, getGroupRepeatedAnswers, upsert]
+---
+
+# Intake Questionnaires: Design and Extraction
+
+An intake questionnaire is different from a typical clinical form (like a PHQ-9 or wound assessment) because a single response fans out into many different FHIR resource types — Patient demographics, allergies, medications, conditions, insurance, consents, and more. This means the Questionnaire structure needs to be designed with extraction in mind: the way you organize items and name linkIds directly determines how reliably the response can be transformed into structured data.
+
+This page covers:
+
+- Questionnaire structure patterns for intake forms
+- linkId conventions and the design contract they create
+- Processing responses with SDC extraction vs. Bot-based extraction
+- How to choose between the two approaches
+- Modeling Consent resources captured during intake
+
+## Designing Intake Questionnaires
+
+### Structure: Groups and Repeating Items
+
+Intake forms collect multiple entries for several categories — a patient may have three allergies, two medications, and one insurance plan. In FHIR Questionnaires, use `group` items with `repeats: true` to model these multi-entry sections.
+
+```json
+{
+  "linkId": "allergies",
+  "text": "Allergies",
+  "type": "group",
+  "repeats": true,
+  "item": [
+    {
+      "linkId": "allergy-substance",
+      "text": "Substance",
+      "type": "choice"
+    },
+    {
+      "linkId": "allergy-reaction",
+      "text": "Reaction",
+      "type": "string"
+    },
+    {
+      "linkId": "allergy-onset",
+      "text": "Onset Date",
+      "type": "dateTime"
+    }
+  ]
+}
+```
+
+When a patient reports multiple allergies, the QuestionnaireResponse contains multiple instances of the `allergies` group — one per allergy — each with its own set of child answers.
+
+:::caution[`repeats: true` on Groups]
+
+This is a common point of confusion. `repeats: true` on a `group` item means the **entire group** can appear multiple times in the response, not that individual items within the group repeat. Each repetition of the group represents one complete entry (one allergy, one medication, etc.).
+
+Without `repeats: true`, the form can only capture a single entry per section, which rarely matches real-world intake needs.
+
+:::
+
+### linkId Conventions
+
+The linkId is the key that connects a Questionnaire item to its answer in the QuestionnaireResponse, and to the extraction logic that transforms that answer into a FHIR resource field. Adopting consistent conventions makes extraction logic predictable and reduces bugs.
+
+**Pattern: Resource-type prefix + FHIR field hint**
+
+The [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) uses linkIds that hint at both the target resource and the target field:
+
+| linkId | Target Resource | Target Field |
+| --- | --- | --- |
+| `allergy-substance` | AllergyIntolerance | `code` |
+| `allergy-reaction` | AllergyIntolerance | `reaction.manifestation` |
+| `allergy-onset` | AllergyIntolerance | `onsetDateTime` |
+| `medication-code` | MedicationRequest | `medicationCodeableConcept` |
+| `medication-note` | MedicationRequest | `note` |
+| `medical-history-problem` | Condition | `code` |
+| `medical-history-clinical-status` | Condition | `clinicalStatus` |
+| `immunization-vaccine` | Immunization | `vaccineCode` |
+| `immunization-date` | Immunization | `occurrenceDateTime` |
+| `family-member-history-problem` | FamilyMemberHistory | `condition.code` |
+| `family-member-history-relationship` | FamilyMemberHistory | `relationship` |
+
+**Why this matters:** When your extraction logic (whether SDC or Bot) looks up `answers['allergy-substance']`, the linkId immediately tells you what resource and field it maps to. When conventions break down — for example, using generic names like `field1` or `question3` — the extraction logic becomes fragile and hard to maintain.
+
+**Group linkIds as resource-type identifiers:** The group-level linkId (`allergies`, `medications`, `medical-history`, `vaccination-history`, `coverage-information`) acts as the key for extracting all entries of that type. These map directly to the loop structure in the processing logic:
+
+```ts
+const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
+for (const allergy of allergies) {
+  await addAllergy(medplum, patient, allergy);
+}
+```
+
+For general Questionnaire mechanics (item types, enableWhen, nested items), see [Questionnaires & Assessments](/docs/questionnaires).
+
+## Processing Responses
+
+Once a patient submits their intake form, the [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) needs to be transformed into FHIR resources. There are two approaches, and the right choice depends on where you want your extraction logic to live and how much flexibility you need:
+
+- **SDC Extensions + `$extract`** — Less flexible, but all structured data capture business logic lives in the Questionnaire itself. Changes to extraction rules mean updating the Questionnaire, not deploying code.
+- **Subscription to QuestionnaireResponse + Bot** — More flexible, but requires Bot code changes whenever the Questionnaire is updated. Gives you full programmatic control for complex business logic.
+
+### Approach 1: SDC Extraction (`$extract`)
+
+[Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) lets you annotate the Questionnaire itself with extraction rules. When a response is submitted, the [`$extract` operation](/docs/api/fhir/operations/extract) reads those annotations and returns a transaction Bundle containing the extracted resources — no custom code required.
+
+**How it works:**
+
+1. Add template resources to `Questionnaire.contained` (e.g., a Patient template, an AllergyIntolerance template)
+2. Annotate the Questionnaire with `templateExtract`, `templateExtractValue`, and `templateExtractContext` extensions that define FHIRPath rules for populating each template field
+3. Call `$extract` on the QuestionnaireResponse to get a transaction Bundle
+4. Submit the Bundle to create/update the resources
+
+**When to use SDC extraction:**
+
+- The questionnaire maps cleanly to FHIR resources (each answer → one field on one resource)
+- You don't need conditional logic during extraction (e.g., "only create this resource if another field has a specific value")
+- You want the extraction rules to live with the Questionnaire rather than in separate code
+
+For full details on SDC annotation syntax, template resources, and FHIRPath rules, see [Structured Data Capture](/docs/questionnaires/structured-data-capture).
+
+### Approach 2: Bot-Based Extraction
+
+A [Medplum Bot](/docs/bots/bot-basics) triggered by a [Subscription](/docs/subscriptions) on QuestionnaireResponse creation gives you full programmatic control over the extraction process.
+
+**How it works:**
+
+1. Create a Bot that receives a `QuestionnaireResponse` as input
+2. Create a Subscription on `QuestionnaireResponse` with criteria that matches your intake form
+3. When a response is created, the Bot runs and transforms the answers into FHIR resources
+
+The Bot uses two key utility functions from the intake demo:
+
+**`getQuestionnaireAnswers()`** — Flattens the QuestionnaireResponse into a dictionary keyed by linkId. Use this for top-level, non-repeating fields like demographics:
+
+```ts
+import { getQuestionnaireAnswers } from '@medplum/core';
+
+const answers = getQuestionnaireAnswers(response);
+
+// Access flat fields directly
+const birthDate = answers['dob']?.valueDate;
+const gender = answers['gender-identity']?.valueCoding?.code;
+```
+
+**`getGroupRepeatedAnswers()`** — Extracts an array of answer dictionaries from a repeating group. Use this for multi-entry sections like allergies and medications:
+
+```ts
+import { getGroupRepeatedAnswers } from './intake-utils';
+
+// Returns one dictionary per allergy the patient reported
+const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
+
+for (const allergy of allergies) {
+  const substance = allergy['allergy-substance']?.valueCoding;
+  const reaction = allergy['allergy-reaction']?.valueString;
+  // ... create AllergyIntolerance resource
+}
+```
+
+**When to use Bot-based extraction:**
+
+- You need conditional resource creation (e.g., only create a RelatedPerson if the insurance subscriber is not the patient)
+- You need to call external APIs during processing (e.g., verify insurance eligibility)
+- You need custom validation beyond what FHIR validation provides
+- Your extraction logic involves business rules that don't fit SDC's declarative model
+
+For a complete Bot implementation, see the [intake-form.ts](https://github.com/medplum/medplum/blob/main/examples/medplum-patient-intake-demo/src/bots/core/intake-form.ts) in the Patient Intake Demo.
+
+### Idempotent Processing with Upserts
+
+In production, intake responses may be resubmitted — whether due to user error, form corrections, or system retries. Use [`upsertResource`](/docs/fhir-datastore/working-with-fhir#upsert) to avoid creating duplicate resources. The upsert searches for an existing resource matching your criteria and updates it if found, or creates a new one if not.
+
+Each resource type has a natural upsert key:
+
+| Resource | Upsert Key (Search Params) |
+| --- | --- |
+| AllergyIntolerance | `patient` + `code` |
+| MedicationRequest | `subject` + `code` |
+| Condition | `subject` + `code` |
+| FamilyMemberHistory | `patient` + `code` + `relationship` |
+| Immunization | `patient` + `vaccine-code` + `date` |
+| Coverage | `beneficiary` + `payor` |
+| CareTeam | `name` + `subject` |
+| Observation | `subject` + `code` |
+
+```ts
+await medplum.upsertResource(
+  {
+    resourceType: 'AllergyIntolerance',
+    patient: createReference(patient),
+    code: { coding: [substanceCoding] },
+    // ... other fields
+  },
+  {
+    patient: getReferenceString(patient),
+    code: `${substanceCoding.system}|${substanceCoding.code}`,
+  }
+);
+```
+
+## Modeling Consent Resources
+
+Intake forms typically capture several types of consent. Each is modeled as a separate [`Consent`](/docs/api/fhir/resources/consent) resource with a specific combination of `scope`, `category`, and `policyRule` that identifies the consent type.
+
+:::note
+
+The `policyRule` values shown below are examples based on HL7 consent policy codes and custom organizational codes. Consent coding varies significantly across implementations — use the codes that match your organization's policies and compliance requirements.
+
+:::
+
+### Common Consent Types
+
+| Consent Type | `scope` | `category` | `policyRule` |
+| --- | --- | --- | --- |
+| Consent for Treatment | `treatment` | `med` (Medical) | `cric` (Common Rule Informed Consent) |
+| Agreement to Pay | `treatment` | `pay` (Payment) | `hipaa-self-pay` |
+| Notice of Privacy Practices | `patient-privacy` | `nopp` (Notice of Privacy Practices) | `hipaa-npp` |
+| Advance Directives | `adr` (Advanced Care Directive) | `acd` (Advanced Care Directive) | Organization-specific |
+| Communication Preferences | `patient-privacy` | Consent Document (LOINC `59284-0`) | Organization-specific |
+
+### Consent Resource Shape
+
+```json
+{
+  "resourceType": "Consent",
+  "status": "active",
+  "patient": { "reference": "Patient/example" },
+  "dateTime": "2026-03-15T10:30:00Z",
+  "scope": {
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/consentscope",
+      "code": "treatment",
+      "display": "Treatment"
+    }]
+  },
+  "category": [{
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "med",
+      "display": "Medical"
+    }]
+  }],
+  "policyRule": {
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/consentpolicycodes",
+      "code": "cric",
+      "display": "Common Rule Informed Consent"
+    }]
+  }
+}
+```
+
+Use `status: "active"` when consent is granted and `status: "rejected"` when declined. The `dateTime` field records when the consent was captured.
+
+For communication preferences, the `provision` field specifies which channels are permitted or denied:
+
+```json
+{
+  "provision": {
+    "type": "permit",
+    "action": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/consentaction", "code": "use" }] }],
+    "purpose": [{ "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "PATADMIN" }],
+    "code": [
+      { "coding": [{ "system": "http://hl7.org/fhir/contact-point-system", "code": "email" }] },
+      { "coding": [{ "system": "http://loinc.org", "code": "101134-5", "display": "Appointment reminder" }] }
+    ]
+  }
+}
+```
+
+## See Also
+
+- [Structured Data Capture](/docs/questionnaires/structured-data-capture) — Full SDC annotation guide and `$extract` API details
+- [Questionnaires & Assessments](/docs/questionnaires) — General Questionnaire mechanics
+- [Bot Basics](/docs/bots/bot-basics) — Creating and deploying Bots
+- [Subscriptions](/docs/subscriptions) — Triggering automations on resource creation
+- [Intake Data Model](/docs/intake/intake-data-model) — Resource graph and relationships
+- [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) — Working reference implementation

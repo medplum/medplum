@@ -28,3 +28,5 @@ export const syntheticR4Project: WithId<Project> = {
  *     systemResourceProjectId = v5('systemResource', nullUuid)
  */
 export const systemResourceProjectId = '65897e4f-7add-55f3-9b17-035b5a4e6d52';
+
+export const WEBSOCKET_SUB_PUBLISH_CHANNEL = 'medplum:subscriptions:r4:websockets';

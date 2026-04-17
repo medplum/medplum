@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { Resource } from './Resource';
+import type { Resource } from './Resource.d.ts';
 
 export type ResourceType = Resource['resourceType'];
 export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;

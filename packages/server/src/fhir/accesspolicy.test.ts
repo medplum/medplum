@@ -16,6 +16,7 @@ import type {
   Binary,
   ClientApplication,
   Condition,
+  Device,
   Login,
   Observation,
   Organization,
@@ -39,7 +40,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository } from './repo';
+import { getProjectSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
@@ -52,7 +53,7 @@ describe('AccessPolicy', () => {
 
   beforeEach(async () => {
     testProject = (await createTestProject()).project;
-    systemRepo = getSystemRepo();
+    systemRepo = await getProjectSystemRepo(testProject);
   });
 
   afterAll(async () => {
@@ -1901,6 +1902,40 @@ describe('AccessPolicy', () => {
       await expect(repo2.readResource<Task>('Task', task.id)).rejects.toThrow('Forbidden');
     }));
 
+  test('Project admin cannot delete project', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test Project',
+        systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
+      });
+
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/' + project.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: true,
+      });
+
+      const repo2 = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
+
+      const check1 = await repo2.readResource<Project>('Project', project.id);
+      expect(check1.id).toStrictEqual(project.id);
+
+      // Try to delete the project
+      // This should fail - even though the user is an admin, they should not be able to delete the project
+      try {
+        await repo2.deleteResource('Project', project.id);
+        throw new Error('Should not be able to delete project');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
+      }
+    }));
+
   test('Project admin cannot modify protected fields', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({
@@ -2923,5 +2958,77 @@ describe('AccessPolicy', () => {
       await expect(buildAccessPolicy(membership)).rejects.toThrow();
       await expect(buildAccessPolicy(membership)).rejects.toThrow(/Invalid access policy configuration/);
       await expect(buildAccessPolicy(membership)).rejects.toThrow(/contact your administrator/);
+    }));
+
+  test('Combined access policies with overlapping entries', () =>
+    withTestContext(async () => {
+      const adminRepo = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [testProject],
+        strictMode: true,
+        extendedMode: true,
+      });
+
+      const identifier = `http://example.com/device-id`;
+
+      // Create 3 patients
+      const globalDevice = await adminRepo.createResource<Device>({ resourceType: 'Device' });
+      const scopedDevice = await adminRepo.createResource<Device>({
+        resourceType: 'Device',
+        identifier: [{ system: identifier, value: 'foo' }],
+      });
+
+      // Create access policy for a patient resource
+      // Create access policy for a patient resource
+      const globalPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Device',
+            interaction: ['read'],
+          },
+        ],
+      });
+
+      const orgPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Device',
+            criteria: 'Device?identifier=%identifier',
+            interaction: ['search', 'read'],
+          },
+        ],
+      });
+
+      // Create project membership parameterized with 2 instances of the access policy
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/' + testProject.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        access: [
+          {
+            policy: createReference(globalPolicy),
+          },
+          {
+            policy: createReference(orgPolicy),
+            parameter: [{ name: 'identifier', valueString: identifier + '|' }],
+          },
+        ],
+      });
+
+      const repo2 = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+        userConfig: {} as UserConfiguration,
+      });
+
+      await expect(repo2.readResource<Device>('Device', globalDevice.id)).resolves.toBeDefined();
+      await expect(repo2.readResource<Device>('Device', scopedDevice.id)).resolves.toBeDefined();
+
+      const results = await repo2.searchResources<Device>({ resourceType: 'Device' });
+      expect(results).toHaveLength(1);
     }));
 });

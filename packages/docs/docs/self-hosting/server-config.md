@@ -306,7 +306,7 @@ Maximum JSON size for API calls. String is parsed with the [bytes](https://www.n
 
 ### maxBatchSize
 
-Maximum batch size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library.
+Maximum batch size for Async Batches. When processing Async Batches, this limit overrides `maxJsonSize`. See [Asynchronous Batch Requests](/docs/fhir-datastore/fhir-batch-requests#asynchronous-batch-requests) for more details. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library.
 
 **Default:** `50mb`
 
@@ -353,6 +353,26 @@ The AWS Region identifier.
 
 **Created by:** `cdk`
 **Default:** `us-east-1`
+
+### sseCustomerKey
+
+Optional base64-encoded 256-bit key for S3 Server-Side Encryption with Customer-Provided Keys (SSE-C). When set, all S3 operations (upload, download, copy, presigned URLs) will use SSE-C encryption with the `AES256` algorithm.
+
+To generate a suitable key:
+
+```bash
+openssl rand -base64 32
+```
+
+:::caution
+You must store this key securely. If the key is lost, all data encrypted with it becomes permanently inaccessible. AWS does not store or manage SSE-C keys.
+:::
+
+:::warning
+Enabling SSE-C does not retroactively encrypt existing objects in the S3 bucket. Only new uploads will be encrypted. To encrypt existing data, you must re-upload the objects (e.g., using `aws s3 cp` with the `--sse-c` flags).
+:::
+
+**Default:** None
 
 ### accurateCountThreshold
 
@@ -413,7 +433,7 @@ Limit for the total number of FHIR request that can be sent to to processed by t
 
 **Default:** `50000`
 
-:::tip Local Config
+:::tip[Local Config]
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
 
 To make changes to settings that affect your deployed Medplum App, you must _also_ make these changes to your local configuration json file.
@@ -549,7 +569,29 @@ Flag to enable pre-commit subscriptions for the interceptor pattern.
 
 ### externalAuthProviders
 
-Optional list of external authentication providers.
+Optional list of external authentication providers for [Direct External Authentication](/docs/auth/direct-external-auth). Each entry allows users with JWTs from the specified issuer to authenticate directly against the Medplum API without a token exchange.
+
+Each provider object has the following properties:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `issuer` | `string` | The expected `iss` claim in JWTs from this IDP. Must match exactly. |
+| `userInfoUrl` | `string` | The IDP's userinfo endpoint URL, used to validate tokens. |
+
+Example configuration:
+
+```json
+{
+  "externalAuthProviders": [
+    {
+      "issuer": "https://auth.example.com",
+      "userInfoUrl": "https://auth.example.com/oauth2/userinfo"
+    }
+  ]
+}
+```
+
+When a user presents a JWT with a matching `iss` claim, the server validates the token against the IDP's userinfo endpoint, then identifies the user via the `fhirUser` claim or falls back to matching the `sub` claim against `ProjectMembership.externalId`. See [Direct External Authentication](/docs/auth/direct-external-auth) for full details.
 
 **Default:** None
 
@@ -629,7 +671,7 @@ Example `DatabaseSecrets` value:
 }
 ```
 
-:::note Query Timeout
+:::note[Query Timeout]
 The `queryTimeout` parameter controls how long the database will allow a query to run before terminating it. If this
 parameter is set too high, expensive queries will be allowed to run on the DB, potentially even after the associated
 request has returned a server timeout error. If set too low, some queries may start to fail if they hit the

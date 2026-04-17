@@ -38,6 +38,11 @@ const ARRAY_PATHS = [
 
   'code.translation',
   'value.translation',
+  'routeCode.translation',
+  'methodCode.translation',
+  'targetSiteCode.translation',
+  'approachSiteCode.translation',
+  'administrationUnitCode.translation',
 
   'section.entry',
 
@@ -87,7 +92,8 @@ export function convertXmlToCcda(xml: string): Ccda {
     attributeNamePrefix: '@_',
     parseAttributeValue: false,
     parseTagValue: false,
-    isArray: (_tagName, jPath, _isLeafNode, _isAttribute) => ARRAY_PATHS.some((p) => jPath.endsWith(p)),
+    jPath: true,
+    isArray: (_tagName, jPath, _isLeafNode, _isAttribute) => ARRAY_PATHS.some((p) => (jPath as string).endsWith(p)),
   });
 
   const parsedData = parser.parse(xml);

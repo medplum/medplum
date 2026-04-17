@@ -5,26 +5,26 @@
  * Do not edit manually.
  */
 
-import { Age } from './Age';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { DataRequirement } from './DataRequirement';
-import { Duration } from './Duration';
-import { Expression } from './Expression';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Period } from './Period';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
-import { Reference } from './Reference';
-import { RelatedArtifact } from './RelatedArtifact';
-import { Resource } from './Resource';
-import { Timing } from './Timing';
-import { TriggerDefinition } from './TriggerDefinition';
-import { UsageContext } from './UsageContext';
+import type { Age } from './Age.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { DataRequirement } from './DataRequirement.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Expression } from './Expression.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Timing } from './Timing.d.ts';
+import type { TriggerDefinition } from './TriggerDefinition.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * This resource allows for the definition of various types of plans as a

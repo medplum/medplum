@@ -1,36 +1,34 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Paper,
-  Stack,
-  Text,
-  Group,
   Badge,
   Divider,
+  Group,
   Loader,
-  Button,
-  Timeline,
-  ThemeIcon,
+  Paper,
   ScrollArea,
+  Stack,
+  Tabs,
+  Text,
+  ThemeIcon,
+  Timeline,
 } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type {
-  ServiceRequest,
-  HumanName,
-  DocumentReference,
-  DiagnosticReport,
-  QuestionnaireResponse,
-  MedicationRequest,
-  Reference,
   CarePlan,
+  DiagnosticReport,
+  DocumentReference,
+  HumanName,
+  MedicationRequest,
+  QuestionnaireResponse,
+  Reference,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
+import { AttachmentDisplay, ObservationTable, useMedplum, useResource } from '@medplum/react';
+import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useResource, useMedplum, AttachmentDisplay, ObservationTable } from '@medplum/react';
-import { IconSend, IconCheck, IconFlask, IconClipboardCheck } from '@tabler/icons-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
-import classes from './LabOrderDetails.module.css';
-import cx from 'clsx';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface LabOrderDetailsProps {
@@ -53,11 +51,11 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const requester = useResource(order.requester);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState<boolean>(false);
+  const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
-  const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState<boolean>(false);
+  const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
-  const [loadingQuestionnaire, setLoadingQuestionnaire] = useState<boolean>(false);
+  const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
     order.status !== 'completed' ? 'progress' : 'report'
   );
@@ -384,26 +382,19 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
               </Stack>
               <Divider />
               <Group justify="space-between" align="center">
-                <Group gap="xs">
-                  <Button
-                    className={cx(classes.button, {
-                      [classes.selected]: activeDetailTab === (order.status !== 'completed' ? 'progress' : 'report'),
-                    })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => setActiveDetailTab(order.status !== 'completed' ? 'progress' : 'report')}
-                  >
-                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                  </Button>
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeDetailTab === 'order' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => setActiveDetailTab('order')}
-                  >
-                    Order Details
-                  </Button>
-                </Group>
+                <Tabs
+                  value={activeDetailTab}
+                  onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+                  variant="unstyled"
+                  className="pill-tabs"
+                >
+                  <Tabs.List>
+                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
+                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                    </Tabs.Tab>
+                    <Tabs.Tab value="order">Order Details</Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
                 <Badge size="lg" color={getStatusColor(order.status)} variant="light">
                   {getStatusDisplayText(order.status)}
                 </Badge>

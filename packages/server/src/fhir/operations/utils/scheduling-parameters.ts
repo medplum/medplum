@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ActivityDefinition, Duration, Schedule } from '@medplum/fhirtypes';
+import { codeableConceptMatchesToken, EMPTY, isDefined } from '@medplum/core';
+import type {
+  CodeableConcept,
+  Duration,
+  HealthcareService,
+  HealthcareServiceAvailableTime,
+  Period,
+  Schedule,
+} from '@medplum/fhirtypes';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -18,35 +26,43 @@ type HardDuration = {
   unit: DurationUnit;
 };
 
-// The SchedulingParameters extension constrains codes:
-// - `system` and `code` must be present
-export type HardCoding = {
-  system: string;
-  code: string;
+// Similar to a Temporal.PlainTime; represents a time without a date or time
+// zone, as seen in the FHIR `time` type. Segments may be zero padded.
+type WallClockTime = `${number}:${number}:${number}`;
+
+// Nested extension types for `availability`, encoding the R5 `Availability` datatype
+// in valid R4 extension form. Note: `daysOfWeek` repeats once per day value.
+type AvailabilityR4AvailableTime = {
+  url: 'availableTime';
+  extension: (
+    | { url: 'daysOfWeek'; valueCode: DayOfWeek }
+    | { url: 'allDay'; valueBoolean: boolean }
+    | { url: 'availableStartTime'; valueTime: WallClockTime }
+    | { url: 'availableEndTime'; valueTime: WallClockTime }
+  )[];
+};
+
+// Typed for completeness / future use; not yet processed by parseSchedulingParametersExtensions.
+type AvailabilityR4NotAvailableTime = {
+  url: 'notAvailableTime';
+  extension: ({ url: 'description'; valueString: string } | { url: 'during'; valuePeriod: Period })[];
 };
 
 // The allowed nested extensions
-type SchedulingParametersExtensionExtension =
+export type SchedulingParametersExtensionExtension =
   | { url: 'bufferBefore'; valueDuration: HardDuration }
   | { url: 'bufferAfter'; valueDuration: HardDuration }
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
-  | { url: 'serviceType'; valueCoding: HardCoding }
+  | { url: 'serviceType'; valueCodeableConcept: CodeableConcept }
   | { url: 'timezone'; valueCode: string }
   | {
       url: 'availability';
-      valueTiming: {
-        repeat: {
-          dayOfWeek: DayOfWeek[];
-          timeOfDay: `${number}:${number}:${number}`[];
-          duration: number;
-          durationUnit: 'h' | 'min' | 'd' | 'wk';
-        };
-      };
+      extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
     };
 
-type SchedulingParametersExtension = {
+export type SchedulingParametersExtension = {
   url: typeof SchedulingParametersURI;
   extension: SchedulingParametersExtensionExtension[];
 };
@@ -55,8 +71,8 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 type SchedulingParametersAvailability = {
   dayOfWeek: DayOfWeek[];
-  timeOfDay: `${number}:${number}:${number}`[];
-  duration: number; // minutes
+  availableStartTime: WallClockTime;
+  availableEndTime: WallClockTime;
 };
 
 export type SchedulingParameters = {
@@ -66,7 +82,7 @@ export type SchedulingParameters = {
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
   duration: number; // minutes
-  serviceType: HardCoding[]; // codes that may be booked into this availability
+  serviceType: CodeableConcept[]; // codes that may be booked into this availability
   timezone?: string;
 };
 
@@ -89,21 +105,21 @@ function durationToMinutes(duration: Duration): number {
   }
 }
 
-function atMostOne<T>(arr: T[], attribute: string): T | undefined {
+function atMostOne<T>(arr: T[], attribute: string, _resourceType: string): T | undefined {
   if (arr.length > 1) {
     throw new Error(`Scheduling parameter attribute '${attribute}' has too many values`);
   }
   return arr[0];
 }
 
-function atLeastOne<T>(arr: T[], attribute: string): T[] {
+function atLeastOne<T>(arr: T[], attribute: string, _resourceType: string): T[] {
   if (arr.length < 1) {
     throw new Error(`Required scheduling parameter attribute '${attribute}' is missing`);
   }
   return arr;
 }
 
-function exactlyOne<T>(arr: T[], attribute: string): T {
+function exactlyOne<T>(arr: T[], attribute: string, _resourceType: string): T {
   if (arr.length < 1) {
     throw new Error(`Required scheduling parameter attribute '${attribute}' is missing`);
   }
@@ -113,55 +129,197 @@ function exactlyOne<T>(arr: T[], attribute: string): T {
   return arr[0];
 }
 
+function exactlyZero(arr: unknown[], attribute: string, resourceType: string): void {
+  if (arr.length > 0) {
+    throw new Error(`Scheduling parameter attribute '${attribute}' is not allowed on ${resourceType}`);
+  }
+}
+
 /**
- * @param resource - A Schedule or ActivityDefinition to extract scheduling information from
+ * Given a Schedule, HealthcareServices, and an array of input service type
+ * tokens, return [SchedulingParameters, serviceType] pairs that satisfy the
+ * requested service types.
+ *
+ * Priority order (highest to lowest):
+ *  1. Entries from the Schedule matching a requested service-type
+ *  2. Entries from HealthcareService matching a requested service-type
+ *
+ * Each SchedulingParameters description is returned at most once. If matches are found at a given
+ * priority level, lower-priority levels are not returned.
+ *
+ * @param schedule - The schedule resource to consider
+ * @param healthcareServices - HealthcareServices to consider
+ * @param serviceTypeTokens - Service type tokens to restrict scheduling parameters to
+ * @returns pairs of [SchedulingParameters, CodeableConcept]
+ */
+export function chooseSchedulingParameters(
+  schedule: Schedule,
+  healthcareServices: HealthcareService[],
+  serviceTypeTokens: string[]
+): (readonly [SchedulingParameters, CodeableConcept])[] {
+  const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
+
+  // Top priority: entries on an individual schedule matching a service type
+  const specificMatches = scheduleSchedulingParameters
+    .map((schedulingParameters) => {
+      const serviceType = schedulingParameters.serviceType.find((st) =>
+        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+      );
+      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
+    })
+    .filter(isDefined);
+
+  if (specificMatches.length) {
+    return specificMatches;
+  }
+
+  // Next: entries on HealthcareService resources matching a service type
+  const healthcareServiceSchedulingParameters = healthcareServices.flatMap((healthcareService) =>
+    parseSchedulingParametersExtensions(healthcareService)
+  );
+  const sharedMatches = healthcareServiceSchedulingParameters
+    .map((schedulingParameters) => {
+      const serviceType = schedulingParameters.serviceType.find((st) =>
+        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+      );
+      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
+    })
+    .filter(isDefined);
+
+  if (sharedMatches.length) {
+    return sharedMatches;
+  }
+
+  return [];
+}
+
+// Convert a single availability extension into SchedulingParametersAvailability entries.
+// notAvailableTime sub-extensions are ignored for now.
+function extractAvailabilityR4(ext: {
+  url: 'availability';
+  extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
+}): SchedulingParametersAvailability[] {
+  return ext.extension
+    .filter((sub) => sub.url === 'availableTime')
+    .map((availTime) => {
+      const dayOfWeek = availTime.extension.filter((e) => e.url === 'daysOfWeek').map((e) => e.valueCode);
+
+      const allDay = availTime.extension.find((e) => e.url === 'allDay')?.valueBoolean;
+      if (allDay) {
+        // FHIR doesn't allow representing end-of-day as `24:00:00` in a time
+        //
+        // We follow a convention where when end <= start, we treat it as
+        // belonging to the next day. In other words, this availability is from
+        // the start of the given weekdays to the start of the subsequent day.
+        //
+        // Note that we don't use a sentinel value like `23:59:59`, as we don't
+        // want to introduce a 1sec gap in availability; some events are
+        // scheduled to cross that boundary.
+        return { dayOfWeek, availableStartTime: '00:00:00' as const, availableEndTime: '00:00:00' as const };
+      }
+
+      const start = availTime.extension.find((e) => e.url === 'availableStartTime')?.valueTime;
+      const end = availTime.extension.find((e) => e.url === 'availableEndTime')?.valueTime;
+      if (start && end) {
+        return { dayOfWeek, availableStartTime: start, availableEndTime: end };
+      }
+      return undefined;
+    })
+    .filter(isDefined);
+}
+
+// Convert HealthcareService.availability entries into a format matching
+// our extension.availability values
+function extractAvailability(
+  availableTime: HealthcareServiceAvailableTime
+): SchedulingParametersAvailability | undefined {
+  if (availableTime.allDay) {
+    return {
+      dayOfWeek: availableTime.daysOfWeek ?? [],
+      availableStartTime: '00:00:00',
+      availableEndTime: '00:00:00',
+    };
+  }
+
+  if (availableTime.availableStartTime && availableTime.availableEndTime) {
+    return {
+      dayOfWeek: availableTime.daysOfWeek ?? [],
+      availableStartTime: availableTime.availableStartTime as WallClockTime,
+      availableEndTime: availableTime.availableEndTime as WallClockTime,
+    };
+  }
+
+  return undefined;
+}
+
+/**
+ * @param resource - A Schedule or HealthcareService to extract scheduling information from
  * @returns SchedulingParameters[] - An array of objects describing scheduling configuration
  */
-export function parseSchedulingParametersExtensions(resource: Schedule | ActivityDefinition): SchedulingParameters[] {
+export function parseSchedulingParametersExtensions(resource: Schedule | HealthcareService): SchedulingParameters[] {
   const extensions = (resource.extension ?? []).filter(
     (ext) => ext.url === SchedulingParametersURI
   ) as SchedulingParametersExtension[];
+
+  // Holds scheduling parameters extracted from attributes of the resource, to be merged into
+  // each extension on the resource
+  const resourceParameters: Partial<SchedulingParameters> = {};
+  if (resource.resourceType === 'HealthcareService') {
+    resourceParameters.serviceType = resource.type ?? [];
+    resourceParameters.availability = (resource.availableTime ?? EMPTY).map(extractAvailability).filter(isDefined);
+  }
+
   return extensions.map((extension) => {
     const duration = exactlyOne(
       extension.extension.filter((ext) => ext.url === 'duration'),
-      'duration'
+      'duration',
+      resource.resourceType
     );
-    const rawAvailability = atLeastOne(
-      extension.extension.filter((ext) => ext.url === 'availability'),
-      'availability'
-    );
+
+    // `availability` is required in Schedule, and not allowed in
+    // HealthcareService (where we read from availableTime instead).
+    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
+    if (resource.resourceType === 'Schedule') {
+      atLeastOne(rawAvailability, 'availability', resource.resourceType);
+    } else {
+      exactlyZero(rawAvailability, 'availability', resource.resourceType);
+    }
+
+    const availability = resourceParameters.availability ?? rawAvailability.flatMap(extractAvailabilityR4);
+
     const bufferBefore = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferBefore'),
-      'bufferBefore'
+      'bufferBefore',
+      resource.resourceType
     );
     const bufferAfter = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferAfter'),
-      'bufferAfter'
+      'bufferAfter',
+      resource.resourceType
     );
     const alignmentOffset = atMostOne(
       extension.extension.filter((ext) => ext.url === 'alignmentOffset'),
-      'alignmentOffset'
+      'alignmentOffset',
+      resource.resourceType
     );
     const rawAlignmentInterval = atMostOne(
       extension.extension.filter((ext) => ext.url === 'alignmentInterval'),
-      'alignmentInterval'
+      'alignmentInterval',
+      resource.resourceType
     );
     const timezone = atMostOne(
       extension.extension.filter((ext) => ext.url === 'timezone'),
-      'timezone'
+      'timezone',
+      resource.resourceType
     );
 
-    // serviceType has cardinality 0..*
-    const serviceType = extension.extension.filter((ext) => ext.url === 'serviceType').map((ext) => ext.valueCoding);
-
-    const availability = rawAvailability.map((ext) => ({
-      dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
-      timeOfDay: ext.valueTiming.repeat.timeOfDay,
-      duration: durationToMinutes({
-        value: ext.valueTiming.repeat.duration,
-        unit: ext.valueTiming.repeat.durationUnit,
-      }),
-    }));
+    // `serviceType` is expected in Schedule, not allowed in HealthcareService
+    // (where we read from HealthcareService.type instead)
+    const rawServiceType = extension.extension.filter((ext) => ext.url === 'serviceType');
+    if (resource.resourceType === 'HealthcareService') {
+      exactlyZero(rawServiceType, 'serviceType', resource.resourceType);
+    }
+    const serviceType = resourceParameters.serviceType ?? rawServiceType.map((ext) => ext.valueCodeableConcept);
 
     // default alignmentInterval is "on the hour" (0)
     let alignmentInterval = rawAlignmentInterval ? durationToMinutes(rawAlignmentInterval.valueDuration) : 0;
@@ -170,13 +328,15 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
     alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
 
     return {
-      availability: availability,
+      serviceType, // HealthcareService.type or `serviceType` extension parameter
+      availability, // HealthcareService.availableTime or `availability` extension parameter
+
+      // These attributes always come from the extension
       bufferBefore: bufferBefore ? durationToMinutes(bufferBefore.valueDuration) : 0,
       bufferAfter: bufferAfter ? durationToMinutes(bufferAfter.valueDuration) : 0,
       alignmentInterval,
       alignmentOffset: alignmentOffset ? durationToMinutes(alignmentOffset.valueDuration) : 0,
       duration: durationToMinutes(duration.valueDuration),
-      serviceType,
       timezone: timezone?.valueCode,
     };
   });

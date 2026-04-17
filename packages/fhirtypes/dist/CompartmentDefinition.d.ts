@@ -5,13 +5,13 @@
  * Do not edit manually.
  */
 
-import { ContactDetail } from './ContactDetail';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
-import { ResourceType } from './ResourceType';
-import { UsageContext } from './UsageContext';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ResourceType } from './ResourceType.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * A compartment definition that defines how resources are accessed on a

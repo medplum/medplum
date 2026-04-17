@@ -66,7 +66,7 @@ See the [Search documentation](/docs/search/basic-search) for more information o
 }
 ```
 
-:::warning Limitations
+:::warning[Limitations]
 While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
 
 - Only `:not` and `:missing` [modifiers](/docs/search/basic-search#search-modifiers) are allowed.
@@ -144,7 +144,7 @@ The `interaction` array can contain any of the supported interaction types:
 - `history`: View the list of previous versions of a resource
 - `vread`: View a specific previous version of a resource
 
-:::tip Related interactions
+:::tip[Related interactions]
 
 Some FHIR interactions are used in concert by the server, and so should be considered together:
 
@@ -446,13 +446,13 @@ Because the account-tagging is handled within the resource, project administrato
 
 If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. In this case it is recommended to use templated access policies, that also implement compartments as shown below.
 
-:::caution Open Patient Registration
+:::caution[Open Patient Registration]
 
 Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/user-management/open-patient-registration) for instructions on enabling this functionality.
 
 :::
 
-:::danger Binary Access
+:::danger[Binary Access]
 
 Binary resources cannot use compartment-based access controls. They require explicit `securityContext` declaration. See the [Binary Security Context](/docs/access/binary-security-context) documentation for more information.
 
@@ -568,11 +568,9 @@ The recent enhancements introduce the **AccessPolicy.basedOn element**, which en
 This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
 
 - **Endpoint: /auth/me**
-
   - This endpoint provides access to the user's AccessPolicy information, including the basedOn element.
 
 - **AccessPolicy.basedOn**
-
   - This element is an array containing references to original AccessPolicy resources.
   - It provides traceability by linking the resolved AccessPolicy back to its source policies.
   - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.

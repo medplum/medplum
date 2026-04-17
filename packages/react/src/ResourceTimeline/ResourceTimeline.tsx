@@ -19,7 +19,7 @@ import type {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
@@ -61,8 +61,10 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const [countToShow, setCountToShow] = useState(10);
   const loadTimelineResources = props.loadTimelineResources;
 
-  const itemsRef = useRef<Resource[]>(items);
-  itemsRef.current = items;
+  const itemsRef = useRef(items);
+  useLayoutEffect(() => {
+    itemsRef.current = items;
+  });
 
   /**
    * Sorts and sets the items.

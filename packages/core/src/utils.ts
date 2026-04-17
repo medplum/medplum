@@ -431,6 +431,11 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   return undefined;
 }
 
+export interface SetIdentifierOptions {
+  /** IdentifierUse code. See {@link https://build.fhir.org/valueset-identifier-use.html} */
+  use?: Identifier['use'];
+}
+
 /**
  * Sets a resource identifier for the given system.
  *
@@ -446,13 +451,12 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param system - The identifier system.
  * @param value - The identifier value.
  * @param options - Optional attributes to set
- * @param options.use - IdentifierUse code (https://build.fhir.org/valueset-identifier-use.html)
  */
 export function setIdentifier(
   resource: Resource & { identifier?: Identifier[] },
   system: string,
   value: string,
-  options?: { use?: Identifier['use'] }
+  options?: SetIdentifierOptions
 ): void {
   const identifier: Identifier = { system, value };
   if (options?.use) {
@@ -905,6 +909,48 @@ export function findCodeBySystem(categories: CodeableConcept[] | undefined, syst
     }
   }
   return undefined;
+}
+
+/**
+ * Checks if a Coding matches a token search string
+ * https://build.fhir.org/search.html#token
+ *
+ * @param coding - The Coding to test
+ * @param token - The token string to test
+ * @returns True if the Coding matches the token
+ */
+export function codingMatchesToken(coding: Coding, token: string): boolean {
+  const [system, code] = splitN(token, '|', 2);
+
+  if (code === undefined) {
+    // There was no '|' delimiter in the token, so we treat the whole token as a code and
+    // match irrespective of the `system` property
+    return coding.code === token;
+  }
+
+  if (system === '') {
+    // The token was of the form '|[code]', which only matches Coding values with no `system`
+    return coding.system === undefined && coding.code === code;
+  }
+
+  if (code === '') {
+    // The token was of the form '[system]|', which matches any Coding belonging to that system
+    return coding.system === system;
+  }
+
+  return coding.system === system && coding.code === code;
+}
+
+/**
+ * Checks if a CodeableConcept matches a token search string
+ * https://build.fhir.org/search.html#token
+ *
+ * @param codeableConcept - The CodeableConcept to test
+ * @param token - The token string to test
+ * @returns True if the CodeableConcept matches the token
+ */
+export function codeableConceptMatchesToken(codeableConcept: CodeableConcept, token: string): boolean {
+  return (codeableConcept.coding ?? EMPTY).some((coding) => codingMatchesToken(coding, token));
 }
 
 /**
@@ -1524,9 +1570,11 @@ export function escapeHtml(unsafe: string): string {
  * @param value - The value to refine
  * @returns boolean
  *
- * Example usage:
- *   const arr: Array<number | undefined> = [1,undefined];
- *   const refined: Array<number> = arr.filter(isDefined);
+ * @example
+ * ```typescript
+ * const arr: Array<number | undefined> = [1,undefined];
+ * const refined: Array<number> = arr.filter(isDefined);
+ * ```
  */
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
@@ -1534,3 +1582,6 @@ export function isDefined<T>(value: T | undefined | null): value is T {
 
 /** Constant empty array. */
 export const EMPTY: readonly [] = Object.freeze([]);
+
+/** No operation function. */
+export const NOOP = (): void => {};

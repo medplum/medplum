@@ -97,12 +97,12 @@ interface Cursor {
 }
 
 /** Linking direction for chained search. */
-const Direction = {
+export const Direction = {
   FORWARD: 1,
   REVERSE: -1,
 } as const;
 
-interface ChainedSearchLink {
+export interface ChainedSearchLink {
   originType: string;
   targetType: string;
   code: string;
@@ -135,7 +135,8 @@ export async function searchImpl<T extends Resource>(
 
   let total = undefined;
   if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
-    total = await getCount(repo, searchRequest, rowCount);
+    const countResult = await getCount(repo, searchRequest, { rowCount });
+    total = countResult.accurate ?? countResult.estimate;
   }
 
   return {
@@ -435,7 +436,7 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType);
+  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
@@ -819,6 +820,18 @@ function getSearchUrl(searchRequest: SearchRequest): string {
   return `${getConfig().baseUrl}fhir/R4/${searchRequest.resourceType}${formatSearchQuery(searchRequest)}`;
 }
 
+export interface CountResult {
+  estimate: number;
+  accurate?: number;
+}
+
+export interface GetCountOptions {
+  /** The number of matching results if found. Used to clamp the estimate count. */
+  rowCount?: number;
+  /** If true, always compute the accurate count regardless of the estimate threshold. */
+  forceAccurate?: boolean;
+}
+
 /**
  * Returns the count for a search request.
  * This ignores page number and page size.
@@ -826,16 +839,39 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * If the estimate is less than the "accurateCountThreshold" config setting (default 1,000,000), then we run an accurate count.
  * @param repo - The repository.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found.
- * @returns The total number of matching results.
+ * @param options - Options for controlling count behavior.
+ * @returns The count result with estimate and optionally accurate count.
  */
-async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount?: number): Promise<number> {
-  let estimateCount = await getEstimateCount(repo, searchRequest);
-  estimateCount = clampEstimateCount(searchRequest, estimateCount, rowCount);
-  if (estimateCount < getConfig().accurateCountThreshold) {
-    return getAccurateCount(repo, searchRequest);
+export async function getCount(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  options?: GetCountOptions
+): Promise<CountResult> {
+  // When the data query returned fewer rows than the page size and we're not
+  // using cursor pagination, we already know the exact total: offset + rowCount.
+  // Skip both the EXPLAIN and COUNT(*) queries.
+  if (
+    options?.rowCount !== undefined && // We actually fetched results
+    !options.forceAccurate && // Caller isn't explicitly requesting a DB count
+    !searchRequest.cursor && // Cursor adds WHERE clauses the count query won't have, so rowCount isn't representative
+    options.rowCount <= (searchRequest.count ?? DEFAULT_SEARCH_COUNT) && // Fewer results than requested means we've seen them all
+    (options.rowCount > 0 || (searchRequest.offset ?? 0) === 0) // With offset + zero rows, total could be 0..offset
+  ) {
+    const exact = (searchRequest.offset ?? 0) + options.rowCount;
+    return { estimate: exact, accurate: exact };
   }
-  return estimateCount;
+
+  let estimate = await getEstimateCount(repo, searchRequest);
+  estimate = clampEstimateCount(searchRequest, estimate, options?.rowCount);
+
+  const shouldGetAccurate = options?.forceAccurate || estimate < getConfig().accurateCountThreshold;
+
+  if (shouldGetAccurate) {
+    const accurate = await getAccurateCount(repo, searchRequest);
+    return { estimate, accurate };
+  }
+
+  return { estimate };
 }
 
 /**
@@ -934,17 +970,8 @@ export function buildSearchExpression(
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    let expr: Expression | undefined;
-    if (isChainedSearchFilter(filter)) {
-      const chain = parseChainedParameter(searchRequest.resourceType, filter);
-      expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
-    } else {
-      expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
-    }
-
-    if (expr) {
-      expressions.push(expr);
-    }
+    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    expressions.push(expr);
   }
   if (expressions.length === 0) {
     return undefined;
@@ -979,7 +1006,7 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest('Search filter value cannot contain null bytes'));
   }
 
-  if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
+  if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
@@ -1155,8 +1182,11 @@ function trySpecialSearchParameter(
         filter
       );
     }
-    case '_filter':
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
+    case '_filter': {
+      const filterExpr = parseFilterParameter(filter.value);
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr);
+    }
+
     default:
       return undefined;
   }
@@ -1604,7 +1634,7 @@ function buildChainedSearch(
     const targetId = param.filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
       code,
-      operator: Operator.EQUALS,
+      operator: param.filter.operator,
       value: `${targetType}/${targetId}`,
     });
   }
@@ -1762,7 +1792,7 @@ function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink,
   ]);
 }
 
-function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
+export function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
   let currentResourceType = resourceType;
   const parts = splitChainedSearch(searchFilter.code);
 
@@ -1783,7 +1813,7 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
         if (!searchParam) {
           throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
         }
-        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
+        filter = parseParameter(searchParam, searchFilter.operator, modifier, searchFilter.value);
       }
     } else {
       const link = parseChainLink(part, currentResourceType);

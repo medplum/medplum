@@ -29,7 +29,11 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   }
 
   function filterMembership(membership: ProjectMembership): boolean {
-    return filterDisplay(membership.profile?.display) || filterDisplay(membership.project?.display);
+    return (
+      filterDisplay(membership.profile?.display) ||
+      filterDisplay(membership.project?.display) ||
+      filterDisplay(getMembershipLabel(membership))
+    );
   }
 
   function handleValueSelect(membershipId: string): void {

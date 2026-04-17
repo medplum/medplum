@@ -5,24 +5,24 @@
  * Do not edit manually.
  */
 
-import { Age } from './Age';
-import { AllergyIntolerance } from './AllergyIntolerance';
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { DiagnosticReport } from './DiagnosticReport';
-import { DocumentReference } from './DocumentReference';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { QuestionnaireResponse } from './QuestionnaireResponse';
-import { Range } from './Range';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Age } from './Age.d.ts';
+import type { AllergyIntolerance } from './AllergyIntolerance.d.ts';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { DocumentReference } from './DocumentReference.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { QuestionnaireResponse } from './QuestionnaireResponse.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Significant health conditions for a person related to the patient

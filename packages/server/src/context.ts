@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, OperationOutcomeError, badRequest, isUUID, parseLogLevel } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -16,12 +16,12 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
-import type { Repository } from './fhir/repo';
+import type { Repository, SystemRepository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
-import { globalLogger } from './logger';
+import { getLogger, globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
-import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
-import { getRedis } from './redis';
+import { authenticateTokenImpl } from './oauth/middleware';
+import { getRateLimitRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
@@ -107,6 +107,14 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.authState;
   }
 
+  /**
+   * @returns a SystemRepository for the same shard as this context's repository.
+   * Use this when you need elevated privileges within request handling.
+   */
+  get systemRepo(): SystemRepository {
+    return this.repo.getSystemRepo();
+  }
+
   [Symbol.dispose](): void {
     this.repo[Symbol.dispose]();
   }
@@ -133,20 +141,29 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 }
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const { requestId, traceId } = requestIds(req);
+  let ctx: RequestContext | undefined;
   try {
-    let ctx: RequestContext;
-    const { requestId, traceId } = requestIds(req);
-    const authState = await authenticateTokenImpl(req);
-    if (authState) {
-      const repo = await getRepoForLogin(authState, isExtendedMode(req));
+    const result = await authenticateTokenImpl(req);
+    if (result) {
+      const { authState, repo } = result;
       ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
-    } else {
-      ctx = new RequestContext(requestId, traceId);
     }
-    requestContextStore.run(ctx, () => next());
-  } catch (err) {
-    next(err);
+  } catch (err: any) {
+    // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
+    ctx ??= new RequestContext(requestId, traceId);
+    requestContextStore.run(ctx, () => {
+      getLogger().error('Authentication error', { err: err.toString(), stack: err.stack });
+      const outcome = badRequest('Authentication error');
+      outcome.issue[0].diagnostics = err.toString();
+      const wrappedErr = new OperationOutcomeError(outcome, { cause: err });
+      next(wrappedErr);
+    });
+    return;
   }
+
+  ctx ??= new RequestContext(requestId, traceId);
+  requestContextStore.run(ctx, () => next());
 }
 
 export function closeRequestContext(): void {
@@ -256,13 +273,13 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boole
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return authState.membership
-    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
+    ? new FhirRateLimiter(getRateLimitRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
     : undefined;
 }
 
 function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
   const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
   return authState.membership && projectLimit
-    ? new ResourceCap(getRedis(), authState, projectLimit, logger ?? globalLogger)
+    ? new ResourceCap(getRateLimitRedis(), authState, projectLimit, logger ?? globalLogger)
     : undefined;
 }

@@ -1,0 +1,35 @@
+---
+title: Package
+sidebar_position: 16
+---
+
+import Link from '@docusaurus/Link';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import definition from '@site/static/data/medplumDefinitions/package.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Package
+
+Definition of a marketplace package, which represents a set of automated actions that can be taken by a system, such as a subscription or a workflow.
+
+<Tabs queryString="section">
+  <TabItem value="schema" label="Schema" default>
+
+## Elements
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Elements
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+  </TabItem>
+
+</Tabs>

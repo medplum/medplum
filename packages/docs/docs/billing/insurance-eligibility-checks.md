@@ -43,7 +43,7 @@ To complete an eligibility check, you will need the following information:
 - Patient demographic info, modeled as a reference to a [`Patient`](/docs/api/fhir/resources/patient) resource.
 - Patient insurance coverage, modeled as a reference to a [`Coverage`](/docs/api/fhir/resources/coverage) resource (see our [insurance guide](/docs/billing/patient-insurance) for more info).
 - Provider info, modeled as a reference to the relevant [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), or [`Organization`](/docs/api/fhir/resources/organization) (see the [provider network guide](/docs/administration/provider-directory/provider-networks) for more info).
-- The procedure/service to be provided and the diagnosis. This information should be on the relevant [`Encounter`](/docs/api/fhir/resources/encounter) (see our [blog post on Well Defined Service Menus](https://www.medplum.com/blog#well-defined-service-menu) for more info).
+- The procedure/service to be provided and the diagnosis. This information should be on the relevant [`Encounter`](/docs/api/fhir/resources/encounter).
 
 ## Creating a Request
 
@@ -138,7 +138,7 @@ This field has some overlap with the request resource, but there are also signif
 | `provider`                | A reference to the [`Practitioner`](/docs/api/fhir/resources/practitioner) who is responsible for providing the service. |                                                                                                                                      | Practitioner/dr-alice-smith              |
 | `category`                | The general type of the service or product being checked for eligibility.                                                |                                                                                                                                      | Vision Coverage                          |
 
-:::note Coordination of Benefits
+:::note[Coordination of Benefits]
 FHIR makes the `insurance` field on both the request and response an array, allowing for coordination of benefits across multiple insurance policies.
 
 When sending a request, if there are multiple insurances, the `CoverageEligibilityRequest.insurance.focal` field should be set to `true` on the specific coverage being checked.

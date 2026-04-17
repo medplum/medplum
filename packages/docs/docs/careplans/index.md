@@ -46,11 +46,11 @@ flowchart LR
 
 | **Code System**                                       | **Description**                                                                          |
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [LOINC](https://www.medplum.com/docs/careplans/loinc) | Used to define the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource. |
+| [LOINC](/docs/careplans/loinc) | Used to define the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource. |
 
 ## Other Resources
 
-:::caution Note
+:::caution[Note]
 
 Feel free to reach out to us at hello@medplum.com if you have questions about your care plan setup.
 

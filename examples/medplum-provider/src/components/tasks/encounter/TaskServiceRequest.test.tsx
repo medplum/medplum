@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest, Task } from '@medplum/fhirtypes';
+import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { TaskServiceRequest } from './TaskServiceRequest';
-import { act, fireEvent, render, screen, waitFor } from '../../../test-utils/render';
-import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { useParams } from 'react-router';
-import type { WithId } from '@medplum/core';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '../../../test-utils/render';
+import { TaskServiceRequest } from './TaskServiceRequest';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
   const actual = await vi.importActual('@medplum/health-gorilla-react');

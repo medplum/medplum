@@ -5,26 +5,26 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { CarePlan } from './CarePlan';
-import { Coding } from './Coding';
-import { Device } from './Device';
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
+import type { Attachment } from './Attachment.d.ts';
+import type { CarePlan } from './CarePlan.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
 
 /**
  * A structured set of questions and their answers. The questions are

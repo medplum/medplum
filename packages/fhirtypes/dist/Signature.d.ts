@@ -5,15 +5,15 @@
  * Do not edit manually.
  */
 
-import { Coding } from './Coding';
-import { Device } from './Device';
-import { Extension } from './Extension';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
+import type { Coding } from './Coding.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
 
 /**
  * A signature along with supporting context. The signature may be a

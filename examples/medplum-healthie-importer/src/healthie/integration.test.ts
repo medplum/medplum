@@ -14,7 +14,10 @@ import { config } from 'dotenv';
 import { describe, expect, test } from 'vitest';
 import { HealthieClient } from './client';
 import { fetchAllergySensitivities } from './allergy';
+import { fetchPolicies } from './coverage';
+import { fetchDocuments } from './document';
 import { fetchMedications } from './medication';
+import { fetchOrganizationMembers } from './provider';
 import { fetchHealthieFormAnswerGroups } from './questionnaire-response';
 import {
   fetchMostRecentAllergyDate,
@@ -148,6 +151,27 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
     }
   });
 
+  test('can fetch policies for a patient', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const policies = await fetchPolicies(healthieClient, testPatientId);
+
+    expect(Array.isArray(policies)).toBe(true);
+    console.log(`Found ${policies.length} policies for patient ${testPatientId}`);
+
+    if (policies.length > 0) {
+      const policy = policies[0];
+      expect(policy.id).toBeDefined();
+      expect(typeof policy.id).toBe('string');
+      console.log(
+        `  First policy: id=${policy.id}, priority=${policy.priority_type}, holder_relationship=${policy.holder_relationship}, payer=${policy.insurance_plan?.payer_name}`
+      );
+    }
+  });
+
   test('can fetch most recent medication date', async () => {
     if (!testPatientId) {
       console.log('Skipping: No test patient available');
@@ -202,6 +226,41 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       console.log(`Most recent form date: ${date}`);
     } else {
       console.log('No form answer groups found for patient');
+    }
+  });
+
+  test('can fetch organization members (providers)', async () => {
+    const providers = await fetchOrganizationMembers(healthieClient);
+
+    expect(Array.isArray(providers)).toBe(true);
+    console.log(`Found ${providers.length} active providers`);
+
+    if (providers.length > 0) {
+      const provider = providers[0];
+      expect(provider.id).toBeDefined();
+      expect(typeof provider.id).toBe('string');
+      console.log(
+        `  First provider: id=${provider.id}, name=${provider.first_name} ${provider.last_name}, npi=${provider.npi}`
+      );
+    }
+  });
+
+  test('can fetch documents for a patient', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const documents = await fetchDocuments(healthieClient, testPatientId);
+
+    expect(Array.isArray(documents)).toBe(true);
+    console.log(`Found ${documents.length} documents for patient ${testPatientId}`);
+
+    if (documents.length > 0) {
+      const doc = documents[0];
+      expect(doc.id).toBeDefined();
+      expect(typeof doc.id).toBe('string');
+      console.log(`  First document: id=${doc.id}, name=${doc.display_name}, type=${doc.file_content_type}`);
     }
   });
 
