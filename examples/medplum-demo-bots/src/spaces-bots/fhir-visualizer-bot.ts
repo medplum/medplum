@@ -90,15 +90,7 @@ export async function handler(
   medplum: MedplumClient,
   event: BotEvent<Parameters>
 ): Promise<Parameters | OperationOutcome | undefined> {
-  const { input, secrets, responseStream } = event;
-
-  const apiKey = secrets['OPENAI_API_KEY']?.valueString;
-  if (!apiKey) {
-    return {
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: 'OPENAI_API_KEY is required' } }],
-    };
-  }
+  const { input, responseStream } = event;
 
   const messagesParam = input.parameter?.find((p) => p.name === 'messages');
   if (!messagesParam?.valueString) {
@@ -120,7 +112,6 @@ export async function handler(
     resourceType: 'Parameters',
     parameter: [
       { name: 'messages', valueString: JSON.stringify(messages) },
-      { name: 'apiKey', valueString: apiKey },
       { name: 'model', valueString: model },
     ],
   };

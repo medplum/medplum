@@ -3,7 +3,7 @@
 import { Box, Drawer, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { createReference, EMPTY, getReferenceString } from '@medplum/core';
+import { createReference, EMPTY, getReferenceString, isReference } from '@medplum/core';
 import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
@@ -120,25 +120,37 @@ export function SchedulePage(): JSX.Element | null {
     };
   }, [medplum, schedule, range]);
 
+  const practitioner = schedule?.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
+
   // When a date/time interval is selected, set the event object and open the
   // create appointment modal
   const handleSelectInterval = useCallback(
     (slot: SlotInfo) => {
+      if (!practitioner) {
+        showErrorNotification("Can't create visit without associated Practitioner");
+        return;
+      }
+
       createAppointmentHandlers.open();
       setAppointmentSlot(slot);
     },
-    [createAppointmentHandlers]
+    [createAppointmentHandlers, practitioner]
   );
 
   const handleSelectSlot = useCallback(
     (slot: Slot) => {
+      if (!practitioner) {
+        showErrorNotification("Can't create visit without associated Practitioner");
+        return;
+      }
+
       // When a "free" slot is selected, open the create appointment modal
       if (slot.status === 'free') {
         createAppointmentHandlers.open();
         setAppointmentSlot({ start: new Date(slot.start), end: new Date(slot.end) });
       }
     },
-    [createAppointmentHandlers]
+    [createAppointmentHandlers, practitioner]
   );
 
   const handleBookSuccess = useCallback(
@@ -169,20 +181,17 @@ export function SchedulePage(): JSX.Element | null {
       }
 
       try {
-        const encounters = await medplum.searchResources('Encounter', [
-          ['appointment', reference],
-          ['_count', '1'],
-        ]);
+        const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
 
-        if (encounters.length === 0) {
+        if (!encounter) {
           setAppointmentDetails(appointment);
           appointmentDetailsHandlers.open();
           return;
         }
 
-        const patient = encounters?.[0]?.subject;
+        const patient = encounter.subject;
         if (patient?.reference) {
-          await navigate(`/${patient.reference}/Encounter/${encounters?.[0]?.id}`);
+          await navigate(`/${patient.reference}/Encounter/${encounter.id}`);
         }
       } catch (error) {
         showErrorNotification(error);
@@ -254,15 +263,17 @@ export function SchedulePage(): JSX.Element | null {
       </div>
 
       {/* Modals */}
-      <Drawer
-        opened={createAppointmentOpened}
-        onClose={createAppointmentHandlers.close}
-        title="New Calendar Event"
-        position="right"
-        h="100%"
-      >
-        <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} />
-      </Drawer>
+      {practitioner && (
+        <Drawer
+          opened={createAppointmentOpened}
+          onClose={createAppointmentHandlers.close}
+          title="New Calendar Event"
+          position="right"
+          h="100%"
+        >
+          <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
+        </Drawer>
+      )}
       <Drawer
         opened={appointmentDetailsOpened}
         onClose={appointmentDetailsHandlers.close}

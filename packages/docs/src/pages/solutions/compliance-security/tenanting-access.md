@@ -10,7 +10,7 @@ Data is tenanted in Medplum primarily in two layers: at the project level, and a
 
 A [Medplum Project](/docs/access/projects) is a fully isolated workspace for FHIR resources, and forms the core boundary for access control and data separation on the Medplum platform. Resources in one project cannot reference or interact with those in another, and users can only access data within the specific project to which they are granted access. All access tokens, whether for users or service accounts, are strictly limited to a single project.
 
-:::info Project-level data isolation
+:::info[Project-level data isolation]
 
 As of Feb 2026, data isolation is enforced at the application layer. The 2026 road includes [database sharding](https://www.medplum.com/blog/2026-roadmap#enterprise-scale--infrastructure), which would allow for strict database level isolation. Follow the [Github discussion](https://github.com/medplum/medplum/discussions/6026)!
 

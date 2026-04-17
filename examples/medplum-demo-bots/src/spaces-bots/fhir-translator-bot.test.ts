@@ -6,7 +6,7 @@ import { handler } from './fhir-translator-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
-const secrets = { OPENAI_API_KEY: { name: 'OPENAI_API_KEY', valueString: 'test-key' } };
+const secrets = {};
 
 const SYSTEM_PROMPT = 'You are a FHIR Request Translator.';
 const PROFILE_CONTEXT_TEMPLATE = '## CURRENT USER CONTEXT:\nRef: {{ref}}';
@@ -35,13 +35,6 @@ describe('fhir-translator-bot', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-  });
-
-  test('throws when OPENAI_API_KEY secret is missing', async () => {
-    const input = makeInput([{ role: 'user', content: 'Find patient John' }]);
-    await expect(handler(medplum, { bot, input, contentType, secrets: {} })).rejects.toThrow(
-      'OPENAI_API_KEY is required'
-    );
   });
 
   test('throws when messages parameter is missing', async () => {
@@ -194,8 +187,8 @@ describe('fhir-translator-bot', () => {
       bot,
       input,
       contentType,
-      secrets,
       requester: { reference: 'Practitioner/abc' },
+      secrets,
     });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;

@@ -433,7 +433,7 @@ Limit for the total number of FHIR request that can be sent to to processed by t
 
 **Default:** `50000`
 
-:::tip Local Config
+:::tip[Local Config]
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
 
 To make changes to settings that affect your deployed Medplum App, you must _also_ make these changes to your local configuration json file.
@@ -671,7 +671,7 @@ Example `DatabaseSecrets` value:
 }
 ```
 
-:::note Query Timeout
+:::note[Query Timeout]
 The `queryTimeout` parameter controls how long the database will allow a query to run before terminating it. If this
 parameter is set too high, expensive queries will be allowed to run on the DB, potentially even after the associated
 request has returned a server timeout error. If set too low, some queries may start to fail if they hit the

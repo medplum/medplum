@@ -68,7 +68,7 @@ The `:missing` modifier finds Communication resources that have no `partOf` refe
 
 This retrieves all child messages for a given thread header, sorted chronologically by the `sent` timestamp.
 
-:::caution About `_revinclude` with thread headers
+:::caution[About `_revinclude` with thread headers]
 
 You may encounter examples that use `Communication?part-of:missing=true&_revinclude=Communication:part-of` to return every thread header and every child message in one search response. That pattern tends to **over-fetch**: the bundle grows with the total number of messages across all matched threads and is **expensive** for the server. For typical UIs, load thread headers first, then run a separate query per thread (as above), using pagination where appropriate.
 
@@ -96,7 +96,7 @@ Filter threads by patient:
   </TabItem>
 </Tabs>
 
-### Filter by Current User {#filter-by-current-user}
+### Filter by Current User {/* #filter-by-current-user */}
 
 To show threads the current user participates in, filter by `recipient`:
 

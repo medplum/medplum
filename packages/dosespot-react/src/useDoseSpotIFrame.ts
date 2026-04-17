@@ -1,51 +1,103 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { NOOP } from '@medplum/core';
+import type { ProjectMembership } from '@medplum/fhirtypes';
+import type { EPrescribingIFrameOptions } from '@medplum/react-hooks';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT } from './common';
+import { useEffect, useRef, useState } from 'react';
+import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
+import type { DoseSpotSelfEnrollmentResult } from './useDoseSpotSelfEnrollment';
 
-export interface DoseSpotIFrameOptions {
-  readonly patientId?: string;
-  readonly onPatientSyncSuccess?: () => void;
-  readonly onIframeSuccess?: (url: string) => void;
-  readonly onError?: (err: unknown) => void;
+export interface DoseSpotIFrameOptions extends EPrescribingIFrameOptions {
+  /**
+   * When true, automatically runs the self-enrollment bot before loading
+   * the iframe if the current user does not have a DoseSpot identifier
+   * on their ProjectMembership. Requires an active PractitionerRole with
+   * DoseSpot role type codes for the practitioner.
+   */
+  readonly selfEnroll?: boolean;
+  /** Called after self-enrollment completes successfully. */
+  readonly onSelfEnrollSuccess?: (result: DoseSpotSelfEnrollmentResult) => void;
 }
 
+/**
+ * React hook that syncs a patient to DoseSpot and returns the iframe URL.
+ *
+ * Runs optional self-enrollment, then the patient-sync bot (when `patientId`
+ * is set), then the iframe bot — aligned with {@link useEPrescribingIFrame}
+ * behavior plus DoseSpot-specific enrollment.
+ *
+ * @param options - Configuration and callback options.
+ * @returns The DoseSpot iframe URL, or undefined while loading.
+ */
 export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | undefined {
   const medplum = useMedplum();
-  const { patientId } = options;
-  const initializingRef = useRef(false);
+  const { patientId, selfEnroll, onPatientSyncSuccess, onIframeSuccess, onSelfEnrollSuccess, onError } = options;
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
-  const onPatientSyncSuccess = useEffectEvent(options.onPatientSyncSuccess ?? NOOP);
-  const onIframeSuccess = useEffectEvent(options.onIframeSuccess ?? NOOP);
-  const onError = useEffectEvent(options.onError ?? NOOP);
+
+  const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);
+  const onIframeSuccessRef = useRef(onIframeSuccess);
+  const onSelfEnrollSuccessRef = useRef(onSelfEnrollSuccess);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => {
-    const initPage = async (): Promise<void> => {
-      if (initializingRef.current) {
+    onPatientSyncSuccessRef.current = onPatientSyncSuccess;
+    onIframeSuccessRef.current = onIframeSuccess;
+    onSelfEnrollSuccessRef.current = onSelfEnrollSuccess;
+    onErrorRef.current = onError;
+  }, [onPatientSyncSuccess, onIframeSuccess, onSelfEnrollSuccess, onError]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async (): Promise<void> => {
+      if (selfEnroll && !hasDoseSpotIdentifier(medplum.getProjectMembership())) {
+        const enrollResult = (await medplum.executeBot(
+          DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
+          {}
+        )) as DoseSpotSelfEnrollmentResult;
+        if (cancelled) {
+          return;
+        }
+        onSelfEnrollSuccessRef.current?.(enrollResult);
+      }
+
+      if (patientId) {
+        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
+        if (cancelled) {
+          return;
+        }
+        onPatientSyncSuccessRef.current?.();
+      }
+      const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId });
+      if (cancelled) {
         return;
       }
-      initializingRef.current = true;
-      try {
-        if (patientId) {
-          await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
-          onPatientSyncSuccess();
-        }
-        const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId });
-        if (result.url) {
-          setIframeUrl(result.url);
-          onIframeSuccess(result.url);
-        }
-      } catch (err: unknown) {
-        onError(err);
-      } finally {
-        initializingRef.current = false;
+      if (result.url) {
+        setIframeUrl(result.url);
+        onIframeSuccessRef.current?.(result.url);
       }
     };
 
-    initPage().catch(console.error);
-  }, [medplum, patientId]);
+    run().catch((err: unknown) => {
+      if (!cancelled) {
+        onErrorRef.current?.(err);
+      }
+    });
+
+    return (): void => {
+      cancelled = true;
+    };
+  }, [medplum, patientId, selfEnroll]);
 
   return iframeUrl;
+}
+
+/**
+ * Checks whether a ProjectMembership has a DoseSpot identifier.
+ *
+ * @param membership - The project membership to check.
+ * @returns True when membership identifiers include a DoseSpot system URL.
+ */
+function hasDoseSpotIdentifier(membership: ProjectMembership | undefined): boolean {
+  return !!membership?.identifier?.some((i) => i.system?.includes('dosespot'));
 }

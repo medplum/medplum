@@ -49,7 +49,7 @@ When working with linked projects:
 - Be aware that queries like `medplum.searchresources()` will return the first matching resource across all accessible projects (both local and linked)
 - If you need to distinguish between local and linked resources, consider adding additional search parameters, such as the `_compartment` search parameter.
 
-## The SuperAdmin `Project` {#superadmin}
+## The SuperAdmin `Project` {/* #superadmin */}
 
 The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Medplum server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
 
@@ -65,7 +65,7 @@ Logging into the Super Admin project allows for potentially dangerous operations
 
 :::
 
-:::note Checking If You Are In The SuperAdmin Project
+:::note[Checking If You Are In The SuperAdmin Project]
 
 To switch to the SuperAdmin project or check if you are already in it, you can use the [**profile selector**](/docs/app/app-introduction/index.md#profile-selector).
 
@@ -80,7 +80,7 @@ To switch to the SuperAdmin project or check if you are already in it, you can u
 - Sign in with an existing user, or enter the details for a new user account
 - Enter your project name
 
-## Project Settings {#settings}
+## Project Settings {/* #settings */}
 
 Project-level settings can be used to configure server behavior for different groups of users. A subset of the available
 settings related to authentication and access control are shown below; see the full [Project Settings](/docs/self-hosting/project-settings)

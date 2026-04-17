@@ -186,6 +186,7 @@ const objectKeys = new Set([
   'defaultOAuthClients',
   'smtp',
   'arrayColumnPadding',
+  'subscriptionAutoDisable',
   'workers',
   'workers.enabled',
   'workers.bullmq',

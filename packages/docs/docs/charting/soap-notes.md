@@ -348,7 +348,7 @@ For a deeper look at `Observation` resources and how to model measurements with 
 
 `ClinicalImpression` is the FHIR-native resource for recording a clinical assessment. Per the FHIR specification, it is literally the equivalent of the "A" in SOAP — it represents the clinician's summary, differential diagnosis, and overall impression formed during the encounter.
 
-:::tip Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?
+:::tip[Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?]
 
 Some implementations store the Assessment as a `DocumentReference` or leave it as a raw `QuestionnaireResponse`, treating the entire note as an opaque blob of text. `ClinicalImpression` is the recommended approach because it gives each part of the assessment a structured home — findings, differentials, and clinical reasoning are all discrete, searchable fields that other systems can consume. The goal is to maximize structured, codified data and minimize free-text wherever possible.
 
@@ -401,7 +401,7 @@ The Plan component maps to the order resources in FHIR. Depending on what the cl
 | Ongoing care strategy    | [`CarePlan`](/docs/api/fhir/resources/careplan)                                         |
 | Referral                 | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) with appropriate `category` |
 
-For details on placing orders, see [Ordering Labs and Imaging](/docs/charting/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
+For details on placing orders, see [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
 
 ## Signing and Locking Notes
 
@@ -452,5 +452,5 @@ Once the full note is complete and reviewed, the `ClinicalImpression` status sho
 - [`Condition` resource reference](/docs/api/fhir/resources/condition)
 - [Capturing Vital Signs](/docs/charting/capturing-vital-signs)
 - [Representing Diagnoses](/docs/charting/representing-diagnoses)
-- [Ordering Labs and Imaging](/docs/charting/ordering-labs-imaging)
+- [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging)
 - [medplum-provider example app](https://github.com/medplum/medplum/tree/main/examples/medplum-provider)

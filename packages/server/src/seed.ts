@@ -16,7 +16,10 @@ import { rebuildR4ValueSets } from './seeds/valuesets';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   await withPoolClient(async (client) => {
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client); // client will eventually know its shard ID
+    // client will eventually know its shard ID
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client, {
+      skipBackgroundJobs: true,
+    });
 
     if (await isSeeded(systemRepo)) {
       globalLogger.info('Already seeded');
