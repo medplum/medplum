@@ -2623,26 +2623,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await this.processPreCommit();
-      try {
-        await conn.query('COMMIT');
-      } catch (err) {
-        // COMMIT failed (e.g. connection was terminated by idle_in_transaction_session_timeout).
-        // Postgres has already rolled back, so skip ROLLBACK attempts.
-        this.abortTransaction(err as Error);
-        throw err;
-      }
+      await conn.query('COMMIT');
       this.transactionDepth--;
       this.releaseConnection();
       this.clearCallbackStack();
       await this.processPostCommit();
     } else {
-      try {
-        await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
-      } catch (err) {
-        // Savepoint release failed; outer transaction is toast. Abort the whole chain.
-        this.abortTransaction(err as Error);
-        throw err;
-      }
+      // If RELEASE SAVEPOINT fails (e.g. transaction in aborted state), let the error propagate.
+      // withTransaction's catch will invoke rollbackTransaction, which can run ROLLBACK TO SAVEPOINT
+      // even against an aborted transaction to recover — aborting here would discard work the outer
+      // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
+      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
       this.popCallbackFrame();
     }
