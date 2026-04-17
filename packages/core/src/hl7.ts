@@ -92,7 +92,13 @@ export class Hl7Message {
    * place and replaced with their {@link Hl7Segment} form.
    */
   private readonly _segments: (Hl7Segment | string)[];
-  private segmentsByName: Map<string, (Hl7Segment | string)[]>;
+  /**
+   * Maps segment name → indices into {@link _segments}. Storing indices (rather
+   * than references to the segments themselves) keeps this map in sync with
+   * {@link _segments} without needing a per-parse update step, and is immune to
+   * collisions when two segments have identical raw text.
+   */
+  private segmentsByName: Map<string, number[]>;
   private cachedString: string | undefined;
   /** Becomes true once every entry in `_segments` has been parsed. */
   private allSegmentsParsed: boolean;
@@ -178,15 +184,11 @@ export class Hl7Message {
     if (typeof index === 'number') {
       return this.parseSegment(index);
     }
-    const list = this.segmentsByName.get(index);
-    if (!list?.length) {
+    const indices = this.segmentsByName.get(index);
+    if (!indices?.length) {
       return undefined;
     }
-    const first = list[0];
-    if (typeof first !== 'string') {
-      return first;
-    }
-    return this.parseSegment(this._segments.indexOf(first));
+    return this.parseSegment(indices[0]);
   }
 
   /**
@@ -199,16 +201,11 @@ export class Hl7Message {
    * @returns An array of HL7 segments with the specified name.
    */
   getAllSegments(name: string): Hl7Segment[] {
-    const list = this.segmentsByName.get(name);
-    if (!list) {
+    const indices = this.segmentsByName.get(name);
+    if (!indices) {
       return [];
     }
-    for (const entry of list) {
-      if (typeof entry === 'string') {
-        this.parseSegment(this._segments.indexOf(entry));
-      }
-    }
-    return list as Hl7Segment[];
+    return indices.map((i) => this.parseSegment(i) as Hl7Segment);
   }
 
   /**
@@ -230,13 +227,6 @@ export class Hl7Message {
       this.cachedString = undefined;
     };
     this._segments[index] = parsed;
-    const list = this.segmentsByName.get(parsed.name);
-    if (list) {
-      const lidx = list.indexOf(raw);
-      if (lidx !== -1) {
-        list[lidx] = parsed;
-      }
-    }
     return parsed;
   }
 
@@ -388,7 +378,7 @@ export class Hl7Message {
   }
 
   private findSegmentIndexByName(name: string): number {
-    return this._segments.findIndex((s) => (typeof s === 'string' ? s.slice(0, 3) : s.name) === name);
+    return this.segmentsByName.get(name)?.[0] ?? -1;
   }
 
   private invalidateCache(): void {
@@ -409,20 +399,16 @@ export class Hl7Message {
   }
 }
 
-function buildSegmentMap(segments: (Hl7Segment | string)[]): Map<string, (Hl7Segment | string)[]> {
-  const map = new Map<string, (Hl7Segment | string)[]>();
-  for (const segment of segments) {
-    let segmentName: string;
-    if (typeof segment === 'string') {
-      segmentName = segment.slice(0, 3);
-    } else {
-      segmentName = segment.name;
-    }
-    const existing = map.get(segmentName);
+function buildSegmentMap(segments: (Hl7Segment | string)[]): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const name = typeof segment === 'string' ? segment.slice(0, 3) : segment.name;
+    const existing = map.get(name);
     if (existing) {
-      existing.push(segment);
+      existing.push(i);
     } else {
-      map.set(segmentName, [segment]);
+      map.set(name, [i]);
     }
   }
   return map;
