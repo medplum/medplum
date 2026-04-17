@@ -122,7 +122,7 @@ After you have committed to the new minor version, you may set `disablePostDeplo
 If validation in Step 3 reveals a problem and you need to roll back:
 
 1. **Confirm no post-deploy migrations have run.** Query `AsyncJob` resources where `type` is `data-migration` and confirm there are no entries corresponding to the new minor version. If any have started — even partially — rollback is no longer safe; contact Medplum support.
-2. **Deploy the previous minor version's latest patch.** For example, if you were rolling forward from `v4.2.6` to `v4.3.0` and need to revert, redeploy `v4.2.6` (or whatever is currently the latest patch of `v4.2.x`) using your standard deployment process.
+2. **Deploy the previous minor version's latest patch.** For example, if you were rolling forward from `v4.2.6` to `v4.3.15` and need to revert, redeploy `v4.2.6` (or whatever is currently the latest patch of `v4.2.x`) using your standard deployment process.
 3. **Leave `disablePostDeployMigrations` as is.** The previous minor version will ignore the setting for its own migrations (which have already run) and will start normally against the existing database.
 4. **Verify that the rolled-back server is healthy** via your usual health checks and monitoring.
 
