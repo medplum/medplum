@@ -7,7 +7,7 @@ import { Hl7Server } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { Hl7MessageTracker } from './hl7-message-tracker';
-import { createMockLogger } from './test-utils';
+import { createMockLogger, getFreePort } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 describe('Hl7MessageTracker', () => {
@@ -90,17 +90,6 @@ describe('Hl7MessageTracker', () => {
   });
 
   describe('TrackedHl7Connection via EnhancedHl7Client', () => {
-    const usedPorts = [] as number[];
-
-    function getRandomPort(): number {
-      let port = Math.floor(Math.random() * 10000) + 41000;
-      while (usedPorts.includes(port)) {
-        port = Math.floor(Math.random() * 10000) + 41000;
-      }
-      usedPorts.push(port);
-      return port;
-    }
-
     let mockLogger: ILogger;
 
     beforeEach(() => {
@@ -108,7 +97,7 @@ describe('Hl7MessageTracker', () => {
     });
 
     test('sendAndWait resolves via shared tracker', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const tracker = new Hl7MessageTracker();
 
       const server = new Hl7Server((connection) => {
@@ -141,7 +130,7 @@ describe('Hl7MessageTracker', () => {
     });
 
     test('pending messages survive connection close when using tracker', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const tracker = new Hl7MessageTracker();
       // Server that does NOT send any ACK — messages will stay pending
       const server = new Hl7Server(() => {
@@ -195,7 +184,7 @@ describe('Hl7MessageTracker', () => {
     });
 
     test('second connection resolves message tracked by first connection', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const tracker = new Hl7MessageTracker();
 
       // Server that only ACKs messages from the second connection onwards
@@ -267,7 +256,7 @@ describe('Hl7MessageTracker', () => {
     });
 
     test('pool recovers from server-side close and new client resolves original push via tracker', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const tracker = new Hl7MessageTracker();
       const mockHeartbeatEmitter: HeartbeatEmitter = new TypedEventTarget();
 
@@ -356,7 +345,7 @@ describe('Hl7MessageTracker', () => {
     });
 
     test('pending messages with timeout still timeout after client is closed', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const tracker = new Hl7MessageTracker();
 
       // Server that does NOT send any ACK
@@ -407,7 +396,7 @@ describe('Hl7MessageTracker', () => {
     });
 
     test('stats tracking works with message tracker', async () => {
-      const port = getRandomPort();
+      const port = await getFreePort();
       const tracker = new Hl7MessageTracker();
       const mockHeartbeatEmitter: HeartbeatEmitter = new TypedEventTarget();
 
