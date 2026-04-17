@@ -11,7 +11,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { getBinaryStorage } from './loader';
 
 const app = express();
@@ -161,5 +161,79 @@ describe('Storage Routes', () => {
     dateLessThan.setHours(dateLessThan.getHours() + 1);
     const res = await request(app).put(`/storage/${binary.id}?Signature=xyz&Expires=${dateLessThan.getTime()}`);
     expect(res.status).toBe(401);
+  });
+
+  describe('Project query param', () => {
+    let projectId: string;
+    let projectBinary: Binary;
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      projectId = project.id;
+      projectBinary = await withTestContext(async () => {
+        return systemRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: ContentType.TEXT,
+          meta: { project: projectId },
+        });
+      });
+
+      const req = new Readable();
+      req.push('project hello');
+      req.push(null);
+      (req as any).headers = {};
+      await getBinaryStorage().writeBinary(projectBinary, 'hello.txt', ContentType.TEXT, req as Request);
+    });
+
+    test('Presigned URL includes Project before Signature', async () => {
+      const url = await getBinaryStorage().getPresignedUrl(projectBinary);
+      const parsed = new URL(url);
+      expect(parsed.searchParams.get('Project')).toBe(projectId);
+      const projectIdx = parsed.search.indexOf('Project=');
+      const signatureIdx = parsed.search.indexOf('Signature=');
+      expect(projectIdx).toBeGreaterThanOrEqual(0);
+      expect(signatureIdx).toBeGreaterThanOrEqual(0);
+      expect(projectIdx).toBeLessThan(signatureIdx);
+    });
+
+    test('Presigned URL omits Project when binary has no project', async () => {
+      const url = await getBinaryStorage().getPresignedUrl(binary);
+      const parsed = new URL(url);
+      expect(parsed.searchParams.get('Project')).toBeNull();
+    });
+
+    test('GET success with Project param', async () => {
+      const req = request(app).get('/');
+      config.storageBaseUrl = req.url + 'storage/';
+      req.url = await getBinaryStorage().getPresignedUrl(projectBinary);
+      const res = await req;
+      expect(res.status).toBe(200);
+    });
+
+    test('GET tampered Project fails signature', async () => {
+      const req = request(app).get('/');
+      config.storageBaseUrl = req.url + 'storage/';
+      const url = await getBinaryStorage().getPresignedUrl(projectBinary);
+      req.url = url.replace(`Project=${projectId}`, `Project=${randomUUID()}`);
+      const res = await req;
+      expect(res.status).toBe(401);
+    });
+
+    test('PUT success with Project param', async () => {
+      const req = request(app).put('/').set('Content-Type', 'text/plain');
+      config.storageBaseUrl = req.url + 'storage/';
+      req.url = await getBinaryStorage().getPresignedUrl(projectBinary, { upload: true });
+      const res = await req.send('project upload content');
+      expect(res.status).toBe(200);
+    });
+
+    test('PUT tampered Project fails signature', async () => {
+      const req = request(app).put('/').set('Content-Type', 'text/plain');
+      config.storageBaseUrl = req.url + 'storage/';
+      const url = await getBinaryStorage().getPresignedUrl(projectBinary, { upload: true });
+      req.url = url.replace(`Project=${projectId}`, `Project=${randomUUID()}`);
+      const res = await req.send('tampered');
+      expect(res.status).toBe(401);
+    });
   });
 });
