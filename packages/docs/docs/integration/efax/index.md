@@ -7,7 +7,7 @@ tags: [integration]
 
 Medplum provides a first-party integration with eFax Corporate to send and receive faxes directly from your healthcare application. Faxes are stored as FHIR `Communication` resources, enabling seamless integration with your clinical workflows.
 
-:::caution Medplum Team Setup Required
+:::caution[Medplum Team Setup Required]
 This integration requires setup by the Medplum team. [Contact us](mailto:info+efax@medplum.com?subject=eFax%20Integration%20for%20Medplum) to enable eFax for your project.
 :::
 
