@@ -704,9 +704,7 @@ describe('Hl7Message.getAllSegments with segment map', () => {
   });
 
   test('Returns single-element array for unique segment', () => {
-    const text =
-      'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' +
-      'PID|1||12345^^^MRN';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||12345^^^MRN';
     const msg = Hl7Message.parse(text);
 
     const pids = msg.getAllSegments('PID');
@@ -715,10 +713,7 @@ describe('Hl7Message.getAllSegments with segment map', () => {
   });
 
   test('getSegment by name uses segment map', () => {
-    const text =
-      'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\r' +
-      'PID|1||12345^^^MRN\r' +
-      'PV1|1|O';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||12345^^^MRN\rPV1|1|O';
     const msg = Hl7Message.parse(text);
 
     expect(msg.getSegment('PID')?.name).toBe('PID');
@@ -754,10 +749,7 @@ describe('Hl7Message.getAllSegments with segment map', () => {
   });
 
   test('getSegment returns the first segment when multiple exist', () => {
-    const text =
-      'MSH|^~\\&|APP||FAC||20240101||OUL^R22|1|P|2.5\r' +
-      'OBX|1|NM|GLU||100|mg/dL\r' +
-      'OBX|2|NM|HGB||14.5|g/dL';
+    const text = 'MSH|^~\\&|APP||FAC||20240101||OUL^R22|1|P|2.5\rOBX|1|NM|GLU||100|mg/dL\rOBX|2|NM|HGB||14.5|g/dL';
     const msg = Hl7Message.parse(text);
 
     const first = msg.getSegment('OBX');
@@ -1016,10 +1008,7 @@ describe('Hl7Field.toString caching', () => {
   });
 });
 
-describe('Hl7Message benchmark scenarios', () => {
-  // Mirrors the message shape used in the medplum-hl7-parsing-benchmark repo
-  // so the assertions here cover the same parse/getAllSegments/toString paths
-  // that the benchmark measures.
+describe('Hl7Message parse/toString caching', () => {
   function buildSampleMessage(obxCount: number): string {
     const segments = [
       'MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ORU^R01|MSG00001|P|2.5.1',
@@ -1148,6 +1137,279 @@ describe('Hl7Message benchmark scenarios', () => {
       }
       expect(obxs[i].toString()).toBe(`OBX|${i + 1}|NM|${2001 + i}^Component ${i + 1}^99LAB|1|42.0|mg/dL||N|||F`);
     }
+  });
+
+  describe('component mutations invalidate caches across every segment-access path', () => {
+    // Each test grabs a segment (or a field within a segment) through one of the public
+    // access paths — `segments[i]`, `getSegment(index)`, `getSegment(name)`,
+    // `getAllSegments(name)[i]`, `header` — mutates a component, and asserts that:
+    //   1. the message toString() reflects the mutation on the very next call
+    //   2. the mutation is observed no matter which access path is used afterwards
+    //   3. segment identity is stable across access paths (same instance returned)
+    //   4. the cached toString() value after the mutation matches the rebuilt value
+
+    test('setComponent via segments[index] busts message cache and is visible from every access path', () => {
+      const text = buildSampleMessage(3);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      // PID is at index 1 in the source message
+      const pid = msg.segments[1];
+      expect(pid.name).toBe('PID');
+      pid.setComponent(5, 1, 'SEGIDX');
+
+      const expected = text.replace('DOE^JOHN^A', 'SEGIDX^JOHN^A');
+      expect(msg.toString()).toBe(expected);
+      // Second call should hit the cache with the same value
+      expect(msg.toString()).toBe(expected);
+
+      // All access paths must see the mutation and return the same segment instance
+      expect(msg.getSegment(1)).toBe(pid);
+      expect(msg.getSegment('PID')).toBe(pid);
+      expect(msg.getAllSegments('PID')[0]).toBe(pid);
+      expect(msg.segments[1]).toBe(pid);
+      expect(msg.getSegment('PID')?.getField(5).getComponent(1)).toBe('SEGIDX');
+    });
+
+    test('setComponent via getSegment(index) busts message cache and is visible from every access path', () => {
+      const text = buildSampleMessage(3);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      const pv1 = msg.getSegment(2);
+      expect(pv1?.name).toBe('PV1');
+      pv1?.setComponent(3, 2, '999');
+
+      const expected = text.replace('ICU^101^A', 'ICU^999^A');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      expect(msg.getSegment(2)).toBe(pv1);
+      expect(msg.getSegment('PV1')).toBe(pv1);
+      expect(msg.getAllSegments('PV1')[0]).toBe(pv1);
+      expect(msg.segments[2]).toBe(pv1);
+      expect(msg.getSegment('PV1')?.getField(3).getComponent(2)).toBe('999');
+    });
+
+    test('setComponent via getSegment(name) busts message cache and is visible from every access path', () => {
+      const text = buildSampleMessage(2);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      const orc = msg.getSegment('ORC');
+      expect(orc?.name).toBe('ORC');
+      orc?.getField(2).setComponent(1, 'BYNAME');
+
+      const expected = text.replace('ORD001|FIL001||CM', 'BYNAME|FIL001||CM');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      expect(msg.getSegment('ORC')).toBe(orc);
+      expect(msg.getSegment(3)).toBe(orc);
+      expect(msg.getAllSegments('ORC')[0]).toBe(orc);
+      expect(msg.segments[3]).toBe(orc);
+      expect(msg.getSegment('ORC')?.getField(2).getComponent(1)).toBe('BYNAME');
+    });
+
+    test('setComponent via getAllSegments(name)[i] busts message cache and is visible from every access path', () => {
+      const text = buildSampleMessage(4);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      const obxs = msg.getAllSegments('OBX');
+      expect(obxs).toHaveLength(4);
+      // Mutate OBX[2] (which is the 3rd OBX — OBX.1 = '3')
+      obxs[2].setComponent(3, 2, 'RENAMED COMPONENT');
+
+      const expected = text.replace('2003^Component 3^99LAB', '2003^RENAMED COMPONENT^99LAB');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      // Segment identity must be stable across paths — OBX[2] lives at index 7
+      // (MSH, PID, PV1, ORC, OBR, OBX[0], OBX[1], OBX[2])
+      const target = obxs[2];
+      expect(msg.getSegment(7)).toBe(target);
+      expect(msg.segments[7]).toBe(target);
+      expect(msg.getAllSegments('OBX')[2]).toBe(target);
+      // getSegment('OBX') returns the *first* OBX, not this one
+      expect(msg.getSegment('OBX')).not.toBe(target);
+      expect(msg.getAllSegments('OBX')[2].getField(3).getComponent(2)).toBe('RENAMED COMPONENT');
+    });
+
+    test('setField via getAllSegments(name)[i] busts message cache and is visible from every access path', () => {
+      const text = buildSampleMessage(3);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      const obxs = msg.getAllSegments('OBX');
+      obxs[1].setField(5, '77.7');
+
+      const expected = text.replace(
+        'OBX|2|NM|2002^Component 2^99LAB|1|42.0|mg/dL',
+        'OBX|2|NM|2002^Component 2^99LAB|1|77.7|mg/dL'
+      );
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      // OBX[1] is at message index 6
+      const target = obxs[1];
+      expect(msg.getSegment(6)).toBe(target);
+      expect(msg.segments[6]).toBe(target);
+      expect(msg.getAllSegments('OBX')[1]).toBe(target);
+      expect(msg.getAllSegments('OBX')[1].getField(5).toString()).toBe('77.7');
+    });
+
+    test('setComponent via header busts message cache and is visible from every access path', () => {
+      const text = buildSampleMessage(2);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      const header = msg.header;
+      expect(header.name).toBe('MSH');
+      // MSH.3 is the sending application — component 1
+      header.getField(3).setComponent(1, 'NEW_APP');
+
+      const expected = text.replace('|SENDING_APP|', '|NEW_APP|');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      expect(msg.header).toBe(header);
+      expect(msg.getSegment(0)).toBe(header);
+      expect(msg.getSegment('MSH')).toBe(header);
+      expect(msg.segments[0]).toBe(header);
+      expect(msg.getAllSegments('MSH')[0]).toBe(header);
+    });
+
+    test('field mutation propagates up through the field → segment → message cache chain', () => {
+      const text = buildSampleMessage(2);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      // Prime the PID segment's toString cache so we know its cache actually gets busted
+      const pid = msg.getSegment('PID') as Hl7Segment;
+      const pidOriginal = pid.toString();
+      expect(pid.toString()).toBe(pidOriginal);
+
+      // Grab a single field reference and mutate a component on it
+      const pid5 = pid.getField(5);
+      const pid5Original = pid5.toString();
+      expect(pid5.toString()).toBe(pid5Original);
+      pid5.setComponent(2, 'JANE');
+
+      // Field's own toString reflects the mutation
+      const expectedField = 'DOE^JANE^A';
+      expect(pid5.toString()).toBe(expectedField);
+
+      // Segment toString rebuilds with the mutated field
+      const expectedSegment = pidOriginal.replace(pid5Original, expectedField);
+      expect(pid.toString()).toBe(expectedSegment);
+
+      // Message toString rebuilds with the mutated segment
+      const expectedMessage = text.replace(pid5Original, expectedField);
+      expect(msg.toString()).toBe(expectedMessage);
+
+      // Every cached layer now returns the mutated value on repeat access
+      expect(pid5.toString()).toBe(expectedField);
+      expect(pid.toString()).toBe(expectedSegment);
+      expect(msg.toString()).toBe(expectedMessage);
+    });
+
+    test('subcomponent mutation propagates through the cache chain from every access path', () => {
+      const text = 'MSH|^~\\&|APP||FAC||20240101||ADT^A01|123|P|2.5\rPID|1||a&b&c^comp2^comp3\rOBX|1|NM|val';
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      // Touch every access path for PID so each one holds a reference before mutation
+      const viaSegments = msg.segments[1];
+      const viaGetByIndex = msg.getSegment(1);
+      const viaGetByName = msg.getSegment('PID');
+      const viaGetAll = msg.getAllSegments('PID')[0];
+      expect(viaSegments).toBe(viaGetByIndex);
+      expect(viaSegments).toBe(viaGetByName);
+      expect(viaSegments).toBe(viaGetAll);
+
+      // Mutate a subcomponent via getAllSegments path
+      viaGetAll.getField(3).setComponent(1, 'NEW', 1);
+
+      const expected = text.replace('a&b&c', 'a&NEW&c');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      // Every reference we held before the mutation observes the new value
+      expect(viaSegments.getField(3).getComponent(1, 1)).toBe('NEW');
+      expect(viaGetByIndex?.getField(3).getComponent(1, 1)).toBe('NEW');
+      expect(viaGetByName?.getField(3).getComponent(1, 1)).toBe('NEW');
+      expect(viaGetAll.getField(3).getComponent(1, 1)).toBe('NEW');
+
+      // And fresh lookups on each path return the same instance
+      expect(msg.segments[1]).toBe(viaSegments);
+      expect(msg.getSegment(1)).toBe(viaSegments);
+      expect(msg.getSegment('PID')).toBe(viaSegments);
+      expect(msg.getAllSegments('PID')[0]).toBe(viaSegments);
+    });
+
+    test('mutating the same segment from different access paths accumulates on one instance', () => {
+      const text = buildSampleMessage(1);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+
+      // Mutate component via segments[index]
+      msg.segments[1].setComponent(5, 1, 'A');
+      // Mutate a different component via getSegment(name)
+      msg.getSegment('PID')?.setComponent(5, 2, 'B');
+      // Mutate yet another via getAllSegments(name)[0]
+      msg.getAllSegments('PID')[0].setComponent(5, 3, 'C');
+
+      const expected = text.replace('DOE^JOHN^A', 'A^B^C');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      // All four mutations landed on the same underlying segment
+      expect(msg.segments[1]).toBe(msg.getSegment('PID'));
+      expect(msg.segments[1]).toBe(msg.getAllSegments('PID')[0]);
+      expect(msg.segments[1]).toBe(msg.getSegment(1));
+    });
+
+    test('setField on a segment retrieved via getAllSegments busts the parent message cache', () => {
+      const text = buildSampleMessage(2);
+      const msg = Hl7Message.parse(text);
+      expect(msg.toString()).toBe(text);
+      // Prime the cache a second time so a stale cache bug would be visible
+      expect(msg.toString()).toBe(text);
+
+      // Replace an entire field on OBX[0]
+      const obxs = msg.getAllSegments('OBX');
+      obxs[0].setField(3, 'NEWCODE^New Label^99LAB');
+
+      const expected = text.replace('2001^Component 1^99LAB', 'NEWCODE^New Label^99LAB');
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+
+      // The replaced field is observable from any path
+      expect(msg.getSegment('OBX')?.getField(3).toString()).toBe('NEWCODE^New Label^99LAB');
+      expect(msg.segments[5].getField(3).toString()).toBe('NEWCODE^New Label^99LAB');
+      expect(msg.getAllSegments('OBX')[0].getField(3).toString()).toBe('NEWCODE^New Label^99LAB');
+    });
+
+    test('getSegment(name) after a prior getAllSegments(name) lookup returns the same parsed instance', () => {
+      // Covers the lazy-parse path: getAllSegments parses every matching segment eagerly,
+      // so the subsequent getSegment(name) must return the already-parsed instance (not re-parse).
+      const text = buildSampleMessage(2);
+      const msg = Hl7Message.parse(text);
+
+      const obxs = msg.getAllSegments('OBX');
+      const firstObx = msg.getSegment('OBX');
+      expect(firstObx).toBe(obxs[0]);
+
+      firstObx?.setComponent(5, 1, '55.5');
+
+      const expected = text.replace('OBX|1|NM|2001^Component 1^99LAB|1|42.0', 'OBX|1|NM|2001^Component 1^99LAB|1|55.5');
+      expect(msg.toString()).toBe(expected);
+
+      // The mutated instance is what getAllSegments returns on a fresh call as well
+      expect(msg.getAllSegments('OBX')[0]).toBe(firstObx);
+      expect(msg.getAllSegments('OBX')[0].getField(5).toString()).toBe('55.5');
+    });
   });
 
   test('subsequent toString() calls are at least 10x faster than the first after mutation', () => {

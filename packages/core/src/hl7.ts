@@ -445,8 +445,7 @@ export class Hl7Segment {
   private readonly _fields: (Hl7Field | string)[];
   /** Becomes true once every entry in `_fields` has been parsed. */
   private allFieldsParsed: boolean;
-  /** @internal */
-  cachedString: string | undefined;
+  private cachedString: string | undefined;
   /** @internal */
   onModified?: () => void;
 
