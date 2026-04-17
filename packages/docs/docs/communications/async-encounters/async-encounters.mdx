@@ -52,7 +52,7 @@ flowchart RL
     B --> |Communication.encounter| A
 ```
 
-:::note Encounter on the thread header only
+:::note[Encounter on the thread header only]
 
 Set [`Communication.encounter`](/docs/api/fhir/resources/communication) on the thread header only. Child messages point at the header with [`Communication.partOf`](/docs/api/fhir/resources/communication); they do not need their own `encounter` element for this pattern.
 
@@ -60,7 +60,7 @@ Set [`Communication.encounter`](/docs/api/fhir/resources/communication) on the t
 
 You should record the participating physicians using the [`Encounter.participant`](/docs/api/fhir/resources/encounter) element. You can also record any family members who are part of the session here (see our [Family Relationships guide](/docs/fhir-datastore/family-relationships)).
 
-:::tip Asynchronous Encounter Ontologies
+:::tip[Asynchronous Encounter Ontologies]
 
 The [`Encounter.class`](/docs/api/fhir/resources/encounter) element is required in FHIR and should be taken from the [HL7 Act Encounter Code Valueset](https://terminology.hl7.org/3.1.0/ValueSet-v3-ActEncounterCode.html). Asynchronous care contexts will almost always use the code `VR` ("virtual").
 
@@ -134,7 +134,7 @@ Create one child [`Encounter`](/docs/api/fhir/resources/encounter) per patient, 
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::tip Family participants
+:::tip[Family participants]
 
 Record family members involved in the session on [`Encounter.participant`](/docs/api/fhir/resources/encounter). See [Family Relationships](/docs/fhir-datastore/family-relationships) for modeling related persons.
 

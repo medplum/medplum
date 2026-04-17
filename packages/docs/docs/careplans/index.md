@@ -50,7 +50,7 @@ flowchart LR
 
 ## Other Resources
 
-:::caution Note
+:::caution[Note]
 
 Feel free to reach out to us at hello@medplum.com if you have questions about your care plan setup.
 

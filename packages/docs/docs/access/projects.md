@@ -65,7 +65,7 @@ Logging into the Super Admin project allows for potentially dangerous operations
 
 :::
 
-:::note Checking If You Are In The SuperAdmin Project
+:::note[Checking If You Are In The SuperAdmin Project]
 
 To switch to the SuperAdmin project or check if you are already in it, you can use the [**profile selector**](/docs/app/app-introduction/index.md#profile-selector).
 
