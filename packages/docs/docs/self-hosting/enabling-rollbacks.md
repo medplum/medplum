@@ -32,10 +32,10 @@ Suppose your cluster is running `v4.2.6` and you want to upgrade to `v4.3.x`:
 ```
 v4.2.6 (latest patch of previous minor) ─┐
                                          │  ← safe rollback window
-v4.3.0 deployed, post-deploy deferred ───┘
+v4.3.15 deployed, post-deploy deferred ───┘
 ```
 
-Once post-deploy migrations for `v4.3.0` have been applied, the rollback window closes. At that point you are fully committed to `v4.3.x` and later.
+Once post-deploy migrations for `v4.3.15` have been applied, the rollback window closes. At that point you are fully committed to `v4.3.x` and later.
 
 ## How It Works
 
