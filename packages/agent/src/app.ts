@@ -53,7 +53,6 @@ import { AgentDicomChannel } from './dicom';
 import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
-import { Hl7MessageTracker } from './hl7-message-tracker';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats, updateStat } from './stats';
@@ -91,7 +90,6 @@ export class App {
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
   readonly hl7Clients = new Map<string, Hl7ClientPool>();
-  readonly messageTracker = new Hl7MessageTracker();
   heartbeatPeriod = HEARTBEAT_PERIOD_MS; // 10 seconds
   private heartbeatTimer?: NodeJS.Timeout;
   readonly heartbeatEmitter: HeartbeatEmitter = new TypedEventTarget();
@@ -656,7 +654,6 @@ export class App {
       await Promise.all(poolClosePromises);
       this.hl7Clients.clear();
     }
-    this.messageTracker.drainAll();
 
     const channelStopPromises = [];
     for (const channel of this.channels.values()) {
@@ -1062,7 +1059,6 @@ export class App {
         maxClients: this.maxClientsPerRemote,
         log: this.log,
         heartbeatEmitter: this.heartbeatEmitter,
-        messageTracker: this.messageTracker,
       });
       this.hl7Clients.set(message.remote, pool);
       if (keepAlive && this.logStatsFreqSecs > 0) {

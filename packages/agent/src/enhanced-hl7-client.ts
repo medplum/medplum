@@ -11,8 +11,7 @@ import type {
 import { Hl7Client } from '@medplum/hl7';
 import type { Socket } from 'node:net';
 import { ChannelStatsTracker } from './channel-stats-tracker';
-import type { Hl7MessageTracker } from './hl7-message-tracker';
-import { TrackedHl7Connection } from './hl7-message-tracker';
+import { Hl7MessageTracker, TrackedHl7Connection } from './hl7-message-tracker';
 import type { HeartbeatEmitter } from './types';
 
 export interface ClientStatsTrackingOptions {
@@ -20,7 +19,7 @@ export interface ClientStatsTrackingOptions {
 }
 
 export interface ExtendedHl7ClientOptions extends Hl7ClientOptions {
-  messageTracker: Hl7MessageTracker;
+  messageTracker?: Hl7MessageTracker;
   log?: ILogger;
 }
 
@@ -31,7 +30,7 @@ export class EnhancedHl7Client extends Hl7Client {
 
   constructor(options: ExtendedHl7ClientOptions) {
     super(options);
-    this.messageTracker = options.messageTracker;
+    this.messageTracker = options.messageTracker ?? new Hl7MessageTracker();
     this.log = options.log;
   }
 
