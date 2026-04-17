@@ -133,20 +133,6 @@ If validation in Step 3 reveals a problem and you need to roll back:
 - **Keep the validation window short.** The longer post-deploy migrations are deferred, the more unindexed / unbackfilled data accumulates, and the longer those migrations will take to complete when you do eventually run them.
 - **Do not skip minor versions, even with this procedure.** The sequential-minor-version rule described in [Upgrading Medplum Server](/docs/self-hosting/upgrading-server) still applies. This procedure only opens a rollback window for one-minor-version hops; it does not enable skipping minors.
 
-## Troubleshooting
-
-### Post-deploy migrations ran automatically despite the config setting
-
-**Likely cause**: The config value was not picked up by the server at startup — commonly because the AWS Parameter Store parameter was created but the ECS service was not restarted, or an environment variable name was malformed (see the conversion rules in [Setting Medplum Server Configuration](/docs/self-hosting/setting-configuration)).
-
-**Solution**: Confirm the value in use by checking the server's startup logs, which log the loaded config on boot. Redeploy after correcting the setting.
-
-### Rolled-back server refuses to start with a version mismatch
-
-**Likely cause**: A post-deploy migration from the newer version actually did run — often because `disablePostDeployMigrations` was briefly `false`, or a Super Admin triggered the migration endpoint during the validation window.
-
-**Solution**: Roll forward to the newer minor version again and complete the upgrade. The rollback window is closed.
-
 ## Need Help?
 
 If you're unsure whether your cluster is in a safe rollback state, or a rollback is not proceeding cleanly:
