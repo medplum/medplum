@@ -14,10 +14,6 @@ This page explains how to enable rollbacks by deferring post-deploy migrations w
 
 ## When Rollbacks Are Safe
 
-:::caution Scope of this guide
-This guide only applies to Medplum server **v4.0.0 and later**. Rollbacks across the v3 → v4 boundary, or across any major version, are not supported regardless of configuration.
-:::
-
 Since the `4.x` series, Medplum has structured its release process so that each minor version's post-deploy migrations are the only thing that breaks backward compatibility with the previous minor version's database state. In other words:
 
 - The **pre-deploy** schema changes introduced by a new minor version are additive and tolerated by the previous minor version's code.
@@ -45,10 +41,10 @@ Once post-deploy migrations for `v4.3.0` have been applied, the rollback window 
 
 Medplum server has a config setting called `disablePostDeployMigrations`. When set to `true`, the server starts up and runs pre-deploy migrations normally, but does not automatically enqueue any post-deploy migrations.
 
-| Setting Value | Behavior |
-| :--- | :--- |
-| `false` (default) | Post-deploy migrations run automatically in the background after server startup. |
-| `true` | Post-deploy migrations are deferred and must be triggered manually by a Super Admin. |
+| Setting Value     | Behavior                                                                             |
+| :---------------- | :----------------------------------------------------------------------------------- |
+| `false` (default) | Post-deploy migrations run automatically in the background after server startup.     |
+| `true`            | Post-deploy migrations are deferred and must be triggered manually by a Super Admin. |
 
 By keeping `disablePostDeployMigrations` set to `true` during your upgrade, your new-minor-version server instances will be running the new code against a database that is still compatible with the previous minor version. That compatibility is what makes the rollback safe.
 
