@@ -1,0 +1,33 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "transcript-document-reference",
+  "url": "https://medplum.com/fhir/StructureDefinition/TranscriptDocumentReference",
+  "name": "TranscriptDocumentReference",
+  "title": "AI Transcript / Clinical Note",
+  "status": "active",
+  "kind": "resource",
+  "abstract": false,
+  "type": "DocumentReference",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/DocumentReference",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "DocumentReference.extension:aiAgentSource",
+        "path": "DocumentReference.extension",
+        "sliceName": "aiAgentSource",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/ai-agent-source"] }]
+      },
+      {
+        "id": "DocumentReference.extension:aiConfidenceScore",
+        "path": "DocumentReference.extension",
+        "sliceName": "aiConfidenceScore",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/ai-confidence-score"] }]
+      }
+    ]
+  }
+}

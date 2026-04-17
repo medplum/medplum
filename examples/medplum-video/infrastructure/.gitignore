@@ -1,0 +1,30 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+.terraform
+.terraform.lock.hcl
+.terraform.lock.hcl.*
+
+terraform.tfvars
+terraform.tfvars.dev
+terraform.tfvars.prod
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore transient lock info files created by terraform apply
+.terraform.tfstate.lock.info
+
+.env

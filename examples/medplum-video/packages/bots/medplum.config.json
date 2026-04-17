@@ -1,0 +1,46 @@
+{
+  "bots": [
+    {
+      "name": "create-video-room",
+      "id": "13d7d613-bc87-44ac-9770-29d867dc53f4",
+      "source": "src/create-video-room.ts",
+      "dist": "dist/create-video-room.js"
+    },
+    {
+      "name": "start-adhoc-visit",
+      "id": "d805e853-880d-4bcd-9a7b-a98f5d4bef46",
+      "source": "src/start-adhoc-visit.ts",
+      "dist": "dist/start-adhoc-visit.js"
+    },
+    {
+      "name": "generate-token",
+      "id": "42f74501-da18-442f-bf58-e05d9f0addc3",
+      "source": "src/generate-token.ts",
+      "dist": "dist/generate-token.js"
+    },
+    {
+      "name": "admit-patient",
+      "id": "455ac047-d61c-452f-ab3a-605e76e9651d",
+      "source": "src/admit-patient.ts",
+      "dist": "dist/admit-patient.js"
+    },
+    {
+      "name": "on-encounter-status-change",
+      "id": "4b530ddb-0c86-4f68-b739-ee437f986ae5",
+      "source": "src/on-encounter-status-change.ts",
+      "dist": "dist/on-encounter-status-change.js"
+    },
+    {
+      "name": "on-video-room-ended",
+      "id": "440d4545-2ca8-4e9c-acbc-37cd3ec76423",
+      "source": "src/on-video-room-ended.ts",
+      "dist": "dist/on-video-room-ended.js"
+    },
+    {
+      "name": "post-visit-summarize",
+      "id": "5fbc0452-d318-4c6c-8bda-0349c7eb6792",
+      "source": "src/post-visit-summarize.ts",
+      "dist": "dist/post-visit-summarize.js"
+    }
+  ]
+}

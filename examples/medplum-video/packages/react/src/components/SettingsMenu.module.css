@@ -1,0 +1,27 @@
+.tabs {
+  position: relative;
+  display: flex;
+  align-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.tabs > .tab {
+  padding: 0.5rem;
+  border-radius: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid;
+  border-color: var(--bg5, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tabs > .tab[aria-pressed='true'] {
+  border-color: var(--lk-accent-bg, #0090ff);
+}
+
+.panel {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}

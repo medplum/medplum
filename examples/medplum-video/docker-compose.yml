@@ -1,0 +1,34 @@
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      - LIVEKIT_KEYS=devkey:secret
+    command: --dev --bind 0.0.0.0
+
+  livekit-agents:
+    build:
+      context: ./packages/agents
+      dockerfile: Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:-22}
+    environment:
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+      - LIVEKIT_URL=ws://livekit:7880
+      - MEDPLUM_BASE_URL=${MEDPLUM_BASE_URL:-https://api.medplum.com}
+      - MEDPLUM_CLIENT_ID=${MEDPLUM_CLIENT_ID}
+      - MEDPLUM_CLIENT_SECRET=${MEDPLUM_CLIENT_SECRET}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AGENT_TYPE=${AGENT_TYPE:-scribe}
+    depends_on:
+      - livekit
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

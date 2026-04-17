@@ -1,0 +1,82 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "video-encounter",
+  "url": "https://medplum.com/fhir/StructureDefinition/VideoEncounter",
+  "name": "VideoEncounter",
+  "title": "Video Visit Encounter",
+  "status": "active",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Encounter",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Encounter",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Encounter.class",
+        "path": "Encounter.class",
+        "fixedCoding": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "VR",
+          "display": "virtual"
+        }
+      },
+      {
+        "id": "Encounter.extension:livekitRoomName",
+        "path": "Encounter.extension",
+        "sliceName": "livekitRoomName",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/livekit-room-name"] }]
+      },
+      {
+        "id": "Encounter.extension:livekitRoomSid",
+        "path": "Encounter.extension",
+        "sliceName": "livekitRoomSid",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/livekit-room-sid"] }]
+      },
+      {
+        "id": "Encounter.extension:videoVisitMode",
+        "path": "Encounter.extension",
+        "sliceName": "videoVisitMode",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/video-visit-mode"] }]
+      },
+      {
+        "id": "Encounter.extension:waitingRoomStatus",
+        "path": "Encounter.extension",
+        "sliceName": "waitingRoomStatus",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/waiting-room-status"] }]
+      },
+      {
+        "id": "Encounter.extension:waitingRoomJoinedAt",
+        "path": "Encounter.extension",
+        "sliceName": "waitingRoomJoinedAt",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/waiting-room-joined-at"] }]
+      },
+      {
+        "id": "Encounter.extension:roomGracePeriodMinutes",
+        "path": "Encounter.extension",
+        "sliceName": "roomGracePeriodMinutes",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/room-grace-period-minutes"] }]
+      },
+      {
+        "id": "Encounter.extension:videoVisitRecordingUrl",
+        "path": "Encounter.extension",
+        "sliceName": "videoVisitRecordingUrl",
+        "min": 0,
+        "max": "1",
+        "type": [{ "code": "Extension", "profile": ["https://medplum.com/fhir/StructureDefinition/video-visit-recording-url"] }]
+      }
+    ]
+  }
+}

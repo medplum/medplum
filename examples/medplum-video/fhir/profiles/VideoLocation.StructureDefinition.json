@@ -1,0 +1,36 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "video-location",
+  "url": "https://medplum.com/fhir/StructureDefinition/VideoLocation",
+  "name": "VideoLocation",
+  "title": "Virtual Video Visit Location",
+  "status": "active",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Location",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Location",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Location.mode",
+        "path": "Location.mode",
+        "fixedCode": "kind"
+      },
+      {
+        "id": "Location.physicalType",
+        "path": "Location.physicalType",
+        "min": 1,
+        "patternCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/location-physical-type",
+              "code": "vi",
+              "display": "virtual"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

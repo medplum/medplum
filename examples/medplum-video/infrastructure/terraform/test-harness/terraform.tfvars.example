@@ -1,0 +1,41 @@
+# Copy this file to terraform.tfvars.<env> (e.g. terraform.tfvars.dev) and
+# fill in the values.  terraform.tfvars* are gitignored.
+
+# ── AWS ──────────────────────────────────────────────────────────────────
+aws_region  = "us-east-1"
+environment = "dev"
+
+# ── DNS ──────────────────────────────────────────────────────────────────
+# Find zone id with:  aws route53 list-hosted-zones --query 'HostedZones[*].[Name,Id]'
+route53_zone_id = "Z05732942RSSZK56Y1BIZ"
+domain_prefix   = "tele"        # => tele.<zone-domain>, e.g. tele.medplum.dev
+
+# ── Container image ──────────────────────────────────────────────────────
+# Leave empty to use the ECR repo created by this module.
+image     = ""
+image_tag = "latest"
+
+# ── ECS sizing ───────────────────────────────────────────────────────────
+ecs_cpu           = 256
+ecs_memory        = 512
+ecs_desired_count = 1
+
+# ── Networking ───────────────────────────────────────────────────────────
+# VPC, public subnets, and ECS cluster are shared with the livekit module.
+# See data.terraform_remote_state.livekit in main.tf.  Nothing to configure.
+
+# ── Medplum runtime config (baked into /config.js at container start) ───
+# Pulled from examples/medplum-video/.env.staging for the hosted dev env.
+medplum_base_url         = "https://api.staging.medplum.dev/"
+medplum_client_id        = "REPLACE_WITH_STAGING_CLIENT_ID"
+medplum_client_secret    = "REPLACE_WITH_STAGING_CLIENT_SECRET"
+generate_token_bot_id    = "REPLACE_WITH_DEPLOYED_BOT_ID"
+admit_patient_bot_id     = "REPLACE_WITH_DEPLOYED_BOT_ID"
+start_adhoc_visit_bot_id = "REPLACE_WITH_DEPLOYED_BOT_ID"
+
+# Optional dropdown seed values - leave empty if you don't care.
+default_patient_id      = ""
+default_practitioner_id = ""
+
+# Shown in the UI header so you can't confuse environments.
+environment_label = "staging"

@@ -1,0 +1,12 @@
+# BuildKit picks up "<Dockerfile-name>.dockerignore" when it sits next to
+# the target Dockerfile, regardless of the build-context root.
+# Paths are evaluated relative to the build context (examples/medplum-video).
+
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/coverage
+**/.turbo
+**/.vite
+**/*.log

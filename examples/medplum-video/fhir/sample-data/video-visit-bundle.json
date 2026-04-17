@@ -1,0 +1,101 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:location-1",
+      "resource": {
+        "resourceType": "Location",
+        "name": "Video Visit Room",
+        "mode": "kind",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "VR",
+                "display": "virtual"
+              }
+            ]
+          }
+        ],
+        "physicalType": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/location-physical-type",
+              "code": "vi",
+              "display": "virtual"
+            }
+          ]
+        }
+      },
+      "request": { "method": "POST", "url": "Location" }
+    },
+    {
+      "fullUrl": "urn:uuid:patient-1",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "given": ["Jane"], "family": "TestPatient" }]
+      },
+      "request": { "method": "POST", "url": "Patient" }
+    },
+    {
+      "fullUrl": "urn:uuid:practitioner-1",
+      "resource": {
+        "resourceType": "Practitioner",
+        "name": [{ "given": ["Alex"], "family": "TestProvider" }]
+      },
+      "request": { "method": "POST", "url": "Practitioner" }
+    },
+    {
+      "fullUrl": "urn:uuid:appointment-1",
+      "resource": {
+        "resourceType": "Appointment",
+        "status": "booked",
+        "start": "2026-04-20T10:00:00Z",
+        "end": "2026-04-20T10:30:00Z",
+        "participant": [
+          {
+            "actor": { "reference": "urn:uuid:patient-1" },
+            "status": "accepted"
+          },
+          {
+            "actor": { "reference": "urn:uuid:practitioner-1" },
+            "status": "accepted"
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Appointment" }
+    },
+    {
+      "fullUrl": "urn:uuid:encounter-1",
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "planned",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "VR",
+          "display": "virtual"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "448337001",
+                "display": "Telemedicine consultation with patient"
+              }
+            ]
+          }
+        ],
+        "subject": { "reference": "urn:uuid:patient-1" },
+        "participant": [
+          { "individual": { "reference": "urn:uuid:practitioner-1" } }
+        ],
+        "appointment": [{ "reference": "urn:uuid:appointment-1" }],
+        "period": { "start": "2026-04-20T10:00:00Z" }
+      },
+      "request": { "method": "POST", "url": "Encounter" }
+    }
+  ]
+}

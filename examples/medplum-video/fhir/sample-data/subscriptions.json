@@ -1,0 +1,41 @@
+[
+  {
+    "resourceType": "Subscription",
+    "status": "active",
+    "reason": "Create LiveKit room when virtual encounter reaches arrived (scheduled or ad-hoc)",
+    "criteria": "Encounter?class=VR&status=arrived",
+    "channel": {
+      "type": "rest-hook",
+      "endpoint": "Bot/<create-video-room-bot-id>",
+      "payload": "application/fhir+json"
+    }
+  },
+  {
+    "resourceType": "Subscription",
+    "status": "active",
+    "reason": "Handle encounter status transitions for video visits",
+    "criteria": "Encounter?class=VR",
+    "channel": {
+      "type": "rest-hook",
+      "endpoint": "Bot/<on-encounter-status-change-bot-id>",
+      "payload": "application/fhir+json"
+    },
+    "extension": [
+      {
+        "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+        "valueCode": "update"
+      }
+    ]
+  },
+  {
+    "resourceType": "Subscription",
+    "status": "active",
+    "reason": "Post-visit AI summarization when encounter finishes",
+    "criteria": "Encounter?class=VR&status=finished",
+    "channel": {
+      "type": "rest-hook",
+      "endpoint": "Bot/<post-visit-summarize-bot-id>",
+      "payload": "application/fhir+json"
+    }
+  }
+]

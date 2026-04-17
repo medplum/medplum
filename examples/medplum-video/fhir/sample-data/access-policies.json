@@ -1,0 +1,22 @@
+[
+  {
+    "resourceType": "AccessPolicy",
+    "name": "Video Visit AI Agent",
+    "resource": [
+      { "resourceType": "Encounter", "criteria": "Encounter?class=VR" },
+      { "resourceType": "Communication" },
+      { "resourceType": "DocumentReference" },
+      { "resourceType": "Binary" },
+      { "resourceType": "Patient", "readonly": true },
+      { "resourceType": "Practitioner", "readonly": true }
+    ]
+  },
+  {
+    "resourceType": "AccessPolicy",
+    "name": "Video Visit Patient",
+    "resource": [
+      { "resourceType": "Encounter", "criteria": "Encounter?subject=%patient", "readonly": true },
+      { "resourceType": "Communication", "criteria": "Communication?encounter.subject=%patient", "readonly": true }
+    ]
+  }
+]

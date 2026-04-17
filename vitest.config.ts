@@ -4,6 +4,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    projects: ['packages/*/vite{,st}.config.ts', 'examples/*/vite{,st}.config.ts'],
+    projects: [
+      'packages/*/vite{,st}.config.ts',
+      'examples/*/vite{,st}.config.ts',
+      'examples/medplum-video/packages/*/vitest.config.ts',
+    ],
   },
 });

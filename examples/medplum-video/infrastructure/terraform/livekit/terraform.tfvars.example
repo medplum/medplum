@@ -1,0 +1,46 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# Never commit terraform.tfvars to version control.
+
+# ── AWS ──────────────────────────────────────────────────────────────────────
+aws_region  = "us-east-1"
+environment = "production"
+
+# ── DNS ──────────────────────────────────────────────────────────────────────
+# The Route53 Hosted Zone ID that owns your domain.
+# Find it: AWS Console → Route53 → Hosted Zones, or:
+#   aws route53 list-hosted-zones --query 'HostedZones[*].[Name,Id]' --output table
+route53_zone_id = "Z1234567890ABCDEF0123"
+
+# Subdomain prefix – combined with the zone domain to form the full hostname.
+# Default produces:  livekit.medplum.dev
+domain_prefix = "livekit"
+
+# ── LiveKit credentials ───────────────────────────────────────────────────────
+# Generate strong random values:
+#   openssl rand -hex 12   → api key
+#   openssl rand -hex 32   → api secret
+livekit_api_key    = "replace-with-your-api-key"
+livekit_api_secret = "replace-with-your-api-secret"
+
+# ── Container image ───────────────────────────────────────────────────────────
+# Leave empty to use the ECR repository URI that Terraform creates.
+# After running `make push-image` you can set this explicitly, e.g.:
+#   livekit_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/production-livekit-server:latest"
+livekit_image     = ""
+livekit_image_tag = "latest"
+
+# ── ECS compute sizing ────────────────────────────────────────────────────────
+# Fargate CPU/memory combinations: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html
+# Recommendation per concurrent rooms:
+#   < 20 rooms  → cpu=512,  memory=1024
+#   < 100 rooms → cpu=1024, memory=2048  (default)
+#   < 500 rooms → cpu=2048, memory=4096
+ecs_cpu    = 1024
+ecs_memory = 2048
+
+# Keep at 1 unless you have deployed a Redis cluster for multi-node LiveKit.
+ecs_desired_count = 1
+
+# ── Networking ────────────────────────────────────────────────────────────────
+vpc_cidr                = "10.10.0.0/16"
+availability_zone_count = 2
