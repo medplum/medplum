@@ -22,13 +22,13 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
-import { getPostDeployVersion } from '../migration-sql';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
-import { MigrationVersion } from '../migrations/migration-versions';
-import { reconnectOnError } from '../redis';
-import type { WorkerInitializer } from './utils';
+import { isFirstBootMode } from '../migrations/migration-utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
   isJobActive,
   isJobCompatible,
   moveToDelayedAndThrow,
@@ -94,9 +94,9 @@ const defaultSettings: ReindexJobSettings = {
 // to prevent workers running older versions of the reindex worker from processing jobs
 export const REINDEX_WORKER_VERSION = 2;
 
-export const initReindexWorker: WorkerInitializer = (config) => {
+export const initReindexWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<ReindexJobData>(ReindexQueueName, {
@@ -110,18 +110,22 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<ReindexJobData>(
-    ReindexQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
-  addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
-    asyncJob: 'AsyncJob/' + job.data.asyncJobId,
-    jobType: job.data.type,
-  }));
+  let worker: Worker<ReindexJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'reindex');
+    worker = new Worker<ReindexJobData>(
+      ReindexQueueName,
+      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
+    );
+    addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
+      asyncJob: 'AsyncJob/' + job.data.asyncJobId,
+      jobType: job.data.type,
+    }));
+  }
 
   return { queue, worker, name: ReindexQueueName };
 };
@@ -165,8 +169,7 @@ export class ReindexJob {
   }
 
   private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
-    const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
-    if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
+    if (Boolean(asyncJob.dataVersion) && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,

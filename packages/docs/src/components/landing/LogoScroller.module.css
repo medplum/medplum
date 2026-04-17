@@ -1,21 +1,50 @@
 .logoScroller {
   position: relative;
-  height: 200px;
+  height: 8rem;
   overflow: hidden;
   white-space: nowrap;
 }
 
+.logoScroller::before,
+.logoScroller::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.logoScroller::before {
+  left: 0;
+  background: linear-gradient(to right, #fff, transparent);
+}
+
+.logoScroller::after {
+  right: 0;
+  background: linear-gradient(to left, #fff, transparent);
+}
+
+[data-theme='dark'] .logoScroller::before {
+  background: linear-gradient(to right, #1B1B1D, transparent);
+}
+
+[data-theme='dark'] .logoScroller::after {
+  background: linear-gradient(to left, #1B1B1D, transparent);
+}
+
 .images {
-  width: 4000px;
-  animation: bannermove 30s linear infinite;
   display: flex;
   align-items: center;
-  justify-content: center;
+  width: max-content;
+  animation: bannermove 20s linear infinite;
 }
 
 .images img {
   display: inline-block;
-  margin: 1rem;
+  margin: 2rem;
+  flex-shrink: 0;
 }
 
 [data-theme='dark'] .images img {
@@ -27,6 +56,6 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-2030px);
+    transform: translateX(-50%);
   }
 }

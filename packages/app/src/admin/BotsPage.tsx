@@ -10,8 +10,11 @@ export function BotsPage(): JSX.Element {
     <>
       <Title>Bots</Title>
       <Text size="sm">This page lists all ProjectMemberships for Bots.</Text>
+      // FIXME
       <ResourceMemberTable
         resourceType="Bot"
+      <MemberTable
+        profileTypeOptions={[{ label: 'Bot', value: 'Bot' }]}
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
       />
       <Group justify="flex-end">

@@ -3,12 +3,12 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import type { AccessPolicy, Patient, Project, Subscription, UserConfiguration } from '@medplum/fhirtypes';
-import { createBot } from '../admin/bot';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
+import { createBot } from './operations/botinit';
 import { deployBot } from './operations/deploy';
 import type { Repository } from './repo';
 
@@ -37,8 +37,7 @@ describe('FHIR Repo', () => {
   test('Pre-commit bot execute with boolean return', () =>
     withTestContext(async () => {
       // Create a test bot
-      const bot = await createBot(repo, {
-        project,
+      const bot = await createBot(repo, project, {
         name: 'Pre-commit test bot',
         runtimeVersion: 'vmcontext',
       });
@@ -88,8 +87,7 @@ describe('FHIR Repo', () => {
   test('Pre-commit bot execute with Resource return', () =>
     withTestContext(async () => {
       // Create a test bot
-      const bot = await createBot(repo, {
-        project,
+      const bot = await createBot(repo, project, {
         name: 'Pre-commit test bot',
         runtimeVersion: 'vmcontext',
       });

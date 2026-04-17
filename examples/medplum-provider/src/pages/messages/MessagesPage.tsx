@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
-import type { JSX } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
-import { ThreadInbox } from '@medplum/react';
-import classes from './MessagesPage.module.css';
-import { formatSearchQuery, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
+import type { Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
+import { createPharmaciesSection, getDefaultSections, ThreadInbox } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router';
+import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
-import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
+import classes from './MessagesPage.module.css';
 /**
  * Fetches
  * @returns A React component that displays all Threads/Topics.
@@ -18,6 +19,8 @@ export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const medplum = useMedplum();
+  const PharmacyDialogComponent = usePharmacyDialog();
 
   const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
@@ -58,8 +61,25 @@ export function MessagesPage(): JSX.Element {
   const inProgressUri = `/Communication${formatSearchQuery(buildStatusSearch('in-progress'))}`;
   const completedUri = `/Communication${formatSearchQuery(buildStatusSearch('completed'))}`;
 
+  const sections = useMemo(
+    () =>
+      getDefaultSections().map((s) => (s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s)),
+    [PharmacyDialogComponent]
+  );
+
   const onNew = (message: Communication): void => {
     navigate(getThreadUri(message))?.catch(console.error);
+  };
+
+  const onViewInDocuments = (reference: Reference<DocumentReference>): void => {
+    medplum
+      .readReference(reference)
+      .then((docRef) => {
+        const subject = docRef.subject?.reference;
+        const path = subject ? `/${subject}/${getReferenceString(reference)}` : `/${getReferenceString(reference)}`;
+        navigate(path)?.catch(console.error);
+      })
+      .catch(console.error);
   };
 
   return (
@@ -68,12 +88,15 @@ export function MessagesPage(): JSX.Element {
         threadId={messageId}
         query={formatSearchQuery(parsedSearch).substring(1)}
         showPatientSummary={true}
-        pharmacyDialogComponent={DoseSpotPharmacyDialog}
+        sections={sections}
+        allowPatientSelection={true}
         onNew={onNew}
         getThreadUri={getThreadUri}
+        onViewInDocuments={onViewInDocuments}
         onChange={onChange}
         inProgressUri={inProgressUri}
         completedUri={completedUri}
+        uploadEnabled={true}
       />
     </div>
   );

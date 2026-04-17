@@ -38,7 +38,10 @@ import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
+import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
+import type { SubscriptionAutoDisableTrigger } from '../config/types';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -49,13 +52,26 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getRedis, reconnectOnError } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
-import { getActiveSubsKey } from '../subscriptions/websockets';
+import type { ActiveSubscriptionEntry } from '../pubsub';
+import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import type { WorkerInitializer } from './utils';
-import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import type { SubEventsOptions } from '../ws/subscriptions';
+import {
+  clearSubscriptionFailures,
+  getSubscriptionAutoDisableTriggers,
+  recordSubscriptionFailure,
+} from './subscription-failure-tracker';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import {
+  addVerboseQueueLogging,
+  findProjectMembership,
+  getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
+  isJobSuccessful,
+  queueRegistry,
+} from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -120,9 +136,9 @@ function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
-export const initSubscriptionWorker: WorkerInitializer = (config) => {
+export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
@@ -136,39 +152,43 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<SubscriptionJobData>(
-    queueName,
-    (job) =>
-      job.data.authState
-        ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
-        : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
-  addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
-  worker.on('active', (job) => {
-    // Only record queuedDuration on the first attempt
-    if (job.attemptsMade === 0) {
-      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
-    }
-  });
-  worker.on('completed', (job) => {
-    recordHistogramValue(
-      'medplum.subscription.executionDuration',
-      ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+  let worker: Worker<SubscriptionJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'subscription');
+    worker = new Worker<SubscriptionJobData>(
+      queueName,
+      (job) =>
+        job.data.authState
+          ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
     );
-    recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
-  });
-  worker.on('failed', (job) => {
-    if (job) {
+    addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
+    worker.on('active', (job) => {
+      // Only record queuedDuration on the first attempt
+      if (job.attemptsMade === 0) {
+        recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
+      }
+    });
+    worker.on('completed', (job) => {
       recordHistogramValue(
-        'medplum.subscription.failedExecutionDuration',
+        'medplum.subscription.executionDuration',
         ((job.finishedOn as number) - (job.processedOn as number)) / 1000
       );
-    }
-  });
+      recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
+    });
+    worker.on('failed', (job) => {
+      if (job) {
+        recordHistogramValue(
+          'medplum.subscription.failedExecutionDuration',
+          ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+        );
+      }
+    });
+  }
 
   return { queue, worker, name: queueName };
 };
@@ -292,6 +312,10 @@ export async function addSubscriptionJobs(
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsSubEvents = [] as [string, SubEventsOptions][];
+  // Cache access policy results per (author, channel type) for the duration of this evaluation.
+  // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
+  // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
+  const accessPolicyCache = new Map<string, boolean>();
   for (const subscription of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
@@ -317,7 +341,18 @@ export async function addSubscriptionJobs(
       continue;
     }
     if (matches) {
-      if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+      const authorRef = getReferenceString(subscription.meta?.author as Reference);
+      // Channel type is part of the key because satisfiesAccessPolicy() is hardcoded to always
+      // return `true` for rest-hook subscriptions (see the TODO comment on that function).
+      // Without it, a cached `true` from a rest-hook sub could bypass the real policy check
+      // for a websocket sub sharing the same author.
+      const cacheKey = `${authorRef}:${subscription.channel.type}`;
+      let satisfied = accessPolicyCache.get(cacheKey);
+      if (satisfied === undefined) {
+        satisfied = await satisfiesAccessPolicy(resource, project, subscription);
+        accessPolicyCache.set(cacheKey, satisfied);
+      }
+      if (!satisfied) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
       }
@@ -342,7 +377,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -390,7 +425,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = getProjectSystemRepo(projectId);
+  const systemRepo = await getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -407,24 +442,67 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getRedis();
-  const hashKey = getActiveSubsKey(projectId, resource.resourceType);
-  const entries = await redis.hgetall(hashKey);
+
   const redisOnlySubRefStrs: string[] = [];
-  for (const [ref, criteria] of Object.entries(entries)) {
-    try {
-      if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
-        redisOnlySubRefStrs.push(ref);
+  const expiredSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
+  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
+
+  if (Object.keys(entries).length) {
+    const cachedCriteriaEvalMap = new Map<string, boolean>();
+    const wsEvalStartTime = Date.now();
+
+    for (const [ref, entry] of Object.entries(entries)) {
+      const { criteria, expiration } = entry;
+      // Expiration comes directly from the JWT, so it's in seconds
+      // If it's less than Date.now(), add this subscription entry to the expired list
+      if (expiration * 1000 < Date.now()) {
+        expiredSubEntries[ref] = entry;
+        continue;
       }
-    } catch (err) {
-      getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
+
+      try {
+        const cached = cachedCriteriaEvalMap.get(criteria);
+        let matches: boolean;
+
+        if (cached !== undefined) {
+          matches = cached;
+        } else {
+          matches = matchesSearchRequest(resource, parseSearchRequest(criteria));
+          cachedCriteriaEvalMap.set(criteria, matches);
+        }
+
+        if (matches) {
+          redisOnlySubRefStrs.push(ref);
+        }
+      } catch (err) {
+        getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
+      }
     }
+    getLogger().info('[WS] Evaluated active subscription criteria', {
+      projectId,
+      resourceType: resource.resourceType,
+      numSubscriptions: Object.keys(entries).length,
+      evalDurationMs: Date.now() - wsEvalStartTime,
+    });
   }
+
+  // We should clean up all expired sub entries ASAP
+  if (Object.keys(expiredSubEntries).length) {
+    await cleanupActiveSubs(projectId, expiredSubEntries);
+  }
+
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
+    const cacheRedis = getCacheRedis();
+    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
-      if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
+      // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
+      // However, we now store the Subscription criteria and use that to filter before doing the mget above,
+      // Which means by this point only Subscriptions with not only the same resource type but also have matching criteria
+      // Would be in the list by now
+      // That means for subscriptions with niche criteria we may not get enough subs to trigger any GC unless the threshold is pretty low
+      // Trying 5 for now (50 -> 5)
+      if (redisOnlySubStrs.length - activeSubStrs.length >= 5) {
         getLogger().warn('Excessive subscription cache miss', {
           numKeys: redisOnlySubRefStrs.length,
           hitRate: activeSubStrs.length / redisOnlySubStrs.length,
@@ -436,7 +514,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await redis.hdel(hashKey, ...inactiveSubs);
+        await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
@@ -523,8 +601,10 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     } else {
       await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
+    // Success - reset the failure counter
+    await clearSubscriptionFailures(subscription.id);
   } catch (err) {
-    await catchJobError(subscription, job, err);
+    await catchJobError(systemRepo, subscription, job, err);
   }
 }
 
@@ -599,7 +679,7 @@ async function sendRestHook(
   let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
-    systemRepo = getProjectSystemRepo(subscription.meta.project);
+    systemRepo = await getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
@@ -760,7 +840,12 @@ async function execBot(
   });
 }
 
-async function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): Promise<void> {
+async function catchJobError(
+  systemRepo: SystemRepository,
+  subscription: WithId<Subscription>,
+  job: Job<SubscriptionJobData>,
+  err: unknown
+): Promise<void> {
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
       ?.valueInteger ?? DEFAULT_ATTEMPTS;
@@ -776,6 +861,59 @@ async function catchJobError(subscription: Subscription, job: Job<SubscriptionJo
 
     throw err;
   }
-  // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+
+  // All retries exhausted - record as a final failure for auto-disable tracking
   globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
+  const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+  const result = await recordSubscriptionFailure(subscription.id, triggers);
+  if (result) {
+    await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
+  }
+}
+
+async function autoDisableSubscription(
+  systemRepo: SystemRepository,
+  trigger: SubscriptionAutoDisableTrigger,
+  subscription: WithId<Subscription>,
+  failureCount: number
+): Promise<void> {
+  try {
+    const errorMessage = `Automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`;
+
+    // Use a transaction with a JSON Patch test operation to atomically:
+    // 1. Verify the subscription is still active (test op fails if not, rolling back the transaction)
+    // 2. Disable the subscription and record the error
+    // 3. Create the AuditEvent
+    const patch: Operation[] = [
+      { op: 'test', path: '/status', value: 'active' },
+      { op: 'replace', path: '/status', value: 'off' },
+      { op: 'add', path: '/error', value: errorMessage },
+    ];
+
+    await systemRepo.withTransaction(async () => {
+      await systemRepo.patchResource('Subscription', subscription.id, patch);
+
+      await createSubscriptionAuditEvent(
+        systemRepo,
+        subscription,
+        new Date().toISOString(),
+        AuditEventOutcome.SeriousFailure,
+        errorMessage,
+        subscription
+      );
+    });
+
+    await clearSubscriptionFailures(subscription.id);
+
+    globalLogger.warn('Subscription auto-disabled due to repeated failures', {
+      subscription: subscription.id,
+      project: subscription.meta?.project,
+      failureCount,
+    });
+  } catch (err) {
+    globalLogger.warn('Failed to auto-disable subscription', {
+      subscription: subscription.id,
+      error: err,
+    });
+  }
 }

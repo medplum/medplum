@@ -41,12 +41,12 @@ describe('ProjectPage', () => {
       fireEvent.click(screen.getByText('Users'));
     });
 
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(screen.getByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Users page', async () => {
     await setup('/admin/users');
-    expect(await screen.findByText('Invite new user')).toBeInTheDocument();
+    expect(await screen.findByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Users page shows profile type segmented control', async () => {
@@ -66,7 +66,7 @@ describe('ProjectPage', () => {
     });
 
     expect(screen.getAllByText('Practitioner').length).toBeGreaterThan(0);
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(screen.getByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Clients page does not show profile type segmented control', async () => {

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { HistoryList } from './HistoryList';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import * as spacePersistence from '../../utils/spacePersistence';
+import { HistoryList } from './HistoryList';
 
 const mockTopics = [
   {

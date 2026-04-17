@@ -115,6 +115,7 @@ import type {
   CcdaPatientRole,
   CcdaPerformer,
   CcdaProcedure,
+  CcdaQuantity,
   CcdaReferenceRange,
   CcdaSection,
   CcdaSubstanceAdministration,
@@ -742,17 +743,29 @@ class CcdaToFhirConverter {
   }
 
   private processReaction(reactionObs: CcdaObservation): AllergyIntoleranceReaction {
+    const manifestation = this.mapCode(reactionObs.value as CcdaCode) ?? {
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+          valueCode: 'unknown',
+        },
+      ],
+    };
+
     const reaction: AllergyIntoleranceReaction = {
       id: this.mapId(reactionObs.id),
-      manifestation: [this.mapCode(reactionObs.value as CcdaCode)] as CodeableConcept[],
+      manifestation: [manifestation],
       onset: mapCcdaToFhirDateTime(reactionObs.effectiveTime?.[0]?.low?.['@_value']),
     };
 
     this.processSeverity(reactionObs, reaction);
 
     // Add reaction reference
-    if (reaction.manifestation && reaction.manifestation.length > 0 && reactionObs.text?.reference?.['@_value']) {
-      reaction.manifestation[0].extension = this.mapTextReference(reactionObs.text);
+    if (reactionObs.text?.reference?.['@_value']) {
+      const textRefExtension = this.mapTextReference(reactionObs.text);
+      if (textRefExtension) {
+        reaction.manifestation[0].extension = [...(reaction.manifestation[0].extension ?? []), ...textRefExtension];
+      }
     }
 
     return reaction;
@@ -843,7 +856,13 @@ class CcdaToFhirConverter {
       });
     }
 
-    for (const translation of code.translation ?? EMPTY) {
+    let translations: CcdaCode[] = [];
+    if (Array.isArray(code.translation)) {
+      translations = code.translation;
+    } else if (code.translation) {
+      translations = [code.translation];
+    }
+    for (const translation of translations) {
       const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
       const translationCode = translation['@_code'];
       const translationDisplay = translation['@_displayName'];
@@ -1317,6 +1336,28 @@ class CcdaToFhirConverter {
     const result: ObservationReferenceRange = {};
 
     result.extension = this.mapTextReference(observationRange.text);
+
+    const value = observationRange.value as CcdaQuantity | undefined;
+    if (value?.low) {
+      result.low = {
+        value: value.low['@_value'] ? Number.parseFloat(value.low['@_value']) : undefined,
+        unit: value.low['@_unit'],
+        system: UCUM,
+        code: value.low['@_unit'],
+      };
+    }
+    if (value?.high) {
+      result.high = {
+        value: value.high['@_value'] ? Number.parseFloat(value.high['@_value']) : undefined,
+        unit: value.high['@_unit'],
+        system: UCUM,
+        code: value.high['@_unit'],
+      };
+    }
+
+    if (!result.extension && !result.low && !result.high) {
+      return undefined;
+    }
 
     return result;
   }

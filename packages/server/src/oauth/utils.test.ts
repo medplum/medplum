@@ -7,7 +7,6 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import {} from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -416,6 +415,102 @@ describe('OAuth utils', () => {
     }
   });
 
+  test('getMembershipsForLogin excludes inactive memberships', async () => {
+    await withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+      const systemRepo = repo.getSystemRepo();
+
+      const user = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test-${randomUUID()}@example.com`,
+      });
+
+      const activePatient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Active'], family: 'User' }],
+      });
+
+      const inactivePatient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Inactive'], family: 'User' }],
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: createReference(user),
+        profile: createReference(activePatient),
+        project: createReference(project),
+        active: true,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: createReference(user),
+        profile: createReference(inactivePatient),
+        project: createReference(project),
+        active: false,
+      });
+
+      const login: Login = {
+        resourceType: 'Login',
+        user: createReference(user),
+      } as Login;
+
+      const memberships = await getMembershipsForLogin(login);
+      expect(memberships).toHaveLength(1);
+      expect(memberships[0].profile?.reference).toBe(`Patient/${activePatient.id}`);
+    });
+  });
+
+  test('getMembershipsForLogin includes memberships without active field', async () => {
+    await withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+      const systemRepo = repo.getSystemRepo();
+
+      const user = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test-${randomUUID()}@example.com`,
+      });
+
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['One'], family: 'User' }],
+      });
+
+      const patient2 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Two'], family: 'User' }],
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: createReference(user),
+        profile: createReference(patient1),
+        project: createReference(project),
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: createReference(user),
+        profile: createReference(patient2),
+        project: createReference(project),
+        active: true,
+      });
+
+      const login: Login = {
+        resourceType: 'Login',
+        user: createReference(user),
+      } as Login;
+
+      const memberships = await getMembershipsForLogin(login);
+      expect(memberships).toHaveLength(2);
+    });
+  });
+
   test('getAuthTokens Login missing profile', async () => {
     try {
       await getAuthTokens(
@@ -471,7 +566,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -521,7 +616,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login without email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),
@@ -569,7 +664,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'client',
           user: createReference(client),
@@ -619,7 +714,7 @@ describe('OAuth utils', () => {
         });
 
         // Create a Login with email scope
-        const login = await systemRepo.createResource<Login>({
+        const login = await systemRepo.createResource({
           resourceType: 'Login',
           authMethod: 'password',
           user: createReference(user),

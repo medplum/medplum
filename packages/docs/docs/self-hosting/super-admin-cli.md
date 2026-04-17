@@ -175,7 +175,7 @@ The result of the clone operation will be the new Project JSON:
 }
 ```
 
-:::caution Note
+:::caution[Note]
 
 The $clone operation to clone a project has a limit of cloning `1000` resources per resource type.
 

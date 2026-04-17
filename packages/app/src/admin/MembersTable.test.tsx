@@ -32,9 +32,9 @@ describe('MemberTable (Users page)', () => {
     expect(screen.getAllByText('RelatedPerson').length).toBeGreaterThan(0);
   });
 
-  test('Renders Invite new user link', async () => {
+  test('Renders Invite New User button', async () => {
     await setup('/admin/users');
-    expect(await screen.findByText('Invite new user')).toBeInTheDocument();
+    expect(await screen.findByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Clicking Practitioner segment updates filter', async () => {
@@ -48,7 +48,7 @@ describe('MemberTable (Users page)', () => {
 
     // Segmented control and invite link remain visible
     expect(screen.getAllByText('Practitioner').length).toBeGreaterThan(0);
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(screen.getByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Clicking Patient segment updates filter', async () => {
@@ -60,7 +60,7 @@ describe('MemberTable (Users page)', () => {
     });
 
     expect(screen.getAllByText('Patient').length).toBeGreaterThan(0);
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(screen.getByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Clicking RelatedPerson segment updates filter', async () => {
@@ -72,7 +72,7 @@ describe('MemberTable (Users page)', () => {
     });
 
     expect(screen.getAllByText('RelatedPerson').length).toBeGreaterThan(0);
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(screen.getByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Clicking All segment after filtering resets to all types', async () => {
@@ -90,7 +90,7 @@ describe('MemberTable (Users page)', () => {
     });
 
     expect(screen.getByText('All')).toBeInTheDocument();
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(screen.getByText('Invite New User')).toBeInTheDocument();
   });
 
   test('Clicking a search result row navigates to the ProjectMembership page', async () => {
@@ -107,7 +107,7 @@ describe('MemberTable (Users page)', () => {
 
     // After clicking a row the router should navigate to /ProjectMembership/<id>
     await waitFor(() => {
-      expect(screen.queryByText('Invite new user')).not.toBeInTheDocument();
+      expect(screen.queryByText('Invite New User')).not.toBeInTheDocument();
     });
   });
 });

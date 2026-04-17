@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Environment detection utilities that can be mocked in tests.
+ * Environment detection utilities that can be mocked in tests (e.g. `vi.mock` in Vitest).
  * These functions replace direct checks of global objects to avoid
- * the need to manipulate non-configurable globalThis.window in Jest/JSDOM 23+.
+ * manipulating non-configurable `globalThis.window` under JSDOM 23+.
  */
 
 /**
@@ -40,8 +40,8 @@ export function getBuffer(): typeof Buffer | undefined {
 }
 
 /**
- * Location utilities that can be mocked in tests.
- * These functions wrap location calls to avoid JSDOM 23+ restrictions.
+ * Location helpers that can be mocked alongside the rest of this module.
+ * Centralizes `location` access to work around JSDOM 23+ behavior in test environments.
  */
 export const locationUtils = {
   assign(url: string): void {

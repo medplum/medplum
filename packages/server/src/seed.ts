@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { ClientApplication, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { bcryptHashPassword } from './auth/utils';
+import type { ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { bcryptHashPassword, createProfile, createProjectMembership } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
 import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
-import type { Repository, SystemRepository } from './fhir/repo';
+import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
@@ -16,7 +16,10 @@ import { rebuildR4ValueSets } from './seeds/valuesets';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   await withPoolClient(async (client) => {
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client); // client will eventually know its shard ID
+    // client will eventually know its shard ID
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client, {
+      skipBackgroundJobs: true,
+    });
 
     if (await isSeeded(systemRepo)) {
       globalLogger.info('Already seeded');
@@ -44,7 +47,7 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   }, getDatabasePool(DatabaseMode.WRITER));
 }
 
-async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {
+async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<void> {
   const email = config.defaultSuperAdminEmail ?? 'admin@example.com';
   const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
   const [firstName, lastName] = ['Medplum', 'Admin'];
@@ -71,33 +74,8 @@ async function createSuperAdmin(systemRepo: Repository, config: MedplumServerCon
     name: 'FHIR R4',
   });
 
-  const practitioner = await systemRepo.createResource<Practitioner>({
-    resourceType: 'Practitioner',
-    meta: {
-      project: superAdminProject.id,
-    },
-    name: [
-      {
-        given: [firstName],
-        family: lastName,
-      },
-    ],
-    telecom: [
-      {
-        system: 'email',
-        use: 'work',
-        value: email,
-      },
-    ],
-  });
-
-  await systemRepo.createResource<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    project: createReference(superAdminProject),
-    user: createReference(superAdmin),
-    profile: createReference(practitioner),
-    admin: true,
-  });
+  const practitioner = await createProfile(systemRepo, superAdminProject, 'Practitioner', firstName, lastName, email);
+  await createProjectMembership(systemRepo, superAdmin, superAdminProject, practitioner, { admin: true });
 
   if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
     // Use specified client ID and secret

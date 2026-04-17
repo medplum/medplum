@@ -48,19 +48,21 @@ export class BackEnd extends Construct {
   taskDefinition: ecs.FargateTaskDefinition;
   logGroup?: logs.ILogGroup;
   logDriver: ecs.LogDriver;
+  loggingBucket?: s3.IBucket;
+  loadBalancerSecurityGroup?: ec2.ISecurityGroup;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
-  targetGroup: elbv2.ApplicationTargetGroup;
   loadBalancer: elbv2.ApplicationLoadBalancer;
-  waf: wafv2.CfnWebACL;
-  wafAssociation: wafv2.CfnWebACLAssociation;
+  mtlsLoadBalancer?: elbv2.ApplicationLoadBalancer;
   dnsRecord?: route53.ARecord;
+  mtlsDnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
   databaseSecretsParameter: ssm.StringParameter;
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
+  workersParameter?: ssm.StringParameter;
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
@@ -253,57 +255,44 @@ export class BackEnd extends Construct {
       subnetIds: this.vpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
-    if (config.cacheSecurityGroupId) {
-      this.redisSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
-        this,
-        'RedisSecurityGroup',
-        config.cacheSecurityGroupId
-      );
-    } else {
-      this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
-        vpc: this.vpc,
-        description: 'Redis Security Group',
-        allowAllOutbound: false,
-      });
+    const defaultRedis = this.createRedisCluster('Redis', {
+      nodeType: config.cacheNodeType,
+      securityGroupId: config.cacheSecurityGroupId,
+      engine: config.cacheEngine,
+      engineVersion: config.cacheEngineVersion,
+    });
+    this.redisSecurityGroup = defaultRedis.securityGroup;
+    this.redisPassword = defaultRedis.password;
+    this.redisCluster = defaultRedis.cluster;
+    this.redisSecrets = defaultRedis.secrets;
+
+    // Purpose-specific Redis clusters
+    const purposeRedisConfigs = [
+      { key: 'cacheRedis' as const, id: 'CacheRedis' },
+      { key: 'rateLimitRedis' as const, id: 'RateLimitRedis' },
+      { key: 'pubSubRedis' as const, id: 'PubSubRedis' },
+      { key: 'backgroundJobsRedis' as const, id: 'BackgroundJobsRedis' },
+    ];
+
+    const purposeRedisClusters: {
+      id: string;
+      securityGroup: ec2.ISecurityGroup;
+      cluster: elasticache.CfnReplicationGroup;
+      secrets: secretsmanager.ISecret;
+      secretsParameter?: ssm.StringParameter;
+    }[] = [];
+    for (const { key, id } of purposeRedisConfigs) {
+      const redisConfig = config[key];
+      if (redisConfig) {
+        const redis = this.createRedisCluster(id, {
+          nodeType: redisConfig.nodeType,
+          securityGroupId: redisConfig.securityGroupId,
+          engine: redisConfig.engine,
+          engineVersion: redisConfig.engineVersion,
+        });
+        purposeRedisClusters.push({ id, ...redis });
+      }
     }
-
-    this.redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
-      generateSecretString: {
-        secretStringTemplate: '{}',
-        generateStringKey: 'password',
-        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
-      },
-    });
-
-    this.redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
-      engine: 'Redis',
-      engineVersion: '6.x',
-      cacheNodeType: config.cacheNodeType ?? 'cache.t2.medium',
-      replicationGroupDescription: 'RedisReplicationGroup',
-      authToken: this.redisPassword.secretValueFromJson('password').toString(),
-      transitEncryptionEnabled: true,
-      atRestEncryptionEnabled: true,
-      multiAzEnabled: true,
-      cacheSubnetGroupName: this.redisSubnetGroup.ref,
-      numNodeGroups: 1,
-      replicasPerNodeGroup: 1,
-      securityGroupIds: [this.redisSecurityGroup.securityGroupId],
-    });
-    this.redisCluster.node.addDependency(this.redisPassword);
-
-    this.redisSecrets = new secretsmanager.Secret(this, 'RedisSecrets', {
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({
-          host: this.redisCluster.attrPrimaryEndPointAddress,
-          port: this.redisCluster.attrPrimaryEndPointPort,
-          password: this.redisPassword.secretValueFromJson('password').toString(),
-          tls: {},
-        }),
-        generateStringKey: 'unused',
-      },
-    });
-    this.redisSecrets.node.addDependency(this.redisPassword);
-    this.redisSecrets.node.addDependency(this.redisCluster);
 
     // ECS Cluster
     let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
@@ -494,7 +483,7 @@ export class BackEnd extends Construct {
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials, 'Server'),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -505,25 +494,7 @@ export class BackEnd extends Construct {
       hostPort: config.apiPort,
     });
 
-    for (const container of config.additionalContainers ?? EMPTY) {
-      this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
-        containerName: container.name,
-        image: this.getContainerImage(config, container.image, containerRegistryCredentials),
-        command: container.command,
-        environment: container.environment,
-        logging: this.logDriver,
-        essential: container.essential ?? false, // Default to false
-      });
-    }
-
-    if (config.fireLens?.enabled) {
-      this.taskDefinition.addFirelensLogRouter('FireLensRouter', {
-        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
-        essential: true,
-        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
-        environment: config.fireLens.environment,
-      });
-    }
+    this.addSidecarContainers(this.taskDefinition, config, config.additionalContainers, containerRegistryCredentials);
 
     // Security Groups
     this.fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
@@ -543,49 +514,22 @@ export class BackEnd extends Construct {
       desiredCount: config.desiredServerCount,
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
-      minHealthyPercent: 50, // 50% is the default; make it explicit
+      minHealthyPercent: 100, // 50% is the default
     });
 
     // Add autoscaling
-    if (config.fargateAutoScaling) {
-      const scaling = this.fargateService.autoScaleTaskCount({
-        minCapacity: config.fargateAutoScaling.minCapacity,
-        maxCapacity: config.fargateAutoScaling.maxCapacity,
-      });
-      scaling.scaleOnCpuUtilization('CpuScaling', {
-        targetUtilizationPercent: config.fargateAutoScaling.targetUtilizationPercent,
-        scaleInCooldown: Duration.seconds(config.fargateAutoScaling.scaleInCooldown),
-        scaleOutCooldown: Duration.seconds(config.fargateAutoScaling.scaleOutCooldown),
-      });
-    }
+    this.addAutoScaling(this.fargateService, config.fargateAutoScaling);
 
     // Add dependencies - make sure Fargate service is created after RDS and Redis
-    if (this.rdsCluster) {
-      this.fargateService.node.addDependency(this.rdsCluster);
-    }
-    if (this.rdsProxy) {
-      this.fargateService.node.addDependency(this.rdsProxy);
-    }
-    this.fargateService.node.addDependency(this.redisCluster);
+    this.addServiceDependencies(this.fargateService, purposeRedisClusters);
 
-    // Load Balancer Target Group
-    this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
-      vpc: this.vpc,
-      port: config.apiPort,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      healthCheck: {
-        path: '/healthcheck',
-        interval: Duration.seconds(30),
-        timeout: Duration.seconds(3),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 5,
-      },
-      targets: [this.fargateService],
-    });
+    // Load Balancer logging
+    if (config.loadBalancerLoggingBucket) {
+      this.loggingBucket = s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket);
+    }
 
-    let loadBalancerSecurityGroup: ec2.ISecurityGroup | undefined = undefined;
     if (config.loadBalancerSecurityGroupId) {
-      loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+      this.loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
         this,
         'LoadBalancerSecurityGroup',
         config.loadBalancerSecurityGroupId
@@ -593,50 +537,33 @@ export class BackEnd extends Construct {
     }
 
     // Load Balancer
-    this.loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
-      vpc: this.vpc,
-      internetFacing: config.apiInternetFacing !== false, // default true
-      http2Enabled: true,
-      securityGroup: loadBalancerSecurityGroup,
-    });
-
-    if (config.loadBalancerLoggingBucket) {
-      // Load Balancer logging
-      this.loadBalancer.logAccessLogs(
-        s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
-        config.loadBalancerLoggingPrefix
-      );
-    }
-
-    // HTTPS Listener
-    // Forward to the target group
-    this.loadBalancer.addListener('HttpsListener', {
-      port: 443,
-      certificates: [
-        {
-          certificateArn: config.apiSslCertArn,
-        },
-      ],
-      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
-      defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
-    });
-
-    // WAF
-    this.waf = buildWaf(
-      this,
-      'BackEndWAF',
-      `${config.stackName}-BackEndWAF`,
-      'REGIONAL',
+    this.loadBalancer = this.createLoadBalancer(
+      config.stackName,
+      '',
+      config.apiPort,
+      config.apiInternetFacing !== false,
+      config.apiSslCertArn,
+      config.loadBalancerLoggingBucket,
       config.apiWafIpSetArn,
       config.wafLogGroupName,
       config.wafLogGroupCreate
     );
 
-    // Create an association between the load balancer and the WAF
-    this.wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
-      resourceArn: this.loadBalancer.loadBalancerArn,
-      webAclArn: this.waf.attrArn,
-    });
+    // Optional mTLS Load Balancer
+    if (config.mtlsSslCertArn) {
+      this.mtlsLoadBalancer = this.createLoadBalancer(
+        config.stackName,
+        'Mtls',
+        config.apiPort,
+        config.mtlsInternetFacing !== false,
+        config.mtlsSslCertArn,
+        config.loadBalancerLoggingBucket,
+        config.mtlsWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate,
+        { mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH }
+      );
+    }
 
     if (this.rdsCluster) {
       // Grant RDS access to the fargate group
@@ -663,6 +590,22 @@ export class BackEnd extends Construct {
     // Grant Redis access to the fargate group
     this.redisSecurityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
 
+    // Grant purpose-specific Redis access to the fargate group and create SSM parameters
+    for (const purposeRedis of purposeRedisClusters) {
+      purposeRedis.securityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
+      purposeRedis.secretsParameter = new ssm.StringParameter(this, `${purposeRedis.id}SecretsParameter`, {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/${purposeRedis.id}Secrets`,
+        description: `${purposeRedis.id} secrets ARN`,
+        stringValue: purposeRedis.secrets.secretArn,
+      });
+    }
+
+    // Additional Services (e.g., background workers)
+    for (const service of config.workerServices ?? []) {
+      this.createWorkerService(config, service, containerRegistryCredentials, purposeRedisClusters);
+    }
+
     // DNS
     if (!config.skipDns) {
       // Route 53
@@ -675,6 +618,14 @@ export class BackEnd extends Construct {
         target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.loadBalancer)),
         zone: zone,
       });
+
+      if (this.mtlsLoadBalancer) {
+        this.mtlsDnsRecord = new route53.ARecord(this, 'MtlsLoadBalancerAliasRecord', {
+          recordName: config.mtlsDomainName,
+          target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.mtlsLoadBalancer)),
+          zone: zone,
+        });
+      }
     }
 
     // SSM Parameters
@@ -714,6 +665,16 @@ export class BackEnd extends Construct {
       description: 'Bot lambda execution role ARN',
       stringValue: this.botLambdaRole.roleArn,
     });
+
+    // Workers configuration
+    if (config.workers) {
+      this.workersParameter = new ssm.StringParameter(this, 'WorkersParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/workers`,
+        description: 'Background workers configuration',
+        stringValue: JSON.stringify(config.workers),
+      });
+    }
   }
 
   /**
@@ -723,12 +684,14 @@ export class BackEnd extends Construct {
    * @param config - The config settings (account number and region).
    * @param imageName - The image name.
    * @param credentials - The credentials for the image repository.
+   * @param constructIdPrefix - Prefix for the construct ID to avoid collisions (default: 'Server').
    * @returns The container image.
    */
   private getContainerImage(
     config: MedplumInfraConfig,
     imageName: string,
-    credentials: secretsmanager.ISecret | undefined
+    credentials: secretsmanager.ISecret | undefined,
+    constructIdPrefix: string
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
@@ -741,7 +704,7 @@ export class BackEnd extends Construct {
       // Creating an ecr repository image will automatically grant fine-grained permissions to ecs to access the image
       const ecrRepo = Repository.fromRepositoryArn(
         this,
-        'ServerImageRepo',
+        `${constructIdPrefix}ImageRepo`,
         `arn:aws:ecr:${config.region}:${config.accountNumber}:repository/${serverImageName}`
       );
       return ecs.ContainerImage.fromEcrRepository(ecrRepo, serverImageTag);
@@ -749,6 +712,313 @@ export class BackEnd extends Construct {
 
     // Otherwise, use the standard container image
     return ecs.ContainerImage.fromRegistry(imageName, { credentials });
+  }
+
+  /**
+   * Adds sidecar containers and a FireLens log router to a task definition.
+   * @param taskDefinition - The task definition to add containers to.
+   * @param config - The infra config (for FireLens and registry settings).
+   * @param additionalContainers - The sidecar container definitions.
+   * @param credentials - Optional registry credentials.
+   * @param idPrefix - Optional prefix for construct IDs to avoid collisions.
+   */
+  private addSidecarContainers(
+    taskDefinition: ecs.FargateTaskDefinition,
+    config: MedplumInfraConfig,
+    additionalContainers: NonNullable<MedplumInfraConfig['additionalContainers']> | undefined,
+    credentials: secretsmanager.ISecret | undefined,
+    idPrefix?: string
+  ): void {
+    const prefix = idPrefix ? `${idPrefix}` : '';
+    for (const container of additionalContainers ?? EMPTY) {
+      taskDefinition.addContainer(`${prefix}AdditionalContainer-${container.name}`, {
+        containerName: container.name,
+        image: this.getContainerImage(config, container.image, credentials, `${prefix || 'Server'}-${container.name}`),
+        command: container.command,
+        environment: container.environment,
+        logging: this.logDriver,
+        essential: container.essential ?? false,
+      });
+    }
+
+    if (config.fireLens?.enabled) {
+      taskDefinition.addFirelensLogRouter(`${prefix}FireLensRouter`, {
+        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
+        essential: true,
+        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
+        environment: config.fireLens.environment,
+      });
+    }
+  }
+
+  /**
+   * Adds CPU-based auto-scaling to a Fargate service.
+   * @param service - The Fargate service to add auto-scaling to.
+   * @param autoScaling - The auto-scaling configuration, or undefined to skip.
+   * @param idPrefix - Optional prefix for the scaling policy construct ID.
+   */
+  private addAutoScaling(
+    service: ecs.FargateService,
+    autoScaling: MedplumInfraConfig['fargateAutoScaling'],
+    idPrefix?: string
+  ): void {
+    if (!autoScaling) {
+      return;
+    }
+    const prefix = idPrefix ?? '';
+    const scaling = service.autoScaleTaskCount({
+      minCapacity: autoScaling.minCapacity,
+      maxCapacity: autoScaling.maxCapacity,
+    });
+    scaling.scaleOnCpuUtilization(`${prefix}CpuScaling`, {
+      targetUtilizationPercent: autoScaling.targetUtilizationPercent,
+      scaleInCooldown: Duration.seconds(autoScaling.scaleInCooldown),
+      scaleOutCooldown: Duration.seconds(autoScaling.scaleOutCooldown),
+    });
+  }
+
+  /**
+   * Adds RDS and Redis dependencies to a Fargate service so it is created after the data stores.
+   * @param service - The Fargate service to add dependencies to.
+   * @param purposeRedisClusters - Purpose-specific Redis clusters to add as dependencies.
+   */
+  private addServiceDependencies(
+    service: ecs.FargateService,
+    purposeRedisClusters: { cluster: elasticache.CfnReplicationGroup }[]
+  ): void {
+    if (this.rdsCluster) {
+      service.node.addDependency(this.rdsCluster);
+    }
+    if (this.rdsProxy) {
+      service.node.addDependency(this.rdsProxy);
+    }
+    service.node.addDependency(this.redisCluster);
+    for (const { cluster } of purposeRedisClusters) {
+      service.node.addDependency(cluster);
+    }
+  }
+
+  /**
+   * Creates an additional Fargate service to run background jobs. If `workers` is not specified in the
+   * service's configuration AND no MEDPLUM_WORKERS* environment variables are present, all background
+   * workers are run on this service.
+   *
+   * The service shares the same cluster, VPC, security group, and dependencies as the primary service,
+   * but is not added to the ALB and uses a `,env` config suffix for env var overrides.
+   * @param config - The infra config.
+   * @param service - The additional service definition.
+   * @param containerRegistryCredentials - Optional registry credentials.
+   * @param purposeRedisClusters - Purpose-specific Redis clusters to add as dependencies.
+   */
+  private createWorkerService(
+    config: MedplumInfraConfig,
+    service: NonNullable<MedplumInfraConfig['workerServices']>[number],
+    containerRegistryCredentials: secretsmanager.ISecret | undefined,
+    purposeRedisClusters: { cluster: elasticache.CfnReplicationGroup }[]
+  ): void {
+    const name = config.name;
+    const region = config.region;
+    const serviceId = service.id + 'Worker';
+
+    const serviceTaskDef = new ecs.FargateTaskDefinition(this, `${serviceId}TaskDefinition`, {
+      memoryLimitMiB: service.serverMemory ?? config.serverMemory,
+      cpu: service.serverCpu ?? config.serverCpu,
+      taskRole: this.taskRole,
+    });
+
+    const serviceImage = service.serverImage ?? config.serverImage;
+    const serviceCommand = region === 'us-east-1' ? `aws:/medplum/${name}/,env` : `aws:${region}:/medplum/${name}/,env`;
+    const serviceEnv = { ...config.environment, ...service.environment };
+
+    // enable all workers if no worker config specified for this service
+    if (!service.workers && !Object.keys(service.environment ?? {}).some((k) => k.startsWith('MEDPLUM_WORKERS'))) {
+      serviceEnv['MEDPLUM_WORKERS_ENABLED'] = JSON.stringify(['*']);
+    }
+
+    serviceTaskDef.addContainer(`${serviceId}Container`, {
+      image: this.getContainerImage(config, serviceImage, containerRegistryCredentials, serviceId),
+      command: [serviceCommand],
+      logging: this.logDriver,
+      environment: serviceEnv,
+    });
+
+    // Add port mappings for ECS health checks (not for ALB)
+    serviceTaskDef.defaultContainer?.addPortMappings({
+      containerPort: config.apiPort,
+      hostPort: config.apiPort,
+    });
+
+    this.addSidecarContainers(
+      serviceTaskDef,
+      config,
+      service.additionalContainers ?? config.additionalContainers,
+      containerRegistryCredentials,
+      serviceId
+    );
+
+    const serviceFargate = new ecs.FargateService(this, `${serviceId}FargateService`, {
+      cluster: this.ecsCluster,
+      taskDefinition: serviceTaskDef,
+      assignPublicIp: false,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      desiredCount: service.desiredCount,
+      securityGroups: [this.fargateSecurityGroup],
+      healthCheckGracePeriod: Duration.minutes(5),
+      minHealthyPercent: 100, // 50% is the default
+    });
+
+    // Add dependencies - same as primary service
+    this.addServiceDependencies(serviceFargate, purposeRedisClusters);
+
+    // Optional auto-scaling
+    this.addAutoScaling(serviceFargate, service.fargateAutoScaling, serviceId);
+  }
+
+  private createRedisCluster(
+    id: string,
+    options: { nodeType?: string; securityGroupId?: string; engine?: string; engineVersion?: string }
+  ): {
+    securityGroup: ec2.ISecurityGroup;
+    password: secretsmanager.ISecret;
+    cluster: elasticache.CfnReplicationGroup;
+    secrets: secretsmanager.ISecret;
+  } {
+    let securityGroup: ec2.ISecurityGroup;
+    if (options.securityGroupId) {
+      securityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, `${id}SecurityGroup`, options.securityGroupId);
+    } else {
+      securityGroup = new ec2.SecurityGroup(this, `${id}SecurityGroup`, {
+        vpc: this.vpc,
+        description: `${id} Security Group`,
+        allowAllOutbound: false,
+      });
+      securityGroup.applyRemovalPolicy(RemovalPolicy.RETAIN);
+    }
+
+    const password = new secretsmanager.Secret(this, `${id}Password`, {
+      generateSecretString: {
+        secretStringTemplate: '{}',
+        generateStringKey: 'password',
+        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
+      },
+    });
+    password.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    const cluster = new elasticache.CfnReplicationGroup(this, `${id}Cluster`, {
+      engine: options.engine ?? 'Redis',
+      engineVersion: options.engineVersion ?? '6.x',
+      cacheNodeType: options.nodeType ?? 'cache.t2.medium',
+      replicationGroupDescription: `${id}ReplicationGroup`,
+      authToken: password.secretValueFromJson('password').toString(),
+      transitEncryptionEnabled: true,
+      atRestEncryptionEnabled: true,
+      multiAzEnabled: true,
+      cacheSubnetGroupName: this.redisSubnetGroup.ref,
+      numNodeGroups: 1,
+      replicasPerNodeGroup: 1,
+      securityGroupIds: [securityGroup.securityGroupId],
+    });
+    cluster.node.addDependency(password);
+    cluster.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    const secrets = new secretsmanager.Secret(this, `${id}Secrets`, {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          host: cluster.attrPrimaryEndPointAddress,
+          port: cluster.attrPrimaryEndPointPort,
+          password: password.secretValueFromJson('password').toString(),
+          tls: {},
+        }),
+        generateStringKey: 'unused',
+      },
+    });
+    secrets.node.addDependency(password);
+    secrets.node.addDependency(cluster);
+    secrets.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    return { securityGroup, password, cluster, secrets };
+  }
+
+  /**
+   * Creates an Application Load Balancer with an HTTPS listener and a target group pointing to the Fargate service.
+   * @param stackName - The name of the stack, used for naming the WAF.
+   * @param namePrefix - Prefix for construct IDs to avoid collisions (e.g., 'Mtls' for the mTLS load balancer).
+   * @param port - The port for the target group health checks and Fargate container (default: config.apiPort).
+   * @param internetFacing - Whether the load balancer is internet-facing (default: config.apiInternetFacing).
+   * @param certificateArn - The ARN of the SSL certificate for the HTTPS listener.
+   * @param loadBalancerLoggingPrefix - Optional prefix for load balancer access log object keys.
+   * @param wafIpSetArn - Optional WAF IP set ARN.
+   * @param wafLogGroupName - Optional WAF log group name.
+   * @param wafLogGroupCreate - Optional WAF log group create flag.
+   * @param mutualAuthentication - Optional mutual authentication configuration for the HTTPS listener.
+   * @returns The created Application Load Balancer.
+   */
+  private createLoadBalancer(
+    stackName: string,
+    namePrefix: string,
+    port: number,
+    internetFacing: boolean,
+    certificateArn: string,
+    loadBalancerLoggingPrefix: string | undefined,
+    wafIpSetArn: string | undefined,
+    wafLogGroupName: string | undefined,
+    wafLogGroupCreate: boolean | undefined,
+    mutualAuthentication?: elbv2.MutualAuthentication
+  ): elbv2.ApplicationLoadBalancer {
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, `${namePrefix}TargetGroup`, {
+      vpc: this.vpc,
+      port,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      healthCheck: {
+        path: '/healthcheck',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(3),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 5,
+      },
+      targets: [this.fargateService],
+    });
+
+    const loadBalancer = new elbv2.ApplicationLoadBalancer(this, `${namePrefix}LoadBalancer`, {
+      vpc: this.vpc,
+      internetFacing,
+      http2Enabled: true,
+      securityGroup: this.loadBalancerSecurityGroup,
+    });
+
+    if (this.loggingBucket) {
+      loadBalancer.logAccessLogs(this.loggingBucket, loadBalancerLoggingPrefix);
+    }
+
+    loadBalancer.addListener(`${namePrefix}HttpsListener`, {
+      port: 443,
+      certificates: [{ certificateArn }],
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+      mutualAuthentication,
+    });
+
+    // WAF
+    const waf = buildWaf(
+      this,
+      `${namePrefix}BackEndWAF`,
+      `${stackName}-${namePrefix}BackEndWAF`,
+      'REGIONAL',
+      wafIpSetArn,
+      wafLogGroupName,
+      wafLogGroupCreate
+    );
+
+    // Create an association between the load balancer and the WAF
+    const wafAssociation = new wafv2.CfnWebACLAssociation(this, `${namePrefix}LoadBalancerAssociation`, {
+      resourceArn: loadBalancer.loadBalancerArn,
+      webAclArn: waf.attrArn,
+    });
+    assert.ok(wafAssociation, 'Failed to create WAF association');
+
+    return loadBalancer;
   }
 }
 

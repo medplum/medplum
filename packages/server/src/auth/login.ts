@@ -27,26 +27,29 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
   const clientId = req.body.clientId;
   const projectId = await getProjectIdByClientId(req.body.clientId, req.body.projectId as string | undefined);
 
-  const login = await tryLogin({
-    authMethod: 'password',
-    clientId,
-    projectId,
-    resourceType,
-    scope: req.body.scope || 'openid',
-    nonce: req.body.nonce || randomUUID(),
-    launchId: req.body.launch,
-    codeChallenge: req.body.codeChallenge,
-    codeChallengeMethod: req.body.codeChallengeMethod,
-    email: req.body.email,
-    password: req.body.password,
-    remember: req.body.remember,
-    remoteAddress: req.ip,
-    userAgent: req.get('User-Agent'),
-    allowNoMembership: req.body.projectId === 'new',
-    origin: req.get('Origin'),
-  });
-
-  getLogger().info('Login success', { email: req.body.email, projectId });
-
-  await sendLoginResult(res, login);
+  try {
+    const login = await tryLogin({
+      authMethod: 'password',
+      clientId,
+      projectId,
+      resourceType,
+      scope: req.body.scope || 'openid',
+      nonce: req.body.nonce || randomUUID(),
+      launchId: req.body.launch,
+      codeChallenge: req.body.codeChallenge,
+      codeChallengeMethod: req.body.codeChallengeMethod,
+      email: req.body.email,
+      password: req.body.password,
+      remember: req.body.remember,
+      remoteAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      allowNoMembership: req.body.projectId === 'new',
+      origin: req.get('Origin'),
+    });
+    getLogger().info('Login success', { email: req.body.email, projectId });
+    await sendLoginResult(res, login);
+  } catch (err) {
+    getLogger().warn('Login failed', { email: req.body.email, projectId });
+    throw err;
+  }
 }

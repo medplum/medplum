@@ -8,6 +8,7 @@ import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
@@ -25,14 +26,22 @@ import {
   enforceStrictMigrationVersionChecks,
   getPostDeployManifestEntry,
   getPostDeployMigration,
+  isFirstBootMode,
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
-import { reconnectOnError } from '../redis';
 import { getRegisteredServers } from '../server-registry';
-import type { WorkerInitializer } from './utils';
-import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import {
+  addVerboseQueueLogging,
+  getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
+  isJobActive,
+  isJobCompatible,
+  moveToDelayedAndThrow,
+  queueRegistry,
+} from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
@@ -43,9 +52,9 @@ function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, st
   };
 }
 
-export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
+export const initPostDeployMigrationWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<PostDeployJobData>(PostDeployMigrationQueueName, {
@@ -55,15 +64,19 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<PostDeployJobData>(
-    PostDeployMigrationQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-    {
-      ...config.bullmq,
-      ...defaultOptions,
-    }
-  );
-  addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
+  let worker: Worker<PostDeployJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'post-deploy-migration');
+    worker = new Worker<PostDeployJobData>(
+      PostDeployMigrationQueueName,
+      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+      {
+        ...workerBullmq,
+        ...defaultOptions,
+      }
+    );
+    addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
+  }
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
 
@@ -189,6 +202,19 @@ export async function runCustomMigration(
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const exec = new AsyncJobExecutor(systemRepo, asyncJob);
+
+  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+    globalLogger.info('Skipping custom post-deploy migration since server is in firstBoot mode', {
+      asyncJob: getReferenceString(asyncJob),
+      version: `v${asyncJob.dataVersion}`,
+    });
+    await exec.completeJob({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
+    });
+    return 'finished';
+  }
+
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {

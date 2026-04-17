@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Loader, Paper, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { DEFAULT_SEARCH_COUNT, formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
+import { DEFAULT_SEARCH_COUNT, formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
@@ -11,8 +11,8 @@ import {
 } from '@medplum/dosespot-react';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { IconSwitchHorizontal } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { hasDoseSpotIdentifier } from '../../components/utils';
 import { usePatient } from '../../hooks/usePatient';

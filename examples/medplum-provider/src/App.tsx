@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
+import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
@@ -9,6 +10,7 @@ import {
   IconClipboardCheck,
   IconMail,
   IconPill,
+  IconPrinter,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -16,20 +18,24 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
-import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
-import { hasDoseSpotIdentifier } from './components/utils';
+import { hasScriptSureIdentifier } from './components/utils';
+import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
+import { FaxPage } from './pages/fax/FaxPage';
+import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
+import { CoveragePage } from './pages/patient/CoveragePage';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
@@ -38,6 +44,7 @@ import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
+import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
@@ -50,7 +57,6 @@ import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
-import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -59,6 +65,9 @@ export function App(): JSX.Element | null {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
+  const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
+  const membership = medplum.getProjectMembership();
+  const hasScriptSure = hasScriptSureIdentifier(membership);
 
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
@@ -68,9 +77,6 @@ export function App(): JSX.Element | null {
   if (medplum.isLoading()) {
     return null;
   }
-
-  const membership = medplum.getProjectMembership();
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
 
   return (
     <AppShell
@@ -90,7 +96,7 @@ export function App(): JSX.Element | null {
                     label: 'Patients',
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
-                  { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
+                  { icon: <IconCalendarEvent />, label: 'Schedule', href: `/Calendar/Schedule` },
                   {
                     icon: <IconMail />,
                     label: 'Messages',
@@ -112,6 +118,7 @@ export function App(): JSX.Element | null {
                       subscriptionCriteria: `Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`,
                     },
                   },
+                  { icon: <IconPrinter />, label: 'Faxes', href: '/Fax/Communication' },
                 ],
               },
               {
@@ -137,6 +144,15 @@ export function App(): JSX.Element | null {
                           href: '/dosespot',
                           alert: true,
                           count: doseSpotCount ?? 0,
+                        },
+                      ]
+                    : []),
+                  ...(hasScriptSure
+                    ? [
+                        {
+                          icon: <IconPill />,
+                          label: 'ScriptSure',
+                          href: '/scriptsure',
                         },
                       ]
                     : []),
@@ -182,12 +198,16 @@ export function App(): JSX.Element | null {
                 <Route path="Task" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
+                {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage />} />
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path="Coverage" element={<CoveragePage />} />
+                <Route path="Coverage/:coverageId" element={<CoveragePage />} />
+                <Route path="Coverage/:coverageId/CoverageEligibilityRequest/:requestId" element={<CoveragePage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
                   <Route path="" element={<ResourceDetailPage />} />
@@ -200,12 +220,16 @@ export function App(): JSX.Element | null {
                 <Route index element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
               </Route>
-              <Route path="Task" element={<TasksPage />} />
-              <Route path="Task/:taskId" element={<TasksPage />} />
+              <Route path="/Task" element={<TasksPage />} />
+              <Route path="/Task/:taskId" element={<TasksPage />} />
+              <Route path="/Fax/Communication" element={<FaxPage />} />
+              <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
-              <Route path="/schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
+              {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

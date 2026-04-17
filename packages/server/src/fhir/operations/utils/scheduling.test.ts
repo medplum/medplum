@@ -30,8 +30,13 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['mon', 'wed', 'thu'],
-          timeOfDay: ['09:30:00', '13:15:00'],
-          duration: 180,
+          availableStartTime: '09:30:00',
+          availableEndTime: '12:30:00',
+        },
+        {
+          dayOfWeek: ['mon', 'wed', 'thu'],
+          availableStartTime: '13:15:00',
+          availableEndTime: '16:15:00',
         },
       ],
       duration: 20,
@@ -63,8 +68,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['mon'],
-          timeOfDay: ['15:20:00'],
-          duration: 600,
+          availableStartTime: '15:20:00',
+          availableEndTime: '01:20:00',
         },
       ],
       duration: 20,
@@ -86,13 +91,43 @@ describe('resolveAvailability', () => {
     ]);
   });
 
+  test('all day availability', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['mon', 'tue'],
+          availableStartTime: '00:00:00',
+          availableEndTime: '00:00:00',
+        },
+      ],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceType: [],
+    };
+
+    const range = {
+      start: new Date('2025-11-30T00:00:00.000-05:00'), // Start of Oct 30
+      end: new Date('2025-12-03T23:59:59.999-05:00'), // End of Dec 3
+    };
+
+    expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
+      // Mon Dec 1, 00:00 ET - Wed Dec 2, 00:00 ET
+      { start: new Date('2025-12-01T05:00:00.000Z'), end: new Date('2025-12-02T05:00:00.000Z') },
+      // Mon Dec 2, 00:00 ET - Wed Dec 3, 00:00 ET
+      { start: new Date('2025-12-02T05:00:00.000Z'), end: new Date('2025-12-03T05:00:00.000Z') },
+    ]);
+  });
+
   test('availabilities crossing the start of the query range are clamped', () => {
     const schedulingParameters: SchedulingParameters = {
       availability: [
         {
           dayOfWeek: ['tue'],
-          timeOfDay: ['10:00:00'],
-          duration: 360,
+          availableStartTime: '10:00:00',
+          availableEndTime: '16:00:00',
         },
       ],
       duration: 20,
@@ -119,8 +154,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['tue'],
-          timeOfDay: ['10:00:00'],
-          duration: 360,
+          availableStartTime: '10:00:00',
+          availableEndTime: '16:00:00',
         },
       ],
       duration: 20,
@@ -148,8 +183,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['tue', 'wed', 'thu'],
-          timeOfDay: ['20:00:00'],
-          duration: 360,
+          availableStartTime: '20:00:00',
+          availableEndTime: '02:00:00',
         },
       ],
       duration: 60,
@@ -176,8 +211,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['sun'],
-          timeOfDay: ['10:00:00'],
-          duration: 360,
+          availableStartTime: '10:00:00',
+          availableEndTime: '16:00:00',
         },
       ],
       duration: 20,
@@ -214,8 +249,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['sun'],
-          timeOfDay: ['00:30:00'],
-          duration: 360,
+          availableStartTime: '00:30:00',
+          availableEndTime: '06:30:00',
         },
       ],
       duration: 20,
@@ -232,9 +267,10 @@ describe('resolveAvailability', () => {
       end: new Date('2026-03-08T08:00:00.000-04:00'), // Sun Mar 8, 8am EDT
     };
 
-    // Availability duration is 6 hours, spanning 12:30am (pre time-change) to 7:30am (post time-change)
+    // Local-time window 00:30–06:30: on a spring-forward day the window is 5 real hours
+    // (one hour skipped), ending at 06:30 EDT = 10:30Z
     expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
-      { start: new Date('2026-03-08T05:30:00.000Z'), end: new Date('2026-03-08T11:30:00.000Z') },
+      { start: new Date('2026-03-08T05:30:00.000Z'), end: new Date('2026-03-08T10:30:00.000Z') },
     ]);
 
     // NY has a DST "fall back" on Nov 2 2025
@@ -243,9 +279,10 @@ describe('resolveAvailability', () => {
       end: new Date('2025-11-02T08:00:00.000-05:00'), // Sun Nov 2, 8am EST
     };
 
-    // Availability duration is 6 hours, spanning 12:30am (pre time-change) to 7:30am (post time-change)
+    // Local-time window 00:30–06:30: on a fall-back day the window is 7 real hours
+    // (one hour repeated), ending at 06:30 EST = 11:30Z
     expect(resolveAvailability(schedulingParameters, range2, 'America/New_York')).toEqual([
-      { start: new Date('2025-11-02T04:30:00.000Z'), end: new Date('2025-11-02T10:30:00.000Z') },
+      { start: new Date('2025-11-02T04:30:00.000Z'), end: new Date('2025-11-02T11:30:00.000Z') },
     ]);
   });
 
@@ -254,8 +291,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['sun'],
-          timeOfDay: ['01:30:00'],
-          duration: 360,
+          availableStartTime: '01:30:00',
+          availableEndTime: '06:30:00',
         },
       ],
       duration: 20,
@@ -272,7 +309,8 @@ describe('resolveAvailability', () => {
       end: new Date('2025-11-02T10:00:00.000-05:00'), // Sun Nov 2, 10am EST
     };
 
-    // Availability duration is 6 hours, spanning 1:30am (post time-change) to 7:30am (post time-change)
+    // 1:30am is ambiguous; Temporal picks the earlier (EDT) occurrence = 05:30Z.
+    // Window ends at 06:30 EST = 11:30Z.
     expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
       { start: new Date('2025-11-02T05:30:00.000Z'), end: new Date('2025-11-02T11:30:00.000Z') },
     ]);
@@ -283,8 +321,8 @@ describe('resolveAvailability', () => {
       availability: [
         {
           dayOfWeek: ['sun'],
-          timeOfDay: ['02:30:00'],
-          duration: 360,
+          availableStartTime: '02:30:00',
+          availableEndTime: '09:30:00',
         },
       ],
       duration: 20,
@@ -301,7 +339,7 @@ describe('resolveAvailability', () => {
       end: new Date('2026-03-08T10:00:00.000-04:00'), // Sun Mar 8, 10am EDT
     };
 
-    // Availability duration is 6 hours, spanning 03:30 (post time-change) to 09:30am (post time-change)
+    // 2:30am is skipped; Temporal advances to 03:30 EDT = 07:30Z. Window ends at 09:30 EDT = 13:30Z.
     expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
       { start: new Date('2026-03-08T07:30:00.000Z'), end: new Date('2026-03-08T13:30:00.000Z') },
     ]);
@@ -565,22 +603,22 @@ describe('applyExistingSlots', () => {
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slots = makeSlots(schedule, freeIntervals, 'free'); // No serviceType
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
-    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });
 
   test('free slots with matching service type are included', () => {
-    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
-    const slots = makeSlots(schedule, freeIntervals, 'free', [{ coding: serviceType }]);
+    const slots = makeSlots(schedule, freeIntervals, 'free', serviceType);
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });
 
   test('free slots with non-matching service type are excluded', () => {
-    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slotServiceType = [{ coding: [{ system: 'http://example.com', code: 'new-patient' }] }];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
@@ -591,7 +629,7 @@ describe('applyExistingSlots', () => {
 
   test('free slots do not match when system matches but code differs', () => {
     const system = 'http://example.com';
-    const serviceType = [{ system, code: 'checkup' }];
+    const serviceType = [{ coding: [{ system, code: 'checkup' }] }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slotServiceType = [{ coding: [{ system, code: 'office-visit' }] }];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
@@ -601,7 +639,7 @@ describe('applyExistingSlots', () => {
 
   test('free slots do not match when code matches but system differs', () => {
     const code = 'office-visit';
-    const serviceType = [{ system: 'http://other.com', code }];
+    const serviceType = [{ coding: [{ system: 'http://other.com', code }] }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slotServiceType = [{ coding: [{ system: 'http://example.com', code }] }];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
@@ -619,7 +657,7 @@ describe('applyExistingSlots', () => {
     ];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
-    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });

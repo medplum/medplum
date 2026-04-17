@@ -4,8 +4,8 @@ import { Box } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
-import { useRef } from 'react';
 import type { JSX } from 'react';
+import { useRef } from 'react';
 import { useParams } from 'react-router';
 
 export function DoseSpotTab(): JSX.Element {
@@ -26,6 +26,13 @@ export function DoseSpotTab(): JSX.Element {
 
   const iframeUrl = useDoseSpotIFrame({
     patientId,
+    selfEnroll: true,
+    onSelfEnrollSuccess: (result) =>
+      showNotification({
+        color: 'blue',
+        title: 'DoseSpot Enrollment',
+        message: result.nextSteps[0] ?? 'Enrollment in progress...',
+      }),
     onPatientSyncSuccess: () => {
       syncedRef.current = true;
       checkAndNotify();

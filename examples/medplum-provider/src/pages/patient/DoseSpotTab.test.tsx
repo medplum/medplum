@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { DoseSpotTab } from './DoseSpotTab';
-import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 
 // Mock useDoseSpotIFrame
 vi.mock('@medplum/dosespot-react', () => ({

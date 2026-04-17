@@ -3,7 +3,7 @@
 import type { AnchorProps } from '@mantine/core';
 import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ensureTrailingSlash, locationUtils, normalizeErrorString } from '@medplum/core';
+import { ensureTrailingSlash, normalizeErrorString } from '@medplum/core';
 import type { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -12,6 +12,7 @@ export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly client: ClientApplication;
   readonly patient?: Reference<Patient>;
   readonly encounter?: Reference<Encounter>;
+  readonly fhirContext?: Reference[];
   readonly children?: ReactNode;
 }
 
@@ -62,12 +63,13 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
         resourceType: 'SmartAppLaunch',
         patient: patientRef,
         encounter: encounterRef,
+        fhirContext: props.fhirContext,
       })
       .then((result) => {
         const url = new URL(client.launchUri as string);
         url.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
         url.searchParams.set('launch', result.id);
-        locationUtils.assign(url.toString());
+        window.open(url.toString(), '_blank');
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }

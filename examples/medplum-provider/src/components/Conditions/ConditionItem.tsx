@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Flex, Group, Select, Text } from '@mantine/core';
 import type { Condition } from '@medplum/fhirtypes';
-import { ActionIcon, Select, Group, Flex, Text } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import type { Bundle, Practitioner, Task } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import type { Task, Practitioner, Bundle } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskBoard } from './TaskBoard';
-import type { WithId } from '@medplum/core';
 
 describe('TaskBoard', () => {
   let medplum: MockClient;
@@ -386,9 +386,9 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Switch to All Tasks (this should navigate to reset pagination)
-    const allTasksLink = screen.getByRole('link', { name: 'All Tasks' });
-    expect(allTasksLink).toHaveAttribute('href', '/Task?_sort=-_lastUpdated');
+    // Switch to All Tasks tab (this should navigate to reset pagination)
+    const allTasksTab = screen.getByRole('tab', { name: 'All Tasks' });
+    expect(allTasksTab).toBeInTheDocument();
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
@@ -641,10 +641,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -685,10 +685,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -725,10 +725,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();

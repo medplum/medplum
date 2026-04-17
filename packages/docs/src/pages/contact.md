@@ -7,11 +7,11 @@ slug: /contact
 
 ## Need Support?
 
-If you have any questions or need assistance, please email [support@medplum.com](mailto:support@medplum.com).
+If you have any questions or need assistance, please email [support@medplum.com](mailto:support@medplum.com) or [schedule a support call](https://cal.com/forms/ea81515b-3bc4-4321-90f7-550d5c934bbe).
 
 ## Sales Inquiries
 
-For questions about pricing, please email [hello@medplum.com](mailto:hello@medplum.com) or [schedule a demo](https://cal.com/medplum/15).
+For questions about pricing, please email [hello@medplum.com](mailto:hello@medplum.com) or [book an intro call](https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a).
 
 ## Discord Community
 

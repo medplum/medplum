@@ -8,10 +8,13 @@ import { ResourceMemberTable } from './ResourceMemberTable';
 export function ClientsPage(): JSX.Element {
   return (
     <>
-      <Title>ClientApps</Title>
+      <Title>Client Applications</Title>
       <Text size="sm">This page lists all ProjectMemberships for ClientApplications.</Text>
+      // FIXME
       <ResourceMemberTable
         resourceType="ClientApplication"
+      <MemberTable
+        profileTypeOptions={[{ label: 'ClientApplication', value: 'ClientApplication' }]}
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
       />
       <Group justify="flex-end">

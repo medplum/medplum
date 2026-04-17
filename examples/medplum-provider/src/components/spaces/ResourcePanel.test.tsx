@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { MockClient } from '@medplum/mock';
 import type {
   DiagnosticReport,
   Encounter,
@@ -12,12 +11,13 @@ import type {
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { ResourcePanel } from './ResourcePanel';
 import { randomUUID } from 'crypto';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { ResourcePanel } from './ResourcePanel';
 
 describe('ResourcePanel', () => {
   let medplum: MockClient;

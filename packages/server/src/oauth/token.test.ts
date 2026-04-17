@@ -23,7 +23,7 @@ import type {
 import express from 'express';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, X509Certificate } from 'node:crypto';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
@@ -33,7 +33,8 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
 
@@ -90,7 +91,7 @@ describe('OAuth2 Token', () => {
 
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
-    systemRepo = getProjectSystemRepo(project);
+    systemRepo = await getProjectSystemRepo(project);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -2077,6 +2078,60 @@ describe('OAuth2 Token', () => {
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('mTLS error on client not found', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('x-mtls-cert', encodeURIComponent('invalid-cert'))
+      .send({
+        grant_type: 'client_credentials',
+        client_id: randomUUID(),
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toStrictEqual('invalid_request');
+    expect(res.body.error_description).toBe('Error reading client: Not found');
+  });
+
+  test('mTLS error missing trust store', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('x-mtls-cert', encodeURIComponent('fake-cert'))
+      .send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toStrictEqual('invalid_request');
+    expect(res.body.error_description).toBe('Client does not have a configured certificate trust store');
+  });
+
+  test('mTLS with self-signed certificate success', async () => {
+    const { cert } = generateSelfSignedCert('CN=Test Client');
+    const result = validateClientCert(cert, cert);
+    expect(result).toBeInstanceOf(X509Certificate);
+    expect(result.subject).toBe('CN=Test Client');
+
+    const { client } = await createTestProject({
+      withClient: true,
+      client: {
+        certificateTrustStore: cert,
+      },
+    });
+
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('x-mtls-cert', encodeURIComponent(cert))
+      .send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
   });
 });
 
