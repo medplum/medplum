@@ -127,7 +127,7 @@ export class AgentDicomChannel extends BaseChannel {
           App.instance.addToWebSocketQueue({
             type: 'agent:transmit:request',
             accessToken: 'placeholder',
-            channel: DcmjsDimseScp.channel.getDefinition().name as string,
+            channel: DcmjsDimseScp.channel.getDefinition().name,
             remote: this.association?.getCallingAeTitle() as string,
             contentType: ContentType.JSON,
             body: JSON.stringify(payload),
@@ -187,7 +187,7 @@ export class AgentDicomChannel extends BaseChannel {
       return;
     }
     this.started = true;
-    const address = new URL(this.getEndpoint().address as string);
+    const address = new URL(this.getEndpoint().address);
     this.log.info(`Channel starting on ${address}`);
     const port = Number.parseInt(address.port, 10);
 

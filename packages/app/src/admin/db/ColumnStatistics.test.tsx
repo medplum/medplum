@@ -135,7 +135,7 @@ describe('ColumnStatistics', () => {
   test('Selects table and displays column data', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -165,7 +165,7 @@ describe('ColumnStatistics', () => {
   test('Select all and deselect all columns', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -206,7 +206,7 @@ describe('ColumnStatistics', () => {
   test('Select individual row', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -303,7 +303,7 @@ describe('ColumnStatistics', () => {
   test('Shows notification when submitting without selecting columns', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -348,7 +348,7 @@ describe('ColumnStatistics', () => {
   test('Submits form with selected columns and new statistics target', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -402,7 +402,7 @@ describe('ColumnStatistics', () => {
   test('Submits form with reset to default', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -454,7 +454,7 @@ describe('ColumnStatistics', () => {
   test('Toggles show more stats', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -489,7 +489,7 @@ describe('ColumnStatistics', () => {
   test('Toggles show non-default only', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -523,7 +523,7 @@ describe('ColumnStatistics', () => {
   test('Opens modal when clicking stat cell', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -639,7 +639,7 @@ describe('ColumnStatistics', () => {
 
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -783,7 +783,7 @@ describe('ColumnStatistics', () => {
 
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -818,7 +818,7 @@ describe('ColumnStatistics', () => {
   test('Shows statistics target -1 as default', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -849,7 +849,7 @@ describe('ColumnStatistics', () => {
   test('Show non-default with show more stats enabled', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);
@@ -890,7 +890,7 @@ describe('ColumnStatistics', () => {
   test('Table change clears selected rows', async () => {
     setup();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);

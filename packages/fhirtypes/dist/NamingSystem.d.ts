@@ -5,14 +5,14 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Period } from './Period';
-import { Resource } from './Resource';
-import { UsageContext } from './UsageContext';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * A curated namespace that issues unique symbols within that namespace

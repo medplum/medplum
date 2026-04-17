@@ -18,7 +18,8 @@ import type {
 import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -194,7 +195,11 @@ export function createAuditEvent(
     network = { address: remoteAddress, type: '2' };
   }
 
-  let extension = buildTracingExtension();
+  let extension: Extension[] | undefined;
+  const tracingExt = buildTracingExtension();
+  if (tracingExt) {
+    extension = append(extension, tracingExt);
+  }
   if (options?.durationMs) {
     extension = append(extension, buildDurationExtension(options.durationMs));
   }
@@ -276,6 +281,11 @@ export async function createBotAuditEvent(
     return;
   }
 
+  let extension: Extension[] | undefined;
+  const tracingExt = buildTracingExtension();
+  if (tracingExt) {
+    extension = append(extension, tracingExt);
+  }
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
@@ -303,18 +313,20 @@ export async function createBotAuditEvent(
     entity: createAuditEventEntities(bot, input, subscription, agent, device),
     outcome,
     outcomeDesc,
-    extension: buildTracingExtension(),
+    extension,
   };
 
   const config = getConfig();
   for (const destination of bot.auditEventDestination ?? ['resource']) {
     switch (destination) {
-      case 'resource':
-        await getSystemRepo().createResource<AuditEvent>({
+      case 'resource': {
+        const systemRepo = await getProjectSystemRepo(runAs.project);
+        await systemRepo.createResource<AuditEvent>({
           ...auditEvent,
           outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
         });
         break;
+      }
       case 'log':
         logAuditEvent({
           ...auditEvent,
@@ -329,8 +341,12 @@ function tail(str: string, n: number): string {
   return str.substring(str.length - n);
 }
 
+const SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL =
+  'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination';
+
 /**
  * Creates an AuditEvent for a subscription attempt.
+ * @param systemRepo - The system repository.
  * @param resource - The resource that triggered the subscription.
  * @param startTime - The time the subscription attempt started.
  * @param outcome - The outcome code.
@@ -339,6 +355,7 @@ function tail(str: string, n: number): string {
  * @param bot - Optional bot that was executed.
  */
 export async function createSubscriptionAuditEvent(
+  systemRepo: SystemRepository,
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
@@ -346,10 +363,14 @@ export async function createSubscriptionAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
-  await systemRepo.createResource<AuditEvent>({
+  let extension: Extension[] | undefined;
+  const tracingExt = buildTracingExtension();
+  if (tracingExt) {
+    extension = append(extension, tracingExt);
+  }
+  const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
       project: auditedEvent.meta?.project,
@@ -376,8 +397,33 @@ export async function createSubscriptionAuditEvent(
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
-    extension: buildTracingExtension(),
-  });
+    extension,
+  };
+
+  // Read destination extensions from subscription
+  const destinations: string[] = [];
+  if (subscription?.extension) {
+    for (const ext of subscription.extension) {
+      if (ext.url === SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL && ext.valueCode) {
+        destinations.push(ext.valueCode);
+      }
+    }
+  }
+
+  // Default to 'resource' if no extensions found
+  const finalDestinations = destinations.length > 0 ? destinations : ['resource'];
+
+  // Process each destination
+  for (const destination of finalDestinations) {
+    switch (destination) {
+      case 'resource':
+        await systemRepo.createResource(auditEvent);
+        break;
+      case 'log':
+        logAuditEvent(auditEvent);
+        break;
+    }
+  }
 }
 
 export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {

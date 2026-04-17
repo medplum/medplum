@@ -12,7 +12,7 @@ You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you 
 
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
-:::note Bots in Local Development
+:::note[Bots in Local Development]
 
 If you want to run bots locally, you should use a VM Context. For more details see the [Running Bots Locally docs](/docs/bots/running-bots-locally).
 
@@ -34,13 +34,13 @@ By using Bots, the entire logic is self contained and managed in one place. Like
 
 ## Creating a Bot
 
-:::caution Note
+:::caution[Note]
 
 Bots are disabled by default. Contact your info@medplum.com if you'd like to learn more.
 
 :::
 
-:::caution Note
+:::caution[Note]
 
 Bots are restricted to Project administrators. If you do not have access, contact your Project administrator.
 
@@ -173,7 +173,7 @@ There are a few different ways a bot can be executed:
 
 ### _Executing from the Code Editor_
 
-The simplest way to to execute a bot is to click the "Execute" button inside the Bot's **Editor** tab.
+The simplest way to execute a bot is to click the "Execute" button inside the Bot's **Editor** tab.
 This will execute the most recently deployed version of your Bot, with the `event.input` set to the contents of the
 **Input Pane**.
 
@@ -249,7 +249,7 @@ Change "Criteria" field to `Patient`
 
 ![Subscription Criteria](/img/app/bots/subscription_criteria.png)
 
-:::warning Subscriptions on `AuditEvents`
+:::warning[Subscriptions on `AuditEvents`]
 
 The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir/resources/auditevent) resource. When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
 
@@ -257,7 +257,7 @@ The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir
 
 Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
 
-Because, Bots can be are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
+Because Bots are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
 
 ![Subscription Channel](/img/app/bots/subscription_channel.png)
 

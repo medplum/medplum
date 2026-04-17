@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WS } from 'jest-websocket-mock';
+import { WS } from 'vitest-websocket-mock';
 import type {
   FhircastConnectEvent,
   FhircastDiagnosticReportOpenContext,
@@ -603,15 +603,10 @@ describe('createFhircastMessagePayload', () => {
 
   test('Missing `context.versionId` in `*-update` event', () => {
     expect(() =>
-      createFhircastMessagePayload(
-        'abc-123',
-        // @ts-expect-error Missing `context.versionId` for test
-        'DiagnosticReport-update',
-        [
-          { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
-          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
-        ]
-      )
+      createFhircastMessagePayload('abc-123', 'DiagnosticReport-update', [
+        { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
+        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'document' } },
+      ])
     ).toThrow(OperationOutcomeError);
   });
 });
@@ -628,100 +623,105 @@ describe('FhircastConnection', () => {
     WS.clean();
   });
 
-  test('Constructor / .addEventListener("connect")', (done) => {
-    const subRequest = {
-      topic: 'abc123',
-      mode: 'subscribe',
-      channelType: 'websocket',
-      events: ['Patient-open'],
-      endpoint: 'ws://localhost:1234',
-    } satisfies SubscriptionRequest;
+  test('Constructor / .addEventListener("connect")', () =>
+    new Promise<void>((done) => {
+      const subRequest = {
+        topic: 'abc123',
+        mode: 'subscribe',
+        channelType: 'websocket',
+        events: ['Patient-open'],
+        endpoint: 'ws://localhost:1234',
+      } satisfies SubscriptionRequest;
 
-    connection = new FhircastConnection(subRequest);
-    expect(connection).toBeDefined();
+      connection = new FhircastConnection(subRequest);
+      expect(connection).toBeDefined();
 
-    const handler = (event: FhircastConnectEvent): void => {
-      expect(event).toBeDefined();
-      expect(event.type).toBe('connect');
-      connection.removeEventListener('connect', handler);
-      done();
-    };
-    connection.addEventListener('connect', handler);
-  });
+      const handler = (event: FhircastConnectEvent): void => {
+        expect(event).toBeDefined();
+        expect(event.type).toBe('connect');
+        connection.removeEventListener('connect', handler);
+        done();
+      };
+      connection.addEventListener('connect', handler);
+    }));
 
-  test('.addEventListener("message") - FhircastMessage', (done) => {
-    const message = createFhircastMessagePayload('abc123', 'Patient-open', {
-      key: 'patient',
-      resource: { id: '123', resourceType: 'Patient' },
-    });
+  test('.addEventListener("message") - FhircastMessage', () =>
+    new Promise<void>((done) => {
+      const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      });
 
-    const handler = (event: FhircastMessageEvent): void => {
-      expect(event).toBeDefined();
-      expect(event.type).toBe('message');
-      expect(event.payload).toStrictEqual(message);
-      connection.removeEventListener('message', handler);
-      done();
-    };
-    connection.addEventListener('message', handler);
-    wsServer.send(message);
-  });
+      const handler = (event: FhircastMessageEvent): void => {
+        expect(event).toBeDefined();
+        expect(event.type).toBe('message');
+        expect(event.payload).toStrictEqual(message);
+        connection.removeEventListener('message', handler);
+        done();
+      };
+      connection.addEventListener('message', handler);
+      wsServer.send(message);
+    }));
 
-  test('.addEventListener("message") - Subscription Confirmation', (done) => {
-    const message = createFhircastMessagePayload('abc123', 'Patient-open', {
-      key: 'patient',
-      resource: { id: '123', resourceType: 'Patient' },
-    });
+  test('.addEventListener("message") - Subscription Confirmation', () =>
+    new Promise<void>((done) => {
+      const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      });
 
-    const handler = (event: FhircastMessageEvent): void => {
-      expect(event).toBeDefined();
-      expect(event.type).toBe('message');
-      expect(event.payload).toStrictEqual(message);
-      connection.removeEventListener('message', handler);
-      done();
-    };
-    connection.addEventListener('message', handler);
-    wsServer.send({ 'hub.topic': generateId() });
-    wsServer.send(message);
-  });
+      const handler = (event: FhircastMessageEvent): void => {
+        expect(event).toBeDefined();
+        expect(event.type).toBe('message');
+        expect(event.payload).toStrictEqual(message);
+        connection.removeEventListener('message', handler);
+        done();
+      };
+      connection.addEventListener('message', handler);
+      wsServer.send({ 'hub.topic': generateId() });
+      wsServer.send(message);
+    }));
 
-  test('.addEventListener("message") - Heartbeat message', (done) => {
-    const heartbeatMessage = {
-      id: generateId(),
-      timestamp: new Date().toISOString(),
-      event: {
-        'hub.topic': 'abc123',
-        'hub.event': 'heartbeat',
-        context: [{ key: 'period', decimal: '10' }],
-      },
-    };
+  test('.addEventListener("message") - Heartbeat message', () =>
+    new Promise<void>((done) => {
+      const heartbeatMessage = {
+        id: generateId(),
+        timestamp: new Date().toISOString(),
+        event: {
+          'hub.topic': 'abc123',
+          'hub.event': 'heartbeat',
+          context: [{ key: 'period', decimal: '10' }],
+        },
+      };
 
-    const message = createFhircastMessagePayload('abc123', 'Patient-open', {
-      key: 'patient',
-      resource: { id: '123', resourceType: 'Patient' },
-    });
+      const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      });
 
-    const handler = (event: FhircastMessageEvent): void => {
-      expect(event).toBeDefined();
-      expect(event.type).toBe('message');
-      expect(event.payload).toStrictEqual(message);
-      connection.removeEventListener('message', handler);
-      done();
-    };
-    connection.addEventListener('message', handler);
-    wsServer.send(heartbeatMessage);
-    wsServer.send(message);
-  });
+      const handler = (event: FhircastMessageEvent): void => {
+        expect(event).toBeDefined();
+        expect(event.type).toBe('message');
+        expect(event.payload).toStrictEqual(message);
+        connection.removeEventListener('message', handler);
+        done();
+      };
+      connection.addEventListener('message', handler);
+      wsServer.send(heartbeatMessage);
+      wsServer.send(message);
+    }));
 
-  test('.disconnect() / .addEventListener("disconnect")', (done) => {
-    const handler = (event: FhircastDisconnectEvent): void => {
-      expect(event).toBeDefined();
-      expect(event.type).toBe('disconnect');
-      connection.removeEventListener('disconnect', handler);
-      done();
-    };
-    connection.addEventListener('disconnect', handler);
-    connection.disconnect();
-  });
+  test('.disconnect() / .addEventListener("disconnect")', () =>
+    new Promise<void>((done) => {
+      const handler = (event: FhircastDisconnectEvent): void => {
+        expect(event).toBeDefined();
+        expect(event.type).toBe('disconnect');
+        connection.removeEventListener('disconnect', handler);
+        done();
+      };
+      connection.addEventListener('disconnect', handler);
+      connection.disconnect();
+    }));
 
   test('Invalid SubscriptionRequest in constructor', () => {
     expect(

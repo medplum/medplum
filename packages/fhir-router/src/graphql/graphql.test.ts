@@ -44,7 +44,7 @@ describe('GraphQL', () => {
     getRootSchema();
 
     // Create a profile picture
-    binary = await repo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
+    binary = await repo.createResource({ resourceType: 'Binary' } as Binary);
 
     // Creat a simple patient
     patient = await repo.createResource<Patient>({
@@ -461,6 +461,66 @@ describe('GraphQL', () => {
     expect(res[0].issue?.[0]?.details?.text).toStrictEqual(
       'Field "ObservationList" argument "_reference" of type "Patient_Observation_reference!" is required, but it was not provided.'
     );
+  });
+
+  test('Reverse lookup with Connection API and count', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        PatientList(_count: 2) {
+          id
+          ObservationConnection(_reference: subject) {
+            count
+            edges {
+              resource {
+                id
+                status
+                code {
+                  text
+                }
+              }
+            }
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientList).toBeDefined();
+    expect(data.PatientList[0].ObservationConnection).toBeDefined();
+    expect(data.PatientList[0].ObservationConnection.count).toBeDefined();
+    expect(typeof data.PatientList[0].ObservationConnection.count).toBe('number');
+    // Patient has 1 observation, patient2 has 2 observations
+    const patient1ObsCount = data.PatientList.find((p: Patient) => p.id === patient.id)?.ObservationConnection?.count;
+    const patient2ObsCount = data.PatientList.find((p: Patient) => p.id === patient2.id)?.ObservationConnection?.count;
+    expect(patient1ObsCount).toBe(1);
+    expect(patient2ObsCount).toBe(2);
+  });
+
+  test('Reverse lookup with Connection API count only (no edges)', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Patient(id: "${patient.id}") {
+          id
+          ObservationConnection(_reference: subject) {
+            count
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.ObservationConnection).toBeDefined();
+    expect(data.Patient.ObservationConnection.count).toBe(1);
+    expect(data.Patient.ObservationConnection.edges).toBeUndefined();
   });
 
   test.skip('Max depth', async () => {
@@ -1218,7 +1278,7 @@ describe('GraphQL', () => {
   });
 
   test('Reference missing reference property', async () => {
-    const eob = await repo.createResource<ExplanationOfBenefit>({
+    const eob = await repo.createResource({
       resourceType: 'ExplanationOfBenefit',
       facility: {
         display: 'test',

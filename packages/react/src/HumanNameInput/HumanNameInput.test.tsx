@@ -16,11 +16,11 @@ describe('HumanNameInput', () => {
       />
     );
 
-    const given = screen.getByPlaceholderText('Given') as HTMLInputElement;
+    const given = screen.getByPlaceholderText<HTMLInputElement>('Given');
     expect(given).toBeDefined();
     expect(given.value).toEqual('Alice');
 
-    const family = screen.getByPlaceholderText('Family') as HTMLInputElement;
+    const family = screen.getByPlaceholderText<HTMLInputElement>('Family');
     expect(family).toBeDefined();
     expect(family.value).toEqual('Smith');
   });

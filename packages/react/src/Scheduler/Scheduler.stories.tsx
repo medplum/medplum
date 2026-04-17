@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { Period, Schedule, Slot } from '@medplum/fhirtypes';
-import { DrAliceSmithSchedule, ExampleQuestionnaire } from '@medplum/mock';
+import { DrAliceSmithSchedule } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -19,7 +19,7 @@ export default {
 export const Basic = (): JSX.Element => {
   return (
     <Document>
-      <Scheduler schedule={DrAliceSmithSchedule} questionnaire={ExampleQuestionnaire} />
+      <Scheduler schedule={DrAliceSmithSchedule} />
     </Document>
   );
 };
@@ -34,7 +34,7 @@ export const MultipleSchedules = (): JSX.Element => {
 
   return (
     <Document>
-      <Scheduler schedule={[DrAliceSmithSchedule, DrBobSchedule]} questionnaire={ExampleQuestionnaire} />
+      <Scheduler schedule={[DrAliceSmithSchedule, DrBobSchedule]} />
     </Document>
   );
 };
@@ -99,7 +99,7 @@ export const CustomSlotSearch = (): JSX.Element => {
   };
   return (
     <Document>
-      <Scheduler schedule={customSlotSearch} questionnaire={ExampleQuestionnaire} />
+      <Scheduler fetchSlots={customSlotSearch} />
     </Document>
   );
 };

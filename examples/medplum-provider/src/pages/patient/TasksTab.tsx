@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Task } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
-import type { JSX } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
-import classes from '../tasks/TasksPage.module.css';
-import { TaskBoard } from '../../components/tasks/TaskBoard';
+import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
-import type { ProfileResource, SearchRequest } from '@medplum/core';
+import type { Task } from '@medplum/fhirtypes';
 import { Loading, useMedplumProfile } from '@medplum/react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router';
+import { TaskBoard } from '../../components/tasks/TaskBoard';
 import { normalizeTaskSearch } from '../../utils/task-search';
+import classes from '../tasks/TasksPage.module.css';
 
 export function TasksTab(): JSX.Element {
   const { patientId, taskId } = useParams();
@@ -64,7 +64,7 @@ export function TasksTab(): JSX.Element {
     value: patientRef,
   });
   if (profile) {
-    const profileRef = getReferenceString(profile as ProfileResource);
+    const profileRef = getReferenceString(profile);
     if (profileRef) {
       myTasksFilters.push({
         code: 'owner',
@@ -95,7 +95,7 @@ export function TasksTab(): JSX.Element {
   const allTasksQuery = formatSearchQuery(allTasksSearch);
 
   return (
-    <div className={classes.container}>
+    <div className={classes.container} style={{ height: '100%' }}>
       <TaskBoard
         query={formatSearchQuery(parsedSearch).substring(1)}
         selectedTaskId={taskId}

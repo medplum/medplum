@@ -47,7 +47,7 @@ describe('Agent/$upgrade', () => {
       });
     });
 
-    const promises = Array.from({ length: NUM_DEFAULT_AGENTS }) as Promise<Response>[];
+    const promises: Promise<Response>[] = Array.from({ length: NUM_DEFAULT_AGENTS });
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
       promises[i] = request(app)
         .post('/fhir/R4/Agent')
@@ -174,7 +174,7 @@ describe('Agent/$upgrade', () => {
     expect(res.status).toBe(200);
     const outcome = res.body as OperationOutcome;
 
-    expect(outcome).toMatchObject<OperationOutcome>(allOk);
+    expect(outcome).toMatchObject(allOk);
     cleanup();
   });
 
@@ -294,7 +294,7 @@ describe('Agent/$upgrade', () => {
     expect(res.status).toBe(500);
 
     const outcome = res.body as OperationOutcome;
-    expect(outcome).toMatchObject<OperationOutcome>(serverError(new Error('Invalid response received from agent')));
+    expect(outcome).toMatchObject(serverError(new Error('Invalid response received from agent')));
 
     for (const handle of handles) {
       handle.cleanup();

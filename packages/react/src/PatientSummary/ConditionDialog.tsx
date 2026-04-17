@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
-import type { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
+import type { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
@@ -20,8 +20,8 @@ export interface ConditionDialogProps {
 
 export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
   const { patient, encounter, condition, onSubmit } = props;
-  const [code, setCode] = useState<CodeableConcept | undefined>(condition?.code);
-  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>(condition?.clinicalStatus);
+  const [code, setCode] = useState(condition?.code);
+  const [clinicalStatus, setClinicalStatus] = useState(condition?.clinicalStatus);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
+import { createReference, singularize } from '@medplum/core';
 import type {
   AccessPolicy,
   ClientApplication,
@@ -14,7 +14,6 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -26,7 +25,7 @@ export async function createClientHandler(req: Request, res: Response): Promise<
   let project: Project;
   const { project: localsProject, repo } = getAuthenticatedContext();
   if (localsProject.superAdmin) {
-    project = { resourceType: 'Project', id: req.params.projectId };
+    project = { resourceType: 'Project', id: singularize(req.params.projectId) };
   } else {
     project = localsProject;
   }
@@ -54,7 +53,7 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const client = await systemRepo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,

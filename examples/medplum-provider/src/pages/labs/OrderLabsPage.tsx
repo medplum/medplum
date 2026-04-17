@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
-import { ContentType, createReference } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import type { Encounter, Patient, Practitioner, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
-import { NPI_SYSTEM } from '@medplum/health-gorilla-core';
 import type {
   BillingInformation,
   DiagnosisCodeableConcept,
@@ -12,7 +12,9 @@ import type {
   LabOrganization,
   TestCoding,
 } from '@medplum/health-gorilla-core';
+import { NPI_SYSTEM } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
+import type { AsyncAutocompleteOption } from '@medplum/react';
 import {
   AsyncAutocomplete,
   DateTimeInput,
@@ -21,16 +23,15 @@ import {
   useMedplum,
   useResource,
   ValueSetAutocomplete,
+  valueSetElementToCoding,
 } from '@medplum/react';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import { PerformingLabInput } from '../../components/PerformingLabInput';
-import { TestMetadataCardInput } from '../../components/TestMetadataCardInput';
-import { CoverageInput } from '../../components/CoverageInput';
-import { useState, useEffect, useRef } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { PerformingLabInput } from '../../components/PerformingLabInput';
+import { CoverageInput } from '../../components/labs/CoverageInput';
+import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
 import { showErrorNotification } from '../../utils/notifications';
-import { showNotification } from '@mantine/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(
@@ -84,8 +85,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     // Compare by checking if arrays have different lengths or different test codes
     const testsChanged =
       tests &&
-      (prevTestsRef.current === undefined ||
-        prevTestsRef.current.length !== tests.length ||
+      (prevTestsRef.current?.length !== tests.length ||
         prevTestsRef.current.some((prevTest, index) => prevTest.code !== tests[index]?.code));
 
     if (testsChanged) {
@@ -202,11 +202,13 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm"
+                binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {
-                  const codeableConcepts = items.map((item) => ({ coding: [item] })) as DiagnosisCodeableConcept[];
+                  const codeableConcepts = items.map((item) => ({
+                    coding: [valueSetElementToCoding(item)],
+                  })) as DiagnosisCodeableConcept[];
                   setDiagnoses(codeableConcepts);
                 }}
               />

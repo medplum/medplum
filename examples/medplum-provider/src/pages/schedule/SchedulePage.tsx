@@ -1,27 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Drawer, Group, SegmentedControl, Title } from '@mantine/core';
+import { Box, Drawer, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, getReferenceString } from '@medplum/core';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createReference, EMPTY, getReferenceString, isReference } from '@medplum/core';
+import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
-import { Calendar, dayjsLocalizer } from 'react-big-calendar';
-import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useNavigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import type { SlotInfo } from 'react-big-calendar';
+import { useNavigate, useParams } from 'react-router';
+import { Calendar } from '../../components/Calendar';
+import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
+import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-
-type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
-type SlotEvent = Event & { type: 'slot'; status: string; start: Date; end: Date };
-type ScheduleEvent = AppointmentEvent | SlotEvent;
+import { mergeOverlappingSlots } from '../../utils/slots';
+import { FindPane } from './FindPane';
+import classes from './SchedulePage.module.css';
 
 /**
  * Schedule page that displays the practitioner's schedule.
@@ -30,387 +26,269 @@ type ScheduleEvent = AppointmentEvent | SlotEvent;
  */
 export function SchedulePage(): JSX.Element | null {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
-  const calendarRef = useRef<Calendar<ScheduleEvent>>(null);
-  const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
-  const [view, setView] = useState<View>('week');
-  const [date, setDate] = useState<Date>(new Date());
-  const [range, setRange] = useState<{ start: Date; end: Date } | undefined>(undefined);
-  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
-  const [slotEvents, setSlotEvents] = useState<ScheduleEvent[]>();
-  const [appointmentEvents, setAppointmentEvents] = useState<ScheduleEvent[]>();
 
-  const [appointmentSlot, setAppointmentSlot] = useState<SlotInfo>();
-
+  // Redirect to the current user's schedule if no id in the URL
   useEffect(() => {
-    if (medplum.isLoading() || !profile) {
+    if (id || !profile?.id) {
       return;
     }
-
-    // Search for a Schedule associated with the logged user,
-    // create one if it doesn't exist
     medplum
-      .searchOne('Schedule', { actor: getReferenceString(profile) })
+      .searchOne('Schedule', { actor: getReferenceString(profile as WithId<Practitioner>) })
       .then((foundSchedule) => {
-        if (foundSchedule) {
-          setSchedule(foundSchedule);
+        if (foundSchedule?.id) {
+          navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.log);
         } else {
           medplum
             .createResource({
               resourceType: 'Schedule',
-              actor: [createReference(profile)],
+              actor: [createReference(profile as WithId<Practitioner>)],
               active: true,
             })
-            .then(setSchedule)
-            .catch(console.error);
+            .then((created) => {
+              navigate(`/Calendar/Schedule/${created.id}`, { replace: true })?.catch(console.log);
+            })
+            .catch(showErrorNotification);
         }
       })
-      .catch(console.error);
-  }, [medplum, profile]);
+      .catch(showErrorNotification);
+  }, [id, profile, medplum, navigate]);
+  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
+  const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
+  const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
+  const [range, setRange] = useState<Range | undefined>(undefined);
+  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
+  const [appointments, setAppointments] = useState<Appointment[] | undefined>(undefined);
 
-  const handleRangeChange = useCallback(
-    (newRange: Date[] | { start: Date; end: Date }) => {
-      let newStart: Date;
-      let newEnd: Date;
-      if (Array.isArray(newRange)) {
-        // Week view passes the range as an array of dates
-        newStart = newRange[0];
-        newEnd = new Date(newRange[newRange.length - 1].getTime() + 24 * 60 * 60 * 1000);
-      } else {
-        // Other views pass the range as an object
-        newStart = newRange.start;
-        newEnd = newRange.end;
-      }
+  const [appointmentSlot, setAppointmentSlot] = useState<Range>();
+  const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
 
-      // Only update state if the range has changed
-      if (!range || newStart.getTime() !== range.start.getTime() || newEnd.getTime() !== range.end.getTime()) {
-        setRange({ start: newStart, end: newEnd });
-      }
-    },
-    [range, setRange]
-  );
+  // Load the schedule directly from the URL param
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    setSchedule(undefined);
+    medplum.readResource('Schedule', id).then(setSchedule).catch(showErrorNotification);
+  }, [id, medplum]);
 
-  const refreshEvents = useCallback(
-    (cache?: RequestCache) => {
-      const calendar = calendarRef.current;
-      if (!calendar || !schedule || !range) {
+  // Find slots visible in the current range
+  useEffect(() => {
+    if (!schedule || !range) {
+      return () => {};
+    }
+    let active = true;
+
+    medplum
+      .searchResources('Slot', [
+        ['_count', '1000'],
+        ['schedule', getReferenceString(schedule)],
+        ['start', `ge${range.start.toISOString()}`],
+        ['start', `le${range.end.toISOString()}`],
+        ['status', 'free,busy-unavailable'],
+      ])
+      .then((rawSlots) => active && setSlots(mergeOverlappingSlots(rawSlots)))
+      .catch((error: unknown) => active && showErrorNotification(error));
+
+    return () => {
+      active = false;
+    };
+  }, [medplum, schedule, range]);
+
+  // Find appointments visible in the current range
+  useEffect(() => {
+    const actorRef = schedule?.actor?.[0]?.reference;
+    if (!actorRef || !range) {
+      return () => {};
+    }
+    let active = true;
+
+    medplum
+      .searchResources('Appointment', [
+        ['_count', '1000'],
+        ['actor', actorRef],
+        ['date', `ge${range.start.toISOString()}`],
+        ['date', `le${range.end.toISOString()}`],
+      ])
+      .then((appointments) => active && setAppointments(appointments))
+      .catch((error: unknown) => active && showErrorNotification(error));
+
+    return () => {
+      active = false;
+    };
+  }, [medplum, schedule, range]);
+
+  const practitioner = schedule?.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
+
+  // When a date/time interval is selected, set the event object and open the
+  // create appointment modal
+  const handleSelectInterval = useCallback(
+    (slot: SlotInfo) => {
+      if (!practitioner) {
+        showErrorNotification("Can't create visit without associated Practitioner");
         return;
       }
 
-      const start = range.start.toISOString();
-      const end = range.end.toISOString();
-
-      async function searchSlots(): Promise<void> {
-        const slots = await medplum.searchResources(
-          'Slot',
-          [
-            ['_count', '1000'],
-            ['schedule', getReferenceString(schedule as WithId<Schedule>)],
-            ['start', `ge${start}`],
-            ['start', `le${end}`],
-          ],
-          { cache }
-        );
-        setSlotEvents(slotsToEvents(slots));
-      }
-
-      async function searchAppointments(): Promise<void> {
-        const appointments = await medplum.searchResources(
-          'Appointment',
-          [
-            ['_count', '1000'],
-            ['actor', getReferenceString(profile as WithId<Practitioner>)],
-            ['date', `ge${start}`],
-            ['date', `le${end}`],
-          ],
-          { cache }
-        );
-        setAppointmentEvents(appointmentsToEvents(appointments));
-      }
-
-      Promise.allSettled([searchSlots(), searchAppointments()]).catch(console.error);
-    },
-    [medplum, profile, schedule, range]
-  );
-
-  useEffect(() => {
-    refreshEvents();
-  }, [refreshEvents]);
-
-  /**
-   * When a date/time range is selected, set the event object and open the create slot modal
-   */
-  const handleSelectSlot = useCallback(
-    (slot: SlotInfo) => {
       createAppointmentHandlers.open();
       setAppointmentSlot(slot);
     },
-    [createAppointmentHandlers]
+    [createAppointmentHandlers, practitioner]
   );
 
-  /**
-   * When an existing event (slot/appointment) is selected, set the event object and open the
-   * appropriate modal.
-   * - If the event is a free slot, open the create appointment modal.
-   * - If the event is an appointment, navigate to the appointment page.
-   */
-  const handleSelectEvent = useCallback(
-    async (event: ScheduleEvent) => {
-      const { resourceType, status } = event.resource;
-
-      function handleSlot(): void {
-        if (status === 'free') {
-          createAppointmentHandlers.open();
-        }
-      }
-
-      async function handleAppointment(): Promise<void> {
-        const encounters = await medplum.searchResources('Encounter', [
-          ['appointment', getReferenceString(event.resource)],
-          ['_count', '1'],
-        ]);
-        const patient = encounters?.[0]?.subject;
-        if (patient?.reference) {
-          navigate(`/${patient.reference}/Encounter/${encounters?.[0]?.id}`)?.catch(console.error);
-        }
-      }
-
-      if (resourceType === 'Slot') {
-        handleSlot();
+  const handleSelectSlot = useCallback(
+    (slot: Slot) => {
+      if (!practitioner) {
+        showErrorNotification("Can't create visit without associated Practitioner");
         return;
       }
 
-      if (resourceType === 'Appointment') {
-        handleAppointment().catch((err) => showErrorNotification(err));
+      // When a "free" slot is selected, open the create appointment modal
+      if (slot.status === 'free') {
+        createAppointmentHandlers.open();
+        setAppointmentSlot({ start: new Date(slot.start), end: new Date(slot.end) });
       }
     },
-    [createAppointmentHandlers, navigate, medplum]
+    [createAppointmentHandlers, practitioner]
   );
 
-  if (!schedule) {
-    return null;
-  }
+  const handleBookSuccess = useCallback(
+    (results: { appointments: Appointment[]; slots: Slot[] }) => {
+      setAppointments((state) => results.appointments.concat(state ?? EMPTY));
+      setAppointmentDetails(results.appointments[0]);
+      appointmentDetailsHandlers.open();
+      setSlots((state) =>
+        results.slots
+          .filter(
+            // We don't show "busy" slots, assuming that they are duplicative of
+            // more descriptive Appointment resources.
+            (slot) => slot.status !== 'busy'
+          )
+          .concat(state ?? EMPTY)
+      );
+    },
+    [appointmentDetailsHandlers]
+  );
+
+  // When an appointment is selected, navigate to the detail page
+  const handleSelectAppointment = useCallback(
+    async (appointment: Appointment) => {
+      const reference = getReferenceString(appointment);
+      if (!reference) {
+        showErrorNotification("Can't navigate to unsaved appointment");
+        return;
+      }
+
+      try {
+        const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
+
+        if (!encounter) {
+          setAppointmentDetails(appointment);
+          appointmentDetailsHandlers.open();
+          return;
+        }
+
+        const patient = encounter.subject;
+        if (patient?.reference) {
+          await navigate(`/${patient.reference}/Encounter/${encounter.id}`);
+        }
+      } catch (error) {
+        showErrorNotification(error);
+      }
+    },
+    [medplum, navigate, appointmentDetailsHandlers]
+  );
 
   const height = window.innerHeight - 60;
 
-  const CustomToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element => {
-    const [firstRender, setFirstRender] = useState(true);
-    useEffect(() => {
-      // The calendar does not provide any way to receive the range of dates that
-      // are visible except when they change. This is the cleanest way I could find
-      // to extend it to provide the _initial_ range (`onView` calls `onRangeChange`).
-      // https://github.com/jquense/react-big-calendar/issues/1752#issuecomment-761051235
-      if (firstRender) {
-        props.onView(props.view);
-        setFirstRender(false);
+  const handleAppointmentUpdate = useCallback((updated: Appointment) => {
+    setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
+    setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
+  }, []);
+
+  const handleActorChange = useCallback(
+    (ref: Reference | undefined) => {
+      if (!ref?.reference) {
+        return;
       }
-    }, [props, firstRender, setFirstRender]);
-    return (
-      <Group justify="space-between" pb="sm">
-        <Group>
-          <Title order={4} mr="md">
-            {props.view !== 'day' && dayjs(props.date).format('MMMM YYYY')}
-            {props.view === 'day' && dayjs(props.date).format('MMMM D YYYY')}
-          </Title>
-          <Button.Group>
-            <Button variant="default" size="xs" onClick={() => props.onNavigate('PREV')}>
-              <IconChevronLeft size={12} />
-            </Button>
-            <Button variant="default" size="xs" onClick={() => props.onNavigate('TODAY')}>
-              Today
-            </Button>
-            <Button variant="default" size="xs" onClick={() => props.onNavigate('NEXT')}>
-              <IconChevronRight size={12} />
-            </Button>
-          </Button.Group>
-        </Group>
-        <SegmentedControl
-          size="xs"
-          value={props.view}
-          onChange={(newView) => setView(newView as View)}
-          data={[
-            { label: 'Month', value: 'month' },
-            { label: 'Week', value: 'week' },
-            { label: 'Day', value: 'day' },
-          ]}
-        />
-      </Group>
-    );
-  };
-
-  function eventPropGetter(
-    event: ScheduleEvent,
-    _start: Date,
-    _end: Date,
-    _isSelected: boolean
-  ): { className?: string | undefined; style?: React.CSSProperties } {
-    const result = {
-      style: {
-        backgroundColor: '#228be6',
-        border: '1px solid rgba(255, 255, 255, 0)',
-        borderRadius: '4px',
-        color: 'white',
-        display: 'block',
-        opacity: 1.0,
-      },
-    };
-
-    if (event.type === 'slot') {
-      result.style.backgroundColor = event.status === 'free' ? '#d3f9d8' : '#ced4da';
-      result.style.color = 'black';
-      result.style.opacity = 0.6;
-    }
-
-    return result;
-  }
-
-  dayjs.extend(utc);
-  dayjs.extend(timezone);
-  dayjs.tz.setDefault(dayjs.tz.guess());
+      medplum
+        .searchOne('Schedule', { actor: ref.reference })
+        .then((foundSchedule) => {
+          if (foundSchedule?.id) {
+            navigate(`/Calendar/Schedule/${foundSchedule.id}`)?.catch(console.error);
+          }
+        })
+        .catch(showErrorNotification);
+    },
+    [medplum, navigate]
+  );
 
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
-      <Calendar
-        ref={calendarRef}
-        components={{ toolbar: CustomToolbar }}
-        view={view}
-        date={date}
-        localizer={dayjsLocalizer(dayjs)}
-        events={appointmentEvents}
-        backgroundEvents={slotEvents} // Background events don't show in the month view
-        onNavigate={(newDate: Date, newView: View) => {
-          setDate(newDate);
-          setView(newView);
-        }}
-        onRangeChange={handleRangeChange}
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
-        scrollToTime={date} // Default scroll to current time
-        style={{ height: height - 150 }}
-        selectable
-        eventPropGetter={eventPropGetter}
-      />
+      <div className={classes.wrapper}>
+        <Box mb="sm" maw={320}>
+          <ReferenceInput
+            key={schedule?.id}
+            name="schedule-actor"
+            targetTypes={['Practitioner']}
+            placeholder="Switch schedule..."
+            defaultValue={schedule?.actor?.[0] as Reference<Practitioner>}
+            onChange={handleActorChange}
+          />
+        </Box>
+        <div className={classes.container}>
+          <div className={classes.calendar}>
+            <Calendar
+              style={{ height: '100%' }}
+              onSelectInterval={handleSelectInterval}
+              onSelectAppointment={handleSelectAppointment}
+              onSelectSlot={handleSelectSlot}
+              slots={slots ?? []}
+              appointments={appointments ?? []}
+              onRangeChange={setRange}
+            />
+          </div>
+
+          {schedule && range && (
+            <FindPane
+              key={schedule.id}
+              schedule={schedule}
+              range={range}
+              onSuccess={handleBookSuccess}
+              className={classes.findPane}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Modals */}
+      {practitioner && (
+        <Drawer
+          opened={createAppointmentOpened}
+          onClose={createAppointmentHandlers.close}
+          title="New Calendar Event"
+          position="right"
+          h="100%"
+        >
+          <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
+        </Drawer>
+      )}
       <Drawer
-        opened={createAppointmentOpened}
-        onClose={createAppointmentHandlers.close}
-        title="New Calendar Event"
+        opened={appointmentDetailsOpened}
+        onClose={appointmentDetailsHandlers.close}
+        title={
+          <Text size="xl" fw={700}>
+            Appointment Details
+          </Text>
+        }
         position="right"
         h="100%"
       >
-        <CreateVisit appointmentSlot={appointmentSlot} />
+        {appointmentDetails && (
+          <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
+        )}
       </Drawer>
     </Box>
   );
-}
-
-// This function collapses contiguous or overlapping slots of the same status into single events
-function slotsToEvents(slots: Slot[]): SlotEvent[] {
-  if (!slots || slots.length === 0) {
-    return [];
-  }
-
-  // First, filter the slots as before
-  const filteredSlots = slots.filter((slot) => slot.status === 'free' || slot.status === 'busy-unavailable');
-
-  // Group slots by status
-  const slotsByStatus: Record<string, SlotEvent[]> = {};
-  filteredSlots.forEach((slot) => {
-    if (!slotsByStatus[slot.status]) {
-      slotsByStatus[slot.status] = [];
-    }
-    slotsByStatus[slot.status].push({
-      type: 'slot',
-      status: slot.status,
-      start: new Date(slot.start),
-      end: new Date(slot.end),
-    });
-  });
-
-  const collapsedEvents: SlotEvent[] = [];
-
-  // Process each status group separately
-  Object.entries(slotsByStatus).forEach(([status, statusSlots]) => {
-    // Sort slots by start time
-    statusSlots.sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    // Merge contiguous/overlapping slots
-    let currentGroup: SlotEvent | undefined = undefined;
-
-    for (const slot of statusSlots) {
-      if (!currentGroup) {
-        // Start a new group
-        currentGroup = {
-          type: 'slot',
-          status,
-          start: slot.start,
-          end: slot.end,
-        };
-      } else if (slot.start <= new Date(currentGroup.end.getTime() + 1000)) {
-        // Slot is contiguous or overlapping with current group
-        // The +1000ms (1 second) tolerance handles potential tiny gaps
-
-        // Extend end time if needed
-        if (slot.end > currentGroup.end) {
-          currentGroup.end = slot.end;
-        }
-      } else {
-        // This slot doesn't connect to the current group
-        // Finish current group and start a new one
-        collapsedEvents.push({
-          type: 'slot',
-          status: currentGroup.status,
-          title: status === 'free' ? 'Available' : 'Blocked',
-          start: currentGroup.start,
-          end: currentGroup.end,
-        });
-
-        currentGroup = {
-          type: 'slot',
-          status,
-          start: slot.start,
-          end: slot.end,
-        };
-      }
-    }
-
-    // Don't forget to add the last group
-    if (currentGroup) {
-      collapsedEvents.push({
-        type: 'slot',
-        status: currentGroup.status,
-        title: status === 'free' ? 'Available' : 'Blocked',
-        start: currentGroup.start,
-        end: currentGroup.end,
-        resource: {
-          status,
-        },
-      });
-    }
-  });
-
-  return collapsedEvents;
-}
-
-function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
-  return appointments
-    .filter((appointment) => appointment.status !== 'cancelled')
-    .map((appointment) => {
-      // Find the patient among the participants to use as title
-      const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
-        ? ` (${appointment.status})`
-        : '';
-
-      return {
-        type: 'appointment',
-        appointment,
-        title: `${patientParticipant?.actor?.display} ${status}`,
-        start: new Date(appointment.start as string),
-        end: new Date(appointment.end as string),
-        resource: appointment,
-      };
-    });
 }

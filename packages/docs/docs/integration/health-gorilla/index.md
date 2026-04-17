@@ -5,26 +5,26 @@ tags: [integration]
 
 # Health Gorilla Lab Orders
 
-Health Gorilla is an interoperability service that enables healthcare providers to order lab tests and diagnostics through a unified API. Medplum provides a first-party integration with Health Gorilla in order to optimize this experience, minimizing errors and enhancing the patient experience. 
+Health Gorilla is an interoperability service that enables healthcare providers to order lab tests and diagnostics through a unified API. Medplum provides a first-party integration with Health Gorilla in order to optimize this experience, minimizing errors and enhancing the patient experience.
 
 :::tip
 Need help? This is an advanced integration. [Contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for implementation support.
 :::
 
-This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering. 
+This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering.
 
-For more information about the FHIR resources involved in the integration, see [Sending Orders](./sending-orders.md) and [Receiving Results](./receiving-results.md). See our [Changelog](./hg-changelog.md) for information about integration upgrades. 
+For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
 
-## Prerequisites 
+## Prerequisites
 
-In order to integrate with Health Gorilla for labs, your organization must: 
+In order to integrate with Health Gorilla for labs, your organization must:
 
-- Be a provider organization, i.e. with a clinician licensed to review lab orders, 
-- Have an account number with a [connected lab](https://developer.healthgorilla.com/docs/list-of-connected-labs), such as Quest or LabCorp. 
+- Be a provider organization, i.e. with a clinician licensed to review lab orders,
+- Have an account number with a [connected lab](https://developer.healthgorilla.com/docs/list-of-connected-labs), such as Quest or LabCorp.
 
-## Requisite information for successful lab order 
+## Requisite information for successful lab order
 
-Below is a decision tree that helps determine what information must be collected for a successful lab order with this integration. 
+Below is a decision tree that helps determine what information must be collected for a successful lab order with this integration.
 
 ```mermaid
 graph TD
@@ -42,55 +42,90 @@ graph TD
     K --> L[Lab collects insurance/specimen]
     L --> M[Receive results via API]
     M --> N[Release results to patient following state resulting protocol]
-    
+
     classDef question fill:#A5D6A7,stroke:#333,stroke-width:2px
     classDef action fill:#B088E1,stroke:#333,stroke-width:2px
-    
+
     class D,F,H question
     class A,B,C,E,G,I,J,K,L,M,N,P action
 ```
 
-Information on how to systemize the collection of this information is included below. 
+Information on how to systemize the collection of this information is included below.
 
-### Ensure correct demographic information for patient 
+### Ensure correct demographic information for patient
 
-[FHIR profiles](/docs/fhir-datastore/profiles) are used to ensure that the correct patient demographic information is collected for every patient. 
+[FHIR profiles](/docs/fhir-datastore/profiles) are used to ensure that the correct patient demographic information is collected for every patient.
 
-### Select performing lab 
+### Select performing lab
 
-In order to use Health Gorilla's integration, you must retain an account number with the lab directly. This can be done programmatically (see [Sending Orders](./sending-orders.md) for more details). 
+In order to use Health Gorilla's integration, you must retain an account number with the lab directly. This can be done programmatically (see [Sending Orders](/docs/integration/health-gorilla/sending-orders) for more details).
 
-### Choose a lab panel 
+### Choose a lab panel
 
-To standardize the labs or the sets of labs (i.e. blood glucose level, standard STD test set, etc) that can be selected by clinicians, care managers can set up [PlanDefinitions](/docs/api/fhir/resources/plandefinition), that are then instantiated into [ServiceRequests](/docs/api/fhir/resources/servicerequest) when they are ordered for a specific patient. For more information, see our [order structure FHIR data model](/docs/integration/health-gorilla/sending-orders#fhir-data-model). 
+To standardize the labs or the sets of labs (i.e. blood glucose level, standard STD test set, etc) that can be selected by clinicians, care managers can set up [PlanDefinitions](/docs/api/fhir/resources/plandefinition), that are then instantiated into [ServiceRequests](/docs/api/fhir/resources/servicerequest) when they are ordered for a specific patient. For more information, see our [order structure FHIR data model](/docs/integration/health-gorilla/sending-orders#fhir-data-model).
 
-### Ensuring Coverage are collected 
+### Ensuring Coverage are collected
 
-When attaching insurance information to the lab order, ensure that the correct Coverage resource is attached. See [Sending Orders](./sending-orders.md) for more details. 
+When attaching insurance information to the lab order, ensure that the correct Coverage resource is attached. See [Sending Orders](/docs/integration/health-gorilla/sending-orders) for more details.
 
 ### Show ABN and capture diagnosis codes for Medicare patients
 
-When billing lab orders to Medicare, two features are needed: (1) Advanced Beneficiary Notice (ABN) and (2) Diagnosis codes. 
+When billing lab orders to Medicare, two features are needed: (1) Advanced Beneficiary Notice (ABN) and (2) Diagnosis codes.
 
-The Advanced Beneficiary Notice (ABN) is a PDF that is generated by the Health Gorilla system for orders that are placed for patients with Medicare coverage. Patients should be informed for their expected cost before testing, and these documents give an indication of their out-of-pocket costs for the lab test. For a sample ABN document, see [sample PDF's](#sample-health-gorilla-pdfs). 
+The Advanced Beneficiary Notice (ABN) is a PDF that is generated by the Health Gorilla system for orders that are placed for patients with Medicare coverage. Patients should be informed for their expected cost before testing, and these documents give an indication of their out-of-pocket costs for the lab test. For a sample ABN document, see [sample PDF's](#sample-health-gorilla-pdfs).
 
 In the majority of Medicare orders, patients need diagnosis codes added to their order to receive overage for the tests. These are ICD-10 codes, and a sample `ValueSet` with common ICD-10 codes can be [downloaded](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link).
 
-### Attach requisition to sample and send to lab 
+### Attach requisition to sample and send to lab
 
 If collecting specimens on site, you'll need to provide the collection details and attach a printed specimen with barcode to the specimen to ensure correct chain of custody and turnaround times. See [sample PDF's](#sample-health-gorilla-pdfs) for an example of a PDF that should be printed and attached.
 
-## Sample Health Gorilla PDF's 
+## Sample Health Gorilla PDF's
 
-The below table includes a list of sample documents for PDF's provided by Health Gorilla during the lab order requisition process. Please [contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for access. 
+The below table includes a list of sample documents for PDF's provided by Health Gorilla during the lab order requisition process. Please [contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for access.
 
-| Sample PDF             | Purpose                                 | 
-| ---------------------- | --------------------------------------- | 
-| [Sample Req w/ collected date](https://drive.google.com/file/d/1gVvhw-2OnW9IlwZU2ly13jZGbGMAyW0O/view?usp=drive_link) | Requisition for speciments collected onsite, with collection date and time. To be attached to the speciment when sending to lab. | 
-| [Sample PSC Hold](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link) | Requisition for speciments collected offsite, to be shared with patient. | 
-| [Diagnosis samples](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link) | Sample diagnosis codes, for Medicare patients. | 
-| [Sample ABN](https://drive.google.com/file/d/1l6VbtqdlkDbCJr_DPQwfKOpoaRo2giTM/view?usp=drive_link) | Sample ABN document, for Medicare patients. | 
-| [Sample Req with multiple insurance](https://drive.google.com/file/d/1QMrLkP71ysQEMIi3EOKx0BWeJOATUeCw/view?usp=drive_link) | Requisition for patients with multiple insurance. | 
+| Sample PDF                                                                                                                  | Purpose                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| [Sample Req w/ collected date](https://drive.google.com/file/d/1gVvhw-2OnW9IlwZU2ly13jZGbGMAyW0O/view?usp=drive_link)       | Requisition for speciments collected onsite, with collection date and time. To be attached to the speciment when sending to lab. |
+| [Sample PSC Hold](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link)                    | Requisition for speciments collected offsite, to be shared with patient.                                                         |
+| [Diagnosis samples](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link)                  | Sample diagnosis codes, for Medicare patients.                                                                                   |
+| [Sample ABN](https://drive.google.com/file/d/1l6VbtqdlkDbCJr_DPQwfKOpoaRo2giTM/view?usp=drive_link)                         | Sample ABN document, for Medicare patients.                                                                                      |
+| [Sample Req with multiple insurance](https://drive.google.com/file/d/1QMrLkP71ysQEMIi3EOKx0BWeJOATUeCw/view?usp=drive_link) | Requisition for patients with multiple insurance.                                                                                |
+
+## Migrating to Health Gorilla Labs
+
+When migrating your existing lab workflows to the Medplum Health Gorilla integration, there are several steps and phases to ensure a smooth transition.
+
+### Customer Requirements
+
+To begin the setup process, you will need to provide the following to the Medplum team:
+
+- **Lab Account Numbers**: Obtain and share your Quest or Labcorp account numbers.
+- **Temporary Access**: Provide a Forward Deployed Engineer (FDE) with temporary access to your Medplum project to install the necessary bots and resources.
+
+### Migration Phases
+
+Migrations are typically rolled out in phases to minimize disruption to your clinical operations:
+
+#### 1. Receive-Only Mode
+
+Often, the first step is to enable the integration in **"receive-only" mode**. This allows you to start receiving structured FHIR results into your Medplum system while continuing to place orders through your existing system or legacy EMR.
+
+#### 2. Syncing Placeholder Orders
+
+When operating in receive-only mode, incoming results will lack a corresponding order in Medplum, which normally results in [`unsolicited-diagnostic-report` or `unknown-patient` issues](/docs/integration/health-gorilla/receiving-results#resolving-orders-with-results).
+
+To avoid this and ensure results are properly matched to the correct patient:
+
+- **Sync Placeholder Orders**: You should sync at least "placeholder" orders (`ServiceRequest` resources) from your legacy system into Medplum.
+- **Include Identifiers**: Ensure these placeholder orders include an order ID (such as a Placer or Accession number) that can be matched against the incoming results.
+- **Link to Patients**: Point these placeholder orders to a valid `Patient` resource in Medplum.
+
+By doing this, the `receive-from-health-gorilla` bot will successfully match the incoming result's Placer/Accession number to the placeholder order, automatically linking the result to the correct patient and avoiding unsolicited reports.
+
+#### 3. Ordering from Medplum
+
+In the final phase, you transition to placing lab orders directly from your Medplum application. To accelerate the development of the ordering interface, you can use the [`useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react) from the `@medplum/health-gorilla-react` package. This headless UI hook helps manage the complex state required for creating an order, including searching and selecting lab tests, answering Ask on Entry (AOE) questions, and completing the order workflow.
 
 ## Glossary
 
@@ -109,6 +144,13 @@ In a lab implementation, you'll see the following abbreviations.
 | Patient Bill     | Patient responsible for paying   | This encompasses two cases: one where the patient pays out of pocket and the other where a patient shows their coverage card to the lab                                                       |
 | Third Party Bill | Insurance responsible            | In this case, a patient's insurance is billed                                                                                                                                                 |
 | Account Bill     | Owner of lab account responsible | This is common in clinical research and concierge care                                                                                                                                        |
+
+## Getting a Lab Account
+
+If your organization does not yet have an account with a national lab, you can sign up directly:
+
+- [Contact a Labcorp national lab account representative](https://www.labcorp.com/clinical-drug-testing/support/contact-labcorp-account-representative)
+- [Sign up for a Quest national lab account](https://questdiagnosticscommercial.my.site.com/AASU/s/)
 
 ## Related Reading
 

@@ -71,7 +71,7 @@ describe('ResendSubscriptionsModal', () => {
     // Create a Subscription to find with autocomplete
     await medplum.createResource({
       resourceType: 'Subscription',
-      id: '123',
+      id: '1234',
       status: 'active',
       reason: 'test',
       criteria: 'Patient',
@@ -94,7 +94,7 @@ describe('ResendSubscriptionsModal', () => {
       fireEvent.click(screen.getByText('Choose subscription', { exact: false }));
     });
 
-    const input = screen.getByPlaceholderText('Subscription') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Subscription');
 
     // Enter "Patient"
     await act(async () => {
@@ -129,7 +129,7 @@ describe('ResendSubscriptionsModal', () => {
     expect(resendCallback).toHaveBeenCalledTimes(1);
 
     const request = resendCallback.mock.calls[0][0];
-    expect(request.body.subscription).toBe('Subscription/123');
+    expect(request.body.subscription).toBe('Subscription/1234');
     expect(request.body.verbose).toBe(true);
   });
 

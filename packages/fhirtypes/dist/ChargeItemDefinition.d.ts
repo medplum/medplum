@@ -5,20 +5,20 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { Device } from './Device';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Medication } from './Medication';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { Narrative } from './Narrative';
-import { Period } from './Period';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { Substance } from './Substance';
-import { UsageContext } from './UsageContext';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Substance } from './Substance.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * The ChargeItemDefinition resource provides the properties that apply

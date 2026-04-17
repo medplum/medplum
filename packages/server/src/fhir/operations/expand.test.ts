@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import type {
   CodeSystem,
@@ -14,6 +15,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { addExpansionItems } from './expand';
 
 describe('Expand', () => {
   const app = express();
@@ -1198,6 +1200,80 @@ describe('Expand', () => {
     ]);
   });
 
+  test('Condenses multiple synonyms in expansion', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: `urn:uuid:${randomUUID()}`,
+      status: 'draft',
+      content: 'example',
+      name: 'Example allergy manifestations',
+      property: [{ code: 'status', type: 'code' }],
+      concept: [
+        {
+          code: 'HIV',
+          display: 'Hives',
+          designation: [{ value: 'Wheal' }, { language: 'fr', value: 'éruption urticaire' }],
+        },
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { system: codeSystem.url, code: 'HIV', display: 'Hives', designation: [{ value: 'Wheal' }] },
+    ]);
+  });
+
+  test('addExpansionItems() allows items out of order', () => {
+    const rows = [
+      { id: 'foo', code: 'F', display: 'Foo', synonymOf: 'bar', language: null },
+      { id: 'bar', code: 'F', display: 'Food', synonymOf: null, language: null },
+      { id: 'baz', code: 'F', display: 'Essen', synonymOf: 'bar', language: 'de' },
+    ];
+    const expansion: ValueSetExpansionContains[] = [];
+    const system = 'http://example.com/codes/' + randomUUID();
+    const codeSystem: WithId<CodeSystem> = {
+      resourceType: 'CodeSystem',
+      id: randomUUID(),
+      status: 'draft',
+      content: 'not-present',
+      url: system,
+    };
+
+    addExpansionItems(rows, expansion, codeSystem);
+    expect(expansion).toStrictEqual([
+      {
+        system,
+        code: 'F',
+        display: 'Food',
+        designation: [
+          { value: 'Foo', language: undefined },
+          { value: 'Essen', language: 'de' },
+        ],
+      } satisfies ValueSetExpansionContains,
+    ]);
+  });
+
   test('Searches translated designations', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',
@@ -1285,6 +1361,67 @@ describe('Expand', () => {
 
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'MSG_INVALID_ID', display: 'ID not accepted', system: codeSystem.url },
+    ]);
+  });
+
+  test('Honors ValueSet designation overrides', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'example',
+      status: 'draft',
+      concept: [
+        {
+          code: 'MSG_INVALID_ID',
+          display: 'ID not accepted',
+          designation: [
+            { language: 'fr', value: 'ID non accepté' },
+            { language: 'zh', value: 'ID不被接受' },
+          ],
+        },
+      ],
+    };
+    const valueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: codeSystem.url,
+            concept: [
+              {
+                code: 'MSG_INVALID_ID',
+                display: 'Invalid ID',
+                designation: [
+                  { language: 'fr', value: 'Identifiant invalide' },
+                  { language: 'es', value: 'ID inválido' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    } satisfies ValueSet;
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url)}&filter=invalid&displayLanguage=fr`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'MSG_INVALID_ID', display: 'Identifiant invalide', system: codeSystem.url },
     ]);
   });
 

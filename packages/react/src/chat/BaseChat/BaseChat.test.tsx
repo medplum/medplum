@@ -3,7 +3,7 @@
 import { Notifications } from '@mantine/notifications';
 import type { ProfileResource } from '@medplum/core';
 import { createReference, generateId, getReferenceString, getWebSocketUrl, sleep } from '@medplum/core';
-import type { Bundle, Communication } from '@medplum/fhirtypes';
+import type { Bundle, Communication, DocumentReference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient, MockSubscriptionManager } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
@@ -175,7 +175,7 @@ describe('BaseChat', () => {
       sendMessage,
     });
 
-    const chatInput = screen.getByPlaceholderText('Type a message...') as HTMLInputElement;
+    const chatInput = screen.getByPlaceholderText('Type a message...');
     expect(chatInput).toBeInTheDocument();
     act(() => {
       fireEvent.change(chatInput, { target: { value: "Doc, I can't feel my legs!" } });
@@ -183,7 +183,7 @@ describe('BaseChat', () => {
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /send message/i }));
     });
-    expect(sendMessage).toHaveBeenLastCalledWith("Doc, I can't feel my legs!");
+    expect(sendMessage).toHaveBeenLastCalledWith("Doc, I can't feel my legs!", undefined, undefined);
   });
 
   test('`onMessageReceived` called on incoming message', async () => {
@@ -676,6 +676,181 @@ describe('BaseChat', () => {
     expect(screen.queryByRole('heading', { name: /test chat/i })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
     expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
+  });
+
+  test('uploadEnabled defaults to false - no attach button shown', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    });
+    expect(screen.queryByRole('button', { name: /attach file/i })).not.toBeInTheDocument();
+  });
+
+  test('uploadEnabled shows attach button', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+    expect(screen.getByRole('button', { name: /attach file/i })).toBeInTheDocument();
+  });
+
+  test('Messages with contentAttachment show filename and icon', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [
+        {
+          contentAttachment: {
+            title: 'report.pdf',
+            url: 'https://example.com/report.pdf',
+            contentType: 'application/pdf',
+          },
+        },
+      ],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByText('report.pdf')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  test('Messages with contentReference show document title', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const docRef = await medplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [
+        {
+          attachment: { title: 'summary.pdf', url: 'https://example.com/summary.pdf', contentType: 'application/pdf' },
+        },
+      ],
+    });
+
+    await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentReference: createReference(docRef) }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByText('summary.pdf')).toBeInTheDocument();
+  });
+
+  test('3-dots menu appears for messages with attachment', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentAttachment: { title: 'file.pdf', url: 'https://example.com/file.pdf' } }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByRole('button', { name: /attachment options/i })).toBeInTheDocument();
+  });
+
+  test('3-dots menu does not appear for text-only messages', async () => {
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined });
+
+    const bundle = await createCommunicationSubBundle(defaultMedplum);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
+      });
+    });
+
+    expect(await screen.findByText('Hello, Medplum!')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /attachment options/i })).not.toBeInTheDocument();
+  });
+
+  test('onViewInDocuments called when View in Documents clicked', async () => {
+    const onViewInDocuments = jest.fn();
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const docRef = await medplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [{ attachment: { title: 'report.pdf', url: 'https://example.com/report.pdf' } }],
+    });
+
+    await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentReference: createReference(docRef) }],
+    });
+
+    await setup(
+      { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined, onViewInDocuments },
+      medplum
+    );
+
+    const menuButton = await screen.findByRole('button', { name: /attachment options/i });
+    await act(() => fireEvent.click(menuButton));
+
+    const viewItem = await screen.findByRole('menuitem', { name: /view in documents/i });
+    await act(() => fireEvent.click(viewItem));
+
+    expect(onViewInDocuments).toHaveBeenCalledWith(createReference(docRef));
+  });
+
+  test('Download opens new tab with safe https URL', async () => {
+    const mockOpen = jest.spyOn(window, 'open').mockReturnValue(null);
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentAttachment: { title: 'file.pdf', url: 'https://example.com/file.pdf' } }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    const menuButton = await screen.findByRole('button', { name: /attachment options/i });
+    await act(() => fireEvent.click(menuButton));
+
+    const downloadItem = await screen.findByRole('menuitem', { name: /download/i });
+    await act(() => fireEvent.click(downloadItem));
+
+    expect(mockOpen).toHaveBeenCalledWith('https://example.com/file.pdf', '_blank', 'noopener,noreferrer');
+    mockOpen.mockRestore();
+  });
+
+  test('Download blocked for non-http URLs', async () => {
+    const mockOpen = jest.spyOn(window, 'open').mockReturnValue(null);
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentAttachment: { title: 'evil.pdf', url: 'javascript:alert(1)' } }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    const menuButton = await screen.findByRole('button', { name: /attachment options/i });
+    await act(() => fireEvent.click(menuButton));
+
+    const downloadItem = await screen.findByRole('menuitem', { name: /download/i });
+    await act(() => fireEvent.click(downloadItem));
+
+    expect(mockOpen).not.toHaveBeenCalled();
+    mockOpen.mockRestore();
   });
 
   test('BaseChat handles multiple communications with undefined sent date via subscription', async () => {

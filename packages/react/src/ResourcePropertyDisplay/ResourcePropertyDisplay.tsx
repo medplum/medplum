@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
 import type { InternalSchemaElement } from '@medplum/core';
-import { PropertyType, formatDateTime, formatPeriod, formatTiming, isEmpty } from '@medplum/core';
+import { PropertyType, formatDateTime, formatPeriod, formatTiming, formatWallTime, isEmpty } from '@medplum/core';
 import type { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -120,6 +120,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.dateTime:
     case PropertyType.instant:
       return <>{formatDateTime(value)}</>;
+    case PropertyType.time:
+      return <>{formatWallTime(value)}</>;
     case PropertyType.markdown:
       return <pre>{value}</pre>;
     case PropertyType.Address:

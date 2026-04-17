@@ -12,7 +12,7 @@ import type { SearchControlField } from './SearchControlField';
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   fulltext: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
-  token: [Operator.EQUALS, Operator.NOT],
+  token: [Operator.EQUALS, Operator.NOT, Operator.TEXT],
   reference: [Operator.EQUALS, Operator.NOT],
   numeric: [
     Operator.EQUALS,

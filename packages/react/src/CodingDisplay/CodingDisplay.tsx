@@ -6,8 +6,9 @@ import type { JSX } from 'react';
 
 export interface CodingDisplayProps {
   readonly value?: Coding;
+  readonly includeCode?: boolean;
 }
 
 export function CodingDisplay(props: CodingDisplayProps): JSX.Element {
-  return <>{formatCoding(props.value)}</>;
+  return <>{formatCoding(props.value, props.includeCode)}</>;
 }

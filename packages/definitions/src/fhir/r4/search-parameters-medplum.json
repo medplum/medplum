@@ -230,6 +230,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-admin",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-admin",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-admin",
+        "version": "4.0.1",
+        "name": "admin",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The admin status of the project membership",
+        "code": "admin",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.admin"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
       "resource": {
         "resourceType": "SearchParameter",
@@ -654,7 +671,7 @@
         "publisher": "Medplum",
         "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
         "code": "priority-order",
-        "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
+        "base": ["Communication", "CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
         "type": "number",
         "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
       }
@@ -1370,6 +1387,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Practitioner-davinci-pdex-where-valid",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Practitioner-davinci-pdex-where-valid",
+        "url": "https://medplum.com/fhir/SearchParameter/Practitioner-davinci-pdex-where-valid",
+        "version": "4.0.1",
+        "name": "davinci-pdex-where-valid",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The jurisdiction(s) where the qualifiction is valid",
+        "code": "qualification-davinci-pdex-where-valid",
+        "base": ["Practitioner"],
+        "type": "token",
+        "expression": "Practitioner.qualification.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification').extension.where(url='whereValid').value.coding.code"
+      }
+    },
+    {
       "fullUrl" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
       "resource" : {
         "resourceType" : "SearchParameter",
@@ -1665,6 +1699,195 @@
         "base": ["ServiceRequest"],
         "type": "token",
         "expression": "ServiceRequest.reasonCode"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ActivityDefinition-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ActivityDefinition-code",
+        "url": "https://medplum.com/fhir/SearchParameter/ActivityDefinition-code",
+        "version": "4.0.1",
+        "name": "code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The code(s) described by this ActivityDefinition",
+        "code": "code",
+        "base": ["ActivityDefinition"],
+        "type": "token",
+        "expression": "ActivityDefinition.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Communication-priority",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Communication-priority",
+        "url": "https://medplum.com/fhir/SearchParameter/Communication-priority",
+        "version": "4.0.1",
+        "name": "priority",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The priority of this Communication",
+        "code": "priority",
+        "base": ["Communication"],
+        "type": "token",
+        "expression": "Communication.priority"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-active",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-active",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-active",
+        "version": "4.0.1",
+        "name": "active",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "If this ProjectMembership is active",
+        "code": "active",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.active"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Package-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Package-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Package-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the package",
+        "code": "name",
+        "base": ["Package"],
+        "type": "string",
+        "expression": "Package.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Package-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Package-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Package-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The status of the package",
+        "code": "status",
+        "base": ["Package"],
+        "type": "token",
+        "expression": "Package.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Package-category",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Package-category",
+        "url": "https://medplum.com/fhir/SearchParameter/Package-category",
+        "version": "4.0.1",
+        "name": "category",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The category of the package",
+        "code": "category",
+        "base": ["Package"],
+        "type": "token",
+        "expression": "Package.category"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PackageRelease-package",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PackageRelease-package",
+        "url": "https://medplum.com/fhir/SearchParameter/PackageRelease-package",
+        "version": "4.0.1",
+        "name": "package",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Package of the package release",
+        "code": "package",
+        "base": ["PackageRelease"],
+        "type": "reference",
+        "expression": "PackageRelease.package",
+        "target": ["Package"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PackageRelease-version",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PackageRelease-version",
+        "url": "https://medplum.com/fhir/SearchParameter/PackageRelease-version",
+        "version": "4.0.1",
+        "name": "version",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The version of the package release",
+        "code": "version",
+        "base": ["PackageRelease"],
+        "type": "token",
+        "expression": "PackageRelease.version"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PackageInstallation-package",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PackageInstallation-package",
+        "url": "https://medplum.com/fhir/SearchParameter/PackageInstallation-package",
+        "version": "4.0.1",
+        "name": "package",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Package of the package installation",
+        "code": "package",
+        "base": ["PackageInstallation"],
+        "type": "reference",
+        "expression": "PackageInstallation.package",
+        "target": ["Package"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PackageInstallation-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PackageInstallation-status",
+        "url": "https://medplum.com/fhir/SearchParameter/PackageInstallation-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The status of the package installation",
+        "code": "status",
+        "base": ["PackageInstallation"],
+        "type": "token",
+        "expression": "PackageInstallation.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PackageInstallation-version",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PackageInstallation-version",
+        "url": "https://medplum.com/fhir/SearchParameter/PackageInstallation-version",
+        "version": "4.0.1",
+        "name": "version",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The version of the package installation",
+        "code": "version",
+        "base": ["PackageInstallation"],
+        "type": "token",
+        "expression": "PackageInstallation.version"
       }
     }
   ]

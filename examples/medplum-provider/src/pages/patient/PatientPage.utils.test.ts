@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
   formatPatientPageTabUrl,
   getPatientPageTabOrThrow,
-  patientPathPrefix,
   PatientPageTabs,
+  patientPathPrefix,
   prependPatientPath,
 } from './PatientPage.utils';
 
@@ -24,7 +25,7 @@ describe('PatientPage.utils', () => {
   });
 
   describe('prependPatientPath', () => {
-    const mockPatient: Patient = {
+    const mockPatient: WithId<Patient> = {
       resourceType: 'Patient',
       id: 'patient-123',
     };
@@ -155,6 +156,7 @@ describe('PatientPage.utils', () => {
         'careplan',
         'message',
         'dosespot',
+        'scriptsure',
         'export',
       ];
       for (const tabId of tabIds) {
@@ -185,6 +187,7 @@ describe('PatientPage.utils', () => {
       expect(tabIds).toContain('careplan');
       expect(tabIds).toContain('message');
       expect(tabIds).toContain('dosespot');
+      expect(tabIds).toContain('scriptsure');
       expect(tabIds).toContain('export');
     });
 

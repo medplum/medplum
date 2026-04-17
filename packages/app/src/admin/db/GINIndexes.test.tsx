@@ -107,7 +107,7 @@ describe('GINIndexes', () => {
     setup();
     expect(screen.getByText('GIN index stats')).toBeInTheDocument();
 
-    const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Table name');
 
     await act(async () => {
       fireEvent.click(input);

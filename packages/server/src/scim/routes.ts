@@ -7,6 +7,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
   OperationOutcomeError,
+  singularize,
 } from '@medplum/core';
 import type { User } from '@medplum/fhirtypes';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
@@ -27,7 +28,7 @@ scimRouter.get(
   '/Users',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await searchScimUsers(ctx.project, req.query as Record<string, string>);
+    const result = await searchScimUsers(ctx.systemRepo, ctx.project, req.query as Record<string, string>);
     res.status(200).json(result);
   })
 );
@@ -48,7 +49,8 @@ scimRouter.get(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await readScimUser(ctx.project, req.params.id);
+    const id = singularize(req.params.id) ?? '';
+    const result = await readScimUser(ctx.systemRepo, ctx.project, id);
     res.status(200).json(result);
   })
 );
@@ -57,7 +59,7 @@ scimRouter.put(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await updateScimUser(ctx.project, req.body);
+    const result = await updateScimUser(ctx.systemRepo, ctx.project, req.body);
     res.status(200).json(result);
   })
 );
@@ -66,7 +68,8 @@ scimRouter.patch(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await patchScimUser(ctx.project, req.params.id, req.body);
+    const id = singularize(req.params.id) ?? '';
+    const result = await patchScimUser(ctx.systemRepo, ctx.project, id, req.body);
     res.status(200).json(result);
   })
 );
@@ -75,7 +78,8 @@ scimRouter.delete(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    await deleteScimUser(ctx.project, req.params.id);
+    const id = singularize(req.params.id) ?? '';
+    await deleteScimUser(ctx.systemRepo, ctx.project, id);
     res.sendStatus(204);
   })
 );

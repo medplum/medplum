@@ -841,10 +841,22 @@
       "expression": "Communication.subject"
     },
     {
+      "name": "priority-order",
+      "type": "number",
+      "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
+      "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
+    },
+    {
       "name": "topic",
       "type": "token",
       "description": "Description of the purpose/content",
       "expression": "Communication.topic"
+    },
+    {
+      "name": "priority",
+      "type": "token",
+      "description": "The priority of this Communication",
+      "expression": "Communication.priority"
     }
   ]
 }

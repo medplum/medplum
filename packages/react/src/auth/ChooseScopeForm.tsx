@@ -34,7 +34,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
     <Form
       onSubmit={(formData: Record<string, string>) => {
         medplum
-          .post('auth/scope', {
+          .post<LoginAuthenticationResponse>('auth/scope', {
             login: props.login,
             scope: Object.keys(formData).join(' '),
           })

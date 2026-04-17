@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, forbidden, getReferenceString } from '@medplum/core';
-import type { ProjectMembership } from '@medplum/fhirtypes';
+import { allOk, badRequest, forbidden, getReferenceString, Operator } from '@medplum/core';
+import type { ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { authenticator } from 'otplib';
 import { setPassword } from '../auth/setpassword';
 import { getAuthenticatedContext } from '../context';
+import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
@@ -93,7 +95,7 @@ projectAdminRouter.post('/:projectId/sites', async (req: Request, res: Response)
 
 projectAdminRouter.get('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { membershipId } = req.params;
+  const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   if (membership.project?.reference !== getReferenceString(ctx.project)) {
     sendOutcome(res, forbidden);
@@ -104,7 +106,7 @@ projectAdminRouter.get('/:projectId/members/:membershipId', async (req: Request,
 
 projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { membershipId } = req.params;
+  const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   if (membership.project?.reference !== getReferenceString(ctx.project)) {
     sendOutcome(res, forbidden);
@@ -121,7 +123,7 @@ projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request
 
 projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { membershipId } = req.params;
+  const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   if (membership.project?.reference !== getReferenceString(ctx.project)) {
     sendOutcome(res, forbidden);
@@ -132,6 +134,89 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
     sendOutcome(res, badRequest('Cannot delete the owner of the project'));
     return;
   }
-  await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
+
+  const systemRepo = ctx.systemRepo;
+  const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+
+  // Check if the user is project-scoped (has a project field matching the current project)
+  if (user.project?.reference === getReferenceString(ctx.project)) {
+    // Wrap search and delete operations in a transaction
+    await systemRepo.withTransaction(async () => {
+      // Check if there are other ProjectMemberships for this user
+      // (search before deleting to get accurate count)
+      const otherMemberships = await systemRepo.searchResources<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        filters: [
+          {
+            code: 'user',
+            operator: Operator.EQUALS,
+            value: getReferenceString(user),
+          },
+        ],
+        count: 2,
+      });
+
+      // Delete the ProjectMembership
+      await systemRepo.deleteResource('ProjectMembership', membershipId);
+
+      // Delete the User resource if it's project-scoped and this was their only membership
+      // (project-scoped users should only have memberships in one project)
+      if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
+        await systemRepo.deleteResource('User', user.id);
+      }
+    });
+  } else {
+    // User is not project-scoped, just delete the ProjectMembership
+    await ctx.repo.deleteResource('ProjectMembership', membershipId);
+  }
+
+  sendOutcome(res, allOk);
+});
+
+/**
+ * Handles requests to "/admin/projects/{projectId}/members/{membershipId}/mfa/reset"
+ * Allows a project admin to reset MFA enrollment for a member who has lost access to their authenticator.
+ * The user will need to re-enroll in MFA on their next login (if mfaRequired is set) or via the security page.
+ */
+projectAdminRouter.post('/:projectId/members/:membershipId/mfa/reset', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const membershipId = req.params.membershipId as string;
+  const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+
+  if (membership.project?.reference !== getReferenceString(ctx.project)) {
+    sendOutcome(res, forbidden);
+    return;
+  }
+
+  const systemRepo = ctx.systemRepo;
+  const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+
+  if (!user.mfaEnrolled && !user.mfaSecret) {
+    sendOutcome(res, badRequest('User is not enrolled in MFA'));
+    return;
+  }
+
+  await systemRepo.updateResource<User>({
+    ...user,
+    mfaEnrolled: false,
+    // Rotate the secret so the old authenticator app entry cannot be re-used
+    mfaSecret: authenticator.generateSecret(),
+  });
+
+  if (user.email) {
+    await sendEmail(systemRepo, {
+      to: user.email,
+      subject: 'Your multi-factor authentication has been reset',
+      text: [
+        `Hello ${user.firstName ?? user.email},`,
+        '',
+        'A project administrator has reset your multi-factor authentication (MFA) enrollment.',
+        'You will need to re-enroll the next time you sign in.',
+        '',
+        'If you did not expect this change, please contact your administrator immediately.',
+      ].join('\n'),
+    });
+  }
+
   sendOutcome(res, allOk);
 });

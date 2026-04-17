@@ -7,7 +7,7 @@ tags: [integration]
 
 Medplum provides a first-party integration with eFax Corporate to send and receive faxes directly from your healthcare application. Faxes are stored as FHIR `Communication` resources, enabling seamless integration with your clinical workflows.
 
-:::caution Medplum Team Setup Required
+:::caution[Medplum Team Setup Required]
 This integration requires setup by the Medplum team. [Contact us](mailto:info+efax@medplum.com?subject=eFax%20Integration%20for%20Medplum) to enable eFax for your project.
 :::
 
@@ -88,6 +88,8 @@ Send a fax from a `Communication` resource.
 - `sender` reference to a Practitioner with eFax identifier
 - `recipient` reference(s) to resources with fax numbers in their `telecom`
 
+Recipient fax numbers must be in **E.164** format: a leading `+` followed by the country calling code and the subscriber number (for example, `+1` for US/Canada, then the number: `+15551234567`). eFax requires this country code; a local number without it may fail or route incorrectly.
+
 When sending a fax, you need to create multiple FHIR resources:
 1. **Binary**: The document to fax (PDF, image) - created via `medplum.createAttachment()`
 2. **Organization**: The recipient with fax number
@@ -109,7 +111,7 @@ const attachment = await medplum.createAttachment({
   filename: file.name,
 });
 
-// Step 2: Create the recipient Organization
+// Step 2: Create the recipient Organization (fax value must be E.164: + and country code)
 const recipient = await medplum.createResource<Organization>({
   resourceType: 'Organization',
   name: 'Acme Medical Center',
@@ -142,7 +144,28 @@ await medplum.post(medplum.fhirUrl('Communication', '$send-efax'), communication
 console.log('Fax sent successfully!');
 ```
 
+The recipient `Organization` (or `Practitioner`, `RelatedPerson`, etc.) must store the destination fax in `telecom` using E.164 (country code required), for example:
+
+```json
+{
+  "resourceType": "Organization",
+  "name": "Acme Medical Center",
+  "contact": [
+    {
+      "telecom": [
+        {
+          "system": "fax",
+          "value": "+15551234567"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Communication Resource Structure
+
+The samples below show the `Communication` resource only. For outbound sends, the fax number used by eFax comes from the **recipient** resource’s `telecom` and must include the country code in E.164 form (e.g. `+15551234567`), as in the `Organization` recipient example above.
 
 ### Outbound Fax (Sent)
 

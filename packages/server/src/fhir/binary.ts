@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, allOk, badRequest, created, isResource } from '@medplum/core';
+import { ContentType, allOk, badRequest, created, isResource, singularize } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -28,7 +28,7 @@ binaryRouter.put('/:id', handleBinaryWriteRequest);
 // Get binary content
 binaryRouter.get('/:id', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { id } = req.params;
+  const id = singularize(req.params.id) ?? '';
   const binary = await ctx.repo.readResource<Binary>('Binary', id);
   await sendFhirResponse(req, res, allOk, binary);
 });
@@ -36,7 +36,7 @@ binaryRouter.get('/:id', async (req: Request, res: Response) => {
 async function handleBinaryWriteRequest(req: Request, res: Response): Promise<void> {
   const { repo } = getAuthenticatedContext();
   const create = req.method === 'POST';
-  const { id } = req.params;
+  const id = singularize(req.params.id);
   const contentType = req.get('Content-Type') as string;
 
   const stream = getContentStream(req);
@@ -71,7 +71,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
       //   except for the special case where the content is actually a Binary resource.
       // """
       const resource = body as Binary;
-      const binary = await (create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
+      const binary = await (create ? repo.createResource(resource) : repo.updateResource(resource));
       await sendFhirResponse(req, res, create ? created : allOk, binary);
       return;
     }
@@ -151,7 +151,7 @@ export async function uploadBinaryData(
     contentType: options?.contentType ?? DEFAULT_CONTENT_TYPE,
     securityContext: options?.securityContext ? { reference: options.securityContext } : undefined,
   };
-  const binary = await (options?.id ? repo.updateResource<Binary>(resource) : repo.createResource<Binary>(resource));
+  const binary = await (options?.id ? repo.updateResource(resource) : repo.createResource(resource));
 
   const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
   await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);

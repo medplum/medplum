@@ -4,7 +4,7 @@ import { Hl7Message } from '@medplum/core';
 import iconv from 'iconv-lite';
 import { Hl7Connection } from './connection';
 import { CR, FS, VT } from './constants';
-import { Hl7MessageEvent } from './events';
+import { Hl7EnhancedAckSentEvent, Hl7MessageEvent, Hl7WarningEvent } from './events';
 import { MockSocket } from './test-utils';
 
 describe('HL7 Connection', () => {
@@ -106,6 +106,116 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
 
     expect(receivedMsg.toString().replaceAll('\r', '\n')).toStrictEqual(ackToCompare.toString().replaceAll('\r', '\n'));
     await connection.close();
+  });
+
+  describe('Hl7EnhancedAckSentEvent', () => {
+    const testMessage =
+      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
+EVN|P03|20240218153044
+PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`);
+
+    test('emits enhancedAckSent event with CA when in standard enhanced mode', async () => {
+      const mockSocket = new MockSocket();
+      const enhancedAckListener = jest.fn();
+
+      const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
+      connection.addEventListener('enhancedAckSent', enhancedAckListener);
+
+      connection.dispatchEvent(new Hl7MessageEvent(connection, testMessage));
+
+      expect(enhancedAckListener).toHaveBeenCalledTimes(1);
+      const event = enhancedAckListener.mock.calls[0][0] as Hl7EnhancedAckSentEvent;
+      expect(event).toBeInstanceOf(Hl7EnhancedAckSentEvent);
+      expect(event.connection).toBe(connection);
+      expect(event.message.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+      expect(event.message.getSegment('MSA')?.getField(2)?.toString()).toBe('MSG00002');
+
+      await connection.close();
+    });
+
+    test('emits enhancedAckSent event with AA when in aaMode', async () => {
+      const mockSocket = new MockSocket();
+      const enhancedAckListener = jest.fn();
+
+      const connection = new Hl7Connection(mockSocket as any, undefined, 'aaMode');
+      connection.addEventListener('enhancedAckSent', enhancedAckListener);
+
+      connection.dispatchEvent(new Hl7MessageEvent(connection, testMessage));
+
+      expect(enhancedAckListener).toHaveBeenCalledTimes(1);
+      const event = enhancedAckListener.mock.calls[0][0] as Hl7EnhancedAckSentEvent;
+      expect(event).toBeInstanceOf(Hl7EnhancedAckSentEvent);
+      expect(event.connection).toBe(connection);
+      expect(event.message.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+      expect(event.message.getSegment('MSA')?.getField(2)?.toString()).toBe('MSG00002');
+
+      await connection.close();
+    });
+
+    test('does not emit enhancedAckSent event when not in enhanced mode', async () => {
+      const mockSocket = new MockSocket();
+      const enhancedAckListener = jest.fn();
+
+      // Create connection without enhanced mode (undefined)
+      const connection = new Hl7Connection(mockSocket as any, undefined, undefined);
+      connection.addEventListener('enhancedAckSent', enhancedAckListener);
+
+      connection.dispatchEvent(new Hl7MessageEvent(connection, testMessage));
+
+      expect(enhancedAckListener).not.toHaveBeenCalled();
+      // Also verify no ACK was sent via socket.write
+      expect(mockSocket.write).not.toHaveBeenCalled();
+
+      await connection.close();
+    });
+
+    test('does not emit enhancedAckSent when enhanced mode is disabled after initialization', async () => {
+      const mockSocket = new MockSocket();
+      const enhancedAckListener = jest.fn();
+
+      // Start with enhanced mode, then disable it
+      const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
+      connection.setEnhancedMode(undefined);
+      connection.addEventListener('enhancedAckSent', enhancedAckListener);
+
+      connection.dispatchEvent(new Hl7MessageEvent(connection, testMessage));
+
+      expect(enhancedAckListener).not.toHaveBeenCalled();
+      expect(mockSocket.write).not.toHaveBeenCalled();
+
+      await connection.close();
+    });
+  });
+
+  test('Data received after close emits warning', async () => {
+    const mockSocket = new MockSocket();
+    const messageListener = jest.fn();
+    const warningListener = jest.fn();
+
+    const connection = new Hl7Connection(mockSocket as any);
+    connection.addEventListener('message', messageListener);
+    connection.addEventListener('warning', warningListener);
+
+    // Initiate close but don't await yet — this sets the closing flag
+    const closePromise = connection.close();
+
+    // Emit data after close was initiated
+    const msg = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3\rPID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
+    const messageBuffer = iconv.encode(msg, 'utf-8');
+    const outputBuffer = Buffer.alloc(messageBuffer.length + 3);
+    outputBuffer.writeInt8(VT, 0);
+    messageBuffer.copy(outputBuffer, 1);
+    outputBuffer.writeInt8(FS, messageBuffer.length + 1);
+    outputBuffer.writeInt8(CR, messageBuffer.length + 2);
+    mockSocket.emit('data', outputBuffer);
+
+    // Warning should have been emitted, message should not
+    expect(warningListener).toHaveBeenCalledTimes(1);
+    const event = warningListener.mock.calls[0][0] as Hl7WarningEvent;
+    expect(event).toBeInstanceOf(Hl7WarningEvent);
+    expect(messageListener).not.toHaveBeenCalled();
+
+    await closePromise;
   });
 
   describe('parseMessages', () => {

@@ -5,26 +5,26 @@
  * Do not edit manually.
  */
 
-import { Address } from './Address';
-import { Attachment } from './Attachment';
-import { Claim } from './Claim';
-import { CodeableConcept } from './CodeableConcept';
-import { CommunicationRequest } from './CommunicationRequest';
-import { Coverage } from './Coverage';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Address } from './Address.d.ts';
+import type { Attachment } from './Attachment.d.ts';
+import type { Claim } from './Claim.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { CommunicationRequest } from './CommunicationRequest.d.ts';
+import type { Coverage } from './Coverage.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * This resource provides the adjudication details from the processing of

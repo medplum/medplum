@@ -7,7 +7,7 @@ import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigration,
@@ -16,7 +16,7 @@ import type {
 } from '../migrations/data/types';
 import * as migrateModule from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
-import type { MigrationAction } from '../migrations/types';
+import type { PhasalMigration } from '../migrations/types';
 import type { ServerRegistryInfo } from '../server-registry';
 import { getRegisteredServers } from '../server-registry';
 import { withTestContext } from '../test.setup';
@@ -37,6 +37,7 @@ jest.mock('../server-registry');
 describe('Post-Deploy Migration Worker', () => {
   let config: MedplumServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -105,7 +106,7 @@ describe('Post-Deploy Migration Worker', () => {
       } as unknown as Job<PostDeployJobData>;
     });
 
-    const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
       dataVersion: 123,
@@ -160,7 +161,7 @@ describe('Post-Deploy Migration Worker', () => {
   ])('Job processor skips job if AsyncJob %s', async (_, jobProps, shouldThrow) => {
     const getPostDeployMigrationSpy = jest.spyOn(migrationUtils, 'getPostDeployMigration');
 
-    const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+    const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
       dataVersion: 456,
@@ -205,7 +206,6 @@ describe('Post-Deploy Migration Worker', () => {
         results.push({ name: 'some-action', durationMs: 10 });
       });
 
-    const systemRepo = getSystemRepo();
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
@@ -213,18 +213,21 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/reconcile-schema-drift',
     });
 
-    const migrationActions: MigrationAction[] = [
-      {
-        type: 'CREATE_INDEX',
-        indexName: 'some_necessary_test_index',
-        createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
-      },
-    ];
+    const migration: PhasalMigration = {
+      preDeploy: [],
+      postDeploy: [
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'some_necessary_test_index',
+          createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
+        },
+      ],
+    };
 
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migrationActions);
+      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migration);
       job = {
         id: '1',
         data: jobData,
@@ -237,13 +240,85 @@ describe('Post-Deploy Migration Worker', () => {
 
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
     expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(1);
-    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(expect.any(Object), expect.any(Array), migrationActions);
+    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Array),
+      migration.postDeploy
+    );
 
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
     expect(updatedAsyncJob.output?.parameter).toEqual([
       { name: 'some-action', part: [{ name: 'durationMs', valueInteger: 10 }] },
     ]);
+
+    getPostDeployMigrationSpy.mockRestore();
+    executeMigrationActionsSpy.mockRestore();
+  });
+
+  test('Job processor runs dynamic migration with both preDeploy and postDeploy actions', async () => {
+    const getPostDeployMigrationSpy = jest.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(() => {
+      throw new Error('Should not be called');
+    });
+
+    const executeMigrationActionsSpy = jest
+      .spyOn(migrateModule, 'executeMigrationActions')
+      .mockImplementation(async (_client, results) => {
+        results.push({ name: 'executed-action', durationMs: 5 });
+      });
+
+    const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/reconcile-schema-drift',
+    });
+
+    const migration: PhasalMigration = {
+      preDeploy: [
+        {
+          type: 'DROP_INDEX',
+          indexName: 'old_index_to_drop',
+        },
+      ],
+      postDeploy: [
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'new_index_to_create',
+          createIndexSql: 'CREATE INDEX new_index_to_create ON Observation (id)',
+        },
+      ],
+    };
+
+    const job = await withTestContext(async () => {
+      return {
+        id: '1',
+        data: prepareDynamicMigrationJobData(mockAsyncJob, migration),
+        queueName: 'PostDeployMigrationQueue',
+      } as unknown as Job<PostDeployJobData>;
+    });
+    expect(job.data).toBeDefined();
+
+    await jobProcessor(job);
+
+    expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
+    // Should be called twice: once for preDeploy, once for postDeploy
+    expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(2);
+    expect(executeMigrationActionsSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Object),
+      expect.any(Array),
+      migration.preDeploy
+    );
+    expect(executeMigrationActionsSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Object),
+      expect.any(Array),
+      migration.postDeploy
+    );
+
+    const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
+    expect(updatedAsyncJob.status).toBe('completed');
 
     getPostDeployMigrationSpy.mockRestore();
     executeMigrationActionsSpy.mockRestore();
@@ -265,7 +340,6 @@ describe('Post-Deploy Migration Worker', () => {
       .spyOn(migrationUtils, 'getPostDeployMigration')
       .mockReturnValue(mockCustomMigration);
 
-    const systemRepo = getSystemRepo();
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
@@ -306,7 +380,7 @@ describe('Post-Deploy Migration Worker', () => {
 
       const queue = getQueueFromRegistryOrThrow();
 
-      const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+      const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         dataVersion: 456,
@@ -374,7 +448,7 @@ describe('Post-Deploy Migration Worker', () => {
   test('Job processor delays job when migration definition is not found', async () => {
     await initWorkers(config);
 
-    const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+    const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
       dataVersion: 456,
@@ -422,7 +496,7 @@ describe('Post-Deploy Migration Worker', () => {
     jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => mockServerVersion);
     await initWorkers(config);
 
-    const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+    const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
       dataVersion: 13,
@@ -494,7 +568,6 @@ describe('Post-Deploy Migration Worker', () => {
   });
 
   test('Run custom migration success', async () => {
-    const systemRepo = getSystemRepo();
     const asyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',
@@ -538,7 +611,6 @@ describe('Post-Deploy Migration Worker', () => {
   });
 
   test('Run custom migration with error', async () => {
-    const systemRepo = getSystemRepo();
     const asyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',

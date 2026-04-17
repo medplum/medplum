@@ -7,8 +7,8 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { LabsPage } from './LabsPage';
 
 describe('LabsPage', () => {
@@ -17,7 +17,6 @@ describe('LabsPage', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (initialPath = `/Patient/${HomerSimpson.id}/ServiceRequest`): ReturnType<typeof render> => {
@@ -206,7 +205,7 @@ describe('LabsPage', () => {
     }
 
     await waitFor(() => {
-      expect(screen.getByText('Order Labs')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
     });
 
     const closeButton = document.querySelector('.mantine-Modal-close');
@@ -214,9 +213,12 @@ describe('LabsPage', () => {
       await userEvent.click(closeButton);
     }
 
-    await waitFor(() => {
-      expect(screen.queryByText('Order Labs')).not.toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('button', { name: 'Submit Order' })).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('filters out draft and entered-in-error orders from open tab', async () => {

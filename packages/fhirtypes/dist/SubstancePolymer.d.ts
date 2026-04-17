@@ -5,13 +5,13 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
-import { SubstanceAmount } from './SubstanceAmount';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { SubstanceAmount } from './SubstanceAmount.d.ts';
 
 /**
  * Todo.

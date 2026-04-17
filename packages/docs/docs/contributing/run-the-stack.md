@@ -15,7 +15,7 @@ Follow these instructions to get the complete Medplum stack running directly on 
 ## Prerequisites
 
 1. **[Git](https://git-scm.com/)**
-2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** (version 20+ required)
+2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** (version 22+ required)
 3. **[Docker](https://docs.docker.com/engine/install/)**
 4. [Clone the Medplum repo](./local-dev-setup#clone-the-repo)
 
@@ -153,7 +153,7 @@ If everything is working, you should see the following in your browser:
 { "ok": true, "version": "<MEDPLUM_VERSION>", "postgres": true, "redis": true }
 ```
 
-:::warning Troubleshooting
+:::warning[Troubleshooting]
 
 If you get an error such as `error: role "medplum" does not exist` or `password authentication failed for user "medplum"` this usually means you have another instance of Postgres running. Closing the other instance should resolve this issue.
 

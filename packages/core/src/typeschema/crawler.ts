@@ -126,21 +126,15 @@ class Crawler {
 
     for (const propertyValue of propertyValues) {
       for (const value of arrayify(propertyValue)) {
-        this.crawlPropertyValue(value, path);
+        this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      // What is this the correct way to consider schema.innerTypes? e.g. for profiles
-      // See https://github.com/medplum/medplum/issues/8102
-      // Two ways that work in some cases but need further vetting after adding schema: InternalTypeSchema as a parameter to crawlPropertyValue:
-      // 1. const type = getDataType(value.type, schema.url). May require adding call to `loadDataType(profile);` in Repository.validateProfiles()
-      // 2. const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
-      // Similar changes should be made to AsyncCrawler.crawlPropertyValue
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       this.crawlObject(value, type, path);
     }
   }
@@ -211,15 +205,15 @@ class AsyncCrawler {
 
     for (const propertyValue of propertyValues) {
       for (const value of arrayify(propertyValue)) {
-        await this.crawlPropertyValue(value, path);
+        await this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private async crawlPropertyValue(value: TypedValueWithPath, path: string): Promise<void> {
+  private async crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): Promise<void> {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       await this.crawlObject(value, type, path);
     }
   }
@@ -309,6 +303,11 @@ function withPath(
  * @returns pointer -An RFC6902 pointer describing the path
  */
 export function pathToJSONPointer(path: string): string {
+  // eslint-disable-next-line @typescript-eslint/prefer-string-starts-ends-with
+  if (path[0] === path[0].toUpperCase()) {
+    // Path starts with resource type, which should be removed from JSON Pointer
+    path = path.slice(path.indexOf('.') + 1);
+  }
   return `.${path}` // Prepend a delimiter to match RFC6902
     .replaceAll('.', '/') // convert dot delimiters to slash delimiters
     .replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert array syntax: `arr[0]` => `arr/0`

@@ -5,16 +5,16 @@
  * Do not edit manually.
  */
 
-import { Binary } from './Binary';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { ResourceType } from './ResourceType';
-import { UsageContext } from './UsageContext';
+import type { Binary } from './Binary.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ResourceType } from './ResourceType.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * A set of rules of how a particular interoperability or standards

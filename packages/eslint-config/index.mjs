@@ -119,6 +119,13 @@ export const coreConfig = {
       ],
     ],
   },
+  settings: {
+    jsdoc: {
+      tagNamePreference: {
+        default: 'defaultValue',
+      },
+    },
+  },
 };
 
 /**
@@ -171,6 +178,7 @@ export const tsConfig = {
     '@typescript-eslint/no-redundant-type-constituents': 'error',
     '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'error',
     '@typescript-eslint/no-unnecessary-type-arguments': 'error',
+    '@typescript-eslint/no-unnecessary-type-assertion': 'error',
     '@typescript-eslint/no-unsafe-declaration-merging': 'error',
     '@typescript-eslint/no-unsafe-enum-comparison': 'error',
     '@typescript-eslint/prefer-for-of': 'error',
@@ -287,4 +295,13 @@ export const medplumEslintConfig = [
   },
   coreConfig,
   tsConfig,
+  /**
+   * vite.config.ts is often outside package tsconfig include (e.g. rootDir src); skip type-aware parsing.
+   *
+   * we don't need type checking for vite.config.ts files
+   */
+  {
+    files: ['**/vite.config.ts'],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
 ];

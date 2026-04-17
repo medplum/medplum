@@ -280,7 +280,7 @@ function addSearchReferenceResult(
   result.set(`${searchParam.code}|${targetId}`, {
     resourceId: resource.id,
     targetId: targetId,
-    code: searchParam.code as string,
+    code: searchParam.code,
   });
 }
 

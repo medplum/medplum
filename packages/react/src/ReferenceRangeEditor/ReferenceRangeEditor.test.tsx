@@ -272,7 +272,7 @@ describe('ReferenceRangeEditor', () => {
       .getAllByTestId(/range-id-\d+-low-unit/)
       .map((element) => (element as HTMLInputElement).value);
     expect(unitInputs).toHaveLength(4);
-    const lastUnitInput = screen.getByTestId('range-id-4-low-unit') as HTMLInputElement;
+    const lastUnitInput = screen.getByTestId<HTMLInputElement>('range-id-4-low-unit');
     expect(lastUnitInput.value).toEqual('mg/dL');
   });
 

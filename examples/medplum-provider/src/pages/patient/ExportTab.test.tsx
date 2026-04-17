@@ -5,8 +5,8 @@ import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as medplumReact from '@medplum/react';
 import { render, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ExportTab } from './ExportTab';
 
 describe('ExportTab', () => {
@@ -16,7 +16,6 @@ describe('ExportTab', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
     patientExportFormSpy = vi.spyOn(medplumReact, 'PatientExportForm');
   });
 

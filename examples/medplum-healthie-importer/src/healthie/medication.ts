@@ -48,14 +48,18 @@ export interface HealthieMedicationType {
 
 /**
  * Fetches medications for a specific patient.
+ * Note: Healthie's medications query doesn't support pagination, so all medications
+ * are fetched in a single request.
  * @param healthie - The Healthie client instance to use for API calls.
  * @param patientId - The ID of the patient.
  * @returns An array of medication data.
  */
 export async function fetchMedications(healthie: HealthieClient, patientId: string): Promise<HealthieMedicationType[]> {
+  // Note: Healthie's medications query doesn't support pagination (no page_size, after, cursor).
+  // It only accepts: patient_id, active, unreconciled_from_ccda_ingest
   const query = `
-    query {
-      medications(patient_id: "${patientId}") {
+    query fetchMedications($patientId: ID!) {
+      medications(patient_id: $patientId) {
         id
         name
         active
@@ -76,7 +80,10 @@ export async function fetchMedications(healthie: HealthieClient, patientId: stri
     }
   `;
 
-  const result = await healthie.query<{ medications: HealthieMedicationType[] }>(query);
+  const result = await healthie.query<{
+    medications: HealthieMedicationType[];
+  }>(query, { patientId });
+
   return result.medications ?? [];
 }
 

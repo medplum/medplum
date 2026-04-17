@@ -57,7 +57,7 @@ describe('CodeableConceptInput', () => {
   test('Searches for results', async () => {
     await setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter random text
     await act(async () => {
@@ -88,7 +88,7 @@ describe('CodeableConceptInput', () => {
 
     await setup({ onChange: (newValue) => (currValue = newValue) });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     await act(async () => {
       fireEvent.focus(input);
@@ -129,7 +129,7 @@ describe('CodeableConceptInput', () => {
 
     await setup({ defaultValue });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     await act(async () => {
       fireEvent.focus(input);

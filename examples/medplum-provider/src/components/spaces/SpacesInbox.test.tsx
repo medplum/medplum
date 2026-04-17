@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient } from '@medplum/mock';
-import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
 import type { Communication } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SpacesInbox } from './SpacesInbox';
 
 const mockTopic: Communication = {
@@ -30,6 +30,23 @@ const mockProfile = {
   id: 'practitioner-123',
 };
 
+// Helper to create a mock streaming response
+function createMockStreamingResponse(content: string): Response {
+  const encoder = new TextEncoder();
+  const sseData = `data: ${JSON.stringify({ content })}\n\ndata: [DONE]\n\n`;
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(sseData));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
+}
+
 describe('SpacesInbox', () => {
   let medplum: MockClient;
   const onNewTopicMock = vi.fn();
@@ -42,6 +59,9 @@ describe('SpacesInbox', () => {
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
     medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.searchOne = vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-123' });
+    medplum.getAccessToken = vi.fn().mockReturnValue('mock-token');
+    medplum.fhirUrl = vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-123/$execute'));
     medplum.readReference = vi.fn().mockImplementation((ref: any) => {
       if (ref.reference?.startsWith('Communication/')) {
         return Promise.resolve(mockTopic);
@@ -188,8 +208,6 @@ describe('SpacesInbox', () => {
       await waitFor(() => {
         expect(screen.getByText('Hello! How can I help you?')).toBeInTheDocument();
       });
-
-      expect(screen.getByText('AI Assistant')).toBeInTheDocument();
     });
   });
 
@@ -222,10 +240,11 @@ describe('SpacesInbox', () => {
         })
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient John Doe' }],
+          parameter: [],
         });
 
       medplum.get = vi.fn().mockResolvedValue(mockPatient);
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient John Doe'));
 
       await act(async () => {
         setup();
@@ -275,10 +294,11 @@ describe('SpacesInbox', () => {
         })
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Patient not found' }],
+          parameter: [],
         });
 
       medplum.get = vi.fn().mockRejectedValue(new Error('Not found'));
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Patient not found'));
 
       await act(async () => {
         setup();
@@ -295,7 +315,7 @@ describe('SpacesInbox', () => {
       });
 
       await waitFor(() => {
-        expect(medplum.executeBot).toHaveBeenCalledTimes(2);
+        expect(globalThis.fetch).toHaveBeenCalled();
       });
     });
   });
@@ -328,13 +348,14 @@ describe('SpacesInbox', () => {
         })
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient' }],
+          parameter: [],
         });
 
       medplum.get = vi.fn().mockResolvedValue({
         resourceType: 'Patient',
         id: 'patient-123',
       });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
 
       await act(async () => {
         setup();
@@ -351,7 +372,8 @@ describe('SpacesInbox', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Patient/patient-123')).toBeInTheDocument();
+        const resourceBox = screen.getByTestId('resource-box');
+        expect(within(resourceBox).getByText('Patient/patient-123')).toBeInTheDocument();
       });
     });
 
@@ -382,13 +404,14 @@ describe('SpacesInbox', () => {
         })
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient' }],
+          parameter: [],
         });
 
       medplum.get = vi.fn().mockResolvedValue({
         resourceType: 'Patient',
         id: 'patient-123',
       });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
 
       await act(async () => {
         setup();
@@ -440,13 +463,14 @@ describe('SpacesInbox', () => {
         })
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient' }],
+          parameter: [],
         });
 
       medplum.get = vi.fn().mockResolvedValue({
         resourceType: 'Patient',
         id: 'patient-123',
       });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
 
       await act(async () => {
         setup();
@@ -594,10 +618,11 @@ describe('SpacesInbox', () => {
         })
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found 2 patients' }],
+          parameter: [],
         });
 
       medplum.get = vi.fn().mockResolvedValue(mockBundle);
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found 2 patients'));
 
       await act(async () => {
         setup();

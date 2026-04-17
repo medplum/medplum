@@ -3,7 +3,7 @@
 import { ActionIcon, Anchor, Badge, Card, Group, Loader, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatDateTime, getDisplayString, normalizeErrorString } from '@medplum/core';
-import type { Communication, Organization, Practitioner, Resource } from '@medplum/fhirtypes';
+import type { Communication, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDownload } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -123,13 +123,13 @@ function SentFaxCard({ fax }: SentFaxCardProps): JSX.Element {
     }
 
     if (recipient.resourceType === 'Organization') {
-      const org = recipient as Organization;
+      const org = recipient;
       const faxNumber = org.contact?.[0]?.telecom?.find((t) => t.system === 'fax')?.value;
       return { name: org.name || 'Unknown organization', faxNumber };
     }
 
     if (recipient.resourceType === 'Practitioner') {
-      const prac = recipient as Practitioner;
+      const prac = recipient;
       const faxNumber = prac.telecom?.find((t) => t.system === 'fax')?.value;
       return { name: getDisplayString(prac), faxNumber };
     }

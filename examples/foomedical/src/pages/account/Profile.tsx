@@ -3,18 +3,18 @@
 import { Box, Button, InputLabel, LoadingOverlay, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatFamilyName, formatGivenName, formatHumanName, normalizeErrorString } from '@medplum/core';
-import type { Address, HumanName, Patient } from '@medplum/fhirtypes';
+import type { HumanName, Patient } from '@medplum/fhirtypes';
 import { AddressInput, Form, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Profile(): JSX.Element | null {
   const medplum = useMedplum();
-  const [profile, setProfile] = useState<Patient>(medplum.getProfile() as Patient);
+  const [profile, setProfile] = useState(medplum.getProfile() as Patient);
   const [loading, setLoading] = useState(false);
-  const [address, setAddress] = useState<Address>(profile.address?.[0] || {});
+  const [address, setAddress] = useState(profile.address?.[0] || {});
 
   async function handleProfileEdit(formData: Record<string, string>): Promise<void> {
     setLoading(true);

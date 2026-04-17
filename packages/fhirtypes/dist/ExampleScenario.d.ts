@@ -5,15 +5,15 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
-import { ResourceType } from './ResourceType';
-import { UsageContext } from './UsageContext';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ResourceType } from './ResourceType.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * Example of workflow instance.

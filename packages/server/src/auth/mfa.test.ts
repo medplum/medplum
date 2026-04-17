@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
-import type { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { authenticator } from 'otplib';
@@ -177,7 +176,7 @@ describe('MFA', () => {
         token: '123',
       });
     expect(res1.status).toBe(400);
-    expect(res1.body).toMatchObject<OperationOutcome>(badRequest('Secret not found'));
+    expect(res1.body).toMatchObject(badRequest('Secret not found'));
 
     // Get status; should not be enrolled and should get a secret
     const res2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -218,7 +217,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json');
     expect(res6.status).toBe(400);
-    expect(res6.body).toMatchObject<OperationOutcome>(badRequest('Missing token'));
+    expect(res6.body).toMatchObject(badRequest('Missing token'));
 
     // Call disable with invalid token, should fail
     const res7 = await request(app)
@@ -227,7 +226,7 @@ describe('MFA', () => {
       .type('json')
       .send({ token: 'invalid' });
     expect(res7.status).toBe(400);
-    expect(res7.body).toMatchObject<OperationOutcome>(badRequest('Invalid token'));
+    expect(res7.body).toMatchObject(badRequest('Invalid token'));
 
     // Call disable with token, should succeed
     const res8 = await request(app)
@@ -236,7 +235,7 @@ describe('MFA', () => {
       .type('json')
       .send({ token: authenticator.generate(secret) });
     expect(res8.status).toBe(200);
-    expect(res8.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res8.body).toMatchObject(allOk);
 
     // Get status should not be enrolled and should have a new secret
     const res9 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -256,6 +255,6 @@ describe('MFA', () => {
         token: authenticator.generate(secret2),
       });
     expect(res10.status).toBe(400);
-    expect(res10.body).toMatchObject<OperationOutcome>(badRequest('User not enrolled in MFA'));
+    expect(res10.body).toMatchObject(badRequest('User not enrolled in MFA'));
   });
 });

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { EMPTY } from '@medplum/core';
 import type {
   Address,
   Bundle,
@@ -266,10 +267,8 @@ export class FhirToCcdaConverter {
   private createSections(): CcdaSection[] {
     const sections: CcdaSection[] = [];
 
-    if (this.composition.section) {
-      for (const section of this.composition.section) {
-        sections.push(this.createSection(section));
-      }
+    for (const section of this.composition.section ?? EMPTY) {
+      sections.push(this.createSection(section));
     }
 
     return sections;
@@ -296,7 +295,7 @@ export class FhirToCcdaConverter {
       resources.length === 1 &&
       resources[0].resourceType === 'ClinicalImpression'
     ) {
-      return this.createClinicalImpressionSection(section, resources[0] as ClinicalImpression);
+      return this.createClinicalImpressionSection(section, resources[0]);
     }
 
     if (
@@ -304,7 +303,7 @@ export class FhirToCcdaConverter {
       resources.length === 1 &&
       resources[0].resourceType === 'ServiceRequest'
     ) {
-      return this.createReasonForReferralSection(section, resources[0] as ServiceRequest);
+      return this.createReasonForReferralSection(section, resources[0]);
     }
 
     return {
@@ -402,7 +401,7 @@ export class FhirToCcdaConverter {
 
     let code: CodeableConcept | undefined = undefined;
     if ('qualification' in mainResource) {
-      code = mainResource.qualification?.[0];
+      code = mainResource.qualification?.[0]?.code;
     }
 
     let humanName: HumanName[] | undefined = undefined;

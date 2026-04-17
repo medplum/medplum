@@ -98,7 +98,7 @@ describe('ReferenceInput', () => {
       fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
     });
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test');
 
     // Enter "Simpson"
     await act(async () => {
@@ -138,7 +138,7 @@ describe('ReferenceInput', () => {
       fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
     });
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test');
 
     // Enter "Simpson"
     await act(async () => {

@@ -10,7 +10,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
-import { deepClone } from './utils';
+import { deepClone, EMPTY } from './utils';
 
 /**
  * More on Bundles can be found here
@@ -25,7 +25,7 @@ import { deepClone } from './utils';
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
   const idToUuid: Record<string, string> = {};
   bundle = deepClone(bundle);
-  for (const entry of bundle.entry || []) {
+  for (const entry of bundle.entry ?? EMPTY) {
     const resource = entry.resource;
     if (!resource) {
       continue;
@@ -102,7 +102,7 @@ export function reorderBundle(bundle: Bundle): Bundle {
   const entryMap: Record<string, BundleEntry> = {};
   const entriesWithoutFullUrl: BundleEntry[] = [];
 
-  for (const entry of bundle.entry ?? []) {
+  for (const entry of bundle.entry ?? EMPTY) {
     if (entry.fullUrl) {
       entryMap[entry.fullUrl] = entry;
     } else {
@@ -220,13 +220,13 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
   const adjacencyList: AdjacencyList = {};
 
   // Initialize adjacency list with empty arrays for each entry's fullUrl
-  for (const entry of bundle.entry || []) {
+  for (const entry of bundle.entry ?? EMPTY) {
     if (entry.fullUrl) {
       adjacencyList[entry.fullUrl] = [];
     }
   }
 
-  for (const entry of bundle.entry || []) {
+  for (const entry of bundle.entry ?? EMPTY) {
     const fullUrl = entry.fullUrl;
 
     if (entry.resource) {

@@ -69,6 +69,7 @@ Medplum supports a [Smart-App-Launch react component](https://storybook.medplum.
 ## Related Reading
 
 - [ONC Certification](/docs/compliance/onc)
+- [CDS Hooks](/docs/integration/cds-hooks) in Integrations
 - [Smart App Launch](/docs/integration/smart-app-launch) in Integrations
 - [(a)(9) Clinical decision support (CDS)](https://www.healthit.gov/test-method/clinical-decision-support-cds)
 - [HL7 Infobutton Implementation Guide](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)

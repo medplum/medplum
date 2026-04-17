@@ -5,20 +5,20 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactPoint } from './ContactPoint';
-import { DeviceDefinition } from './DeviceDefinition';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { DeviceDefinition } from './DeviceDefinition.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * A type of a manufactured item that is used in the provision of

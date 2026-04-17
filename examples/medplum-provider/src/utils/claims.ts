@@ -1,22 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CPT, getReferenceString } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
-import type { ChargeItem, Claim, ClaimItem, Coverage, Encounter, Reference } from '@medplum/fhirtypes';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { CPT, createReference } from '@medplum/core';
+import type {
+  ChargeItem,
+  Claim,
+  ClaimItem,
+  Coverage,
+  Encounter,
+  Patient,
+  Practitioner,
+  Reference,
+} from '@medplum/fhirtypes';
 import { calculateTotalPrice } from './chargeitems';
 import { createSelfPayCoverage } from './coverage';
 
 export async function createClaimFromEncounter(
   medplum: MedplumClient,
-  patientId: string,
-  encounterId: string,
-  practitionerId: string,
-  chargeItems: ChargeItem[]
-): Promise<Claim | undefined> {
-  const coverageResults = await medplum.searchResources('Coverage', `patient=Patient/${patientId}&status=active`);
+  patient: WithId<Patient>,
+  encounter: WithId<Encounter>,
+  practitioner: WithId<Practitioner>,
+  chargeItems: WithId<ChargeItem>[]
+): Promise<WithId<Claim> | undefined> {
+  const coverageResults = await medplum.searchResources('Coverage', `patient=Patient/${patient.id}&status=active`);
   let coverage: Coverage = coverageResults[0];
   if (!coverage) {
-    coverage = await createSelfPayCoverage(medplum, patientId);
+    coverage = await createSelfPayCoverage(medplum, patient);
   }
 
   const claim: Claim = {
@@ -25,17 +34,17 @@ export async function createClaimFromEncounter(
     type: { coding: [{ code: 'professional' }] },
     use: 'claim',
     created: new Date().toISOString(),
-    patient: { reference: `Patient/${patientId}` },
-    provider: { reference: `Practitioner/${practitionerId}`, type: 'Practitioner' },
+    patient: createReference(patient),
+    provider: createReference(practitioner),
     priority: { coding: [{ code: 'normal' }] },
     insurance: [
       {
         sequence: 1,
         focal: true,
-        coverage: { reference: getReferenceString(coverage) },
+        coverage: createReference(coverage),
       },
     ],
-    item: getCptChargeItems(chargeItems, { reference: `Encounter/${encounterId}` }),
+    item: getCptChargeItems(chargeItems, createReference(encounter)),
     total: { value: calculateTotalPrice(chargeItems) },
   };
   return medplum.createResource(claim);

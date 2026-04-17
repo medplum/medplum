@@ -5,15 +5,15 @@
  * Do not edit manually.
  */
 
-import { AccessPolicy } from './AccessPolicy';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { ResourceType } from './ResourceType';
-import { User } from './User';
+import type { AccessPolicy } from './AccessPolicy.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ResourceType } from './ResourceType.d.ts';
+import type { User } from './User.d.ts';
 
 /**
  * Encapsulation of resources for a specific project or organization.

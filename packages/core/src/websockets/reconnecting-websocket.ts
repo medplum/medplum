@@ -106,9 +106,7 @@ export interface IWebSocket {
 }
 
 const Events = {
-  Event: (typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined) as
-    | typeof globalThis.Event
-    | undefined,
+  Event: typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined,
   ErrorEvent: undefined as any,
   CloseEvent: undefined as any,
 };
@@ -404,7 +402,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
    * @param data - The data to enqueue.
    */
   public send(data: Message): void {
-    if (this._ws && this._ws.readyState === this.OPEN) {
+    if (this._ws?.readyState === this.OPEN) {
       this._debug('send', data);
       this._ws.send(data);
     } else {

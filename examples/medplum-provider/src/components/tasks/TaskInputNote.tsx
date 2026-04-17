@@ -12,18 +12,19 @@ import {
   Stack,
   Text,
   Textarea,
+  Tooltip,
 } from '@mantine/core';
-import { createReference, formatDate, getDisplayString, getReferenceString } from '@medplum/core';
-import type { Annotation, QuestionnaireResponse, Task, Reference } from '@medplum/fhirtypes';
+import { useDebouncedCallback } from '@mantine/hooks';
+import { createReference, formatDate, getDisplayString } from '@medplum/core';
+import type { Annotation, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React, { useState } from 'react';
+import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskQuestionnaireForm } from './encounter/TaskQuestionnaireForm';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { TaskNoteItem } from './TaskNoteItem';
-import { useDebouncedCallback } from '@mantine/hooks';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
 interface TaskInputNoteProps {
   task: Task | Reference<Task>;
@@ -38,8 +39,8 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const author = useMedplumProfile();
   const task = useResource(initialTask);
-  const [note, setNote] = useState<string>('');
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [note, setNote] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleAddComment = async (): Promise<void> => {
     if (!task) {
@@ -99,15 +100,15 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
     async (task: Task, response: QuestionnaireResponse): Promise<void> => {
       try {
         if (response.id) {
-          await medplum.updateResource<QuestionnaireResponse>(response);
+          await medplum.updateResource(response);
         } else {
-          const updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
+          const updatedResponse = await medplum.createResource(response);
           const updatedTask = await medplum.updateResource<Task>({
             ...task,
             output: [
               {
                 type: { text: 'QuestionnaireResponse' },
-                valueReference: { reference: getReferenceString(updatedResponse) },
+                valueReference: createReference(updatedResponse),
               },
             ],
           });
@@ -136,33 +137,34 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
           </Flex>
 
           {allowEdit && (
-            <Flex align="center" gap="md">
+            <Flex align="center" gap="xs">
               {onDeleteTask && (
-                <ActionIcon
-                  variant="outline"
-                  c="dimmed"
-                  color="gray"
-                  aria-label="Delete Task"
-                  radius="xl"
-                  w={36}
-                  h={36}
-                  onClick={() => handleDeleteTask()}
-                >
-                  <IconTrash size={24} />
-                </ActionIcon>
+                <Tooltip label="Delete Task" position="bottom" openDelay={500}>
+                  <ActionIcon
+                    variant="transparent"
+                    aria-label="Delete Task"
+                    radius="xl"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleDeleteTask}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Tooltip>
               )}
 
-              <ActionIcon
-                variant={task.status === 'completed' ? 'filled' : 'outline'}
-                color={task.status === 'completed' ? 'blue' : 'gray'}
-                aria-label="Mark as Completed"
-                radius="xl"
-                w={36}
-                h={36}
-                onClick={() => handleMarkAsCompleted()}
-              >
-                <IconCheck size={24} />
-              </ActionIcon>
+              <Tooltip label="Mark as Completed" position="bottom" openDelay={500}>
+                <ActionIcon
+                  variant="filled"
+                  color="blue"
+                  aria-label="Mark as Completed"
+                  radius="xl"
+                  size={32}
+                  onClick={handleMarkAsCompleted}
+                >
+                  <IconCheck size={16} />
+                </ActionIcon>
+              </Tooltip>
             </Flex>
           )}
         </Flex>

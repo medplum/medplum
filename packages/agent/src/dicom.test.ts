@@ -23,7 +23,7 @@ describe('DICOM', () => {
 
     bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
-    endpoint = await medplum.createResource<Endpoint>({
+    endpoint = await medplum.createResource({
       resourceType: 'Endpoint',
       address: 'dicom://0.0.0.0:8104',
     } as Endpoint);
@@ -47,7 +47,7 @@ describe('DICOM', () => {
       });
     });
 
-    const agent = await medplum.createResource<Agent>({
+    const agent = await medplum.createResource({
       resourceType: 'Agent',
       channel: [
         {
@@ -66,13 +66,13 @@ describe('DICOM', () => {
     //
     // C-ECHO
     //
-    const echoResponse = (await new Promise((resolve, reject) => {
+    const echoResponse = await new Promise<dimse.responses.CEchoResponse>((resolve, reject) => {
       const request = new dimse.requests.CEchoRequest();
       request.on('response', resolve);
       client.on('networkError', reject);
       client.addRequest(request);
       client.send('localhost', 8104, 'SCU', 'ANY-SCP');
-    })) as dimse.responses.CEchoResponse;
+    });
 
     expect(echoResponse).toBeDefined();
 
@@ -85,13 +85,13 @@ describe('DICOM', () => {
     // C-STORE
     //
 
-    const storeResponse = (await new Promise((resolve, reject) => {
+    const storeResponse = await new Promise<dimse.responses.CStoreResponse>((resolve, reject) => {
       const request = new dimse.requests.CStoreRequest(path.resolve(__dirname, '../testdata/sample-sr.dcm'));
       request.on('response', resolve);
       client.on('networkError', reject);
       client.addRequest(request);
       client.send('localhost', 8104, 'SCU', 'ANY-SCP');
-    })) as dimse.responses.CStoreResponse;
+    });
 
     expect(storeResponse).toBeDefined();
 

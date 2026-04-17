@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import type { Bundle, Practitioner, Task } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import type { Task, Practitioner, Bundle } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskBoard } from './TaskBoard';
 
 describe('TaskBoard', () => {
@@ -385,9 +386,9 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Switch to All Tasks (this should navigate to reset pagination)
-    const allTasksLink = screen.getByRole('link', { name: 'All Tasks' });
-    expect(allTasksLink).toHaveAttribute('href', '/Task?_sort=-_lastUpdated');
+    // Switch to All Tasks tab (this should navigate to reset pagination)
+    const allTasksTab = screen.getByRole('tab', { name: 'All Tasks' });
+    expect(allTasksTab).toBeInTheDocument();
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
@@ -513,7 +514,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup();
 
@@ -542,7 +543,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 1,
       entry: [{ resource: newTask }],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     const createButton = screen.getByRole('button', { name: 'Create Task' });
     await user.click(createButton);
@@ -553,5 +554,196 @@ describe('TaskBoard', () => {
       },
       { timeout: 3000 }
     );
+  });
+
+  test('parses priority filter from URL query string', async () => {
+    const urgentTask: Task = {
+      ...mockTask,
+      id: 'urgent-task',
+      priority: 'urgent',
+      code: { text: 'Urgent Task' },
+    };
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: urgentTask }],
+    } as Bundle<WithId<Task>>);
+
+    setup('priority=urgent');
+
+    await waitFor(() => {
+      expect(screen.getByText('Urgent Task')).toBeInTheDocument();
+    });
+
+    expect(medplum.search).toHaveBeenCalledWith('Task', expect.stringContaining('priority=urgent'), expect.any(Object));
+  });
+
+  test('handles multiple priorities in URL query string', async () => {
+    const urgentTask: Task = {
+      ...mockTask,
+      id: 'urgent-task',
+      priority: 'urgent',
+      code: { text: 'Urgent Task' },
+    };
+
+    const statTask: Task = {
+      ...mockTask,
+      id: 'stat-task',
+      priority: 'stat',
+      code: { text: 'Stat Task' },
+    };
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [{ resource: urgentTask }, { resource: statTask }],
+    } as Bundle<WithId<Task>>);
+
+    setup('priority=urgent,stat');
+
+    await waitFor(() => {
+      expect(screen.getByText('Urgent Task')).toBeInTheDocument();
+      expect(screen.getByText('Stat Task')).toBeInTheDocument();
+    });
+
+    expect(medplum.search).toHaveBeenCalledWith(
+      'Task',
+      expect.stringContaining('priority=urgent,stat'),
+      expect.any(Object)
+    );
+  });
+
+  test('calls onChange with priority filter when priority is selected', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as Bundle<WithId<Task>>);
+
+    setup('', { onChange });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter tasks')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Priority')).toBeInTheDocument();
+    });
+    await user.hover(screen.getByText('Priority'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Urgent'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    const call = onChange.mock.calls[0];
+    expect(call[0].filters).toContainEqual({
+      code: 'priority',
+      operator: 'eq',
+      value: 'urgent',
+    });
+    expect(call[0].offset).toBe(0);
+  });
+
+  test('toggles priority filter when same priority is selected twice', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as Bundle<WithId<Task>>);
+
+    setup('priority=urgent', { onChange });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter tasks')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Priority')).toBeInTheDocument();
+    });
+
+    await user.hover(screen.getByText('Priority'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Urgent'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    const call = onChange.mock.calls[0];
+    const priorityFilters = call[0].filters?.filter((f: any) => f.code === 'priority');
+    expect(priorityFilters).toEqual([]);
+  });
+
+  test('combines priority and status filters', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as Bundle<WithId<Task>>);
+
+    setup('status=in-progress', { onChange });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter tasks')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Priority')).toBeInTheDocument();
+    });
+
+    await user.hover(screen.getByText('Priority'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Urgent'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    const call = onChange.mock.calls[0];
+    expect(call[0].filters).toContainEqual({
+      code: 'status',
+      operator: 'eq',
+      value: 'in-progress',
+    });
+    expect(call[0].filters).toContainEqual({
+      code: 'priority',
+      operator: 'eq',
+      value: 'urgent',
+    });
   });
 });

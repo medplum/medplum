@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString } from '@medplum/core';
+import { EMPTY, getReferenceString } from '@medplum/core';
 import type { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
 import type { Repository } from '../../repo';
-import { getSystemRepo } from '../../repo';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
@@ -85,11 +84,9 @@ export class BulkExporter {
   }
 
   async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
-    if (bundle.entry) {
-      for (const entry of bundle.entry) {
-        if (entry.resource) {
-          await this.writeResource(entry.resource);
-        }
+    for (const entry of bundle.entry ?? EMPTY) {
+      if (entry.resource) {
+        await this.writeResource(entry.resource);
       }
     }
   }
@@ -126,7 +123,7 @@ export class BulkExporter {
     this.resourceSets.clear();
 
     // Update the AsyncJob
-    const systemRepo = getSystemRepo();
+    const systemRepo = this.repo.getSystemRepo();
     const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id);
     if (asyncJob.status !== 'cancelled') {
       return systemRepo.updateResource<AsyncJob>({

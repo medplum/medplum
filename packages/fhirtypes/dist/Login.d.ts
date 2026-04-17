@@ -5,18 +5,18 @@
  * Do not edit manually.
  */
 
-import { Bot } from './Bot';
-import { ClientApplication } from './ClientApplication';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Project } from './Project';
-import { ProjectMembership } from './ProjectMembership';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { ResourceType } from './ResourceType';
-import { SmartAppLaunch } from './SmartAppLaunch';
-import { User } from './User';
+import type { Bot } from './Bot.d.ts';
+import type { ClientApplication } from './ClientApplication.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Project } from './Project.d.ts';
+import type { ProjectMembership } from './ProjectMembership.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ResourceType } from './ResourceType.d.ts';
+import type { SmartAppLaunch } from './SmartAppLaunch.d.ts';
+import type { User } from './User.d.ts';
 
 /**
  * Login event and session details.

@@ -124,7 +124,7 @@ function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {
 function isDayAvailable(day: Date, slots: Slot[]): boolean {
   // Note that slot start and end time may or may not be in UTC.
   for (const slot of slots) {
-    const slotStart = new Date(slot.start as string);
+    const slotStart = new Date(slot.start);
     if (
       slotStart.getFullYear() === day.getFullYear() &&
       slotStart.getMonth() === day.getMonth() &&

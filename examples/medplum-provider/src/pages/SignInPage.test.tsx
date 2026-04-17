@@ -6,7 +6,7 @@ import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
-import { describe, expect, test, beforeAll, vi } from 'vitest';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
 import { App } from '../App';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -72,6 +72,7 @@ describe('SignInPage', () => {
       fireEvent.click(submitButton);
     });
 
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    // After successful sign-in, user is redirected to /getstarted
+    expect(await screen.findByText('Get Started with Medplum Provider')).toBeInTheDocument();
   });
 });

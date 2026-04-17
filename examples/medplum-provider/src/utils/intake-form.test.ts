@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockAnswers = {
   'first-name': { valueString: 'Jamie' },
@@ -123,7 +123,7 @@ describe('onboardPatient', () => {
     const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
     const response = buildResponseFromAnswers(mockAnswers);
 
-    const patient = await onboardPatient(medplum as any, questionnaire, response);
+    const patient = await onboardPatient(medplum, questionnaire, response);
 
     expect(patient.id).toBe('patient-1');
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Patient' }));

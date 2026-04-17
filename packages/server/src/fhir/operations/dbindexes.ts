@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
@@ -53,7 +53,7 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
   const params = parseInputParameters<{ tableName?: string }>(operation, req);
 
   const tableNames = [];
-  for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? []) {
+  for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? EMPTY) {
     if (!isValidTableName(tableName)) {
       throw new OperationOutcomeError(badRequest('Invalid tableName'));
     }

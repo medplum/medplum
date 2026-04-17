@@ -17,6 +17,7 @@ prettier-fmt1.err
 dist/
 packages/core/docs/
 !packages/definitions/dist/fhir/
+!packages/fhirtypes/dist/
 packages/generator/output/
 packages/generator/compare.html
 packages/graphiql/public/
@@ -34,11 +35,8 @@ coverage/
 tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo
 
-# Server tarball
-medplum-server.tar.gz
-
-# App tarball
-medplum-app.tar.gz
+# Tarballs
+*.tar.gz
 
 # Deb files
 *.deb
@@ -99,6 +97,10 @@ playwright/.cache/
 
 # Cursor
 .cursor/
+
+# Claude
+.claude/
+CLAUDE.md
 
 # 0x profiling data
 *.0x

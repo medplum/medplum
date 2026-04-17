@@ -4,8 +4,8 @@ import type { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import type { SystemRepository } from './fhir/repo';
+import { getGlobalSystemRepo } from './fhir/repo';
 import { SelectQuery } from './fhir/sql';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -17,7 +17,7 @@ import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrati
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
 
-async function synchronouslyRunAllPendingPostDeployMigrations(): Promise<void> {
+async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
 
   const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
@@ -34,11 +34,11 @@ async function synchronouslyRunAllPendingPostDeployMigrations(): Promise<void> {
   );
 
   for (let i = pendingMigration; i <= lastVersion; i++) {
-    await synchronouslyRunPostDeployMigration(getSystemRepo(), i);
+    await synchronouslyRunPostDeployMigration(systemRepo, i);
   }
 }
 
-async function synchronouslyRunPostDeployMigration(systemRepo: Repository, version: number): Promise<void> {
+async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
@@ -64,7 +64,7 @@ describe('Seed', () => {
     await initAppServices(config);
     await withTestContext(async () => {
       // Run post-deploy migrations synchronously
-      await synchronouslyRunAllPendingPostDeployMigrations();
+      await synchronouslyRunAllPendingPostDeployMigrations(getGlobalSystemRepo());
     });
   });
 

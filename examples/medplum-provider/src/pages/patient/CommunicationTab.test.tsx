@@ -6,9 +6,9 @@ import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CommunicationTab } from './CommunicationTab';
 
 vi.mock('@medplum/react-hooks', async () => {
@@ -27,7 +27,6 @@ describe('CommunicationTab', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
     useNavigateSpy = vi.spyOn(reactRouter, 'useNavigate');
     useParamsSpy = vi.spyOn(reactRouter, 'useParams');
   });
@@ -51,7 +50,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication`);
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
 
     expect(useParamsSpy).toHaveBeenCalled();
@@ -62,7 +61,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication`);
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
   });
 
@@ -79,7 +78,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication/message-123`);
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
   });
 });

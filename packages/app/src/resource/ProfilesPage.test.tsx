@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { loadDataType } from '@medplum/core';
-import type { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -18,7 +18,7 @@ describe('ProfilesPage', () => {
   beforeAll(async () => {
     const loadedProfileUrls: string[] = [];
     for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
-      const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      const sd = await medplum.createResourceIfNoneExist(profile, `url:${profile.url}`);
       loadedProfileUrls.push(sd.url);
       loadDataType(sd);
     }
@@ -79,12 +79,12 @@ describe('ProfilesPage', () => {
 
     expect(screen.getByText('Success')).toBeInTheDocument();
 
-    const updatedPatient = await medplum.readResource('Patient', patient.id as string);
+    const updatedPatient = await medplum.readResource('Patient', patient.id);
     expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(true);
   });
 
   test('Can remove a profile from a resource with a profile', async () => {
-    const patient = await medplum.createResource<Patient>(FishPatientResources.getSampleFishPatient());
+    const patient = await medplum.createResource(FishPatientResources.getSampleFishPatient());
     expect(patient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(true);
     await setup(`/Patient/${patient.id}/profiles`);
 
@@ -104,7 +104,7 @@ describe('ProfilesPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
 
-    const updatedPatient = await medplum.readResource('Patient', patient.id as string);
+    const updatedPatient = await medplum.readResource('Patient', patient.id);
     expect(updatedPatient.meta?.profile).toEqual(undefined);
   });
 });

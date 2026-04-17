@@ -5,13 +5,13 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { Duration } from './Duration';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Period } from './Period';
-import { Reference } from './Reference';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
 
 /**
  * Describes a required data item for evaluation in terms of the type of

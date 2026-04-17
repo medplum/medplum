@@ -252,16 +252,23 @@ export function conflict(details: string, code?: string): OperationOutcome {
   };
 }
 
-export function validationError(details: string): OperationOutcome {
+export function validationError(
+  details: string,
+  expressions?: string[],
+  code?: IssueType,
+  diagnostics?: string
+): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     issue: [
       {
         severity: 'error',
-        code: 'structure',
+        code: code ?? 'structure',
         details: {
           text: details,
         },
+        ...(expressions ? { expression: expressions } : undefined),
+        ...(diagnostics ? { diagnostics } : undefined),
       },
     ],
   };
@@ -495,7 +502,7 @@ export function normalizeErrorString(error: unknown): string {
 }
 
 /**
- * Returns a string represenation of the operation outcome.
+ * Returns a string representation of the operation outcome.
  * @param outcome - The operation outcome.
  * @returns The string representation of the operation outcome.
  */
@@ -505,7 +512,7 @@ export function operationOutcomeToString(outcome: OperationOutcome): string {
 }
 
 /**
- * Returns a string represenation of the operation outcome issue.
+ * Returns a string representation of the operation outcome issue.
  * @param issue - The operation outcome issue.
  * @returns The string representation of the operation outcome issue.
  */

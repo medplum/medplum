@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "lib": ["esnext", "dom", "dom.iterable"],
+    "rootDir": "src",
     "outDir": "dist/types",
     "noEmit": false,
     "emitDeclarationOnly": true

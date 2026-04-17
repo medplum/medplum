@@ -13,7 +13,8 @@ import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -26,6 +27,7 @@ const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
 let project: WithId<Project>;
+let repo: Repository;
 let client: WithId<ClientApplication>;
 let corsClient: WithId<ClientApplication>;
 
@@ -37,10 +39,10 @@ describe('Login', () => {
       await initApp(app, config);
 
       // Create a test project
-      ({ project, client } = await createTestProject({ withClient: true }));
+      ({ project, client, repo } = await createTestProject({ withClient: true, withRepo: true }));
 
       // Create another client with CORS "allowed origins"
-      corsClient = await getSystemRepo().createResource<ClientApplication>({
+      corsClient = await repo.getSystemRepo().createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         meta: {
           project: project.id,
@@ -130,7 +132,7 @@ describe('Login', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 5 characters');
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
   });
 
   test('Wrong password', async () => {
@@ -351,7 +353,7 @@ describe('Login', () => {
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project: newProject } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -360,9 +362,9 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
-      const systemRepo = getSystemRepo();
+      const systemRepo = await getProjectSystemRepo(newProject);
       await systemRepo.updateResource({
-        ...project,
+        ...newProject,
         features: ['google-auth-required'],
       });
     });
@@ -524,7 +526,7 @@ describe('Login', () => {
     );
 
     // Mark the membership as inactive
-    await getSystemRepo().updateResource({ ...membership, active: false });
+    await repo.getSystemRepo().updateResource({ ...membership, active: false });
 
     // User should not be able to login
     const res = await request(app).post('/auth/login').type('json').send({
@@ -539,7 +541,7 @@ describe('Login', () => {
     expect(res.body.login).toBeUndefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
-    expect(res.body.issue[0].details.text).toBe('Profile not active');
+    expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
   test('Success with no origin', async () => {

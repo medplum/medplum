@@ -5,22 +5,42 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, Loading, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
 import { showErrorNotification } from '../../utils/notifications';
 
-export function IntakeFormPage(): JSX.Element {
+export interface IntakeFormPageProps {
+  skipValueSetCheck?: boolean;
+  questionnaire?: Questionnaire;
+}
+
+export function IntakeFormPage({
+  skipValueSetCheck = false,
+  questionnaire: propQuestionnaire,
+}: IntakeFormPageProps = {}): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [unavailableValueSets, setUnavailableValueSets] = useState<ValueSetInfo[]>([]);
-  const [checkingValueSets, setCheckingValueSets] = useState(true);
+  const [checkingValueSets, setCheckingValueSets] = useState(false);
+  const questionnaire = propQuestionnaire ?? defaultQuestionnaire;
 
   useEffect(() => {
+    const abortController = new AbortController();
+    let isActive = true;
+
     async function checkValueSets(): Promise<void> {
+      if (!isActive || skipValueSetCheck) {
+        return;
+      }
+      setCheckingValueSets(true);
+
       if (!questionnaire) {
+        if (isActive) {
+          setCheckingValueSets(false);
+        }
         return;
       }
 
@@ -37,20 +57,38 @@ export function IntakeFormPage(): JSX.Element {
 
       await Promise.allSettled(
         valueSets.map(async (vs) => {
+          if (abortController.signal.aborted) {
+            return;
+          }
           const isAvailable = await checkValueSetAvailability(vs.url, medplum);
-          if (!isAvailable) {
+          if (!isAvailable && !abortController.signal.aborted) {
             unavailable.push(vs);
           }
         })
       );
 
-      setUnavailableValueSets(unavailable);
+      if (isActive && !abortController.signal.aborted) {
+        setUnavailableValueSets(unavailable);
+      }
     }
 
     checkValueSets()
-      .catch((error) => showErrorNotification(error))
-      .finally(() => setCheckingValueSets(false));
-  }, [medplum]);
+      .catch((error) => {
+        if (isActive && !abortController.signal.aborted) {
+          showErrorNotification(error);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setCheckingValueSets(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
+  }, [medplum, skipValueSetCheck, questionnaire]);
 
   const handleOnSubmit = useCallback(
     async (response: QuestionnaireResponse) => {
@@ -68,12 +106,8 @@ export function IntakeFormPage(): JSX.Element {
         });
       }
     },
-    [medplum, navigate, profile]
+    [medplum, navigate, profile, questionnaire]
   );
-
-  if (!questionnaire) {
-    return <Loading />;
-  }
 
   return (
     <Document width={800}>
@@ -150,7 +184,7 @@ async function checkValueSetAvailability(
   }
 }
 
-const questionnaire: Questionnaire = {
+const defaultQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
   title: 'Patient Intake Questionnaire',
@@ -554,7 +588,51 @@ const questionnaire: Questionnaire = {
               system: 'http://loinc.org',
             },
           ],
-          answerValueSet: 'http://example.com/pregnancy-status',
+          answerOption: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '77386006',
+                display: 'Pregnant',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '60001007',
+                display: 'Not pregnant',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '102874004',
+                display: 'Possible pregnancy',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor',
+                code: 'UNK',
+                display: 'Unknown',
+              },
+            },
+          ],
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/questionnaire-item-control',
+                    code: 'drop-down',
+                    display: 'Drop down',
+                  },
+                ],
+                text: 'Drop down',
+              },
+            },
+          ],
         },
         {
           linkId: 'estimated-delivery-date',

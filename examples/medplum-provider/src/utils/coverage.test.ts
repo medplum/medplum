@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Coverage } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createSelfPayCoverage } from './coverage';
 
 describe('createSelfPayCoverage', () => {
@@ -13,6 +13,11 @@ describe('createSelfPayCoverage', () => {
   });
 
   test('creates a self-pay coverage for patient', async () => {
+    const patient = await medplum.createResource({
+      resourceType: 'Patient',
+      id: 'patient-123',
+    });
+
     const createdCoverage: Coverage = {
       resourceType: 'Coverage',
       id: 'coverage-123',
@@ -28,7 +33,7 @@ describe('createSelfPayCoverage', () => {
     };
     const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue(createdCoverage as any);
 
-    const result = await createSelfPayCoverage(medplum as any, 'patient-123');
+    const result = await createSelfPayCoverage(medplum, patient);
 
     expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({

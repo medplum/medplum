@@ -71,21 +71,19 @@ describe('RequestContext', () => {
     test('with both traceId and requestId', async () => {
       await withTestContext(
         () => {
-          expect(buildTracingExtension()).toStrictEqual([
-            {
-              extension: [
-                {
-                  url: 'requestId',
-                  valueId: 'a-request-id',
-                },
-                {
-                  url: 'traceId',
-                  valueId: 'a-trace-id',
-                },
-              ],
-              url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-            },
-          ]);
+          expect(buildTracingExtension()).toStrictEqual({
+            extension: [
+              {
+                url: 'requestId',
+                valueId: 'a-request-id',
+              },
+              {
+                url: 'traceId',
+                valueId: 'a-trace-id',
+              },
+            ],
+            url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+          });
         },
         { requestId: 'a-request-id', traceId: 'a-trace-id' }
       );
@@ -97,17 +95,15 @@ describe('RequestContext', () => {
     ])('with missing traceId', async (requestId: string | undefined, traceId: string | undefined) => {
       await withTestContext(
         () => {
-          expect(buildTracingExtension()).toStrictEqual([
-            {
-              extension: [
-                {
-                  url: 'requestId',
-                  valueId: requestId,
-                },
-              ],
-              url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-            },
-          ]);
+          expect(buildTracingExtension()).toStrictEqual({
+            extension: [
+              {
+                url: 'requestId',
+                valueId: requestId,
+              },
+            ],
+            url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+          });
         },
         { requestId, traceId }
       );
@@ -118,17 +114,15 @@ describe('RequestContext', () => {
     ])('with missing requestId', async (requestId: string | undefined, traceId: string | undefined) => {
       await withTestContext(
         () => {
-          expect(buildTracingExtension()).toStrictEqual([
-            {
-              extension: [
-                {
-                  url: 'traceId',
-                  valueId: traceId,
-                },
-              ],
-              url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-            },
-          ]);
+          expect(buildTracingExtension()).toStrictEqual({
+            extension: [
+              {
+                url: 'traceId',
+                valueId: traceId,
+              },
+            ],
+            url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+          });
         },
         { requestId, traceId }
       );
