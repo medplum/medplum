@@ -1789,6 +1789,58 @@ describe('FHIR Repo', () => {
     expect(postCommit).toHaveBeenCalledTimes(0);
   });
 
+  test('withTransaction releases connection when rollback fails on a dead backend', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    let querySpy: jest.SpyInstance | undefined;
+    let releaseSpy: jest.SpyInstance | undefined;
+
+    await expect(
+      repo.withTransaction(async (client) => {
+        querySpy = jest.spyOn(client, 'query').mockImplementation(() => {
+          // Simulates a session killed by idle_in_transaction_session_timeout: every query
+          // issued on the client — including the ROLLBACK the error handler sends — rejects.
+          const terminationErr = Object.assign(new Error('terminating connection due to idle-in-transaction timeout'), {
+            code: '57P01',
+          });
+          throw terminationErr;
+        });
+        releaseSpy = jest.spyOn(client, 'release');
+        await client.query('SELECT 1');
+      })
+    ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
+
+    if (!querySpy) {
+      throw new Error('querySpy is undefined');
+    }
+    if (!releaseSpy) {
+      throw new Error('releaseSpy is undefined');
+    }
+
+    // Bookkeeping must be fully reset so the repo is safe for future use
+    expect((repo as any).transactionDepth).toBe(0);
+    expect((repo as any).conn).toBeUndefined();
+
+    // Dead client must be released with a truthy err so pg-pool discards it
+    expect(releaseSpy).toHaveBeenCalledTimes(1);
+    expect(releaseSpy?.mock.calls[0][0]).toBeDefined();
+
+    // The rollback failure should be logged, not thrown
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Error rolling back transaction',
+      expect.objectContaining({
+        err: expect.stringContaining('terminating connection'),
+      })
+    );
+
+    querySpy.mockRestore();
+    releaseSpy.mockRestore();
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
