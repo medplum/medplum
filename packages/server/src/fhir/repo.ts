@@ -2516,8 +2516,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param err - Optional error to remove the connection from the pool.
    */
   private releaseConnection(err?: boolean | Error): void {
-    if (this.conn && this.disposable) {
-      this.conn.release(err);
+    if (!this.conn) {
+      return;
+    }
+    if (this.disposable) {
+      try {
+        this.conn.release(err);
+      } catch (releaseErr) {
+        // pg-pool throws if release() is called twice (e.g. socket already errored out).
+        // We've done our part; just log and move on.
+        getLogger().warn('Error releasing database client', { err: normalizeErrorString(releaseErr) });
+      }
+      this.conn = undefined;
+    } else if (err) {
+      // Shared connection is known to be dead. Drop our reference so we don't reuse it.
+      // The owner of the connection is responsible for the actual release.
       this.conn = undefined;
     }
   }
@@ -2616,6 +2629,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       this.clearCallbackStack();
       await this.processPostCommit();
     } else {
+      // If RELEASE SAVEPOINT fails (e.g. transaction in aborted state), let the error propagate.
+      // withTransaction's catch will invoke rollbackTransaction, which can run ROLLBACK TO SAVEPOINT
+      // even against an aborted transaction to recover — aborting here would discard work the outer
+      // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
       this.popCallbackFrame();
@@ -2623,18 +2640,48 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async rollbackTransaction(error: Error): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
-      await conn.query('ROLLBACK');
-      this.transactionDepth--;
-      this.truncateCommitCallbacks();
-      this.releaseConnection(error);
-    } else {
-      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
-      this.transactionDepth--;
-      this.truncateCommitCallbacks();
+    // Tolerate being called after state has already been reset (e.g. when a prior
+    // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
+    if (this.transactionDepth <= 0) {
+      return;
     }
+    const conn = await this.getConnection(DatabaseMode.WRITER);
+    const isOuter = this.transactionDepth === 1;
+    try {
+      if (isOuter) {
+        await conn.query('ROLLBACK');
+      } else {
+        await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+      }
+    } catch (rollbackErr) {
+      // ROLLBACK itself failed — connection is almost certainly dead (e.g. killed by
+      // idle_in_transaction_session_timeout). Pass the original triggering error to
+      // abortTransaction so the client is released with the right root cause.
+      getLogger().warn('Error rolling back transaction', {
+        err: normalizeErrorString(rollbackErr),
+        originalErr: normalizeErrorString(error),
+      });
+      this.abortTransaction(error);
+      return;
+    }
+    this.transactionDepth--;
+    this.truncateCommitCallbacks();
+    if (isOuter) {
+      this.releaseConnection(error);
+    }
+  }
+
+  /**
+   * Fully abort the transaction hierarchy: reset depth, drop pending pre/post-commit
+   * callbacks, and release the connection with an error so pg-pool discards it.
+   * Invoked from commit/rollback error paths when further recovery on the current
+   * connection is not possible.
+   * @param err - The error that triggered the abort; forwarded to `release()`.
+   */
+  private abortTransaction(err: Error): void {
+    this.transactionDepth = 0;
+    this.clearCallbackStack();
+    this.releaseConnection(err);
   }
 
   private endTransaction(): void {
