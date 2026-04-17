@@ -981,7 +981,10 @@ describe('Hl7Field.toString caching', () => {
   });
 
   test('Manually constructed field caches after first toString', () => {
-    const field = new Hl7Field([['a', 'b'], ['c', 'd']]);
+    const field = new Hl7Field([
+      ['a', 'b'],
+      ['c', 'd'],
+    ]);
     const result = field.toString();
     expect(result).toBe('a^b~c^d');
     expect(field.toString()).toBe(result);
