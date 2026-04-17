@@ -63,8 +63,8 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       },
       {
         ...defaultOptions,
-        ...workerBullmq,
         concurrency: 1,
+        ...workerBullmq,
       }
     );
   }
