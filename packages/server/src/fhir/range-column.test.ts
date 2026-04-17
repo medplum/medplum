@@ -178,6 +178,34 @@ describe('buildRangeColumns', () => {
     expect(columns.__probability).toStrictEqual(`{[0.005,0.005],[0.001,0.0049],[0.00002,)}`);
     expect(columns.__probabilitySort).toStrictEqual(0.00002);
   });
+
+  test('quantity range', () => {
+    const value = getSearchParameter('Observation', 'value-quantity');
+    if (!value) {
+      throw new Error('Missing search parameter');
+    }
+    const impl = getSearchParameterImplementation('Observation', value) as RangeColumnSearchParameterImplementation;
+    expect(impl.searchStrategy).toStrictEqual('range-column');
+    expect(impl.rangeColumnName).toStrictEqual('__valueQuantity');
+    expect(impl.sortColumnName).toStrictEqual('__valueQuantitySort');
+
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: `Patient/${randomUUID()}` },
+      valueQuantity: {
+        value: 102,
+        unit: 'deg.',
+      },
+    };
+
+    const columns: Record<string, any> = {};
+    buildRangeColumns(value, impl, columns, resource);
+
+    expect(columns.__valueQuantity).toStrictEqual(`[102,102]`);
+    expect(columns.__valueQuantitySort).toStrictEqual(102);
+  });
 });
 
 describe('buildRangeColumnsSearchFilter', () => {

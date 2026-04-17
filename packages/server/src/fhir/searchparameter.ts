@@ -111,7 +111,11 @@ function buildSearchParameterImplementation(
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  if ((searchParam.type === 'date' && impl.type !== SearchParameterType.DATE) || searchParam.type === 'number') {
+  if (
+    (searchParam.type === 'date' && impl.type !== SearchParameterType.DATE) ||
+    searchParam.type === 'number' ||
+    searchParam.type === 'quantity'
+  ) {
     const writeable = impl as Writeable<RangeColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'range-column';
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
 import { evalFhirPathTyped, getSearchParameterDetails, Operator, toTypedValue } from '@medplum/core';
-import type { Period, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Period, Quantity, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
@@ -24,7 +24,7 @@ export function buildRangeColumns(
 ): void {
   if (searchParam.type === 'date') {
     extractDateTimeParameter(searchParam, impl, resource, columns);
-  } else if (searchParam.type === 'number') {
+  } else if (searchParam.type === 'number' || searchParam.type === 'quantity') {
     extractNumberParameter(searchParam, impl, resource, columns);
   } else {
     throw new Error('Unsupported search parameter type for range column: ' + searchParam.type);
@@ -174,6 +174,9 @@ function buildNumericRange(typed: TypedValue): Interval<number> {
     case 'unsignedInt':
     case 'positiveInt':
       return parseNumberToRange(typed.value);
+    case 'Quantity':
+      // TODO: Omit missing value?
+      return parseNumberToRange((typed.value as Quantity).value ?? 0);
     default:
       throw new Error('Cannot build numeric range from ' + typed.type);
   }
