@@ -43,6 +43,21 @@
             "definition": "Medplum client application for automated access."
           },
           {
+            "code": "DicomInstance",
+            "display": "DicomInstance",
+            "definition": "A single DICOM instance (image or other data) within a series."
+          },
+          {
+            "code": "DicomSeries",
+            "display": "DicomSeries",
+            "definition": "A series of DICOM instances (images or other data) within a study."
+          },
+          {
+            "code": "DicomStudy",
+            "display": "DicomStudy",
+            "definition": "A study of DICOM instances (images or other data) within a patient."
+          },
+          {
             "code": "DomainConfiguration",
             "display": "DomainConfiguration",
             "definition": "Domain specific configuration for the Medplum application."
@@ -66,6 +81,21 @@
             "code": "UserSecurityRequest",
             "display": "UserSecurityRequest",
             "definition": "User security request for the 'forgot password' flow or email verification."
+          },
+          {
+            "code": "Package",
+            "display": "Package",
+            "definition": "Marketplace package that can be installed into a Medplum project. A package contains FHIR resources that are automatically installed when the package is installed."
+          },
+          {
+            "code": "PackageRelease",
+            "display": "PackageRelease",
+            "definition": "A specific release of a marketplace package."
+          },
+          {
+            "code": "PackageInstallation",
+            "display": "PackageInstallation",
+            "definition": "An installation of a marketplace package into a Medplum project."
           },
           {
             "code": "Project",
