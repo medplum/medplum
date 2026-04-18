@@ -65211,6 +65211,10 @@
           },
           "type": "array"
         },
+        "study": {
+          "description": "The study that this DICOM series belongs to.",
+          "$ref": "#/definitions/Reference"
+        },
         "seriesInstanceUid": {
           "description": "Unique identifier for the series.",
           "$ref": "#/definitions/id"
@@ -65255,6 +65259,7 @@
       "additionalProperties": false,
       "required": [
         "resourceType",
+        "study",
         "seriesInstanceUid"
       ]
     },
@@ -65306,6 +65311,14 @@
           },
           "type": "array"
         },
+        "study": {
+          "description": "The study that this DICOM instance belongs to.",
+          "$ref": "#/definitions/Reference"
+        },
+        "series": {
+          "description": "The series that this DICOM instance belongs to.",
+          "$ref": "#/definitions/Reference"
+        },
         "sopClassUid": {
           "description": "The SOP Class UID of the DICOM instance.",
           "$ref": "#/definitions/id"
@@ -65341,11 +65354,24 @@
         "numberOfFrames": {
           "description": "The number of frames in the image.",
           "$ref": "#/definitions/string"
+        },
+        "rawData": {
+          "description": "The raw binary data of the DICOM instance, typically stored as a reference to a Binary resource containing the DICOM file.",
+          "$ref": "#/definitions/Reference"
+        },
+        "pixelData": {
+          "description": "The pixel data of the DICOM instance, typically stored as a reference to a Binary resource containing the pixel data. This is an alternative to rawData for cases where the pixel data is stored separately from the full DICOM file.",
+          "$ref": "#/definitions/Reference"
         }
       },
       "additionalProperties": false,
       "required": [
-        "resourceType"
+        "resourceType",
+        "study",
+        "series",
+        "sopClassUid",
+        "sopInstanceUid",
+        "rawData"
       ]
     }
   }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
-import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { DicomInstance, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -9,6 +9,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { addCronJobs } from './cron';
+import { addDicomJobs } from './dicom';
 import { addDownloadJobs } from './download';
 import { addSubscriptionJobs } from './subscription';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
@@ -160,6 +161,18 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
         resource: resource.id,
         err,
       });
+    }
+
+    if (resource.resourceType === 'DicomInstance') {
+      try {
+        await addDicomJobs(resource, previousVersion as DicomInstance);
+      } catch (err) {
+        getLogger().error('Error adding cron jobs', {
+          resourceType: resource.resourceType,
+          resource: resource.id,
+          err,
+        });
+      }
     }
   }
 }

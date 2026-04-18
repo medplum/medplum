@@ -1,12 +1,76 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/* eslint-disable @typescript-eslint/no-extraneous-class */
-
 // Draft TypeScript definitions from https://github.com/dcmjs-org/dcmjs/pull/165/files
 
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+/* eslint-disable @typescript-eslint/no-extraneous-class */
+
 declare module 'dcmjs' {
-  declare namespace async {
+  //
+  // Shared module-scope types
+  // These exist to avoid circular / awkward references across exported namespaces.
+  //
+
+  export type DcmjsDicomTag = string;
+  export type DcmjsDicomVR = string;
+
+  export interface DcmjsDicomElement {
+    vr?: DcmjsDicomVR;
+    Value?: unknown[];
+    InlineBinary?: string;
+    BulkDataURI?: string;
+    [key: string]: unknown;
+  }
+
+  export interface DcmjsDicomDataset {
+    [tag: string]: DcmjsDicomElement | undefined;
+  }
+
+  export type DcmjsDicomDict = Record<string, DcmjsDicomElement>;
+
+  export interface DcmjsDicomTagInfo {
+    vr?: DcmjsDicomVR;
+    length?: number;
+    [key: string]: unknown;
+  }
+
+  export interface DcmjsInformationMap {
+    [name: string]: unknown;
+  }
+
+  export interface DcmjsInformationFilterInitOptions {
+    information?: DcmjsInformationMap;
+  }
+
+  export interface DcmjsListenerCurrentState {
+    parent: DcmjsListenerCurrentState | null;
+    dest: DcmjsDicomElement | DcmjsDicomDataset | unknown[] | Record<string, unknown>;
+    type: string;
+    tag?: string;
+    vr?: DcmjsDicomVR;
+    level: number;
+    length?: number;
+    _trackInformation?: string | null;
+    pop?: () => any;
+    [key: string]: unknown;
+  }
+
+  export interface DcmjsDicomInformationLike {
+    transferSyntaxUid?: string;
+    sopInstanceUid?: string;
+    numberOfFrames?: string | number;
+    rows?: number;
+    columns?: number;
+    samplesPerPixel?: number;
+    bitsAllocated?: number;
+    pixelRepresentation?: number;
+    [key: string]: unknown;
+  }
+
+  export namespace async {
     export interface AsyncDicomReaderConstructorOptions {
       isLittleEndian?: boolean;
       maxFragmentSize?: number;
@@ -18,7 +82,8 @@ declare module 'dcmjs' {
     }
 
     export interface AsyncDicomReaderReadOptions {
-      listener?: DicomMetadataListenerLike;
+      isLittleEndian?: boolean;
+      listener?: DcmjsDicomMetadataListener;
       untilOffset?: number;
       maxSizeMeta?: number;
       ignoreErrors?: boolean;
@@ -29,57 +94,14 @@ declare module 'dcmjs' {
       includeUntilTagValue?: boolean;
     }
 
-    export interface DicomInformationLike {
-      transferSyntaxUid?: string;
-      sopInstanceUid?: string;
-      numberOfFrames?: string | number;
-      rows?: number;
-      columns?: number;
-      samplesPerPixel?: number;
-      bitsAllocated?: number;
-      pixelRepresentation?: number;
-      [key: string]: unknown;
-    }
-
-    export interface DicomMetadataListenerLike {
-      information?: DicomInformationLike;
-
-      startObject?(obj?: unknown): void;
-      addTag?(tag: string, tagInfo: AsyncDicomReaderTagHeader): { expectsRaw?: boolean } | undefined;
-      value?(value: unknown): void;
-      pop?(): any;
-      awaitDrain?(): Promise<void>;
-    }
-
-    export interface ValueRepresentationLike {
-      type: string;
-      maxLength: number;
-      noMultiple?: boolean;
-
-      isLength32(): boolean;
-      isBinary(): boolean;
-      dropPadByte?(values: string[]): string[];
-
-      read(stream: ReadBufferStream, length: number, syntax: string): { value: unknown } | undefined;
-
-      readBytes?(stream: ReadBufferStream): number;
-    }
-
-    export interface TagLike {
-      cleanString: string;
-      length: number;
-
-      group(): number;
-      isInstruction(): boolean;
-      isPixelDataTag(): boolean;
-      isPrivateCreator(): boolean;
-    }
+    export type DicomElement = DcmjsDicomElement;
+    export type DicomDict = DcmjsDicomDict;
 
     export interface AsyncDicomReaderTagHeader {
-      vrObj: ValueRepresentationLike;
+      vrObj: DcmjsValueRepresentation;
       vr: string;
       tag: string;
-      tagObj: TagLike;
+      tagObj: DcmjsTag;
       vm?: string | number;
       name?: string;
       length: number;
@@ -87,7 +109,7 @@ declare module 'dcmjs' {
 
     export interface AsyncDicomReaderUntilTagHeader {
       tag: string;
-      tagObj: TagLike;
+      tagObj: DcmjsTag;
       vr: 0;
       values: 0;
       untilTag: true;
@@ -95,26 +117,16 @@ declare module 'dcmjs' {
 
     export type AsyncDicomReaderTagHeaderResult = AsyncDicomReaderTagHeader | AsyncDicomReaderUntilTagHeader;
 
-    export type DicomElement = {
-      vr?: string;
-      Value?: unknown[];
-      InlineBinary?: string;
-      BulkDataURI?: string;
-      [key: string]: unknown;
-    };
-
-    export type DicomDict = Record<string, DicomElement>;
-
-    export declare class AsyncDicomReader {
+    export class AsyncDicomReader {
       static PART10_NO_PREAMBLE: symbol;
 
       syntax: string;
       isLittleEndian?: boolean;
       maxFragmentSize: number;
       stream: ReadBufferStream;
-      meta?: DicomDict;
-      dict?: DicomDict;
-      listener?: DicomMetadataListenerLike;
+      meta?: DcmjsDicomDict;
+      dict?: DcmjsDicomDict;
+      listener?: DcmjsDicomMetadataListener;
 
       constructor(options?: AsyncDicomReaderConstructorOptions);
 
@@ -140,18 +152,18 @@ declare module 'dcmjs' {
       /**
        * Reads the file meta information.
        */
-      readMeta(options?: AsyncDicomReaderReadOptions): Promise<DicomDict>;
+      readMeta(options?: AsyncDicomReaderReadOptions): Promise<DcmjsDicomDict>;
 
       /**
        * Reads the main dataset using the supplied listener.
        */
-      read(listener: DicomMetadataListenerLike, options?: AsyncDicomReaderReadOptions): Promise<any>;
+      read(listener: DcmjsDicomMetadataListener, options?: AsyncDicomReaderReadOptions): Promise<any>;
 
       /**
        * Reads a sequence tag and its items.
        */
       readSequence(
-        listener: DicomMetadataListenerLike,
+        listener: DcmjsDicomMetadataListener,
         sqTagInfo: AsyncDicomReaderTagHeader,
         options?: AsyncDicomReaderReadOptions
       ): Promise<void>;
@@ -206,7 +218,7 @@ declare module 'dcmjs' {
        */
       readSingle(
         tagInfo: AsyncDicomReaderTagHeader,
-        listener: DicomMetadataListenerLike,
+        listener: DcmjsDicomMetadataListener,
         options?: AsyncDicomReaderReadOptions
       ): Promise<unknown[]>;
     }
@@ -240,7 +252,7 @@ declare module 'dcmjs' {
 
     export type AvailableListener = () => void;
 
-    export declare class BufferStream {
+    export class BufferStream {
       offset: number;
       startOffset: number;
       isLittleEndian: boolean;
@@ -371,7 +383,7 @@ declare module 'dcmjs' {
       getBufferMemoryInfo(): BufferMemoryInfo;
     }
 
-    export declare class ReadBufferStream extends BufferStream {
+    export class ReadBufferStream extends BufferStream {
       decoder: TextDecoder;
       noCopy?: boolean;
 
@@ -408,27 +420,36 @@ declare module 'dcmjs' {
       concat(stream: BufferStream): never;
     }
 
-    export declare class DeflatedReadBufferStream extends ReadBufferStream {
+    export class DeflatedReadBufferStream extends ReadBufferStream {
       constructor(stream: BufferStream, options?: ReadBufferStreamOptions);
     }
 
-    export declare class WriteBufferStream extends BufferStream {
+    export class WriteBufferStream extends BufferStream {
       constructor(defaultSize?: number, littleEndian?: boolean);
+    }
+
+    // Best-effort placeholder: referenced in BufferStream.view but not defined in your draft.
+    export interface SplitDataView {
+      [key: string]: unknown;
     }
   }
 
-  declare namespace data {
+  //
+  // data namespace
+  //
+
+  export namespace data {
     export class DicomMetaDictionary {
       static uid(): string;
       static date(): string;
       static time(): string;
       static dateTime(): string;
-      static denaturalizeDataset(object): object;
-      static naturalizeDataset(object): object;
-      static namifyDataset(object): object;
-      static cleanDataset(object): object;
-      static punctuateTag(string): string;
-      static unpunctuateTag(string): string;
+      static denaturalizeDataset(object: object): object;
+      static naturalizeDataset(object: object): object;
+      static namifyDataset(object: object): object;
+      static cleanDataset(object: object): object;
+      static punctuateTag(value: string): string;
+      static unpunctuateTag(value: string): string;
     }
 
     export class DicomDict {
@@ -439,7 +460,134 @@ declare module 'dcmjs' {
     }
 
     export class DicomMessage {
-      static readFile(string): DicomDict;
+      static readFile(value: string): DicomDict;
     }
+  }
+
+  //
+  // utilities namespace
+  //
+
+  export namespace utilities {
+    export type DicomTag = DcmjsDicomTag;
+    export type DicomVR = DcmjsDicomVR;
+    export type DicomTagInfo = DcmjsDicomTagInfo;
+    export type DicomElement = DcmjsDicomElement;
+    export type DicomDataset = DcmjsDicomDataset;
+    export type ListenerCurrentState = DcmjsListenerCurrentState;
+    export type InformationMap = DcmjsInformationMap;
+    export type InformationFilterInitOptions = DcmjsInformationFilterInitOptions;
+
+    export type AddTagNext = (tag: DicomTag, tagInfo?: DicomTagInfo) => any;
+    export type StartObjectNext = (dest?: Record<string, unknown> | unknown[]) => any;
+    export type PopNext = () => any;
+    export type ValueNext = (value: unknown) => any;
+
+    export interface DicomMetadataFilter {
+      information?: InformationMap | null;
+
+      _init?(this: DicomMetadataListener, options?: InformationFilterInitOptions): void;
+
+      addTag?(this: DicomMetadataListener, next: AddTagNext, tag: DicomTag, tagInfo?: DicomTagInfo): any;
+
+      startObject?(this: DicomMetadataListener, next: StartObjectNext, dest?: Record<string, unknown> | unknown[]): any;
+
+      pop?(this: DicomMetadataListener, next: PopNext): any;
+
+      value?(this: DicomMetadataListener, next: ValueNext, value: unknown): any;
+    }
+
+    export interface DicomMetadataListenerOptions {
+      informationFilter?: DicomMetadataFilter;
+      informationTags?: Set<string>;
+      information?: InformationMap;
+      [key: string]: unknown;
+    }
+
+    /**
+     * Creates an information filter that tracks top-level DICOM attributes.
+     * @param tags - Optional set of DICOM tags to include in the information. If not provided, a default set of common tags will be used.
+     * @returns A DICOM Metadata Filter that can be used to create a DicomMetadataListener.
+     */
+    export function createInformationFilter(tags?: Set<string>): DicomMetadataFilter;
+
+    /**
+     * A DICOM Metadata listener implements the basic listener for creating a dicom
+     * metadata instance from a stream of notification events.
+     */
+    export class DicomMetadataListener {
+      current: ListenerCurrentState | null;
+      fmi: DicomDataset | null;
+      dict: DicomDataset | null;
+      filters: DicomMetadataFilter[];
+      information: InformationMap | null;
+
+      /**
+       * Optional backpressure (drain) function.
+       */
+      _drain: (() => Promise<void>) | null;
+
+      constructor(options?: DicomMetadataListenerOptions | DicomMetadataFilter, ...filters: DicomMetadataFilter[]);
+
+      /**
+       * Set the drain (pushback) function for backpressure.
+       */
+      setDrain(fn: (() => Promise<void>) | null): void;
+
+      /**
+       * Returns a Promise that resolves when the drain condition is met.
+       */
+      awaitDrain(): Promise<void>;
+
+      /**
+       * Initializes state, allowing it to be re-used.
+       */
+      init(options?: InformationFilterInitOptions): void;
+
+      /**
+       * Creates method chains for each method that can be filtered.
+       * @private
+       */
+      _createMethodChains(): void;
+
+      /**
+       * Base implementation: Adds a new tag value.
+       * @private
+       */
+      _baseAddTag(tag: DicomTag, tagInfo?: DicomTagInfo): void;
+
+      /**
+       * Base implementation: Starts a new object, using the provided value.
+       * @private
+       */
+      _baseStartObject(dest?: Record<string, unknown> | unknown[]): void;
+
+      /**
+       * Base implementation: Pops the current value being created off the stack.
+       * @private
+       */
+      _basePop(): any;
+
+      /**
+       * Base implementation: Registers a new value for the current destination being created.
+       * @private
+       */
+      _baseValue(value: unknown): void;
+
+      /**
+       * Gets the Transfer Syntax UID from the File Meta Information (FMI)
+       */
+      getTransferSyntaxUID(): string | undefined;
+
+      /**
+       * These are replaced at runtime by _createMethodChains().
+       */
+      addTag(tag: DicomTag, tagInfo?: DicomTagInfo): any;
+      startObject(dest?: Record<string, unknown> | unknown[]): any;
+      pop(): any;
+      value(value: unknown): any;
+    }
+
+    export const DEFAULT_INFORMATION_TAGS: Set<string>;
   }
 }

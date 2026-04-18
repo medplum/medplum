@@ -90,13 +90,15 @@ export async function run(client: PoolClient): Promise<void> {
   "___tag" UUID[],
   "___tagText" TEXT[],
   "___tagSort" TEXT,
+  "study" TEXT,
   "seriesInstanceUid" TEXT,
   "seriesNumber" TEXT,
   "performedProcedureStepStartDate" TEXT,
   "performedProcedureStepStartTime" TEXT,
   "scheduledProcedureStepId" TEXT,
   "requestedProcedureId" TEXT,
-  "___compartmentIdentifierSort" TEXT
+  "___compartmentIdentifierSort" TEXT,
+  "__studyIdentifierSort" TEXT
 )`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries_lastUpdated_idx" ON "DicomSeries" ("lastUpdated")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries_projectId_lastUpdated_idx" ON "DicomSeries" ("projectId", "lastUpdated")`);
@@ -110,6 +112,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries___sharedTokensTextTrgm_idx" ON "DicomSeries" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries____tag_idx" ON "DicomSeries" USING gin ("___tag")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries____tagTextTrgm_idx" ON "DicomSeries" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries_study_idx" ON "DicomSeries" ("study")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries_seriesInstanceUid_idx" ON "DicomSeries" ("seriesInstanceUid")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries_seriesNumber_idx" ON "DicomSeries" ("seriesNumber")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomSeries_performedProcedureStepStartDate_idx" ON "DicomSeries" ("performedProcedureStepStartDate")`);
@@ -147,10 +150,14 @@ export async function run(client: PoolClient): Promise<void> {
   "___tag" UUID[],
   "___tagText" TEXT[],
   "___tagSort" TEXT,
+  "study" TEXT,
+  "series" TEXT,
   "sopClassUid" TEXT,
   "sopInstanceUid" TEXT,
   "instanceNumber" TEXT,
-  "___compartmentIdentifierSort" TEXT
+  "___compartmentIdentifierSort" TEXT,
+  "__studyIdentifierSort" TEXT,
+  "__seriesIdentifierSort" TEXT
 )`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_lastUpdated_idx" ON "DicomInstance" ("lastUpdated")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_projectId_lastUpdated_idx" ON "DicomInstance" ("projectId", "lastUpdated")`);
@@ -164,6 +171,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance___sharedTokensTextTrgm_idx" ON "DicomInstance" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance____tag_idx" ON "DicomInstance" USING gin ("___tag")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance____tagTextTrgm_idx" ON "DicomInstance" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_study_idx" ON "DicomInstance" ("study")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_series_idx" ON "DicomInstance" ("series")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_sopClassUid_idx" ON "DicomInstance" ("sopClassUid")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_sopInstanceUid_idx" ON "DicomInstance" ("sopInstanceUid")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomInstance_instanceNumber_idx" ON "DicomInstance" ("instanceNumber")`);

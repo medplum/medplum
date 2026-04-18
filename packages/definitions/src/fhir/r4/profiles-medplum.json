@@ -9112,6 +9112,22 @@
             }]
           },
           {
+            "id" : "DicomSeries.study",
+            "path" : "DicomSeries.study",
+            "definition" : "The study that this DICOM series belongs to.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/DicomStudy"]
+            }],
+            "base" : {
+              "path" : "DicomSeries.study",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "DicomSeries.seriesInstanceUid",
             "path" : "DicomSeries.seriesInstanceUid",
             "short" : "Series Instance UID",
@@ -9429,18 +9445,50 @@
             }]
           },
           {
+            "id" : "DicomInstance.study",
+            "path" : "DicomInstance.study",
+            "definition" : "The study that this DICOM instance belongs to.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/DicomStudy"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.study",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.series",
+            "path" : "DicomInstance.series",
+            "definition" : "The series that this DICOM instance belongs to.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/DicomSeries"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.series",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "DicomInstance.sopClassUid",
             "path" : "DicomInstance.sopClassUid",
             "short" : "SOP Class UID",
             "definition" : "The SOP Class UID of the DICOM instance.",
-            "min" : 0,
+            "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "id"
             }],
             "base" : {
               "path" : "DicomInstance.sopClassUid",
-              "min" : 0,
+              "min" : 1,
               "max" : "1"
             }
           },
@@ -9449,14 +9497,14 @@
             "path" : "DicomInstance.sopInstanceUid",
             "short" : "SOP Instance UID",
             "definition" : "The SOP Instance UID of the DICOM instance.",
-            "min" : 0,
+            "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "id"
             }],
             "base" : {
               "path" : "DicomInstance.sopInstanceUid",
-              "min" : 0,
+              "min" : 1,
               "max" : "1"
             }
           },
@@ -9568,6 +9616,38 @@
             }],
             "base" : {
               "path" : "DicomInstance.numberOfFrames",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.rawData",
+            "path" : "DicomInstance.rawData",
+            "definition" : "The raw binary data of the DICOM instance, typically stored as a reference to a Binary resource containing the DICOM file.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Binary"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.rawData",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.pixelData",
+            "path" : "DicomInstance.pixelData",
+            "definition" : "The pixel data of the DICOM instance, typically stored as a reference to a Binary resource containing the pixel data. This is an alternative to rawData for cases where the pixel data is stored separately from the full DICOM file.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Binary"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.pixelData",
               "min" : 0,
               "max" : "1"
             }

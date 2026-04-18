@@ -2044,6 +2044,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-study",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-study",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-study",
+        "version": "4.0.1",
+        "name": "study",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The study that this DICOM series belongs to",
+        "code": "study",
+        "base": ["DicomSeries"],
+        "type": "reference",
+        "expression": "DicomSeries.study",
+        "target": ["DicomStudy"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-series-instance-uid",
       "resource": {
         "resourceType": "SearchParameter",
@@ -2143,6 +2161,42 @@
         "base": ["DicomSeries"],
         "type": "string",
         "expression": "DicomSeries.requestedProcedureId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomInstance-study",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomInstance-study",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomInstance-study",
+        "version": "4.0.1",
+        "name": "study",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The study that this DICOM instance belongs to",
+        "code": "study",
+        "base": ["DicomInstance"],
+        "type": "reference",
+        "expression": "DicomInstance.study",
+        "target": ["DicomStudy"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomInstance-series",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomInstance-series",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomInstance-series",
+        "version": "4.0.1",
+        "name": "series",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The series that this DICOM instance belongs to",
+        "code": "series",
+        "base": ["DicomInstance"],
+        "type": "reference",
+        "expression": "DicomInstance.series",
+        "target": ["DicomSeries"]
       }
     },
     {

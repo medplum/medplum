@@ -5,9 +5,11 @@
  * Do not edit manually.
  */
 
+import type { DicomStudy } from './DicomStudy.d.ts';
 import type { Extension } from './Extension.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
+import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 
 /**
@@ -91,6 +93,11 @@ export interface DicomSeries {
    * modifierExtension itself).
    */
   modifierExtension?: Extension[];
+
+  /**
+   * The study that this DICOM series belongs to.
+   */
+  study: Reference<DicomStudy>;
 
   /**
    * Unique identifier for the series.

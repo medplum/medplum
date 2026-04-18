@@ -5,9 +5,13 @@
  * Do not edit manually.
  */
 
+import type { Binary } from './Binary.d.ts';
+import type { DicomSeries } from './DicomSeries.d.ts';
+import type { DicomStudy } from './DicomStudy.d.ts';
 import type { Extension } from './Extension.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
+import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 
 /**
@@ -93,14 +97,24 @@ export interface DicomInstance {
   modifierExtension?: Extension[];
 
   /**
+   * The study that this DICOM instance belongs to.
+   */
+  study: Reference<DicomStudy>;
+
+  /**
+   * The series that this DICOM instance belongs to.
+   */
+  series: Reference<DicomSeries>;
+
+  /**
    * The SOP Class UID of the DICOM instance.
    */
-  sopClassUid?: string;
+  sopClassUid: string;
 
   /**
    * The SOP Instance UID of the DICOM instance.
    */
-  sopInstanceUid?: string;
+  sopInstanceUid: string;
 
   /**
    * The availability of the DICOM instance.
@@ -136,4 +150,18 @@ export interface DicomInstance {
    * The number of frames in the image.
    */
   numberOfFrames?: string;
+
+  /**
+   * The raw binary data of the DICOM instance, typically stored as a
+   * reference to a Binary resource containing the DICOM file.
+   */
+  rawData: Reference<Binary>;
+
+  /**
+   * The pixel data of the DICOM instance, typically stored as a reference
+   * to a Binary resource containing the pixel data. This is an alternative
+   * to rawData for cases where the pixel data is stored separately from
+   * the full DICOM file.
+   */
+  pixelData?: Reference<Binary>;
 }

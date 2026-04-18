@@ -88,14 +88,14 @@ export class AgentDicomChannel extends BaseChannel {
           let binary: Binary | undefined = undefined;
           let dicomJson: Record<string, unknown> | undefined = undefined;
           if (dataset) {
-            // Save the DICOM file to a temp file
+            // TODO: Remove the temp file on disk
             const tempFileName = join(DcmjsDimseScp.channel.tempDir, randomUUID() + '.dcm');
             dataset.toFile(tempFileName);
 
-            // Read the temp file into a buffer
+            // TODO: Skip the file, stream directly
             const buffer = readFileSync(tempFileName);
 
-            // Upload the Medplum as a FHIR Binary
+            // TODO: Replace this `createBinary` with a POST to `/dicomweb/studies`
             const medplum = App.instance.medplum;
             binary = await medplum.createBinary({
               data: buffer,
@@ -103,7 +103,7 @@ export class AgentDicomChannel extends BaseChannel {
               contentType: 'application/dicom',
             });
 
-            // Parse the DICOM file into DICOM JSON
+            // TODO: This is likely duplicate work with the existing `dataset` variable above
             const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);
             dicomJson = {
               ...dicomDict.meta,
@@ -111,7 +111,7 @@ export class AgentDicomChannel extends BaseChannel {
               '7FE00010': undefined, // Remove PixelData
             };
 
-            // Delete the temp file
+            // TODO: Remove all temp files
             unlinkSync(tempFileName);
           }
 
