@@ -51,6 +51,9 @@ import type { DeviceMetric } from './DeviceMetric.d.ts';
 import type { DeviceRequest } from './DeviceRequest.d.ts';
 import type { DeviceUseStatement } from './DeviceUseStatement.d.ts';
 import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { DicomInstance } from './DicomInstance.d.ts';
+import type { DicomSeries } from './DicomSeries.d.ts';
+import type { DicomStudy } from './DicomStudy.d.ts';
 import type { DocumentManifest } from './DocumentManifest.d.ts';
 import type { DocumentReference } from './DocumentReference.d.ts';
 import type { DomainConfiguration } from './DomainConfiguration.d.ts';
@@ -217,6 +220,9 @@ export type Resource = AccessPolicy
   | DeviceRequest
   | DeviceUseStatement
   | DiagnosticReport
+  | DicomInstance
+  | DicomSeries
+  | DicomStudy
   | DocumentManifest
   | DocumentReference
   | DomainConfiguration
