@@ -8930,7 +8930,7 @@
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "unsignedInt"
             }],
             "base" : {
               "path" : "DicomStudy.numberOfStudyRelatedSeries",
@@ -8946,7 +8946,7 @@
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "unsignedInt"
             }],
             "base" : {
               "path" : "DicomStudy.numberOfStudyRelatedInstances",
@@ -9215,7 +9215,7 @@
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "unsignedInt"
             }],
             "base" : {
               "path" : "DicomSeries.numberOfSeriesRelatedInstances",
@@ -9612,7 +9612,7 @@
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "unsignedInt"
             }],
             "base" : {
               "path" : "DicomInstance.numberOfFrames",
@@ -9621,8 +9621,23 @@
             }
           },
           {
-            "id" : "DicomInstance.rawData",
-            "path" : "DicomInstance.rawData",
+            "id" : "DicomInstance.metadata",
+            "path" : "DicomInstance.metadata",
+            "definition" : "The DICOM metadata of the instance, typically stored as a JSON string containing the DICOM tags and their values.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomInstance.raw",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.raw",
+            "path" : "DicomInstance.raw",
             "definition" : "The raw binary data of the DICOM instance, typically stored as a reference to a Binary resource containing the DICOM file.",
             "min" : 1,
             "max" : "1",
@@ -9631,7 +9646,7 @@
               "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Binary"]
             }],
             "base" : {
-              "path" : "DicomInstance.rawData",
+              "path" : "DicomInstance.raw",
               "min" : 1,
               "max" : "1"
             }
@@ -9641,7 +9656,7 @@
             "path" : "DicomInstance.pixelData",
             "definition" : "The pixel data of the DICOM instance, typically stored as a reference to a Binary resource containing the pixel data. This is an alternative to rawData for cases where the pixel data is stored separately from the full DICOM file.",
             "min" : 0,
-            "max" : "1",
+            "max" : "*",
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Binary"]
@@ -9649,7 +9664,7 @@
             "base" : {
               "path" : "DicomInstance.pixelData",
               "min" : 0,
-              "max" : "1"
+              "max" : "*"
             }
           }
         ]

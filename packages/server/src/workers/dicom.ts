@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { isGone, normalizeOperationOutcome } from '@medplum/core';
-import type { DicomInstance } from '@medplum/fhirtypes';
+import { createReference, isGone, normalizeOperationOutcome } from '@medplum/core';
+import type { Binary, DicomInstance } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import type { DcmjsDicomDict } from 'dcmjs';
 import dcmjs from 'dcmjs';
+import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
@@ -86,7 +86,7 @@ export function getDicomQueue(): Queue<DicomJobData> | undefined {
  * @param previousVersion - The previous version of the resource, if available
  */
 export async function addDicomJobs(resource: WithId<DicomInstance>, previousVersion: DicomInstance): Promise<void> {
-  if (resource.rawData?.reference !== previousVersion?.rawData?.reference) {
+  if (resource.raw?.reference !== previousVersion?.raw?.reference) {
     const ctx = tryGetRequestContext();
     await addDicomJobData({
       id: resource.id,
@@ -108,8 +108,8 @@ async function addDicomJobData(job: DicomJobData): Promise<void> {
 }
 
 /**
- * Executes a download job.
- * @param job - The download job details.
+ * Executes a DICOM processor job.
+ * @param job - The DICOM processor job details.
  */
 export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
@@ -129,22 +129,99 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
   }
 
   try {
-    const binary = await systemRepo.readReference(resource.rawData);
+    const binary = await systemRepo.readReference(resource.raw);
     const stream = await getBinaryStorage().readBinary(binary);
     const listener = new DicomMetadataListener();
     listener.startObject({});
     const reader = new AsyncDicomReader();
     await reader.stream.fromAsyncStream(stream);
     const result = await reader.readFile({ listener });
-    const naturalized = DicomMetaDictionary.naturalizeDataset(result.dict as DcmjsDicomDict) as Record<string, unknown>;
 
-    // TODO: Extract PixelData to separate Binary resource and reference it from DicomInstance.pixelData
-
-    if (naturalized.PixelData) {
-      console.log('CODY PixelData found, length', (naturalized.PixelData as Uint8Array).length);
+    const meta = result.meta as Record<string, unknown> | undefined;
+    if (!meta) {
+      log.info('No DICOM metadata found in instance', { id });
+      return;
     }
+
+    const dict = result.dict as Record<string, unknown> | undefined;
+    if (!dict) {
+      log.info('No DICOM metadata found in instance', { id });
+      return;
+    }
+
+    const naturalized = DicomMetaDictionary.naturalizeDataset({ ...meta, ...dict }) as Record<string, unknown>;
+    const pixelData = naturalized.PixelData;
+    if (!pixelData) {
+      log.info('No PixelData found in DICOM instance', { id });
+      return;
+    }
+
+    if (!Array.isArray(pixelData) || pixelData.length === 0) {
+      log.info('PixelData is empty or not an array', { id, pixelData });
+      return;
+    }
+
+    const transferSyntaxUid = naturalized.TransferSyntaxUID as string | undefined;
+    const contentType = getContentTypeForTransferSyntax(transferSyntaxUid);
+    const securityContext = createReference(resource);
+    const binaries: Binary[] = [];
+
+    async function processPixelData(pixelData: unknown): Promise<void> {
+      if (Array.isArray(pixelData)) {
+        for (const entry of pixelData) {
+          await processPixelData(entry);
+        }
+      } else if (pixelData instanceof ArrayBuffer) {
+        const buffer = Buffer.from(pixelData);
+        const readable = Readable.from(buffer);
+        const binary = await systemRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType,
+          meta: {
+            project: resource.meta?.project,
+          },
+          securityContext,
+        });
+        await getBinaryStorage().writeBinary(binary, 'pixeldata.bin', contentType, readable);
+        binaries.push(binary);
+      } else {
+        log.info('Unexpected PixelData format', { id, pixelData });
+      }
+    }
+
+    await processPixelData(pixelData);
+
+    await systemRepo.patchResource('DicomInstance', id, [
+      { op: 'replace', path: '/meta/author', value: { reference: 'system' } },
+      {
+        op: resource.pixelData ? 'replace' : 'add',
+        path: '/pixelData',
+        value: binaries.map(createReference),
+      },
+    ]);
   } catch (err) {
     log.info('DICOM processing error', { id, err });
     throw err;
+  }
+}
+
+function getContentTypeForTransferSyntax(transferSyntaxUID: string | undefined): string {
+  switch (transferSyntaxUID) {
+    case '1.2.840.10008.1.2.4.50':
+      return 'image/jpeg';
+    case '1.2.840.10008.1.2.4.57':
+      return 'image/jpeg';
+    case '1.2.840.10008.1.2.4.70':
+      return 'image/jpeg';
+    case '1.2.840.10008.1.2.4.90':
+      return 'image/jp2';
+    case '1.2.840.10008.1.2.4.91':
+      return 'image/jp2';
+    case '1.2.840.10008.1.2.4.201':
+      return 'image/jxl';
+    case '1.2.840.10008.1.2.4.202':
+      return 'image/jxl';
+    default:
+      return 'application/octet-stream';
   }
 }

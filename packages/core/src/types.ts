@@ -360,7 +360,7 @@ export function getPropertyDisplayName(propertyName: string): string {
   return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replaceAll(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['CDS', 'ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);
+const capitalizedWords = new Set(['CDS', 'ID', 'IP', 'JWKS', 'PKCE', 'OMB', 'OID', 'SOP', 'UDI', 'UID', 'URI', 'URL']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();

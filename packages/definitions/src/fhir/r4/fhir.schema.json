@@ -65150,11 +65150,11 @@
         },
         "numberOfStudyRelatedSeries": {
           "description": "The number of series related to the study.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/unsignedInt"
         },
         "numberOfStudyRelatedInstances": {
           "description": "The number of instances related to the study.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/unsignedInt"
         }
       },
       "additionalProperties": false,
@@ -65237,7 +65237,7 @@
         },
         "numberOfSeriesRelatedInstances": {
           "description": "The number of instances related to the series.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/unsignedInt"
         },
         "performedProcedureStepStartDate": {
           "description": "The start date of the performed procedure step (YYYYMMDD).",
@@ -65353,15 +65353,22 @@
         },
         "numberOfFrames": {
           "description": "The number of frames in the image.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "metadata": {
+          "description": "The DICOM metadata of the instance, typically stored as a JSON string containing the DICOM tags and their values.",
           "$ref": "#/definitions/string"
         },
-        "rawData": {
+        "raw": {
           "description": "The raw binary data of the DICOM instance, typically stored as a reference to a Binary resource containing the DICOM file.",
           "$ref": "#/definitions/Reference"
         },
         "pixelData": {
           "description": "The pixel data of the DICOM instance, typically stored as a reference to a Binary resource containing the pixel data. This is an alternative to rawData for cases where the pixel data is stored separately from the full DICOM file.",
-          "$ref": "#/definitions/Reference"
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -65371,7 +65378,8 @@
         "series",
         "sopClassUid",
         "sopInstanceUid",
-        "rawData"
+        "metadata",
+        "raw"
       ]
     }
   }

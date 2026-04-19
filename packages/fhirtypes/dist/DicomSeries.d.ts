@@ -127,7 +127,7 @@ export interface DicomSeries {
   /**
    * The number of instances related to the series.
    */
-  numberOfSeriesRelatedInstances?: string;
+  numberOfSeriesRelatedInstances?: number;
 
   /**
    * The start date of the performed procedure step (YYYYMMDD).

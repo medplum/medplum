@@ -149,13 +149,19 @@ export interface DicomInstance {
   /**
    * The number of frames in the image.
    */
-  numberOfFrames?: string;
+  numberOfFrames?: number;
+
+  /**
+   * The DICOM metadata of the instance, typically stored as a JSON string
+   * containing the DICOM tags and their values.
+   */
+  metadata: string;
 
   /**
    * The raw binary data of the DICOM instance, typically stored as a
    * reference to a Binary resource containing the DICOM file.
    */
-  rawData: Reference<Binary>;
+  raw: Reference<Binary>;
 
   /**
    * The pixel data of the DICOM instance, typically stored as a reference
@@ -163,5 +169,5 @@ export interface DicomInstance {
    * to rawData for cases where the pixel data is stored separately from
    * the full DICOM file.
    */
-  pixelData?: Reference<Binary>;
+  pixelData?: Reference<Binary>[];
 }

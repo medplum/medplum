@@ -160,10 +160,10 @@ export interface DicomStudy {
   /**
    * The number of series related to the study.
    */
-  numberOfStudyRelatedSeries?: string;
+  numberOfStudyRelatedSeries?: number;
 
   /**
    * The number of instances related to the study.
    */
-  numberOfStudyRelatedInstances?: string;
+  numberOfStudyRelatedInstances?: number;
 }

@@ -1,17 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
-import { ContentType, createReference, normalizeErrorString, sleep } from '@medplum/core';
-import type { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
+import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
+import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
+import { once } from 'node:events';
+import { mkdtempSync } from 'node:fs';
 import type net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { PassThrough } from 'node:stream';
 import { App } from './app';
 import { BaseChannel } from './channel';
+
+const { data } = dcmjs;
+const { DicomMetaDictionary, DicomDict } = data;
+
+const { constants, Dataset, Implementation } = dimse;
+const { StorageClass } = constants;
 
 export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
@@ -85,34 +93,22 @@ export class AgentDicomChannel extends BaseChannel {
         const response = dimse.responses.CStoreResponse.fromRequest(request);
         try {
           const dataset = request.getDataset();
-          let binary: Binary | undefined = undefined;
           let dicomJson: Record<string, unknown> | undefined = undefined;
           if (dataset) {
-            // TODO: Remove the temp file on disk
-            const tempFileName = join(DcmjsDimseScp.channel.tempDir, randomUUID() + '.dcm');
-            dataset.toFile(tempFileName);
-
-            // TODO: Skip the file, stream directly
-            const buffer = readFileSync(tempFileName);
-
-            // TODO: Replace this `createBinary` with a POST to `/dicomweb/studies`
+            const buffer = datasetToBuffer(dataset);
             const medplum = App.instance.medplum;
-            binary = await medplum.createBinary({
-              data: buffer,
-              filename: 'dicom.dcm',
-              contentType: 'application/dicom',
-            });
-
-            // TODO: This is likely duplicate work with the existing `dataset` variable above
-            const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);
+            const boundary = `medplum-${Date.now()}`;
+            const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+            const stream = new PassThrough();
+            const writePromise = writeMultipartRelatedBody(stream, [buffer], boundary);
+            const requestPromise = medplum.post('/dicomweb/studies', stream, contentType);
+            await writePromise;
+            const text = await requestPromise;
+            DcmjsDimseScp.channel.log.info(`DICOM instance stored successfully via DICOMweb STOW-RS: ${text}`);
             dicomJson = {
-              ...dicomDict.meta,
-              ...dicomDict.dict,
+              ...dataset.getElements(),
               '7FE00010': undefined, // Remove PixelData
             };
-
-            // TODO: Remove all temp files
-            unlinkSync(tempFileName);
           }
 
           const payload = {
@@ -121,7 +117,6 @@ export class AgentDicomChannel extends BaseChannel {
               calledAeTitle: this.association?.getCalledAeTitle(),
             },
             dataset: dicomJson,
-            binary: binary ? createReference(binary) : undefined,
           };
 
           App.instance.addToWebSocketQueue({
@@ -231,5 +226,57 @@ export class AgentDicomChannel extends BaseChannel {
 
   sendToRemote(msg: AgentTransmitResponse): void {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
+  }
+}
+
+/**
+ * Serializes a dataset to DICOM P10 buffer.
+ *
+ * Based on: https://github.com/PantelisGeorgiadis/dcmjs-dimse/blob/master/src/Dataset.js#L178
+ *
+ * See method `toFile()`, which only writes to a file, but we want to write to a buffer so we can send via DICOMweb STOW-RS without needing to write to disk first.
+ *
+ * @param dataset - The DICOM dataset to save.
+ * @param writeOptions - The write options to pass through to `DicomDict.write()`.
+ * @returns A buffer containing the DICOM P10 file data.
+ */
+function datasetToBuffer(dataset: dimse.Dataset, writeOptions?: object): Buffer {
+  const elements = {
+    _meta: {
+      FileMetaInformationVersion: new Uint8Array([0, 1]).buffer,
+      MediaStorageSOPClassUID: dataset.getElement('SOPClassUID') || StorageClass.SecondaryCaptureImageStorage,
+      MediaStorageSOPInstanceUID: dataset.getElement('SOPInstanceUID') || Dataset.generateDerivedUid(),
+      TransferSyntaxUID: dataset.getTransferSyntaxUid(),
+      ImplementationClassUID: Implementation.getImplementationClassUid(),
+      ImplementationVersionName: Implementation.getImplementationVersion(),
+    },
+    ...dataset.getElements(),
+  };
+  const denaturalizedMetaHeader = DicomMetaDictionary.denaturalizeDataset(elements._meta);
+  const dicomDict = new DicomDict(denaturalizedMetaHeader);
+  dicomDict.dict = DicomMetaDictionary.denaturalizeDataset(elements);
+  return Buffer.from(dicomDict.write(writeOptions));
+}
+
+async function writeMultipartRelatedBody(out: PassThrough, fileBuffers: Buffer[], boundary: string): Promise<void> {
+  try {
+    for (const fileBuffer of fileBuffers) {
+      await writeBuffer(out, Buffer.from(`--${boundary}\r\n`));
+      await writeBuffer(out, Buffer.from('Content-Type: application/dicom\r\n'));
+      await writeBuffer(out, Buffer.from('\r\n'));
+      await writeBuffer(out, fileBuffer);
+      await writeBuffer(out, Buffer.from('\r\n'));
+    }
+    await writeBuffer(out, Buffer.from(`--${boundary}--\r\n`));
+    out.end();
+  } catch (err) {
+    out.destroy(err as Error);
+    throw err;
+  }
+}
+
+async function writeBuffer(stream: PassThrough, buffer: Buffer): Promise<void> {
+  if (!stream.write(buffer)) {
+    await once(stream, 'drain');
   }
 }
