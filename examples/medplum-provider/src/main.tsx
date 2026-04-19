@@ -37,6 +37,13 @@ const theme = createTheme({
     lg: '1.0rem',
     xl: '1.125rem',
   },
+  components: {
+    Button: {
+      styles: {
+        root: { transform: 'none' },
+      },
+    },
+  },
 });
 
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);

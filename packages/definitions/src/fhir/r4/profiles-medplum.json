@@ -8003,9 +8003,24 @@
             }
           },
           {
+            "id" : "Package.short",
+            "path" : "Package.short",
+            "definition" : "A brief summary or characterization of the Package.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Package.short",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Package.description",
             "path" : "Package.description",
-            "definition" : "A summary, characterization or explanation of the Package.",
+            "definition" : "A detailed description of the Package.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -8049,6 +8064,96 @@
             "base": {
               "path" : "Package.author",
               "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Package.icon",
+            "path" : "Package.icon",
+            "definition" : "Image of the package.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base" : {
+              "path" : "Package.icon",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Package.screenshots",
+            "path" : "Package.screenshots",
+            "definition" : "Screenshots of the package.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base" : {
+              "path" : "Package.screenshots",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Package.supportUrl",
+            "path" : "Package.supportUrl",
+            "definition" : "URL for support related to the package.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "url"
+            }],
+            "base" : {
+              "path" : "Package.supportUrl",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Package.docsUrl",
+            "path" : "Package.docsUrl",
+            "definition" : "URL for documentation related to the package.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "url"
+            }],
+            "base" : {
+              "path" : "Package.docsUrl",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Package.termsUrl",
+            "path" : "Package.termsUrl",
+            "definition" : "URL for terms and conditions related to the package.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "url"
+            }],
+            "base" : {
+              "path" : "Package.termsUrl",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Package.privacyUrl",
+            "path" : "Package.privacyUrl",
+            "definition" : "URL for privacy policy related to the package.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "url"
+            }],
+            "base" : {
+              "path" : "Package.privacyUrl",
+              "min" : 0,
               "max" : "1"
             }
           }
