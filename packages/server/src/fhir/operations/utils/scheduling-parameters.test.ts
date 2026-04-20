@@ -753,7 +753,7 @@ describe('chooseSchedulingParameters', () => {
     expect(chooseSchedulingParameters(schedule, service1)).toEqual(undefined);
   });
 
-  test('falls back to HealthcareService when Schedule has no matching parameters', () => {
+  test('falls back to HealthcareService when Schedule has no SchedulingParameters extension', () => {
     const service: WithId<HealthcareService> = {
       resourceType: 'HealthcareService',
       type: [consultType],
@@ -775,6 +775,51 @@ describe('chooseSchedulingParameters', () => {
 
     const result = chooseSchedulingParameters(schedule, service);
     expect(result?.duration).toBe(30);
+  });
+
+  test('falls back to HealthcareService when Schedule has no matching parameters', () => {
+    // Schedule has two extensions — each points at a different service.
+    // We query with a third service that has its own parameters. Neither Schedule
+    // extension matches, so chooseSchedulingParameters should fall through to
+    // the HealthcareService's own parameters.
+    const service1: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'hcs-1' };
+    const service2: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'hcs-2' };
+    const targetService: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'hcs-target',
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 45 } }],
+        },
+      ],
+    };
+
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      actor: [{ reference: 'Practitioner/test' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
+            { url: 'service', valueReference: createReference(service1) },
+            mondayAvailability,
+          ],
+        },
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
+            { url: 'service', valueReference: createReference(service2) },
+            mondayAvailability,
+          ],
+        },
+      ],
+    };
+
+    const result = chooseSchedulingParameters(schedule, targetService);
+    expect(result?.duration).toBe(45);
   });
 
   test('Schedule-specific parameters take priority over HealthcareService', () => {

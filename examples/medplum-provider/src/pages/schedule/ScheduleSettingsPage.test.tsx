@@ -79,19 +79,12 @@ describe('ScheduleSettings', () => {
       expect(screen.getByRole('switch', { name: 'Annual Checkup' })).toBeInTheDocument();
     });
 
-    test('lists unschedulable services in a separate section', async () => {
+    test('unschedulable services have disabled checkboxes', async () => {
       await act(async () => renderSettings(defaultSchedule));
-      expect(screen.getByText('Unschedulable Healthcare Services')).toBeInTheDocument();
       if (!unschedulableService.name) {
         throw new Error('Precondition failed; unschedulableService.name');
       }
-      expect(screen.getByText(unschedulableService.name)).toBeInTheDocument();
-    });
-
-    test('omits unschedulable section when all services are schedulable', async () => {
-      medplum.searchResources = vi.fn().mockResolvedValue([schedulableService]);
-      await act(async () => renderSettings(defaultSchedule));
-      expect(screen.queryByText('Unschedulable Healthcare Services')).not.toBeInTheDocument();
+      expect(screen.getByRole('switch', { name: unschedulableService.name })).toHaveAttribute('disabled');
     });
 
     test('switch is checked when the service is already linked to the schedule', async () => {
@@ -282,7 +275,7 @@ describe('ScheduleSettingsPage', () => {
 
   test('renders the "Schedule Settings" heading', async () => {
     await act(async () => setup());
-    expect(screen.getByRole('heading', { name: 'Schedule Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Schedule Settings - Dr. Alice Smith' })).toBeInTheDocument();
   });
 
   test('renders the ScheduleSettings form once the schedule has loaded', async () => {
