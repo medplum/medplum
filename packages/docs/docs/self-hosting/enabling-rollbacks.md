@@ -8,7 +8,11 @@ tags:
 
 # Enabling Rollbacks for Medplum Server
 
-Rolling back a Medplum server deployment is normally not supported, because post-deploy migrations can alter data in ways that are not reversible by simply deploying an older image. However, starting with the `4.x` series, Medplum's minor version cadence gives you a narrow, well-defined window where a rollback is safe — provided you take control of **when** post-deploy migrations run.
+As of the `4.x` series, Medplum supports a safe and well-defined rollback window for server deployments, provided you control when post-deploy migrations run.
+
+:::note
+Rolling back a Medplum server deployment has historically been unsafe, because post-deploy migrations can alter data in ways that are not reversible by simply deploying an older image. The `4.x` release process introduces a clearer separation between reversible and irreversible changes, enabling controlled rollbacks under specific conditions.
+:::
 
 This page explains how to enable rollbacks by deferring post-deploy migrations with the `disablePostDeployMigrations` server config setting.
 
