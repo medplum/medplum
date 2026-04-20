@@ -332,7 +332,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setSubmitting(true);
       debouncedUpdateClaim.cancel();
       try {
-        const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
+        const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
         showNotification({
           title: 'Claim Submitted',
           message: result?.message || 'Claim successfully submitted to Candid Health',
@@ -515,7 +515,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 practitioner={practitioner}
                 chargeItems={chargeItems}
                 onClose={() => setConfirmModalOpen(false)}
-                onConfirm={handleConfirmSubmit}
+                onSubmitClaim={handleConfirmSubmit}
               />
               <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
                 <Button

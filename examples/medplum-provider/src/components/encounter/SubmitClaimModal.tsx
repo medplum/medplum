@@ -90,34 +90,41 @@ const CoverageCard = ({ coverage, selected, onToggle }: CoverageCardProps): JSX.
   );
 };
 
-interface ClaimPickerProps {
+interface ClaimReviewPanelProps {
   patient: WithId<Patient>;
   conditions: Condition[];
   chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   submitting: boolean;
   insuranceCoverages: WithId<Coverage>[];
+  selectedCoverage: WithId<Coverage> | undefined;
   selfPayValue: string;
   initialBillingType: BillingType;
   onClose: () => void;
-  onConfirm: (coverageIds: string[]) => void;
+  onSubmitClaim: (coverageIds: string[]) => void;
 }
 
-const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
+const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
   const {
     patient,
     conditions,
     practitioner,
     submitting,
     insuranceCoverages,
+    selectedCoverage,
     selfPayValue,
     initialBillingType,
-    onConfirm,
+    onSubmitClaim,
   } = props;
 
   const [billingType, setBillingType] = useState<BillingType>(initialBillingType);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(initialBillingType === 'insurance' ? insuranceCoverages.map((c) => c.id) : [])
+    () =>
+      new Set(
+        initialBillingType === 'insurance' && selectedCoverage && !isSelfPayCoverage(selectedCoverage)
+          ? [selectedCoverage.id]
+          : []
+      )
   );
 
   const patientName = patient.name?.[0] ? formatHumanName(patient.name[0]) : 'Unknown Patient';
@@ -143,9 +150,9 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
   };
   const handleConfirm = (): void => {
     if (billingType === 'self-pay') {
-      onConfirm([selfPayValue]);
+      onSubmitClaim([selfPayValue]);
     } else {
-      onConfirm(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map((c) => c.id));
+      onSubmitClaim(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map((c) => c.id));
     }
   };
 
@@ -255,7 +262,7 @@ export interface SubmitClaimModalProps {
   chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   onClose: () => void;
-  onConfirm: (coverageIds: string[]) => void;
+  onSubmitClaim: (coverageIds: string[]) => void;
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
@@ -269,7 +276,7 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
     chargeItems,
     practitioner,
     onClose,
-    onConfirm,
+    onSubmitClaim,
   } = props;
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
@@ -283,17 +290,18 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
   return (
     <Modal opened={opened} onClose={onClose} centered size="lg" padding="xl" title="Review before submitting claim">
       {opened && (
-        <ClaimPicker
+        <ClaimReviewPanel
           patient={patient}
           conditions={conditions}
           chargeItems={chargeItems}
           practitioner={practitioner}
           submitting={submitting}
           insuranceCoverages={insuranceCoverages}
+          selectedCoverage={selectedCoverage}
           selfPayValue={selfPayValue}
           initialBillingType={initialBillingType}
           onClose={onClose}
-          onConfirm={onConfirm}
+          onSubmitClaim={onSubmitClaim}
         />
       )}
     </Modal>
