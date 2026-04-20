@@ -79,11 +79,6 @@ const FHIR_TOOLS = [
 ];
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
-  if (!event.secrets['OPENAI_API_KEY']?.valueString) {
-    throw new Error('OPENAI_API_KEY is required in project secrets');
-  }
-
-  const apiKey = event.secrets['OPENAI_API_KEY'].valueString;
   const input = event.input;
 
   const messagesParam = input.parameter?.find((p) => p.name === 'messages');
@@ -131,10 +126,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Parameters
       {
         name: 'messages',
         valueString: JSON.stringify(normalizedMessages),
-      },
-      {
-        name: 'apiKey',
-        valueString: apiKey,
       },
       {
         name: 'model',

@@ -8,7 +8,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 import classes from './MessagesPage.module.css';
 /**
@@ -20,6 +20,7 @@ export function MessagesPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const medplum = useMedplum();
+  const PharmacyDialogComponent = usePharmacyDialog();
 
   const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
@@ -62,8 +63,8 @@ export function MessagesPage(): JSX.Element {
 
   const sections = useMemo(
     () =>
-      getDefaultSections().map((s) => (s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s)),
-    []
+      getDefaultSections().map((s) => (s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s)),
+    [PharmacyDialogComponent]
   );
 
   const onNew = (message: Communication): void => {

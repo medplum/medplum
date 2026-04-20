@@ -450,6 +450,11 @@ export interface MedplumRequestOptions extends RequestInit {
    * Only applies when the client is configured with auto-batching enabled.
    */
   disableAutoBatch?: boolean;
+
+  /**
+   * See: https://developer.mozilla.org/en-US/docs/Web/API/Request/duplex
+   */
+  duplex?: 'half';
 }
 
 export interface PushToAgentOptions extends MedplumRequestOptions {
@@ -3239,6 +3244,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise to the response body as a blob.
    */
   async download(url: URL | string, options: MedplumRequestOptions = {}): Promise<Blob> {
+    const response = await this.downloadResponse(url, options);
+    return response.blob();
+  }
+
+  /**
+   * Downloads the URL as a Response. Can accept binary URLs in the form of `Binary/{id}` as well.
+   * @category Read
+   * @param url - The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
+   * @param options - Optional fetch request init options.
+   * @returns Promise to the response body as a Response.
+   */
+  async downloadResponse(url: URL | string, options: MedplumRequestOptions = {}): Promise<Response> {
     if (this.refreshPromise) {
       await this.refreshPromise;
     }
@@ -3258,8 +3275,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetchWithRetry(url.toString(), options);
-    return response.blob();
+    return this.fetchWithRetry(url.toString(), options);
   }
 
   /**
@@ -3923,6 +3939,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data?.constructor.name === 'Uint8Array'))
     ) {
       options.body = data;
+    } else if (
+      typeof data === 'object' &&
+      data !== null &&
+      (typeof data.getReader === 'function' || (typeof data.pipe === 'function' && typeof data.on === 'function'))
+    ) {
+      options.body = data;
+      options.duplex = 'half'; // Required for ReadableStream in Node 18+ and in most browsers
     } else if (data) {
       options.body = JSON.stringify(data);
     }

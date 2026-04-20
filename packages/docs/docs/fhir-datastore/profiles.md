@@ -357,7 +357,7 @@ In the above example, we have a [`Patient`](/docs/api/fhir/resources/patient) wi
 
 We then define the new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition). Here you would add any changes to the profile you want. Note that the `url` field is the same, except we have updated the version to `2.0.0.`.
 
-:::note Semantic Versioning in Profiles
+:::note[Semantic Versioning in Profiles]
 
 When updating FHIR profiles, you should use semantic versioning to assign values to your versions. In the above example, requiring a phone number is a breaking change as it may cause some resources to fail validation. Any backwards-incompatible changes should be considered major changes.
 

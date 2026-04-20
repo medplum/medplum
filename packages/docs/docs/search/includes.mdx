@@ -57,7 +57,7 @@ For example, the search query described above for `Observation`, `Patient`, and 
   </MedplumCodeBlock>
 </details>
 
-:::caution Note
+:::caution[Note]
 
 The values of the `_include` and `_revinclude` parameters are not paths into the resource, but search parameters.
 
@@ -153,7 +153,7 @@ flowchart TD
     P1 & P2 --> | general-practitioner | D1
 ```
 
-:::tip Recursive application
+:::tip[Recursive application]
 
 The `:iterate` modifier applies recursively, and can return multiple levels of results. For example,
 all results in the graph shown below would be returned in the results for the following search API request:

@@ -52,9 +52,9 @@ describe('Search Utils', () => {
     ['', new Error('Invalid search URL')],
     ['Observation?date=12/17', new Error('Invalid format for date search parameter: 12/17')],
     ['Observation?date=012522', new Error('Invalid format for date search parameter: 012522')],
-  ])('parseSearchRequest(%p) => %p', (url, expected) => {
+  ])('parseSearchRequest($0) => $1', (url, expected) => {
     if (expected instanceof Error) {
-      expect(() => parseSearchRequest(url)).toThrow(expected);
+      expect(() => parseSearchRequest(url)).toThrow(expected.message);
     } else {
       expect(parseSearchRequest(url)).toMatchObject(expected);
       expect(parseSearchRequest(new URL('http://example.com/' + url))).toMatchObject(expected);
@@ -234,7 +234,7 @@ describe('Search Utils', () => {
       'Patient?_lastUpdated:foobar=2025-10-15',
       { resourceType: 'Patient', filters: [{ code: '_lastUpdated', operator: 'foobar', value: '2025-10-15' }] },
     ],
-  ])('Invalid modifiers still parsed in %p', (url, expected) => {
+  ])('Invalid modifiers still parsed in $0', (url, expected) => {
     if (expected instanceof Error) {
       expect(() => parseSearchRequest(url)).toThrow(expected);
     } else {
@@ -242,42 +242,57 @@ describe('Search Utils', () => {
     }
   });
 
-  test('Parse chained search parameters', () => {
-    const searchReq = parseSearchRequest(
-      'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
-    );
-
-    expect(searchReq).toMatchObject<SearchRequest>({
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'organization.name',
-          operator: Operator.EQUALS,
-          value: 'Kaiser Permanente',
-        },
-        {
-          code: '_has:Observation:subject:performer:Practitioner.name',
-          operator: Operator.EQUALS,
-          value: 'Alice',
-        },
-      ],
-    });
-  });
-
-  test('Parsed chained search', () => {
-    const searchReq = parseSearchRequest(
-      `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
-    );
-    expect(searchReq).toMatchObject<SearchRequest>({
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: '_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected',
-          operator: Operator.EQUALS,
-          value: '2023',
-        },
-      ],
-    });
+  test.each([
+    [
+      'single-link chained search parameter',
+      'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice',
+      {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization.name',
+            operator: Operator.EQUALS,
+            value: 'Kaiser Permanente',
+          },
+          {
+            code: '_has:Observation:subject:performer:Practitioner.name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
+      },
+    ],
+    [
+      'multi-link chained search parameter',
+      'Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023',
+      {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected',
+            operator: Operator.EQUALS,
+            value: '2023',
+          },
+        ],
+      },
+    ],
+    [
+      'prefixes are not processed for chained search parameters',
+      'Patient?_has:EpisodeOfCare:patient:date=ge2026-04-01',
+      {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_has:EpisodeOfCare:patient:date',
+            operator: Operator.EQUALS,
+            value: 'ge2026-04-01',
+          },
+        ],
+      },
+    ],
+  ])('chained search parseSearchRequest %s', (_, url, expected) => {
+    const searchReq = parseSearchRequest(url);
+    expect(searchReq).toMatchObject(expected);
   });
 
   test('Format Patient search', () => {

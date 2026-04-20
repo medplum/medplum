@@ -255,11 +255,18 @@ describe('Profiles', () => {
     medplum.setBasicAuth(obj.clientId, obj.clientSecret);
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
 
-    const medplumDownloadSpy = jest.spyOn(medplum, 'download').mockImplementation((): any => {
-      return {
-        text: jest.fn(),
-      };
-    });
+    const medplumDownloadSpy = jest.spyOn(medplum, 'downloadResponse').mockImplementation(
+      async (): Promise<Response> =>
+        ({
+          ok: true,
+          body: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('download data'));
+              controller.close();
+            },
+          }),
+        }) as Response
+    );
 
     await main(['node', 'index.js', 'bulk', 'export', '-e', 'Patient', '-p', profileName]);
 

@@ -1,20 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Parameters, Patient } from '@medplum/fhirtypes';
-import { WS } from 'jest-websocket-mock';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
 import type { FetchLike } from './client';
 import { MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
 import type { SubscriptionEventMap } from './subscriptions';
 import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
+import type {
+  DEFAULT_PING_INTERVAL_MS,
+  UNREF_GRACE_PERIOD_MS,
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
+} from './subscriptions/constants';
 import { sendHandshakeBundle } from './subscriptions/test-utils';
 import { sleep } from './utils';
 
-jest.mock('./subscriptions/constants', () => ({
-  ...jest.requireActual('./subscriptions/constants'),
-  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
-  UNREF_GRACE_PERIOD_MS: 50,
-}));
+// fake type for eslint to avoid importing the actual module
+type SubscriptionsConstantsModule = {
+  DEFAULT_PING_INTERVAL_MS: typeof DEFAULT_PING_INTERVAL_MS;
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS: typeof WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS;
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: typeof WS_SUB_TOKEN_REFRESH_INTERVAL_MS;
+  UNREF_GRACE_PERIOD_MS: typeof UNREF_GRACE_PERIOD_MS;
+};
+
+vi.mock('./subscriptions/constants', async (importOriginal) => {
+  const mod = await importOriginal<SubscriptionsConstantsModule>();
+  return {
+    ...mod,
+    WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+    UNREF_GRACE_PERIOD_MS: 50,
+  };
+});
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -76,7 +94,7 @@ describe('MedplumClient -- Subscriptions', () => {
 
   beforeEach(async () => {
     originalWarn = console.warn;
-    console.warn = jest.fn();
+    console.warn = vi.fn();
 
     wsServer = new WS('wss://api.medplum.com/ws/subscriptions-r4', { jsonProtocol: true });
 

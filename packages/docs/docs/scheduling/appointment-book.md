@@ -5,7 +5,7 @@ sidebar_position: 3
 
 # Appointment $book
 
-:::info Alpha
+:::info[Alpha]
 
 The `$book` operation is currently in alpha. It supports only Schedules with a single actor.
 

@@ -161,6 +161,11 @@ import { buildTokenColumns } from './token-column';
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
 
+type CallbackFrame = {
+  pre: number;
+  post: number;
+};
+
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
  * In practice, there will be one Repository per HTTP request.
@@ -248,6 +253,11 @@ export interface RepositoryContext {
    * 3) "compartment" - References to all compartments the resource is in.
    */
   extendedMode?: boolean;
+
+  /**
+   * Optional flag to skip scheduling background jobs for writes.
+   */
+  skipBackgroundJobs?: boolean;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -272,6 +282,27 @@ export interface ProcessAllResourcesOptions {
   delayBetweenPagesMs?: number;
 }
 
+export type ColumnValue = boolean | number | string | undefined | null;
+
+export function compareColumnValues(a: ColumnValue, b: ColumnValue): number {
+  if ((a ?? null) === (b ?? null)) {
+    return 0;
+  }
+  if (a === null || a === undefined) {
+    return 1;
+  }
+  if (b === null || b === undefined) {
+    return -1;
+  }
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  if (typeof a === 'boolean' && typeof b === 'boolean') {
+    return Number(a) - Number(b);
+  }
+  return String(a).localeCompare(String(b));
+}
+
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -287,6 +318,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
+  private callbackStack: CallbackFrame[] = [];
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -308,8 +340,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
    * 12. 12/01/25 - Added search param `Bot-cds-hook` (https://github.com/medplum/medplum/pull/7933)
    * 13. 01/05/25 - Added search params: ActivityDefinition-code, Communication-priority, Communication-priority-order, ProjectMembership-active (https://github.com/medplum/medplum/pull/8160)
+   * 14. 04/14/26 - Added search params: ProjectMembership-admin, Practitioner-qualification-code (https://github.com/medplum/medplum/pull/8919)
+   *                and sort inline array columns (https://github.com/medplum/medplum/pull/8961)
    */
-  static readonly VERSION: number = 13;
+  static readonly VERSION: number = 14;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -344,7 +378,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
-    return createSystemRepository(this.shardId, this.conn);
+    return createSystemRepository(this.shardId, this.conn, {
+      skipBackgroundJobs: this.context.skipBackgroundJobs,
+    });
   }
 
   setMode(mode: RepositoryMode): void {
@@ -884,10 +920,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
-    await this.postCommit(async () => {
-      const project = await this.getProjectById(projectId);
-      await addBackgroundJobs(result, existing, { project, interaction });
-    });
+    if (!this.context.skipBackgroundJobs) {
+      await this.postCommit(async () => {
+        const project = await this.getProjectById(projectId);
+        await addBackgroundJobs(result, existing, { project, interaction });
+      });
+    }
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
@@ -1401,10 +1439,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      await addBackgroundJobs(resource, resource, {
-        project: await this.getProjectById(resource.meta?.project),
-        interaction: 'delete',
-      });
+      if (!this.context.skipBackgroundJobs) {
+        await addBackgroundJobs(resource, resource, {
+          project: await this.getProjectById(resource.meta?.project),
+          interaction: 'delete',
+        });
+      }
     } catch (err) {
       const durationMs = Date.now() - startTime;
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {
@@ -1901,6 +1941,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     impl satisfies ColumnSearchParameterImplementation;
     const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
     if (impl.array) {
+      columnValues.sort(compareColumnValues);
       columns[impl.columnName] = columnValues.length > 0 ? columnValues : undefined;
     } else {
       columns[impl.columnName] = columnValues[0];
@@ -1920,7 +1961,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchParam: SearchParameter,
     details: SearchParameterDetails,
     typedValues: TypedValue[]
-  ): (boolean | number | string | undefined | null)[] {
+  ): ColumnValue[] {
     if (details.type === SearchParameterType.BOOLEAN) {
       const value = typedValues[0]?.value;
       if (value === undefined || value === null) {
@@ -2499,8 +2540,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param err - Optional error to remove the connection from the pool.
    */
   private releaseConnection(err?: boolean | Error): void {
-    if (this.conn && this.disposable) {
-      this.conn.release(err);
+    if (!this.conn) {
+      return;
+    }
+    if (this.disposable) {
+      try {
+        this.conn.release(err);
+      } catch (releaseErr) {
+        // pg-pool throws if release() is called twice (e.g. socket already errored out).
+        // We've done our part; just log and move on.
+        getLogger().warn('Error releasing database client', { err: normalizeErrorString(releaseErr) });
+      }
+      this.conn = undefined;
+    } else if (err) {
+      // Shared connection is known to be dead. Drop our reference so we don't reuse it.
+      // The owner of the connection is responsible for the actual release.
       this.conn = undefined;
     }
   }
@@ -2578,6 +2632,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
+    this.pushCallbackFrame();
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
@@ -2595,24 +2650,62 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await conn.query('COMMIT');
       this.transactionDepth--;
       this.releaseConnection();
+      this.clearCallbackStack();
       await this.processPostCommit();
     } else {
+      // If RELEASE SAVEPOINT fails (e.g. transaction in aborted state), let the error propagate.
+      // withTransaction's catch will invoke rollbackTransaction, which can run ROLLBACK TO SAVEPOINT
+      // even against an aborted transaction to recover — aborting here would discard work the outer
+      // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
+      this.popCallbackFrame();
     }
   }
 
   private async rollbackTransaction(error: Error): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
-      await conn.query('ROLLBACK');
-      this.transactionDepth--;
-      this.releaseConnection(error);
-    } else {
-      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
-      this.transactionDepth--;
+    // Tolerate being called after state has already been reset (e.g. when a prior
+    // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
+    if (this.transactionDepth <= 0) {
+      return;
     }
+    const conn = await this.getConnection(DatabaseMode.WRITER);
+    const isOuter = this.transactionDepth === 1;
+    try {
+      if (isOuter) {
+        await conn.query('ROLLBACK');
+      } else {
+        await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+      }
+    } catch (rollbackErr) {
+      // ROLLBACK itself failed — connection is almost certainly dead (e.g. killed by
+      // idle_in_transaction_session_timeout). Pass the original triggering error to
+      // abortTransaction so the client is released with the right root cause.
+      getLogger().warn('Error rolling back transaction', {
+        err: normalizeErrorString(rollbackErr),
+        originalErr: normalizeErrorString(error),
+      });
+      this.abortTransaction(error);
+      return;
+    }
+    this.transactionDepth--;
+    this.truncateCommitCallbacks();
+    if (isOuter) {
+      this.releaseConnection(error);
+    }
+  }
+
+  /**
+   * Fully abort the transaction hierarchy: reset depth, drop pending pre/post-commit
+   * callbacks, and release the connection with an error so pg-pool discards it.
+   * Invoked from commit/rollback error paths when further recovery on the current
+   * connection is not possible.
+   * @param err - The error that triggered the abort; forwarded to `release()`.
+   */
+  private abortTransaction(err: Error): void {
+    this.transactionDepth = 0;
+    this.clearCallbackStack();
+    this.releaseConnection(err);
   }
 
   private endTransaction(): void {
@@ -2670,6 +2763,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       } else {
         getLogger().error('Error processing post-commit callback', { err });
       }
+    }
+  }
+
+  private pushCallbackFrame(): void {
+    this.callbackStack.push({
+      pre: this.preCommitCallbacks.length,
+      post: this.postCommitCallbacks.length,
+    });
+  }
+
+  private popCallbackFrame(): CallbackFrame {
+    const frame = this.callbackStack.pop();
+
+    if (!frame) {
+      throw new Error('No callback frame');
+    }
+
+    return frame;
+  }
+
+  private clearCallbackStack(): void {
+    this.callbackStack = [];
+  }
+
+  private truncateCommitCallbacks(): void {
+    const frame = this.popCallbackFrame();
+    if (frame.pre !== this.preCommitCallbacks.length) {
+      this.preCommitCallbacks = this.preCommitCallbacks.slice(0, frame.pre);
+    }
+    if (frame.post !== this.postCommitCallbacks.length) {
+      this.postCommitCallbacks = this.postCommitCallbacks.slice(0, frame.post);
     }
   }
 
@@ -2879,15 +3003,23 @@ function getProfileCacheKey(projectId: string, url: string): string {
 
 export class SystemRepository extends Repository {}
 
+type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
+
 /**
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
  * @param conn - Optional database connection for transaction support.
+ * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
-function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepository {
+function createSystemRepository(
+  shardId: string,
+  conn?: PoolClient,
+  contextDefaults?: SystemRepositoryContextDefaults
+): SystemRepository {
   return new SystemRepository(
     {
+      ...contextDefaults,
       shardId,
       superAdmin: true,
       strictMode: true,
@@ -2924,10 +3056,14 @@ mostly intended for system-level, super-admin triggered operations against a par
  * - Cross-project operations by super admins
  *
  * @param client - Option database client connection to use in new Repository.
+ * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the global shard.
  */
-export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
-  return createSystemRepository(GLOBAL_SHARD_ID, client);
+export function getGlobalSystemRepo(
+  client?: PoolClient,
+  contextDefaults?: SystemRepositoryContextDefaults
+): SystemRepository {
+  return createSystemRepository(GLOBAL_SHARD_ID, client, contextDefaults);
 }
 
 /**
@@ -2936,10 +3072,15 @@ export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
  * or `getGlobalSystemRepo` if intentionally working in the global shard.
  * @param shardId - The shard ID. Currently ignored.
  * @param client - Option database client connection to use in new Repository.
+ * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the specified shard.
  */
-export function getShardSystemRepo(shardId: string, client?: PoolClient): SystemRepository {
-  return createSystemRepository(shardId, client);
+export function getShardSystemRepo(
+  shardId: string,
+  client?: PoolClient,
+  contextDefaults?: SystemRepositoryContextDefaults
+): SystemRepository {
+  return createSystemRepository(shardId, client, contextDefaults);
 }
 
 /**

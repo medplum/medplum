@@ -4,6 +4,10 @@ sidebar_position: 1
 
 # Sending Orders
 
+:::info[Prerequisites]
+For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data model, see [Labs & Imaging](/docs/labs-imaging) and [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging).
+:::
+
 This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
 
 The high-level workflow for sending laboratory & imaging orders is:

@@ -27,11 +27,12 @@ import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResour
 import { ChartNoteStatus } from '../../types/encounter';
 import { calculateTotalPrice } from '../../utils/chargeitems';
 import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
-import { createSelfPayCoverage } from '../../utils/coverage';
+import { createSelfPayCoverage, isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
 import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
+import { SubmitClaimModal } from './SubmitClaimModal';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
@@ -80,8 +81,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const medplum = useMedplum();
   const candidEncounterId = claim ? getIdentifier(claim, CANDID_IDENTIFIER_SYSTEM) : undefined;
   const [conditions, setConditions] = useState<Condition[]>([]);
-  const [coverage, setCoverage] = useState<Coverage | undefined>();
+  const [coverages, setCoverages] = useState<WithId<Coverage>[]>([]);
+  const [coverage, setCoverage] = useState<WithId<Coverage> | undefined>();
   const [submitting, setSubmitting] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
@@ -102,15 +105,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       if (!patient) {
         return;
       }
-      const coverageResults = await medplum.searchResources(
+      const results = await medplum.searchResources(
         'Coverage',
         `patient=${getReferenceString(patient)}&status=active&_sort=-_lastUpdated`
       );
-      if (coverageResults.length > 0) {
-        setCoverage(coverageResults[0]);
+      if (results.length > 0) {
+        setCoverages(results);
+        setCoverage(results.find((c) => !isSelfPayCoverage(c)) ?? results[0]);
       } else {
-        const selfPayCoverage = await createSelfPayCoverage(medplum, patient);
-        setCoverage(selfPayCoverage);
+        const selfPay = await createSelfPayCoverage(medplum, patient);
+        const selfPayWithId = selfPay as WithId<Coverage>;
+        setCoverages([selfPayWithId]);
+        setCoverage(selfPayWithId);
       }
     };
 
@@ -302,55 +308,59 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
   };
 
-  const submitClaim = useCallback(async (): Promise<void> => {
-    if (!claim) {
-      return;
-    }
-
-    const currentConditions = conditionsRef.current;
-    if (!currentConditions || currentConditions.length === 0) {
-      showNotification({
-        title: 'Missing Diagnosis',
-        message: 'Please add at least one diagnosis before submitting a claim',
-        color: 'red',
-      });
-      return;
-    }
-
-    if (!billingBot) {
-      return;
-    }
-
-    setSubmitting(true);
-    debouncedUpdateClaim.cancel();
-    try {
-      const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
-      showNotification({
-        title: 'Claim Submitted',
-        message: result?.message || 'Claim successfully submitted to Candid Health',
-        color: 'green',
-      });
-      const updatedClaim = await medplum.readResource('Claim', claim.id);
-      setClaim(updatedClaim);
-      await fetchCandidEncounter();
-    } catch (err) {
-      let errorMessage: string | undefined;
-      try {
-        const parsed = JSON.parse((err as Error).message);
-        errorMessage = parsed?.errorMessage;
-        notifications.show({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: errorMessage,
-        });
-      } catch {
-        showErrorNotification(err);
+  const submitClaim = useCallback(
+    async (claimOverride?: WithId<Claim>): Promise<void> => {
+      const claimToSubmit = claimOverride ?? claim;
+      if (!claimToSubmit) {
+        return;
       }
-    } finally {
-      setSubmitting(false);
-    }
-  }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
+
+      const currentConditions = conditionsRef.current;
+      if (!currentConditions || currentConditions.length === 0) {
+        showNotification({
+          title: 'Missing Diagnosis',
+          message: 'Please add at least one diagnosis before submitting a claim',
+          color: 'red',
+        });
+        return;
+      }
+
+      if (!billingBot) {
+        return;
+      }
+
+      setSubmitting(true);
+      debouncedUpdateClaim.cancel();
+      try {
+        const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
+        showNotification({
+          title: 'Claim Submitted',
+          message: result?.message || 'Claim successfully submitted to Candid Health',
+          color: 'green',
+        });
+        const updatedClaim = await medplum.readResource('Claim', claimToSubmit.id);
+        setClaim(updatedClaim);
+        await fetchCandidEncounter();
+      } catch (err) {
+        let errorMessage: string | undefined;
+        try {
+          const parsed = JSON.parse((err as Error).message);
+          errorMessage = parsed?.errorMessage;
+          notifications.show({
+            color: 'red',
+            icon: <IconCircleOff />,
+            title: 'Error',
+            message: errorMessage,
+          });
+        } catch {
+          showErrorNotification(err);
+        }
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
+  );
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
@@ -407,6 +417,64 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Menu>
   );
 
+  const handleConfirmSubmit = useCallback(
+    async (coverageIds: string[]): Promise<void> => {
+      setConfirmModalOpen(false);
+      if (!claim) {
+        return;
+      }
+
+      const resolved: WithId<Coverage>[] = [];
+      for (const id of coverageIds) {
+        if (id === SELF_PAY_VALUE) {
+          const existing = coverages.find(isSelfPayCoverage);
+          if (existing) {
+            resolved.push(existing);
+          } else {
+            const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
+            setCoverages((prev) => [...prev, created]);
+            resolved.push(created);
+          }
+        } else {
+          const found = coverages.find((c) => c.id === id);
+          if (found) {
+            resolved.push(found);
+          }
+        }
+      }
+
+      if (resolved.length === 0) {
+        return;
+      }
+
+      setCoverage(resolved[0]);
+      debouncedUpdateClaim.cancel();
+      const updatedClaim = await medplum.updateResource({
+        ...claim,
+        insurance: resolved.map((cov, index) => ({
+          sequence: index + 1,
+          focal: index === 0,
+          coverage: { reference: getReferenceString(cov) },
+        })),
+      });
+      setClaim(updatedClaim);
+      await submitClaim(updatedClaim);
+    },
+    [claim, coverages, debouncedUpdateClaim, medplum, patient, setClaim, submitClaim]
+  );
+
+  const handleSubmitClaimClick = useCallback((): void => {
+    if (!conditions.length) {
+      showNotification({
+        title: 'Missing Diagnosis',
+        message: 'Please add at least one diagnosis before submitting a claim',
+        color: 'red',
+      });
+      return;
+    }
+    setConfirmModalOpen(true);
+  }, [conditions]);
+
   const renderClaimCard = (): JSX.Element | null => {
     if (!claim) {
       return null;
@@ -435,19 +503,34 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
           {billingBot && (
-            <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
-              <Button
-                component="div"
-                variant="outline"
-                leftSection={<IconSend size={16} />}
-                loading={submitting}
-                onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? submitClaim : undefined}
-                disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
-                data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
-              >
-                Submit Claim
-              </Button>
-            </Tooltip>
+            <>
+              <SubmitClaimModal
+                opened={confirmModalOpen}
+                submitting={submitting}
+                coverages={coverages}
+                selectedCoverage={coverage}
+                patient={patient}
+                encounter={encounter}
+                conditions={conditions}
+                practitioner={practitioner}
+                chargeItems={chargeItems}
+                onClose={() => setConfirmModalOpen(false)}
+                onConfirm={handleConfirmSubmit}
+              />
+              <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
+                <Button
+                  component="div"
+                  variant="outline"
+                  leftSection={<IconSend size={16} />}
+                  loading={submitting}
+                  onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
+                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                  data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
+                >
+                  Submit Claim
+                </Button>
+              </Tooltip>
+            </>
           )}
           {billingBot === null && (
             <Button
