@@ -9,7 +9,12 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { createProfile, createProjectMembership, getDefaultMembershipAccessFields, projectHasDefaultPatientAccess } from './utils';
+import {
+  createProfile,
+  createProjectMembership,
+  getDefaultMembershipAccessFields,
+  projectHasDefaultPatientAccess,
+} from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
