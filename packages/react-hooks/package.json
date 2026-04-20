@@ -70,11 +70,11 @@
     "@types/node": "22.19.17",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "dotenv": "17.4.1",
+    "dotenv": "17.4.2",
     "jest-websocket-mock": "2.5.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "typescript": "6.0.2"
+    "typescript": "6.0.3"
   },
   "peerDependencies": {
     "@medplum/core": "5.1.8",
