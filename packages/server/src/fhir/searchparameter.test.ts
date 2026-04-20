@@ -8,6 +8,7 @@ import { HumanNameTable } from './lookups/humanname';
 import type {
   ColumnSearchParameterImplementation,
   LookupTableSearchParameterImplementation,
+  RangeColumnSearchParameterImplementation,
   SearchParameterImplementation,
   TokenColumnSearchParameterImplementation,
 } from './searchparameter';
@@ -130,8 +131,9 @@ describe('SearchParameterImplementation', () => {
       (e) => e.id === 'Observation-value-quantity'
     ) as SearchParameter;
     const impl = getSearchParameterImplementation('Observation', valueQuantityParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('valueQuantity');
+    expect(impl.rangeColumnName).toStrictEqual('__valueQuantity');
   });
 
   test('Encounter-date', () => {
@@ -306,7 +308,7 @@ function expectTokenColumnImplementation(
 
 function assertRangeColumnImplementation(
   impl: SearchParameterImplementation | undefined
-): asserts impl is ColumnSearchParameterImplementation {
+): asserts impl is RangeColumnSearchParameterImplementation {
   expect(impl).toBeDefined();
   expect(impl?.searchStrategy).toBe(SearchStrategies.RANGE_COLUMN);
 }

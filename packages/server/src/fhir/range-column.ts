@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
 import { evalFhirPathTyped, getSearchParameterDetails, Operator, toTypedValue } from '@medplum/core';
-import type { Period, Quantity, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Money, Period, Quantity, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
@@ -91,9 +91,9 @@ function buildDateTimeRange(typed: TypedValue): Interval<Date> {
   }
 }
 
-function parseDateTimeToRange(dt: string): Interval<Date> {
-  const start = new Date(dt);
-  const end = new Date(start.getTime()); // Copy start time before modifying
+function parseDateTimeToRange(dt: string, approximate?: boolean): Interval<Date> {
+  let start = new Date(dt);
+  let end = new Date(start.getTime()); // Copy start time before modifying
   const len = dt.length;
   if (len <= 4) {
     // Year precision
@@ -110,6 +110,13 @@ function parseDateTimeToRange(dt: string): Interval<Date> {
   } else {
     // Millisecond precision
     end.setMilliseconds(end.getMilliseconds() + 1);
+  }
+
+  if (approximate) {
+    const startTime = start.getTime();
+    const deltaMs = (Date.now() - startTime) * 0.1;
+    start = new Date(startTime - deltaMs);
+    end = new Date(end.getTime() + deltaMs);
   }
   return { lInc: true, left: start, right: end, rInc: false };
 }
@@ -175,16 +182,25 @@ function buildNumericRange(typed: TypedValue): Interval<number> {
     case 'positiveInt':
       return parseNumberToRange(typed.value);
     case 'Quantity':
+    case 'Money': // Not technically a Quantity, but referenced by ChargeItem.priceOverride
       // TODO: Omit missing value?
-      return parseNumberToRange((typed.value as Quantity).value ?? 0);
+      return parseNumberToRange((typed.value as Quantity | Money).value ?? 0);
     default:
       throw new Error('Cannot build numeric range from ' + typed.type);
   }
 }
 
-function parseNumberToRange(n: number): Interval<number> {
+function parseNumberToRange(n: number, approximate?: boolean): Interval<number> {
   // TODO: Implement precision range
-  return { lInc: true, left: n, right: n, rInc: true };
+  let low = n;
+  let high = n;
+  let inclusive = true;
+  if (approximate) {
+    low = low - 0.1 * n;
+    high = high + 0.1 * n;
+    inclusive = false;
+  }
+  return { lInc: true, left: low, right: high, rInc: inclusive };
 }
 
 /**
@@ -224,18 +240,20 @@ export function buildRangeColumnsSearchFilter(
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
   }
 
+  const approximate = filter.operator === Operator.APPROXIMATELY;
   let range: Interval<number | Date>;
   let colType: ColumnType;
   if (param.type === 'date') {
-    range = parseDateTimeToRange(filter.value);
+    range = parseDateTimeToRange(filter.value, approximate);
     colType = ColumnType.TSTZRANGE;
   } else {
-    range = parseNumberToRange(Number.parseFloat(filter.value));
+    range = parseNumberToRange(Number.parseFloat(filter.value), approximate);
     colType = ColumnType.NUMRANGE;
   }
   const column = new Column(tableName, impl.rangeColumnName);
   switch (filter.operator) {
     case Operator.EXACT: // Alias needed for _filter search
+    case Operator.APPROXIMATELY: // Approximate target range calculated above, match against it here
     case Operator.EQUALS:
       return new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType);
     case Operator.NOT:

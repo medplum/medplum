@@ -226,23 +226,28 @@ describe('buildRangeColumnsSearchFilter', () => {
     ).toThrow('Invalid search strategy');
   });
 
-  test.each<[Operator, string, string, string]>([
-    [Operator.EQUALS, '2026', ' && $1', '[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z)'],
-    [Operator.EQUALS, '2020-02', ' && $1', '[2020-02-01T00:00:00.000Z,2020-03-01T00:00:00.000Z)'],
-    [Operator.EQUALS, '2020-02-14', ' && $1', '[2020-02-14T00:00:00.000Z,2020-02-15T00:00:00.000Z)'],
+  test.each<[Operator, string, string, string[]]>([
+    [Operator.EQUALS, '2026', ' && $1', ['[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z)']],
+    [Operator.EQUALS, '2020-02', ' && $1', ['[2020-02-01T00:00:00.000Z,2020-03-01T00:00:00.000Z)']],
+    [Operator.EQUALS, '2020-02-14', ' && $1', ['[2020-02-14T00:00:00.000Z,2020-02-15T00:00:00.000Z)']],
     [
       Operator.NOT_EQUALS,
       '2020',
       'NOT ("AllergyIntolerance"."__onset" &&',
-      '[2020-01-01T00:00:00.000Z,2021-01-01T00:00:00.000Z)',
+      ['[2020-01-01T00:00:00.000Z,2021-01-01T00:00:00.000Z)'],
     ],
-    [Operator.LESS_THAN, '2025-03-02T12:34:56Z', ' && $1', '(,2025-03-02T12:34:56.000Z)'],
-    [Operator.LESS_THAN_OR_EQUALS, '2024-04-04T12:34:56.789Z', ' && $1', '(,2024-04-04T12:34:56.790Z)'],
-    [Operator.GREATER_THAN, '2022', ' && $1', '[2023-01-01T00:00:00.000Z,)'],
-    [Operator.GREATER_THAN_OR_EQUALS, '2024-02-29T12:34:56Z', ' && $1', '[2024-02-29T12:34:56.000Z,)'],
-    [Operator.STARTS_AFTER, '2026-01-31', ' >> $1', '[2026-01-31T00:00:00.000Z,2026-02-01T00:00:00.000Z)'],
-    [Operator.ENDS_BEFORE, '2024-02-29', ' << $1', '[2024-02-29T00:00:00.000Z,2024-03-01T00:00:00.000Z)'],
-  ])('constructs filter condition correctly for date value: %s %s', (operator, value, expectedSql, range) => {
+    [Operator.LESS_THAN, '2025-03-02T12:34:56Z', ' && $1', ['(,2025-03-02T12:34:56.000Z)']],
+    [Operator.LESS_THAN_OR_EQUALS, '2024-04-04T12:34:56.789Z', ' && $1', ['(,2024-04-04T12:34:56.790Z)']],
+    [Operator.GREATER_THAN, '2022', ' && $1', ['[2023-01-01T00:00:00.000Z,)']],
+    [Operator.GREATER_THAN_OR_EQUALS, '2024-02-29T12:34:56Z', ' && $1', ['[2024-02-29T12:34:56.000Z,)']],
+    [Operator.STARTS_AFTER, '2026-01-31', ' >> $1', ['[2026-01-31T00:00:00.000Z,2026-02-01T00:00:00.000Z)']],
+    [Operator.ENDS_BEFORE, '2024-02-29', ' << $1', ['[2024-02-29T00:00:00.000Z,2024-03-01T00:00:00.000Z)']],
+    [Operator.MISSING, 'true', `"AllergyIntolerance"."__onset" IS NULL`, []],
+    [Operator.MISSING, 'false', `"AllergyIntolerance"."__onset" IS NOT NULL`, []],
+    [Operator.PRESENT, 'true', `"AllergyIntolerance"."__onset" IS NOT NULL`, []],
+    [Operator.PRESENT, 'false', `"AllergyIntolerance"."__onset" IS NULL`, []],
+    [Operator.APPROXIMATELY, '2025-03-02', ' && $1', [expect.not.stringContaining('2025-03-02')]],
+  ])('constructs filter condition correctly for date value: %s %s', (operator, value, expectedSql, values) => {
     const onset = getSearchParameter('AllergyIntolerance', 'onset');
     if (!onset) {
       throw new Error('Missing search parameter');
@@ -259,7 +264,7 @@ describe('buildRangeColumnsSearchFilter', () => {
     const sql = new SqlBuilder();
     condition.buildSql(sql);
     expect(sql.toString()).toStrictEqual(expect.stringContaining(expectedSql));
-    expect(sql.getValues()).toStrictEqual([range]);
+    expect(sql.getValues()).toStrictEqual(values);
   });
 
   test('constructs basic numeric range filter', () => {
@@ -275,5 +280,20 @@ describe('buildRangeColumnsSearchFilter', () => {
     condition.buildSql(sql);
     expect(sql.toString()).toStrictEqual(expect.stringContaining(' && $1'));
     expect(sql.getValues()).toStrictEqual(['(,0.05)']);
+  });
+
+  test('constructs approximate numeric range filter', () => {
+    const probability = getSearchParameter('RiskAssessment', 'probability');
+    if (!probability) {
+      throw new Error('Missing search parameter');
+    }
+
+    const filter: Filter = { code: 'probability', operator: Operator.APPROXIMATELY, value: '0.5' };
+    const condition = buildRangeColumnsSearchFilter('RiskAssessment', 'RiskAssessment', probability, filter);
+
+    const sql = new SqlBuilder();
+    condition.buildSql(sql);
+    expect(sql.toString()).toStrictEqual(expect.stringContaining(' && $1'));
+    expect(sql.getValues()).toStrictEqual(['[0.45,0.55)']);
   });
 });
