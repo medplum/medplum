@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, Loader, Stack, Switch, Title } from '@mantine/core';
+import { Alert, Button, Group, Loader, Stack, Switch, Text, Title, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatReferenceString, getExtensionValue, getReferenceString } from '@medplum/core';
+import { deepClone, EMPTY, formatReferenceString, getExtensionValue, getReferenceString } from '@medplum/core';
 import type { HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import { Document, MedplumLink, useMedplum } from '@medplum/react';
 import { useResource, useSearchResources } from '@medplum/react-hooks';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useState } from 'react';
 import { useParams } from 'react-router';
@@ -16,15 +16,23 @@ import { showErrorNotification, showSuccessNotification } from '../../utils/noti
 import { hasSchedulingParameters } from '../../utils/scheduling';
 import { isCodeableReferenceLikeTo, ServiceTypeReferenceURI, toCodeableReferenceLike } from '../../utils/servicetype';
 
+// Eventually we should paginate the HealthcareService search so this is not a
+// hard limit. We expect that 1000 rows should be plenty for most providers, so
+// temporarily shipping with a single large page fetch.
+const MAX_PAGE_SIZE = 1000;
+
 export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | null {
   const medplum = useMedplum();
-  const [services, servicesLoading] = useSearchResources('HealthcareService');
+  const [services, servicesLoading] = useSearchResources('HealthcareService', {
+    _sort: 'name',
+    _count: MAX_PAGE_SIZE.toString(),
+  });
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Store a copy of the Schedule that we can mutate while the viewer manipulates
   // the UI
-  const [schedule, setSchedule] = useState({ ...props.schedule });
+  const [schedule, setSchedule] = useState(deepClone(props.schedule));
 
   if (servicesLoading) {
     return <Loader />;
@@ -39,9 +47,6 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
       </Group>
     );
   }
-
-  const schedulableServices = services.filter((service) => hasSchedulingParameters(service));
-  const unschedulableServices = services.filter((service) => !hasSchedulingParameters(service));
 
   function toggleServiceType(service: WithId<HealthcareService>, enabled: boolean): void {
     setDirty(true);
@@ -77,45 +82,42 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
   }
 
   return (
-    <Stack gap="xl">
-      <Stack gap="sm">
-        <Title order={3}>Schedule Actor</Title>
-        <div>
-          {schedule.actor.map((actor, i) => (
-            <Fragment key={actor.reference}>
-              {i > 0 && ', '}
-              <MedplumLink to={actor}>{formatReferenceString(actor)}</MedplumLink>
-            </Fragment>
-          ))}
-        </div>
+    <Stack gap="lg">
+      <Stack gap="0">
+        <Title order={3}>Appointment Types</Title>
+        <Text fs="italic" c="dimmed">
+          Choose what appointment types can be scheduled on this calendar. Learn more about{' '}
+          <DocsLink path="scheduling">configuring Scheduling</DocsLink>.
+        </Text>
       </Stack>
-      <Stack gap="sm">
-        <Title order={3}>Schedulable Healthcare Services</Title>
-        {schedulableServices.map((service) => (
-          <Switch
-            key={service.id}
-            label={service.name}
-            checked={isCodeableReferenceLikeTo(schedule.serviceType, service)}
-            onChange={(e) => toggleServiceType(service, e.target.checked)}
-          />
-        ))}
-      </Stack>
-      {unschedulableServices.length > 0 && (
-        <Stack gap="sm">
-          <Title order={4}>Unschedulable Healthcare Services</Title>
-          <Group>
-            <Alert color="yellow.5" variant="outline" icon={<IconInfoCircle />}>
-              These services do not have a{' '}
-              <DocsLink path="scheduling/defining-availability">SchedulingParameters</DocsLink> extension.
-            </Alert>
-          </Group>
-          <ul>
-            {unschedulableServices.map((service) => (
-              <li key={service.id}>{service.name}</li>
-            ))}
-          </ul>
-        </Stack>
+      {services.length >= MAX_PAGE_SIZE && (
+        <Alert color="yellow" variant="outline" icon={<IconAlertCircle />}>
+          HealthcareService page size reached; some rows may not have been fetched.
+        </Alert>
       )}
+      <Stack gap="sm">
+        {services.map((service) => {
+          const schedulable = hasSchedulingParameters(service);
+          return (
+            <Group key={service.id}>
+              <Tooltip
+                label={'This HealthcareService does not have a SchedulingParameters extension'}
+                disabled={schedulable}
+                position="right"
+                refProp="rootRef"
+                withArrow
+              >
+                <Switch
+                  label={service.name}
+                  checked={isCodeableReferenceLikeTo(schedule.serviceType, service)}
+                  onChange={(e) => toggleServiceType(service, e.target.checked)}
+                  disabled={!schedulable}
+                />
+              </Tooltip>
+            </Group>
+          );
+        })}
+      </Stack>
       <Group justify="flex-end">
         <Button variant="outline" disabled={saving} component={MedplumLink} to={`/Calendar/Schedule/${schedule.id}`}>
           {dirty ? 'Cancel' : 'Back'}
@@ -134,7 +136,15 @@ export function ScheduleSettingsPage(): JSX.Element {
 
   return (
     <Document>
-      <Title order={1}>Schedule Settings</Title>
+      <Title order={1} mb="sm">
+        Schedule Settings
+        {schedule?.actor.map((actor, i) => (
+          <Fragment key={actor.reference}>
+            {i === 0 ? ' - ' : ', '}
+            {formatReferenceString(actor)}
+          </Fragment>
+        ))}
+      </Title>
       <AlphaBanner bdrs="md" mb="lg">
         Medplum Scheduling is in an Alpha period and is subject to change.
       </AlphaBanner>
