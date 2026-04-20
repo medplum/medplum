@@ -8,7 +8,7 @@ Keeping your Medplum server up-to-date ensures you get the latest security patch
 
 ## Before You Begin
 
-:::warning Do Not Skip Minor Versions
+:::warning[Do Not Skip Minor Versions]
 You cannot skip minor versions when upgrading. Attempting to jump ahead (e.g., from v3.1.2 directly to v4.3.4) will cause your server to fail to start.
 :::
 

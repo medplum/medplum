@@ -77,7 +77,9 @@ function buildBpEntry(patientUrn: string, daysAgo: number, systolic: number, dia
       meta: { profile: [US_CORE_BP], tag: [DEMO_TAG] },
       status: 'final',
       category: VITAL_SIGNS_CATEGORY,
-      code: { coding: [{ system: LOINC, code: '55284-4', display: 'Blood pressure systolic and diastolic' }] },
+      code: {
+        coding: [{ system: LOINC, code: '85354-9', display: 'Blood pressure panel with all children optional' }],
+      },
       subject: { reference: patientUrn },
       effectiveDateTime: isoDate(daysAgo),
       component: [

@@ -54,7 +54,7 @@ The FHIR [`Communication`](/docs/api/fhir/resources/communication) resource repr
 | `sent` / `received` | When the message was sent or received. | | 2023-04-10T10:00:00Z |
 | `status` | Transmission and lifecycle state on the resource. Draft, sent, retracted, and related patterns are summarized in [Communication Lifecycle](#communication-lifecycle). For read tracking via Tasks, see [Read Receipts and Message Status](/docs/communications/read-receipts-and-message-status). | [Event Status Codes](http://hl7.org/fhir/R4/valueset-event-status.html) | in-progress |
 
-:::note `category` vs. `reasonCode`
+:::note[`category` vs. `reasonCode`]
 
 `category` classifies the message at a broad level (for example notification versus alert). `reasonCode` explains why it was sent in more detail (for example appointment reminder versus abnormal lab result). A message can carry both, such as `category` for notification and `reasonCode` for appointment reminder.
 
@@ -62,7 +62,7 @@ The FHIR [`Communication`](/docs/api/fhir/resources/communication) resource repr
 
 For every search parameter, see the [Communication API reference](/docs/api/fhir/resources/communication#search-parameters).
 
-## Communication Lifecycle {#communication-lifecycle}
+## Communication Lifecycle {/* #communication-lifecycle */}
 
 | Stage | FHIR representation |
 | --- | --- |
@@ -79,7 +79,7 @@ The header represents the thread, not a specific message. It has no `payload` an
 
 A minimal thread can use `topic` on the **header only** (for example [Creating Your First Thread](/docs/communications/creating-your-first-thread)); UIs usually show that title when rendering the message list. Duplicate the same `topic` on **each child** when you need each `Communication` to carry the subject for message-level search, subscriptions, or exports without joining the header.
 
-:::tip Thread header: `sender` and `recipient`
+:::tip[Thread header: `sender` and `recipient`]
 
 Set `sender` to whoever created or opened the thread when that applies. Include that same actor in `recipient`, together with every other participant. Treat `recipient` on the header as the full participant list for routing and UI, not only others who received a message.
 
@@ -113,7 +113,7 @@ You can omit `category` entirely if you do not need tags. **When using `category
   </MedplumCodeBlock>
 </details>
 
-:::tip Designing category schemes
+:::tip[Designing category schemes]
 
 You can use multiple `category` entries (for example separate entries for specialty and credential level). That tends to be self-documenting and easier to maintain, but queries may need to match several categories.
 

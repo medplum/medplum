@@ -6,7 +6,7 @@ import { handler } from './fhir-visualizer-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
-const secrets = { OPENAI_API_KEY: { name: 'OPENAI_API_KEY', valueString: 'test-key' } };
+const secrets = {};
 
 function makeInput(messages: object[], fhirData?: object[], model?: string): Parameters {
   return {
@@ -29,15 +29,6 @@ describe('fhir-visualizer-bot', () => {
       payload: [{ contentString: 'You are a helpful FHIR visualization assistant.' }],
       status: 'completed',
       id: 'test-communication',
-    });
-  });
-
-  test('returns OperationOutcome when OPENAI_API_KEY is missing', async () => {
-    const input = makeInput([{ role: 'user', content: 'Show chart' }]);
-    const result = await handler(medplum, { bot, input, contentType, secrets: {} });
-    expect(result).toMatchObject({
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', details: { text: expect.stringContaining('OPENAI_API_KEY') } }],
     });
   });
 

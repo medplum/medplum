@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, formatDate, getReferenceString } from '@medplum/core';
+import { createReference, formatDateTime, getReferenceString } from '@medplum/core';
 import type {
   Bot,
   Coverage,
@@ -237,8 +237,11 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         <DetailField label="Type" value={getCoverageType(coverage)} />
         <DetailField label="Patient ID" value={coverage.subscriberId ?? coverage.identifier?.[0]?.value ?? '—'} />
         <DetailField label="Group Number" value={getGroupNumber(coverage)} />
-        <DetailField label="Effective Date" value={coverage.period?.start ? formatDate(coverage.period.start) : '—'} />
-        <DetailField label="End Date" value={coverage.period?.end ? formatDate(coverage.period.end) : '—'} />
+        <DetailField
+          label="Effective Date"
+          value={coverage.period?.start ? formatDateTime(coverage.period.start) : '—'}
+        />
+        <DetailField label="End Date" value={coverage.period?.end ? formatDateTime(coverage.period.end) : '—'} />
       </SimpleGrid>
 
       <Divider />
@@ -250,7 +253,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
             {benefitsLoading && <Loader size="xs" />}
             {latestRequest && (
               <Text size="xs" c="dimmed">
-                Last checked: {formatDate(latestRequest.created ?? latestRequest.meta?.lastUpdated ?? '')}
+                Last checked: {formatDateTime(latestRequest.created ?? latestRequest.meta?.lastUpdated ?? '')}
               </Text>
             )}
             {benefitsOpened ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
@@ -266,7 +269,13 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
                   : 'No eligibility check found. Contact support to enable eligibility checks.'}
               </Text>
             )}
+            {!benefitsLoading && eligibilityResponse?.outcome === 'error' && (
+              <Text size="sm" c="red">
+                {eligibilityResponse.disposition ?? 'Eligibility check returned an error.'}
+              </Text>
+            )}
             {!benefitsLoading &&
+              eligibilityResponse?.outcome !== 'error' &&
               eligibilityResponse?.insurance?.map((ins, i) => {
                 const items = ins.item;
                 if (!items || items.length === 0) {

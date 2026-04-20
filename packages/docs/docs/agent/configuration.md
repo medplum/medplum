@@ -148,7 +148,7 @@ The **channel logger** records activity specific to individual communication cha
 
 The separation between main and channel loggers serves an important security purpose: it enables **remote log fetching without unnecessarily exposing PHI**.
 
-When troubleshooting connection issues or agent configuration problems, administrators can fetch main logger entries to diagnose the issue via the [Fetch Logs FHIR operation](./fetch-logs.md), without accessing any patient data.
+When troubleshooting connection issues or agent configuration problems, administrators can fetch main logger entries to diagnose the issue via the [Fetch Logs FHIR operation](./fetch-logs), without accessing any patient data.
 
 Channel logs, which may contain PHI, can be kept with stricter access controls and only accessed when specifically needed for message-level debugging.
 

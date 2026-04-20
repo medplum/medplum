@@ -138,7 +138,7 @@ This field has some overlap with the request resource, but there are also signif
 | `provider`                | A reference to the [`Practitioner`](/docs/api/fhir/resources/practitioner) who is responsible for providing the service. |                                                                                                                                      | Practitioner/dr-alice-smith              |
 | `category`                | The general type of the service or product being checked for eligibility.                                                |                                                                                                                                      | Vision Coverage                          |
 
-:::note Coordination of Benefits
+:::note[Coordination of Benefits]
 FHIR makes the `insurance` field on both the request and response an array, allowing for coordination of benefits across multiple insurance policies.
 
 When sending a request, if there are multiple insurances, the `CoverageEligibilityRequest.insurance.focal` field should be set to `true` on the specific coverage being checked.

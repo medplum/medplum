@@ -92,6 +92,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
 
   useEffect(() => {
     debouncedSearch(searchQuery);
+    return debouncedSearch.cancel;
   }, [searchQuery, debouncedSearch]);
 
   const isSelected = (participant: Reference<Patient | Practitioner>): boolean => {

@@ -138,7 +138,7 @@ export class Hl7Connection extends Hl7Base {
       if (!origMsgCtrlId) {
         return;
       }
-      const queueItem = this.pendingMessages.get(origMsgCtrlId);
+      const queueItem = this.getPendingMessage(origMsgCtrlId);
       if (!queueItem) {
         this.dispatchEvent(
           new Hl7WarningEvent(
@@ -176,8 +176,11 @@ export class Hl7Connection extends Hl7Base {
       }
 
       // Resolve the promise if there is one pending for this message and we didn't exit already because the ACK type matches
+      if (queueItem.timer) {
+        clearTimeout(queueItem.timer);
+      }
       queueItem.resolve(event.message);
-      this.pendingMessages.delete(origMsgCtrlId);
+      this.deletePendingMessage(origMsgCtrlId);
     });
   }
 
@@ -295,7 +298,7 @@ export class Hl7Connection extends Hl7Base {
 
       if (options?.timeoutMs) {
         timer = setTimeout(() => {
-          this.pendingMessages.delete(msgCtrlId);
+          this.deletePendingMessage(msgCtrlId);
           reject(
             new OperationOutcomeError({
               resourceType: 'OperationOutcome',
@@ -314,7 +317,7 @@ export class Hl7Connection extends Hl7Base {
         }, options.timeoutMs);
       }
 
-      this.pendingMessages.set(msgCtrlId, {
+      this.setPendingMessage(msgCtrlId, {
         message: msg,
         resolve,
         reject,
@@ -351,8 +354,11 @@ export class Hl7Connection extends Hl7Base {
   /**
    * Rejects all pending sendAndWait promises and clears the pending messages map.
    * Safe to call multiple times — subsequent calls are no-ops once the map is empty.
+   *
+   * Subclasses may override this to change the behavior when a connection closes
+   * (e.g. to keep promises alive in an external tracker).
    */
-  private drainPendingMessages(): void {
+  protected drainPendingMessages(): void {
     if (!this.pendingMessages.size) {
       return;
     }
@@ -430,5 +436,34 @@ export class Hl7Connection extends Hl7Base {
 
   getPendingMessageCount(): number {
     return this.pendingMessages.size;
+  }
+
+  /**
+   * Looks up a pending message by its message control ID.
+   * Subclasses may override this to use an external message store (e.g. a shared tracker).
+   * @param msgCtrlId - The message control ID (MSH.10) to look up.
+   * @returns The pending queue item, or undefined if not found.
+   */
+  protected getPendingMessage(msgCtrlId: string): Hl7MessageQueueItem | undefined {
+    return this.pendingMessages.get(msgCtrlId);
+  }
+
+  /**
+   * Stores a pending message by its message control ID.
+   * Subclasses may override this to use an external message store (e.g. a shared tracker).
+   * @param msgCtrlId - The message control ID (MSH.10).
+   * @param item - The queue item containing the message and its resolve/reject callbacks.
+   */
+  protected setPendingMessage(msgCtrlId: string, item: Hl7MessageQueueItem): void {
+    this.pendingMessages.set(msgCtrlId, item);
+  }
+
+  /**
+   * Removes a pending message by its message control ID.
+   * Subclasses may override this to use an external message store (e.g. a shared tracker).
+   * @param msgCtrlId - The message control ID (MSH.10) to remove.
+   */
+  protected deletePendingMessage(msgCtrlId: string): void {
+    this.pendingMessages.delete(msgCtrlId);
   }
 }

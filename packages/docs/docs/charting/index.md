@@ -69,7 +69,7 @@ risk -->|subject| homer
 | [SNOMED](https://www.snomed.org/)                                           | Used in [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resources to track substance intolerances.                                                                                                     |
 | [CVX](https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx) | Used in [`Immunization`](/docs/api/fhir/resources/immunization) resources to track vaccine types.                                                                                                                          |
 
-## Encounter & Charting {#encounter-charting}
+## Encounter & Charting {/* #encounter-charting */}
 
 ### Capturing Notes
 

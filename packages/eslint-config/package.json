@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "5.1.7",
+  "version": "5.1.8",
   "description": "Shared ESLint configuration for Medplum projects",
   "keywords": [
     "eslint",
@@ -25,9 +25,9 @@
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-jsdoc": "62.9.0",
     "eslint-plugin-no-only-tests": "3.3.0",
-    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-hooks": "7.1.0",
     "eslint-plugin-react-refresh": "0.5.2",
-    "typescript-eslint": "8.58.0"
+    "typescript-eslint": "8.58.2"
   },
   "peerDependencies": {
     "eslint": "^9",

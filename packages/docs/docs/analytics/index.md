@@ -72,6 +72,8 @@ Related: [eCQM fact sheet 2022](https://www.cms.gov/files/document/2022-ecqm-rep
 
 Clinical Decision Support (CDS) systems encode clinical guidelines into rules-based suggestions to guide clinicians and standardize care. CDS rules can incorporate conditional logic based on patient demographic information and medical history to generate personalized clinical guidelines. CDS Hooks is an emerging standard, built on top of FHIR, that defines REST APIs for clients to request CDS care plans from hosted CDS services. CDS workflows are supported through the PlanDefinition resource (more in [Care Plans](/docs/careplans)). Each plan can then be instantiated as a CarePlan for a patient using the $apply operation. CDS systems are great for helping providers ensure consistent quality of care across individual physicians by providing standardized treatment recommendations and eliminating care gaps.
 
+For Medplum-specific endpoint contracts and implementation guidance, see [CDS Hooks](/docs/integration/cds-hooks).
+
 For simple CDS such as [social determinants of health risk-scoring](https://www.ajmc.com/view/social-determinants-of-health-score-does-it-help-identify-those-at-higher-cardiovascular-risk) or [eGFR](https://www.kidneyfund.org/all-about-kidneys/tests/blood-test-egfr) calculation [bots](/docs/bots) combined with [subscriptions](/docs/subscriptions) are a very fast and pragmatic choice.
 
 ## Machine Learning / Predictive Modeling

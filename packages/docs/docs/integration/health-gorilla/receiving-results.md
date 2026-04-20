@@ -444,7 +444,7 @@ Health Gorilla returns detailed information about the performing laboratory for 
 }
 ```
 
-## Resolving Orders with Results {#resolving-orders-with-results}
+## Resolving Orders with Results {/* #resolving-orders-with-results */}
 
 When a result is received, Medplum attempts to match it to an existing order (`ServiceRequest`).
 
