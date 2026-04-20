@@ -167,8 +167,9 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     }
   }
 
-  if (!membership?.access?.length && !membership.accessPolicy) {
-    // Preserve legacy behavior of null access policy
+  if (!membership?.access && !membership.accessPolicy) {
+    // Preserve legacy behavior of null access policy (access field absent / never set).
+    // An explicit `access: []` is intentional "no access" and must NOT trigger this wildcard.
     // TODO: This should be removed in future release when access policies are required
     resourcePolicies.push({ resourceType: '*' });
   }
@@ -220,15 +221,23 @@ async function buildAccessPolicyResources(
     }
   }
 
-  const params = access.parameter || [];
-  params.push({ name: 'profile', valueReference: profile });
+  // Copy so we don't mutate the stored access.parameter array.
+  const params = [...(access.parameter ?? [])];
+  // S3: Guard 'profile' the same as 'patient' — if the caller already supplied a 'profile'
+  // parameter, honour it; otherwise inject the real profile reference.
+  if (!params.some((p) => p.name === 'profile')) {
+    params.push({ name: 'profile', valueReference: profile });
+  }
   if (!params.some((p) => p.name === 'patient')) {
     params.push({ name: 'patient', valueReference: profile });
   }
   let json = JSON.stringify(original);
   for (const param of params) {
     if (param.valueString) {
-      json = json.replaceAll(`%${param.name}`, param.valueString);
+      // S2: JSON-escape valueString before substitution so that special characters (", \, etc.)
+      // cannot break the JSON structure of the resolved access policy template.
+      const escaped = JSON.stringify(param.valueString).slice(1, -1);
+      json = json.replaceAll(`%${param.name}`, escaped);
     } else if (param.valueReference) {
       json = json.replaceAll(`%${param.name}.id`, resolveId(param.valueReference) as string);
       json = json.replaceAll(`%${param.name}`, param.valueReference.reference as string);

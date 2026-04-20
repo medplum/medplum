@@ -9,7 +9,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { createProfile, createProjectMembership, projectHasDefaultPatientAccess } from './utils';
+import { createProfile, createProjectMembership, getDefaultMembershipAccessFields, projectHasDefaultPatientAccess } from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
@@ -71,6 +71,31 @@ async function createPatient(
 
   if (!projectHasDefaultPatientAccess(project)) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
+  }
+
+  // S4: Verify that the default access policy references actually exist before creating the
+  // membership. Without this, a dangling reference produces a broken membership: the patient
+  // can complete registration but will receive a cryptic error at login time.
+  const defaults = getDefaultMembershipAccessFields(project, 'Patient');
+  if (defaults.accessPolicy) {
+    try {
+      await systemRepo.readReference(defaults.accessPolicy);
+    } catch {
+      throw new OperationOutcomeError(
+        badRequest('Default access policy not found. Please contact your project administrator.')
+      );
+    }
+  }
+  for (const entry of defaults.access ?? []) {
+    if (entry.policy) {
+      try {
+        await systemRepo.readReference(entry.policy);
+      } catch {
+        throw new OperationOutcomeError(
+          badRequest('Default access policy not found. Please contact your project administrator.')
+        );
+      }
+    }
   }
 
   const profile = (await createProfile(

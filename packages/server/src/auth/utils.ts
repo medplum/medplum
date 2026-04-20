@@ -6,6 +6,7 @@ import type {
   ContactPoint,
   Login,
   OperationOutcome,
+  ParameterizedAccess,
   Project,
   ProjectMembership,
   Reference,
@@ -96,8 +97,16 @@ export async function createProjectMembership(
   const skipDefaults = options?.skipDefaultAccessPolicy || membershipDetailsHaveExplicitAccess(cleanDetails);
   const defaults = skipDefaults ? {} : getDefaultMembershipAccessFields(project, profile.resourceType);
 
+  // S1: When the caller explicitly opts out of defaults but supplies no access of their own, write
+  // access: [] so the legacy full-access wildcard in buildAccessPolicy does not fire at login time.
+  const explicitNoAccess: Partial<ProjectMembership> =
+    options?.skipDefaultAccessPolicy && !membershipDetailsHaveExplicitAccess(cleanDetails)
+      ? { access: [] as ParameterizedAccess[] }
+      : {};
+
   const result = await systemRepo.createResource<ProjectMembership>({
     ...defaults,
+    ...explicitNoAccess,
     ...cleanDetails,
     resourceType: 'ProjectMembership',
     project: createReference(project),
