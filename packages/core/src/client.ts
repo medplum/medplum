@@ -3945,7 +3945,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       (typeof data.getReader === 'function' || (typeof data.pipe === 'function' && typeof data.on === 'function'))
     ) {
       options.body = data;
-      options.duplex = 'half'; // Required for ReadableStream in Node 18+
+      options.duplex = 'half'; // Required for ReadableStream in Node 18+ and in most browsers
     } else if (data) {
       options.body = JSON.stringify(data);
     }
