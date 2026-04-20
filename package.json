@@ -63,7 +63,7 @@
     "jest-util": "30.3.0",
     "jest-worker": "30.3.0",
     "jsdom": "29.0.2",
-    "npm-check-updates": "20.0.2",
+    "npm-check-updates": "21.0.2",
     "nyc": "18.0.0",
     "prettier": "3.8.3",
     "prettier-plugin-organize-imports": "4.3.0",
