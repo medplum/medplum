@@ -31,17 +31,30 @@ export async function main(args: string[]): Promise<void> {
     .option('--end-window <end>', 'End window timestamp (ISO 8601)')
     .action(async (options) => {
       let { databaseUrl } = options;
-      const { dbHost, dbPort, dbName, dbUsername, dbPassword, s3Bucket, s3Region, awsS3TableArn, startWindow, endWindow } = options;
-      
+      const {
+        dbHost,
+        dbPort,
+        dbName,
+        dbUsername,
+        dbPassword,
+        s3Bucket,
+        s3Region,
+        awsS3TableArn,
+        startWindow,
+        endWindow,
+      } = options;
+
       if (!databaseUrl) {
         if (dbHost && dbName && dbUsername && dbPassword) {
           databaseUrl = `postgresql://${encodeURIComponent(dbUsername)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}`;
         } else {
-          console.error('Missing required database configuration. Provide either --database-url OR all of --db-host, --db-name, --db-username, --db-password');
+          console.error(
+            'Missing required database configuration. Provide either --database-url OR all of --db-host, --db-name, --db-username, --db-password'
+          );
           process.exit(1);
         }
       }
-      
+
       if (!s3Bucket && !awsS3TableArn) {
         console.error('Missing required option: --s3-bucket or --aws-s3-table-arn');
         process.exit(1);

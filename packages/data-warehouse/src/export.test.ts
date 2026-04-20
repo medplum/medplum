@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import duckdb from 'duckdb';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { exportData } from './export.js';
 
 describe('Data Warehouse Export', () => {
@@ -16,10 +16,10 @@ describe('Data Warehouse Export', () => {
   beforeAll(async () => {
     // Spin up Postgres
     pgContainer = await new PostgreSqlContainer('postgres:16-alpine').start();
-    
+
     // Connect and create table + insert data
     databaseUrl = pgContainer.getConnectionUri();
-    
+
     const db = new duckdb.Database(':memory:');
     const execAsync = (query: string): Promise<void> => {
       return new Promise((resolve, reject) => {
@@ -29,7 +29,7 @@ describe('Data Warehouse Export', () => {
 
     await execAsync(`INSTALL postgres; LOAD postgres;`);
     await execAsync(`ATTACH '${databaseUrl}' AS pg_db (TYPE postgres);`);
-    
+
     // Create AuditEvent table and insert sample data
     await execAsync(`
       CREATE TABLE pg_db."AuditEvent" (
@@ -45,7 +45,7 @@ describe('Data Warehouse Export', () => {
         ('00000000-0000-0000-0000-000000000002', '{"event": 2}', '2026-04-11 10:15:00+00'),
         ('00000000-0000-0000-0000-000000000003', '{"event": 3}', '2026-04-11 10:30:00+00');
     `);
-    
+
     db.close();
 
     // Create temp dir for mock S3 Iceberg catalog
@@ -76,11 +76,11 @@ describe('Data Warehouse Export', () => {
         db.all(query, (err, res) => (err ? reject(err) : resolve(res)));
       });
     };
-    
+
     const res1 = await allAsync(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY "lastUpdated";
     `);
-    
+
     expect(res1.length).toBe(2);
     expect(res1[0].id).toBe('00000000-0000-0000-0000-000000000001');
 

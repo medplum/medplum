@@ -2,15 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildExportQueries } from './export.js';
 
 vi.mock('duckdb', () => ({
   Database: class {
-    exec(query: string, cb: any) { cb(null); }
-    all(query: string, cb: any) { cb(null, []); }
+    exec(query: string, cb: any) {
+      cb(null);
+    }
+    all(query: string, cb: any) {
+      cb(null, []);
+    }
     close() {}
-  }
+  },
 }));
 
 describe('Data Warehouse Export - Unit Tests', () => {
@@ -23,10 +27,10 @@ describe('Data Warehouse Export - Unit Tests', () => {
       endWindow: '2026-01-02T00:00:00Z',
     });
 
-    expect(queries).toContain("INSTALL postgres;");
-    expect(queries).toContain("LOAD postgres;");
-    expect(queries).toContain("INSTALL httpfs;");
-    expect(queries).toContain("LOAD httpfs;");
+    expect(queries).toContain('INSTALL postgres;');
+    expect(queries).toContain('LOAD postgres;');
+    expect(queries).toContain('INSTALL httpfs;');
+    expect(queries).toContain('LOAD httpfs;');
 
     // S3 secret should be created
     expect(queries.find((q: string) => q.includes('CREATE SECRET') && q.includes("REGION 'us-west-2'"))).toBeDefined();
@@ -35,7 +39,9 @@ describe('Data Warehouse Export - Unit Tests', () => {
     expect(queries).toContain("ATTACH 'postgresql://user:pass@localhost/db' AS pg_db (TYPE postgres);");
 
     // Parquet output
-    expect(queries).toContain("COPY (SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO 's3://my-bucket/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);");
+    expect(queries).toContain(
+      "COPY (SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO 's3://my-bucket/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);"
+    );
   });
 
   it('should build correct SQL queries for AWS S3 Tables managed Iceberg', () => {
@@ -45,17 +51,17 @@ describe('Data Warehouse Export - Unit Tests', () => {
       s3Region: 'us-west-2',
       startWindow: '2026-01-01T00:00:00Z',
       endWindow: '2026-01-02T00:00:00Z',
-      awsS3TableArn: 'arn:aws:s3tables:us-west-2:123456789012:bucket/my-s3-tables-bucket'
+      awsS3TableArn: 'arn:aws:s3tables:us-west-2:123456789012:bucket/my-s3-tables-bucket',
     });
 
-    expect(queries).toContain("INSTALL aws;");
-    expect(queries).toContain("LOAD aws;");
-    expect(queries).toContain("INSTALL postgres;");
-    expect(queries).toContain("LOAD postgres;");
-    expect(queries).toContain("INSTALL httpfs;");
-    expect(queries).toContain("LOAD httpfs;");
-    expect(queries).toContain("INSTALL iceberg;");
-    expect(queries).toContain("LOAD iceberg;");
+    expect(queries).toContain('INSTALL aws;');
+    expect(queries).toContain('LOAD aws;');
+    expect(queries).toContain('INSTALL postgres;');
+    expect(queries).toContain('LOAD postgres;');
+    expect(queries).toContain('INSTALL httpfs;');
+    expect(queries).toContain('LOAD httpfs;');
+    expect(queries).toContain('INSTALL iceberg;');
+    expect(queries).toContain('LOAD iceberg;');
 
     // S3 secret should be created
     expect(queries.find((q: string) => q.includes('CREATE SECRET') && q.includes("REGION 'us-west-2'"))).toBeDefined();
@@ -64,19 +70,27 @@ describe('Data Warehouse Export - Unit Tests', () => {
     expect(queries).toContain("ATTACH 'postgresql://user:pass@localhost/db' AS pg_db (TYPE postgres);");
 
     // S3 Tables attach
-    expect(queries).toContain("ATTACH 'arn:aws:s3tables:us-west-2:123456789012:bucket/my-s3-tables-bucket' AS s3_tables_db ( TYPE iceberg, ENDPOINT_TYPE s3_tables );");
+    expect(queries).toContain(
+      "ATTACH 'arn:aws:s3tables:us-west-2:123456789012:bucket/my-s3-tables-bucket' AS s3_tables_db ( TYPE iceberg, ENDPOINT_TYPE s3_tables );"
+    );
 
     // Schema creation
-    expect(queries).toContain("CREATE SCHEMA IF NOT EXISTS s3_tables_db.default;");
+    expect(queries).toContain('CREATE SCHEMA IF NOT EXISTS s3_tables_db.default;');
 
     // Table creation
-    expect(queries).toContain("CREATE TABLE IF NOT EXISTS s3_tables_db.default.audit_events AS SELECT * FROM pg_db.\"AuditEvent\" LIMIT 0;");
+    expect(queries).toContain(
+      'CREATE TABLE IF NOT EXISTS s3_tables_db.default.audit_events AS SELECT * FROM pg_db."AuditEvent" LIMIT 0;'
+    );
 
     // Idempotent Delete
-    expect(queries).toContain("DELETE FROM s3_tables_db.default.audit_events WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z';");
+    expect(queries).toContain(
+      "DELETE FROM s3_tables_db.default.audit_events WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z';"
+    );
 
     // Incremental Insert
-    expect(queries).toContain("INSERT INTO s3_tables_db.default.audit_events SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z';");
+    expect(queries).toContain(
+      "INSERT INTO s3_tables_db.default.audit_events SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z';"
+    );
   });
 
   it('should build correct SQL queries for test environment (mocking S3)', () => {
@@ -93,6 +107,8 @@ describe('Data Warehouse Export - Unit Tests', () => {
     expect(queries.find((q: string) => q.includes('CREATE SECRET'))).toBeUndefined();
 
     // Parquet output using local path
-    expect(queries).toContain("COPY (SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO '/tmp/mock-s3-path/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);");
+    expect(queries).toContain(
+      "COPY (SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO '/tmp/mock-s3-path/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);"
+    );
   });
 });
