@@ -494,7 +494,7 @@
       "name": "email",
       "type": "token",
       "description": " A value in an email contact\r",
-      "expression": "Practitioner.telecom.where(system = 'email')"
+      "expression": "Practitioner.telecom.where((system = 'email'))"
     },
     {
       "name": "family",
@@ -518,7 +518,7 @@
       "name": "phone",
       "type": "token",
       "description": " A value in a phone contact\r",
-      "expression": "Practitioner.telecom.where(system = 'phone')"
+      "expression": "Practitioner.telecom.where((system = 'phone'))"
     },
     {
       "name": "phonetic",
@@ -557,10 +557,16 @@
       "expression": "Practitioner.name"
     },
     {
-      "name": "topic",
+      "name": "qualification-code",
       "type": "token",
       "description": "The type of qualification",
       "expression": "Practitioner.qualification.code"
+    },
+    {
+      "name": "davinci-pdex-where-valid",
+      "type": "token",
+      "description": "The jurisdiction(s) where the qualifiction is valid",
+      "expression": "Practitioner.qualification.extension.where((url = 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification')).extension.where((url = 'whereValid')).value.coding.code"
     }
   ]
 }
