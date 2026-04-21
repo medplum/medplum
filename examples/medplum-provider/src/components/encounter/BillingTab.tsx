@@ -144,7 +144,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
   useEffect(() => {
     medplum
-      .searchOne('Bot', { identifier: 'https://www.medplum.com/bots|submit-to-stedi' })
+      .searchOne('Bot', { identifier: 'https://www.medplum.com/bots|submit-claim-to-stedi' })
       .then((bot) => setStediBot(bot ?? null))
       .catch(() => setStediBot(null));
   }, [medplum]);
