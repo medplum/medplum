@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, normalizeErrorString } from '@medplum/core';
 import type { IncomingMessage } from 'node:http';
-import type { RawData, WebSocket as IncomingWebSocket } from 'ws';
+import type { WebSocket as IncomingWebSocket, RawData } from 'ws';
 import WebSocket from 'ws';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
@@ -22,16 +22,11 @@ type OpenAIRealtimeWebSocketFactory = (apiKey: string, intent: OpenAIRealtimeInt
 
 let openAIRealtimeWebSocketFactory: OpenAIRealtimeWebSocketFactory = defaultCreateOpenAIRealtimeWebSocket;
 
-export function setOpenAIRealtimeWebSocketFactoryForTest(
-  factory: OpenAIRealtimeWebSocketFactory | undefined
-): void {
+export function setOpenAIRealtimeWebSocketFactoryForTest(factory: OpenAIRealtimeWebSocketFactory | undefined): void {
   openAIRealtimeWebSocketFactory = factory ?? defaultCreateOpenAIRealtimeWebSocket;
 }
 
-export async function handleAiRealtimeConnection(
-  socket: IncomingWebSocket,
-  request: IncomingMessage
-): Promise<void> {
+export async function handleAiRealtimeConnection(socket: IncomingWebSocket, request: IncomingMessage): Promise<void> {
   const socketId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   let closed = false;
   let connected = false;
