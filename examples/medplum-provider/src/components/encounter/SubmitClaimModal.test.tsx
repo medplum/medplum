@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { createReference } from '@medplum/core';
 import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Condition, Coverage, Encounter, Patient } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -78,7 +78,6 @@ function setup(overrides: Partial<React.ComponentProps<typeof SubmitClaimModal>>
 }
 
 describe('SubmitClaimModal', () => {
-
   test('review information is displayed', () => {
     setup({ coverages: [mockInsurance1, mockSelfPay], selectedCoverage: mockInsurance1 });
     expect(screen.getByText('Blue Cross')).toBeInTheDocument();
@@ -179,10 +178,7 @@ describe('SubmitClaimModal', () => {
       await user.click(screen.getByText('Select all'));
       await user.click(screen.getByRole('button', { name: 'Submit claim' }));
 
-      expect(onSubmitClaim).toHaveBeenCalledWith([
-        createReference(mockInsurance1),
-        createReference(mockInsurance2),
-      ]);
+      expect(onSubmitClaim).toHaveBeenCalledWith([createReference(mockInsurance1), createReference(mockInsurance2)]);
     });
 
     test('"Deselect all" clears all selections and disables submit', async () => {

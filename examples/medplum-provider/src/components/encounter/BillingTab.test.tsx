@@ -1098,7 +1098,10 @@ describe('BillingTab', () => {
       const mockCondition = {
         resourceType: 'Condition' as const,
         id: 'condition-1',
-        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51', display: 'Headache' }], text: 'Headache' },
+        code: {
+          coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51', display: 'Headache' }],
+          text: 'Headache',
+        },
       };
       const updatedClaim: WithId<Claim> = {
         ...mockClaim,
@@ -1143,7 +1146,9 @@ describe('BillingTab', () => {
         expect(medplum.executeBot).toHaveBeenCalledWith(
           'bot-123',
           expect.objectContaining({
-            insurance: [expect.objectContaining({ coverage: expect.objectContaining({ reference: 'Coverage/coverage-123' }) })],
+            insurance: [
+              expect.objectContaining({ coverage: expect.objectContaining({ reference: 'Coverage/coverage-123' }) }),
+            ],
           }),
           'application/fhir+json'
         );
@@ -1159,7 +1164,9 @@ describe('BillingTab', () => {
         code: { text: 'Headache' },
       };
 
-      vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(mockBot as WithId<Bot>).mockResolvedValue(undefined);
+      vi.spyOn(medplum, 'searchOne')
+        .mockResolvedValueOnce(mockBot as WithId<Bot>)
+        .mockResolvedValue(undefined);
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({
