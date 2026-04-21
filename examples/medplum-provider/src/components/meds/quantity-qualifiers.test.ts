@@ -26,10 +26,7 @@ describe('quantity-qualifiers', () => {
 
   test('inferQuantityQualifierCode picks suppository for rectal sigs', () => {
     expect(
-      inferQuantityQualifierCode(
-        'Insert 1 suppository rectally daily',
-        'Anusol-HC 25 mg rectal suppository'
-      )
+      inferQuantityQualifierCode('Insert 1 suppository rectally daily', 'Anusol-HC 25 mg rectal suppository')
     ).toBe('C48486');
   });
 
@@ -78,15 +75,9 @@ describe('quantity-qualifiers', () => {
   });
 
   test('inferQuantityQualifierCodeWith uses caller-supplied matcher', () => {
-    const liveOnlyMatcher = buildQualifierMatcher([
-      { potencyUnit: 'C48486', name: 'Suppository' },
-    ]);
-    expect(
-      inferQuantityQualifierCodeWith(liveOnlyMatcher, 'Insert 1 suppository rectally daily')
-    ).toBe('C48486');
-    expect(
-      inferQuantityQualifierCodeWith(liveOnlyMatcher, 'Take 1 capsule by mouth twice daily')
-    ).toBeUndefined();
+    const liveOnlyMatcher = buildQualifierMatcher([{ potencyUnit: 'C48486', name: 'Suppository' }]);
+    expect(inferQuantityQualifierCodeWith(liveOnlyMatcher, 'Insert 1 suppository rectally daily')).toBe('C48486');
+    expect(inferQuantityQualifierCodeWith(liveOnlyMatcher, 'Take 1 capsule by mouth twice daily')).toBeUndefined();
   });
 
   test('STATIC_QUALIFIER_MATCHER backs the legacy inferQuantityQualifierCode helper', () => {

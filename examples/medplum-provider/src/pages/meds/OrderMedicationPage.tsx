@@ -19,9 +19,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import type { MedicationOrderDrugInput, MedplumClient, WithId } from '@medplum/core';
-import { getPreferredPharmaciesFromPatient, getReferenceString, NDC, RXNORM, createReference } from '@medplum/core';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import { AsyncAutocomplete, Panel, ResourceInput, useMedplum } from '@medplum/react';
+import { createReference, getPreferredPharmaciesFromPatient, getReferenceString, NDC, RXNORM } from '@medplum/core';
 import type {
   Condition,
   Coverage,
@@ -32,6 +30,8 @@ import type {
   Practitioner,
   PractitionerRole,
 } from '@medplum/fhirtypes';
+import type { AsyncAutocompleteOption } from '@medplum/react';
+import { AsyncAutocomplete, Panel, ResourceInput, useMedplum } from '@medplum/react';
 import {
   loadScriptSureQuantityQualifiers,
   SCRIPTSURE_GENERIC_NAME_EXTENSION,
@@ -43,14 +43,14 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
-import { showErrorNotification } from '../../utils/notifications';
+import type { QualifierMatcher } from '../../components/meds/quantity-qualifiers';
 import {
   buildQualifierMatcher,
   inferQuantityQualifierCodeWith,
   mergeQuantityQualifierCatalog,
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
-import type { QualifierMatcher } from '../../components/meds/quantity-qualifiers';
+import { showErrorNotification } from '../../utils/notifications';
 
 const DEFAULT_QUANTITY_QUALIFIER = 'C48542';
 
@@ -95,15 +95,13 @@ function normalizeNdcDigits(ndc: string | undefined): string | undefined {
  * @returns Dedupe key (NDC, RxNorm, routed id, or text/json fallback).
  */
 function medicationDedupeKey(m: Medication): string {
-  const ndc =
-    m.code?.coding?.find((c) => c.system === NDC)?.code ?? m.identifier?.find((i) => i.system === NDC)?.value;
+  const ndc = m.code?.coding?.find((c) => c.system === NDC)?.code ?? m.identifier?.find((i) => i.system === NDC)?.value;
   const nd = normalizeNdcDigits(ndc);
   if (nd) {
     return `ndc:${nd}`;
   }
   const rx =
-    m.code?.coding?.find((c) => c.system === RXNORM)?.code ??
-    m.identifier?.find((i) => i.system === RXNORM)?.value;
+    m.code?.coding?.find((c) => c.system === RXNORM)?.code ?? m.identifier?.find((i) => i.system === RXNORM)?.value;
   if (rx) {
     return `rx:${rx.trim()}`;
   }
@@ -323,11 +321,9 @@ function medicationToOrderDrugInput(
     quantityQualifier?: string;
   }
 ): MedicationOrderDrugInput {
-  const ndc =
-    m.code?.coding?.find((c) => c.system === NDC)?.code ?? m.identifier?.find((i) => i.system === NDC)?.value;
+  const ndc = m.code?.coding?.find((c) => c.system === NDC)?.code ?? m.identifier?.find((i) => i.system === NDC)?.value;
   const rxNorm =
-    m.code?.coding?.find((c) => c.system === RXNORM)?.code ??
-    m.identifier?.find((i) => i.system === RXNORM)?.value;
+    m.code?.coding?.find((c) => c.system === RXNORM)?.code ?? m.identifier?.find((i) => i.system === RXNORM)?.value;
   const routedMedId = getRoutedMedIdFromMedication(m);
   return {
     ...(ndc ? { ndc } : {}),
@@ -474,7 +470,14 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
   const [pharmacyOrg, setPharmacyOrg] = useState<Organization | undefined>();
 
   const [compoundLines, setCompoundLines] = useState<
-    { id: string; termMed?: Medication; formatMed?: Medication; quantity: number; refill: number; useSubstitution: boolean }[]
+    {
+      id: string;
+      termMed?: Medication;
+      formatMed?: Medication;
+      quantity: number;
+      refill: number;
+      useSubstitution: boolean;
+    }[]
   >([
     { id: 'a', quantity: 30, refill: 0, useSubstitution: true },
     { id: 'b', quantity: 30, refill: 0, useSubstitution: true },
@@ -498,9 +501,7 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
         if (cancelled) {
           return;
         }
-        const merged = mergeQuantityQualifierCatalog(
-          live.map((row) => ({ potencyUnit: row.code, name: row.label }))
-        );
+        const merged = mergeQuantityQualifierCatalog(live.map((row) => ({ potencyUnit: row.code, name: row.label })));
         setQualifierCatalog(merged);
       })
       .catch(() => {
@@ -535,10 +536,7 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
     if (!patientId) {
       return undefined;
     }
-    medplum
-      .readResource('Patient', patientId)
-      .then(setPatient)
-      .catch(showErrorNotification);
+    medplum.readResource('Patient', patientId).then(setPatient).catch(showErrorNotification);
     return undefined;
   }, [patientProp, patientId, medplum]);
 
@@ -682,9 +680,7 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
     const sigLine3 = selectedSigText.trim() || 'Take as directed';
     const q = sigOptions.length > 0 && sigOptions[sigIndex] ? sigOptions[sigIndex].quantity : quantity;
     const qtyUnit =
-      sigOptions.length > 0 && sigOptions[sigIndex]
-        ? sigOptions[sigIndex].quantityQualifier
-        : manualQtyQualifier;
+      sigOptions.length > 0 && sigOptions[sigIndex] ? sigOptions[sigIndex].quantityQualifier : manualQtyQualifier;
 
     setSubmitting(true);
     try {
@@ -897,7 +893,12 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
               )}
 
               {selectedFormat && sigOptions.length === 0 && (
-                <TextInput label="Sig (directions)" required value={freeSig} onChange={(e) => setFreeSig(e.currentTarget.value)} />
+                <TextInput
+                  label="Sig (directions)"
+                  required
+                  value={freeSig}
+                  onChange={(e) => setFreeSig(e.currentTarget.value)}
+                />
               )}
 
               <Group grow>
@@ -966,7 +967,11 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
                 minRows={2}
               />
 
-              <Checkbox label="Allow substitution" checked={useSubstitution} onChange={(e) => setUseSubstitution(e.currentTarget.checked)} />
+              <Checkbox
+                label="Allow substitution"
+                checked={useSubstitution}
+                onChange={(e) => setUseSubstitution(e.currentTarget.checked)}
+              />
 
               <OptionalContextFields
                 medplum={medplum}
@@ -1207,10 +1212,7 @@ function OptionalContextFields(props: {
   }, [patientCoverages, coverage, setCoverage]);
 
   const coverageOptions = useMemo(
-    () =>
-      patientCoverages
-        .filter((c) => c.id)
-        .map((c) => ({ value: getReferenceString(c), label: coverageLabel(c) })),
+    () => patientCoverages.filter((c) => c.id).map((c) => ({ value: getReferenceString(c), label: coverageLabel(c) })),
     [patientCoverages]
   );
 

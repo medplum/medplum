@@ -107,9 +107,7 @@ interface CompiledRule {
  *   (and/or the static fallback rows).
  * @returns A {@link QualifierMatcher} closed over the catalog.
  */
-export function buildQualifierMatcher(
-  catalog: readonly { potencyUnit: string; name: string }[]
-): QualifierMatcher {
+export function buildQualifierMatcher(catalog: readonly { potencyUnit: string; name: string }[]): QualifierMatcher {
   const ordered = [...catalog]
     .filter((row) => row.potencyUnit?.trim() && row.name?.trim())
     .sort((a, b) => b.name.length - a.name.length);
@@ -201,7 +199,5 @@ export function mergeQuantityQualifierCatalog(
       map.set(row.potencyUnit, row.name);
     }
   }
-  return [...map.entries()]
-    .map(([code, label]) => ({ code, label }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+  return [...map.entries()].map(([code, label]) => ({ code, label })).sort((a, b) => a.label.localeCompare(b.label));
 }

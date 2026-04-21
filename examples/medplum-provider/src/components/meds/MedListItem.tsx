@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Group, Stack, Text } from '@mantine/core';
 import type { EPrescribingExtensions } from '@medplum/core';
-import {
-  formatCodeableConcept,
-  formatDate,
-  formatHumanName,
-  getEPrescribingPendingOrderStatus,
-} from '@medplum/core';
+import { formatCodeableConcept, formatDate, formatHumanName, getEPrescribingPendingOrderStatus } from '@medplum/core';
 import type { HumanName, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
 import cx from 'clsx';

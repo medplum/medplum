@@ -81,6 +81,8 @@ describe('useEPrescribingOrder', () => {
       wrapper: wrapper(medplum),
     });
 
-    await expect(result.current.orderMedication({ patientId: 'p1' })).rejects.toThrow(INVALID_MEDICATION_ORDER_RESPONSE);
+    await expect(result.current.orderMedication({ patientId: 'p1' })).rejects.toThrow(
+      INVALID_MEDICATION_ORDER_RESPONSE
+    );
   });
 });

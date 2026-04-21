@@ -17,29 +17,29 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { MedicationRequest } from '@medplum/fhirtypes';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
   DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
 } from '@medplum/dosespot-react';
+import type { MedicationRequest } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { SCRIPTSURE_EPRESCRIBING_EXTENSIONS, useScriptSureOrderMedication } from '@medplum/scriptsure-react';
 import { IconPlus } from '@tabler/icons-react';
-import { showNotification } from '@mantine/notifications';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { MedicationRequestDetails } from '../../components/meds/MedicationRequestDetails';
 import type { MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
-import { MedicationRequestDetails } from '../../components/meds/MedicationRequestDetails';
 import { MedSelectEmpty } from '../../components/meds/MedSelectEmpty';
 import { PrescriptionIFrameModal } from '../../components/meds/PrescriptionIFrameModal';
 import { hasDoseSpotIdentifier } from '../../components/utils';
 import { usePatient } from '../../hooks/usePatient';
-import { OrderMedicationPage } from '../meds/OrderMedicationPage';
 import { showErrorNotification } from '../../utils/notifications';
+import { OrderMedicationPage } from '../meds/OrderMedicationPage';
 import classes from './MedsPage.module.css';
 
 export function MedicationsPage(): JSX.Element {
@@ -118,10 +118,7 @@ export function MedicationsPage(): JSX.Element {
       setCurrentOrder(fromList);
       return;
     }
-    medplum
-      .readResource('MedicationRequest', medicationRequestId)
-      .then(setCurrentOrder)
-      .catch(showErrorNotification);
+    medplum.readResource('MedicationRequest', medicationRequestId).then(setCurrentOrder).catch(showErrorNotification);
   }, [medicationRequestId, allOrders, medplum]);
 
   const handleDoseSpotSync = useCallback(async (): Promise<void> => {
@@ -213,7 +210,12 @@ export function MedicationsPage(): JSX.Element {
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md" wrap="wrap" gap="xs">
                 <Group gap="xs">
-                  <Tabs value={activeTab} onChange={(v) => setActiveTab((v as MedTab) || 'active')} variant="unstyled" className="pill-tabs">
+                  <Tabs
+                    value={activeTab}
+                    onChange={(v) => setActiveTab((v as MedTab) || 'active')}
+                    variant="unstyled"
+                    className="pill-tabs"
+                  >
                     <Tabs.List>
                       <Tabs.Tab value="active">Active</Tabs.Tab>
                       <Tabs.Tab value="draft">Draft</Tabs.Tab>
@@ -290,7 +292,13 @@ export function MedicationsPage(): JSX.Element {
         </Box>
       </Flex>
 
-      <Modal opened={newOrderModalOpened} onClose={() => setNewOrderModalOpened(false)} size="xl" centered title="Order medication">
+      <Modal
+        opened={newOrderModalOpened}
+        onClose={() => setNewOrderModalOpened(false)}
+        size="xl"
+        centered
+        title="Order medication"
+      >
         <OrderMedicationPage
           patient={patient}
           onOrderComplete={(r) => handleOrderMedicationComplete(r).catch(showErrorNotification)}

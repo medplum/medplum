@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Button, Divider, Group, Paper, ScrollArea, Stack, Text, Tooltip } from '@mantine/core';
+import type { EPrescribingExtensions } from '@medplum/core';
 import {
   formatCodeableConcept,
   formatDate,
@@ -9,15 +10,7 @@ import {
   getEPrescribingPendingOrderId,
   getEPrescribingPendingOrderStatus,
 } from '@medplum/core';
-import type { EPrescribingExtensions } from '@medplum/core';
-import type {
-  Dosage,
-  HumanName,
-  MedicationRequest,
-  Patient,
-  Practitioner,
-  Quantity,
-} from '@medplum/fhirtypes';
+import type { Dosage, HumanName, MedicationRequest, Patient, Practitioner, Quantity } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { IconExternalLink, IconMaximize } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -50,11 +43,7 @@ function formatQuantityWithQualifier(quantity: Quantity | undefined): string {
   const code = quantity.code?.trim();
   const qualifierKey = rawUnit || code || '';
   const nciLabel = qualifierKey ? getQuantityQualifierLabel(qualifierKey) : undefined;
-  const human =
-    nciLabel ||
-    rawUnit ||
-    (code && quantity.system ? `${quantity.system}|${code}` : code) ||
-    '';
+  const human = nciLabel || rawUnit || (code && quantity.system ? `${quantity.system}|${code}` : code) || '';
   if (human) {
     parts.push(human);
   }
@@ -304,14 +293,12 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
                     medicationRequest.dispenseRequest.expectedSupplyDuration.code === 'd'
                       ? 'days'
                       : (medicationRequest.dispenseRequest.expectedSupplyDuration.unit ??
-                          medicationRequest.dispenseRequest.expectedSupplyDuration.code ??
-                          '')}
+                        medicationRequest.dispenseRequest.expectedSupplyDuration.code ??
+                        '')}
                   </Text>
                 )}
                 {medicationRequest.dispenseRequest?.numberOfRepeatsAllowed !== undefined && (
-                  <Text size="sm">
-                    Refills allowed: {medicationRequest.dispenseRequest.numberOfRepeatsAllowed}
-                  </Text>
+                  <Text size="sm">Refills allowed: {medicationRequest.dispenseRequest.numberOfRepeatsAllowed}</Text>
                 )}
                 {medicationRequest.dispenseRequest?.performer && (
                   <Text size="sm">

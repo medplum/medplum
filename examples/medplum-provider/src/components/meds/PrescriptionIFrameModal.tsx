@@ -33,9 +33,7 @@ function medicationRequestLooksSynced(mr: MedicationRequest): boolean {
   if (mr.status && mr.status !== 'draft') {
     return true;
   }
-  return (
-    mr.identifier?.some((i) => i.system === SCRIPTSURE_PRESCRIPTION_ID_SYSTEM && Boolean(i.value)) ?? false
-  );
+  return mr.identifier?.some((i) => i.system === SCRIPTSURE_PRESCRIPTION_ID_SYSTEM && Boolean(i.value)) ?? false;
 }
 
 /**
