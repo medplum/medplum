@@ -115,18 +115,23 @@ If you are using an Organization from the Medplum Payer Directory, it will have 
 
 ## Executing the Eligibility Check
 
-Once you have created and stored your `CoverageEligibilityRequest`, invoke the `$check-eligibility` operation on it. The **Insurance Eligibility Bot** will execute the eligibility check by sending the request to the Stedi API and return a `CoverageEligibilityResponse`.
+The **Insurance Eligibility Bot** runs the Stedi (X12 270/271) eligibility check and returns a `CoverageEligibilityResponse`. Invoke the `$stedi-check-eligibility` [custom operation](/docs/api/fhir/operations/custom-operations) on `CoverageEligibilityRequest` in either of these ways:
+
+- **Instance level** — on a stored request: `POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility`
+- **Type level** — with a `CoverageEligibilityRequest` in the request body: `POST {base}/fhir/R4/CoverageEligibilityRequest/$stedi-check-eligibility`
+
+**Instance level** (after you have created and stored the `CoverageEligibilityRequest`):
 
 ```ts
 const response = await medplum.post(
-  medplum.fhirUrl('CoverageEligibilityRequest', coverageEligibilityRequest.id, '$check-eligibility')
+  medplum.fhirUrl('CoverageEligibilityRequest', coverageEligibilityRequest.id, '$stedi-check-eligibility')
 );
 ```
 
 Or via the FHIR REST API:
 
 ```http
-POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$check-eligibility
+POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
 ```
 
 ### Stedi sandbox testing
