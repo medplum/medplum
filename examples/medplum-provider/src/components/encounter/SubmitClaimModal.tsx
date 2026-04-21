@@ -99,8 +99,11 @@ interface ClaimPickerProps {
   insuranceCoverages: WithId<Coverage>[];
   selfPayValue: string;
   initialBillingType: BillingType;
+  showStediButton?: boolean;
+  stediSubmitting?: boolean;
   onClose: () => void;
   onConfirm: (coverageIds: string[]) => void;
+  onSubmitToStedi?: () => void;
 }
 
 const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
@@ -112,7 +115,11 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
     insuranceCoverages,
     selfPayValue,
     initialBillingType,
+    showStediButton,
+    stediSubmitting,
+    onClose,
     onConfirm,
+    onSubmitToStedi,
   } = props;
 
   const [billingType, setBillingType] = useState<BillingType>(initialBillingType);
@@ -230,14 +237,25 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
       </Grid>
 
       <Group justify="flex-end">
+        {showStediButton && (
+          <Button
+            size="md"
+            variant="outline"
+            rightSection={<IconArrowUpRight size={16} />}
+            disabled={submitting}
+            onClick={() => { onClose(); onSubmitToStedi?.(); }}
+          >
+            Submit to Stedi
+          </Button>
+        )}
         <Button
           size="md"
           rightSection={<IconArrowUpRight size={16} />}
           loading={submitting}
-          disabled={!canSubmit}
+          disabled={!canSubmit || !!stediSubmitting}
           onClick={handleConfirm}
         >
-          Submit claim
+          Submit to Candid
         </Button>
       </Group>
     </Stack>
@@ -254,8 +272,11 @@ export interface SubmitClaimModalProps {
   conditions: Condition[];
   chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
+  showStediButton?: boolean;
+  stediSubmitting?: boolean;
   onClose: () => void;
   onConfirm: (coverageIds: string[]) => void;
+  onSubmitToStedi?: () => void;
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
@@ -268,8 +289,11 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
     conditions,
     chargeItems,
     practitioner,
+    showStediButton,
+    stediSubmitting,
     onClose,
     onConfirm,
+    onSubmitToStedi,
   } = props;
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
@@ -292,8 +316,11 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
           insuranceCoverages={insuranceCoverages}
           selfPayValue={selfPayValue}
           initialBillingType={initialBillingType}
+          showStediButton={showStediButton}
+          stediSubmitting={stediSubmitting}
           onClose={onClose}
           onConfirm={onConfirm}
+          onSubmitToStedi={onSubmitToStedi}
         />
       )}
     </Modal>

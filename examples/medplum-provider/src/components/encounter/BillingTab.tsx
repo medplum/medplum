@@ -87,6 +87,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const [stediBot, setStediBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const [stediSubmitting, setStediSubmitting] = useState(false);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
@@ -135,6 +137,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .searchOne('Bot', { identifier: 'https://medplum.com/integrations/candid-health|get-encounter' })
       .then((bot) => setGetEncounterBot(bot ?? null))
       .catch(() => setGetEncounterBot(null));
+  }, [medplum]);
+
+  useEffect(() => {
+    medplum
+      .searchOne('Bot', { identifier: 'https://www.medplum.com/bots|submit-to-stedi' })
+      .then((bot) => setStediBot(bot ?? null))
+      .catch(() => setStediBot(null));
   }, [medplum]);
 
   const processCandidResponse = useCallback((result: CandidBotResponse): void => {
@@ -362,6 +371,32 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
   );
 
+  const submitToStedi = useCallback(async (): Promise<void> => {
+    if (!claim || !stediBot) {
+      return;
+    }
+    setStediSubmitting(true);
+    try {
+      const lastCoverage = coverages.length > 0 ? coverages[coverages.length - 1] : undefined;
+      const claimPayload = lastCoverage
+        ? {
+            ...claim,
+            insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(lastCoverage) } }],
+          }
+        : claim;
+      const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
+      showNotification({
+        title: 'Submitted to Stedi',
+        message: result?.message || 'Claim successfully submitted to Stedi',
+        color: 'green',
+      });
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setStediSubmitting(false);
+    }
+  }, [claim, coverages, medplum, stediBot]);
+
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
@@ -514,17 +549,20 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 conditions={conditions}
                 practitioner={practitioner}
                 chargeItems={chargeItems}
+                showStediButton={!!stediBot}
+                stediSubmitting={stediSubmitting}
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmSubmit}
+                onSubmitToStedi={submitToStedi}
               />
               <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
                 <Button
                   component="div"
                   variant="outline"
                   leftSection={<IconSend size={16} />}
-                  loading={submitting}
+                  loading={submitting || stediSubmitting}
                   onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
-                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || submitting || stediSubmitting}
                   data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
                 >
                   Submit Claim
