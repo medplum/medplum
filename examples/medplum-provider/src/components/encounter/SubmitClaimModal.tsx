@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatHumanName } from '@medplum/core';
-import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner } from '@medplum/fhirtypes';
+import { createReference, formatHumanName } from '@medplum/core';
+import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
+import { isSelfPayCoverage } from '../../utils/coverage';
 
 type BillingType = 'insurance' | 'self-pay';
 
@@ -98,10 +98,10 @@ interface ClaimReviewPanelProps {
   submitting: boolean;
   insuranceCoverages: WithId<Coverage>[];
   selectedCoverage: WithId<Coverage> | undefined;
-  selfPayValue: string;
+  selfPayCoverage: WithId<Coverage> | undefined;
   initialBillingType: BillingType;
   onClose: () => void;
-  onSubmitClaim: (coverageIds: string[]) => void;
+  onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
 }
 
 const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
@@ -112,7 +112,7 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
     submitting,
     insuranceCoverages,
     selectedCoverage,
-    selfPayValue,
+    selfPayCoverage,
     initialBillingType,
     onSubmitClaim,
   } = props;
@@ -150,9 +150,9 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
   };
   const handleConfirm = (): void => {
     if (billingType === 'self-pay') {
-      onSubmitClaim([selfPayValue]);
+      onSubmitClaim(selfPayCoverage ? [createReference(selfPayCoverage)] : []);
     } else {
-      onSubmitClaim(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map((c) => c.id));
+      onSubmitClaim(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map(createReference));
     }
   };
 
@@ -262,7 +262,7 @@ export interface SubmitClaimModalProps {
   chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   onClose: () => void;
-  onSubmitClaim: (coverageIds: string[]) => void;
+  onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
@@ -281,7 +281,6 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
   const insuranceCoverages = coverages.filter((c) => !isSelfPayCoverage(c));
-  const selfPayValue = selfPayCoverage?.id ?? SELF_PAY_VALUE;
   const initialBillingType: BillingType =
     insuranceCoverages.length > 0 && selectedCoverage && !isSelfPayCoverage(selectedCoverage)
       ? 'insurance'
@@ -298,7 +297,7 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
           submitting={submitting}
           insuranceCoverages={insuranceCoverages}
           selectedCoverage={selectedCoverage}
-          selfPayValue={selfPayValue}
+          selfPayCoverage={selfPayCoverage}
           initialBillingType={initialBillingType}
           onClose={onClose}
           onSubmitClaim={onSubmitClaim}

@@ -17,6 +17,7 @@ import type {
   Media,
   Patient,
   Practitioner,
+  Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
@@ -27,7 +28,7 @@ import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResour
 import { ChartNoteStatus } from '../../types/encounter';
 import { calculateTotalPrice } from '../../utils/chargeitems';
 import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
-import { createSelfPayCoverage, isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
+import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
@@ -418,52 +419,33 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   );
 
   const handleConfirmSubmit = useCallback(
-    async (coverageIds: string[]): Promise<void> => {
+    async (coverageRefs: Reference<Coverage>[]): Promise<void> => {
       setConfirmModalOpen(false);
-      if (!claim) {
+      if (!claim || coverageRefs.length === 0) {
         return;
       }
 
-      const resolved: WithId<Coverage>[] = [];
-      for (const id of coverageIds) {
-        if (id === SELF_PAY_VALUE) {
-          const existing = coverages.find(isSelfPayCoverage);
-          if (existing) {
-            resolved.push(existing);
-          } else {
-            const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
-            setCoverages((prev) => [...prev, created]);
-            resolved.push(created);
-          }
-        } else {
-          const found = coverages.find((c) => c.id === id);
-          if (found) {
-            resolved.push(found);
-          }
-        }
+      const firstCoverage = coverages.find((c) => getReferenceString(c) === coverageRefs[0].reference);
+      if (firstCoverage) {
+        setCoverage(firstCoverage);
       }
 
-      if (resolved.length === 0) {
-        return;
-      }
-
-      setCoverage(resolved[0]);
       debouncedUpdateClaim.cancel();
       const updatedClaim = await medplum.updateResource({
         ...claim,
-        insurance: resolved.map((cov, index) => ({
+        insurance: coverageRefs.map((ref, index) => ({
           sequence: index + 1,
           focal: index === 0,
-          coverage: { reference: getReferenceString(cov) },
+          coverage: ref,
         })),
       });
       setClaim(updatedClaim);
       await submitClaim(updatedClaim);
     },
-    [claim, coverages, debouncedUpdateClaim, medplum, patient, setClaim, submitClaim]
+    [claim, coverages, debouncedUpdateClaim, medplum, setClaim, submitClaim]
   );
 
-  const handleSubmitClaimClick = useCallback((): void => {
+  const handleSubmitClaimClick = useCallback(async (): Promise<void> => {
     if (!conditions.length) {
       showNotification({
         title: 'Missing Diagnosis',
@@ -472,8 +454,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       });
       return;
     }
+    if (!coverages.find(isSelfPayCoverage)) {
+      const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
+      setCoverages((prev) => [...prev, created]);
+    }
     setConfirmModalOpen(true);
-  }, [conditions]);
+  }, [conditions, coverages, medplum, patient]);
 
   const renderClaimCard = (): JSX.Element | null => {
     if (!claim) {
