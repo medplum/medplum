@@ -903,14 +903,13 @@ export class App {
         );
         child.on('message', (msg: { type: 'STARTED' } | { type: 'ERROR'; err: string }) => {
           clearTimeout(childTimeout);
-          assert(
-            ['STARTED', 'ERROR'].includes(msg.type),
-            `Received unexpected message type ${msg.type} when expected type STARTED`
-          );
+          if (!['STARTED', 'ERROR'].includes(msg.type)) {
+            reject(new Error(`Received unexpected message type ${msg.type}, expected 'STARTED' or 'ERROR'`));
+          }
           if (msg.type === 'STARTED') {
             resolve();
           } else if (msg.type === 'ERROR') {
-            reject(msg.err);
+            reject(new Error(msg.err));
           }
         });
 

@@ -212,6 +212,98 @@ describe('Upgrader', () => {
       console.log = originalConsoleLog;
     });
 
+    test('Download fails with 404 -- sends ERROR message and throws', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const manifest = {
+        tag_name: 'v4.2.4',
+        assets: [
+          {
+            name: 'medplum-agent-4.2.4-linux',
+            browser_download_url: 'https://example.com/linux',
+          },
+          {
+            name: 'medplum-agent-installer-4.2.4-windows.exe',
+            browser_download_url: 'https://example.com/win32',
+          },
+        ],
+      };
+
+      let count = 0;
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+        jest.fn(async () => {
+          switch (count) {
+            case 0:
+              count++;
+              return new Response(JSON.stringify(manifest), {
+                headers: { 'content-type': 'application/json' },
+                status: 200,
+              });
+            case 1:
+              count++;
+              return new Response(null, { status: 404, statusText: 'Not Found' });
+            default:
+              throw new Error('Too many calls');
+          }
+        })
+      );
+      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
+      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+
+      const receivedMsgPromise = new Promise<{ type: string; err?: string }>((resolve) => {
+        process.once('childSend', (msg) => {
+          resolve(msg);
+        });
+      });
+
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).rejects.toThrow(
+        'Failed to download installer with status code: 404'
+      );
+      await expect(receivedMsgPromise).resolves.toStrictEqual({
+        type: 'ERROR',
+        err: 'Failed to download installer with status code: 404',
+      });
+
+      // Installer should not have been run
+      expect(spawnSyncSpy).not.toHaveBeenCalled();
+
+      for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
+    test('Invalid version via IPC -- sends ERROR message and throws', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const fetchSpy = mockFetchForUpgrader();
+      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
+      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+
+      const receivedMsgPromise = new Promise<{ type: string; err?: string }>((resolve) => {
+        process.once('childSend', (msg) => {
+          resolve(msg);
+        });
+      });
+
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow(
+        'Invalid version specified'
+      );
+      await expect(receivedMsgPromise).resolves.toStrictEqual({
+        type: 'ERROR',
+        err: 'Invalid version specified',
+      });
+
+      for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
     test('Not in child process -- Missing process.send', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();

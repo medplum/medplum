@@ -58,7 +58,7 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (_platform) => {
   let platformSpy: jest.SpyInstance;
 
-  beforeAll(() => {
+  beforeEach(() => {
     // @ts-expect-error Platform type is not exported
     platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
   });

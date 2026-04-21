@@ -49,8 +49,9 @@ export async function upgraderMain(argv: string[]): Promise<void> {
       globalLogger.info('Release successfully downloaded');
     }
   } catch (err) {
-    // Let the parent process know quickly that something happened
-    process.send({ type: 'ERROR', err });
+    // Let the parent process know quickly that something happened.
+    // Normalize to a string since Node's default IPC serialization is JSON and Error instances flatten to {}.
+    process.send({ type: 'ERROR', err: normalizeErrorString(err) });
     // Rethrow error to shutdown process
     throw err;
   }
