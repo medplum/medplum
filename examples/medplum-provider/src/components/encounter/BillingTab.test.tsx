@@ -1107,7 +1107,7 @@ describe('BillingTab', () => {
 
       vi.spyOn(medplum, 'searchOne')
         .mockResolvedValueOnce(mockBot as WithId<Bot>)
-        .mockResolvedValue(null);
+        .mockResolvedValue(undefined);
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim as any);
@@ -1159,7 +1159,7 @@ describe('BillingTab', () => {
         code: { text: 'Headache' },
       };
 
-      vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(mockBot as WithId<Bot>).mockResolvedValue(null);
+      vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(mockBot as WithId<Bot>).mockResolvedValue(undefined);
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({
