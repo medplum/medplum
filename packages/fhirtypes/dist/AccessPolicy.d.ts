@@ -7,6 +7,7 @@
 
 import type { Expression } from './Expression.d.ts';
 import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
 import type { Reference } from './Reference.d.ts';
@@ -98,6 +99,13 @@ export interface AccessPolicy {
    * A name associated with the AccessPolicy.
    */
   name?: string;
+
+  /**
+   * Identifier(s) used to match this access policy to an external system
+   * such as a SCIM group. Set the value to the SCIM group externalId to
+   * enable automatic assignment.
+   */
+  identifier?: Identifier[];
 
   /**
    * Other access policies used to derive this access policy.
