@@ -226,6 +226,7 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
  * with inline base64-encoded data. This transforms `attachment.url` into `attachment.data`.
  * @param repo - The repository for reading Binary resources.
  * @param entries - The bundle entries to process.
+ * @param maxBytes - Max size for attachment to inline
  */
 async function inlineDocumentReferenceAttachments(
   repo: Repository,
@@ -281,6 +282,9 @@ async function inlineDocumentReferenceAttachments(
 /**
  * Reads a stream into a Buffer, aborting and returning null if the total byte count exceeds maxBytes.
  * The URL is left untouched for attachments that exceed the limit.
+ * @param stream - binary input stream
+ * @param maxBytes - Max size for attachment to inline
+ * @returns Buffered binary stream
  */
 async function readStreamToBufferWithLimit(stream: Readable, maxBytes: number): Promise<Buffer | null> {
   const chunks: Buffer[] = [];
