@@ -2,7 +2,7 @@
 
 ## POST `/auth/setpassword`
 
-:::note
+:::note[]
 To see an example of the Medplum app's set password page, check out the code in [`SetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/SetPasswordPage.tsx). Notice that the page 
 :::
 

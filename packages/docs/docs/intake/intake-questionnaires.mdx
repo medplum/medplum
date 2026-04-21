@@ -51,7 +51,7 @@ Intake forms collect multiple entries for several categories — a patient may h
 
 When a patient reports multiple allergies, the QuestionnaireResponse contains multiple instances of the `allergies` group — one per allergy — each with its own set of child answers.
 
-:::caution `repeats: true` on Groups
+:::caution[`repeats: true` on Groups]
 
 This is a common point of confusion. `repeats: true` on a `group` item means the **entire group** can appear multiple times in the response, not that individual items within the group repeat. Each repetition of the group represents one complete entry (one allergy, one medication, etc.).
 
@@ -204,7 +204,7 @@ await medplum.upsertResource(
 
 Intake forms typically capture several types of consent. Each is modeled as a separate [`Consent`](/docs/api/fhir/resources/consent) resource with a specific combination of `scope`, `category`, and `policyRule` that identifies the consent type.
 
-:::note
+:::note[]
 
 The `policyRule` values shown below are examples based on HL7 consent policy codes and custom organizational codes. Consent coding varies significantly across implementations — use the codes that match your organization's policies and compliance requirements.
 

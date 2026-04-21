@@ -198,7 +198,7 @@ When you invoke the `$apply` operation, Medplum processes the PlanDefinition and
 3. **Creates a RequestGroup** containing all the generated actions.
 4. **Creates a CarePlan** that wraps the RequestGroup.
 
-:::info Note on Medplum Support
+:::info[Note on Medplum Support]
 The FHIR standard allows for very complex workflow modeling, including hierarchical actions, conditional logic, and dynamic values. While you can author and store these complex `PlanDefinition` resources in Medplum today, the Medplum [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply) currently implements a focused subset of these capabilities (primarily generating sequential Tasks and resolving ActivityDefinitions). Full execution support for hierarchical and conditional logic is under active development.
 :::
 

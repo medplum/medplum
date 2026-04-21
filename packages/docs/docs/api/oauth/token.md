@@ -184,7 +184,7 @@ Content-Type: application/json
 }
 ```
 
-:::info Note
+:::info[Note]
 
 The token endpoint returns `refresh_token` only when the `grant_type` is `authorization_code`.
 

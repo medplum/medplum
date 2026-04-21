@@ -19,7 +19,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 | `contentAttachment` | Files (images, PDFs, documents)    | Lab report PDF, wound photo                         |
 | `contentReference`  | References to other FHIR resources | Link to a `DiagnosticReport` or `DocumentReference` |
 
-:::note
+:::note[]
 If you use `@medplum/react`, [`ThreadChat`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadChat/ThreadChat.tsx) uploads files with `medplum.createDocumentReference()` and adds `payload[].contentReference` pointing at that [`DocumentReference`](/docs/api/fhir/resources/documentreference). The same FHIR pattern works from any client: create a `DocumentReference`, then reference it on the payload so each file is a first-class, searchable document (query by patient, type, and other document fields). The sections below focus on `createAttachment()` + `contentAttachment`, which attaches a file on the message without creating a separate `DocumentReference` resource.
 :::
 
@@ -35,7 +35,7 @@ Use `medplum.createAttachment()` to upload the file and get an `Attachment`, the
   {BinaryExampleCode}
 </MedplumCodeBlock>
 
-:::note
+:::note[]
 If you already have a `Binary` resource (e.g. from `createBinary()`), use `url: getReferenceString(binary)` in the attachment. For new uploads in messages, we recommend `createAttachment()` so you get an `Attachment` object to pass directly to `contentAttachment`.
 :::
 
@@ -47,7 +47,7 @@ Create the attachment with `createAttachment()` as above, then include multiple 
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::caution
+:::caution[]
 `contentAttachment` stores metadata and a URL reference — not the file bytes themselves. The binary lives as a separate [`Binary`](/docs/api/fhir/resources/binary) resource. If you delete the Binary, the attachment URL will return a 404.
 :::
 

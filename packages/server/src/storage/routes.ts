@@ -9,8 +9,7 @@ import { createPrivateKey, createPublicKey, createVerify } from 'node:crypto';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
-import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();
@@ -20,41 +19,10 @@ const pump = promisify(pipeline);
 let cachedPublicKey: KeyObject | undefined = undefined;
 
 storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
-  const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
-  const signature = originalUrl.searchParams.get('Signature');
-  if (!signature) {
-    res.sendStatus(401);
+  const binary = await verifyAndLoadBinary(req, res, 'GET');
+  if (!binary) {
     return;
   }
-
-  const expires = req.query['Expires'];
-  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
-    res.status(410).send('URL has expired');
-    return;
-  }
-
-  originalUrl.searchParams.delete('Signature');
-  const urlToVerify = originalUrl.toString();
-
-  const verifier = createVerify('sha256');
-  verifier.update('GET ');
-  verifier.update(urlToVerify);
-  const publicKey = getPublicKey();
-  const isVerified = verifier.verify(publicKey, signature, 'base64');
-  if (!isVerified) {
-    // Try legacy format without HTTP method
-    const verifier = createVerify('sha256');
-    verifier.update(urlToVerify);
-    const legacyVerified = verifier.verify(publicKey, signature, 'base64');
-    if (!legacyVerified) {
-      res.status(401).send('Invalid signature');
-      return;
-    }
-  }
-
-  const id = singularize(req.params.id) ?? '';
-  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
-  const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {
     const stream = await getBinaryStorage().readBinary(binary);
@@ -66,35 +34,10 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
 });
 
 storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
-  const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
-  const signature = originalUrl.searchParams.get('Signature');
-  if (!signature) {
-    res.sendStatus(401);
+  const binary = await verifyAndLoadBinary(req, res, 'PUT');
+  if (!binary) {
     return;
   }
-
-  const expires = req.query['Expires'];
-  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
-    res.status(410).send('URL has expired');
-    return;
-  }
-
-  originalUrl.searchParams.delete('Signature');
-  const urlToVerify = originalUrl.toString();
-
-  const verifier = createVerify('sha256');
-  verifier.update('PUT ');
-  verifier.update(urlToVerify);
-  const publicKey = getPublicKey();
-  const isVerified = verifier.verify(publicKey, signature, 'base64');
-  if (!isVerified) {
-    res.status(401).send('Invalid signature');
-    return;
-  }
-
-  const id = singularize(req.params.id) ?? '';
-  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
-  const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   const contentType = req.headers['content-type'];
   if (contentType && contentType !== binary.contentType) {
@@ -109,6 +52,43 @@ storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
     res.sendStatus(400);
   }
 });
+
+async function verifyAndLoadBinary(req: Request, res: Response, method: 'GET' | 'PUT'): Promise<Binary | undefined> {
+  const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
+  const signature = originalUrl.searchParams.get('Signature');
+  if (!signature) {
+    res.sendStatus(401);
+    return undefined;
+  }
+
+  const expires = req.query['Expires'];
+  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
+    res.status(410).send('URL has expired');
+    return undefined;
+  }
+
+  originalUrl.searchParams.delete('Signature');
+  const urlToVerify = originalUrl.toString();
+  const publicKey = getPublicKey();
+
+  let isVerified = createVerify('sha256')
+    .update(method + ' ')
+    .update(urlToVerify)
+    .verify(publicKey, signature, 'base64');
+  if (!isVerified && method === 'GET') {
+    // Try legacy format without HTTP method
+    isVerified = createVerify('sha256').update(urlToVerify).verify(publicKey, signature, 'base64');
+  }
+  if (!isVerified) {
+    res.status(401).send('Invalid signature');
+    return undefined;
+  }
+
+  const id = singularize(req.params.id) ?? '';
+  const projectId = originalUrl.searchParams.get('Project');
+  const systemRepo = projectId ? await getProjectSystemRepo(projectId) : getGlobalSystemRepo();
+  return systemRepo.readResource<Binary>('Binary', id);
+}
 
 function getPublicKey(): KeyObject {
   cachedPublicKey ??= buildPublicKey();
