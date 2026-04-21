@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { Practitioner, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import assert from 'node:assert';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { getUserByEmail } from '../oauth/utils';
-import { withTestContext } from '../test.setup';
+import { drainShardSyncOutboxForTests, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('jose', () => {
@@ -34,11 +36,23 @@ const app = express();
 
 describe('Google Auth', () => {
   let systemRepo: SystemRepository;
+  let serverUser: WithId<User> & { email: string };
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     systemRepo = getShardSystemRepo(getConfig().defaultShardId);
+
+    const result = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Google Project',
+      email: 'google-' + randomUUID() + '@example.com',
+      password: 'password!@#',
+    });
+    systemRepo = getShardSystemRepo(result.shardId);
+    assert(result.user.email);
+    serverUser = result.user as WithId<User> & { email: string };
   });
 
   beforeEach(() => {
@@ -55,7 +69,7 @@ describe('Google Auth', () => {
       .type('json')
       .send({
         googleClientId: '',
-        googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
+        googleCredential: createCredential(serverUser.firstName, serverUser.lastName, serverUser.email),
       });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
@@ -68,7 +82,7 @@ describe('Google Auth', () => {
       .type('json')
       .send({
         googleClientId: '123',
-        googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
+        googleCredential: createCredential(serverUser.firstName, serverUser.lastName, serverUser.email),
       });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
@@ -101,9 +115,9 @@ describe('Google Auth', () => {
       .type('json')
       .send({
         googleClientId: getConfig().googleClientId,
-        googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
+        googleCredential: createCredential(serverUser.firstName, serverUser.lastName, serverUser.email),
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.code).toBeDefined();
   });
 
@@ -287,7 +301,7 @@ describe('Google Auth', () => {
 
     await withTestContext(async () => {
       // Register and create a project
-      const { project } = await registerNew({
+      const { project, shardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -306,6 +320,7 @@ describe('Google Auth', () => {
           },
         ],
       });
+      await drainShardSyncOutboxForTests(shardId);
     });
 
     // Try to login with the custom Google client
@@ -317,7 +332,7 @@ describe('Google Auth', () => {
         googleClientId: googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeDefined();
   });
 
@@ -329,7 +344,7 @@ describe('Google Auth', () => {
     await withTestContext(async () => {
       for (let i = 0; i < 2; i++) {
         // Register and create a project
-        const { project } = await registerNew({
+        const { project, shardId } = await registerNew({
           firstName: 'Google',
           lastName: 'Google',
           projectName: 'Require Google Auth',
@@ -348,6 +363,7 @@ describe('Google Auth', () => {
             },
           ],
         });
+        await drainShardSyncOutboxForTests(shardId);
       }
     });
 
@@ -374,7 +390,7 @@ describe('Google Auth', () => {
 
     // Register and create a project
     const project = await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project, shardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -393,6 +409,7 @@ describe('Google Auth', () => {
           },
         ],
       });
+      await drainShardSyncOutboxForTests(shardId);
       return project;
     });
 

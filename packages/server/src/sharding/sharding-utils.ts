@@ -42,6 +42,8 @@ export const SyncedResourceTypes = new Set([
   'UserSecurityRequest',
   // Read by ID in storage endpoints
   'Binary',
+  // 'UserConfiguration', // SHARDING need to be synced?
+  // 'Agent' // SHARDING need to be synced?
   // 'Bot',
 ]);
 

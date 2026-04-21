@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { ClientApplication, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword, createProfile, createProjectMembership } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
@@ -19,7 +20,7 @@ import type { ShardPool } from './sharding/sharding-types';
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   // Ensure global shard is run first
   const globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-  await seedDatabaseShard(globalPool, config);
+  const superAdminUser = await seedDatabaseShard(globalPool, config, undefined);
 
   // Seed all other shards
   if (config.shards) {
@@ -29,23 +30,38 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
         continue;
       }
       const pool = getDatabasePool(DatabaseMode.WRITER, shardName);
-      await seedDatabaseShard(pool, config);
+      await seedDatabaseShard(pool, config, superAdminUser);
     }
   }
 }
 
-export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerConfig): Promise<void> {
-  await withPoolClient(async (client) => {
+export async function seedDatabaseShard(
+  pool: ShardPool,
+  config: MedplumServerConfig,
+  superAdminUser: WithId<User>
+): Promise<undefined>;
+export async function seedDatabaseShard(
+  pool: ShardPool,
+  config: MedplumServerConfig,
+  superAdminUser: undefined
+): Promise<WithId<User>>;
+export async function seedDatabaseShard(
+  pool: ShardPool,
+  config: MedplumServerConfig,
+  superAdminUser: WithId<User> | undefined
+): Promise<WithId<User> | undefined> {
+  return withPoolClient(async (client): Promise<WithId<User> | undefined> => {
     const systemRepo = getShardSystemRepo(client.shardId, client, {
       skipBackgroundJobs: true,
     });
 
     if (await isSeeded(systemRepo)) {
       globalLogger.info('Already seeded', { shardId: pool.shardId });
-      return;
+      return undefined;
     }
 
-    await systemRepo.withTransaction(async () => {
+    return systemRepo.withTransaction(async () => {
+      let createdSuperAdminUser: WithId<User> | undefined;
       await createProjectResource(
         systemRepo,
         {
@@ -56,7 +72,12 @@ export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerCo
         { assignedId: true }
       );
 
-      await createSuperAdmin(systemRepo, config);
+      if (!superAdminUser) {
+        createdSuperAdminUser = await createSuperAdminUser(systemRepo, config);
+        superAdminUser = createdSuperAdminUser;
+      }
+
+      await createSuperAdminProject(systemRepo, config, superAdminUser);
 
       globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
       let startTime = Date.now();
@@ -78,23 +99,31 @@ export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerCo
         shardId: pool.shardId,
         durationMs: Date.now() - startTime,
       });
+
+      return createdSuperAdminUser;
     });
   }, pool);
 }
 
-async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<void> {
+async function createSuperAdminUser(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<WithId<User>> {
   const email = config.defaultSuperAdminEmail ?? 'admin@example.com';
   const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
   const [firstName, lastName] = ['Medplum', 'Admin'];
   const passwordHash = await bcryptHashPassword(password);
-  const superAdmin = await systemRepo.createResource<User>({
+  return systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
     lastName,
     email,
     passwordHash,
   });
+}
 
+async function createSuperAdminProject(
+  systemRepo: SystemRepository,
+  config: MedplumServerConfig,
+  superAdmin: WithId<User>
+): Promise<void> {
   const { project: superAdminProject } = await createProjectResource(systemRepo, {
     resourceType: 'Project',
     name: 'Super Admin',
@@ -103,7 +132,14 @@ async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumSer
     strictMode: true,
   });
 
-  const practitioner = await createProfile(systemRepo, superAdminProject, 'Practitioner', firstName, lastName, email);
+  const practitioner = await createProfile(
+    systemRepo,
+    superAdminProject,
+    'Practitioner',
+    superAdmin.firstName,
+    superAdmin.lastName,
+    superAdmin.email
+  );
   await createProjectMembership(systemRepo, superAdmin, superAdminProject, practitioner, { admin: true });
 
   if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
@@ -135,6 +171,6 @@ async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumSer
  * @param systemRepo - The system repository to use to check if the database is seeded.
  * @returns True if already seeded.
  */
-function isSeeded(systemRepo: SystemRepository): Promise<User | undefined> {
-  return systemRepo.searchOne({ resourceType: 'User' });
+function isSeeded(systemRepo: SystemRepository): Promise<WithId<Project> | undefined> {
+  return systemRepo.searchOne({ resourceType: 'Project' });
 }

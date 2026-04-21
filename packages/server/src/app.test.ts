@@ -13,7 +13,7 @@ import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
-import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
+import { createTestProject, deleteRedisKeys, drainShardSyncOutboxForTests, initTestAuth } from './test.setup';
 
 describe('App', () => {
   let stdOutSpy: jest.SpyInstance;
@@ -153,7 +153,7 @@ describe('App', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(patient);
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body).toMatchObject(patient);
 
       const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
@@ -218,6 +218,8 @@ describe('App', () => {
       // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.deleteResource(membership.resourceType, membership.id);
+
+      await drainShardSyncOutboxForTests(systemRepo.shardId);
 
       const res1 = await request(app)
         .get(`/fhir/R4/Patient`)

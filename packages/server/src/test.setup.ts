@@ -12,6 +12,7 @@ import type {
   Project,
   ProjectMembership,
   Resource,
+  User,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { generateKeyPairSync } from 'crypto';
@@ -28,6 +29,7 @@ import type internal from 'node:stream';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
+import { bcryptHashPassword } from './auth/utils';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
 import { createProjectResource } from './fhir/operations/projectinit';
@@ -224,6 +226,35 @@ export async function createTestClient(options?: TestProjectOptions): Promise<Wi
 
 export async function initTestAuth(options?: TestProjectOptions): Promise<string> {
   return (await createTestProject({ ...options, withAccessToken: true })).accessToken;
+}
+
+export interface ServerScopedUserOptions extends Partial<User> {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly password: string;
+}
+export async function addServerScopedUser(
+  userOptions: ServerScopedUserOptions
+): Promise<WithId<User> & { email: string }> {
+  if (userOptions?.project) {
+    throw new Error('User project must be undefined for server-scoped users');
+  }
+
+  if (!userOptions.email) {
+    throw new Error('Email is required for server-scoped users');
+  }
+
+  const { password, email, ...rest } = userOptions;
+  const passwordHash = await bcryptHashPassword(password);
+
+  return getGlobalSystemRepo().createResource<User>({
+    ...rest,
+    passwordHash,
+    email: email.toLowerCase(),
+    resourceType: 'User',
+    project: undefined,
+  }) as Promise<WithId<User> & { email: string }>;
 }
 
 export async function addTestUser(

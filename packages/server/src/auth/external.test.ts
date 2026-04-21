@@ -351,23 +351,18 @@ describe('External', () => {
   test('Subject auth success', async () => {
     const subjectAuthClient = await withTestContext(async () => {
       // Create a new client application with external subject auth
-      const client = await createClient(systemRepo, {
+      return createClient(systemRepo, {
         project,
         name: 'Subject Auth Client',
         redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...client,
         identityProvider: {
           ...identityProvider,
           useSubject: true,
         },
       });
-
-      return client;
     });
+
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
@@ -407,23 +402,17 @@ describe('External', () => {
   test('Block partial redirect URI match', async () => {
     const subjectAuthClient = await withTestContext(async () => {
       // Create a new client application with external subject auth
-      const client = await createClient(systemRepo, {
+      return createClient(systemRepo, {
         project,
         name: 'Subject Auth Client',
         redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...client,
         identityProvider: {
           ...identityProvider,
           useSubject: true,
         },
       });
-
-      return client;
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
@@ -451,23 +440,17 @@ describe('External', () => {
   test('Block redirect URI with different host', async () => {
     const subjectAuthClient = await withTestContext(async () => {
       // Create a new client application with external subject auth
-      const client = await createClient(systemRepo, {
+      return createClient(systemRepo, {
         project,
         name: 'Subject Auth Client',
         redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...client,
         identityProvider: {
           ...identityProvider,
           useSubject: true,
         },
       });
-
-      return client;
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
@@ -495,23 +478,17 @@ describe('External', () => {
   test('Missing subject', async () => {
     const subjectAuthClient = await withTestContext(async () => {
       // Create a new client application with external subject auth
-      const client = await createClient(systemRepo, {
+      return createClient(systemRepo, {
         project,
         name: 'Subject Auth Client',
         redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...client,
         identityProvider: {
           ...identityProvider,
           useSubject: true,
         },
       });
-
-      return client;
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
@@ -539,23 +516,17 @@ describe('External', () => {
   test('Client secret post', async () => {
     const clientSecretPostClient = await withTestContext(async () => {
       // Create a new client application with external subject auth
-      const client = await createClient(systemRepo, {
+      return createClient(systemRepo, {
         project,
         name: 'Client secret post Client',
         redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...client,
         identityProvider: {
           ...identityProvider,
           tokenAuthMethod: OAuthTokenAuthMethod.ClientSecretPost,
         },
       });
-
-      return client;
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
@@ -758,6 +729,7 @@ describe('External', () => {
       await systemRepo.updateResource<ProjectMembership>({ ...membership, externalId: undefined });
       return client2;
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     // Now try to login with the external ID
     const url = appendQueryParams('/auth/external', {

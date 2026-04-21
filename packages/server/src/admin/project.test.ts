@@ -12,7 +12,13 @@ import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  drainShardSyncOutboxForTests,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
 import { inviteUser } from './invite';
 
 jest.mock('hibp');
@@ -293,7 +299,7 @@ describe('Project Admin routes', () => {
 
   test('Delete membership', async () => {
     // Register and create a project
-    const { project, accessToken } = await withTestContext(() =>
+    const { project, accessToken, shardId } = await withTestContext(() =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -314,6 +320,7 @@ describe('Project Admin routes', () => {
         email: `bob${randomUUID()}@example.com`,
       });
     expect(res2.status).toBe(200);
+    await drainShardSyncOutboxForTests(shardId);
 
     // Get the project details
     // Make sure the new member is in the members list
