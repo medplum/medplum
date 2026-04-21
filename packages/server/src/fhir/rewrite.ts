@@ -186,7 +186,7 @@ class Rewriter {
  * @param url - The input URL.
  * @returns The normalized binary ID and version ID.
  */
-function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
+export function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
   const config = getConfig();
   let refStr: string | undefined;
 

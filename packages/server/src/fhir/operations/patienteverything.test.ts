@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, LOINC, createReference, getReferenceString } from '@medplum/core';
 import type {
+  Binary,
   Bundle,
   BundleEntry,
   Condition,
+  DocumentReference,
   Observation,
   Organization,
   Patient,
@@ -168,6 +170,108 @@ describe('Patient Everything Operation', () => {
       .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8.status).toBe(200);
+  });
+
+  test('Inline DocumentReference attachments', async () => {
+    // Create patient
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Bob'], family: 'Jones' }] } satisfies Patient);
+    expect(patientRes.status).toBe(201);
+    const patient = patientRes.body as Patient;
+
+    // Upload a binary
+    const binaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello attachment');
+    expect(binaryRes.status).toBe(201);
+    const binary = binaryRes.body as Binary;
+
+    // Create a DocumentReference pointing to the binary
+    const docRefRes = await request(app)
+      .post('/fhir/R4/DocumentReference')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        subject: createReference(patient),
+        content: [{ attachment: { url: binary.url, contentType: ContentType.TEXT } }],
+      } satisfies DocumentReference);
+    expect(docRefRes.status).toBe(201);
+
+    // Without _inlineAttachments, the URL should remain
+    const withoutInline = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(withoutInline.status).toBe(200);
+    const bundleWithout = withoutInline.body as Bundle;
+    const docRefWithout = bundleWithout.entry
+      ?.map((e) => e.resource)
+      .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
+    expect(docRefWithout?.content?.[0]?.attachment?.url).toBeDefined();
+    expect(docRefWithout?.content?.[0]?.attachment?.data).toBeUndefined();
+
+    // With _inlineAttachments=true, the attachment should be base64-encoded inline data
+    const withInline = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(withInline.status).toBe(200);
+    const bundleWith = withInline.body as Bundle;
+    const docRefWith = bundleWith.entry
+      ?.map((e) => e.resource)
+      .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
+    expect(docRefWith?.content?.[0]?.attachment?.url).toBeUndefined();
+    expect(docRefWith?.content?.[0]?.attachment?.data).toBeDefined();
+    expect(Buffer.from(docRefWith?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe(
+      'Hello attachment'
+    );
+  });
+
+  test('Skips inlining attachments that exceed _maxAttachmentSize', async () => {
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Max'], family: 'SizeTest' }] } satisfies Patient);
+    expect(patientRes.status).toBe(201);
+    const patient = patientRes.body as Patient;
+
+    const binaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('This content is too large to inline');
+    expect(binaryRes.status).toBe(201);
+    const binary = binaryRes.body as Binary;
+
+    const docRefRes = await request(app)
+      .post('/fhir/R4/DocumentReference')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        subject: createReference(patient),
+        content: [{ attachment: { url: binary.url, contentType: ContentType.TEXT } }],
+      } satisfies DocumentReference);
+    expect(docRefRes.status).toBe(201);
+
+    // With a 1-byte cap, the attachment should not be inlined — URL is preserved
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true&_maxAttachmentSize=1`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    const bundle = res.body as Bundle;
+    const docRef = bundle.entry
+      ?.map((e) => e.resource)
+      .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
+    expect(docRef?.content?.[0]?.attachment?.url).toBeDefined();
+    expect(docRef?.content?.[0]?.attachment?.data).toBeUndefined();
   });
 });
 
