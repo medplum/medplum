@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, SegmentedControl, Stack } from '@mantine/core';
+import { Checkbox, Group, NumberInput, SegmentedControl, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { ContentType, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
@@ -56,14 +56,22 @@ const formats: Record<string, FormatDefinition> = {
 export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const medplum = useMedplum();
   const { patient } = props;
+  const [format, setFormat] = useState('everything');
+  const [inlineAttachments, setInlineAttachments] = useState(false);
+  const [maxAttachmentSizeMb, setMaxAttachmentSizeMb] = useState<number | string>(10);
 
   const handleSubmit = useCallback(
     async (data: Record<string, string>) => {
       const patientId = resolveId(patient) as string;
-      const format = data.format;
       const { operation, type, contentType, extension } = formats[format];
       const url = medplum.fhirUrl('Patient', patientId, operation);
       const params = {} as Record<string, unknown>;
+
+      if (format === 'everything' && inlineAttachments) {
+        url.searchParams.set('_inlineAttachments', 'true');
+        const maxBytes = Math.round(Number(maxAttachmentSizeMb) * 1024 * 1024);
+        url.searchParams.set('_maxAttachmentSize', String(maxBytes));
+      }
 
       if (type) {
         params.type = type;
@@ -127,7 +135,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         });
       }
     },
-    [medplum, patient]
+    [medplum, patient, format, inlineAttachments, maxAttachmentSizeMb]
   );
 
   return (
@@ -136,6 +144,8 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         <FormSection title="Export Format" description="Required" withAsterisk>
           <SegmentedControl
             name="format"
+            value={format}
+            onChange={setFormat}
             data={[
               { label: 'FHIR Everything', value: 'everything' },
               { label: 'Patient Summary', value: 'summary' },
@@ -145,6 +155,31 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
             fullWidth
           />
         </FormSection>
+        {format === 'everything' && (
+          <FormSection
+            title="Inline Attachments"
+            description="Embed DocumentReference file attachments as base64-encoded data instead of storage URLs."
+          >
+            <Stack gap="xs">
+              <Checkbox
+                label="Inline attachments"
+                checked={inlineAttachments}
+                onChange={(e) => setInlineAttachments(e.currentTarget.checked)}
+              />
+              {inlineAttachments && (
+                <NumberInput
+                  label="Max attachment size (MB)"
+                  description="Attachments larger than this will keep their storage URL."
+                  value={maxAttachmentSizeMb}
+                  onChange={setMaxAttachmentSizeMb}
+                  min={1}
+                  step={1}
+                  w={240}
+                />
+              )}
+            </Stack>
+          </FormSection>
+        )}
         <FormSection title="Author" description="Optional author for composition. Default value is current user.">
           <ReferenceInput
             name="author"
