@@ -1,10 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isResourceWithId, protectedResourceTypes } from '@medplum/core';
-import type { Project, Reference } from '@medplum/fhirtypes';
+import {
+  badRequest,
+  getReferenceString,
+  isResourceWithId,
+  OperationOutcomeError,
+  protectedResourceTypes,
+  resolveId,
+} from '@medplum/core';
+import type { Project, Reference, Resource, User } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 
@@ -41,7 +49,8 @@ export function getActiveShardId(project: Project): string | undefined {
   return project.shard?.[0]?.id;
 }
 
-type ProjectOrReferenceOrId = Reference<Project> | WithId<Project> | string | undefined;
+type ResourceOrReferenceOrId<T extends Resource> = Reference<T> | WithId<T> | string | undefined;
+type ProjectOrReferenceOrId = ResourceOrReferenceOrId<Project>;
 
 export async function getProjectShardId(projectOrReferenceOrId: ProjectOrReferenceOrId): Promise<string> {
   if (!getConfig().enableSharding) {
@@ -117,4 +126,40 @@ export async function getProjectAndProjectShardId(
   const systemRepo = getShardSystemRepo(shardId);
   const project = await systemRepo.readResource<Project>('Project', globalProject.id);
   return { project, shardId };
+}
+
+export async function getUserAndSystemRepository(
+  userReference: Reference<User>,
+  shardId: string | undefined
+): Promise<{ globalUser: WithId<User>; user: WithId<User>; systemRepo: SystemRepository }> {
+  let systemRepo: SystemRepository;
+  let user: WithId<User>;
+
+  // SHARDING - User is synced to the global shard, so first read from there.
+  // If the user is project scoped, read from the project shard if necessary.
+  const globalSystemRepo = getGlobalSystemRepo();
+  const globalUser = await globalSystemRepo.readReference<User>(userReference);
+  if (globalUser.project && shardId !== GLOBAL_SHARD_ID) {
+    // project-scoped user
+    const globalUserProjectId = resolveId(globalUser.project);
+    if (!globalUserProjectId) {
+      throw new OperationOutcomeError(badRequest('Invalid project reference', 'user'));
+    }
+
+    if (shardId) {
+      // If provided, restrict to the specified shard
+      // SHARDING - consider getting rid of the shardId-based path for simplicity?
+      systemRepo = getShardSystemRepo(shardId);
+    } else {
+      // Otherwise, read from the project shard
+      systemRepo = await getProjectSystemRepo(globalUser.project);
+    }
+    user = await systemRepo.readReference<User>(userReference);
+  } else {
+    // server-scoped user
+    systemRepo = globalSystemRepo;
+    user = globalUser;
+  }
+
+  return { globalUser, user, systemRepo };
 }

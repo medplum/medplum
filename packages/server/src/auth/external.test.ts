@@ -12,8 +12,8 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { drainShardSyncOutboxForTests, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('node-fetch');
@@ -56,7 +56,7 @@ describe('External', () => {
       project = registerResult.project;
       defaultClient = registerResult.client;
 
-      systemRepo = await getProjectSystemRepo(project);
+      systemRepo = await getShardSystemRepo(registerResult.shardId);
 
       // Create a domain configuration with external identity provider
       await getGlobalSystemRepo().createResource<DomainConfiguration>({
@@ -76,11 +76,6 @@ describe('External', () => {
         project,
         name: 'External Auth Client',
         redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...externalAuthClient,
         identityProvider,
       });
 
@@ -92,6 +87,7 @@ describe('External', () => {
         firstName: 'External',
         lastName: 'User',
       });
+      await drainShardSyncOutboxForTests(systemRepo.shardId);
     });
   });
 

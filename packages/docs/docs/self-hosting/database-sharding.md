@@ -248,6 +248,12 @@ WebSocket subscription handlers maintain a per-shard Redis subscriber. When a We
 
 The seed process runs against all configured shards. The global shard is seeded first, then each additional shard receives the same base resources (FHIR R4 structure definitions, search parameters, value sets). Each shard's R4 project resource is tagged with `setProjectShard()` so it correctly references its own shard.
 
+### External Auth Providers
+
+`config.externalAuthProviders` is not supported when sharding is enabled for projects not on the global shard. The external-auth flow receives only a JWT (with `fhirUser` or `sub` claims) and has no project context, so it cannot determine which shard to query for the profile or project membership. External auth currently works only when the target project lives on the global shard.
+
+The planned fix is to add a project or shard ID to the `MedplumExternalAuthConfig` entry so the server can route lookups to the correct shard up front.
+
 ### Local Development
 
 A `docker-compose.sharding.yml` file and `postgres/init_dev.sql` script provision a local multi-shard environment with a single PostgreSQL instance hosting multiple databases (`medplum`, `medplum_shard_1`, `medplum_shard_2`) and a shared Redis instance.

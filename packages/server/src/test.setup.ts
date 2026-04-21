@@ -211,6 +211,9 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
  * @param shardId - The shard whose outbox should be drained.
  */
 export async function drainShardSyncOutboxForTests(shardId: string): Promise<void> {
+  if (shardId === GLOBAL_SHARD_ID) {
+    return;
+  }
   const job = { id: `drain-${shardId}`, data: { shardId } } as unknown as Job<ShardSyncJobData>;
   await execShardSyncJob(job);
 }

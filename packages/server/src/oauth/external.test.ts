@@ -12,13 +12,22 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject } from '../test.setup';
+import { GLOBAL_SHARD_ID, TEST_SHARD_ID } from '../fhir/sharding';
+import { createTestProject, drainShardSyncOutboxForTests } from '../test.setup';
 
 jest.mock('node-fetch');
 
 // RFC 7662 - External auth
 
-describe('External auth', () => {
+// SHARDING - External auth only works when the project lives on the global shard.
+// See `packages/docs/docs/self-hosting/database-sharding.md`. These tests pin that
+// behavior: fhirUser-based success paths return 200 on global and 401 on non-global.
+// Once MedplumExternalAuthConfig gains a project/shard hint, the non-global variant
+// should behave like global.
+describe.each([
+  { scenario: 'project on global shard', shardId: GLOBAL_SHARD_ID, fhirUserStatus: 200 },
+  { scenario: 'project on non-global shard', shardId: TEST_SHARD_ID, fhirUserStatus: 401 },
+])('External auth ($scenario)', ({ shardId, fhirUserStatus }) => {
   const app = express();
   const npi = randomUUID();
   const externalSub = randomUUID();
@@ -38,8 +47,7 @@ describe('External auth', () => {
     // Initialize the app with the test config
     await initApp(app, config);
 
-    // Create a test project
-    const { project } = await createTestProject();
+    const { project } = await createTestProject({ shardId });
     testProject = project;
 
     // Invite a normal Practitioner user to the project
@@ -65,6 +73,7 @@ describe('External auth', () => {
       lastName: 'User',
       externalId: externalSub,
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
   });
 
   afterAll(async () => {
@@ -169,13 +178,13 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(fhirUserStatus);
 
-    // Call it again to ensure caching works
+    // Call it again to ensure caching works (or fails again consistently)
     const res2 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res2.status).toBe(200);
+    expect(res2.status).toBe(fhirUserStatus);
   });
 
   test('Success by search string', async () => {
@@ -192,7 +201,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(fhirUserStatus);
   });
 
   test('Success by absolute URL', async () => {
@@ -209,7 +218,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(fhirUserStatus);
   });
 
   test('Success by ext.fhirUser', async () => {
@@ -226,7 +235,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(fhirUserStatus);
   });
 
   test('Success by sub claim', async () => {
@@ -325,7 +334,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(fhirUserStatus);
   });
 
   test('Sub claim with inactive membership', async () => {
@@ -341,6 +350,7 @@ describe('External auth', () => {
       ...inactiveMembership,
       active: false,
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
       status: 200,
@@ -362,7 +372,7 @@ describe('External auth', () => {
     const duplicateSub = randomUUID();
 
     // Create two memberships with the same externalId in different projects
-    const { project: project2 } = await createTestProject();
+    const { project: project2 } = await createTestProject({ shardId });
     await inviteUser({
       project: testProject,
       resourceType: 'Practitioner',
@@ -377,6 +387,7 @@ describe('External auth', () => {
       lastName: 'Two',
       externalId: duplicateSub,
     });
+    await drainShardSyncOutboxForTests(shardId);
 
     (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
       status: 200,

@@ -7,7 +7,7 @@ import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -73,8 +73,11 @@ describe('Seed', () => {
     console.log(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
     await withTestContext(async () => {
-      // Run post-deploy migrations synchronously
-      await synchronouslyRunAllPendingPostDeployMigrations(getGlobalSystemRepo());
+      // Run post-deploy migrations synchronously on every configured shard.
+      // In production BullMQ drives these per-shard; tests mock BullMQ so we run them inline.
+      for (const shardId of Object.keys(config.shards ?? {})) {
+        await synchronouslyRunAllPendingPostDeployMigrations(getShardSystemRepo(shardId));
+      }
     });
   });
 
@@ -87,23 +90,30 @@ describe('Seed', () => {
     withTestContext(async () => {
       // seedDatabase will have already been executed in beforeAll
 
-      // Make sure all database migrations have run
-      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+      // Every shard's DatabaseMigration table should be fully migrated (pre- and post-deploy)
+      const shardIds = Object.keys(config.shards ?? {});
+      const latestPostDeploy = getLatestPostDeployMigrationVersion();
+      for (const shardId of shardIds) {
+        const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
 
-      const preDeployVersion = await getPreDeployVersion(pool);
-      expect(preDeployVersion).toBeGreaterThanOrEqual(67);
+        const preDeployVersion = await getPreDeployVersion(pool);
+        expect(preDeployVersion).toBeGreaterThanOrEqual(67);
 
-      const postDeployVersion = await getPostDeployVersion(pool);
-      // only show log messages if post-deploy migrations did not run successfully
-      if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        consoleLogSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
+        const postDeployVersion = await getPostDeployVersion(pool);
+        // only show log messages if post-deploy migrations did not run successfully
+        if (latestPostDeploy !== postDeployVersion) {
+          consoleLogSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
+        }
+        expect(postDeployVersion).toEqual(latestPostDeploy);
       }
-      expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
-      // One Super Admin project per shard on or synced to global
-      const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
-      const shardCount = config.shards ? Object.keys(config.shards).length : 1;
-      expect(rows.length).toBe(shardCount);
+      // One Super Admin project per shard, all synced to/on the global shard
+      const globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+      const rows = await new SelectQuery('Project')
+        .column('content')
+        .where('name', '=', 'Super Admin')
+        .execute(globalPool);
+      expect(rows.length).toBe(shardIds.length);
 
       for (const row of rows) {
         const project = JSON.parse(row.content) as WithId<Project>;

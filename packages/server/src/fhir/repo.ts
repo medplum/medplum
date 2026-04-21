@@ -84,7 +84,6 @@ import type {
   ResourceType,
   SearchParameter,
   StructureDefinition,
-  User,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
@@ -476,10 +475,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Project must be created via createProjectResource');
     }
     if (resource.resourceType === 'User') {
-      const isProjectScoped = !!(resource as User).project;
-      if (isProjectScoped && this.shardId === GLOBAL_SHARD_ID) {
-        throw new Error('Project-scoped User must be created on a project shard, not global');
-      }
+      // Server-scoped Users (no `project` field) live on global only.
+      // Project-scoped Users live on their project's shard — which may itself be global —
+      // so we can't reliably reject "project-scoped on global" without looking up the project.
+      const isProjectScoped = !!resource.project;
       if (!isProjectScoped && this.shardId !== GLOBAL_SHARD_ID) {
         throw new Error('Server-scoped User must be created on global shard, not a project shard');
       }

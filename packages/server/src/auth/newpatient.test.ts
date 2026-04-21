@@ -6,11 +6,18 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
+import assert from 'node:assert';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import {
+  drainShardSyncOutboxForTests,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -18,8 +25,9 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('New patient', () => {
+  let config: MedplumServerConfig;
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initApp(app, config);
   });
 
@@ -58,12 +66,17 @@ describe('New patient', () => {
     });
     expect(res2.status).toBe(200);
 
+    assert(config.defaultShardId);
+    await drainShardSyncOutboxForTests(config.defaultShardId);
+
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
+
+    await drainShardSyncOutboxForTests(config.defaultShardId);
 
     const projectId = resolveId(res3.body.project) as string;
 
@@ -82,7 +95,9 @@ describe('New patient', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
+
+    await drainShardSyncOutboxForTests(config.defaultShardId);
 
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,

@@ -8,17 +8,22 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { GLOBAL_SHARD_ID, TEST_SHARD_ID } from '../fhir/sharding';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
 
-const app = express();
+describe.each([
+  { scenario: 'project on global shard', shardId: GLOBAL_SHARD_ID },
+  { scenario: 'project on non-global shard', shardId: TEST_SHARD_ID },
+])('Change Password ($scenario)', ({ shardId }) => {
+  const app = express();
 
-describe('Change Password', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.defaultShardId = shardId;
     await initApp(app, config);
   });
 
@@ -52,7 +57,7 @@ describe('Change Password', () => {
         newPassword: 'password!@#123',
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('Missing old password', async () => {
@@ -79,7 +84,7 @@ describe('Change Password', () => {
 
   test('Old password not set', async () => {
     // This creates a ClientApplication user
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({ shardId });
 
     const res2 = await request(app)
       .post('/auth/changepassword')

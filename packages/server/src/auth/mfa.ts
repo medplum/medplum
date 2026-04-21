@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -10,23 +11,29 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
+import { getUserAndSystemRepository } from '../sharding/sharding-utils';
 import { sendLoginResult } from './utils';
 
 export const mfaRouter = Router();
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  let user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+
+  const userAndSystemRepo = await getUserAndSystemRepository(ctx.membership.user as Reference<User>, ctx.repo.shardId);
+  let user: WithId<User> = userAndSystemRepo.user;
+  const systemRepo: SystemRepository = userAndSystemRepo.systemRepo;
+
   if (user.mfaEnrolled) {
     res.json({ enrolled: true });
     return;
   }
 
   if (!user.mfaSecret) {
-    user = await ctx.systemRepo.updateResource({
+    user = await systemRepo.updateResource({
       ...user,
       mfaSecret: authenticator.generateSecret(),
     });
@@ -48,9 +55,9 @@ mfaRouter.post(
   '/login-enroll',
   [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
-    const systemRepo = getGlobalSystemRepo();
-    const login = await systemRepo.readResource<Login>('Login', req.body.login);
-    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+    const globalSystemRepo = getGlobalSystemRepo();
+    const login = await globalSystemRepo.readResource<Login>('Login', req.body.login);
+    const { user, systemRepo } = await getUserAndSystemRepository(login.user as Reference<User>, undefined);
 
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));
@@ -131,7 +138,11 @@ mfaRouter.post(
   [body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+    // const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+    const { user, systemRepo } = await getUserAndSystemRepository(
+      ctx.membership.user as Reference<User>,
+      ctx.repo.shardId
+    );
 
     if (!user.mfaSecret) {
       sendOutcome(res, badRequest('Secret not found'));
@@ -157,7 +168,7 @@ mfaRouter.post(
       return;
     }
 
-    await ctx.systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...user,
       mfaEnrolled: false,
       // We generate a new secret so that next time the user enrolls that they don't get the same secret

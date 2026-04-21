@@ -14,7 +14,7 @@ import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, drainShardSyncOutboxForTests, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
 describe('OAuth Authorize', () => {
@@ -42,6 +42,8 @@ describe('OAuth Authorize', () => {
       lastName: 'User',
       email,
     });
+
+    await drainShardSyncOutboxForTests(repo.shardId);
 
     // Set the test user password
     await setPassword(user, password);
@@ -288,7 +290,7 @@ describe('OAuth Authorize', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
@@ -444,7 +446,7 @@ describe('OAuth Authorize', () => {
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
-    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    const login = await getGlobalSystemRepo().readResource<Login>('Login', res1.body.login);
     expect(login.codeChallenge).toEqual('xyz');
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -470,6 +472,7 @@ describe('OAuth Authorize', () => {
     });
 
     const launch = await systemRepo.createResource<SmartAppLaunch>({ resourceType: 'SmartAppLaunch' });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const res3 = await request(app)
       .get(`/oauth2/authorize?launch=${launch.id}&${params.toString()}&prompt=none`)
@@ -482,7 +485,7 @@ describe('OAuth Authorize', () => {
     expect(location.searchParams.get('error')).toBeNull();
     expect(location.searchParams.get('code')).not.toEqual(res1.body.code);
 
-    const updatedLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
+    const updatedLogin = await getGlobalSystemRepo().readResource<Login>('Login', res1.body.login);
     expect(updatedLogin.codeChallenge).toEqual('abc');
     expect(updatedLogin.launch?.reference).toEqual(`SmartAppLaunch/${launch.id}`);
   });
@@ -586,6 +589,7 @@ describe('OAuth Authorize', () => {
       meta: { project: project.id },
       name: 'Test Client Application',
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const params = new URLSearchParams({
       response_type: 'code',
@@ -608,6 +612,7 @@ describe('OAuth Authorize', () => {
       name: 'Test Client Application',
       redirectUris: ['invalid'],
     });
+    await drainShardSyncOutboxForTests(systemRepo.shardId);
 
     const params = new URLSearchParams({
       response_type: 'code',

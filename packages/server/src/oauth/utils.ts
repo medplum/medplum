@@ -1183,6 +1183,12 @@ async function tryExternalAuthLogin(
   if (isString(profileString)) {
     // Path A: fhirUser claim present - look up profile, then find membership
     // Profile string can be either a reference or a search string
+    //
+    // SHARDING - ProfileResource types (Practitioner, Patient, etc.) live on project shards,
+    // not the global shard. Without a project hint we don't know which shard to search,
+    // so this path currently only works when the profile happens to be on the systemRepo's shard.
+    // Needs a cross-shard resolution strategy (likely a project/shard id on MedplumExternalAuthConfig)
+    // to work in general.
     let searchRequest: SearchRequest<ProfileResource>;
     const queryIndex = profileString.indexOf('?');
     if (queryIndex > -1) {

@@ -9,6 +9,7 @@ import { pwnedPassword } from 'hibp';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
+import { getUserAndSystemRepository } from '../sharding/sharding-utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { bcryptHashPassword } from './utils';
 
@@ -19,10 +20,11 @@ export const changePasswordValidator = makeValidationMiddleware([
 
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-
-  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
-
-  await changePassword(ctx.systemRepo, {
+  const { user, systemRepo } = await getUserAndSystemRepository(
+    ctx.membership.user as Reference<User>,
+    ctx.repo.shardId
+  );
+  await changePassword(systemRepo, {
     user,
     oldPassword: req.body.oldPassword,
     newPassword: req.body.newPassword,
