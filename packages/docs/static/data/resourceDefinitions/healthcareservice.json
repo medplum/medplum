@@ -216,6 +216,29 @@
       "inherited": false
     },
     {
+      "name": "offeredIn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "HealthcareService.offeredIn",
+      "min": 0,
+      "max": "*",
+      "short": "The service within which this service is offered",
+      "definition": "When the HealthcareService is representing a specific, schedulable service, the availableIn property can refer to a generic service.",
+      "comment": "For example, if there is a generic Radiology service that offers CT Scans, MRIs, etc.  You could have HealthcareService resources for the CT Scans and MRIs, which have an offeredIn reference to the Radiology HealthcareService.\n\nThis field was backported from FHIR R5 and is nonstandard in FHIR R4.",
+      "inherited": false
+    },
+    {
       "name": "category",
       "depth": 1,
       "types": [
@@ -944,6 +967,12 @@
       "type": "token",
       "description": "The specialty of the service provided by this healthcare service",
       "expression": "HealthcareService.specialty"
+    },
+    {
+      "name": "offered-in",
+      "type": "reference",
+      "description": "The service within which this service is offered",
+      "expression": "HealthcareService.offeredIn"
     }
   ]
 }
