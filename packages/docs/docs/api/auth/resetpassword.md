@@ -9,11 +9,11 @@ Initiates a password reset for a user. If successful, sends a password reset ema
 
 Check out [custom emails](/docs/user-management/custom-emails) for directions to create a custom reset password flow.
 
-:::info
+:::info[]
 To see an example, check out the the code for the Medplum app's reset password page in [`ResetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/ResetPasswordPage.tsx).
 :::
 
-:::warning
+:::warning[]
 Please note that you may need to specify _projectId_ if your User is project scoped and _recaptchaSiteKey_ and _recaptchaToken_ if you are using your own recaptcha keys.
 :::
 

@@ -93,7 +93,7 @@ Replace `BASE_URL`, `PROJECT_ID`, and `ACCESS_TOKEN` with your actual values.
 
 The `externalId` value should match the `sub` claim that the IDP assigns to this user.
 
-:::tip
+:::tip[]
 
 To find a user's `sub` value, decode the JWT from your IDP or check the IDP's user management console. For Auth0, the subject may be prefixed with the identity provider (e.g., `google-oauth2|110925489055200000000`). Use the full value as the `externalId`.
 

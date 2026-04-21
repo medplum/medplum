@@ -46,7 +46,7 @@ To filter for only active threads when querying, see [Searching and Querying Thr
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::caution
+:::caution[]
 
 Closing a thread header does not automatically change the `status` of child messages; they are independent. A closed thread can still contain unread messages if you track read state separately (for example with Tasks). Decide in your UI whether to show those messages or filter by header status.
 
@@ -80,7 +80,7 @@ Replace the `recipient` array without the removed person. Read the current heade
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::caution
+:::caution[]
 
 Adding or removing recipients on the thread header does not retroactively change recipients on existing child messages. When sending new messages in the thread, use the thread header's current recipient list so the conversation stays consistent.
 
@@ -88,7 +88,7 @@ If your access policies scope visibility to `Communication?recipient=%profile`, 
 
 :::
 
-:::tip
+:::tip[]
 
 The read-then-replace pattern for removing participants can race if several users edit the list at once. For production, use the resource's `meta.versionId` with an `If-Match` header to detect conflicts, or use `medplum.updateResource()` for version-aware updates.
 
@@ -108,7 +108,7 @@ The example below uses two `resource` entries for Communication — one scoped t
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::note
+:::note[]
 
 `AccessPolicy` `criteria` uses Medplum's search subset (only `:not` and `:missing` modifiers; no chained searches). Multiple `resource` entries of the same type are ORed. See [Access Policies](/docs/access/access-policies) for the full set of supported patterns before relying on criteria in production.
 
@@ -128,7 +128,7 @@ Assign that policy to admin users as appropriate. The example above is read-only
 
 Multi-tenant messaging, role-based visibility, compartment rules, and cross-organization threads need careful policy design. See [Access Policies](/docs/access/access-policies) or contact [hello@medplum.com](mailto:hello@medplum.com) for guidance.
 
-:::tip
+:::tip[]
 
 Test access policies early with two test users in different roles. Sign in as each and confirm thread visibility matches expectations. Policy mistakes are much harder to debug once real patient data is in the project.
 
