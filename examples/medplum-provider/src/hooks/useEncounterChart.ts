@@ -69,7 +69,7 @@ export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encou
       if (!encounterResource?.id) {
         return;
       }
-      const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounterResource)}`);
+      const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounterResource)}`, { cache: 'no-cache' });
       if (response.length !== 0) {
         setClaim(response[0]);
       }

@@ -89,6 +89,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [stediBot, setStediBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [stediSubmitting, setStediSubmitting] = useState(false);
+  const [stediClaimId, setStediClaimId] = useState(
+    claim ? getIdentifier(claim, 'https://www.stedi.com/claims') : undefined
+  );
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
@@ -145,6 +148,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .then((bot) => setStediBot(bot ?? null))
       .catch(() => setStediBot(null));
   }, [medplum]);
+
+  useEffect(() => {
+    setStediClaimId(claim ? getIdentifier(claim, 'https://www.stedi.com/claims') : undefined);
+  }, [claim]);
 
   const processCandidResponse = useCallback((result: CandidBotResponse): void => {
     const encounterId = result?.fullEncounter?.encounterId;
@@ -385,6 +392,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           }
         : claim;
       const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
+      const claims = await medplum.searchResources('Claim', `_id=${claim.id}`, { cache: 'no-cache' });
+      if (claims.length > 0) {
+        setClaim(claims[0]);
+      }
       showNotification({
         title: 'Submitted to Stedi',
         message: result?.message || 'Claim successfully submitted to Stedi',
@@ -395,7 +406,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     } finally {
       setStediSubmitting(false);
     }
-  }, [claim, coverages, medplum, stediBot]);
+  }, [claim, coverages, medplum, setClaim, stediBot]);
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
@@ -522,12 +533,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         </Card>
       );
     }
-    if (candidEncounterId || candidStatus) {
+    if (candidEncounterId || candidStatus || stediClaimId) {
       return (
         <ClaimSubmittedPanel
-          status={candidStatus}
+          status={candidStatus ?? (stediClaimId ? 'submitted' : undefined)}
           claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
-          createdAt={candidCreatedAt}
+          createdAt={candidCreatedAt ?? claim.meta?.lastUpdated}
           candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
           exportMenu={exportClaimMenu()}
         />
