@@ -85,6 +85,38 @@ describe('quantity-qualifiers', () => {
     expect(inferQuantityQualifierCode('Insert 1 suppository rectally daily')).toBe('C48486');
   });
 
+  test('buildQualifierMatcher prefers dose-form keywords over strength units regardless of catalog name length', () => {
+    // Regression: matcher used to sort compiled rules by catalog-name length
+    // and key synonyms by NCI code. So if DAW returned "Tablet" (len 6) and
+    // "Milligram" (len 9), Milligram sorted first and `mg` in the formulation
+    // (e.g. "Metformin 500 mg tablet, ER 24 hr") matched before "tablet". A
+    // related variant: with `C48481` historically labeled "Milligram" in the
+    // static fallback, /mg/ was bound to Cartridge in the live catalog.
+    //
+    // Now: dose-form keywords (tablet/capsule/suppository/...) carry a fixed
+    // priority that beats every other rule, and strength units (mg/mcg/gm/IU)
+    // are not synonyms at all (they are never a real dispense unit on a
+    // solid dose form).
+    const matcher = buildQualifierMatcher([
+      { potencyUnit: 'C48481', name: 'Cartridge' },
+      { potencyUnit: 'C28253', name: 'Milligram' },
+      { potencyUnit: 'C48542', name: 'Tablet' },
+    ]);
+    expect(matcher('Metformin ER 500 mg tablet, extended release 24 hr')).toBe('C48542');
+    expect(matcher('Norvasc 5 mg tablet')).toBe('C48542');
+    expect(matcher('Take 1 by mouth daily Norvasc 5 mg')).toBeUndefined();
+    expect(matcher('Insulin pen cartridge 100 units/mL')).toBe('C48481');
+  });
+
+  test('buildQualifierMatcher prefers dose-form keywords over Milliliter for solid forms with strength like X mg/5 mL', () => {
+    const matcher = buildQualifierMatcher([
+      { potencyUnit: 'C28254', name: 'Milliliter' },
+      { potencyUnit: 'C48542', name: 'Tablet dosing unit' },
+    ]);
+    expect(matcher('Take 1 tablet by mouth twice daily; 250 mg/5 mL strength')).toBe('C48542');
+    expect(matcher('Take 5 mL by mouth twice daily')).toBe('C28254');
+  });
+
   test('mergeQuantityQualifierCatalog overrides static labels with live names', () => {
     const merged = mergeQuantityQualifierCatalog([
       { potencyUnit: 'C48542', name: 'Tablet' },

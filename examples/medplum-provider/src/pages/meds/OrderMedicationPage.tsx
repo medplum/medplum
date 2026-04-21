@@ -71,7 +71,7 @@ function getRoutedMedIdFromMedication(m: Medication): number | undefined {
   if (!v) {
     return undefined;
   }
-  const n = parseInt(v, 10);
+  const n = Number.parseInt(v, 10);
   return Number.isFinite(n) ? n : undefined;
 }
 
@@ -128,6 +128,94 @@ function dedupeMedications(list: Medication[]): Medication[] {
 }
 
 /**
+ * Verb keywords that introduce a dose amount in English sigs (e.g. "Take 1
+ * tablet …", "Apply 2 patches …").
+ */
+const SIG_DOSE_VERB_RE = /\b(?:take|apply|use|inject|inhale|instill|insert|chew|dissolve|spray)\b/;
+
+/**
+ * Captures `<low>(?:[-/to] <high>)?` after a verb. Matches against the substring
+ * that follows the verb to avoid one large regex.
+ */
+const SIG_DOSE_RANGE_RE = /^\s+(\d+(?:\.\d+)?)(?:\s*(?:-|to)\s*(\d+(?:\.\d+)?))?/;
+
+const SIG_QID_RE = /\bqid\b|four\s+times|\b4\s*x\b/;
+const SIG_TID_RE = /\btid\b|three\s+times|\b3\s*x\b/;
+const SIG_BID_RE = /\bbid\b|twice/;
+const SIG_DAILY_RE = /once\s+(?:a\s+)?day|once\s+daily|every\s+day|\bqd\b|\bqday\b|\bdaily\b/;
+const SIG_EVERY_HOURS_RE = /every\s+(\d+(?:\.\d+)?)\s*(?:hr|hour|hours)\b|\bq(\d+)h\b/;
+const SIG_EVERY_DAYS_RE = /every\s+(\d+(?:\.\d+)?)\s*(?:d|day|days)\b/;
+
+/**
+ * Extracts the per-dose amount from a sig (e.g. "take 2 tablets" → `2`,
+ * "apply 1-2 patches" → `2` taking the high end of the range).
+ *
+ * @param text - Lowercased sig line.
+ * @returns Per-dose amount; defaults to 1 when no verb / number is found.
+ */
+function inferPerDoseFromSig(text: string): number {
+  const verbMatch = SIG_DOSE_VERB_RE.exec(text);
+  if (verbMatch?.index === undefined) {
+    return 1;
+  }
+  const after = text.slice(verbMatch.index + verbMatch[0].length);
+  const range = SIG_DOSE_RANGE_RE.exec(after);
+  if (!range) {
+    return 1;
+  }
+  const lo = Number.parseFloat(range[1]);
+  const hi = range[2] ? Number.parseFloat(range[2]) : lo;
+  return Number.isFinite(hi) && hi > 0 ? hi : lo;
+}
+
+/**
+ * Maps frequency keywords (qid/tid/bid/daily) to doses-per-day.
+ *
+ * @param text - Lowercased sig line.
+ * @returns Doses per day, or 0 when no keyword is recognized.
+ */
+function inferDosesPerDayKeyword(text: string): number {
+  if (SIG_QID_RE.test(text)) {
+    return 4;
+  }
+  if (SIG_TID_RE.test(text)) {
+    return 3;
+  }
+  if (SIG_BID_RE.test(text)) {
+    return 2;
+  }
+  if (SIG_DAILY_RE.test(text)) {
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * Computes doses-per-day from intervals like "every 8 hours", "q6h",
+ * "every 2 days".
+ *
+ * @param text - Lowercased sig line.
+ * @returns Doses per day, or 0 when no interval phrase is recognized.
+ */
+function inferDosesPerDayFromInterval(text: string): number {
+  const everyHrs = SIG_EVERY_HOURS_RE.exec(text);
+  if (everyHrs) {
+    const h = Number.parseFloat(everyHrs[1] ?? everyHrs[2]);
+    if (Number.isFinite(h) && h > 0) {
+      return 24 / h;
+    }
+  }
+  const everyDays = SIG_EVERY_DAYS_RE.exec(text);
+  if (everyDays) {
+    const d = Number.parseFloat(everyDays[1]);
+    if (Number.isFinite(d) && d > 0) {
+      return 1 / d;
+    }
+  }
+  return 0;
+}
+
+/**
  * Parses a free-text sig line (e.g. "Take 1 tablet by mouth twice daily") into a
  * per-dose × per-day estimate used to pre-fill days supply.
  *
@@ -142,52 +230,11 @@ function inferDailyDoseFromSig(sigLine: string): { perDose: number; dosesPerDay:
     return undefined;
   }
   const text = sigLine.toLowerCase();
-
-  let perDose = 1;
-  const verbMatch = text.match(
-    /\b(?:take|apply|use|inject|inhale|instill|insert|chew|dissolve|spray)\s+(\d+(?:\.\d+)?)(?:\s*(?:-|to)\s*(\d+(?:\.\d+)?))?/
-  );
-  if (verbMatch) {
-    const lo = parseFloat(verbMatch[1]);
-    const hi = verbMatch[2] ? parseFloat(verbMatch[2]) : lo;
-    perDose = Number.isFinite(hi) && hi > 0 ? hi : lo;
-  }
-
-  let dosesPerDay = 0;
-  if (/\bqid\b|four\s+times|\b4\s*x\b/.test(text)) {
-    dosesPerDay = 4;
-  } else if (/\btid\b|three\s+times|\b3\s*x\b/.test(text)) {
-    dosesPerDay = 3;
-  } else if (/\bbid\b|twice/.test(text)) {
-    dosesPerDay = 2;
-  } else if (/once\s+(?:a\s+)?day|once\s+daily|every\s+day|\bqd\b|\bqday\b|\bdaily\b/.test(text)) {
-    dosesPerDay = 1;
-  }
-
-  if (!dosesPerDay) {
-    const everyHrs = text.match(/every\s+(\d+(?:\.\d+)?)\s*(?:hr|hour|hours)\b|\bq(\d+)h\b/);
-    if (everyHrs) {
-      const h = parseFloat(everyHrs[1] ?? everyHrs[2]);
-      if (Number.isFinite(h) && h > 0) {
-        dosesPerDay = 24 / h;
-      }
-    }
-  }
-
-  if (!dosesPerDay) {
-    const everyDays = text.match(/every\s+(\d+(?:\.\d+)?)\s*(?:d|day|days)\b/);
-    if (everyDays) {
-      const d = parseFloat(everyDays[1]);
-      if (Number.isFinite(d) && d > 0) {
-        dosesPerDay = 1 / d;
-      }
-    }
-  }
-
+  const dosesPerDay = inferDosesPerDayKeyword(text) || inferDosesPerDayFromInterval(text);
   if (!dosesPerDay) {
     return undefined;
   }
-  return { perDose, dosesPerDay };
+  return { perDose: inferPerDoseFromSig(text), dosesPerDay };
 }
 
 /**
@@ -225,17 +272,19 @@ interface ParsedSig {
 /**
  * Resolves the dispense unit (NCI potency code) for a sig.
  *
- * The ScriptSure drug-search bot defaults missing qualifiers to `C48542`
- * (tablet), so a raw "tablet" code is ambiguous: it may mean "ScriptSure said
- * tablet" or "ScriptSure said nothing — we filled in tablet". In that case we
- * re-derive the code from the sig text + formulation label so e.g. an Anusol-HC
- * rectal suppository sig ends up as `C48486` (Suppository) instead of `C48542`.
+ * The matcher only fires for dose-form keywords (tablet, capsule, suppository,
+ * patch, …) and `mL`. It never tags a strength unit like `mg`, so when it
+ * returns something we can trust it more than ScriptSure's per-sig
+ * `quantityQualifier` — which in practice often carries a strength-unit code
+ * for solid dose forms (e.g. metformin tablets coming back with the milligram
+ * code because the formulation strength is "500 mg").
  *
  * Priority:
- *  1. Explicit non-tablet `quantityQualifier` from the ScriptSure sig payload.
- *  2. Keyword inference from sig line and formulation label (e.g.
- *     "rectal suppository" → C48486 Suppository).
- *  3. Whatever ScriptSure sent (or the static `C48542` Tablet fallback).
+ *  1. Keyword inference from sig line + formulation label (only fires on a
+ *     dose-form / volume keyword).
+ *  2. Whatever ScriptSure sent on the sig (when non-empty and not the bot's
+ *     "I had nothing, defaulting to tablet" sentinel).
+ *  3. The static `C48542` Tablet fallback.
  *
  * @param raw - Value returned by ScriptSure on the sig (may be undefined).
  * @param sigLine - Sig text shown to the prescriber.
@@ -250,13 +299,13 @@ function resolveQuantityQualifier(
   formatText: string | undefined,
   matcher: QualifierMatcher
 ): string {
-  const trimmed = raw?.trim();
-  if (trimmed && trimmed !== DEFAULT_QUANTITY_QUALIFIER) {
-    return trimmed;
-  }
   const inferred = inferQuantityQualifierCodeWith(matcher, sigLine, formatText);
   if (inferred) {
     return inferred;
+  }
+  const trimmed = raw?.trim();
+  if (trimmed && trimmed !== DEFAULT_QUANTITY_QUALIFIER) {
+    return trimmed;
   }
   return trimmed || DEFAULT_QUANTITY_QUALIFIER;
 }
@@ -328,7 +377,7 @@ function medicationToOrderDrugInput(
   return {
     ...(ndc ? { ndc } : {}),
     ...(rxNorm ? { rxNorm } : {}),
-    ...(routedMedId !== undefined ? { routedMedId } : {}),
+    ...(routedMedId === undefined ? {} : { routedMedId }),
     quantity: opts.quantity,
     quantityQualifier: opts.quantityQualifier ?? DEFAULT_QUANTITY_QUALIFIER,
     refill: opts.refill,
@@ -353,7 +402,58 @@ function medicationSearchToOption(m: Medication): AsyncAutocompleteOption<Medica
   };
 }
 
-function MedicationSearchItem(props: AsyncAutocompleteOption<Medication>): JSX.Element {
+/**
+ * Best human-readable label for a {@link Condition}: prefers the per-instance
+ * `code.text`, then the first coding's `display`, then a system|code fallback,
+ * then the resource id.
+ *
+ * @param c - Condition resource.
+ * @returns Display label suitable for autocomplete options and pills.
+ */
+function conditionDisplayLabel(c: Condition): string {
+  const t = c.code?.text?.trim();
+  if (t) {
+    return t;
+  }
+  const coding = c.code?.coding?.[0];
+  if (coding?.display?.trim()) {
+    return coding.display.trim();
+  }
+  if (coding?.code) {
+    return coding.system ? `${coding.system}|${coding.code}` : coding.code;
+  }
+  return c.id ?? 'Condition';
+}
+
+function conditionToOption(c: Condition): AsyncAutocompleteOption<Condition> {
+  return {
+    value: c.id ?? conditionDisplayLabel(c),
+    label: conditionDisplayLabel(c),
+    resource: c,
+  };
+}
+
+function ConditionSearchItem(props: Readonly<AsyncAutocompleteOption<Condition>>): JSX.Element {
+  const { resource } = props;
+  const status = resource.clinicalStatus?.coding?.[0]?.code;
+  const codingCode = resource.code?.coding?.[0]?.code;
+  const codingSystem = resource.code?.coding?.[0]?.system;
+  const subtitle = [codingCode && codingSystem ? `${codingSystem.split('/').pop()} ${codingCode}` : codingCode, status]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <Stack gap={0} style={{ flex: 1 }}>
+      <Text size="sm">{props.label}</Text>
+      {subtitle && (
+        <Text size="xs" c="dimmed">
+          {subtitle}
+        </Text>
+      )}
+    </Stack>
+  );
+}
+
+function MedicationSearchItem(props: Readonly<AsyncAutocompleteOption<Medication>>): JSX.Element {
   const { resource } = props;
   const kind = getBrandOrGeneric(resource);
   const generic = getGenericName(resource);
@@ -431,7 +531,7 @@ function buildFormulationSigChoices(formats: Medication[], matcher: QualifierMat
   return out;
 }
 
-export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Element {
+export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): JSX.Element {
   const { onOrderComplete, patient: patientProp } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
@@ -482,6 +582,10 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
     { id: 'a', quantity: 30, refill: 0, useSubstitution: true },
     { id: 'b', quantity: 30, refill: 0, useSubstitution: true },
   ]);
+
+  const updateCompoundLine = useCallback((id: string, next: CompoundLineState) => {
+    setCompoundLines((prev) => prev.map((l) => (l.id === id ? next : l)));
+  }, []);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -636,9 +740,19 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
     }
   }, [sigOptions, sigIndex]);
 
+  // Reset the "user touched it" lock whenever any input the precalc depends
+  // on changes (medication, sig, OR quantity). Without resetting on quantity
+  // changes, a single edit to days-supply disables auto-precalc for the rest
+  // of the page lifetime — including when the prescriber later changes the
+  // dispense quantity and naturally expects days-supply to follow.
+  useEffect(() => {
+    setDaysSupplyTouched(false);
+  }, [selectedFormat, sigIndex, quantity]);
+
   // Pre-fill days supply from the currently visible sig + dispense quantity.
   // We stop overriding once the user edits the days-supply field manually so the
-  // auto-calc behaves as a hint, not a lock.
+  // auto-calc behaves as a hint, not a lock — but only within the current
+  // medication/sig context (see reset effect above).
   const activeSigText = sigOptions[sigIndex]?.sigLine ?? freeSig;
   useEffect(() => {
     if (daysSupplyTouched) {
@@ -857,12 +971,12 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
                   value={selectedChoiceKey}
                   onChange={(v) => {
                     const [fStr, sStr] = v.split(':');
-                    const fIdx = parseInt(fStr, 10);
-                    const sIdx = parseInt(sStr, 10);
+                    const fIdx = Number.parseInt(fStr, 10);
+                    const sIdx = Number.parseInt(sStr, 10);
                     const fm = formatMedications[fIdx];
                     if (fm) {
                       setSelectedFormat(fm);
-                      setSigIndex(sIdx >= 0 ? sIdx : 0);
+                      setSigIndex(Math.max(sIdx, 0));
                     }
                   }}
                 >
@@ -1051,9 +1165,7 @@ export function OrderMedicationPage(props: OrderMedicationPageProps): JSX.Elemen
                   index={idx}
                   line={line}
                   searchMedications={searchMedications}
-                  onChange={(next) => {
-                    setCompoundLines((prev) => prev.map((l) => (l.id === line.id ? next : l)));
-                  }}
+                  onChange={(next) => updateCompoundLine(line.id, next)}
                 />
               ))}
               <Button
@@ -1101,7 +1213,7 @@ function coverageLabel(coverage: Coverage): string {
   return parts.join(' · ');
 }
 
-function OptionalContextFields(props: {
+interface OptionalContextFieldsProps {
   medplum: MedplumClient;
   patient: Patient | undefined;
   primaryCondition: Condition | undefined;
@@ -1110,7 +1222,9 @@ function OptionalContextFields(props: {
   setCoverage: (c: Coverage | undefined) => void;
   pharmacyOrg: Organization | undefined;
   setPharmacyOrg: (o: Organization | undefined) => void;
-}): JSX.Element {
+}
+
+function OptionalContextFields(props: Readonly<OptionalContextFieldsProps>): JSX.Element {
   const {
     medplum,
     patient,
@@ -1225,16 +1339,53 @@ function OptionalContextFields(props: {
     [preferredPharmacies]
   );
 
+  const patientId = patient?.id;
+  const loadConditionOptions = useCallback(
+    async (input: string, signal: AbortSignal): Promise<Condition[]> => {
+      if (!patientId) {
+        return [];
+      }
+      const term = input.trim();
+      const params = new URLSearchParams({
+        patient: `Patient/${patientId}`,
+        _count: '20',
+        _sort: '-recorded-date',
+      });
+      // ScriptSure-style use case: most users search by display text. `code:text`
+      // does a contains-style match against `code.text` and `code.coding[].display`,
+      // which is what the user actually sees in the picker.
+      if (term.length > 0) {
+        params.set('code:text', term);
+      }
+      try {
+        const rows = await medplum.searchResources('Condition', params, { signal });
+        return rows;
+      } catch (err) {
+        if (signal.aborted) {
+          return [];
+        }
+        showErrorNotification(err);
+        return [];
+      }
+    },
+    [medplum, patientId]
+  );
+
   return (
     <>
       <Divider label="Optional context" labelPosition="center" />
-      <ResourceInput<Condition>
-        resourceType="Condition"
-        name="condition"
+      <AsyncAutocomplete<Condition>
         label="Condition (diagnosis)"
+        placeholder={patient ? 'Search this patient\u2019s conditions' : 'Select patient first'}
+        disabled={!patient}
+        maxValues={1}
+        minInputLength={2}
         defaultValue={primaryCondition}
-        onChange={setPrimaryCondition}
-        searchCriteria={patient ? { patient: `Patient/${patient.id}` } : undefined}
+        loadOptions={loadConditionOptions}
+        toOption={conditionToOption}
+        itemComponent={ConditionSearchItem}
+        onChange={(items) => setPrimaryCondition(items[0])}
+        clearable
       />
       <Select
         label="Coverage"
@@ -1283,12 +1434,14 @@ interface CompoundLineState {
   useSubstitution: boolean;
 }
 
-function CompoundLineEditor(props: {
+interface CompoundLineEditorProps {
   index: number;
   line: CompoundLineState;
   searchMedications: (p: { term?: string; routedMedId?: number }) => Promise<Medication[]>;
   onChange: (line: CompoundLineState) => void;
-}): JSX.Element {
+}
+
+function CompoundLineEditor(props: Readonly<CompoundLineEditorProps>): JSX.Element {
   const { index, line, searchMedications, onChange } = props;
   const [formats, setFormats] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1353,13 +1506,13 @@ function CompoundLineEditor(props: {
             label="Formulation"
             value={line.formatMed ? String(formats.indexOf(line.formatMed)) : ''}
             onChange={(v) => {
-              const fm = formats[parseInt(v, 10)];
+              const fm = formats[Number.parseInt(v, 10)];
               onChange({ ...line, formatMed: fm });
             }}
           >
             <Stack gap={4}>
               {formats.map((fm, i) => (
-                <Radio key={i} value={String(i)} label={fm.code?.text ?? `Option ${i + 1}`} />
+                <Radio key={medicationDedupeKey(fm)} value={String(i)} label={fm.code?.text ?? `Option ${i + 1}`} />
               ))}
             </Stack>
           </Radio.Group>
@@ -1388,7 +1541,7 @@ function CompoundLineEditor(props: {
   );
 }
 
-function PaperWithTitle(props: { title: string; children: ReactNode }): JSX.Element {
+function PaperWithTitle(props: Readonly<{ title: string; children: ReactNode }>): JSX.Element {
   const { title, children } = props;
   return (
     <Stack gap="xs">
