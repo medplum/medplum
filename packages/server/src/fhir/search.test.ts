@@ -3487,6 +3487,37 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     })
   );
 
+  test('birthdate with multiple values', () =>
+    withTestContext(async () => {
+      if (!features) {
+        return; // Skip test without feature flag
+      }
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01,2001-01-01`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    }));
+
   test('_filter search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -5119,20 +5150,44 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
-  test('Date array columns', async () =>
+  test.each(['2028-06-01T23:45:56.890-11:00', '2028-06'])('Date array columns match search value %s', async (value) =>
     withTestContext(async () => {
-      const result = await repo.search({
-        resourceType: 'MedicationRequest',
+      if (!features) {
+        return; // Skip test without feature flag
+      }
+      const identifier = randomUUID();
+      const resource = await repo.createResource<Goal>({
+        resourceType: 'Goal',
+        identifier: [{ value: identifier }],
+        lifecycleStatus: 'active',
+        description: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '406156006',
+              display: 'In paid employment',
+            },
+          ],
+          text: 'This text is ignored in search.',
+        },
+        subject: {
+          reference: 'Patient/example',
+          display: 'Amy Shaw',
+        },
+        target: [{ dueDate: '2028-06-01' }],
+      });
+
+      const res = await repo.search({
+        resourceType: 'Goal',
         filters: [
-          {
-            code: 'date',
-            operator: Operator.EQUALS,
-            value: new Date().toISOString(),
-          },
+          { code: 'identifier', operator: Operator.EQUALS, value: identifier },
+          { code: 'target-date', operator: Operator.EQUALS, value },
         ],
       });
-      expect(result.entry).toHaveLength(0);
-    }));
+      expect(res.entry).toHaveLength(1);
+      expect(res.entry?.[0].resource?.id).toStrictEqual(resource.id);
+    })
+  );
 
   describe('discourage sequential scans', () => {
     let querySpy: jest.SpyInstance;

@@ -50,8 +50,9 @@ describe('SearchParameterImplementation', () => {
     // expression: 'Patient.birthDate'
     const birthDateParam = indexedSearchParams.find((e) => e.id === 'individual-birthdate') as SearchParameter;
     const impl = getSearchParameterImplementation('Patient', birthDateParam);
-    assertColumnImplementation(impl);
+    assertRangeColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('birthdate');
+    expect(impl.rangeColumnName).toStrictEqual('__birthdate');
   });
 
   test('Date/Time param', () => {

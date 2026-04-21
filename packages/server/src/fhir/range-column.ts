@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
-import { evalFhirPathTyped, getSearchParameterDetails, Operator, toTypedValue } from '@medplum/core';
+import {
+  evalFhirPathTyped,
+  getSearchParameterDetails,
+  Operator,
+  SearchParameterType,
+  toTypedValue,
+} from '@medplum/core';
 import type { Money, Period, Quantity, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
@@ -91,7 +97,7 @@ function buildDateTimeRange(typed: TypedValue): Interval<Date> {
   }
 }
 
-function parseDateTimeToRange(dt: string, approximate?: boolean): Interval<Date> {
+export function parseDateTimeToRange(dt: string, approximate?: boolean): Interval<Date> {
   let start = new Date(dt);
   let end = new Date(start.getTime()); // Copy start time before modifying
   const len = dt.length;
@@ -244,8 +250,11 @@ export function buildRangeColumnsSearchFilter(
   let range: Interval<number | Date>;
   let colType: ColumnType;
   if (param.type === 'date') {
-    range = parseDateTimeToRange(filter.value, approximate);
-    colType = ColumnType.TSTZRANGE;
+    range = parseDateTimeToRange(
+      impl.type === SearchParameterType.DATE ? filter.value.substring(0, 10) : filter.value,
+      approximate
+    );
+    colType = impl.type === SearchParameterType.DATE ? ColumnType.DATERANGE : ColumnType.TSTZRANGE;
   } else {
     range = parseNumberToRange(Number.parseFloat(filter.value), approximate);
     colType = ColumnType.NUMRANGE;

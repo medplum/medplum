@@ -33,6 +33,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Appointment" ADD COLUMN IF NOT EXISTS "__endSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__date" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__dateSort" TIMESTAMPTZ`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Basic" ADD COLUMN IF NOT EXISTS "__created" DATERANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Basic" ADD COLUMN IF NOT EXISTS "__createdSort" DATE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Bundle" ADD COLUMN IF NOT EXISTS "__timestamp" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Bundle" ADD COLUMN IF NOT EXISTS "__timestampSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "__contextQuantity" NUMMULTIRANGE`);
@@ -65,6 +67,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Claim" ADD COLUMN IF NOT EXISTS "__createdSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ClaimResponse" ADD COLUMN IF NOT EXISTS "__created" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ClaimResponse" ADD COLUMN IF NOT EXISTS "__createdSort" TIMESTAMPTZ`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "ClaimResponse" ADD COLUMN IF NOT EXISTS "__paymentDate" DATERANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "ClaimResponse" ADD COLUMN IF NOT EXISTS "__paymentDateSort" DATE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ClinicalImpression" ADD COLUMN IF NOT EXISTS "__date" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ClinicalImpression" ADD COLUMN IF NOT EXISTS "__dateSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "__contextQuantity" NUMMULTIRANGE`);
@@ -175,6 +179,10 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "FamilyMemberHistory" ADD COLUMN IF NOT EXISTS "__dateSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Flag" ADD COLUMN IF NOT EXISTS "__date" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Flag" ADD COLUMN IF NOT EXISTS "__dateSort" TIMESTAMPTZ`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Goal" ADD COLUMN IF NOT EXISTS "__startDate" DATERANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Goal" ADD COLUMN IF NOT EXISTS "__startDateSort" DATE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Goal" ADD COLUMN IF NOT EXISTS "__targetDate" DATEMULTIRANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Goal" ADD COLUMN IF NOT EXISTS "__targetDateSort" DATE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "__contextQuantity" NUMMULTIRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "__contextQuantitySort" NUMERIC`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "__date" TSTZRANGE`);
@@ -273,12 +281,16 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "__dateSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "OrganizationAffiliation" ADD COLUMN IF NOT EXISTS "__date" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "OrganizationAffiliation" ADD COLUMN IF NOT EXISTS "__dateSort" TIMESTAMPTZ`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "__birthdate" DATERANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "__birthdateSort" DATE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "__deathDate" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "__deathDateSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PaymentNotice" ADD COLUMN IF NOT EXISTS "__created" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PaymentNotice" ADD COLUMN IF NOT EXISTS "__createdSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PaymentReconciliation" ADD COLUMN IF NOT EXISTS "__created" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PaymentReconciliation" ADD COLUMN IF NOT EXISTS "__createdSort" TIMESTAMPTZ`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Person" ADD COLUMN IF NOT EXISTS "__birthdate" DATERANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Person" ADD COLUMN IF NOT EXISTS "__birthdateSort" DATE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "__contextQuantity" NUMMULTIRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "__contextQuantitySort" NUMERIC`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "__date" TSTZRANGE`);
@@ -301,6 +313,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "__effectiveSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "QuestionnaireResponse" ADD COLUMN IF NOT EXISTS "__authored" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "QuestionnaireResponse" ADD COLUMN IF NOT EXISTS "__authoredSort" TIMESTAMPTZ`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "RelatedPerson" ADD COLUMN IF NOT EXISTS "__birthdate" DATERANGE`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "RelatedPerson" ADD COLUMN IF NOT EXISTS "__birthdateSort" DATE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "RequestGroup" ADD COLUMN IF NOT EXISTS "__authored" TSTZRANGE`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "RequestGroup" ADD COLUMN IF NOT EXISTS "__authoredSort" TIMESTAMPTZ`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "RequestGroup" ADD COLUMN IF NOT EXISTS "__priorityOrder" NUMRANGE`);

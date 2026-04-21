@@ -364,7 +364,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-const dateRangeTypes: readonly SearchParameterType[] = [SearchParameterType.DATETIME, SearchParameterType.PERIOD];
+const dateTimeRangeTypes: readonly SearchParameterType[] = [SearchParameterType.DATETIME, SearchParameterType.PERIOD];
 const numericRangeTypes: readonly SearchParameterType[] = [SearchParameterType.NUMBER, SearchParameterType.QUANTITY];
 function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
@@ -382,7 +382,14 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
       return columns;
     }
     case 'range-column':
-      if (dateRangeTypes.includes(impl.type)) {
+      if (impl.type === SearchParameterType.DATE) {
+        return [
+          { name: impl.rangeColumnName, type: impl.array ? 'DATEMULTIRANGE' : 'DATERANGE' },
+          { name: impl.sortColumnName, type: 'DATE' },
+          // Keep original column during migration
+          getColumnDefinition(impl as unknown as ColumnSearchParameterImplementation),
+        ];
+      } else if (dateTimeRangeTypes.includes(impl.type)) {
         return [
           { name: impl.rangeColumnName, type: impl.array ? 'TSTZMULTIRANGE' : 'TSTZRANGE' },
           { name: impl.sortColumnName, type: 'TIMESTAMPTZ' },
