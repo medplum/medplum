@@ -47,6 +47,8 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
+  config.defaultMaxUserWebSocketSubscriptions ??= 20;
+  config.asyncDelayScaling ??= 5;
 
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
@@ -130,6 +132,14 @@ const integerKeys = new Set([
 
   'redis.db',
   'redis.port',
+  'cacheRedis.db',
+  'cacheRedis.port',
+  'rateLimitRedis.db',
+  'rateLimitRedis.port',
+  'pubSubRedis.db',
+  'pubSubRedis.port',
+  'backgroundJobsRedis.db',
+  'backgroundJobsRedis.port',
 
   'smtp.port',
 
@@ -175,8 +185,13 @@ const objectKeys = new Set([
   'ssl',
   'defaultProjectSystemSetting',
   'defaultOAuthClients',
+  'externalAuthProviders',
   'smtp',
   'arrayColumnPadding',
+  'subscriptionAutoDisable',
+  'workers',
+  'workers.enabled',
+  'workers.bullmq',
 ]);
 
 export function isObjectConfig(key: string): boolean {

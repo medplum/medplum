@@ -8,13 +8,14 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   let accessToken: string;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -29,6 +30,7 @@ describe('SCIM Routes', () => {
       password: 'password!@#',
     });
     accessToken = registration.accessToken;
+    systemRepo = await getProjectSystemRepo(registration.project);
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -192,6 +194,7 @@ describe('SCIM Routes', () => {
       });
 
       // Make the project super admin
+      const systemRepo = await getProjectSystemRepo(reg.project);
       await systemRepo.updateResource({
         ...reg.project,
         superAdmin: true,

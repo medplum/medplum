@@ -64,6 +64,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
       const state = JSON.stringify({
         ...(await medplum.ensureCodeChallenge(baseLoginRequest)),
         domain: authMethod.domain,
+        returnTo: locationUtils.getLocation(),
       });
       const url = new URL(authMethod.authorizeUrl);
       url.searchParams.set('state', state);
@@ -163,7 +164,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
   const issues = getIssuesForExpression(outcome, undefined);
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
+    (formData: Record<string, string>) =>
       medplum
         .startLogin({
           ...baseLoginRequest,
@@ -171,8 +172,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           remember: formData.remember === 'on',
         })
         .then(handleAuthResponse)
-        .catch((err: unknown) => setOutcome(normalizeOperationOutcome(err)));
-    },
+        .catch((err: unknown) => setOutcome(normalizeOperationOutcome(err))),
     [medplum, baseLoginRequest, handleAuthResponse]
   );
 

@@ -13,10 +13,10 @@ import {
 } from '@mantine/core';
 import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
-import type { HumanName } from '@medplum/fhirtypes';
-import { useMedplumNavigate, useMedplumProfile } from '@medplum/react-hooks';
-import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch } from '@tabler/icons-react';
-import type { JSX, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
+import type { HumanName, ResourceType } from '@medplum/fhirtypes';
+import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
+import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch, IconX } from '@tabler/icons-react';
+import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -30,6 +30,18 @@ export interface NavbarLink {
   readonly icon?: JSX.Element;
   readonly label?: string;
   readonly href: string;
+  /** Static count to display. Ignored if notificationCount is provided. */
+  readonly count?: number;
+  /** If true, shows red alert styling (red dot on collapsed icon, red count text when expanded). */
+  readonly alert?: boolean;
+  /** Live subscription-based count. Overrides static `count` when provided. */
+  readonly notificationCount?: {
+    readonly resourceType: ResourceType;
+    readonly countCriteria: string;
+    readonly subscriptionCriteria: string;
+  };
+  /** Callback fired when the dismiss button is clicked. When provided, a dismiss (X) button appears on hover. */
+  readonly onDismiss?: () => void;
 }
 
 export interface NavbarMenu {
@@ -128,17 +140,35 @@ export function Navbar(props: NavbarProps): JSX.Element {
                   </Text>
                 )}
                 <Stack gap="2">
-                  {menu.links?.map((link) => (
-                    <NavbarLink
-                      key={link.href}
-                      to={link.href}
-                      active={link.href === activeLink?.href}
-                      onClick={(e) => onLinkClick(e, link.href)}
-                      icon={link.icon}
-                      label={link.label ?? ''}
-                      opened={opened}
-                    />
-                  ))}
+                  {menu.links?.map((link) =>
+                    link.notificationCount ? (
+                      <NavbarLinkWithSubscription
+                        key={link.href}
+                        to={link.href}
+                        active={link.href === activeLink?.href}
+                        onClick={(e) => onLinkClick(e, link.href)}
+                        icon={link.icon}
+                        label={link.label ?? ''}
+                        opened={opened}
+                        alert={link.alert}
+                        notificationCount={link.notificationCount}
+                        onDismiss={link.onDismiss}
+                      />
+                    ) : (
+                      <NavbarLinkContent
+                        key={link.href}
+                        to={link.href}
+                        active={link.href === activeLink?.href}
+                        onClick={(e) => onLinkClick(e, link.href)}
+                        icon={link.icon}
+                        label={link.label ?? ''}
+                        opened={opened}
+                        alert={link.alert}
+                        count={link.count}
+                        onDismiss={link.onDismiss}
+                      />
+                    )
+                  )}
                 </Stack>
               </Fragment>
             ))}
@@ -218,27 +248,88 @@ export function Navbar(props: NavbarProps): JSX.Element {
   );
 }
 
-interface NavbarLinkProps {
+interface NavbarLinkContentProps {
   readonly to: string;
   readonly active: boolean;
   readonly onClick: MouseEventHandler;
   readonly icon?: JSX.Element;
   readonly label: string;
   readonly opened?: boolean;
+  readonly count?: number;
+  readonly alert?: boolean;
+  readonly onDismiss?: () => void;
 }
 
-function NavbarLink(props: NavbarLinkProps): JSX.Element {
-  const { to, icon, label, onClick, active } = props;
+function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
+  const { to, icon, label, onClick, active, count, alert, opened, onDismiss } = props;
+  const showCount = count !== undefined && count > 0;
+
+  const iconElement = icon ?? <IconBookmark />;
+  const showDot = showCount && alert && !opened;
+
+  function handleDismiss(e: MouseEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    onDismiss?.();
+  }
 
   return (
-    <Tooltip label={label} position="right" transitionProps={{ duration: 0 }} disabled={props.opened}>
+    <Tooltip label={label} position="right" transitionProps={{ duration: 0 }} disabled={opened}>
       <MedplumLink to={to} onClick={onClick} className={classes.link} data-active={active || undefined}>
-        {icon ?? <IconBookmark />}
-        <span className={classes.linkLabel} data-opened={props.opened || undefined}>
+        <span className={classes.iconWrapper}>
+          {iconElement}
+          {showDot && <span className={classes.alertDot} />}
+        </span>
+        <span className={classes.linkLabel} data-opened={opened || undefined}>
           {label}
         </span>
+        {showCount && (
+          <span className={classes.linkCount} data-opened={opened || undefined} data-alert={alert || undefined}>
+            {count.toLocaleString()}
+          </span>
+        )}
+        {onDismiss && opened && (
+          <Tooltip label="Dismiss" openDelay={500}>
+            <UnstyledButton aria-label="Dismiss" className={classes.dismissButton} onClick={handleDismiss}>
+              <IconX size={14} />
+            </UnstyledButton>
+          </Tooltip>
+        )}
       </MedplumLink>
     </Tooltip>
+  );
+}
+
+interface NavbarLinkWithSubscriptionProps {
+  readonly to: string;
+  readonly active: boolean;
+  readonly onClick: MouseEventHandler;
+  readonly icon?: JSX.Element;
+  readonly label: string;
+  readonly opened?: boolean;
+  readonly alert?: boolean;
+  readonly notificationCount: {
+    readonly resourceType: ResourceType;
+    readonly countCriteria: string;
+    readonly subscriptionCriteria: string;
+  };
+  readonly onDismiss?: () => void;
+}
+
+function NavbarLinkWithSubscription(props: NavbarLinkWithSubscriptionProps): JSX.Element {
+  const count = useNotificationCount(props.notificationCount);
+  return (
+    <NavbarLinkContent
+      to={props.to}
+      active={props.active}
+      onClick={props.onClick}
+      icon={props.icon}
+      label={props.label}
+      opened={props.opened}
+      alert={props.alert}
+      count={count}
+      onDismiss={props.onDismiss}
+    />
   );
 }
 

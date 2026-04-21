@@ -16,7 +16,7 @@ import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
 import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import type { MetricReader } from '@opentelemetry/sdk-metrics';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { AggregationType, InstrumentType, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
@@ -102,6 +102,12 @@ export function initOpenTelemetry(): void {
     instrumentations,
     metricReaders: metricReader ? [metricReader] : undefined,
     traceExporter,
+    views: [
+      {
+        instrumentType: InstrumentType.HISTOGRAM,
+        aggregation: { type: AggregationType.EXPONENTIAL_HISTOGRAM },
+      },
+    ],
   });
   sdk.start();
 }

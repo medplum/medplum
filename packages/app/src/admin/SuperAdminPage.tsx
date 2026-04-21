@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, forbidden, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, forbidden, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
@@ -35,12 +35,14 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
+import { WsSubStatsWidget } from './WsSubStatsWidget';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
   const [opened, { open, close }] = useDisclosure(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<ReactNode | undefined>();
+  const [clearWsSubsProject, setClearWsSubsProject] = useState<Reference<Project> | undefined>();
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -64,6 +66,21 @@ export function SuperAdminPage(): JSX.Element {
 
   function reloadCron(): void {
     startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
+  function executeClearAllWsSubs(): void {
+    close();
+    const projectId = resolveId(clearWsSubsProject);
+    medplum
+      .post(
+        'fhir/R4/$clear-all-ws-subs',
+        projectId
+          ? { resourceType: 'Parameters', parameter: [{ name: 'projectId', valueString: projectId }] }
+          : undefined
+      )
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+    setClearWsSubsProject(undefined);
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
@@ -267,7 +284,54 @@ export function SuperAdminPage(): JSX.Element {
       <Title order={2}>Database Explain Search</Title>
       <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
       <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
-
+      <Divider my="lg" />
+      <Title order={2}>WebSocket Subscription Stats</Title>
+      <p>View active WebSocket subscription statistics by project, resource type, and criteria.</p>
+      <WsSubStatsWidget />
+      <Divider my="lg" />
+      <Title order={2}>Clear All WebSocket Subscriptions</Title>
+      <p>
+        Removes all active WebSocket subscription records from Redis. This is useful for cleaning up stale subscriptions
+        during maintenance or after a deployment issue. Connected clients will need to re-bind.
+      </p>
+      <Stack>
+        <FormSection title="Project (optional)" htmlFor="clearWsSubsProject">
+          <ReferenceInput<Project>
+            name="clearWsSubsProject"
+            placeholder="All projects"
+            targetTypes={['Project']}
+            onChange={setClearWsSubsProject}
+          />
+        </FormSection>
+        <div>
+          <Button
+            onClick={() => {
+              setModalTitle('Clear All WebSocket Subscriptions');
+              setModalContent(
+                <Stack>
+                  <Text>
+                    Are you sure you want to completely clear{' '}
+                    <strong>
+                      {clearWsSubsProject
+                        ? `WebSocket subscriptions for "${clearWsSubsProject.display ?? clearWsSubsProject.reference}"`
+                        : 'ALL WebSocket subscriptions'}
+                    </strong>
+                    ? Connected clients will need to re-bind their subscriptions.
+                  </Text>
+                  <Group align="center">
+                    <Button color="red" onClick={executeClearAllWsSubs}>
+                      Clear
+                    </Button>
+                  </Group>
+                </Stack>
+              );
+              open();
+            }}
+          >
+            Clear All WebSocket Subscriptions
+          </Button>
+        </div>
+      </Stack>
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>

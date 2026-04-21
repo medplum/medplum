@@ -5,9 +5,9 @@ import assert from 'node:assert';
 import type { Socket } from 'node:net';
 import { connect } from 'node:net';
 import { Hl7Base } from './base';
-import type { SendAndWaitOptions } from './connection';
+import type { EnhancedMode, Hl7ConnectionOptions, SendAndWaitOptions } from './connection';
 import { Hl7Connection } from './connection';
-import { Hl7CloseEvent, Hl7ErrorEvent } from './events';
+import { Hl7CloseEvent, Hl7ErrorEvent, Hl7WarningEvent } from './events';
 
 export interface Hl7ClientOptions {
   host: string;
@@ -97,9 +97,9 @@ export class Hl7Client extends Hl7Base {
         return;
       }
 
-      // Create the HL7 connection
+      // Create the HL7 connection via the factory method (allows subclasses to customize)
       let connection: Hl7Connection;
-      this.connection = connection = new Hl7Connection(socket, this.encoding);
+      this.connection = connection = this.createConnection(socket, this.encoding);
 
       // Remove the timeout listener as we're now connected
       socket.setTimeout(0);
@@ -154,6 +154,10 @@ export class Hl7Client extends Hl7Base {
     connection.addEventListener('error', (event) => {
       this.dispatchEvent(new Hl7ErrorEvent(event.error));
     });
+
+    connection.addEventListener('warning', (event) => {
+      this.dispatchEvent(new Hl7WarningEvent(event.error));
+    });
   }
 
   private createDeferredConnectionPromise(): DeferredConnectionPromise {
@@ -190,6 +194,26 @@ export class Hl7Client extends Hl7Base {
     if (socket === this.socket) {
       this.socket = undefined;
     }
+  }
+
+  /**
+   * Creates an `Hl7Connection` for the given socket.
+   *
+   * Subclasses may override this to return a customized connection
+   * (e.g. one that delegates pending message tracking to a shared tracker).
+   * @param socket - The connected socket.
+   * @param encoding - The character encoding to use.
+   * @param enhancedMode - Optional enhanced mode for the connection.
+   * @param options - Optional connection options.
+   * @returns A new `Hl7Connection`.
+   */
+  protected createConnection(
+    socket: Socket,
+    encoding?: string,
+    enhancedMode?: EnhancedMode,
+    options?: Hl7ConnectionOptions
+  ): Hl7Connection {
+    return new Hl7Connection(socket, encoding, enhancedMode, options);
   }
 
   async send(msg: Hl7Message): Promise<void> {

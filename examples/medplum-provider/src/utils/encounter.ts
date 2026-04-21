@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG, isResource } from '@medplum/core';
 import type {
   Appointment,
   ChargeItem,
@@ -11,18 +11,22 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
+  Reference,
+  Schedule,
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
 
-export async function createEncounter(
+export async function createAppointment(
   medplum: MedplumClient,
   start: Date,
   end: Date,
-  classification: Coding,
   patient: Patient,
-  planDefinition: PlanDefinition
-): Promise<Encounter> {
+  practitioner: Practitioner | Reference<Practitioner>,
+  schedule?: Schedule
+): Promise<Appointment> {
+  const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
+
   const appointment = await medplum.createResource({
     resourceType: 'Appointment',
     status: 'booked',
@@ -34,11 +38,37 @@ export async function createEncounter(
         status: 'accepted',
       },
       {
-        actor: createReference(medplum.getProfile() as Practitioner),
+        actor: practitionerRef,
         status: 'accepted',
       },
     ],
   });
+
+  // If we have a schedule reference, add a busy slot to prevent future
+  // scheduling operations (such as $find or $book) from thinking this
+  // time is free.
+  if (schedule) {
+    await medplum.createResource({
+      resourceType: 'Slot',
+      start: start.toISOString(),
+      end: end.toISOString(),
+      schedule: createReference(schedule),
+      status: 'busy',
+    });
+  }
+
+  return appointment;
+}
+
+export async function createEncounter(
+  medplum: MedplumClient,
+  classification: Coding,
+  patient: Patient,
+  planDefinition: PlanDefinition,
+  appointment: Appointment,
+  practitioner: Practitioner | Reference<Practitioner>
+): Promise<Encounter> {
+  const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
 
   const encounter: Encounter = await medplum.createResource({
     resourceType: 'Encounter',
@@ -48,11 +78,7 @@ export async function createEncounter(
     class: classification,
     subject: createReference(patient),
     appointment: [createReference(appointment)],
-    participant: [
-      {
-        individual: createReference(medplum.getProfile() as Practitioner),
-      },
-    ],
+    participant: [{ individual: practitionerRef }],
   });
 
   const clinicalImpressionData: ClinicalImpression = {
@@ -71,7 +97,7 @@ export async function createEncounter(
     parameter: [
       { name: 'subject', valueString: getReferenceString(patient) },
       { name: 'encounter', valueString: getReferenceString(encounter) },
-      { name: 'practitioner', valueString: getReferenceString(medplum.getProfile() as Practitioner) },
+      { name: 'practitioner', valueString: getReferenceString(practitioner) },
     ],
   });
 

@@ -11,7 +11,7 @@ import { InfoSection } from '../../components/InfoSection';
 
 export function Medication(): JSX.Element {
   const medplum = useMedplum();
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const { medicationId = '' } = useParams();
   const med: MedicationRequest = medplum.readResource('MedicationRequest', medicationId).read();
 

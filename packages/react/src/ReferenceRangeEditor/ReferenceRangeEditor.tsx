@@ -271,19 +271,12 @@ interface ReferenceRangeGroupFiltersProps {
 function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
   const { intervalGroup, onChange } = props;
 
-  // Pre-populate the units of the age filter
-  if (!intervalGroup.filters.age) {
-    intervalGroup.filters.age = {};
-  }
-  for (const key of ['low', 'high']) {
-    if (!intervalGroup.filters.age[key]?.unit) {
-      intervalGroup.filters.age[key] = {
-        ...intervalGroup.filters.age[key],
-        unit: 'years',
-        system: 'http://unitsofmeasure.org',
-      };
-    }
-  }
+  // Pre-populate the units of the age filter (computed locally, not mutating props)
+  const age = intervalGroup.filters.age ?? {};
+  const ageWithDefaults = {
+    low: age.low?.unit ? age.low : { ...age.low, unit: 'years', system: 'http://unitsofmeasure.org' },
+    high: age.high?.unit ? age.high : { ...age.high, unit: 'years', system: 'http://unitsofmeasure.org' },
+  };
 
   return (
     <Stack style={{ maxWidth: '50%' }}>
@@ -315,7 +308,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
             path=""
             key={`age-${intervalGroup.id}`}
             name={`age-${intervalGroup.id}`}
-            defaultValue={intervalGroup.filters['age']}
+            defaultValue={ageWithDefaults}
             onChange={(ageRange) => {
               for (const interval of intervalGroup.intervals) {
                 onChange(intervalGroup.id, { ...interval, age: ageRange });

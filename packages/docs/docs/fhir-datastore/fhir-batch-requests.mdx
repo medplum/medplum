@@ -13,7 +13,7 @@ import UpdatingDataExampleCode from '!!raw-loader!@site/..//examples/src/fhir-da
 
 FHIR allows users to create batch requests to bundle multiple API calls into a single HTTP request. Batch requests can improve speed and efficiency and can reduce HTTP traffic when working with many resources.
 
-:::tip Cloning a project
+:::tip[Cloning a project]
 If you want to create a copy of a project, say for a new environment, this can be done using the `$clone` operation rather than by creating a batch request. For more details [see the Projects guide](/docs/access/projects#cloning-and-expunging-projects).
 :::
 
@@ -46,7 +46,7 @@ const transactionBundle = {
 };
 ```
 
-:::caution Transaction Support
+:::caution[Transaction Support]
 Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Medplum to enable this feature.
 
 The transaction feature is currently in beta. You may experience `409 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
@@ -61,7 +61,7 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 | Element               | Description                                                                                                                                                                                                                       |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `request.url`         | The URL to send your request to. This is relative to the base R4 FHIR URL (e.g. https://api.medplum.com/fhir/R4).                                                                                                                 |
-| `request.method`      | The type of HTTP request you are making. Can be one of the following: <ul><li>GET: Read a resource or perform a search</li><li>POST: Create a resource</li><li>PUT: Update a resource</li><li>DELETE: Delete a resource</li></ul> |
+| `request.method`      | The type of HTTP request: **GET** (read a resource or perform a search), **POST** (create), **PUT** (update), **DELETE** (delete). |
 | `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                           |
 | `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                   |
 | `fullUrl`             | [See below](#internal-references)                                                                                                                                                                                                 |
@@ -270,7 +270,7 @@ Previously, performing an "upsert" (i.e. either creating or updating a resource 
 required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/working-with-fhir#upsert)
 to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
 
-:::note Upsert URLs
+:::note[Upsert URLs]
 
 Because resolving the search request in the upsert URL is a prerequisite to determine which ID should be assigned as
 part of handling [internal references](#internal-references), the `urn:uuid:` syntax for internal references **cannot**
@@ -368,7 +368,7 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
     "method": "PATCH",
     "url": "Patient/6ffaaab4-ff7e-4416-80c7-8fce95c3e31c"
   },
-  "resource": "resource": {
+  "resource": {
     "resourceType": "Binary",
     "contentType": "application/json-patch+json",
     // Encoded: [{"op":"test","path":"/active","value":false}]
@@ -380,7 +380,7 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
 Additionally, Medplum supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
 resource, making it easier to see what operations are happening in the batch.
 
-:::note Value Formatting
+:::note[Value Formatting]
 
 To avoid parsing ambiguity and simplify the format of the `Parameters`, all values are passed as
 JSON strings, via the `valueString` field on each corresponding `Parameter.parameter.part` with `"name": "value"`.
@@ -430,12 +430,15 @@ Autobatching works by creating a queue of `Promises` issued within the `autoBatc
 Instead you should create the queue of `Promise` requests and then use `Promise.all()` to resolve all of them at once.
 
 <details>
-  <summary>Resolving Promises with autobatching</summary>❌ WRONG
+  <summary>Resolving Promises with autobatching</summary>
+
+  **❌ WRONG**
+
   <MedplumCodeBlock language="ts" selectBlocks="autobatchingWrong">
     {ExampleCode}
   </MedplumCodeBlock>
 
-✅ CORRECT
+  **✅ CORRECT**
 
   <MedplumCodeBlock language="ts" selectBlocks="autobatchingCorrect">
     {ExampleCode}

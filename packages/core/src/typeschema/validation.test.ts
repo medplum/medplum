@@ -27,6 +27,7 @@ import type {
   Questionnaire,
   QuestionnaireItem,
   Resource,
+  RiskAssessment,
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
@@ -376,7 +377,7 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => validateResource(patient, { profile: patientProfile })).toThrow(
-      new Error('Missing required property (Patient.telecom[0].system)')
+      new OperationOutcomeError(validationError('Missing required property', ['Patient.telecom[0].system']))
     );
   });
 
@@ -459,7 +460,7 @@ describe('FHIR resource validation', () => {
 
   // This test is failing because we do not recursively validate extensions. In this case,
   // US Core Race requires the `text` extension, so not having it should fail validation.
-  test.failing('Nested extensions are not yet validated', () => {
+  test.fails('Nested extensions are not yet validated', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       name: [{ given: ['New'], family: 'User' }],
@@ -772,7 +773,7 @@ describe('FHIR resource validation', () => {
     // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
     // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
     // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
-    test.failing('Populated but missing required Condition.category', () => {
+    test.fails('Populated but missing required Condition.category', () => {
       const conditionWrongCategory = deepClone(baseCondition);
       conditionWrongCategory.category = [
         {
@@ -830,7 +831,7 @@ describe('FHIR resource validation', () => {
   test('Additional properties', () => {
     expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Patient)).toThrow(
-      new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
+      new OperationOutcomeError(validationError('Invalid additional property "fakeProperty"', ['Patient.fakeProperty']))
     );
   });
 
@@ -1019,11 +1020,21 @@ describe('FHIR resource validation', () => {
     binary.data = 123 as unknown as string;
     expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
+    binary.data = '==';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
     binary.data = '===';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
+    binary.data = 'AAAA===';
     expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
+
+    // Long invalid base64 (valid chars but invalid char at end) don't cause catastrophic backtracking
+    binary.data = 'A'.repeat(10000) + '!'; // Invalid: '!' not in base64 alphabet
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
   });
 
   test('Binary.data can exceed default when cap override is provided', () => {
@@ -1972,7 +1983,10 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(invalidFullUrlBdl)).toThrow(
       new OperationOutcomeError(
         validationError(
-          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference`,
+          ['Bundle.entry[0]'],
+          'invariant',
+          '{"fhirpath":"fullUrl.exists() implies fullUrl.contains(\'/_history/\').not()"}'
         )
       )
     );
@@ -1992,6 +2006,30 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
+  });
+
+  test('RiskAssessment ras-2', () => {
+    const ra1: RiskAssessment = {
+      resourceType: 'RiskAssessment',
+      status: 'preliminary',
+      subject: { reference: 'Patient/123' },
+      prediction: [
+        {
+          // probabilityDecimal: 0, // <--- without this optional property, constraint validation fails on ras-2
+          qualitativeRisk: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/risk-probability',
+                code: 'high',
+                display: 'High likelihood',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => validateResource(ra1)).not.toThrow();
   });
 });
 

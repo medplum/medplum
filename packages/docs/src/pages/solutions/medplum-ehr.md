@@ -20,4 +20,4 @@ Manage and bill insurance for patient visits and procedures.  View claim status 
 
 ## Certification and Compliance
 
-Medplum has received [ONC certification](https://www.medplum.com/docs/compliance/onc), is [SOC 2 Type II Certified](/docs/compliance/soc2) and is [HIPAA compliant](/docs/compliance/hipaa).
+Medplum has received [ONC certification](/docs/compliance/onc), is [SOC 2 Type II Certified](/docs/compliance/soc2) and is [HIPAA compliant](/docs/compliance/hipaa).

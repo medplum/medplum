@@ -127,6 +127,160 @@ const response = await medplum.executeBot(
 );
 ```
 
+### Stedi sandbox testing
+
+:::note
+The Stedi sandbox successfully validates only a few payloads. **We recommend using the transaction Bundle below** when testing against the sandbox.
+:::
+
+<details>
+<summary>Example transaction Bundle (recommended for Stedi sandbox testing)</summary>
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [
+          {
+            "family": "Doe",
+            "given": ["John"]
+          }
+        ],
+        "birthDate": "1994-04-04"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Provider Name",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1999999984"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Aetna",
+        "identifier": [
+          {
+            "system": "https://www.stedi.com/healthcare/network",
+            "value": "68069"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b",
+      "resource": {
+        "resourceType": "Coverage",
+        "status": "active",
+        "subscriberId": "AMBETTER123",
+        "subscriber": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "John Doe"
+        },
+        "beneficiary": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "John Doe"
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+            "display": "Aetna"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e5a6b7c8-9d0e-4f1a-82b3-4d5e6f7a8b9c",
+      "resource": {
+        "resourceType": "CoverageEligibilityRequest",
+        "status": "active",
+        "purpose": ["benefits"],
+        "patient": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "John Doe"
+        },
+        "created": "2026-03-16",
+        "provider": {
+          "reference": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+          "display": "Provider Name"
+        },
+        "insurer": {
+          "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+          "display": "Aetna"
+        },
+        "insurance": [
+          {
+            "coverage": {
+              "reference": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b"
+            },
+            "focal": true
+          }
+        ],
+        "item": [
+          {
+            "category": {
+              "coding": [
+                {
+                  "system": "https://x12.org/codes/service-type-codes",
+                  "code": "30",
+                  "display": "Plan Coverage and General Benefits"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "CoverageEligibilityRequest"
+      }
+    }
+  ]
+}
+```
+
+</details>
+
 ## Receiving the Eligibility Response
 
 After the eligibility check is sent, the **Insurance Eligibility Bot** will create and return a [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) resource. This new [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) will reference all of the resources from the request.

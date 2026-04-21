@@ -22,10 +22,13 @@ import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
 import { appointmentBookHandler } from './operations/book';
+import { botInitHandler } from './operations/botinit';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
+import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -50,13 +53,18 @@ import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
 import { scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
+import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
+import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
+import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
@@ -288,6 +296,12 @@ function initInternalFhirRouter(): FhirRouter {
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
 
+  // Binary $presigned-url operation
+  router.add('GET', '/Binary/:id/$presigned-url', binaryPresignedUrlHandler);
+
+  // Bot $init operation
+  router.add('POST', '/Bot/$init', botInitHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -318,6 +332,12 @@ function initInternalFhirRouter(): FhirRouter {
   // Resource $set-accounts operation
   router.add('POST', '/:resourceType/:id/$set-accounts', setAccountsHandler);
 
+  // Resource $refresh-reference-display operation
+  router.add('POST', '/:resourceType/:id/$refresh-reference-display', refreshReferenceDisplayHandler);
+
+  // Patient $match operation
+  router.add('POST', '/Patient/$match', patientMatchHandler);
+
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
   router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
@@ -346,6 +366,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // ClientApplication $launch
   router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+
   // Rotate client secret
   router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
@@ -357,6 +378,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Appointment $book operation
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
+
+  // PackageRelease $install operation
+  router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
@@ -386,6 +410,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('GET', '/$get-ws-sub-stats', getWsSubStatsHandler);
+  router.add('GET', '/$get-ws-sub-project-stats', getWsSubProjectStatsHandler);
+  router.add('POST', '/$clear-all-ws-subs', clearAllWsSubsHandler);
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);

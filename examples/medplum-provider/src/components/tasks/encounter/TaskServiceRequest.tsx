@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { DiagnosticReport, Encounter, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import type { JSX } from 'react';
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import { IconPlus } from '@tabler/icons-react';
-import { OrderLabsPage } from '../../../pages/labs/OrderLabsPage';
+import type { DiagnosticReport, Encounter, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
+import { useMedplum, useResource } from '@medplum/react';
+import { IconPlus } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { OrderLabsPage } from '../../../pages/labs/OrderLabsPage';
 import { showErrorNotification } from '../../../utils/notifications';
 
 interface TaskServiceRequestProps {

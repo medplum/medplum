@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
-import type { Message } from '../types/spaces';
 import { createReference, getReferenceString } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import type { Message } from '../types/spaces';
 
 /**
  * Creates a new conversation topic (main Communication resource)
@@ -102,55 +102,6 @@ function buildMessageCommunication(topicId: string, message: Message, sequenceNu
 }
 
 /**
- * Repairs corrupted message history by adding missing tool responses.
- * OpenAI requires that every tool_call_id has a corresponding tool response message.
- * @param messages - The array of messages to repair
- * @returns Repaired array of messages
- */
-function repairMessageHistory(messages: Message[]): Message[] {
-  const repairedMessages: Message[] = [];
-
-  for (let i = 0; i < messages.length; i++) {
-    const message = messages[i];
-    repairedMessages.push(message);
-
-    // Check if this is an assistant message with tool_calls
-    if (message.role === 'assistant' && message.tool_calls && message.tool_calls.length > 0) {
-      // Collect all tool_call_ids that need responses
-      const requiredToolCallIds = new Set(message.tool_calls.map((tc: { id: string }) => tc.id));
-
-      // Look ahead for tool responses
-      const foundToolCallIds = new Set<string>();
-      for (let j = i + 1; j < messages.length; j++) {
-        const nextMessage = messages[j];
-        if (nextMessage.role === 'tool' && nextMessage.tool_call_id) {
-          foundToolCallIds.add(nextMessage.tool_call_id);
-        } else if (nextMessage.role !== 'tool') {
-          // Stop looking when we hit a non-tool message
-          break;
-        }
-      }
-
-      // Add placeholder responses for any missing tool_call_ids
-      for (const toolCallId of requiredToolCallIds) {
-        if (!foundToolCallIds.has(toolCallId)) {
-          repairedMessages.push({
-            role: 'tool',
-            tool_call_id: toolCallId,
-            content: JSON.stringify({
-              error: true,
-              message: 'Tool response was not recorded. The operation may have failed or been interrupted.',
-            }),
-          });
-        }
-      }
-    }
-  }
-
-  return repairedMessages;
-}
-
-/**
  * Loads the last messages for a conversation topic
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic
@@ -192,10 +143,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   // Sort by sequenceNumber to ensure correct message order for OpenAI
   messages.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
-  const sortedMessages = messages.map((m) => m.message);
-
-  // Repair any corrupted message history (missing tool responses)
-  return repairMessageHistory(sortedMessages);
+  return messages.map((m) => m.message);
 }
 
 /**

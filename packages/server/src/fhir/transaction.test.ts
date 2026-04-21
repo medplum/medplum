@@ -7,18 +7,19 @@ import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
-import type { Repository } from './repo';
-import { getSystemRepo } from './repo';
+import type { Repository, SystemRepository } from './repo';
 import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -74,7 +75,7 @@ describe('FHIR Repo Transactions', () => {
 
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
-          await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+          await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
         })
       ).rejects.toMatchObject(
         new OperationOutcomeError({
@@ -197,7 +198,7 @@ describe('FHIR Repo Transactions', () => {
 
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
-            await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+            await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
           })
         ).rejects.toMatchObject(
           new OperationOutcomeError({
@@ -407,7 +408,6 @@ describe('FHIR Repo Transactions', () => {
 
       await sleep(250);
 
-      const systemRepo = getSystemRepo();
       const tx2 = systemRepo.withTransaction(async () => {
         await systemRepo.updateResource({ ...existing, deceasedBoolean: false });
       });
@@ -435,7 +435,6 @@ describe('FHIR Repo Transactions', () => {
         { serializable: true }
       );
 
-      const systemRepo = getSystemRepo();
       const tx2 = systemRepo.withTransaction(
         async () => {
           await sleep(250);
@@ -467,7 +466,6 @@ describe('FHIR Repo Transactions', () => {
         await sleep(500);
       });
 
-      const systemRepo = getSystemRepo();
       const tx2 = systemRepo.withTransaction(async () => {
         await sleep(250);
         const existing = await systemRepo.searchResources(parseSearchRequest(criteria));
@@ -493,7 +491,6 @@ describe('FHIR Repo Transactions', () => {
 
       await sleep(200);
 
-      const systemRepo = getSystemRepo();
       const tx2 = systemRepo.updateResource({ ...existing, deceasedBoolean: false });
 
       const results = await Promise.allSettled([tx1, tx2]);

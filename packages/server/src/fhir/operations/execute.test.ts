@@ -30,7 +30,7 @@ import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
   [
@@ -138,13 +138,13 @@ exports.handler = async function (medplum, event) {
 ] as [string, string][];
 
 type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
-const botDefinitions: { name: BotName; system: boolean; code: [string, string] }[] = [
+const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
   { name: 'echoBot', system: false, code: botCodes[0] },
   { name: 'booleanBot', system: false, code: botCodes[1] },
   { name: 'binaryBot', system: false, code: botCodes[2] },
-  { name: 'streamingBot', system: false, code: botCodes[3] },
-  { name: 'streamingErrorBot', system: false, code: botCodes[4] },
+  { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
+  { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
 ];
 
 describe('Execute', () => {
@@ -176,7 +176,13 @@ describe('Execute', () => {
     project1 = testSetup.project;
     accessToken1 = testSetup.accessToken;
 
-    async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<WithId<Bot>> {
+    async function setupBot(
+      name: string,
+      system: boolean,
+      esmCode: string,
+      cjsCode: string,
+      streaming?: boolean
+    ): Promise<WithId<Bot>> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
         .set('Content-Type', ContentType.FHIR_JSON)
@@ -188,6 +194,7 @@ describe('Execute', () => {
           runtimeVersion: 'vmcontext',
           code: esmCode,
           system,
+          ...(streaming && { streamingEnabled: true }),
         });
 
       expect(res1.status).toBe(201);
@@ -206,8 +213,8 @@ describe('Execute', () => {
       return bot;
     }
 
-    for (const { name, system, code } of botDefinitions) {
-      bots[name] = await setupBot(name, system, code[0], code[1]);
+    for (const { name, system, code, streaming } of botDefinitions) {
+      bots[name] = await setupBot(name, system, code[0], code[1], streaming);
     }
   });
 
@@ -679,6 +686,7 @@ describe('Execute', () => {
       // Create a new project that links to the first project
       const testSetup2 = await createTestProject({
         withAccessToken: true,
+        withRepo: true,
         project: {
           name: 'Project 2',
           systemSecret: [
@@ -698,7 +706,7 @@ describe('Execute', () => {
       project2 = testSetup2.project;
       accessToken2 = testSetup2.accessToken;
 
-      const systemRepo = getSystemRepo();
+      const systemRepo = testSetup2.repo.getSystemRepo();
       for (const bot of [bots.echoBot, bots.systemEchoBot]) {
         await systemRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
@@ -778,11 +786,11 @@ describe('Execute', () => {
       ],
     ])('%s bot in %s project secrets', async (botName, whichProject, expectedSecrets) => {
       const bot = bots[botName];
-      const systemRepo = getSystemRepo();
 
       // execute the bot in the appropriate project context
       const project = whichProject === 'own' ? project1 : project2;
       const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
+      const systemRepo = await getProjectSystemRepo(project);
 
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$execute`)
@@ -834,7 +842,7 @@ describe('Execute', () => {
 
       expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
       const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
-      const authState = await getLoginForAccessToken(undefined, generatedAccessToken);
+      const authState = (await getLoginForAccessToken(undefined, generatedAccessToken))?.authState;
 
       const expectedProject = whichProject === 'own' ? project1 : project2;
       expect(authState?.project?.id).toBeDefined();

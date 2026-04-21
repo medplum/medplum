@@ -11,20 +11,22 @@ import type {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import type { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
+  systemRepo: SystemRepository,
   project: Project,
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
@@ -38,8 +40,7 @@ export async function createProfile(
     telecom = [{ system: 'email', use: 'work', value: email }];
   }
 
-  const systemRepo = getSystemRepo();
-  const result = await systemRepo.createResource<ProfileResource>({
+  const result = await systemRepo.createResource({
     resourceType,
     meta: {
       project: project.id,
@@ -57,7 +58,7 @@ export async function createProfile(
 }
 
 export async function createProjectMembership(
-  repo: Repository,
+  systemRepo: SystemRepository,
   user: User,
   project: Project,
   profile: ProfileResource,
@@ -66,7 +67,7 @@ export async function createProjectMembership(
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
-  const result = await repo.createResource<ProjectMembership>({
+  const result = await systemRepo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
     project: createReference(project),
@@ -85,7 +86,7 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
@@ -205,7 +206,7 @@ export async function getProjectIdByClientId(
 export function getProjectByRecaptchaSiteKey(
   recaptchaSiteKey: string,
   projectId: string | undefined
-): Promise<Project | undefined> {
+): Promise<WithId<Project> | undefined> {
   const filters = [
     {
       code: 'recaptcha-site-key',
@@ -222,7 +223,7 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // not shard ready; would require searching all shards
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 

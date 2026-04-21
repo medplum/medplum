@@ -8,14 +8,14 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
 import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 
 describe('Auth middleware', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
@@ -194,6 +194,14 @@ describe('Auth middleware', () => {
       })
     );
 
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth with inactive project membership', async () => {
+    const client = await createTestClient({ membership: { active: false } });
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));

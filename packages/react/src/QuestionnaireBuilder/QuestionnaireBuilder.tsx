@@ -22,7 +22,7 @@ import {
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem';
@@ -123,8 +123,10 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  const itemRef = useRef<T>(props.item);
-  itemRef.current = props.item;
+  const itemRef = useRef(props.item);
+  useLayoutEffect(() => {
+    itemRef.current = props.item;
+  });
 
   function onClick(e: SyntheticEvent): void {
     killEvent(e);
