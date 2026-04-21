@@ -243,7 +243,10 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
             variant="outline"
             rightSection={<IconArrowUpRight size={16} />}
             disabled={submitting}
-            onClick={() => { onClose(); onSubmitToStedi?.(); }}
+            onClick={() => {
+              onClose();
+              onSubmitToStedi?.();
+            }}
           >
             Submit to Stedi
           </Button>
