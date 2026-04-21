@@ -17,6 +17,7 @@ export {
   DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
   DOSESPOT_SEARCH_MEDICATIONS_BOT,
   DOSESPOT_SEARCH_PHARMACY_BOT,
+  DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
   MEDPLUM_BOT_SYSTEM,
 } from '@medplum/dosespot-core';
 export type { DoseSpotNotificationCountsResponse } from '@medplum/dosespot-core';

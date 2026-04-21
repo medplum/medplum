@@ -44,7 +44,7 @@ The toolbar at the top contains actions that you can use to customize this view.
 
 This search control is also encapsulated as the [`Search Control`](https://storybook.medplum.com/?path=/story/medplum-searchcontrol--checkboxes) React component and can be embedded into your own applications.
 
-:::caution Caution
+:::caution[Caution]
 For performance reasons, the total resource count displayed on the Medplum App is an **estimated count**, not an exact count. You can read more about fetching resource counts [here](/docs/search/paginated-search#getting-the-total-number-of-results-with-_total)
 :::
 

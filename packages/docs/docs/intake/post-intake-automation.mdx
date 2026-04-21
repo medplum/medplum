@@ -50,7 +50,7 @@ Create a Subscription that matches your intake questionnaire. Use the `questionn
 }
 ```
 
-:::tip Avoid Infinite Loops
+:::tip[Avoid Infinite Loops]
 
 If your Bot updates the QuestionnaireResponse (e.g., to set `subject` after creating the Patient), use a **create-only** Subscription to avoid re-triggering. The intake demo Bot does exactly this — it creates the Patient, then updates the QuestionnaireResponse to link `subject` to the new Patient. Because the Subscription only fires on creation, the update doesn't re-trigger the Bot.
 
@@ -92,7 +92,7 @@ When intake data requires human follow-up, create a [`Task`](/docs/api/fhir/reso
 
 ## PlanDefinition Orchestration
 
-:::note Optional / Advanced
+:::note[Optional / Advanced]
 
 Many teams process intake with a single Bot triggered on QuestionnaireResponse creation, and that's a perfectly valid approach. PlanDefinition-based orchestration is useful when you need structured, multi-step intake workflows — for example, when intake involves multiple questionnaires completed by different people (patient fills demographics, nurse fills vitals, provider reviews chart).
 

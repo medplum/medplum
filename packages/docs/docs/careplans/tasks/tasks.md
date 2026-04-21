@@ -116,7 +116,7 @@ You can search for all unassigned tasks using the [`:missing`](/docs/search/basi
   </TabItem>
 </Tabs>
 
-:::tip Assigning tasks to roles
+:::tip[Assigning tasks to roles]
 
 A common pattern in telehealth practices is the assignment of tasks to all practitioners with a given role (e.g., clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 

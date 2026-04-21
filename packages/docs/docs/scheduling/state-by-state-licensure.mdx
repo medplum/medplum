@@ -6,7 +6,7 @@ tags: [scheduling]
 
 # Matching Patients to Providers by State-by-State Licensure
 
-:::info Scheduling operations do not enforce licensure
+:::info[Scheduling operations do not enforce licensure]
 
 Medplum Scheduling is intentionally designed to allow business specific use cases like state-by-state licensure, program enrollment, and “which providers may this patient book?” to be handled **outside** Medplum’s scheduling operations. [`$find`](/docs/scheduling/schedule-find) does not take a patient, a license, or a state; it only computes free slots for a **single** [Schedule](/docs/api/fhir/resources/schedule) you already identified.
 
