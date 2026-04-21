@@ -243,7 +243,7 @@ medplum project invite <firstName> <lastName> <email>
 
 The AWS commands require [AWS authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html). Please make sure your credentials are configured before using the `aws` commands.
 
-:::caution
+:::caution[]
 
 The `aws` commands are in beta, and likely to change.
 

@@ -67,7 +67,7 @@ The operation behavior depends on the current status of the AsyncJob:
 accepted → cancelled (via $cancel)
 ```
 
-:::note
+:::note[]
 Only jobs with `accepted` status can be cancelled. Jobs that are already `completed`, `failed`, or in other terminal states cannot be cancelled.
 :::
 

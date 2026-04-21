@@ -63,7 +63,7 @@ When a new message arrives that requires action, create a [`Task`](/docs/api/fhi
 
 To assign directly to a specific provider instead of a pool, set `owner` to the [`Practitioner`](/docs/api/fhir/resources/practitioner) reference and omit `performerType`.
 
-:::tip
+:::tip[]
 
 Only create a [`Task`](/docs/api/fhir/resources/task) for messages that require a response. Use `Communication.category` or business logic in a Bot to determine which messages need routing. In production, [`Task`](/docs/api/fhir/resources/task) creation is typically handled by a Bot triggered via a [`Subscription`](/docs/api/fhir/resources/subscription) on [`Communication`](/docs/api/fhir/resources/communication) creation rather than created manually.
 

@@ -63,7 +63,7 @@ To view or update the Project-level limits:
 
 If those values are not set, the server defaults will be used.
 
-:::info
+:::info[]
 There are some scenarios where you may want to **set a custom quota for a User, Bot, or ClientApplication**. For example, say you expect higher traffic for a specific User, Bot, or ClientApplication than the default user quota in your project, you can set a custom quota for that User, Bot, or ClientApplication. See [how to set user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits) for more information about how to do this.
 
 **Important:** The `totalFhirQuota` will still be enforced, but `userFhirQuota` will be overridden for the User, Bot, or ClientApplication.

@@ -51,7 +51,7 @@ The original message content is always preserved in the resource's version histo
 | Hide + replace      | Filter out `entered-in-error` messages. Show the correction in the original's position (use `inResponseTo` to find the link). |
 | Show with indicator | Display the original with a strikethrough or "this message was edited" label. Show the correction below it.                   |
 
-:::caution
+:::caution[]
 
 `entered-in-error` messages still appear in search results unless you explicitly filter them out with `status:not=entered-in-error` in your message queries.
 
@@ -127,7 +127,7 @@ Query for the current user's drafts across all threads:
   </TabItem>
 </Tabs>
 
-:::caution
+:::caution[]
 
 Other users should never see your drafts. When loading messages for a thread, filter with `status:not=preparation` to exclude all drafts. Only load drafts via a sender-scoped query for the current user.
 

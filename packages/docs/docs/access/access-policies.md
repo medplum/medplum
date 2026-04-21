@@ -209,7 +209,7 @@ The following access policy grants read-only access to the "Patient" resource ty
 
 Constraints on writes to a resource can also be specified using [FHIRPath expressions][fhirpath] in the `AccessPolicy.resource.writeConstraint` field. These expressions may contain the special variable `%before` to refer to the resource as it existed before the write. Any property accesses will by default refer to the resource as it exists with updates applied, but the `%after` variable is also provided for convenience.
 
-:::tip
+:::tip[]
 
 In case of a resource being created, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
 

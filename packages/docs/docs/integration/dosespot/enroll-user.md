@@ -132,7 +132,7 @@ If a prescriber has DEA numbers for multiple states, add multiple identifier ent
 ]
 ```
 
-:::caution
+:::caution[]
 If you request IDP or TFA initialization but the Practitioner has no DEA number identifiers, the bot will return an error asking you to add them first.
 :::
 
@@ -207,7 +207,7 @@ Full Practitioner resource example (with DEA)
 | `6`   | Proxy Clinician             |
 
 
-:::note
+:::note[]
 Users that need to invite others should be added with the Clinician Admin role type (`4`).
 :::
 
