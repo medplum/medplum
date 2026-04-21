@@ -42,7 +42,7 @@ import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
-import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
@@ -159,7 +159,9 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
       queueName,
       (job) =>
         job.data.authState
-          ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+          ? runInAuthenticatedContext(job.data.authState, job.data.requestId, job.data.traceId, undefined, () =>
+              execSubscriptionJob(job)
+            )
           : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
       {
         ...defaultOptions,

@@ -6,7 +6,7 @@ sidebar_position: 1
 
 This guide explains how to get the **DoseSpot eRx interface iframed into Medplum** and **sync the relevant resources between Medplum and DoseSpot**. It is all integrated into the [Provider App](https://provider.medplum.com) already, but these instructions will show you how to use the hooks and bots in your own application.
 
-:::info
+:::info[]
 This is a [premium](/pricing) tier 3rd party integration feature. Please contact us at [support@medplum.com](mailto:support@medplum.com) to get access.
 :::
 
@@ -43,7 +43,7 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 - date of birth
 - name (first and last)
 
-:::warning Pediatric Patients (Under 18)
+:::warning[Pediatric Patients (Under 18)]
 For patients under 18 years of age, you **must** also sync Height and Weight as [Observations](/docs/api/fhir/resources/observation) using the correct LOINC codes. The sync will fail without these required vital signs. See the [Height and Weight for Pediatric Patients](#height-and-weight-for-pediatric-patients) section for more details.
 :::
 
@@ -182,7 +182,7 @@ For patients under 18 years of age, DoseSpot requires Height and Weight observat
 ```
 </details>
 
-:::tip Required LOINC Codes
+:::tip[Required LOINC Codes]
 - **Height**: `8302-2` (Body height)
 - **Weight**: `29463-7` (Body weight)
 
@@ -736,7 +736,7 @@ For successful enrollment, the Practitioner resource must include the following 
 - **`telecom`** with work phone (`system: "phone"`, `use: "work"`)
 - **`telecom`** with fax (`system: "fax"`)
 
-:::warning NPI Validation
+:::warning[NPI Validation]
 If an NPI identifier is present on the Practitioner resource, it **must** be valid (exactly 10 digits). The bot will throw an error if an invalid NPI is provided.
 :::
 

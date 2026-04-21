@@ -144,7 +144,7 @@ FHIR defines two different types of "string" search parameters: `string` and `to
 
 A `string` search parameter is used when searching for a specific word or phrase within a resource. This type of search is more general and allows for partial matches, such as searching for patients whose names contain the word "Smith". Searches are **case insensitive**, and any result that **starts with** the query string will be returned.
 
-:::note Example
+:::note[Example]
 
 For example, the following search will return patients with the names `"eve"`, `"Eve"`, `"Evelyn`", but _not_ `"Steve"`
 
@@ -162,7 +162,7 @@ Additionally, many `token` elements are namespaced by a `system` string. This is
 
 You can restrict your `token` search to a specific system by using the syntax `<parameter>=<system>|<value>`
 
-:::tip Example
+:::tip[Example]
 
 The following search would find all patients with _any_ identifier that equals `"12345"`
 
@@ -180,7 +180,7 @@ medplum.searchResources('Patient', 'identifier=http://hl7.org/fhir/sid/us-ssn|12
 
 We can also check for the _presence_ of a particular identifier by dropping the `<value>` and using the syntax `<parameter>=<system>|`.
 
-:::tip Example
+:::tip[Example]
 
 To find all `Patients` that _have_ a social security number:
 
@@ -298,7 +298,7 @@ You can search an inclusive range using an AND search
   </TabItem>
 </Tabs>
 
-:::caution Note
+:::caution[Note]
 
 Because we are specifying the `value-quantity` parameter twice in this query, we must pass a `string[][]` as the second argument to `searchResources()`
 

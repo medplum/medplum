@@ -18,7 +18,7 @@ This page covers two workflows: correcting a message that has already been sent,
 
 The recommended approach for healthcare messaging is the "retract and correct" pattern: mark the original as an error, then create a new [`Communication`](/docs/api/fhir/resources/communication) with the corrected content. This preserves an explicit audit trail, which is important for clinical and compliance scenarios.
 
-:::note Alternative for less regulated contexts
+:::note[Alternative for less regulated contexts]
 
 If your use case does not require explicit error marking (for example, internal team chat), you can update the [`Communication`](/docs/api/fhir/resources/communication) `payload` in place using `patchResource`. FHIR version history (`meta.versionId`) still preserves every previous version, so the audit trail exists — it is just not surfaced via `status`. Choose the approach that matches your compliance requirements.
 
@@ -51,7 +51,7 @@ The original message content is always preserved in the resource's version histo
 | Hide + replace      | Filter out `entered-in-error` messages. Show the correction in the original's position (use `inResponseTo` to find the link). |
 | Show with indicator | Display the original with a strikethrough or "this message was edited" label. Show the correction below it.                   |
 
-:::caution
+:::caution[]
 
 `entered-in-error` messages still appear in search results unless you explicitly filter them out with `status:not=entered-in-error` in your message queries.
 
@@ -73,7 +73,7 @@ In your UI, bind the restored string to your composer state (for example, a Reac
 
 This is fast and requires no server round-trips, but the draft is lost if the user switches devices or clears browser storage.
 
-:::note Server-side rendering
+:::note[Server-side rendering]
 
 If your app uses server-side rendering (for example, Next.js), guard `localStorage` access behind a `typeof window !== 'undefined'` check to avoid errors during SSR.
 
@@ -99,7 +99,7 @@ When the user sends the message, promote the draft. At this point, also ensure `
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::tip Draft attachments
+:::tip[Draft attachments]
 
 Draft [`Communication`](/docs/api/fhir/resources/communication) resources support the same `payload` types as sent messages, including `contentAttachment` and `contentReference`. If your composer allows file uploads before send, add the attachment to the draft's `payload` array alongside or instead of `contentString`.
 
@@ -127,13 +127,13 @@ Query for the current user's drafts across all threads:
   </TabItem>
 </Tabs>
 
-:::caution
+:::caution[]
 
 Other users should never see your drafts. When loading messages for a thread, filter with `status:not=preparation` to exclude all drafts. Only load drafts via a sender-scoped query for the current user.
 
 :::
 
-:::tip Draft cleanup
+:::tip[Draft cleanup]
 
 Server-side drafts can accumulate over time if users start composing but never send. Set up a cron-triggered Bot to purge `preparation` [`Communication`](/docs/api/fhir/resources/communication) resources older than a threshold (for example, 30 days). For large numbers of stale drafts, batch the deletes using `medplum.executeBatch()` with a Transaction Bundle for better performance.
 

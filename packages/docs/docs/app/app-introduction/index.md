@@ -30,12 +30,12 @@ The toolbar at the top contains actions that you can use to customize this view.
 - **Fields:** Can be used to add/remove columns for resource elements
 - **Filters:** Used to filter rows based on search criteria. Only elements with [search parameters](/docs/search/basic-search#search-parameters) can be filtered on. You can also use the filter icon at the top of each column to filter on a specific element. Refer to our [search guide](/docs/search/basic-search) for more information.
 - **New:** Create a new resource of the selected type. This will open a form to specify the fields of the newly created resource, with the <span style={{color:"red"}}>\*</span> character indicating required fields.
-  :::note
+  :::note[]
   This form is an instance of the [`ResourceForm`](https://storybook.medplum.com/?path=/story/medplum-resourceform--patient) React component, and can be embedded into your own applications.
   :::
 
 - **Export:** Export the resources in the current view, either as a CSV or as [FHIR Bundle](/docs/api/fhir/resources/bundle). <br/>
-  :::note
+  :::note[]
   This operation will export _all_ resources for the selected filters, not just those on the current page (up to a maximum of 1000 resources).
   :::
 
@@ -44,7 +44,7 @@ The toolbar at the top contains actions that you can use to customize this view.
 
 This search control is also encapsulated as the [`Search Control`](https://storybook.medplum.com/?path=/story/medplum-searchcontrol--checkboxes) React component and can be embedded into your own applications.
 
-:::caution Caution
+:::caution[Caution]
 For performance reasons, the total resource count displayed on the Medplum App is an **estimated count**, not an exact count. You can read more about fetching resource counts [here](/docs/search/paginated-search#getting-the-total-number-of-results-with-_total)
 :::
 

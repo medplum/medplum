@@ -27,7 +27,7 @@ When working with healthcare standards like LOINC, SNOMED CT, or ICD-10, `$looku
 | `coding`   | `Coding` | Look up via full Coding.                                  | No       |
 | `property` | `string` | Properties of the coding to return in the response.       | No       |
 
-:::note Required Parameters
+:::note[Required Parameters]
 
 Although no single parameter is required by the operation, at least one of the following must be provided:
 

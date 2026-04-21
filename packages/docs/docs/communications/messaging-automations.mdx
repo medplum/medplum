@@ -10,7 +10,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Messaging Automations
 
-:::note Prerequisites
+:::note[Prerequisites]
 
 The patterns on this page use **Medplum Bots** — an [advanced feature](/docs/bots/bot-basics) that is disabled by default on many projects — and **FHIR Subscriptions**. Recurring automations also use **cron-scheduled Bots** ([Cron Jobs for Bots](/docs/bots/bot-cron-job)). Confirm Bots are enabled for your project and that you can create Bots and Subscriptions (typically as a Project administrator).
 
@@ -45,7 +45,7 @@ flowchart LR
   {ExampleCode}
 </MedplumCodeBlock>
 
-:::tip
+:::tip[]
 This example reroutes to the `performerType` pool. You could instead reroute to a specific coverage provider by setting `Task.owner` to that provider's reference. You can also customize the availability check — for instance, querying a different `serviceType` or adjusting the time window.
 :::
 

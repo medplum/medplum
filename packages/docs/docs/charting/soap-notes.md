@@ -348,7 +348,7 @@ For a deeper look at `Observation` resources and how to model measurements with 
 
 `ClinicalImpression` is the FHIR-native resource for recording a clinical assessment. Per the FHIR specification, it is literally the equivalent of the "A" in SOAP — it represents the clinician's summary, differential diagnosis, and overall impression formed during the encounter.
 
-:::tip Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?
+:::tip[Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?]
 
 Some implementations store the Assessment as a `DocumentReference` or leave it as a raw `QuestionnaireResponse`, treating the entire note as an opaque blob of text. `ClinicalImpression` is the recommended approach because it gives each part of the assessment a structured home — findings, differentials, and clinical reasoning are all discrete, searchable fields that other systems can consume. The goal is to maximize structured, codified data and minimize free-text wherever possible.
 

@@ -66,7 +66,7 @@ You can set this via the Medplum App UI (the field is on the ClientApplication e
 
 ## Obtaining a Token
 
-:::note
+:::note[]
 mTLS authentication is only available on the dedicated mTLS endpoint: **`https://mtls.api.medplum.com`**. Requests to the standard `https://api.medplum.com` endpoint will not include a client certificate and cannot use mTLS authentication.
 :::
 

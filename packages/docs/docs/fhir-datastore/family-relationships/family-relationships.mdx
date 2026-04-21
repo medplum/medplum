@@ -17,7 +17,7 @@ The FHIR specification provides a number of Resources for modeling interpersonal
 
 This guide provides a framework to help you decide how to model your patients' family relationships, and recommends a few approaches that our users have found useful.
 
-:::info Note
+:::info[Note]
 
 In this guide we will use the term "family member" throughout, as modeling families is a very common use case. However, the same data models can be used to model legal guardians, non-family caregivers, and any other individuals related to the patient.
 :::
@@ -179,7 +179,7 @@ The benefit of this approach is that you can track the family member's role in c
 
 The tradeoff is that is that you need to maintain the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource in addition the [Patient](/docs/api/fhir/resources/patient) Resource.
 
-:::info Note
+:::info[Note]
 
 Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one** patient associated with them it. This is because [RelatedPerson](/docs/api/fhir/resources/relatedperson) is meant to model the _relationship_ between a family member and a patient. Even if two patients the same family member, you'll have to create a new [RelatedPerson](/docs/api/fhir/resources/relatedperson) for each (patient, family member) pair to model each relationship.
 
@@ -241,7 +241,7 @@ In this model, the [RelatedPerson](/docs/api/fhir/resources/relatedperson) does 
 
 A common use case for this approach is in neonatal care. Many common neonatal workflows, such as newborn hearing tests, postpartum-depression screening, and breastfeeding metrics all require modeling both the mother and child as patients to track their individual encounters, medications, labs, and imaging.
 
-:::info Note
+:::info[Note]
 
 The FHIR spec also allows the use of the [Person](/docs/api/fhir/resources/person) resource to factor out demographic information. While this is a valid approach in cases where an individual can be both a [Patient](/docs/api/fhir/resources/patient) and a [Practitioner](/docs/api/fhir/resources/practitioner), Medplum generally doesn't recommend the additional complexity of mixing [Patient](/docs/api/fhir/resources/patient) and [Person](/docs/api/fhir/resources/person) resources.
 
