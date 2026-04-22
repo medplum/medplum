@@ -2237,10 +2237,12 @@ describe('FHIR Repo', () => {
             lastName: 'User',
           });
         });
-        expect(loggerErrorSpy).toHaveBeenCalledWith(
-          'Cross-divide Repository access',
-          expect.objectContaining({ targetType: 'User', relation: 'write' })
-        );
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Cross-divide Repository access', {
+          traversedTypes: 'Patient,User',
+          targetType: 'User',
+          relation: 'write',
+          payload: expect.any(Object),
+        });
 
         loggerErrorSpy.mockClear();
 
@@ -2252,10 +2254,79 @@ describe('FHIR Repo', () => {
           });
           await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
         });
-        expect(loggerErrorSpy).toHaveBeenCalledWith(
-          'Cross-divide Repository access',
-          expect.objectContaining({ targetType: 'Patient', relation: 'write' })
-        );
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Cross-divide Repository access', {
+          traversedTypes: 'User,Patient',
+          targetType: 'Patient',
+          relation: 'write',
+          payload: expect.any(Object),
+        });
+      }));
+
+    test('_include crossing divide does not log (separate SQL statements)', async () =>
+      withTestContext(async () => {
+        const practitioner = await projectRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+        const user = await projectRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Real',
+          lastName: 'User',
+        });
+        await projectRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(project),
+          user: createReference(user),
+          profile: createReference(practitioner),
+        });
+        loggerErrorSpy.mockClear();
+
+        await projectRepo.search({
+          resourceType: 'ProjectMembership',
+          include: [{ resourceType: 'ProjectMembership', searchParam: 'profile' }],
+          filters: [{ code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) }],
+        });
+
+        expect(loggerErrorSpy).not.toHaveBeenCalledWith('Cross-divide Repository access', expect.anything());
+      }));
+
+    test('multi-type search spanning divide logs (single UNION SQL statement)', async () =>
+      withTestContext(async () => {
+        await projectRepo.search({
+          resourceType: 'Patient',
+          types: ['Patient', 'User'],
+        });
+
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Cross-divide Repository access', {
+          traversedTypes: 'Patient,User',
+          targetType: 'User',
+          relation: 'search',
+        });
+      }));
+
+    test('chained search crossing divide logs (single SQL with EXISTS subquery)', async () =>
+      withTestContext(async () => {
+        await projectRepo.search(parseSearchRequest('ProjectMembership?profile:Practitioner.name=foo'));
+
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Cross-divide Repository access', {
+          traversedTypes: 'ProjectMembership,Practitioner',
+          targetType: 'Practitioner',
+          relation: 'chain-forward',
+          payload: expect.any(Object),
+        });
+      }));
+
+    test('two standalone reads crossing divide do not log (separate SQL statements)', async () =>
+      withTestContext(async () => {
+        const patient = await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+        const user = await projectRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Real',
+          lastName: 'User',
+        });
+        loggerErrorSpy.mockClear();
+
+        await projectRepo.readResource('Patient', patient.id);
+        await projectRepo.readResource('User', user.id);
+
+        expect(loggerErrorSpy).not.toHaveBeenCalledWith('Cross-divide Repository access', expect.anything());
       }));
   });
 });

@@ -472,22 +472,24 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
-    await this.rateLimiter()?.recordRead();
+    return this.runInScope(async () => {
+      await this.rateLimiter()?.recordRead();
 
-    const startTime = Date.now();
-    try {
-      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
-      const durationMs = Date.now() - startTime;
-      this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
-      return result;
-    } catch (err) {
-      const durationMs = Date.now() - startTime;
-      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, {
-        resource: { reference: `${resourceType}/${id}` },
-        durationMs,
-      });
-      throw err;
-    }
+      const startTime = Date.now();
+      try {
+        const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
+        const durationMs = Date.now() - startTime;
+        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
+        return result;
+      } catch (err) {
+        const durationMs = Date.now() - startTime;
+        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, {
+          resource: { reference: `${resourceType}/${id}` },
+          durationMs,
+        });
+        throw err;
+      }
+    });
   }
 
   private async readResourceImpl<T extends Resource>(
@@ -561,11 +563,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
 
+    // Each reference is its own single-SQL scope: a batched readReferences call with
+    // references that straddle the divide is physically multiple independent queries,
+    // so state must not leak from one entry to the next.
     for (let i = 0; i < result.length; i++) {
       const startTime = Date.now();
       const reference = references[i];
       const cacheEntry = cacheEntries[i];
-      let entryResult = await this.processReadReferenceEntry(reference, cacheEntry);
+      let entryResult = await this.runInScope(() => this.processReadReferenceEntry(reference, cacheEntry));
       const durationMs = Date.now() - startTime;
 
       if (entryResult instanceof Error) {
@@ -1570,20 +1575,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    await this.rateLimiter()?.recordSearch();
+    return this.runInScope(async () => {
+      await this.rateLimiter()?.recordSearch();
 
-    const startTime = Date.now();
-    try {
-      // Resource type validation is performed in the searchImpl function
-      const result = await searchImpl(this, searchRequest, options);
-      const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
-      return result;
-    } catch (err) {
-      const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
-      throw err;
-    }
+      const startTime = Date.now();
+      try {
+        // Resource type validation is performed in the searchImpl function
+        const result = await searchImpl(this, searchRequest, options);
+        const durationMs = Date.now() - startTime;
+        this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
+        return result;
+      } catch (err) {
+        const durationMs = Date.now() - startTime;
+        this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
+        throw err;
+      }
+    });
   }
 
   async processAllResources<T extends Resource>(
@@ -1619,28 +1626,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     referenceField: string,
     references: string[]
   ): Promise<Record<string, WithId<T>[]>> {
-    await this.rateLimiter()?.recordSearch(references.length);
-    const startTime = Date.now();
-    try {
-      const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
-      const durationMs = Date.now() - startTime;
-      for (const ref of references) {
-        const refFilter: Filter = { code: referenceField, operator: 'eq', value: ref };
-        const refSearch: SearchRequest = {
-          ...searchRequest,
-          filters: searchRequest.filters ? [...searchRequest.filters, refFilter] : [refFilter],
-        };
-        this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
-          searchRequest: refSearch,
-          durationMs,
-        });
+    return this.runInScope(async () => {
+      await this.rateLimiter()?.recordSearch(references.length);
+      const startTime = Date.now();
+      try {
+        const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
+        const durationMs = Date.now() - startTime;
+        for (const ref of references) {
+          const refFilter: Filter = { code: referenceField, operator: 'eq', value: ref };
+          const refSearch: SearchRequest = {
+            ...searchRequest,
+            filters: searchRequest.filters ? [...searchRequest.filters, refFilter] : [refFilter],
+          };
+          this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
+            searchRequest: refSearch,
+            durationMs,
+          });
+        }
+        return result;
+      } catch (err) {
+        const durationMs = Date.now() - startTime;
+        this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
+        throw err;
       }
-      return result;
-    } catch (err) {
-      const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
-      throw err;
-    }
+    });
   }
 
   /**
@@ -2968,16 +2977,55 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this._loggedCrossing = false;
   }
 
-  // Instrumentation for identifying Repository scopes (connection lifetime; a
-  // transaction is one scope) that query across the proposed global/non-global
-  // database split. Fires once per scope the first time both sides are touched.
+  /**
+   * Runs `fn` in its own cross-divide tracking scope when not already inside a transaction.
+   * A transaction is always its own scope (cleared by commit/rollback via releaseConnection),
+   * so this is a no-op when nested inside one. Outside a transaction, each top-level public
+   * method wrapped with this helper starts clean and restores the caller's state on exit,
+   * so separate SQL statements are evaluated independently.
+   * @param fn - The function to execute.
+   * @returns Whatever `fn` returns.
+   */
+  private async runInScope<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.transactionDepth > 0) {
+      return fn();
+    }
+    const savedTraversed = this._traversedResourceTypes;
+    const savedSawOfInterest = this._sawOfInterest;
+    const savedSawNotOfInterest = this._sawNotOfInterest;
+    const savedLoggedCrossing = this._loggedCrossing;
+    this._traversedResourceTypes = undefined;
+    this._sawOfInterest = false;
+    this._sawNotOfInterest = false;
+    this._loggedCrossing = false;
+    try {
+      return await fn();
+    } finally {
+      this._traversedResourceTypes = savedTraversed;
+      this._sawOfInterest = savedSawOfInterest;
+      this._sawNotOfInterest = savedSawNotOfInterest;
+      this._loggedCrossing = savedLoggedCrossing;
+    }
+  }
+
+  // Instrumentation for identifying Repository scopes that query across the proposed
+  // global/non-global database split. A scope is either a transaction or a single
+  // top-level public method call (wrapped via runInScope). Fires once per scope the
+  // first time both sides are touched via a contributing relation.
+  //
+  // Contributing relations represent types that appear together in a single SQL
+  // statement (the failure mode of a split): main search types, chained-search target
+  // types, reads, writes, deletes. Non-contributing relations (include, revinclude)
+  // are recorded in the traversal set for context but do not trigger detection, because
+  // those targets are fetched via separate SQL statements that would each route to
+  // their own database in a split world.
   //
   // Wired entry points:
   //   - writes: writeToDatabase (covers createResource/updateResource/patchResource/AuditEvent writes)
   //   - reads: readResourceImpl, processReadReferenceEntry
   //   - deletes: deleteResource
-  //   - search: getBaseSelectQuery, getSearchIncludeEntries, getSearchRevIncludeEntries,
-  //             chained search filters
+  //   - search: getBaseSelectQuery, getSearchIncludeEntries (non-contributing),
+  //             getSearchRevIncludeEntries (non-contributing), chained search filters
   //
   // Currently NOT instrumented (blind spots):
   //   - reindexResource, resendSubscriptions, expungeResource/expungeResources
@@ -2991,20 +3039,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     try {
       const type = targetType as ResourceType;
       (this._traversedResourceTypes ??= new Set()).add(type);
-      if (resourceTypeOfInterest(type)) {
-        this._sawOfInterest = true;
-      } else {
-        this._sawNotOfInterest = true;
-      }
 
-      if (this._sawOfInterest && this._sawNotOfInterest && !this._loggedCrossing) {
-        this._loggedCrossing = true;
-        getLogger().error('Cross-divide Repository access', {
-          traversedTypes: Array.from(this._traversedResourceTypes).join(','),
-          targetType,
-          relation,
-          payload,
-        });
+      if (relationContributesToCrossDivide(relation)) {
+        if (resourceTypeOfInterest(type)) {
+          this._sawOfInterest = true;
+        } else {
+          this._sawNotOfInterest = true;
+        }
+
+        if (this._sawOfInterest && this._sawNotOfInterest && !this._loggedCrossing) {
+          this._loggedCrossing = true;
+          getLogger().error('Cross-divide Repository access', {
+            traversedTypes: Array.from(this._traversedResourceTypes).join(','),
+            targetType,
+            relation,
+            payload,
+          });
+        }
       }
     } catch (err) {
       getLogger().info('Error in onResourceTypeQuery', { targetType, relation, payload, err });
@@ -3014,6 +3065,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
 function resourceTypeOfInterest(type: ResourceType): boolean {
   return GlobalResourceTypes.has(type) || GlobalOnlyResourceTypes.has(type);
+}
+
+// Relations produced by _include / _revinclude processing. Their targets are fetched
+// via separate SQL statements, so they do not represent a cross-divide failure mode.
+const NON_CONTRIBUTING_RELATIONS: ReadonlySet<string> = new Set(['include', 'revinclude']);
+
+function relationContributesToCrossDivide(relation: string): boolean {
+  return !NON_CONTRIBUTING_RELATIONS.has(relation);
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
