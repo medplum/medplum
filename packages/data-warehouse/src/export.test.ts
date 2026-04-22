@@ -15,8 +15,8 @@ describe('Data Warehouse Export', () => {
 
   beforeAll(async () => {
     // Spin up Postgres
-    pgContainer = await new PostgreSqlContainer('postgres:16-alpine').start();
-
+    pgContainer = await new PostgreSqlContainer('postgres:17').start();
+    
     // Connect and create table + insert data
     databaseUrl = pgContainer.getConnectionUri();
 
@@ -35,15 +35,16 @@ describe('Data Warehouse Export', () => {
       CREATE TABLE pg_db."AuditEvent" (
         id UUID PRIMARY KEY,
         content TEXT NOT NULL,
+        "projectId" UUID NOT NULL,
         "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL
       );
     `);
 
     await execAsync(`
       INSERT INTO pg_db."AuditEvent" VALUES
-        ('00000000-0000-0000-0000-000000000001', '{"event": 1}', '2026-04-11 10:00:00+00'),
-        ('00000000-0000-0000-0000-000000000002', '{"event": 2}', '2026-04-11 10:15:00+00'),
-        ('00000000-0000-0000-0000-000000000003', '{"event": 3}', '2026-04-11 10:30:00+00');
+        ('00000000-0000-0000-0000-000000000001', '{"event": 1}', '123e4567-e89b-12d3-a456-426614174000', '2026-04-11 10:00:00+00'),
+        ('00000000-0000-0000-0000-000000000002', '{"event": 2}', '123e4567-e89b-12d3-a456-426614174000', '2026-04-11 10:15:00+00'),
+        ('00000000-0000-0000-0000-000000000003', '{"event": 3}', '123e4567-e89b-12d3-a456-426614174000', '2026-04-11 10:30:00+00');
     `);
 
     db.close();
