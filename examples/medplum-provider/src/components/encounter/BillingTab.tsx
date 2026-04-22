@@ -422,6 +422,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     async (coverageRefs: Reference<Coverage>[]): Promise<void> => {
       setConfirmModalOpen(false);
       if (!claim || coverageRefs.length === 0) {
+        showNotification({
+          title: 'Missing Coverage',
+          message: 'Please select at least one coverage before submitting a claim',
+          color: 'red',
+        });
         return;
       }
 

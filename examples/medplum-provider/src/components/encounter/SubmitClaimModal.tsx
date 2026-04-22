@@ -93,14 +93,12 @@ const CoverageCard = ({ coverage, selected, onToggle }: CoverageCardProps): JSX.
 interface ClaimReviewPanelProps {
   patient: WithId<Patient>;
   conditions: Condition[];
-  chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   submitting: boolean;
   insuranceCoverages: WithId<Coverage>[];
   selectedCoverage: WithId<Coverage> | undefined;
   selfPayCoverage: WithId<Coverage> | undefined;
   initialBillingType: BillingType;
-  onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
 }
 
@@ -195,9 +193,9 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
               Coverage on file
             </Text>
             {insuranceCoverages.length > 1 && (
-              <Text size="xs" c="blue" style={{ cursor: 'pointer' }} onClick={() => toggleCoverageAll()}>
+              <Button variant="subtle" size="xs" onClick={toggleCoverageAll}>
                 {selectedIds.size === insuranceCoverages.length ? 'Deselect all' : 'Select all'}
-              </Text>
+              </Button>
             )}
           </Group>
           <Box style={{ maxHeight: 320, overflowY: 'auto' }}>
@@ -273,7 +271,6 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
     selectedCoverage,
     patient,
     conditions,
-    chargeItems,
     practitioner,
     onClose,
     onSubmitClaim,
@@ -292,14 +289,12 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
         <ClaimReviewPanel
           patient={patient}
           conditions={conditions}
-          chargeItems={chargeItems}
           practitioner={practitioner}
           submitting={submitting}
           insuranceCoverages={insuranceCoverages}
           selectedCoverage={selectedCoverage}
           selfPayCoverage={selfPayCoverage}
           initialBillingType={initialBillingType}
-          onClose={onClose}
           onSubmitClaim={onSubmitClaim}
         />
       )}
