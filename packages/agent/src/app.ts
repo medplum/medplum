@@ -596,28 +596,39 @@ export class App {
   }
 
   private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    let channel: Channel | undefined = this.channels.get(definition.name);
+    const existingChannel = this.channels.get(definition.name);
 
-    if (channel) {
-      await channel.reloadConfig(definition, endpoint);
+    if (existingChannel) {
+      const previousType = getChannelType(existingChannel.getEndpoint());
+      const nextType = getChannelType(endpoint);
+
+      if (previousType === nextType) {
+        await existingChannel.reloadConfig(definition, endpoint);
+        return;
+      }
+
+      await existingChannel.stop();
+      this.channels.delete(definition.name);
+
+      let replacementChannel: Channel;
+      
+      try {
+        replacementChannel = this.createChannel(nextType, definition, endpoint);
+      } catch (err) {
+        this.log.error(normalizeErrorString(err));
+        return;
+      }
+
+      await replacementChannel.start();
+      this.channels.set(definition.name, replacementChannel);
       return;
     }
 
+    let channel: Channel
+
     try {
       const channelType = getChannelType(endpoint);
-      switch (channelType) {
-        case ChannelType.DICOM:
-          channel = new AgentDicomChannel(this, definition, endpoint);
-          break;
-        case ChannelType.HL7_V2:
-          channel = new AgentHl7Channel(this, definition, endpoint);
-          break;
-        case ChannelType.BYTE_STREAM:
-          channel = new AgentByteStreamChannel(this, definition, endpoint);
-          break;
-        default:
-          throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
-      }
+      channel = this.createChannel(channelType, definition, endpoint);
     } catch (err) {
       this.log.error(normalizeErrorString(err));
       return;
@@ -625,6 +636,19 @@ export class App {
 
     await channel.start();
     this.channels.set(definition.name, channel);
+  }
+
+  private createChannel(channelType: ChannelType, definition: AgentChannel, endpoint: Endpoint): Channel {
+    switch (channelType) {
+      case ChannelType.DICOM:
+        return new AgentDicomChannel(this, definition, endpoint);
+      case ChannelType.HL7_V2:
+        return new AgentHl7Channel(this, definition, endpoint);
+      case ChannelType.BYTE_STREAM:
+        return new AgentByteStreamChannel(this, definition, endpoint);
+      default:
+        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    }
   }
 
   async stop(): Promise<void> {

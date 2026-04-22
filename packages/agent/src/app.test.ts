@@ -38,6 +38,7 @@ import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort } from './test-utils';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
+import { AgentByteStreamChannel } from './bytestream';
 
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
@@ -732,6 +733,105 @@ describe('App', () => {
     clearTimeout(timeout);
     expect(stagingChannel.server.server).not.toBeDefined();
 
+    // Verify protocol changes replace the channel instance instead of no-op reloading it.
+
+    const hl7TestChannelBefore = app.channels.get('hl7-test') as AgentHl7Channel;
+    expect(hl7TestChannelBefore).toBeDefined();
+
+    const protocolSwapAddress = new URL(hl7TestEndpoint2.address);
+    protocolSwapAddress.protocol = 'tcp:';
+    protocolSwapAddress.searchParams.set('startChar', 'a');
+    protocolSwapAddress.searchParams.set('endChar', 'b');
+
+    const hl7TestEndpoint3 = await medplum.updateResource<Endpoint>({
+      ...hl7TestEndpoint2,
+      address: protocolSwapAddress.toString(),
+      connectionType: { code: ContentType.OCTET_STREAM },
+      payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+    });
+
+    await medplum.updateResource({
+      ...agent,
+      channel: [
+        {
+          name: 'hl7-test',
+          endpoint: createReference(hl7TestEndpoint3),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'hl7-prod',
+          endpoint: createReference(hl7ProdEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'dicom-test',
+          endpoint: createReference(dicomTestEndpoint2),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'dicom-prod',
+          endpoint: createReference(dicomProdEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'hl7-dev',
+          endpoint: createReference(hl7StagingEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    state.gotAgentReloadResponse = false;
+    state.gotAgentError = false;
+    state.agentError = undefined;
+
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentReloadResponse && !state.gotAgentError) {
+    if (shouldThrow) {
+      throw new Error('Timeout');
+    }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotAgentReloadResponse).toStrictEqual(true);
+    expect(state.gotAgentError).toStrictEqual(false);
+
+    const hl7TestChannelAfter = app.channels.get('hl7-test');
+    expect(hl7TestChannelAfter).toBeInstanceOf(AgentByteStreamChannel);
+    expect(hl7TestChannelAfter).not.toBe(hl7TestChannelBefore);
+
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2000);
+
+    while (hl7TestChannelBefore.server.server) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(hl7TestChannelBefore.server.server).not.toBeDefined();
+
     // Now we should test accidentally adding endpoints with conflicting ports
 
     // Endpoints with conflicting ports
@@ -757,7 +857,7 @@ describe('App', () => {
         // No changes
         {
           name: 'hl7-test',
-          endpoint: createReference(hl7TestEndpoint2),
+          endpoint: createReference(hl7TestEndpoint3),
           targetReference: createReference(bot),
         },
         // No changes
