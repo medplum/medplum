@@ -5150,43 +5150,28 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
-  test.each(['2028-06-01T23:45:56.890-11:00', '2028-06'])('Date array columns match search value %s', async (value) =>
-    withTestContext(async () => {
-      if (!features) {
-        return; // Skip test without feature flag
-      }
-      const identifier = randomUUID();
-      const resource = await repo.createResource<Goal>({
-        resourceType: 'Goal',
-        identifier: [{ value: identifier }],
-        lifecycleStatus: 'active',
-        description: {
-          coding: [
-            {
-              system: 'http://snomed.info/sct',
-              code: '406156006',
-              display: 'In paid employment',
-            },
-          ],
-          text: 'This text is ignored in search.',
-        },
-        subject: {
-          reference: 'Patient/example',
-          display: 'Amy Shaw',
-        },
-        target: [{ dueDate: '2028-06-01' }],
-      });
+  test.each(['2028-06-01T23:45:56.890-11:00', '2028-06', 'lt2028-06-06'])(
+    'Date array columns match search value %s',
+    async (value) =>
+      withTestContext(async () => {
+        if (!features) {
+          return; // Skip test without feature flag
+        }
+        const identifier = randomUUID();
+        const resource = await repo.createResource<Goal>({
+          resourceType: 'Goal',
+          identifier: [{ value: identifier }],
+          lifecycleStatus: 'active',
+          description: { text: 'Test' },
+          subject: { reference: 'Patient/example' },
+          target: [{ dueDate: '2028-06-01' }],
+        });
 
-      const res = await repo.search({
-        resourceType: 'Goal',
-        filters: [
-          { code: 'identifier', operator: Operator.EQUALS, value: identifier },
-          { code: 'target-date', operator: Operator.EQUALS, value },
-        ],
-      });
-      expect(res.entry).toHaveLength(1);
-      expect(res.entry?.[0].resource?.id).toStrictEqual(resource.id);
-    })
+        const searchReq = parseSearchRequest(`Goal?identifier=${identifier}&target-date=${value}`);
+        const res = await repo.search(searchReq);
+        expect(res.entry).toHaveLength(1);
+        expect(res.entry?.[0].resource?.id).toStrictEqual(resource.id);
+      })
   );
 
   describe('discourage sequential scans', () => {
