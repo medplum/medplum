@@ -609,19 +609,6 @@ export class App {
 
       await existingChannel.stop();
       this.channels.delete(definition.name);
-
-      let replacementChannel: Channel;
-
-      try {
-        replacementChannel = this.createChannel(nextType, definition, endpoint);
-      } catch (err) {
-        this.log.error(normalizeErrorString(err));
-        return;
-      }
-
-      await replacementChannel.start();
-      this.channels.set(definition.name, replacementChannel);
-      return;
     }
 
     let channel: Channel;
