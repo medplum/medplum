@@ -18,15 +18,9 @@ const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference
 
 describe('ScheduleSettings', () => {
   let medplum: MockClient;
+  let defaultSchedule: WithId<Schedule>;
   let schedulableService: WithId<HealthcareService>;
   let unschedulableService: WithId<HealthcareService>;
-
-  const defaultSchedule: Schedule = {
-    resourceType: 'Schedule',
-    id: 'schedule-1',
-    actor: [{ reference: 'Practitioner/practitioner-1' }],
-    active: true,
-  };
 
   beforeEach(async () => {
     // Prevent notifications from leaking across test cases
@@ -36,6 +30,12 @@ describe('ScheduleSettings', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
+
+    defaultSchedule = await medplum.createResource<Schedule>({
+      resourceType: 'Schedule',
+      actor: [{ reference: 'Practitioner/practitioner-1' }],
+      active: true,
+    });
 
     schedulableService = await medplum.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
@@ -165,6 +165,15 @@ describe('ScheduleSettings', () => {
                 ],
               },
             ],
+          }),
+          // MedplumClient.put() mutates the options object in-place (adding body,
+          // method, cache, etc.), so the spy sees the fully-expanded RequestInit
+          // rather than the original { headers } literal. Use objectContaining to
+          // assert only on the header we care about.
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              'If-Match': `W/"${defaultSchedule.meta?.versionId}"`,
+            }),
           })
         );
       });
