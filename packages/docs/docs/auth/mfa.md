@@ -129,8 +129,6 @@ curl -X POST https://api.medplum.com/admin/projects/:projectId/members/:membersh
   </TabItem>
 </Tabs>
 
-For full details, see the [Reset User MFA Endpoint](/docs/api/project-admin/mfa-reset) documentation.
-
 ## Using Medplum's SignInForm Component
 
 **We recommend using Medplum's [`SignInForm`](https://storybook.medplum.com/?path=/story/medplum-auth-signinform--basic) React component** for handling authentication flows that include MFA. The `SignInForm` component automatically handles all MFA-related UI and flows, including:
