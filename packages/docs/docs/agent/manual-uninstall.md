@@ -17,13 +17,13 @@ sc.exe delete MedplumAgent
 
 ## Delete the Agent Files
 
-:::info
+:::info[]
 
 Make sure the agent is stopped and deleted before attempting to delete the files.
 
 :::
 
-:::warning
+:::warning[]
 
 This will delete all configuration files and log data.
 

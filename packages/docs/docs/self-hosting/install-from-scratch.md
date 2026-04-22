@@ -12,7 +12,7 @@ This installation method is particularly useful for development and testing envi
 
 ## Install PostgreSQL
 
-:::note
+:::note[]
 
 These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Medplum server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
 
@@ -168,7 +168,7 @@ npm run build:fast
 
 ## Start Medplum server
 
-:::info
+:::info[]
 
 These are abbreviated instructions. For full details, see [Run the stack](/docs/contributing/run-the-stack)
 
@@ -207,7 +207,7 @@ You should now be able to access the Medplum app at [http://localhost:3000](http
 
 ## Optional: Nginx
 
-:::info
+:::info[]
 
 This "Install from Scratch" guide is designed to help you understand how the different pieces of Medplum work. It's not our recommended approach for production deployments.
 
@@ -256,7 +256,7 @@ nohup npm run dev > server.log 2>&1 &
 
 ### Update Medplum app settings
 
-:::info
+:::info[]
 
 If you already created `packages/app/.env` in the [Configure the app environment](#configure-the-app-environment) step above, verify that `MEDPLUM_BASE_URL` is set to your HTTPS domain. If you skipped that step or used `localhost`, update the value now — the URL is baked into the build output and must be correct before building.
 

@@ -37,11 +37,19 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 /**
  * Returns the patient page tabs filtered based on user permissions.
  * Filters out e-prescribing tabs if the user doesn't have the corresponding integration access.
+ *
  * @param membership - The current user's project membership.
+ * @param options - Optional overrides for tab visibility checks.
+ * @param options.hasDoseSpotAccess - When provided, controls DoseSpot tab visibility directly
+ *   (supports self-enrollment via PractitionerRole in addition to existing identifiers).
+ *   When omitted, falls back to checking the membership for a DoseSpot identifier.
  * @returns Filtered array of patient page tabs.
  */
-export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+export function getPatientPageTabs(
+  membership: ProjectMembership | undefined,
+  options?: { hasDoseSpotAccess?: boolean }
+): PatientPageTabInfo[] {
+  const hasDoseSpot = options?.hasDoseSpotAccess ?? hasDoseSpotIdentifier(membership);
   const hasScriptSure = hasScriptSureIdentifier(membership);
   return PatientPageTabs.filter((tab) => {
     if (tab.id === 'dosespot') {

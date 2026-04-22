@@ -59,7 +59,7 @@ GET /fhir/R4/Binary/[id]/$presigned-url?upload=true
 
 ### Using the Presigned URL
 
-:::warning
+:::warning[]
 
 The generated presigned URLs are **unauthenticated**, and can be accessed by anyone who has the URL
 without an access token. Care should be taken to ensure that the URLs are restricted to the intended users.

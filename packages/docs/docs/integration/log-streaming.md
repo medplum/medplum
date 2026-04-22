@@ -3,7 +3,7 @@ import TabItem from '@theme/TabItem';
 
 # Log Streaming
 
-:::info
+:::info[]
 
 These instructions primarily apply to self-hosted users. To set up log streaming on the Medplum Hosted instance, please reach out to [info@medplum.com](mailto:info@medplum.com)
 
@@ -19,7 +19,7 @@ Medplum server can stream the following to `STDOUT`
 - Other troubleshooting information
 - All RESTful interactions with FHIR resources, which are recorded as [FHIR AuditEvent resources](/docs/api/fhir/resources/auditevent)
 
-:::warning
+:::warning[]
 To capture [AuditEvent](/docs/api/fhir/resources/auditevent) resources for any RESTful interactions you **_must_** set the server configuration for [`logAuditEvents`](/docs/self-hosting/server-config#logauditevents)
 
 :::

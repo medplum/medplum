@@ -90,7 +90,7 @@ There are several `ProjectMembership.profile` resources that are related to prog
 
 The simplest way to create a project is to visit https://app.medplum.com/register and fill out the new project registration form.
 
-:::caution Note
+:::caution[Note]
 
 If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
 
@@ -100,7 +100,7 @@ If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
 
 To create a new `Project` resource via the API, you will need to create a `ClientApplication` with super admin privileges.
 
-:::warning
+:::warning[]
 
 Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/access/access-policies) to this `ClientApplication` to reduce it's privileges.
 
@@ -161,7 +161,7 @@ Only administrators can invite users, and can do so on the [Invite](https://app.
 3. Create a ProjectMembership that links User, ProfileResource and access policy
 4. (Optional) send an email invite user
 
-:::danger Note
+:::danger[Note]
 
 Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner) or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that belong to [`ProjectMemberships`](/docs/api/fhir/medplum/projectmembership). This will cause the login to be non-functional. Do not edit or change the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources directly. If you do delete one of these resources, you will need to register a new project.
 
@@ -352,7 +352,7 @@ For more information, see the [`/invite` endpoint API docs](/docs/api/project-ad
 
 See [Access Control](/docs/access/access-policies) for more details.
 
-:::caution
+:::caution[]
 
 Creating Practitioners via API is an advanced scenario and should be done with extreme caution. If you are planning to do programmatic creation of Practitioners, we highly recommend trying it in a test environment first and ensuring that the logins and associated access controls behave as expected.
 

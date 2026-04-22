@@ -68,7 +68,7 @@ The `:missing` modifier finds Communication resources that have no `partOf` refe
 
 This retrieves all child messages for a given thread header, sorted chronologically by the `sent` timestamp.
 
-:::caution About `_revinclude` with thread headers
+:::caution[About `_revinclude` with thread headers]
 
 You may encounter examples that use `Communication?part-of:missing=true&_revinclude=Communication:part-of` to return every thread header and every child message in one search response. That pattern tends to **over-fetch**: the bundle grows with the total number of messages across all matched threads and is **expensive** for the server. For typical UIs, load thread headers first, then run a separate query per thread (as above), using pagination where appropriate.
 
@@ -120,7 +120,7 @@ To show threads the current user participates in, filter by `recipient`:
 
 This works when thread headers list all participants — including the thread creator — in `recipient`. The Medplum [`ThreadInbox`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadInbox/ThreadInbox.tsx) component follows this convention: when a new thread is created, the sender is added to `recipient` alongside other participants, so a `recipient`-based query returns threads the user started _and_ threads they were added to.
 
-:::note
+:::note[]
 
 FHIR search does not support a single query for `recipient OR sender`. If your thread headers don't follow the convention above, run two searches (`recipient=Practitioner/{id}` and `sender=Practitioner/{id}`) and merge results client-side.
 
