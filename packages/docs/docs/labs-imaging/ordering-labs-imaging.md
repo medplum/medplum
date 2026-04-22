@@ -137,7 +137,7 @@ For lab ordering specifically, the [Health Gorilla](/docs/integration/health-gor
 
 Organizations that connect directly to a performing lab (e.g. via HL7v2 or a proprietary API) follow the same FHIR resource patterns described here. The [HL7 Interface](/docs/integration/hl7-interfacing) and [On-Prem Agent](/docs/agent) docs cover connectivity options.
 
-:::caution
+:::caution[]
 Lab and imaging ordering requires setup. Contact us at [info@medplum.com](mailto:info+diagnostics@medplum.com?subject=enabling%20diagnostic%20providers) to enable a provider.
 :::
 

@@ -1,6 +1,6 @@
 # Scheduling
 
-:::info
+:::info[]
 Medplum Scheduling is currently in alpha.
 :::
 
@@ -76,7 +76,7 @@ Once a desired slot has been found, the appointment booking process can be handl
 Scheduling can be built in FHIR in many different ways. The key design decisions in Meduplum's specific scheduling FHIR model are:
 
 - **Recurring availability does not require pre-generated slots**: Synthetic[`Slot`](/docs/api/fhir/resources/slot) resources are **computed on-demand** by [`$find`](/docs/scheduling/schedule-find) as drafted resources that are not persisted in the datastore until an Appointment is booked. This means you don't need to maintain a bulk set of Slot resources across a planning horizon.
-:::note
+:::note[]
 Available Slots can still be persisted for one time availability.
 :::
 
