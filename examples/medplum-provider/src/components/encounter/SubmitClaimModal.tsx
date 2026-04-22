@@ -262,17 +262,8 @@ export interface SubmitClaimModalProps {
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
-  const {
-    opened,
-    submitting,
-    coverages,
-    selectedCoverage,
-    patient,
-    conditions,
-    practitioner,
-    onClose,
-    onSubmitClaim,
-  } = props;
+  const { opened, submitting, coverages, selectedCoverage, patient, conditions, practitioner, onClose, onSubmitClaim } =
+    props;
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
   const insuranceCoverages = coverages.filter((c) => !isSelfPayCoverage(c));
