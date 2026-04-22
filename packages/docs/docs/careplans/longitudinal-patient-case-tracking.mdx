@@ -66,7 +66,7 @@ The key relationships are:
 - `CarePlan.supportingInfo` explicitly references the EpisodeOfCare, providing a direct link from plan to episode
 - [`Goal`](/docs/api/fhir/resources/goal) resources are referenced from the CarePlan via `CarePlan.goal`
 
-:::note Navigating between EpisodeOfCare and CarePlan
+:::note[Navigating between EpisodeOfCare and CarePlan]
 The `supportingInfo` link is one-directional: you can follow it from CarePlan to EpisodeOfCare, but there is no field on EpisodeOfCare that points back to a CarePlan. To navigate in the reverse direction (episode to plan), query by the shared Condition: `CarePlan?condition=Condition/{id}`. This is the natural clinical query — "show me all plans addressing this diagnosis" — and works regardless of how many episodes or plans reference that condition.
 :::
 
@@ -111,7 +111,7 @@ The CarePlan brings together the condition being addressed, the goals to achieve
 
 <MedplumCodeBlock language="ts" selectBlocks="createCarePlanTs">{ExampleCode}</MedplumCodeBlock>
 
-:::tip
+:::tip[]
 `CarePlan.supportingInfo` accepts `Reference<Resource>[]`, making it flexible enough to reference an EpisodeOfCare, related documents, or any other supporting resource.
 :::
 

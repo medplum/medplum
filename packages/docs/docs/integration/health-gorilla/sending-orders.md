@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Sending Orders
 
-:::info Prerequisites
+:::info[Prerequisites]
 For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data model, see [Labs & Imaging](/docs/labs-imaging) and [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging).
 :::
 

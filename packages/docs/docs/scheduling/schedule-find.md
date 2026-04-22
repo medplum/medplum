@@ -5,7 +5,7 @@ sidebar_position: 2
 
 # Schedule $find
 
-:::info Alpha
+:::info[Alpha]
 
 The `$find` operation is currently in alpha. It supports only Schedules with a single actor.
 

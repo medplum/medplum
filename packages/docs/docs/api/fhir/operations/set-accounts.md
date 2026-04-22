@@ -15,7 +15,7 @@ Medplum implements a custom `$set-accounts` operation to manage account referenc
 
 This operation sets the target resource's `meta.accounts` references and optionally propagates changes to resources in that resources's compartment. This is useful when you need to ensure consistent `meta.accounts` access across all resources related to a patient, for example.
 
-:::warning
+:::warning[]
 
 It is recommended that you run this operation with `Prefer: respond-async` header to avoid any timeouts while waiting for resources in patient compartment to update.
 
@@ -23,7 +23,7 @@ It is recommended that you run this operation with `Prefer: respond-async` heade
 
 For example, when this operation is used to add a new organization to a patient's `meta.accounts`, it can update both the patient and all resources in the patient's compartment to include a new organization in their `meta.accounts` lists. Additionally, each resource's _meta.compartment_ will also be updated to include the references in _meta.accounts_.
 
-:::note
+:::note[]
 
 Resources in a patient's compartment are defined by the [FHIR Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html). This includes resources where the patient is the `subject`, as well as resources that are directly linked to the patient through specific references (`performer`, `author`, `participant`, etc.).
 

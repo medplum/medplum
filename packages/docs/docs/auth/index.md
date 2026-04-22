@@ -9,7 +9,7 @@ This page helps you choose the correct authentication method for your applicatio
 
 For **user-facing applications (web or mobile apps)**, use [_browser-based authentication_](#browser-based-authentication).
 
-:::caution Patient Login
+:::caution[Patient Login]
 The Medplum App (https://app.medplum.com) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Medplum SDK.
 :::
 
@@ -24,6 +24,7 @@ This category is for user-facing applications that connect directly to Medplum. 
 | [Medplum as IDP](/docs/auth/medplum-as-idp)                    | (default) **Get going fast**, and don't have external compliance requirements.                 |
 | [External IDP](/docs/auth/external-identity-providers.mdx)     | Connect to an external IDP, like [Google Auth](/docs/auth/google-auth), Auth0, or AWS Cognito. |
 | [Domain-level IDP](/docs/auth/domain-level-identity-providers) | Use your enterprise, domain-level **corporate identity solution.**                             |
+| [Direct External Auth](/docs/auth/direct-external-auth)        | Authenticate directly with an external IDP token, without a token exchange flow (self-hosted only). |
 
 ## Server-side Authentication
 

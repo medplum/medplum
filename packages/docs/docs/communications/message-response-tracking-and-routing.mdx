@@ -14,11 +14,11 @@ import TabItem from '@theme/TabItem';
 
 When messages need responses — and those responses need to be tracked, assigned, and rerouted — use the FHIR [`Task`](/docs/api/fhir/resources/task) resource alongside [`Communication`](/docs/api/fhir/resources/communication). This separates message content ([`Communication`](/docs/api/fhir/resources/communication)) from the routing and assignment lifecycle ([`Task`](/docs/api/fhir/resources/task)), allowing you to reassign work without modifying conversation data.
 
-:::tip Assignment model
+:::tip[Assignment model]
 Do you need to assign work to named individuals only, to a pool by provider type, or both? That choice drives whether you use `owner`, `performerType`, or both.
 :::
 
-:::note Key concept
+:::note[Key concept]
 
 [`Task`](/docs/api/fhir/resources/task) is the authoritative source for routing and assignment. `Communication.recipient` is informational — it reflects who should see the thread (for access policy scoping and display), but if there's ever a conflict between `Task.owner` and `Communication.recipient`, the [`Task`](/docs/api/fhir/resources/task) is the source of truth. When rerouting, always update the [`Task`](/docs/api/fhir/resources/task) first, then update `Communication.recipient` to match.
 
@@ -51,7 +51,7 @@ flowchart TD
 
 ## Create a Task for a Thread
 
-:::tip When to create a Task
+:::tip[When to create a Task]
 Does this message require a tracked response? If not, keep it as Communication only. Use `Communication.category` or a Bot to determine which messages need routing.
 :::
 
@@ -63,7 +63,7 @@ When a new message arrives that requires action, create a [`Task`](/docs/api/fhi
 
 To assign directly to a specific provider instead of a pool, set `owner` to the [`Practitioner`](/docs/api/fhir/resources/practitioner) reference and omit `performerType`.
 
-:::tip
+:::tip[]
 
 Only create a [`Task`](/docs/api/fhir/resources/task) for messages that require a response. Use `Communication.category` or business logic in a Bot to determine which messages need routing. In production, [`Task`](/docs/api/fhir/resources/task) creation is typically handled by a Bot triggered via a [`Subscription`](/docs/api/fhir/resources/subscription) on [`Communication`](/docs/api/fhir/resources/communication) creation rather than created manually.
 
@@ -99,7 +99,7 @@ To see unclaimed [`Task`](/docs/api/fhir/resources/task) resources in a pool, qu
 
 ## Reroute to a Different Provider
 
-:::tip Reroute target
+:::tip[Reroute target]
 Are you reassigning to one specific provider or back to a pool? Update `owner` and `Communication.recipient` for an individual; clear `owner`, set `performerType`, and clear `recipient` for a pool.
 :::
 
@@ -141,7 +141,7 @@ Providers match pools via their `PractitionerRole.code`.
 
 ## Tracking Reroute History
 
-:::tip Audit trail
+:::tip[Audit trail]
 Do you need an audit trail of who owned the Task and why it was rerouted? Version history gives who/when; add `Task.note` or `Provenance` for reasons.
 :::
 
@@ -167,7 +167,7 @@ You can then query `Provenance?target=Task/{id}` to get the full reroute history
 
 ### Reroute Visibility
 
-:::tip Visibility after reroute
+:::tip[Visibility after reroute]
 After reroute, should the previous owner still see the Task (e.g. for reference), or only the new owner? That determines whether you update `Task.owner` in place or create a new Task for the new owner.
 :::
 

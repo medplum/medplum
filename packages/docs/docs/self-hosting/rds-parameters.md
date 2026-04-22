@@ -9,7 +9,7 @@ settings can be changed via the CDK, which creates and associates the database c
 containing the settings. This process requires a database restart to ensure all settings are applied, necessitating
 the special procedures below to avoid any downtime.
 
-:::caution
+:::caution[]
 
 This is a complex, multi-step process, and requires high proficiency with AWS, Postgres, and command line tools.
 
@@ -19,7 +19,7 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 :::
 
-:::tip
+:::tip[]
 
 If you are new to AWS CDK, we strongly recommend reading [Getting started with the AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
 
@@ -143,7 +143,7 @@ Add the desired Postgres parameters under `rdsClusterParameters` in the CDK conf
 
 Then run CDK `diff` and `deploy` to apply the change.
 
-:::warning
+:::warning[]
 
 This CDK `deploy` will trigger database restarts.
 

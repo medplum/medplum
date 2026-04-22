@@ -107,6 +107,19 @@ describe('Config', () => {
     expect(config.botCustomFunctionsEnabled).toBe(true);
   });
 
+  test('Env config externalAuthProviders as JSON array', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv(
+      'MEDPLUM_EXTERNAL_AUTH_PROVIDERS',
+      JSON.stringify([{ issuer: 'https://idp.example.com', userInfoUrl: 'https://idp.example.com/userinfo' }])
+    );
+
+    const config = await loadConfig('env');
+    expect(config.externalAuthProviders).toHaveLength(1);
+    expect(config.externalAuthProviders?.[0].issuer).toStrictEqual('https://idp.example.com');
+    expect(config.externalAuthProviders?.[0].userInfoUrl).toStrictEqual('https://idp.example.com/userinfo');
+  });
+
   test('Env config integer values', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_PORT', '9000');

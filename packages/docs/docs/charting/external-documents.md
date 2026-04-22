@@ -38,7 +38,7 @@ First, upload the binary file as a [`Binary`](/docs/api/fhir/resources/binary) r
   </TabItem>
 </Tabs>
 
-:::tip Note
+:::tip[Note]
 
 `DocumentReference.content.attachment.url` can refer to any external url. The Medplum server handles urls of the form "`Binary/id`" as a special case and converts them to pre-signed URLs at `storage.medplum.com`. You can read more about pre-signed URLs on the [AWS docs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html)
 

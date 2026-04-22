@@ -9,13 +9,12 @@ import TabItem from '@theme/TabItem';
 
 This guide explains how to enroll a new prescriber in DoseSpot via the Medplum **Enroll Prescriber Bot**, including the full workflow for enabling Electronic Prescriptions for Controlled Substances (EPCS).
 
-:::note Prerequisites
+:::note[Prerequisites]
 The user executing the bot must:
 
 1. Be an admin in your project (`ProjectMembership.admin`)
 2. Already have access to DoseSpot (DoseSpot identifier on their ProjectMembership)
 3. Have a Clinician Admin role type in DoseSpot (as specified in the `practitionerRoleTypes` parameter)
-
 :::
 
 ## Enrollment Workflow Overview
@@ -133,7 +132,7 @@ If a prescriber has DEA numbers for multiple states, add multiple identifier ent
 ]
 ```
 
-:::caution
+:::caution[]
 If you request IDP or TFA initialization but the Practitioner has no DEA number identifiers, the bot will return an error asking you to add them first.
 :::
 
@@ -208,7 +207,7 @@ Full Practitioner resource example (with DEA)
 | `6`   | Proxy Clinician             |
 
 
-:::note
+:::note[]
 Users that need to invite others should be added with the Clinician Admin role type (`4`).
 :::
 
@@ -315,7 +314,7 @@ The bot returns the following fields:
 | `doseSpotClinicianId` | `number`            | The DoseSpot clinician ID                                                                          |
 | `projectMembership`   | `ProjectMembership` | The updated ProjectMembership with DoseSpot identifier                                             |
 | `practitioner`        | `Practitioner`      | The updated Practitioner with registration status extension and EPCS qualification (if applicable) |
-| `registrationStatus`  | `string`            | Current DoseSpot registration status (e.g., `"Pending"`, `"IDPSuccess"`, `"TFAActivatedSuccess"`)  |
+| `registrationStatus`  | `string`            | <details><summary>Current DoseSpot registration status (all values)</summary>`"Pending"`<br/>`"RegistrationSuccess"`<br/>`"RegistrationError"`<br/>`"IDPSuccess"`<br/>`"IDPError"`<br/>`"TFAActivateInit"`<br/>`"TFAActivatedSuccess"`<br/>`"TFAActivatedError"`<br/>`"TFADeactivateInit"`<br/>`"TFADeactivatedSuccess"`<br/>`"TFADeactivatedError"`<br/>`"IDPInitializeSuccess"`</details> |
 | `idpInitialized`      | `boolean`           | Whether IDP was initialized in this run                                                            |
 | `tfaInitialized`      | `boolean`           | Whether TFA was initialized in this run                                                            |
 

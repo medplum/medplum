@@ -66,7 +66,7 @@ See the [Search documentation](/docs/search/basic-search) for more information o
 }
 ```
 
-:::warning Limitations
+:::warning[Limitations]
 While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
 
 - Only `:not` and `:missing` [modifiers](/docs/search/basic-search#search-modifiers) are allowed.
@@ -144,7 +144,7 @@ The `interaction` array can contain any of the supported interaction types:
 - `history`: View the list of previous versions of a resource
 - `vread`: View a specific previous version of a resource
 
-:::tip Related interactions
+:::tip[Related interactions]
 
 Some FHIR interactions are used in concert by the server, and so should be considered together:
 
@@ -209,7 +209,7 @@ The following access policy grants read-only access to the "Patient" resource ty
 
 Constraints on writes to a resource can also be specified using [FHIRPath expressions][fhirpath] in the `AccessPolicy.resource.writeConstraint` field. These expressions may contain the special variable `%before` to refer to the resource as it existed before the write. Any property accesses will by default refer to the resource as it exists with updates applied, but the `%after` variable is also provided for convenience.
 
-:::tip
+:::tip[]
 
 In case of a resource being created, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
 
@@ -446,13 +446,13 @@ Because the account-tagging is handled within the resource, project administrato
 
 If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. In this case it is recommended to use templated access policies, that also implement compartments as shown below.
 
-:::caution Open Patient Registration
+:::caution[Open Patient Registration]
 
 Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/user-management/open-patient-registration) for instructions on enabling this functionality.
 
 :::
 
-:::danger Binary Access
+:::danger[Binary Access]
 
 Binary resources cannot use compartment-based access controls. They require explicit `securityContext` declaration. See the [Binary Security Context](/docs/access/binary-security-context) documentation for more information.
 
@@ -502,6 +502,10 @@ Binary resources cannot use compartment-based access controls. They require expl
     {
       "resourceType": "Communication",
       "criteria": "Communication?_compartment=%patient"
+    },
+    {
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%profile"
     },
     {
       "resourceType": "Organization",
@@ -560,6 +564,36 @@ The [patient access policy](#patient-access) above can be combined with [policy 
 }
 ```
 
+### WebSocket Subscriptions (`useSubscription` Hook)
+
+To use the [`useSubscription`](/docs/react/use-subscription) hook, users need two things in their access policy:
+
+1. **Permission to create `Subscription` resources** — The hook creates an in-memory `Subscription` on behalf of the user. Use a criteria scoped to websocket subscriptions owned by the current user so that users can only manage their own subscriptions:
+
+   ```
+   Subscription?type=websocket&author=%profile
+   ```
+
+2. **Read access to each subscribed resource type** — Users must also have `read` access for every resource type they intend to subscribe to. For example, if your app calls `useSubscription('Communication?...')`, the policy must grant at least `read` on `Communication`.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "WebSocket Subscription Policy",
+  "resource": [
+    {
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%profile"
+    },
+    {
+      "resourceType": "Communication"
+    }
+  ]
+}
+```
+
+Add one entry per resource type your application subscribes to.
+
 ### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
 
 In Medplum, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Medplum server consolidates these resources into a single enforceable AccessPolicy.  
@@ -568,11 +602,9 @@ The recent enhancements introduce the **AccessPolicy.basedOn element**, which en
 This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
 
 - **Endpoint: /auth/me**
-
   - This endpoint provides access to the user's AccessPolicy information, including the basedOn element.
 
 - **AccessPolicy.basedOn**
-
   - This element is an array containing references to original AccessPolicy resources.
   - It provides traceability by linking the resolved AccessPolicy back to its source policies.
   - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.

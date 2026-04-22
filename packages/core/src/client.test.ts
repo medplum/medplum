@@ -4369,6 +4369,55 @@ describe('Client', () => {
     const getPromise2 = client.get(client.fhirUrl('Patient', '123'));
     await expect(getPromise2).resolves.toEqual(patient);
   });
+
+  test('Browser ReadableStream uses duplex half', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const client = new MedplumClient({ fetch });
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('Hello world'));
+        controller.close();
+      },
+    });
+    const response = await client.post('/test', stream, 'application/octet-stream');
+    expect(response).toBeDefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/test',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/octet-stream',
+        }),
+        body: expect.any(ReadableStream),
+        duplex: 'half',
+      })
+    );
+  });
+
+  test('Node.js Readable uses duplex half', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const client = new MedplumClient({ fetch });
+    // const stream = Readable.from(['Hello world']);
+    const stream = {
+      pipe: vi.fn(),
+      on: vi.fn(),
+    };
+    const response = await client.post('/test', stream, 'application/octet-stream');
+    expect(response).toBeDefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/test',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/octet-stream',
+        }),
+        body: stream,
+        duplex: 'half',
+      })
+    );
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {

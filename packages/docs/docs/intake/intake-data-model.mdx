@@ -71,7 +71,7 @@ flowchart TD
 | [`Immunization`](/docs/api/fhir/resources/immunization) | Vaccination history | Upserted by `patient` + `vaccine-code` + `date` | `patient` → Patient |
 | [`CareTeam`](/docs/api/fhir/resources/careteam) | Preferred pharmacy | Upserted by `name` + `subject` | `subject` → Patient, `participant.member` → Organization |
 
-:::tip Created vs. Updated
+:::tip[Created vs. Updated]
 
 In many real-world flows, the [`Patient`](/docs/api/fhir/resources/patient) resource already exists by the time the intake form is submitted — because the patient was registered or scheduled first. The intake bot in the [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) creates a new Patient, but your implementation may instead search for and update an existing one. Most clinical history resources (allergies, medications, conditions) use [`upsertResource`](/docs/fhir-datastore/working-with-fhir#upsert) to avoid duplicates on resubmission.
 
@@ -110,7 +110,7 @@ When the insurance subscriber is someone other than the patient — such as a ch
 
 For full details on Coverage modeling, insurance card image capture, and payor setup, see [Patient Insurance](/docs/billing/patient-insurance).
 
-:::caution Relationship Code Inversion
+:::caution[Relationship Code Inversion]
 
 The relationship code **inverts** between Coverage and RelatedPerson, and this is one of the most common sources of bugs in intake implementations:
 
