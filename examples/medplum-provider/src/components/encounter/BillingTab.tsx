@@ -382,19 +382,27 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     if (!claim || !stediBot) {
       return;
     }
+    if (!conditionsRef.current?.length) {
+      showNotification({
+        title: 'Missing Diagnosis',
+        message: 'Please add at least one diagnosis before submitting a claim',
+        color: 'red',
+      });
+      return;
+    }
     setStediSubmitting(true);
+    debouncedUpdateClaim.cancel();
     try {
-      const lastCoverage = coverages.length > 0 ? coverages[coverages.length - 1] : undefined;
-      const claimPayload = lastCoverage
+      const claimPayload = coverage
         ? {
             ...claim,
-            insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(lastCoverage) } }],
+            insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(coverage) } }],
           }
         : claim;
       const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
-      const claims = await medplum.searchResources('Claim', `_id=${claim.id}`, { cache: 'no-cache' });
-      if (claims.length > 0) {
-        setClaim(claims[0]);
+      const updatedClaim = await medplum.searchOne('Claim', claim.id, { cache: 'no-cache' });
+      if (updatedClaim) {
+        setClaim(updatedClaim);
       }
       showNotification({
         title: 'Submitted to Stedi',
@@ -406,7 +414,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     } finally {
       setStediSubmitting(false);
     }
-  }, [claim, coverages, medplum, setClaim, stediBot]);
+  }, [claim, coverage, debouncedUpdateClaim, medplum, setClaim, stediBot]);
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
@@ -548,7 +556,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       <Card withBorder shadow="sm">
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
-          {billingBot && (
+          {(billingBot || stediBot) && (
             <>
               <SubmitClaimModal
                 opened={confirmModalOpen}
@@ -560,6 +568,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 conditions={conditions}
                 practitioner={practitioner}
                 chargeItems={chargeItems}
+                showCandidButton={!!billingBot}
                 showStediButton={!!stediBot}
                 stediSubmitting={stediSubmitting}
                 onClose={() => setConfirmModalOpen(false)}
@@ -581,7 +590,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
               </Tooltip>
             </>
           )}
-          {billingBot === null && (
+          {billingBot === null && stediBot === null && (
             <Button
               variant="outline"
               leftSection={<IconSend size={16} />}

@@ -99,6 +99,7 @@ interface ClaimPickerProps {
   insuranceCoverages: WithId<Coverage>[];
   selfPayValue: string;
   initialBillingType: BillingType;
+  showCandidButton?: boolean;
   showStediButton?: boolean;
   stediSubmitting?: boolean;
   onClose: () => void;
@@ -115,6 +116,7 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
     insuranceCoverages,
     selfPayValue,
     initialBillingType,
+    showCandidButton,
     showStediButton,
     stediSubmitting,
     onClose,
@@ -251,15 +253,17 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
             Submit to Stedi
           </Button>
         )}
-        <Button
-          size="md"
-          rightSection={<IconArrowUpRight size={16} />}
-          loading={submitting}
-          disabled={!canSubmit || !!stediSubmitting}
-          onClick={handleConfirm}
-        >
-          Submit to Candid
-        </Button>
+        {showCandidButton !== false && (
+          <Button
+            size="md"
+            rightSection={<IconArrowUpRight size={16} />}
+            loading={submitting}
+            disabled={!canSubmit || !!stediSubmitting}
+            onClick={handleConfirm}
+          >
+            Submit to Candid
+          </Button>
+        )}
       </Group>
     </Stack>
   );
@@ -275,6 +279,7 @@ export interface SubmitClaimModalProps {
   conditions: Condition[];
   chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
+  showCandidButton?: boolean;
   showStediButton?: boolean;
   stediSubmitting?: boolean;
   onClose: () => void;
@@ -292,6 +297,7 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
     conditions,
     chargeItems,
     practitioner,
+    showCandidButton = true,
     showStediButton,
     stediSubmitting,
     onClose,
@@ -319,6 +325,7 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
           insuranceCoverages={insuranceCoverages}
           selfPayValue={selfPayValue}
           initialBillingType={initialBillingType}
+          showCandidButton={showCandidButton}
           showStediButton={showStediButton}
           stediSubmitting={stediSubmitting}
           onClose={onClose}
