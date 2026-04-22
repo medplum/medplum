@@ -400,9 +400,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           }
         : claim;
       const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
-      const updatedClaim = await medplum.searchOne('Claim', claim.id, { cache: 'no-cache' });
+      const updatedClaim = await medplum.searchOne('Claim', { _id: claim.id }, { cache: 'no-cache' });
       if (updatedClaim) {
-        setClaim(updatedClaim);
+        setClaim(updatedClaim); 
       }
       showNotification({
         title: 'Submitted to Stedi',
