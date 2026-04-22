@@ -114,6 +114,17 @@ describe('SubmitClaimModal', () => {
         expect(getCoverageCheckbox('Aetna')).toBeChecked();
       });
     });
+
+    test('defaults to insurance billing when selectedCoverage is undefined but insurance coverages exist', () => {
+      setup({
+        coverages: [mockInsurance1, mockInsurance2, mockSelfPay],
+        selectedCoverage: undefined,
+      });
+
+      expect(screen.getByRole('button', { name: 'Insurance pay' })).toHaveAttribute('data-variant', 'filled');
+      expect(getCoverageCheckbox('Blue Cross')).not.toBeChecked();
+      expect(getCoverageCheckbox('Aetna')).not.toBeChecked();
+    });
   });
 
   describe('insurance submission', () => {

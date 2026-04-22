@@ -267,10 +267,9 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
   const insuranceCoverages = coverages.filter((c) => !isSelfPayCoverage(c));
+  const selectedIsSelfPay = selectedCoverage !== undefined && isSelfPayCoverage(selectedCoverage);
   const initialBillingType: BillingType =
-    insuranceCoverages.length > 0 && selectedCoverage && !isSelfPayCoverage(selectedCoverage)
-      ? 'insurance'
-      : 'self-pay';
+    !selectedIsSelfPay && insuranceCoverages.length > 0 ? 'insurance' : 'self-pay';
 
   return (
     <Modal opened={opened} onClose={onClose} centered size="lg" padding="xl" title="Review before submitting claim">
