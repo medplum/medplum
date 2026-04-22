@@ -401,8 +401,8 @@ function getBaseSelectQuery(
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
-    repo.setTraversedResourceTypes(searchRequest.types);
     for (const resourceType of searchRequest.types) {
+      repo.onResourceTypeQuery(resourceType, 'search');
       const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
       queries.push(query);
     }
@@ -411,7 +411,7 @@ function getBaseSelectQuery(
       builder.raw('*');
     }
   } else {
-    repo.setTraversedResourceTypes(searchRequest.resourceType);
+    repo.onResourceTypeQuery(searchRequest.resourceType, 'search');
     builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
   }
   return builder;
@@ -607,6 +607,7 @@ async function getSearchRevIncludeEntries(
   if (!searchParam) {
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
+  repo.onResourceTypeQuery(resourceType as ResourceType, 'revinclude', { revInclude });
 
   const references =
     getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL

@@ -501,6 +501,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     validateResourceType(resourceType);
 
+    this.onResourceTypeQuery(resourceType, 'read', { reference: { reference: `${resourceType}/${id}` } });
+
     if (!this.supportsInteraction(AccessPolicyInteraction.READ, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -594,6 +596,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     try {
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
+
+      this.onResourceTypeQuery(resourceType, 'read', { reference });
 
       if (!this.supportsInteraction(AccessPolicyInteraction.READ, resourceType)) {
         return new OperationOutcomeError(forbidden);
@@ -1207,6 +1211,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
+    this.onResourceTypeQuery(resource.resourceType, 'write', { resource: getReferenceString(resource), create });
     await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
@@ -1357,6 +1362,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
     await this.rateLimiter()?.recordWrite();
+
+    this.onResourceTypeQuery(resourceType, 'delete', { resource: getReferenceString({ resourceType, id }) });
 
     const startTime = Date.now();
     let resource: WithId<T>;
@@ -2557,6 +2564,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // The owner of the connection is responsible for the actual release.
       this.conn = undefined;
     }
+    this.clearTraversedResourceTypes();
   }
 
   async withTransaction<TResult>(
@@ -2949,40 +2957,50 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private _traversedResourceTypes: Set<ResourceType> | undefined;
-  private _traversedResourceTypesOfInterest: boolean | undefined;
-  setTraversedResourceTypes(types: ResourceType | ResourceType[]): void {
-    if (Array.isArray(types)) {
-      this._traversedResourceTypes = new Set(types);
-      this._traversedResourceTypesOfInterest = types.some(resourceTypeOfInterest);
-    } else {
-      this._traversedResourceTypes = new Set([types]);
-      this._traversedResourceTypesOfInterest = resourceTypeOfInterest(types);
-    }
-  }
-
-  private addTraversedResourceType(type: ResourceType): void {
-    if (this._traversedResourceTypes) {
-      this._traversedResourceTypes.add(type);
-    } else {
-      this._traversedResourceTypes = new Set([type]);
-    }
-    this._traversedResourceTypesOfInterest ||= resourceTypeOfInterest(type);
-  }
+  private _sawOfInterest = false;
+  private _sawNotOfInterest = false;
+  private _loggedCrossing = false;
 
   clearTraversedResourceTypes(): void {
     this._traversedResourceTypes = undefined;
-    this._traversedResourceTypesOfInterest = undefined;
+    this._sawOfInterest = false;
+    this._sawNotOfInterest = false;
+    this._loggedCrossing = false;
   }
 
+  // Instrumentation for identifying Repository scopes (connection lifetime; a
+  // transaction is one scope) that query across the proposed global/non-global
+  // database split. Fires once per scope the first time both sides are touched.
+  //
+  // Wired entry points:
+  //   - writes: writeToDatabase (covers createResource/updateResource/patchResource/AuditEvent writes)
+  //   - reads: readResourceImpl, processReadReferenceEntry
+  //   - deletes: deleteResource
+  //   - search: getBaseSelectQuery, getSearchIncludeEntries, getSearchRevIncludeEntries,
+  //             chained search filters
+  //
+  // Currently NOT instrumented (blind spots):
+  //   - reindexResource, resendSubscriptions, expungeResource/expungeResources
+  //   - readHistory/readVersion's direct SelectQuery on `${resourceType}_History`
+  //     (the type is already flagged via readResourceImpl at entry, so acceptable)
+  //   - patchResource's direct readResourceFromDatabase (same type is flagged via
+  //     writeToDatabase later in the same scope)
+  //   - Ad-hoc SQL in FHIR operations ($expunge's Expunger, $everything, terminology ops, etc.)
+  //   - Worker code (subscription, download) that uses systemRepo
   onResourceTypeQuery(targetType: string, relation: string, payload?: object): void {
     try {
-      const previousOfInterest = this._traversedResourceTypesOfInterest;
-      this.addTraversedResourceType(targetType as ResourceType);
-      const shouldLog = previousOfInterest !== this._traversedResourceTypesOfInterest;
+      const type = targetType as ResourceType;
+      (this._traversedResourceTypes ??= new Set()).add(type);
+      if (resourceTypeOfInterest(type)) {
+        this._sawOfInterest = true;
+      } else {
+        this._sawNotOfInterest = true;
+      }
 
-      if (shouldLog) {
-        getLogger().info('onResourceTypeQuery', {
-          originTypes: this._traversedResourceTypes ? Array.from(this._traversedResourceTypes).join(',') : undefined,
+      if (this._sawOfInterest && this._sawNotOfInterest && !this._loggedCrossing) {
+        this._loggedCrossing = true;
+        getLogger().error('Cross-divide Repository access', {
+          traversedTypes: Array.from(this._traversedResourceTypes).join(','),
           targetType,
           relation,
           payload,

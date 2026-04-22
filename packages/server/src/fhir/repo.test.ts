@@ -10,6 +10,7 @@ import {
   encodeBase64,
   getReferenceString,
   isOk,
+  Logger,
   normalizeErrorString,
   notFound,
   OperationOutcomeError,
@@ -2181,6 +2182,82 @@ describe('FHIR Repo', () => {
         client.release();
       }
     }));
+
+  describe('assertShardAccess', () => {
+    let project: WithId<Project>;
+    let projectRepo: Repository;
+    let loggerErrorSpy: jest.SpyInstance;
+    beforeAll(async () => {
+      ({ project } = await createTestProject({ withRepo: true }));
+    });
+
+    beforeEach(async () => {
+      projectRepo = await getProjectSystemRepo(project);
+      loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      loggerErrorSpy.mockRestore();
+    });
+
+    test('transaction with multiple project resource types', async () =>
+      withTestContext(async () => {
+        await projectRepo.withTransaction(async () => {
+          await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await projectRepo.createResource<Organization>({ resourceType: 'Organization' });
+        });
+        expect(loggerErrorSpy).not.toHaveBeenCalledWith('Cross-divide Repository access', expect.anything());
+      }));
+
+    test('transaction with multiple global resource types', async () =>
+      withTestContext(async () => {
+        await projectRepo.withTransaction(async () => {
+          const user = await projectRepo.createResource<User>({
+            resourceType: 'User',
+            firstName: 'Real',
+            lastName: 'User',
+          });
+          await projectRepo.createResource<ProjectMembership>({
+            resourceType: 'ProjectMembership',
+            project: createReference(project),
+            user: createReference(user),
+            profile: { reference: 'Practitioner/123' },
+          });
+        });
+        expect(loggerErrorSpy).not.toHaveBeenCalledWith('Cross-divide Repository access', expect.anything());
+      }));
+
+    test('transaction with mixed project and global resource types', async () =>
+      withTestContext(async () => {
+        await projectRepo.withTransaction(async () => {
+          await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await projectRepo.createResource<User>({
+            resourceType: 'User',
+            firstName: 'Real',
+            lastName: 'User',
+          });
+        });
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          'Cross-divide Repository access',
+          expect.objectContaining({ targetType: 'User', relation: 'write' })
+        );
+
+        loggerErrorSpy.mockClear();
+
+        await projectRepo.withTransaction(async () => {
+          await projectRepo.createResource<User>({
+            resourceType: 'User',
+            firstName: 'Real',
+            lastName: 'User',
+          });
+          await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+        });
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          'Cross-divide Repository access',
+          expect.objectContaining({ targetType: 'Patient', relation: 'write' })
+        );
+      }));
+  });
 });
 
 describe('compareColumnValues', () => {
