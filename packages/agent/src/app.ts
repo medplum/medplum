@@ -611,7 +611,7 @@ export class App {
       this.channels.delete(definition.name);
 
       let replacementChannel: Channel;
-      
+
       try {
         replacementChannel = this.createChannel(nextType, definition, endpoint);
       } catch (err) {
@@ -624,7 +624,7 @@ export class App {
       return;
     }
 
-    let channel: Channel
+    let channel: Channel;
 
     try {
       const channelType = getChannelType(endpoint);

@@ -33,12 +33,12 @@ import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
+import { AgentByteStreamChannel } from './bytestream';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort } from './test-utils';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
-import { AgentByteStreamChannel } from './bytestream';
 
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
@@ -803,9 +803,9 @@ describe('App', () => {
     }, 3000);
 
     while (!state.gotAgentReloadResponse && !state.gotAgentError) {
-    if (shouldThrow) {
-      throw new Error('Timeout');
-    }
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
       await sleep(100);
     }
     clearTimeout(timeout);
