@@ -501,10 +501,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 coverages={coverages}
                 selectedCoverage={coverage}
                 patient={patient}
-                encounter={encounter}
                 conditions={conditions}
                 practitioner={practitioner}
-                chargeItems={chargeItems}
                 onClose={() => setConfirmModalOpen(false)}
                 onSubmitClaim={handleConfirmSubmit}
               />

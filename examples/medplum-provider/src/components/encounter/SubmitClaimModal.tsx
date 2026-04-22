@@ -3,7 +3,7 @@
 import { Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName } from '@medplum/core';
-import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { Condition, Coverage, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -255,9 +255,7 @@ export interface SubmitClaimModalProps {
   coverages: WithId<Coverage>[];
   selectedCoverage: WithId<Coverage> | undefined;
   patient: WithId<Patient>;
-  encounter: WithId<Encounter>;
   conditions: Condition[];
-  chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;

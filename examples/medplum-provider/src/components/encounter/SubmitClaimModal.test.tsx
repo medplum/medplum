@@ -3,19 +3,12 @@
 import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Condition, Coverage, Encounter, Patient } from '@medplum/fhirtypes';
+import type { Condition, Coverage, Patient } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { SubmitClaimModal } from './SubmitClaimModal';
-
-const mockEncounter: WithId<Encounter> = {
-  resourceType: 'Encounter',
-  id: 'encounter-1',
-  status: 'finished',
-  class: { code: 'AMB', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' },
-};
 
 const mockCondition: Condition = {
   resourceType: 'Condition',
@@ -57,15 +50,21 @@ const defaultProps = {
   opened: true,
   submitting: false,
   patient: HomerSimpson as WithId<Patient>,
-  encounter: mockEncounter,
   coverages: [mockInsurance1, mockSelfPay],
   selectedCoverage: mockInsurance1 as WithId<Coverage> | undefined,
   conditions: [mockCondition],
-  chargeItems: undefined,
   practitioner: DrAliceSmith,
   onClose: vi.fn(),
   onSubmitClaim: vi.fn(),
 };
+
+function getCoverageCheckbox(payerName: string): HTMLElement {
+  const card = screen.getByText(payerName).closest('[class*="Card"]');
+  if (!card) {
+    throw new Error(`Coverage card for payer "${payerName}" not found`);
+  }
+  return within(card as HTMLElement).getByRole('checkbox');
+}
 
 function setup(overrides: Partial<React.ComponentProps<typeof SubmitClaimModal>> = {}): void {
   act(() => {
@@ -99,9 +98,8 @@ describe('SubmitClaimModal', () => {
       });
 
       await waitFor(() => {
-        const checkboxes = screen.getAllByRole('checkbox');
-        expect(checkboxes[0]).toBeChecked();
-        expect(checkboxes[1]).not.toBeChecked();
+        expect(getCoverageCheckbox('Blue Cross')).toBeChecked();
+        expect(getCoverageCheckbox('Aetna')).not.toBeChecked();
       });
     });
 
@@ -112,9 +110,8 @@ describe('SubmitClaimModal', () => {
       });
 
       await waitFor(() => {
-        const checkboxes = screen.getAllByRole('checkbox');
-        expect(checkboxes[0]).not.toBeChecked();
-        expect(checkboxes[1]).toBeChecked();
+        expect(getCoverageCheckbox('Blue Cross')).not.toBeChecked();
+        expect(getCoverageCheckbox('Aetna')).toBeChecked();
       });
     });
   });
@@ -140,8 +137,7 @@ describe('SubmitClaimModal', () => {
 
       setup({ coverages: [mockInsurance1, mockSelfPay], selectedCoverage: mockInsurance1 });
 
-      const [checkbox] = screen.getAllByRole('checkbox');
-      await user.click(checkbox);
+      await user.click(getCoverageCheckbox('Blue Cross'));
 
       expect(screen.getByRole('button', { name: 'Submit claim' })).toBeDisabled();
     });
@@ -156,9 +152,8 @@ describe('SubmitClaimModal', () => {
         onSubmitClaim,
       });
 
-      const checkboxes = screen.getAllByRole('checkbox');
-      await user.click(checkboxes[0]); // deselect coverage1
-      await user.click(checkboxes[1]); // select coverage2
+      await user.click(getCoverageCheckbox('Blue Cross')); // deselect coverage1
+      await user.click(getCoverageCheckbox('Aetna')); // select coverage2
 
       await user.click(screen.getByRole('button', { name: 'Submit claim' }));
 
