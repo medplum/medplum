@@ -71,7 +71,12 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
   async function submit(): Promise<void> {
     setSaving(true);
     try {
-      await medplum.updateResource(schedule);
+      const updated = await medplum.updateResource(schedule, {
+        headers: {
+          'If-Match': schedule.meta?.versionId ? `W/"${schedule.meta.versionId}"` : '',
+        },
+      });
+      setSchedule(deepClone(updated));
       showSuccessNotification({ message: 'Schedule updated' });
       setDirty(false);
     } catch (err) {

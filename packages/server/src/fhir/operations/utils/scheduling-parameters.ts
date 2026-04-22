@@ -163,7 +163,7 @@ export function chooseSchedulingParameters(
 ): SchedulingParameters | undefined {
   const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 
-  // Top priority: entries on an schedule pointing at this service
+  // Top priority: entries on the schedule pointing at this service
   const specificMatch = scheduleSchedulingParameters.find((schedulingParameters) =>
     isReferenceTo(schedulingParameters.service, healthcareService)
   );

@@ -140,9 +140,13 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   );
 
   if (serviceRefString) {
-    healthcareService = await ctx.repo.readReference({ reference: serviceRefString });
-    if (!healthcareService) {
-      throw new OperationOutcomeError(badRequest('HealthcareService not found'));
+    try {
+      healthcareService = await ctx.repo.readReference({ reference: serviceRefString });
+    } catch (err) {
+      if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+        throw new OperationOutcomeError(badRequest('HealthcareService not found'));
+      }
+      throw err;
     }
   } else {
     // Collect all unique service type codes across all proposed slots, then fetch
