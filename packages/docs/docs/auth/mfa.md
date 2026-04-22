@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 Multi-Factor Authentication (MFA) adds an extra layer of security to user accounts by requiring a second authentication factor beyond a password. Medplum supports Time-based One-Time Password (TOTP) authentication, which is compatible with authenticator apps like Google Authenticator, Microsoft Authenticator, Authy, and others.
 
-:::note
+:::note[]
 Users enrolled in MFA will only be asked for an MFA code during a login with Username/Password
 :::
 

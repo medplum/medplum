@@ -282,6 +282,27 @@ export interface ProcessAllResourcesOptions {
   delayBetweenPagesMs?: number;
 }
 
+export type ColumnValue = boolean | number | string | undefined | null;
+
+export function compareColumnValues(a: ColumnValue, b: ColumnValue): number {
+  if ((a ?? null) === (b ?? null)) {
+    return 0;
+  }
+  if (a === null || a === undefined) {
+    return 1;
+  }
+  if (b === null || b === undefined) {
+    return -1;
+  }
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  if (typeof a === 'boolean' && typeof b === 'boolean') {
+    return Number(a) - Number(b);
+  }
+  return String(a).localeCompare(String(b));
+}
+
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -319,8 +340,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
    * 12. 12/01/25 - Added search param `Bot-cds-hook` (https://github.com/medplum/medplum/pull/7933)
    * 13. 01/05/25 - Added search params: ActivityDefinition-code, Communication-priority, Communication-priority-order, ProjectMembership-active (https://github.com/medplum/medplum/pull/8160)
+   * 14. 04/14/26 - Added search params: ProjectMembership-admin, Practitioner-qualification-code (https://github.com/medplum/medplum/pull/8919)
+   *                and sort inline array columns (https://github.com/medplum/medplum/pull/8961)
    */
-  static readonly VERSION: number = 13;
+  static readonly VERSION: number = 14;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -1918,6 +1941,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     impl satisfies ColumnSearchParameterImplementation;
     const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
     if (impl.array) {
+      columnValues.sort(compareColumnValues);
       columns[impl.columnName] = columnValues.length > 0 ? columnValues : undefined;
     } else {
       columns[impl.columnName] = columnValues[0];
@@ -1937,7 +1961,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchParam: SearchParameter,
     details: SearchParameterDetails,
     typedValues: TypedValue[]
-  ): (boolean | number | string | undefined | null)[] {
+  ): ColumnValue[] {
     if (details.type === SearchParameterType.BOOLEAN) {
       const value = typedValues[0]?.value;
       if (value === undefined || value === null) {

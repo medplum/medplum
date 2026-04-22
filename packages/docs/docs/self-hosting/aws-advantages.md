@@ -8,7 +8,7 @@ Medplum provides a suite of digital healthcare services such as authentication, 
 
 Medplum's hosted offering runs on AWS, so naturally the AWS configuration is most full-featured and most battle-tested. This document describes which features are only available on AWS, and possible alternatives.
 
-:::info
+:::info[]
 
 Are you interested in a non-AWS environment? Please [contact us](mailto:hello@medplum.com) to learn about partnership or sponsorship opportunities. As the Medplum project grows, we intend to target as many hosting options as possible.
 
