@@ -143,7 +143,7 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
-import { GLOBAL_SHARD_ID } from './sharding';
+import { GLOBAL_SHARD_ID, GlobalOnlyResourceTypes, GlobalResourceTypes } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
@@ -2947,6 +2947,55 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Already closed');
     }
   }
+
+  private _traversedResourceTypes: Set<ResourceType> | undefined;
+  private _traversedResourceTypesOfInterest: boolean | undefined;
+  setTraversedResourceTypes(types: ResourceType | ResourceType[]): void {
+    if (Array.isArray(types)) {
+      this._traversedResourceTypes = new Set(types);
+      this._traversedResourceTypesOfInterest = types.some(resourceTypeOfInterest);
+    } else {
+      this._traversedResourceTypes = new Set([types]);
+      this._traversedResourceTypesOfInterest = resourceTypeOfInterest(types);
+    }
+  }
+
+  private addTraversedResourceType(type: ResourceType): void {
+    if (this._traversedResourceTypes) {
+      this._traversedResourceTypes.add(type);
+    } else {
+      this._traversedResourceTypes = new Set([type]);
+    }
+    this._traversedResourceTypesOfInterest ||= resourceTypeOfInterest(type);
+  }
+
+  clearTraversedResourceTypes(): void {
+    this._traversedResourceTypes = undefined;
+    this._traversedResourceTypesOfInterest = undefined;
+  }
+
+  onResourceTypeQuery(targetType: string, relation: string, payload?: object): void {
+    try {
+      const previousOfInterest = this._traversedResourceTypesOfInterest;
+      this.addTraversedResourceType(targetType as ResourceType);
+      const shouldLog = previousOfInterest !== this._traversedResourceTypesOfInterest;
+
+      if (shouldLog) {
+        getLogger().info('onResourceTypeQuery', {
+          originTypes: this._traversedResourceTypes ? Array.from(this._traversedResourceTypes).join(',') : undefined,
+          targetType,
+          relation,
+          payload,
+        });
+      }
+    } catch (err) {
+      getLogger().info('Error in onResourceTypeQuery', { targetType, relation, payload, err });
+    }
+  }
+}
+
+function resourceTypeOfInterest(type: ResourceType): boolean {
+  return GlobalResourceTypes.has(type) || GlobalOnlyResourceTypes.has(type);
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds

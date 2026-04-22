@@ -401,6 +401,7 @@ function getBaseSelectQuery(
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
+    repo.setTraversedResourceTypes(searchRequest.types);
     for (const resourceType of searchRequest.types) {
       const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
       queries.push(query);
@@ -410,6 +411,7 @@ function getBaseSelectQuery(
       builder.raw('*');
     }
   } else {
+    repo.setTraversedResourceTypes(searchRequest.resourceType);
     builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
   }
   return builder;
@@ -539,6 +541,7 @@ async function getSearchIncludeEntries(
   if (!searchParam) {
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
+  repo.onResourceTypeQuery(resourceType as ResourceType, 'include', { include });
 
   const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
   const references: Reference[] = [];
@@ -1008,6 +1011,12 @@ function buildSearchFilterExpression(
 
   if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
+    for (const c of chain.chain) {
+      repo.onResourceTypeQuery(c.targetType, c.direction === Direction.FORWARD ? 'chain-forward' : 'chain-reverse', {
+        chain: chain.chain.map((c) => ({ targetType: c.targetType, direction: c.direction })),
+        filter,
+      });
+    }
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
