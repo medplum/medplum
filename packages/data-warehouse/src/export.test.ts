@@ -16,7 +16,7 @@ describe('Data Warehouse Export', () => {
   beforeAll(async () => {
     // Spin up Postgres
     pgContainer = await new PostgreSqlContainer('postgres:17').start();
-    
+
     // Connect and create table + insert data
     databaseUrl = pgContainer.getConnectionUri();
 
