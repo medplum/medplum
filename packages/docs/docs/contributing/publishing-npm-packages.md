@@ -8,7 +8,7 @@ This is the process we use to publish new versions of JavaScript NPM packages.
 
 Publishing NPM dependencies requires being a member of the [Medplum dev team](https://github.com/orgs/medplum/teams/dev).
 
-:::note
+:::note[]
 
 Note that publishing to NPM is separate from deploying to production. For details on deploying to production, see:
 
