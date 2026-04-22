@@ -143,9 +143,11 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { CrossDivideScope } from './crossdivide';
 import { GLOBAL_SHARD_ID, GlobalOnlyResourceTypes, GlobalResourceTypes } from './sharding';
-import type { Expression, TransactionIsolationLevel } from './sql';
+import type { BaseQuery, Expression, TransactionIsolationLevel } from './sql';
 import {
+  collectTables,
   Condition,
   DeleteQuery,
   Disjunction,
@@ -319,6 +321,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
   private callbackStack: CallbackFrame[] = [];
+
+  /**
+   * Active transaction-level cross-divide scope. Created when the outer transaction
+   * begins and cleared when it commits or rolls back. Individual SQL scopes created
+   * by `executeQuery` link to this as their parent, so a cross-divide that only
+   * shows up across multiple SQLs in one transaction is still caught.
+   */
+  private txnCrossDivideScope?: CrossDivideScope;
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -539,7 +549,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
-    const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
+    const rows = await this.executeQuery(builder, DatabaseMode.READER);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -2538,6 +2548,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
+   * Executes a query against the appropriate database client, tracking the set of
+   * tables it references for cross-divide detection. This is the canonical entry
+   * point for running query builders through the Repository — prefer it over
+   * `query.execute(this.getDatabaseClient(mode))`, which bypasses tracking.
+   * @param query - The query builder to execute.
+   * @param mode - The database mode.
+   * @returns The rows returned by the query.
+   */
+  async executeQuery<T = any>(query: BaseQuery, mode: DatabaseMode): Promise<T[]> {
+    const scope = new CrossDivideScope('sql', this.txnCrossDivideScope);
+    const tables = new Set<string>();
+    collectTables(query, tables);
+    for (const t of tables) {
+      scope.addTable(t);
+    }
+    return query.execute<T>(this.getDatabaseClient(mode));
+  }
+
+  /**
    * Returns a proper database connection.
    * Unlike getDatabaseClient(), this method always returns a PoolClient.
    * @param mode - The database mode.
@@ -2653,6 +2682,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
+      this.txnCrossDivideScope = new CrossDivideScope('transaction');
     } else {
       await conn.query('SAVEPOINT sp' + this.transactionDepth);
     }
@@ -2666,6 +2696,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.processPreCommit();
       await conn.query('COMMIT');
       this.transactionDepth--;
+      this.txnCrossDivideScope = undefined;
       this.releaseConnection();
       this.clearCallbackStack();
       await this.processPostCommit();
@@ -2708,6 +2739,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.transactionDepth--;
     this.truncateCommitCallbacks();
     if (isOuter) {
+      this.txnCrossDivideScope = undefined;
       this.releaseConnection(error);
     }
   }
@@ -2721,6 +2753,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private abortTransaction(err: Error): void {
     this.transactionDepth = 0;
+    this.txnCrossDivideScope = undefined;
     this.clearCallbackStack();
     this.releaseConnection(err);
   }

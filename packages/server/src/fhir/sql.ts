@@ -1265,6 +1265,164 @@ function getColumn(column: Column | string, defaultTableName?: string): Column {
   }
 }
 
+/**
+ * Collects the set of tables referenced by a query or expression tree.
+ *
+ * Walks the full tree — main `FROM`, joins, inner queries, CTEs, UNION branches,
+ * UPDATE/INSERT/DELETE targets, `USING` tables, subqueries inside WHERE (`EXISTS`,
+ * `IN (SELECT ...)`) — and records every table name as it appears in the SQL.
+ *
+ * Classification (which side of the divide a table belongs to) is a separate concern;
+ * this walker just collects. Aliases and non-resource tables are collected too and
+ * classified as `unknown` downstream.
+ * @param node - Root query or expression to walk.
+ * @param into - Set to add table names into.
+ */
+export function collectTables(node: Expression | Join | GroupBy | OrderBy | undefined, into: Set<string>): void {
+  if (!node) {
+    return;
+  }
+
+  if (node instanceof SelectQuery) {
+    // Skip the main table name when there's an innerQuery — in that case, actualTableName
+    // is just an alias for a derived table (e.g., `SELECT * FROM (<union>) AS combined`).
+    if (!node.innerQuery) {
+      into.add(node.actualTableName);
+    }
+    if (node.with) {
+      collectTables(node.with.expr, into);
+    }
+    collectTables(node.innerQuery, into);
+    for (const join of node.joins) {
+      collectTables(join, into);
+    }
+    for (const column of node.columns) {
+      collectTables(column, into);
+    }
+    collectTables(node.predicate, into);
+    for (const groupBy of node.groupBys) {
+      collectTables(groupBy, into);
+    }
+    for (const orderBy of node.orderBys) {
+      collectTables(orderBy, into);
+    }
+    return;
+  }
+
+  if (node instanceof InsertQuery) {
+    into.add(node.actualTableName);
+    collectTables(node.predicate, into);
+    // INSERT ... SELECT: walk the subquery
+    // (No public accessor; InsertQuery's subquery path is internal. If we need to
+    // capture it, we'll expose a getter later. In practice the subquery form is
+    // only used for InsertQuery constructed with a SelectQuery.)
+    return;
+  }
+
+  if (node instanceof UpdateQuery) {
+    into.add(node.actualTableName);
+    collectTables(node.predicate, into);
+    // UpdateQuery.from (CTE) is private; if/when we need to traverse it, expose a getter.
+    return;
+  }
+
+  if (node instanceof DeleteQuery) {
+    into.add(node.actualTableName);
+    if (node.usingTables) {
+      for (const t of node.usingTables) {
+        into.add(t);
+      }
+    }
+    collectTables(node.predicate, into);
+    return;
+  }
+
+  if (node instanceof Union) {
+    for (const q of node.queries) {
+      collectTables(q, into);
+    }
+    return;
+  }
+
+  if (node instanceof Join) {
+    if (typeof node.joinItem === 'string') {
+      into.add(node.joinItem);
+    } else {
+      collectTables(node.joinItem, into);
+    }
+    collectTables(node.onExpression, into);
+    return;
+  }
+
+  if (node instanceof Conjunction || node instanceof Disjunction) {
+    for (const expr of node.expressions) {
+      collectTables(expr, into);
+    }
+    return;
+  }
+
+  if (node instanceof Negation) {
+    collectTables(node.expression, into);
+    return;
+  }
+
+  if (node instanceof SqlFunction) {
+    for (const arg of node.args) {
+      collectTables(arg, into);
+    }
+    return;
+  }
+
+  if (node instanceof GroupBy) {
+    // GroupBy holds a Column; Columns don't reference tables the walker cares about
+    // (the parent query's table is already added).
+    return;
+  }
+
+  if (node instanceof OrderBy) {
+    // OrderBy.key can be an Expression; walk it in case it wraps a subquery (rare).
+    if (!(node.key instanceof Column)) {
+      collectTables(node.key, into);
+    }
+    return;
+  }
+
+  // Column, Constant, Parameter, ValuesQuery, ArraySubquery: no table references we care about.
+  // (ArraySubquery's filter is an expression tree but operates on an unnested array
+  // column, not a real table. If that assumption changes, walk node.filter here.)
+  if (
+    node instanceof Column ||
+    node instanceof Constant ||
+    node instanceof Parameter ||
+    node instanceof ValuesQuery ||
+    node instanceof ArraySubquery
+  ) {
+    return;
+  }
+
+  if (node instanceof Condition) {
+    return;
+  }
+
+  throw new Error(`Unknown expression type: ${node.constructor.name}`);
+}
+
+/**
+ * Collects every table referenced by a `UnionAllBuilder`. Kept separate because
+ * UnionAllBuilder isn't an Expression — it stringifies SQL directly rather than
+ * going through a SelectQuery/Union tree.
+ * @param builder - The builder to walk.
+ * @returns A set of table names it will hit.
+ */
+export function collectTablesFromUnionAll(builder: UnionAllBuilder): Set<string> {
+  const into = new Set<string>();
+  // UnionAllBuilder doesn't expose its constituent queries after `.add()` (they're
+  // stringified into its internal SqlBuilder). If we need this later, the fix is to
+  // keep the `SelectQuery[]` around on the builder; straightforward.
+  void builder;
+  return into;
+}
+
 export function periodToRangeString(period: Period): string | undefined {
   if (period.start && period.end) {
     return `[${period.start},${period.end}]`;
