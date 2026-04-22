@@ -18,7 +18,7 @@ Yes, Medplum supports Electronic Prescriptions for Controlled Substances (EPCS) 
 
 It is up to the prescriber to ensure dosages are within standard guidelines for for patient's height and weight.
 
-:::danger
+:::danger[]
 
 E-prescription providers often impose additional validation requirements when prescribing medication for minors. Please check the requirements of your eRx vendor.
 

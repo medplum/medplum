@@ -133,7 +133,9 @@ export async function graphqlHandler(
     repo.setMode(RepositoryMode.READER);
   }
 
-  const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
+  const dataLoader = new DataLoader<Reference, Resource, string>((keys) => repo.readReferences(keys), {
+    cacheKeyFn: (ref) => ref.reference ?? '',
+  });
 
   let result: any = introspection && introspectionResults.get(query);
   if (!result) {

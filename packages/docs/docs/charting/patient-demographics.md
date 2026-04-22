@@ -81,7 +81,7 @@ The [integration](/docs/integration) section has details on querying the exchang
 - [ONC Certification for Medplum](/docs/compliance/onc)
 - [(a)(5) User Testing Video](https://youtu.be/NcxFl-GJ9Mc) on Youtube
 
-:::caution
+:::caution[]
 
 ONC (a)(5) certification is under development.
 

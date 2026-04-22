@@ -209,7 +209,7 @@ The following access policy grants read-only access to the "Patient" resource ty
 
 Constraints on writes to a resource can also be specified using [FHIRPath expressions][fhirpath] in the `AccessPolicy.resource.writeConstraint` field. These expressions may contain the special variable `%before` to refer to the resource as it existed before the write. Any property accesses will by default refer to the resource as it exists with updates applied, but the `%after` variable is also provided for convenience.
 
-:::tip
+:::tip[]
 
 In case of a resource being created, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
 
@@ -463,9 +463,6 @@ Binary resources cannot use compartment-based access controls. They require expl
   "resourceType": "AccessPolicy",
   "name": "Patient Access Policy Template",
   "id": "patient-access-policy-template",
-  "compartment": {
-    "reference": "%patient"
-  },
   "resource": [
     {
       "resourceType": "Patient",
@@ -501,7 +498,24 @@ Binary resources cannot use compartment-based access controls. They require expl
     },
     {
       "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%patient"
+      "criteria": "Communication?_compartment=%patient",
+      "interaction": ["create", "read", "search"]
+    },
+    {
+      "resourceType": "RequestGroup",
+      "criteria": "RequestGroup?_compartment=%patient"
+    },
+    {
+      "resourceType": "Task",
+      "criteria": "Task?focus=%patient"
+    },
+    {
+      "resourceType": "QuestionnaireResponse",
+      "criteria": "QuestionnaireResponse?_compartment=%patient"
+    },
+    {
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%profile"
     },
     {
       "resourceType": "Organization",
@@ -516,15 +530,43 @@ Binary resources cannot use compartment-based access controls. They require expl
       "readonly": true
     },
     {
-      "resourceType": "Slot",
-      "readonly": true
+      "resourceType": "DocumentReference",
+      "criteria": "DocumentReference?_compartment=%patient"
     },
     {
-      "resourceType": "Binary"
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%patient"
+    },
+    {
+      "resourceType": "Appointment",
+      "interaction": ["create", "read", "search"],
+      "criteria": "Appointment?_compartment=%patient"
+    },
+    {
+      "resourceType": "Slot",
+      "interaction": ["create", "read", "search"],
     }
   ]
 }
 ```
+
+:::caution Binary Security Context
+
+`Binary` resources cannot use compartment-based access controls. Access is restricted by matching the `securityContext` field to the patient. When creating a `Binary` in a patient context, always set `securityContext` to the patient reference — otherwise the patient will not be able to access it:
+
+```json
+{
+  "resourceType": "Binary",
+  "contentType": "application/pdf",
+  "securityContext": {
+    "reference": "Patient/homer-simpson"
+  }
+}
+```
+
+See [Binary Security Context](/docs/access/binary-security-context) for more details.
+
+:::
 
 You can configure your project to support open registration for patients, therefore it is crucial that you setup a Default Access Policy similar to the one above.
 
@@ -559,6 +601,36 @@ The [patient access policy](#patient-access) above can be combined with [policy 
   ]
 }
 ```
+
+### WebSocket Subscriptions (`useSubscription` Hook)
+
+To use the [`useSubscription`](/docs/react/use-subscription) hook, users need two things in their access policy:
+
+1. **Permission to create `Subscription` resources** — The hook creates an in-memory `Subscription` on behalf of the user. Use a criteria scoped to websocket subscriptions owned by the current user so that users can only manage their own subscriptions:
+
+   ```
+   Subscription?type=websocket&author=%profile
+   ```
+
+2. **Read access to each subscribed resource type** — Users must also have `read` access for every resource type they intend to subscribe to. For example, if your app calls `useSubscription('Communication?...')`, the policy must grant at least `read` on `Communication`.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "WebSocket Subscription Policy",
+  "resource": [
+    {
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%profile"
+    },
+    {
+      "resourceType": "Communication"
+    }
+  ]
+}
+```
+
+Add one entry per resource type your application subscribes to.
 
 ### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
 

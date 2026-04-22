@@ -16,7 +16,7 @@ The Docker Compose file includes the following containers:
 
 All the containers present are configured to work together out of the box with no configuration. Just run the commands above and go to http://localhost:3000 to get started with your own full-stack local instance of Medplum!
 
-:::info
+:::info[]
 
 Starting the whole stack can take a few minutes. This is due to the initial one-time setup Medplum server has to do before it is able to pass its healthcheck.
 

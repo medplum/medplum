@@ -364,11 +364,11 @@ To generate a suitable key:
 openssl rand -base64 32
 ```
 
-:::caution
+:::caution[]
 You must store this key securely. If the key is lost, all data encrypted with it becomes permanently inaccessible. AWS does not store or manage SSE-C keys.
 :::
 
-:::warning
+:::warning[]
 Enabling SSE-C does not retroactively encrypt existing objects in the S3 bucket. Only new uploads will be encrypted. To encrypt existing data, you must re-upload the objects (e.g., using `aws s3 cp` with the `--sse-c` flags).
 :::
 

@@ -6,7 +6,7 @@ AWS Athena is an interactive query tool that makes it easy to analyze data store
 
 In this guide, we will describe how to setup AWS Athena for querying AWS log data.
 
-:::caution
+:::caution[]
 
 AWS Athena is a paid service, so each query can incur a cost.
 
@@ -98,7 +98,7 @@ Now Athena is ready for querying.
 
 ### Querying ALB logs
 
-:::caution
+:::caution[]
 
 As mentioned above, AWS Athena is a paid service, so each query can incur a cost.
 
