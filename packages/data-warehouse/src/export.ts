@@ -66,7 +66,7 @@ export function buildExportQueries(options: ExportOptions): string[] {
     const parquetFile = `${s3Path}/audit_events/window_${safeStart}_${safeEnd}.parquet`;
 
     queries.push(
-      `COPY (SELECT content, "lastUpdated" as last_updated, "projectId" as project_id FROM pg_db."AuditEvent" WHERE lastUpdated >= '${options.startWindow}' AND lastUpdated < '${options.endWindow}') TO '${parquetFile}' (FORMAT PARQUET);`
+      `COPY (SELECT id, content, "lastUpdated" AS last_updated, "projectId" AS project_id FROM pg_db."AuditEvent" WHERE lastUpdated >= '${options.startWindow}' AND lastUpdated < '${options.endWindow}') TO '${parquetFile}' (FORMAT PARQUET);`
     );
   }
 

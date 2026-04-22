@@ -79,7 +79,7 @@ describe('Data Warehouse Export', () => {
     };
 
     const res1 = await allAsync(`
-      SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY "lastUpdated";
+      SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
     `);
 
     expect(res1.length).toBe(2);
@@ -96,7 +96,7 @@ describe('Data Warehouse Export', () => {
     });
 
     const res2 = await allAsync(`
-      SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY "lastUpdated";
+      SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
     `);
     expect(res2.length).toBe(2);
 
@@ -111,7 +111,7 @@ describe('Data Warehouse Export', () => {
     });
 
     const res3 = await allAsync(`
-      SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY "lastUpdated";
+      SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
     `);
     expect(res3.length).toBe(3);
 

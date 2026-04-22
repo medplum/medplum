@@ -40,7 +40,7 @@ describe('Data Warehouse Export - Unit Tests', () => {
 
     // Parquet output
     expect(queries).toContain(
-      "COPY (SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO 's3://my-bucket/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);"
+      "COPY (SELECT id, content, \"lastUpdated\" AS last_updated, \"projectId\" AS project_id FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO 's3://my-bucket/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);"
     );
   });
 
@@ -108,7 +108,7 @@ describe('Data Warehouse Export - Unit Tests', () => {
 
     // Parquet output using local path
     expect(queries).toContain(
-      "COPY (SELECT * FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO '/tmp/mock-s3-path/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);"
+      "COPY (SELECT id, content, \"lastUpdated\" AS last_updated, \"projectId\" AS project_id FROM pg_db.\"AuditEvent\" WHERE lastUpdated >= '2026-01-01T00:00:00Z' AND lastUpdated < '2026-01-02T00:00:00Z') TO '/tmp/mock-s3-path/audit_events/window_2026-01-01-00-00-00_2026-01-02-00-00-00.parquet' (FORMAT PARQUET);"
     );
   });
 });
