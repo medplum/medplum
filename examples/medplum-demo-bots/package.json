@@ -36,7 +36,7 @@
     "dotenv": "17.4.2",
     "esbuild": "0.28.0",
     "fast-glob": "3.3.3",
-    "fast-xml-parser": "5.6.0",
+    "fast-xml-parser": "5.7.0",
     "form-data": "4.0.5",
     "pdfmake": "0.2.21",
     "rimraf": "6.1.3",
