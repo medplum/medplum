@@ -17,6 +17,7 @@ import type {
   Media,
   Patient,
   Practitioner,
+  Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
@@ -378,43 +379,61 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
   );
 
-  const submitToStedi = useCallback(async (): Promise<void> => {
-    if (!claim || !stediBot) {
-      return;
-    }
-    if (!conditionsRef.current?.length) {
-      showNotification({
-        title: 'Missing Diagnosis',
-        message: 'Please add at least one diagnosis before submitting a claim',
-        color: 'red',
-      });
-      return;
-    }
-    setStediSubmitting(true);
-    debouncedUpdateClaim.cancel();
-    try {
-      const claimPayload = coverage
-        ? {
-            ...claim,
-            insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(coverage) } }],
-          }
-        : claim;
-      const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
-      const updatedClaim = await medplum.searchOne('Claim', { _id: claim.id }, { cache: 'no-cache' });
-      if (updatedClaim) {
-        setClaim(updatedClaim);
+  const submitToStedi = useCallback(
+    async (insurance: Reference<Coverage>[]): Promise<void> => {
+      if (!claim || !stediBot) {
+        return;
       }
-      showNotification({
-        title: 'Submitted to Stedi',
-        message: result?.message || 'Claim successfully submitted to Stedi',
-        color: 'green',
-      });
-    } catch (err) {
-      showErrorNotification(err);
-    } finally {
-      setStediSubmitting(false);
+      if (!conditionsRef.current?.length) {
+        showNotification({
+          title: 'Missing Diagnosis',
+          message: 'Please add at least one diagnosis before submitting a claim',
+          color: 'red',
+        });
+        return;
+      }
+      if (insurance.length === 0) {
+        return;
+      }
+      setStediSubmitting(true);
+      debouncedUpdateClaim.cancel();
+      try {
+        const claimPayload = {
+          ...claim,
+          insurance: insurance.map((cov, index) => ({
+            sequence: index + 1,
+            focal: index === 0,
+            coverage: cov,
+          })),
+        };
+        const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
+        const updatedClaim = await medplum.searchOne('Claim', { _id: claim.id }, { cache: 'no-cache' });
+        if (updatedClaim) {
+          setClaim(updatedClaim);
+        }
+        showNotification({
+          title: 'Submitted to Stedi',
+          message: result?.message || 'Claim successfully submitted to Stedi',
+          color: 'green',
+        });
+      } catch (err) {
+        showErrorNotification(err);
+      } finally {
+        setStediSubmitting(false);
+      }
+    },
+    [claim, debouncedUpdateClaim, medplum, setClaim, stediBot]
+  );
+
+  const ensureSelfPayCoverage = useCallback(async (): Promise<WithId<Coverage>> => {
+    const existing = coverages.find(isSelfPayCoverage);
+    if (existing) {
+      return existing;
     }
-  }, [claim, coverage, debouncedUpdateClaim, medplum, setClaim, stediBot]);
+    const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
+    setCoverages((prev) => [...prev, created]);
+    return created;
+  }, [coverages, medplum, patient]);
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
@@ -574,6 +593,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmSubmit}
                 onSubmitToStedi={submitToStedi}
+                ensureSelfPayCoverage={ensureSelfPayCoverage}
               />
               <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
                 <Button
