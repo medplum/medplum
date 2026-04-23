@@ -29,7 +29,6 @@ import {
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 import { invariant } from '../util/invariant';
-import { findProjectMembership } from '../workers/utils';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -282,6 +281,8 @@ function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
   wsToSubLookup.delete(ws);
 }
 
+const REQUIRED_TOKEN_FIELDS = ['subscription_id', 'login_id', 'membership_id'] as const;
+
 // NOTE(ThatOneBro - 06/13/24): Although many parts of the WebSocket Subscription system are set up for multiple subscribers to one subscription
 // The current flow will always mark an unbound subscription as inactive (see `markInMemorySubscriptionsInactive`), which will remove it from the list of active
 // Subscriptions for the associated project and it will not be evaluated against resource interactions
@@ -310,19 +311,16 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return undefined;
     }
 
-    if (!tokenPayload?.subscription_id) {
-      socket.send(
-        JSON.stringify(badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.'))
-      );
-      socket.terminate();
-      return undefined;
-    }
-    if (!tokenPayload?.login_id) {
-      socket.send(
-        JSON.stringify(badRequest('Token claims missing login_id. Make sure you are sending the correct token.'))
-      );
-      socket.terminate();
-      return undefined;
+    for (const field of REQUIRED_TOKEN_FIELDS) {
+      if (!tokenPayload?.[field]) {
+        socket.send(
+          JSON.stringify(
+            badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.')
+          )
+        );
+        socket.terminate();
+        return undefined;
+      }
     }
     return tokenPayload as WebSocketSubToken;
   };
@@ -352,26 +350,13 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     // We know exp is always defined for these tokens
     const expiration = verifiedToken.exp;
     invariant(typeof expiration === 'number');
-    let membershipId = verifiedToken.membership_id;
-    if (!membershipId) {
-      const membership = await findProjectMembership(cacheEntry.projectId, { reference: verifiedToken.profile });
-      if (!membership) {
-        globalLogger.warn('[WS] Failed to retrieve project membership for profile when binding to token', {
-          projectId: cacheEntry.projectId,
-          profile: verifiedToken.profile,
-          subscriptionId: verifiedToken.subscription_id,
-        });
-        return;
-      }
-      membershipId = membership.id;
-    }
     await addUserActiveWebSocketSubscription(verifiedToken.profile, subRef);
     await setActiveSubscription(cacheEntry.projectId, criteriaResourceType, subRef, {
       criteria: cacheEntry.resource.criteria,
       expiration,
       author: verifiedToken.profile,
       loginId: verifiedToken.login_id,
-      membershipId,
+      membershipId: verifiedToken.membership_id,
     });
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken, criteriaResourceType);
     ensureHeartbeatHandler();

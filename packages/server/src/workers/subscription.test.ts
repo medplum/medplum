@@ -19,6 +19,7 @@ import type {
   DocumentReference,
   Observation,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   Resource,
@@ -2328,6 +2329,143 @@ describe('Subscription Worker', () => {
         // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
         // unconditionally returns `true` for non-websocket channel types.
         await findAndExecSubscriptionJob(patient, 'create', restHookSub);
+      }));
+
+    test('Uses correct AccessPolicy when author has multiple ProjectMemberships', () =>
+      withTestContext(async () => {
+        // A Practitioner may hold multiple ProjectMemberships in the same Project, each
+        // backed by a different AccessPolicy.  The active-subscription entry records the
+        // specific membership the WebSocket client bound with, and the subscription worker
+        // must evaluate the notification against that membership -- NOT whichever
+        // membership happens to come back first from `findProjectMembership`.
+        const allowedOrgId = randomUUID();
+        const deniedOrgId = randomUUID();
+        const allowedOrg = 'Organization/' + allowedOrgId;
+        const deniedOrg = 'Organization/' + deniedOrgId;
+
+        const { repo: wsRepo, project: wsProject } = await createTestProject({
+          project: {
+            name: 'WS Multiple Memberships Project',
+            features: ['websocket-subscriptions'],
+          },
+          withRepo: true,
+        });
+
+        const practitioner = await superAdminRepo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          meta: { project: wsProject.id },
+          name: [{ given: ['Dr.'], family: 'Multi' }],
+        });
+        const practitionerRef = getReferenceString(practitioner);
+
+        // The denying policy only grants access to Patients in `deniedOrg`'s compartment.
+        const noAccessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: wsProject.id },
+          compartment: { reference: deniedOrg },
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${deniedOrgId}` }],
+        });
+
+        // The allowing policy grants access to Patients in `allowedOrg`'s compartment.
+        const hasAccessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: wsProject.id },
+          compartment: { reference: allowedOrg },
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${allowedOrgId}` }],
+        });
+
+        // Create the "no access" membership FIRST so that `findProjectMembership` returns
+        // it ahead of the "has access" membership -- this is what makes the
+        // `authorMembershipId` plumbing necessary in the first place.
+        const noAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(practitioner),
+          profile: createReference(practitioner),
+          project: createReference(wsProject),
+          accessPolicy: createReference(noAccessPolicy),
+        });
+
+        const hasAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(practitioner),
+          profile: createReference(practitioner),
+          project: createReference(wsProject),
+          accessPolicy: createReference(hasAccessPolicy),
+        });
+
+        // Sanity check: the unordered membership lookup returns the denying membership
+        // first.  If this ever changes, the rest of the test stops exercising what it
+        // intends to exercise.
+        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        expect(firstFound?.id).toStrictEqual(noAccessMembership.id);
+
+        // Two WebSocket subscriptions, one bound with each membership.
+        const noAccessSub = await wsRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const hasAccessSub = await wsRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const expiration = Math.floor(Date.now() / 1000) + 3600;
+        const noAccessSubRef = `Subscription/${noAccessSub.id}`;
+        const hasAccessSubRef = `Subscription/${hasAccessSub.id}`;
+
+        await addUserActiveWebSocketSubscription(practitionerRef, noAccessSubRef);
+        await setActiveSubscription(wsProject.id, 'Patient', noAccessSubRef, {
+          criteria: 'Patient',
+          expiration,
+          author: practitionerRef,
+          loginId: randomUUID(),
+          membershipId: noAccessMembership.id,
+        });
+
+        await addUserActiveWebSocketSubscription(practitionerRef, hasAccessSubRef);
+        await setActiveSubscription(wsProject.id, 'Patient', hasAccessSubRef, {
+          criteria: 'Patient',
+          expiration,
+          author: practitionerRef,
+          loginId: randomUUID(),
+          membershipId: hasAccessMembership.id,
+        });
+
+        // Create a Patient that lives in the `allowedOrg` compartment.  Only the
+        // hasAccessMembership's policy should permit this.
+        const patient = await superAdminRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            project: wsProject.id,
+            account: { reference: allowedOrg },
+          },
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient.meta?.compartment).toContainEqual({ reference: allowedOrg });
+
+        // The hasAccessSub must receive exactly one notification; the noAccessSub must
+        // NOT fire.  If the worker picked the first-found (denying) membership for both
+        // subscriptions, neither would fire -- or if it picked the allowing membership
+        // for both, we would see two notifications.
+        const nextArgsPromise = waitForNextSubNotification<Patient>();
+        await findAndExecDispatchJob(patient, 'create');
+
+        const notificationArgs = await nextArgsPromise;
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
+          expect.objectContaining({ id: patient.id }),
+          hasAccessSub.id,
+          { includeResource: true },
+        ]);
+
+        // No other notification should arrive.
+        await assertNoWsNotifications();
       }));
 
     test('Subscription Author Has No Membership', () =>
