@@ -13,7 +13,7 @@ Most pipelines make a copy of each patient record from the source system into th
 While deduplication pipelines can take many forms, there are three primary operations in every pipeline:
 
 1. [**Ingestion:**](/docs/fhir-datastore/patient-deduplication/ingestion) Copying data from source systems into the target system to create source records.
-2. [**Matching:**](/docs/fhir-datastore/patient-deduplication/matching) For each patient record, find all other records that are potential matches.
+2. [**Matching:**](/docs/fhir-datastore/patient-deduplication/matching) For each patient record, find all other records that are potential matches. Medplum's built-in [Patient $match](/docs/api/fhir/operations/patient-match) operation provides a FHIR-standard way to query candidates by demographics.
 3. [**Merging:**](/docs/fhir-datastore/patient-deduplication/merging) Merge all the information into a single record to serve as the source of truth.
 
 
