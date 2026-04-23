@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import duckdb from 'duckdb';
+import { DuckDBInstance } from '@duckdb/node-api';
 
 export interface ExportOptions {
   databaseUrl: string;
@@ -74,13 +74,8 @@ export function buildExportQueries(options: ExportOptions): string[] {
 }
 
 export async function exportData(options: ExportOptions): Promise<void> {
-  const db = new duckdb.Database(':memory:');
-
-  const execAsync = (query: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      db.exec(query, (err) => (err ? reject(err) : resolve()));
-    });
-  };
+  const instance = await DuckDBInstance.create(':memory:');
+  const connection = await instance.connect();
 
   try {
     const queries = buildExportQueries(options);
@@ -89,9 +84,9 @@ export async function exportData(options: ExportOptions): Promise<void> {
       if (query.startsWith('DELETE') || query.startsWith('INSERT')) {
         console.log(`Executing: ${query}`);
       }
-      await execAsync(query);
+      await connection.run(query);
     }
   } finally {
-    db.close();
+    connection.closeSync();
   }
 }
