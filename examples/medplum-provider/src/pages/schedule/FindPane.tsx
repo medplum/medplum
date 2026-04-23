@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
+import { EMPTY, formatDateTime, generateId, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum, useSearchResources } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
@@ -47,7 +46,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     () =>
       serviceTypesFromSchedulingParameters(schedule).map((codeableConcept) => ({
         codeableConcept,
-        id: uuidv4(),
+        id: generateId(),
       })),
     [schedule]
   );
@@ -59,7 +58,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
         .flatMap((service) => service.type ?? [])
         .map((codeableConcept) => ({
           codeableConcept,
-          id: uuidv4(),
+          id: generateId(),
         })),
     [healthcareServices]
   );

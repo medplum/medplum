@@ -1,15 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getExtension, getExtensionValue, getIdentifier, isDefined, setIdentifier } from '@medplum/core';
+import { generateId, getExtension, getExtensionValue, getIdentifier, isDefined, setIdentifier } from '@medplum/core';
 import type { CodeableConcept, HealthcareService, Identifier, Resource, Schedule } from '@medplum/fhirtypes';
-import { v4 as uuidv4 } from 'uuid';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const MedplumSchedulingTransientIdentifierURI = 'https://medplum.com/fhir/scheduling-transient-id';
 
 export const SchedulingTransientIdentifier = {
   set(resource: Resource & { identifier?: Identifier[] }) {
-    setIdentifier(resource, MedplumSchedulingTransientIdentifierURI, uuidv4(), { use: 'temp' });
+    setIdentifier(resource, MedplumSchedulingTransientIdentifierURI, generateId(), { use: 'temp' });
   },
 
   get(resource: Resource) {

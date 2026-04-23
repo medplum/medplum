@@ -86,10 +86,10 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
-import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
@@ -464,7 +464,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   generateId(): string {
-    return v4();
+    return randomUUID();
   }
 
   async readResource<T extends Resource>(
