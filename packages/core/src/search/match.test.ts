@@ -897,6 +897,120 @@ describe('Search matching', () => {
     });
   });
 
+  test('_project filter', () => {
+    const resource1: Patient = {
+      resourceType: 'Patient',
+      meta: { project: 'project-123' },
+    };
+
+    const resource2: Patient = {
+      resourceType: 'Patient',
+      meta: { project: 'project-456' },
+    };
+
+    const resource3: Patient = {
+      resourceType: 'Patient',
+    };
+
+    // Exact match
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-123' }],
+      })
+    ).toBe(true);
+
+    // Non-match
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-456' }],
+      })
+    ).toBe(false);
+
+    // Match second resource
+    expect(
+      matchesSearchRequest(resource2, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-456' }],
+      })
+    ).toBe(true);
+
+    // Resource without meta.project does not match
+    expect(
+      matchesSearchRequest(resource3, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-123' }],
+      })
+    ).toBe(false);
+
+    // NOT_EQUALS
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.NOT_EQUALS, value: 'project-123' }],
+      })
+    ).toBe(false);
+
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.NOT_EQUALS, value: 'project-456' }],
+      })
+    ).toBe(true);
+
+    // Comma-separated values (OR)
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-123,project-456' }],
+      })
+    ).toBe(true);
+
+    expect(
+      matchesSearchRequest(resource2, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-123,project-456' }],
+      })
+    ).toBe(true);
+
+    expect(
+      matchesSearchRequest(resource3, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-123,project-456' }],
+      })
+    ).toBe(false);
+
+    // MISSING operator
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.MISSING, value: 'true' }],
+      })
+    ).toBe(false);
+
+    expect(
+      matchesSearchRequest(resource3, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.MISSING, value: 'true' }],
+      })
+    ).toBe(true);
+
+    expect(
+      matchesSearchRequest(resource1, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.MISSING, value: 'false' }],
+      })
+    ).toBe(true);
+
+    expect(
+      matchesSearchRequest(resource3, {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.MISSING, value: 'false' }],
+      })
+    ).toBe(false);
+  });
+
   test('Compartments', () => {
     const resource1: Patient = {
       resourceType: 'Patient',
