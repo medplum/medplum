@@ -376,6 +376,23 @@ describe('FHIR Repo Transactions', () => {
       }
     }));
 
+  test.failing('Derived system repo postCommit defers until outer transaction commits', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+
+      await repo.withTransaction(async () => {
+        const txSystemRepo = repo.getSystemRepo();
+        await txSystemRepo.postCommit(async () => {
+          callback();
+        });
+
+        expect(callback).not.toHaveBeenCalled();
+      });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    })
+  );
+
   test('Nested transaction post-commit', () =>
     withTestContext(async () => {
       const cb1 = jest.fn();
@@ -415,6 +432,29 @@ describe('FHIR Repo Transactions', () => {
       const results = await Promise.allSettled([tx1, tx2]);
       expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
+
+  test.failing('Derived system repo nested transaction rollback does not abort outer transaction', () =>
+    withTestContext(async () => {
+      let patient: WithId<Patient> | undefined;
+
+      await expect(
+        repo.withTransaction(async () => {
+          const txSystemRepo = repo.getSystemRepo();
+          patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+          await expect(
+            txSystemRepo.withTransaction(async () => {
+              throw new Error('inner rollback');
+            })
+          ).rejects.toThrow('inner rollback');
+
+          await expect(repo.readResource('Patient', patient.id)).resolves.toBeDefined();
+        })
+      ).resolves.toBeUndefined();
+
+      await expect(repo.readResource('Patient', patient?.id as string)).resolves.toBeDefined();
+    })
+  );
 
   test('Conflicting concurrent conditional creates', () =>
     withTestContext(async () => {
