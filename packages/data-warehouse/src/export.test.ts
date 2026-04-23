@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { DuckDBInstance } from '@duckdb/node-api';
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -75,9 +75,11 @@ describe('Data Warehouse Export', () => {
     const instance = await DuckDBInstance.create(':memory:');
     const connection = await instance.connect();
 
-    const res1 = (await connection.runAndReadAll(`
+    const res1 = (
+      await connection.runAndReadAll(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
-    `)).getRowObjectsJson() as { id: string }[];
+    `)
+    ).getRowObjectsJson() as { id: string }[];
 
     expect(res1.length).toBe(2);
     expect(res1[0].id).toBe('00000000-0000-0000-0000-000000000001');
@@ -92,9 +94,11 @@ describe('Data Warehouse Export', () => {
       testLocalPath: tempDir,
     });
 
-    const res2 = (await connection.runAndReadAll(`
+    const res2 = (
+      await connection.runAndReadAll(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
-    `)).getRowObjectsJson();
+    `)
+    ).getRowObjectsJson();
     expect(res2.length).toBe(2);
 
     // 3. Incremental next window: 10:20 to 10:40 (Should add 1 row)
@@ -107,9 +111,11 @@ describe('Data Warehouse Export', () => {
       testLocalPath: tempDir,
     });
 
-    const res3 = (await connection.runAndReadAll(`
+    const res3 = (
+      await connection.runAndReadAll(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
-    `)).getRowObjectsJson();
+    `)
+    ).getRowObjectsJson();
     expect(res3.length).toBe(3);
 
     connection.closeSync();

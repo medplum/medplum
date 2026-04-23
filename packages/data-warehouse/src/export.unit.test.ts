@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
+ 
 
 import { describe, expect, it } from 'vitest';
 import { buildExportQueries } from './export.js';

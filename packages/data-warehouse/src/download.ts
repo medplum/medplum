@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { execFile } from 'child_process';
 import { DuckDBInstance } from '@duckdb/node-api';
+import { execFile } from 'child_process';
 import { createWriteStream, promises as fs } from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
