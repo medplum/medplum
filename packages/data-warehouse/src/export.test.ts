@@ -63,11 +63,11 @@ describe('Data Warehouse Export', () => {
     // 1. Initial export: 10:00 to 10:20 (Should export 2 rows)
     await exportData({
       databaseUrl,
-      s3Bucket: 'test-bucket', // ignored because of testLocalPath
+      s3Bucket: 'test-bucket', // ignored because of localPath
       s3Region: 'us-east-1',
       startWindow: '2026-04-11T10:00:00Z',
       endWindow: '2026-04-11T10:20:00Z',
-      testLocalPath: tempDir,
+      localPath: tempDir,
     });
 
     // Verify
@@ -92,7 +92,7 @@ describe('Data Warehouse Export', () => {
       s3Region: 'us-east-1',
       startWindow: '2026-04-11T10:00:00Z',
       endWindow: '2026-04-11T10:20:00Z',
-      testLocalPath: tempDir,
+      localPath: tempDir,
     });
 
     const res2 = await allAsync(`
@@ -107,7 +107,7 @@ describe('Data Warehouse Export', () => {
       s3Region: 'us-east-1',
       startWindow: '2026-04-11T10:20:00Z',
       endWindow: '2026-04-11T10:40:00Z',
-      testLocalPath: tempDir,
+      localPath: tempDir,
     });
 
     const res3 = await allAsync(`

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import duckdb from 'duckdb';
+import fs from 'fs';
 
 export interface ExportOptions {
   databaseUrl: string;
@@ -9,7 +10,7 @@ export interface ExportOptions {
   startWindow: string;
   endWindow: string;
   awsS3TableArn?: string; // Optional AWS S3 Table ARN for managed Iceberg
-  testLocalPath?: string; // Used for mocking S3 in tests
+  localPath?: string; // Write Parquet files to local directory instead of S3 (skips AWS auth)
 }
 
 export function buildExportQueries(options: ExportOptions): string[] {
@@ -30,8 +31,7 @@ export function buildExportQueries(options: ExportOptions): string[] {
     queries.push(`LOAD iceberg;`);
   }
 
-  // In tests, we skip S3 auth
-  if (!options.testLocalPath) {
+  if (!options.localPath) {
     queries.push(`CREATE SECRET ( TYPE S3, PROVIDER CREDENTIAL_CHAIN, REGION '${options.s3Region}' );`);
   }
 
@@ -60,7 +60,7 @@ export function buildExportQueries(options: ExportOptions): string[] {
     );
   } else {
     // Fallback: Write unmanaged partitioned Parquet files
-    const s3Path = options.testLocalPath || `s3://${options.s3Bucket}`;
+    const s3Path = options.localPath || `s3://${options.s3Bucket}`;
     const safeStart = options.startWindow.replace(/[:.T]/g, '-').replace('Z', '');
     const safeEnd = options.endWindow.replace(/[:.T]/g, '-').replace('Z', '');
     const parquetFile = `${s3Path}/audit_events/window_${safeStart}_${safeEnd}.parquet`;
@@ -74,6 +74,10 @@ export function buildExportQueries(options: ExportOptions): string[] {
 }
 
 export async function exportData(options: ExportOptions): Promise<void> {
+  if (options.localPath) {
+    fs.mkdirSync(`${options.localPath}/audit_events`, { recursive: true });
+  }
+
   const db = new duckdb.Database(':memory:');
 
   const execAsync = (query: string): Promise<void> => {
