@@ -3,15 +3,7 @@
 import { Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName } from '@medplum/core';
-import type {
-  ChargeItem,
-  Condition,
-  Coverage,
-  Encounter,
-  Patient,
-  Practitioner,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
