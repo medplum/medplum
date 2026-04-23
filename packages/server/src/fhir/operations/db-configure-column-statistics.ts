@@ -63,11 +63,17 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
 
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
   await systemRepo.withTransaction(async (txRepo) => {
-    const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
     for (const columnName of params.columnNames) {
-      await client.query(
-        'ALTER TABLE "' + params.tableName + '" ALTER COLUMN "' + columnName + '" SET STATISTICS ' + newStatisticsTarget
-      );
+      // table and column names cannot be parameterized, so string interpolate after validating inputs
+      const query = `ALTER TABLE "${params.tableName}" ALTER COLUMN "${columnName}" SET STATISTICS ${newStatisticsTarget}`;
+      await txRepo.executeRawSql(query, [], {
+        mode: DatabaseMode.WRITER,
+        operation: 'write',
+        // this may alter resource type tables, but do not specify since this is an
+        // administrative operation where the desired shard/database was specified as an input to this handler
+        resourceTypes: [],
+        source: 'configureColumnStatisticsHandler',
+      });
     }
   });
 

@@ -120,6 +120,9 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
   }
 
   await repo.withTransaction(async (txRepo) => {
+    // `importConceptMap` does not read/write any resource tables, only derivative tables, so we can
+    // drop down to utilizing a raw database client here and opt-out of resource type access tracking
+    // TODO: this should probably report access of "ConceptMap" to the access tracker.
     const db = txRepo.getDatabaseClient(DatabaseMode.WRITER);
     return importConceptMap(db, conceptMap, params.mapping);
   });

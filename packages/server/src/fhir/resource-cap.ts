@@ -8,15 +8,17 @@ import {
   projectAdminResourceTypes,
   protectedResourceTypes,
 } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode } from '../database';
 import type { AuthState } from '../oauth/middleware';
+import { getRepoForLogin } from './accesspolicy';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;
 
-let countedResourceTypes: string[] | undefined;
+let countedResourceTypes: ResourceType[] | undefined;
 
 export class ResourceCap {
   private readonly limiter: RateLimiterRedis;
@@ -24,6 +26,7 @@ export class ResourceCap {
 
   private current?: RateLimiterRes;
   private readonly enabled: boolean;
+  private readonly authState: AuthState;
   private readonly logger: Logger;
 
   private initPromise?: Promise<void>;
@@ -36,7 +39,7 @@ export class ResourceCap {
       duration: ONE_DAY,
     });
     this.projectKey = authState.project.id;
-
+    this.authState = authState;
     this.logger = logger;
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableResourceCap')?.valueBoolean === true;
   }
@@ -48,11 +51,17 @@ export class ResourceCap {
 
     let currentStatus = await this.limiter.get(this.projectKey);
     if (!currentStatus) {
+      const repo = await getRepoForLogin(this.authState, true);
       const subqueries = countedResourceTypes.map((rt) =>
         new SelectQuery(rt).raw(`COUNT(*)::int as "count"`).where('projectId', '=', this.projectKey)
       );
       const query = new SelectQuery('combined', new Union(...subqueries)).column('count');
-      const tableCounts = await query.execute(getDatabasePool(DatabaseMode.READER));
+      const tableCounts = await repo.executeSql<{ count: number }>(query, {
+        mode: DatabaseMode.READER,
+        operation: 'read',
+        resourceTypes: countedResourceTypes,
+        source: 'resourceCap.init',
+      });
       const totalCount = tableCounts.reduce((sum, row) => sum + row.count, 0);
       currentStatus = await this.limiter.set(this.projectKey, totalCount, ONE_DAY);
     }

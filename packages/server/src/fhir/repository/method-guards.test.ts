@@ -10,6 +10,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
+import { SelectQuery } from '../sql';
 
 type MemberKind = 'method' | 'getter' | 'setter';
 
@@ -111,6 +112,28 @@ const guardedInvocations: MethodInvocation[] = [
   { name: 'getSystemRepo', kind: 'method', invoke: (repo) => repo.getSystemRepo() },
   { name: 'setMode', kind: 'method', invoke: (repo) => repo.setMode('reader') },
   { name: 'getDatabaseClient', kind: 'method', invoke: (repo) => repo.getDatabaseClient(DatabaseMode.WRITER) },
+  {
+    name: 'executeSql',
+    kind: 'method',
+    invoke: (repo) =>
+      repo.executeSql(new SelectQuery('Patient').column('id').limit(0), {
+        mode: DatabaseMode.WRITER,
+        operation: 'read',
+        resourceTypes: ['Patient'],
+        source: 'test',
+      }),
+  },
+  {
+    name: 'executeRawSql',
+    kind: 'method',
+    invoke: (repo) =>
+      repo.executeRawSql('SELECT 1', [], {
+        mode: DatabaseMode.WRITER,
+        operation: 'read',
+        resourceTypes: [],
+        source: 'test',
+      }),
+  },
   { name: 'withTransaction', kind: 'method', invoke: (repo) => repo.withTransaction(async () => undefined) },
   { name: 'withOverrideConfig', kind: 'method', invoke: (repo) => repo.withOverrideConfig({ extendedMode: true }) },
   {
