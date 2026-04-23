@@ -3,6 +3,7 @@
 import type { OperationOutcomeError } from '@medplum/core';
 import { normalizeErrorString, sleep } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
+import type { ResourceType } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
@@ -10,6 +11,8 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
+import type { RepositoryAccessLayer, RepositoryAccessOperation } from './access-tracker';
+import { createRepositoryAccessTracker } from './access-tracker';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -98,6 +101,8 @@ export class RepositoryConnection implements Disposable {
 
   private readonly rootScope: RootScope;
   private currentScope: Scope;
+
+  private readonly accessTracker = createRepositoryAccessTracker();
 
   /**
    * Creates a connection that owns any PoolClient it acquires.
@@ -226,6 +231,15 @@ export class RepositoryConnection implements Disposable {
     return false;
   }
 
+  recordResourceAccess(
+    layer: RepositoryAccessLayer,
+    operation: RepositoryAccessOperation,
+    resourceTypes: Iterable<ResourceType>,
+    source: string
+  ): void {
+    this.accessTracker.recordResourceAccess(layer, operation, resourceTypes, source);
+  }
+
   /**
    * Returns a database client.
    * Use this method when you don't care if you're in a transaction or not.
@@ -312,9 +326,9 @@ export class RepositoryConnection implements Disposable {
 
   async withStatementTimeout<TResult>(
     options: StatementTimeoutOptions,
-    callback: (client: PoolClient) => Promise<TResult>
+    callback: () => Promise<TResult>
   ): Promise<TResult> {
-    const client = await this.withConnectionStateLock(async () => {
+    await this.withConnectionStateLock(async () => {
       this.assertNotClosed();
       this.assertOwnsClient();
       if (this.isInTransaction()) {
@@ -326,12 +340,11 @@ export class RepositoryConnection implements Disposable {
       await client.query(`SELECT set_config('statement_timeout', $1, false)`, [String(options.timeoutMs)]);
       this.pinDepth++;
       this.discardOnRelease = true;
-      return client;
     });
 
     try {
       // invoking the callback must happen outside of the connection state lock to avoid deadlocks
-      return await callback(client);
+      return await callback();
     } finally {
       await this.withConnectionStateLock(async () => {
         this.pinDepth--;
@@ -601,6 +614,7 @@ export class RepositoryConnection implements Disposable {
       }
       const txScope = createScope(nextDepth === 1 ? 'transaction' : 'savepoint', this.currentScope);
       this.currentScope = txScope;
+      this.accessTracker.pushTransactionFrame();
       return { client, scope: txScope };
     });
   }
@@ -633,6 +647,8 @@ export class RepositoryConnection implements Disposable {
 
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
+        const frame = this.accessTracker.popTransactionFrame();
+        this.accessTracker.logTransactionAccess(frame, 'committed');
       } else {
         assert(this.currentScope.kind === 'savepoint');
         assert(this.currentScope.parent.kind !== 'root');
@@ -645,6 +661,7 @@ export class RepositoryConnection implements Disposable {
         this.currentScope.parent.preCommitCallbacks.push(...this.currentScope.preCommitCallbacks);
         this.currentScope.parent.postCommitCallbacks.push(...this.currentScope.postCommitCallbacks);
         this.currentScope = this.currentScope.parent;
+        this.accessTracker.mergeLastTransactionFrame();
       }
     });
 
@@ -692,7 +709,7 @@ export class RepositoryConnection implements Disposable {
           this.currentScope = this.currentScope.parent;
         }
         this.transactionIsolationLevel = undefined;
-
+        this.accessTracker.clearTransactionFrames();
         // Pass the original triggering error so the client is released with the right root cause.
         this.releaseConnection(error);
         return;
@@ -709,6 +726,10 @@ export class RepositoryConnection implements Disposable {
       if (isOuter) {
         this.transactionIsolationLevel = undefined;
         this.releaseConnection(error);
+        const frame = this.accessTracker.popTransactionFrame();
+        this.accessTracker.logTransactionAccess(frame, 'rolled_back');
+      } else {
+        this.accessTracker.mergeLastTransactionFrame();
       }
     });
   }

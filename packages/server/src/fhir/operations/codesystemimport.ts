@@ -105,6 +105,9 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   try {
     await repo.withTransaction(async (txRepo) => {
+      // `importCodeSystem` does not read/write any resource tables, only derivative tables, so we can
+      // drop down to utilizing a raw database client here and opt-out of resource type access tracking
+      // TODO: this should probably report access of "CodeSystem" to the access tracker.
       const db = txRepo.getDatabaseClient(DatabaseMode.WRITER);
       await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
     });
