@@ -13,3 +13,20 @@ export const showErrorNotification = (err: unknown): void => {
     message: normalizeErrorString(err),
   });
 };
+
+export const showSuccessNotification = ({
+  title,
+  message,
+  icon,
+}: {
+  title?: string;
+  message?: string;
+  icon?: React.ReactNode;
+}): void => {
+  notifications.show({
+    color: 'green',
+    icon: icon ?? '✓',
+    title,
+    message,
+  });
+};
