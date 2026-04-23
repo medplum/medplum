@@ -196,7 +196,10 @@
       "BotCdsService": "#/definitions/BotCdsService",
       "Package": "#/definitions/Package",
       "PackageRelease": "#/definitions/PackageRelease",
-      "PackageInstallation": "#/definitions/PackageInstallation"
+      "PackageInstallation": "#/definitions/PackageInstallation",
+      "DicomStudy": "#/definitions/DicomStudy",
+      "DicomSeries": "#/definitions/DicomSeries",
+      "DicomInstance": "#/definitions/DicomInstance"
     }
   },
   "oneOf": [
@@ -775,6 +778,15 @@
     },
     {
       "$ref": "#/definitions/PackageInstallation"
+    },
+    {
+      "$ref": "#/definitions/DicomStudy"
+    },
+    {
+      "$ref": "#/definitions/DicomSeries"
+    },
+    {
+      "$ref": "#/definitions/DicomInstance"
     }
   ],
   "definitions": {
@@ -1355,6 +1367,15 @@
         },
         {
           "$ref": "#/definitions/PackageInstallation"
+        },
+        {
+          "$ref": "#/definitions/DicomStudy"
+        },
+        {
+          "$ref": "#/definitions/DicomSeries"
+        },
+        {
+          "$ref": "#/definitions/DicomInstance"
         }
       ]
     },
@@ -65022,6 +65043,343 @@
         "version",
         "status",
         "installedBy"
+      ]
+    },
+    "DicomStudy": {
+      "description": "Definition of a DICOM study, which represents a collection of DICOM images and related metadata.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a DicomStudy resource",
+          "const": "DicomStudy"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "studyInstanceUid": {
+          "description": "Unique identifier for the study.",
+          "$ref": "#/definitions/id"
+        },
+        "studyId": {
+          "description": "User-friendly identifier for the study.",
+          "$ref": "#/definitions/string"
+        },
+        "studyDate": {
+          "description": "Date the study started.",
+          "$ref": "#/definitions/date"
+        },
+        "studyTime": {
+          "description": "Time the study started.",
+          "$ref": "#/definitions/time"
+        },
+        "accessionNumber": {
+          "description": "The accession number for the study.",
+          "$ref": "#/definitions/string"
+        },
+        "instanceAvailability": {
+          "description": "Availability of the study instances (e.g., ONLINE, OFFLINE).",
+          "$ref": "#/definitions/code"
+        },
+        "modalitiesInStudy": {
+          "description": "The modalities (e.g., CT, MR) that are present in the study.",
+          "items": {
+            "$ref": "#/definitions/code"
+          },
+          "type": "array"
+        },
+        "referringPhysiciansName": {
+          "description": "The name of the referring physician.",
+          "$ref": "#/definitions/string"
+        },
+        "timezoneOffsetFromUtc": {
+          "description": "The timezone offset from UTC for the study (e.g., -0700).",
+          "$ref": "#/definitions/string"
+        },
+        "patientName": {
+          "description": "The name of the patient.",
+          "$ref": "#/definitions/string"
+        },
+        "patientId": {
+          "description": "The ID of the patient.",
+          "$ref": "#/definitions/string"
+        },
+        "patientBirthDate": {
+          "description": "The birth date of the patient.",
+          "$ref": "#/definitions/string"
+        },
+        "patientSex": {
+          "description": "The sex of the patient.",
+          "$ref": "#/definitions/string"
+        },
+        "numberOfStudyRelatedSeries": {
+          "description": "The number of series related to the study.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "numberOfStudyRelatedInstances": {
+          "description": "The number of instances related to the study.",
+          "$ref": "#/definitions/unsignedInt"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "studyInstanceUid"
+      ]
+    },
+    "DicomSeries": {
+      "description": "Definition of a DICOM series, which represents a collection of DICOM images and related metadata that are part of a DICOM study.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a DicomSeries resource",
+          "const": "DicomSeries"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "study": {
+          "description": "The study that this DICOM series belongs to.",
+          "$ref": "#/definitions/Reference"
+        },
+        "seriesInstanceUid": {
+          "description": "Unique identifier for the series.",
+          "$ref": "#/definitions/id"
+        },
+        "seriesNumber": {
+          "description": "The number of this series within the study.",
+          "$ref": "#/definitions/string"
+        },
+        "modality": {
+          "description": "The modality of the series (e.g., CT, MR, US).",
+          "$ref": "#/definitions/code"
+        },
+        "timezoneOffsetFromUtc": {
+          "description": "The timezone offset from UTC for the study (e.g., -0700).",
+          "$ref": "#/definitions/string"
+        },
+        "seriesDescription": {
+          "description": "A description of the series (e.g., \u0027CT Abdomen with contrast\u0027).",
+          "$ref": "#/definitions/string"
+        },
+        "numberOfSeriesRelatedInstances": {
+          "description": "The number of instances related to the series.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "performedProcedureStepStartDate": {
+          "description": "The start date of the performed procedure step (YYYYMMDD).",
+          "$ref": "#/definitions/date"
+        },
+        "performedProcedureStepStartTime": {
+          "description": "The start time of the performed procedure step (HHMMSS.frac).",
+          "$ref": "#/definitions/time"
+        },
+        "scheduledProcedureStepId": {
+          "description": "The ID of the scheduled procedure step.",
+          "$ref": "#/definitions/string"
+        },
+        "requestedProcedureId": {
+          "description": "The ID of the requested procedure.",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "study",
+        "seriesInstanceUid"
+      ]
+    },
+    "DicomInstance": {
+      "description": "Definition of a DICOM instance, which represents a single DICOM image and related metadata that are part of a DICOM series.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a DicomInstance resource",
+          "const": "DicomInstance"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "study": {
+          "description": "The study that this DICOM instance belongs to.",
+          "$ref": "#/definitions/Reference"
+        },
+        "series": {
+          "description": "The series that this DICOM instance belongs to.",
+          "$ref": "#/definitions/Reference"
+        },
+        "sopClassUid": {
+          "description": "The SOP Class UID of the DICOM instance.",
+          "$ref": "#/definitions/id"
+        },
+        "sopInstanceUid": {
+          "description": "The SOP Instance UID of the DICOM instance.",
+          "$ref": "#/definitions/id"
+        },
+        "instanceAvailability": {
+          "description": "The availability of the DICOM instance.",
+          "$ref": "#/definitions/code"
+        },
+        "timezoneOffsetFromUtc": {
+          "description": "The timezone offset from UTC for the study (e.g., -0700).",
+          "$ref": "#/definitions/string"
+        },
+        "instanceNumber": {
+          "description": "The number of the instance in the study.",
+          "$ref": "#/definitions/string"
+        },
+        "rows": {
+          "description": "The number of rows in the image.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "columns": {
+          "description": "The number of columns in the image.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "bitsAllocated": {
+          "description": "The number of bits allocated for each pixel.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "numberOfFrames": {
+          "description": "The number of frames in the image.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "metadata": {
+          "description": "The DICOM metadata of the instance, typically stored as a JSON string containing the DICOM tags and their values.",
+          "$ref": "#/definitions/string"
+        },
+        "raw": {
+          "description": "The raw binary data of the DICOM instance, typically stored as a reference to a Binary resource containing the DICOM file.",
+          "$ref": "#/definitions/Reference"
+        },
+        "pixelData": {
+          "description": "The pixel data of the DICOM instance, typically stored as a reference to a Binary resource containing the pixel data. This is an alternative to rawData for cases where the pixel data is stored separately from the full DICOM file.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "study",
+        "series",
+        "sopClassUid",
+        "sopInstanceUid",
+        "metadata",
+        "raw"
       ]
     }
   }

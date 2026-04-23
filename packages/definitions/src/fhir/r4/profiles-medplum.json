@@ -8560,5 +8560,1115 @@
         ]
       }
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/DicomStudy",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "DicomStudy",
+      "name" : "DicomStudy",
+      "url" : "https://medplum.com/fhir/StructureDefinition/DicomStudy",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "DicomStudy",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "Definition of a DICOM study, which represents a collection of DICOM images and related metadata.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "DicomStudy",
+            "path" : "DicomStudy",
+            "short" : "Definition of a DICOM series.",
+            "definition" : "Definition of a DICOM series, which represents a collection of DICOM images and related metadata that are part of a DICOM study.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DicomStudy",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "DicomStudy.id",
+            "path" : "DicomStudy.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "DicomStudy.meta",
+            "path" : "DicomStudy.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "DicomStudy.implicitRules",
+            "path" : "DicomStudy.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "DicomStudy.language",
+            "path" : "DicomStudy.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "DicomStudy.text",
+            "path" : "DicomStudy.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "DicomStudy.contained",
+            "path" : "DicomStudy.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "DicomStudy.extension",
+            "path" : "DicomStudy.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DicomStudy.modifierExtension",
+            "path" : "DicomStudy.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DicomStudy.studyInstanceUid",
+            "path" : "DicomStudy.studyInstanceUid",
+            "short" : "Study Instance UID",
+            "definition" : "Unique identifier for the study.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "id"
+            }],
+            "base" : {
+              "path" : "DicomStudy.studyInstanceUid",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.studyId",
+            "path" : "DicomStudy.studyId",
+            "short" : "Study ID",
+            "definition" : "User-friendly identifier for the study.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.studyId",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.studyDate",
+            "path" : "DicomStudy.studyDate",
+            "short" : "Study Date",
+            "definition" : "Date the study started.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "date"
+            }],
+            "base" : {
+              "path" : "DicomStudy.studyDate",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.studyTime",
+            "path" : "DicomStudy.studyTime",
+            "short" : "Study Time",
+            "definition" : "Time the study started.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "time"
+            }],
+            "base" : {
+              "path" : "DicomStudy.studyTime",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.accessionNumber",
+            "path" : "DicomStudy.accessionNumber",
+            "short" : "Accession Number",
+            "definition" : "The accession number for the study.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.accessionNumber",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.instanceAvailability",
+            "path" : "DicomStudy.instanceAvailability",
+            "short" : "Instance Availability",
+            "definition" : "Availability of the study instances (e.g., ONLINE, OFFLINE).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "DicomStudy.instanceAvailability",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.modalitiesInStudy",
+            "path" : "DicomStudy.modalitiesInStudy",
+            "short" : "Modalities in Study",
+            "definition" : "The modalities (e.g., CT, MR) that are present in the study.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "DicomStudy.modalitiesInStudy",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "DicomStudy.referringPhysiciansName",
+            "path" : "DicomStudy.referringPhysiciansName",
+            "short" : "Referring Physician's Name",
+            "definition" : "The name of the referring physician.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.referringPhysiciansName",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.timezoneOffsetFromUtc",
+            "path" : "DicomStudy.timezoneOffsetFromUtc",
+            "short" : "Timezone Offset From UTC",
+            "definition" : "The timezone offset from UTC for the study (e.g., -0700).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.timezoneOffsetFromUtc",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.patientName",
+            "path" : "DicomStudy.patientName",
+            "short" : "Patient's Name",
+            "definition" : "The name of the patient.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.patientName",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.patientId",
+            "path" : "DicomStudy.patientId",
+            "short" : "Patient ID",
+            "definition" : "The ID of the patient.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.patientId",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.patientBirthDate",
+            "path" : "DicomStudy.patientBirthDate",
+            "short" : "Patient's Birth Date",
+            "definition" : "The birth date of the patient.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.patientBirthDate",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.patientSex",
+            "path" : "DicomStudy.patientSex",
+            "short" : "Patient's Sex",
+            "definition" : "The sex of the patient.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomStudy.patientSex",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.numberOfStudyRelatedSeries",
+            "path" : "DicomStudy.numberOfStudyRelatedSeries",
+            "short" : "Number of Study Related Series",
+            "definition" : "The number of series related to the study.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomStudy.numberOfStudyRelatedSeries",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomStudy.numberOfStudyRelatedInstances",
+            "path" : "DicomStudy.numberOfStudyRelatedInstances",
+            "short" : "Number of Study Related Instances",
+            "definition" : "The number of instances related to the study.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomStudy.numberOfStudyRelatedInstances",
+              "min" : 0,
+              "max" : "1"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/DicomSeries",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "DicomSeries",
+      "name" : "DicomSeries",
+      "url" : "https://medplum.com/fhir/StructureDefinition/DicomSeries",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "DicomSeries",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "Definition of a DICOM series, which represents a collection of DICOM images and related metadata that are part of a DICOM study.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "DicomSeries",
+            "path" : "DicomSeries",
+            "short" : "Definition of a DICOM series.",
+            "definition" : "Definition of a DICOM series, which represents a collection of DICOM images and related metadata that are part of a DICOM study.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DicomSeries",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "DicomSeries.id",
+            "path" : "DicomSeries.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "DicomSeries.meta",
+            "path" : "DicomSeries.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "DicomSeries.implicitRules",
+            "path" : "DicomSeries.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "DicomSeries.language",
+            "path" : "DicomSeries.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "DicomSeries.text",
+            "path" : "DicomSeries.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "DicomSeries.contained",
+            "path" : "DicomSeries.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "DicomSeries.extension",
+            "path" : "DicomSeries.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DicomSeries.modifierExtension",
+            "path" : "DicomSeries.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DicomSeries.study",
+            "path" : "DicomSeries.study",
+            "definition" : "The study that this DICOM series belongs to.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/DicomStudy"]
+            }],
+            "base" : {
+              "path" : "DicomSeries.study",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.seriesInstanceUid",
+            "path" : "DicomSeries.seriesInstanceUid",
+            "short" : "Series Instance UID",
+            "definition" : "Unique identifier for the series.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "id"
+            }],
+            "base" : {
+              "path" : "DicomSeries.seriesInstanceUid",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.seriesNumber",
+            "path" : "DicomSeries.seriesNumber",
+            "short" : "Series Number",
+            "definition" : "The number of this series within the study.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomSeries.seriesNumber",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.modality",
+            "path" : "DicomSeries.modality",
+            "short" : "Modality",
+            "definition" : "The modality of the series (e.g., CT, MR, US).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "DicomSeries.modality",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.timezoneOffsetFromUtc",
+            "path" : "DicomSeries.timezoneOffsetFromUtc",
+            "short" : "Timezone Offset From UTC",
+            "definition" : "The timezone offset from UTC for the study (e.g., -0700).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomSeries.timezoneOffsetFromUtc",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.seriesDescription",
+            "path" : "DicomSeries.seriesDescription",
+            "short" : "Series Description",
+            "definition" : "A description of the series (e.g., 'CT Abdomen with contrast').",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomSeries.seriesDescription",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.numberOfSeriesRelatedInstances",
+            "path" : "DicomSeries.numberOfSeriesRelatedInstances",
+            "short" : "Number of Series Related Instances",
+            "definition" : "The number of instances related to the series.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomSeries.numberOfSeriesRelatedInstances",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.performedProcedureStepStartDate",
+            "path" : "DicomSeries.performedProcedureStepStartDate",
+            "short" : "Performed Procedure Step Start Date",
+            "definition" : "The start date of the performed procedure step (YYYYMMDD).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "date"
+            }],
+            "base" : {
+              "path" : "DicomSeries.performedProcedureStepStartDate",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.performedProcedureStepStartTime",
+            "path" : "DicomSeries.performedProcedureStepStartTime",
+            "short" : "Performed Procedure Step Start Time",
+            "definition" : "The start time of the performed procedure step (HHMMSS.frac).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "time"
+            }],
+            "base" : {
+              "path" : "DicomSeries.performedProcedureStepStartTime",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.scheduledProcedureStepId",
+            "path" : "DicomSeries.scheduledProcedureStepId",
+            "short" : "Scheduled Procedure Step ID",
+            "definition" : "The ID of the scheduled procedure step.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomSeries.scheduledProcedureStepId",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomSeries.requestedProcedureId",
+            "path" : "DicomSeries.requestedProcedureId",
+            "short" : "Requested Procedure ID",
+            "definition" : "The ID of the requested procedure.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomSeries.requestedProcedureId",
+              "min" : 0,
+              "max" : "1"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/DicomInstance",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "DicomInstance",
+      "name" : "DicomInstance",
+      "url" : "https://medplum.com/fhir/StructureDefinition/DicomInstance",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "DicomInstance",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "Definition of a DICOM instance, which represents a single DICOM image and related metadata that are part of a DICOM series.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "DicomInstance",
+            "path" : "DicomInstance",
+            "short" : "Definition of a DICOM instance.",
+            "definition" : "Definition of a DICOM instance, which represents a single DICOM image and related metadata that are part of a DICOM series.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DicomInstance",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "DicomInstance.id",
+            "path" : "DicomInstance.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "DicomInstance.meta",
+            "path" : "DicomInstance.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "DicomInstance.implicitRules",
+            "path" : "DicomInstance.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "DicomInstance.language",
+            "path" : "DicomInstance.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "DicomInstance.text",
+            "path" : "DicomInstance.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "DicomInstance.contained",
+            "path" : "DicomInstance.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "DicomInstance.extension",
+            "path" : "DicomInstance.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DicomInstance.modifierExtension",
+            "path" : "DicomInstance.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DicomInstance.study",
+            "path" : "DicomInstance.study",
+            "definition" : "The study that this DICOM instance belongs to.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/DicomStudy"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.study",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.series",
+            "path" : "DicomInstance.series",
+            "definition" : "The series that this DICOM instance belongs to.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/DicomSeries"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.series",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.sopClassUid",
+            "path" : "DicomInstance.sopClassUid",
+            "short" : "SOP Class UID",
+            "definition" : "The SOP Class UID of the DICOM instance.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "id"
+            }],
+            "base" : {
+              "path" : "DicomInstance.sopClassUid",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.sopInstanceUid",
+            "path" : "DicomInstance.sopInstanceUid",
+            "short" : "SOP Instance UID",
+            "definition" : "The SOP Instance UID of the DICOM instance.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "id"
+            }],
+            "base" : {
+              "path" : "DicomInstance.sopInstanceUid",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.instanceAvailability",
+            "path" : "DicomInstance.instanceAvailability",
+            "short" : "Instance Availability",
+            "definition" : "The availability of the DICOM instance.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "DicomInstance.instanceAvailability",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.timezoneOffsetFromUtc",
+            "path" : "DicomInstance.timezoneOffsetFromUtc",
+            "short" : "Timezone Offset From UTC",
+            "definition" : "The timezone offset from UTC for the study (e.g., -0700).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomInstance.timezoneOffsetFromUtc",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.instanceNumber",
+            "path" : "DicomInstance.instanceNumber",
+            "short" : "Instance Number",
+            "definition" : "The number of the instance in the study.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomInstance.instanceNumber",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.rows",
+            "path" : "DicomInstance.rows",
+            "short" : "Rows",
+            "definition" : "The number of rows in the image.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomInstance.rows",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.columns",
+            "path" : "DicomInstance.columns",
+            "short" : "Columns",
+            "definition" : "The number of columns in the image.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomInstance.columns",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.bitsAllocated",
+            "path" : "DicomInstance.bitsAllocated",
+            "short" : "Bits Allocated",
+            "definition" : "The number of bits allocated for each pixel.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomInstance.bitsAllocated",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.numberOfFrames",
+            "path" : "DicomInstance.numberOfFrames",
+            "short" : "Number of Frames",
+            "definition" : "The number of frames in the image.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "unsignedInt"
+            }],
+            "base" : {
+              "path" : "DicomInstance.numberOfFrames",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.metadata",
+            "path" : "DicomInstance.metadata",
+            "definition" : "The DICOM metadata of the instance, typically stored as a JSON string containing the DICOM tags and their values.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "DicomInstance.raw",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.raw",
+            "path" : "DicomInstance.raw",
+            "definition" : "The raw binary data of the DICOM instance, typically stored as a reference to a Binary resource containing the DICOM file.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Binary"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.raw",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "DicomInstance.pixelData",
+            "path" : "DicomInstance.pixelData",
+            "definition" : "The pixel data of the DICOM instance, typically stored as a reference to a Binary resource containing the pixel data. This is an alternative to rawData for cases where the pixel data is stored separately from the full DICOM file.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Binary"]
+            }],
+            "base" : {
+              "path" : "DicomInstance.pixelData",
+              "min" : 0,
+              "max" : "*"
+            }
+          }
+        ]
+      }
+    }
   }]
 }

@@ -74,6 +74,8 @@
     "cors": "2.8.6",
     "cron-validator": "1.4.0",
     "dataloader": "2.2.3",
+    "dcmjs": "0.50.1",
+    "dicomweb-multipart-parser": "0.0.2",
     "dotenv": "17.4.2",
     "express": "5.2.1",
     "express-validator": "7.3.2",
