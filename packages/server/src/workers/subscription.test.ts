@@ -2015,6 +2015,8 @@ describe('Subscription Worker', () => {
      * that the subscription worker can find the entry when evaluating criteria.
      * @param subscription - The Subscription to simulate binding to.
      * @param projectId - The project ID the Subscription belongs to.
+     * @param loginId - The login ID for the author of the Subscription.
+     * @param membershipId - The membership ID for the author of the Subscription.
      * @returns A Promise that resolves to the reference string of the author.
      */
     async function bindSubscription(
@@ -2023,7 +2025,7 @@ describe('Subscription Worker', () => {
       loginId: string,
       membershipId: string
     ): Promise<string> {
-      /* @ts-ignore We access context directly in these tests to get what what normally be populated in the async storage authenticated context */
+      /* @ts-expect-error We access context directly in these tests to get what what normally be populated in the async storage authenticated context */
       const ctx = repo.context as unknown as RepositoryContext;
       const authorRef = ctx.author.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
