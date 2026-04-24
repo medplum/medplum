@@ -2259,7 +2259,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       // Non-Superusers can only access resources in their Project, with read-only access to linked Projects
       if (readInteractions.includes(interaction)) {
-        if (!this.context.projects?.some((p) => p.id === resource.meta?.project)) {
+        const resourceProject = this.context.projects?.find((p) => p.id === resource.meta?.project);
+        if (!resourceProject) {
+          return undefined;
+        }
+        // Enforce `exportedResourceType` on linked projects; mirrors addProjectFilters.
+        // The primary (owning) and "current" projects always expose all resource types.
+        if (
+          resource.resourceType !== 'Project' &&
+          resourceProject.id !== this.context.projects?.[0]?.id &&
+          resourceProject.id !== this.context.currentProject?.id &&
+          resourceProject.exportedResourceType?.length &&
+          !resourceProject.exportedResourceType.includes(resource.resourceType as ResourceType)
+        ) {
           return undefined;
         }
       } else if (resource.meta?.project !== this.context.projects?.[0]?.id) {
