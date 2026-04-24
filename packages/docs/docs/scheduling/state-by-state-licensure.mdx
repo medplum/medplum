@@ -8,7 +8,7 @@ tags: [scheduling]
 
 :::info[Scheduling operations do not enforce licensure]
 
-Medplum Scheduling is intentionally designed to allow business specific use cases like state-by-state licensure, program enrollment, and “which providers may this patient book?” to be handled **outside** Medplum’s scheduling operations. [`$find`](/docs/scheduling/schedule-find) does not take a patient, a license, or a state; it only computes free slots for a **single** [Schedule](/docs/api/fhir/resources/schedule) you already identified.
+Medplum Scheduling is intentionally designed to allow business specific use cases like state-by-state licensure, program enrollment, and “which providers may this patient book?” to be handled **outside** Medplum’s scheduling operations. [`$find`](/docs/scheduling/appointment-find) does not take a patient, a license, or a state; it only computes free slots for a **single** [Schedule](/docs/api/fhir/resources/schedule) you already identified.
 
 **Bake that business logic into which Schedules you pass into `$find`.** Typical flow: run your rules (PractitionerRole search, patient address, compartments, access policy, and so on) to build the list of allowed Schedule resource IDs, then call `$find` once per Schedule you want to offer in the UI (and merge or present results however your product requires).
 
@@ -76,7 +76,7 @@ FHIR R4 defines search parameters on PractitionerRole including [`location`](htt
 GET PractitionerRole?location:Location.identifier=NY&service:HealthcareService.identifier=primary-care
 ```
 
-From each matching PractitionerRole, read `PractitionerRole.practitioner` to obtain the [Practitioner](/docs/api/fhir/resources/practitioner) (or use the role itself if your [Schedule](/docs/api/fhir/resources/schedule) actors are [PractitionerRole](/docs/api/fhir/resources/practitionerrole)). Then resolve **only those actors’ Schedules** and pass each allowed `Schedule/id` into [`$find`](/docs/scheduling/schedule-find). This layer supports:
+From each matching PractitionerRole, read `PractitionerRole.practitioner` to obtain the [Practitioner](/docs/api/fhir/resources/practitioner) (or use the role itself if your [Schedule](/docs/api/fhir/resources/schedule) actors are [PractitionerRole](/docs/api/fhir/resources/practitionerrole)). Then resolve **only those actors’ Schedules** and pass each allowed `Schedule/id` into [`$find`](/docs/scheduling/appointment-find). This layer supports:
 
 - Finding every practitioner (or role) licensed for a given service in given state(s)
 - Building the exact set of Schedules your booking UI should query—**before** any `$find` calls
