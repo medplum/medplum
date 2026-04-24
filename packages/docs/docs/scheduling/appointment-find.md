@@ -35,26 +35,18 @@ import TabItem from '@theme/TabItem';
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
-import type { Bundle, Parameters, Appointment } from '@medplum/fhirtypes';
+import type { Bundle, Appointment } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-const result = await medplum.post(
-  medplum.fhirUrl('Appointment', '$find'),
-  {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'start', valueDateTime: '2026-03-10T09:00:00-05:00' },
-      { name: 'end', valueDateTime: '2026-03-10T17:00:00-05:00' },
-      { name: 'service-type-reference', valueReference: { reference: "HealthcareService/my-healthcareservice-id"} },
-      { name: 'schedule', valueReference: { reference: "Schedule/my-schedule-id" } },
-      // Optional: limit number of results
-      { name: '_count', valueInteger: 10 },
-    ],
-  }
-) as Parameters;
+const params = new URLSearchParams({
+  start: '2026-03-10T09:00:00-05:00',
+  end: '2026-03-10T17:00:00-05:00',
+  'service-type-reference': 'HealthcareService/my-healthcareservice-id',
+  schedule:  'Schedule/my-schedule-id'
+})
 
-const bundle = result.parameter?.[0]?.resource as Bundle<Appointment>;
+const bundle = await medplum.get(medplum.fhirUrl('Appointment', '$find?${params}')) as Bundle<Appointment>;
 const appointments = bundle.entry?.map((e) => e.resource as Appointment) ?? [];
 ```
 
@@ -62,18 +54,12 @@ const appointments = bundle.entry?.map((e) => e.resource as Appointment) ?? [];
 <TabItem value="curl" label="cURL">
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$find' \
-  -H "Content-Type: application/fhir+json" \
+curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      { "name": "start", "valueDateTime": "2026-03-10T09:00:00-05:00" },
-      { "name": "end",   "valueDateTime": "2026-03-10T17:00:00-05:00" },
-      { "name": "service-type-reference", "valueReference": { "reference": "HealthcareService/my-healthcareservice-id" } },
-      { "name": "schedule", "valueReference": { "reference": "Schedule/my-schedule-id" } },
-    ]
-  }'
+  --data-urlencode "start=2026-03-10T09:00:00-05:00" \
+  --data-urlencode "end=2026-03-10T17:00:00-05:00" \
+  --data-urlencode "service-type-reference=HealthcareService/my-healthcareservice-id" \
+  --data-urlencode "schedule=Schedule/my-schedule-id"
 ```
 
 </TabItem>
