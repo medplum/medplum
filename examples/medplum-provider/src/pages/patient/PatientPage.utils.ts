@@ -103,5 +103,6 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Care Plans',
   },
   { id: 'message', url: 'Communication', label: 'Messages' },
+  { id: 'priorauth', url: 'priorauth', label: 'Prior Auth' },
   { id: 'export', url: 'export', label: 'Export' },
 ];
