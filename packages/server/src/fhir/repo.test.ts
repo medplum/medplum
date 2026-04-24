@@ -33,6 +33,7 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
+import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
@@ -45,6 +46,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
+import type { RepositoryConnectionContext } from './repo/transaction-context';
 import { PostgresError, SelectQuery } from './sql';
 import * as tokenColumn from './token-column';
 
@@ -1345,8 +1347,10 @@ describe('FHIR Repo', () => {
     }
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).transactionDepth).toBe(0);
-    expect((repo as any).conn).toBeUndefined();
+    const connectionContext: RepositoryConnectionContext = (repo as any).connectionContext;
+    assert(connectionContext);
+    expect(connectionContext.conn).toBeUndefined();
+    expect(connectionContext.transaction).toBeUndefined();
 
     // Dead client must be released with a truthy err so pg-pool discards it
     expect(releaseSpy).toHaveBeenCalledTimes(1);
@@ -1362,6 +1366,14 @@ describe('FHIR Repo', () => {
 
     querySpy.mockRestore();
     releaseSpy.mockRestore();
+
+    // The repository should be safe to reuse after the dead client is discarded.
+    await expect(
+      repo.withTransaction(async (client) => {
+        await client.query('SELECT 1');
+      })
+    ).resolves.toBeUndefined();
+
     warnSpy.mockRestore();
     errorSpy.mockRestore();
   });
@@ -1389,24 +1401,29 @@ describe('FHIR Repo', () => {
     if (mode === 'commit') {
       await promise;
       expect(finalPostCommit).toHaveBeenCalled();
-      expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(expect.any(String), error);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.any(String),
+      const postCommitErrors = loggerErrorSpy.mock.calls.filter(
+        ([message]) => message === 'Error processing post-commit callback'
+      );
+      expect(postCommitErrors).toHaveLength(2);
+      expect(postCommitErrors).toContainEqual(['Error processing post-commit callback', error]);
+      expect(postCommitErrors).toContainEqual([
+        'Error processing post-commit callback',
         expect.objectContaining({
           err: 'Post-commit hook failed with string',
-        })
-      );
+        }),
+      ]);
     } else {
       await expect(promise).rejects.toThrow('Transaction failed');
       expect(finalPostCommit).not.toHaveBeenCalled();
-      expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          error: 'Transaction failed',
-        })
+      const transactionErrors = loggerErrorSpy.mock.calls.filter(
+        ([message, details]) =>
+          message === 'Database error' &&
+          typeof details === 'object' &&
+          details !== null &&
+          'error' in details &&
+          details.error === 'Transaction failed'
       );
+      expect(transactionErrors).toHaveLength(1);
     }
 
     loggerErrorSpy.mockRestore();

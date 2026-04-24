@@ -58,13 +58,13 @@ export function createRepositoryAccessTracker(): RepositoryAccessTracker {
 }
 
 export function getCurrentTransactionFrame(
-  accessTracker: RepositoryAccessTracker
+  accessTracker: RepositoryAccessTracker | undefined
 ): TransactionAccessFrame | undefined {
-  return accessTracker.transactionFrames[accessTracker.transactionFrames.length - 1];
+  return accessTracker?.transactionFrames[accessTracker.transactionFrames.length - 1];
 }
 
-export function hasTrackedTransaction(accessTracker: RepositoryAccessTracker): boolean {
-  return accessTracker.transactionFrames.length > 0;
+export function hasTrackedTransaction(accessTracker: RepositoryAccessTracker | undefined): boolean {
+  return (accessTracker?.transactionFrames.length ?? 0) > 0;
 }
 
 export function partitionResourceTypes(resourceTypes: Iterable<ResourceType>): {
@@ -130,7 +130,7 @@ export function getLocalReferenceResourceTypes(references: Reference[]): Resourc
 }
 
 export function recordTrackedResourceAccess(
-  accessTracker: RepositoryAccessTracker,
+  accessTracker: RepositoryAccessTracker | undefined,
   layer: RepositoryAccessLayer,
   operation: RepositoryAccessOperation,
   resourceTypes: Iterable<ResourceType>,

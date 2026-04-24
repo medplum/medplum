@@ -6,6 +6,7 @@ import type { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
 import { PostgresError } from './sql';
@@ -376,13 +377,47 @@ describe('FHIR Repo Transactions', () => {
       }
     }));
 
-  test.failing('Derived system repo postCommit defers until outer transaction commits', () =>
+  test('Derived system repo postCommit defers until outer transaction commits', () =>
     withTestContext(async () => {
       const callback = jest.fn();
 
       await repo.withTransaction(async () => {
         const txSystemRepo = repo.getSystemRepo();
         await txSystemRepo.postCommit(async () => {
+          callback();
+        });
+
+        expect(callback).not.toHaveBeenCalled();
+      });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    })
+  );
+
+  test('Derived system repo preCommit runs during outer commit, not immediately', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+
+      await repo.withTransaction(async () => {
+        const txSystemRepo = repo.getSystemRepo();
+        await txSystemRepo.preCommit(async () => {
+          callback();
+        });
+
+        expect(callback).not.toHaveBeenCalled();
+      });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    })
+  );
+
+  test('clone() inside an active transaction shares the parent commit lifecycle', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+
+      await repo.withTransaction(async () => {
+        const clonedRepo = repo.clone();
+        await clonedRepo.postCommit(async () => {
           callback();
         });
 
@@ -433,7 +468,7 @@ describe('FHIR Repo Transactions', () => {
       expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
 
-  test.failing('Derived system repo nested transaction rollback does not abort outer transaction', () =>
+  test('Derived system repo nested transaction rollback does not abort outer transaction', () =>
     withTestContext(async () => {
       let patient: WithId<Patient> | undefined;
 
@@ -453,6 +488,41 @@ describe('FHIR Repo Transactions', () => {
       ).resolves.toBeUndefined();
 
       await expect(repo.readResource('Patient', patient?.id as string)).resolves.toBeDefined();
+    })
+  );
+
+  test('Derived system repo bypasses Redis cache reads during an active transaction', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const cacheRedis = getCacheRedis();
+      const getSpy = jest.spyOn(cacheRedis, 'get');
+
+      // Prime the cache outside the transaction.
+      await repo.readResource('Patient', patient.id);
+      getSpy.mockClear();
+
+      await repo.withTransaction(async () => {
+        const txSystemRepo = repo.getSystemRepo();
+        await txSystemRepo.readResource('Patient', patient.id);
+        expect(getSpy).not.toHaveBeenCalled();
+      });
+
+      expect(getSpy).not.toHaveBeenCalled();
+    })
+  );
+
+  test('Derived system repo defers Redis cache writes until the outer transaction commits', () =>
+    withTestContext(async () => {
+      const cacheRedis = getCacheRedis();
+      const setSpy = jest.spyOn(cacheRedis, 'set');
+
+      await repo.withTransaction(async () => {
+        const txSystemRepo = repo.getSystemRepo();
+        await txSystemRepo.createResource<Patient>({ resourceType: 'Patient' });
+        expect(setSpy).not.toHaveBeenCalled();
+      });
+
+      expect(setSpy).toHaveBeenCalled();
     })
   );
 

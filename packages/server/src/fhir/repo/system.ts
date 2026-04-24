@@ -6,7 +6,7 @@ import type { Project, Reference } from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { GLOBAL_SHARD_ID } from '../sharding';
 import type { Repository, RepositoryContext } from '../repo';
-import type { RepositoryAccessTracker } from './access-tracker';
+import type { RepositoryConnectionContext } from './transaction-context';
 
 export type SystemRepository = Repository;
 export type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
@@ -14,7 +14,7 @@ export type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackg
 export type RepositoryConstructor<TRepository extends Repository = Repository> = new (
   context: RepositoryContext,
   conn?: PoolClient,
-  accessTracker?: RepositoryAccessTracker
+  connectionContext?: RepositoryConnectionContext
 ) => TRepository;
 
 export function createSystemRepository<TRepository extends Repository>(
@@ -22,7 +22,7 @@ export function createSystemRepository<TRepository extends Repository>(
   shardId: string,
   conn?: PoolClient,
   contextDefaults?: SystemRepositoryContextDefaults,
-  accessTracker?: RepositoryAccessTracker
+  connectionContext?: RepositoryConnectionContext
 ): TRepository {
   return new RepositoryCtor(
     {
@@ -36,7 +36,7 @@ export function createSystemRepository<TRepository extends Repository>(
       },
     },
     conn,
-    accessTracker
+    connectionContext
   );
 }
 
