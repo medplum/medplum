@@ -9,6 +9,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 
+const profileTypeOptions = [
+  { label: 'All', value: 'Patient,Practitioner,RelatedPerson' },
+  { label: 'Practitioner', value: 'Practitioner' },
+  { label: 'Patient', value: 'Patient' },
+  { label: 'RelatedPerson', value: 'RelatedPerson' },
+];
+
 export interface ProfileTypeOption {
   readonly label: string;
   readonly value: string;
@@ -25,6 +32,8 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
   const navigate = useNavigate();
+  // FIXME
+  const [profileType, setProfileType] = useState('Patient,Practitioner,RelatedPerson');
   const [profileType, setProfileType] = useState(props.profileTypeOptions[0].value);
 
   const [search, setSearch] = useState<SearchRequest>({
@@ -50,6 +59,11 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
 
   return (
     <>
+      // FIXME
+      <SegmentedControl mb="md" value={profileType} onChange={handleProfileTypeChange} data={profileTypeOptions} />
+      <SearchControl
+        search={search}
+        onClick={(e) => navigate(`/ProjectMembership/${e.resource.id}`)}
       {props.profileTypeOptions.length > 1 && (
         <Group justify="space-between" align="center" mb="md" wrap="nowrap">
           <Group gap="md" wrap="nowrap">
