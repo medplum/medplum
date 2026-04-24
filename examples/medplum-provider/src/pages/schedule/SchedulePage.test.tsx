@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import { createReference, ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, getByText, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { SchedulePage } from './SchedulePage';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
@@ -58,6 +60,7 @@ describe('SchedulePage', () => {
             <Routes>
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule/:id/settings" element={<div>Settings Page</div>} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -305,10 +308,57 @@ describe('SchedulePage', () => {
       });
     });
   });
+
+  describe('Settings gear icon', () => {
+    test('gear icon is hidden when the schedule lacks SchedulingParameters', async () => {
+      await act(async () => setup());
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: 'Schedule settings' })).not.toBeInTheDocument();
+    });
+
+    test('gear icon is visible when the schedule has SchedulingParameters', async () => {
+      const scheduleWithParams = {
+        ...mockSchedule,
+        extension: [{ url: SchedulingParametersURI }],
+      };
+      await medplum.updateResource(scheduleWithParams);
+      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
+
+      await act(async () => setup());
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+
+      expect(screen.getByRole('button', { name: 'Schedule settings' })).toBeInTheDocument();
+    });
+
+    test('clicking the gear icon navigates to the schedule settings page', async () => {
+      const user = userEvent.setup();
+      const scheduleWithParams = {
+        ...mockSchedule,
+        extension: [{ url: SchedulingParametersURI }],
+      };
+      await medplum.updateResource(scheduleWithParams);
+      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
+
+      await act(async () => setup());
+      await user.click(screen.getByRole('button', { name: 'Schedule settings' }));
+      await waitFor(() => expect(screen.getByText('Settings Page')).toBeInTheDocument());
+    });
+  });
 });
 
 describe('$find/$book component integration tests', () => {
   let medplum: MockClient;
+  let healthcareService: WithId<HealthcareService>;
+
+  const serviceType1: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'checkup',
+      },
+    ],
+    text: 'Annual Checkup',
+  };
 
   beforeEach(async () => {
     medplum = new MockClient({ profile: DrAliceSmith });
@@ -319,6 +369,15 @@ describe('$find/$book component integration tests', () => {
       writable: true,
       configurable: true,
       value: 800,
+    });
+
+    healthcareService = await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Annual Checkup',
+      type: [serviceType1],
+      extension: [
+        { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }] },
+      ],
     });
   });
 
@@ -338,76 +397,6 @@ describe('$find/$book component integration tests', () => {
     );
   };
 
-  const serviceType1: CodeableConcept = {
-    coding: [
-      {
-        system: 'http://example.com/service-types',
-        code: 'checkup',
-      },
-    ],
-    text: 'Annual Checkup',
-  };
-
-  const serviceType2: CodeableConcept = {
-    coding: [
-      {
-        system: 'http://example.com/service-types',
-        code: 'followup',
-      },
-    ],
-    text: 'Follow-up Visit',
-  };
-
-  const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): Schedule => ({
-    resourceType: 'Schedule',
-    id: `schedule-1`,
-    actor: [{ reference: 'Practitioner/practitioner-1' }],
-    active: true,
-    extension: serviceTypes.map((st) => ({
-      url: SchedulingParametersURI,
-      extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
-    })),
-  });
-
-  test('renders ScheduleFindPane when schedule has scheduling parameters', async () => {
-    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-    await medplum.createResource(scheduleWithServiceTypes);
-
-    // Mock only $find, pass everything else through so readResource still works
-    const originalGet = medplum.get.bind(medplum);
-    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
-      if (url.toString().includes('$find')) {
-        return new ReadablePromise(
-          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
-        );
-      }
-      return originalGet(url, options);
-    });
-
-    await act(async () => {
-      setup('/Calendar/Schedule/schedule-1');
-    });
-
-    // Check Calendar component rendered correctly
-    expect(screen.getByText('Today')).toBeInTheDocument();
-
-    // ScheduleFindPane should be rendered with the single service type selected
-    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-  });
-
-  test('does not render ScheduleFindPane when schedule has no scheduling parameters', async () => {
-    // mockSchedule has no extensions/scheduling parameters
-    await act(async () => {
-      setup();
-    });
-
-    // Check Calendar component rendered correctly
-    expect(screen.getByText('Today')).toBeInTheDocument();
-
-    // ScheduleFindPane should NOT be rendered
-    expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
-  });
-
   test('Adds new appointments and slots after ScheduleFindPane $book success', async () => {
     // set system clock so the week we are creating an event for is visible in the big calendar
     vi.setSystemTime('2024-01-15');
@@ -420,6 +409,7 @@ describe('$find/$book component integration tests', () => {
     // Add scheduling parameter extension to Alice's schedule
     await medplum.updateResource({
       ...DrAliceSmithSchedule,
+      serviceType: toCodeableReferenceLike(healthcareService),
       extension: [
         {
           url: SchedulingParametersURI,
@@ -529,93 +519,5 @@ describe('$find/$book component integration tests', () => {
 
     // Buffer-after unavailable slot should be in the big calendar
     expect(screen.getByText('Blocked')).toBeInTheDocument();
-  });
-
-  test('fetches slots via $find operation when ScheduleFindPane is active', async () => {
-    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-    await medplum.createResource(scheduleWithServiceTypes);
-
-    const originalGet = medplum.get.bind(medplum);
-    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
-      if (url.toString().includes('$find')) {
-        return new ReadablePromise(
-          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
-        );
-      }
-      return originalGet(url, options);
-    });
-
-    await act(async () => {
-      setup('/Calendar/Schedule/schedule-1');
-    });
-
-    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-
-    // With single service type, it auto-selects and fetches
-    expect(medplum.get).toHaveBeenCalledWith(expect.stringContaining('Schedule/schedule-1/$find'), expect.any(Object));
-  });
-
-  test('renders multiple service types in ScheduleFindPane', async () => {
-    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-    await medplum.createResource(scheduleWithServiceTypes);
-
-    const originalGet = medplum.get.bind(medplum);
-    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
-      if (url.toString().includes('$find')) {
-        return new ReadablePromise(
-          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
-        );
-      }
-      return originalGet(url, options);
-    });
-
-    await act(async () => {
-      setup('/Calendar/Schedule/schedule-1');
-    });
-
-    // Test calendar pane rendered
-    expect(screen.getByText('Today')).toBeInTheDocument();
-
-    // Test ScheduleFindPane header rendered
-    expect(screen.getByText('Schedule…')).toBeInTheDocument();
-
-    // Both service types should be rendered as options
-    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-    expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
-  });
-
-  test('allows selecting different service types', async () => {
-    const user = userEvent.setup();
-    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-    await medplum.createResource(scheduleWithServiceTypes);
-
-    const originalGet = medplum.get.bind(medplum);
-    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
-      if (url.toString().includes('$find')) {
-        return new ReadablePromise(
-          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
-        );
-      }
-      return originalGet(url, options);
-    });
-
-    await act(async () => {
-      setup('/Calendar/Schedule/schedule-1');
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-    });
-
-    // Select the first service type
-    await user.click(screen.getByText('Annual Checkup'));
-
-    expect(medplum.get).toHaveBeenCalledWith(
-      expect.stringContaining(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`),
-      expect.any(Object)
-    );
-
-    // Verify the service type is shown as selected (title changes)
-    expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
   });
 });

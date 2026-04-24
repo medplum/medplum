@@ -86,10 +86,10 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
-import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
@@ -464,7 +464,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   generateId(): string {
-    return v4();
+    return randomUUID();
   }
 
   async readResource<T extends Resource>(
@@ -2268,7 +2268,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       // Non-Superusers can only access resources in their Project, with read-only access to linked Projects
       if (readInteractions.includes(interaction)) {
-        if (!this.context.projects?.some((p) => p.id === resource.meta?.project)) {
+        const resourceProject = this.context.projects?.find((p) => p.id === resource.meta?.project);
+        if (!resourceProject) {
+          return undefined;
+        }
+        // Enforce `exportedResourceType` on linked projects; mirrors addProjectFilters.
+        // The primary (owning) and "current" projects always expose all resource types.
+        if (
+          resource.resourceType !== 'Project' &&
+          resourceProject.id !== this.context.projects?.[0]?.id &&
+          resourceProject.id !== this.context.currentProject?.id &&
+          resourceProject.exportedResourceType?.length &&
+          !resourceProject.exportedResourceType.includes(resource.resourceType as ResourceType)
+        ) {
           return undefined;
         }
       } else if (resource.meta?.project !== this.context.projects?.[0]?.id) {

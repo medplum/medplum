@@ -463,9 +463,6 @@ Binary resources cannot use compartment-based access controls. They require expl
   "resourceType": "AccessPolicy",
   "name": "Patient Access Policy Template",
   "id": "patient-access-policy-template",
-  "compartment": {
-    "reference": "%patient"
-  },
   "resource": [
     {
       "resourceType": "Patient",
@@ -501,7 +498,20 @@ Binary resources cannot use compartment-based access controls. They require expl
     },
     {
       "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%patient"
+      "criteria": "Communication?_compartment=%patient",
+      "interaction": ["create", "read", "search"]
+    },
+    {
+      "resourceType": "RequestGroup",
+      "criteria": "RequestGroup?_compartment=%patient"
+    },
+    {
+      "resourceType": "Task",
+      "criteria": "Task?focus=%patient"
+    },
+    {
+      "resourceType": "QuestionnaireResponse",
+      "criteria": "QuestionnaireResponse?_compartment=%patient"
     },
     {
       "resourceType": "Subscription",
@@ -520,15 +530,43 @@ Binary resources cannot use compartment-based access controls. They require expl
       "readonly": true
     },
     {
-      "resourceType": "Slot",
-      "readonly": true
+      "resourceType": "DocumentReference",
+      "criteria": "DocumentReference?_compartment=%patient"
     },
     {
-      "resourceType": "Binary"
+      "resourceType": "Subscription",
+      "criteria": "Subscription?type=websocket&author=%patient"
+    },
+    {
+      "resourceType": "Appointment",
+      "interaction": ["create", "read", "search"],
+      "criteria": "Appointment?_compartment=%patient"
+    },
+    {
+      "resourceType": "Slot",
+      "interaction": ["create", "read", "search"],
     }
   ]
 }
 ```
+
+:::caution Binary Security Context
+
+`Binary` resources cannot use compartment-based access controls. Access is restricted by matching the `securityContext` field to the patient. When creating a `Binary` in a patient context, always set `securityContext` to the patient reference — otherwise the patient will not be able to access it:
+
+```json
+{
+  "resourceType": "Binary",
+  "contentType": "application/pdf",
+  "securityContext": {
+    "reference": "Patient/homer-simpson"
+  }
+}
+```
+
+See [Binary Security Context](/docs/access/binary-security-context) for more details.
+
+:::
 
 You can configure your project to support open registration for patients, therefore it is crucial that you setup a Default Access Policy similar to the one above.
 

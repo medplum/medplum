@@ -161,7 +161,7 @@ describe('findSlotTimes', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: { reference: 'HealthcareService/abcde' },
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability)).toEqual([
@@ -179,7 +179,7 @@ describe('findSlotTimes', () => {
       bufferAfter: 0,
       alignmentInterval: 30,
       alignmentOffset: 15,
-      serviceType: [],
+      service: { reference: 'HealthcareService/abcde' },
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability)).toEqual([
@@ -199,7 +199,7 @@ describe('findSlotTimes', () => {
       bufferAfter: 30,
       alignmentInterval: 30,
       alignmentOffset: 15,
-      serviceType: [],
+      service: { reference: 'HealthcareService/abcde' },
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability)).toEqual([
@@ -219,7 +219,7 @@ describe('findSlotTimes', () => {
       bufferAfter: 0,
       alignmentInterval: 30,
       alignmentOffset: 15,
-      serviceType: [],
+      service: { reference: 'HealthcareService/abcde' },
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability, { maxCount: 3 })).toEqual([

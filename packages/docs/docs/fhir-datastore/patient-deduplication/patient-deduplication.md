@@ -22,3 +22,4 @@ You can also check out our [blog post](/blog/patient-deduplication) on the topic
 ## See Also
 
 - Patient deduplication [reference implementation](https://github.com/medplum/medplum-demo-bots/tree/main/src/deduplication)
+- [Patient $match](/docs/api/fhir/operations/patient-match) — FHIR standard operation for finding candidate patient matches by demographics
