@@ -87,7 +87,7 @@ describe('Data Warehouse Export - Unit Tests', () => {
       s3Region: 'us-west-2',
       startWindow: '2026-01-01T00:00:00Z',
       endWindow: '2026-01-02T00:00:00Z',
-      testLocalPath: '/tmp/mock-s3-path',
+      localPath: '/tmp/mock-s3-path',
     });
 
     // S3 secret should NOT be created

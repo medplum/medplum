@@ -27,6 +27,7 @@ export async function main(args: string[]): Promise<void> {
     .option('-s, --s3-bucket <bucket>', 'S3 Bucket name', process.env.S3_BUCKET)
     .option('-r, --s3-region <region>', 'S3 Region', process.env.AWS_REGION || 'us-east-1')
     .option('-a, --aws-s3-table-arn <arn>', 'AWS S3 Table ARN (optional)', process.env.AWS_S3_TABLE_ARN)
+    .option('-l, --local-path <path>', 'Write Parquet files to local directory instead of S3 (no AWS credentials needed)')
     .option('--start-window <start>', 'Start window timestamp (ISO 8601)')
     .option('--end-window <end>', 'End window timestamp (ISO 8601)')
     .action(async (options) => {
@@ -40,6 +41,7 @@ export async function main(args: string[]): Promise<void> {
         s3Bucket,
         s3Region,
         awsS3TableArn,
+        localPath,
         startWindow,
         endWindow,
       } = options;
@@ -55,8 +57,8 @@ export async function main(args: string[]): Promise<void> {
         }
       }
 
-      if (!s3Bucket && !awsS3TableArn) {
-        console.error('Missing required option: --s3-bucket or --aws-s3-table-arn');
+      if (!s3Bucket && !awsS3TableArn && !localPath) {
+        console.error('Missing required option: --s3-bucket, --aws-s3-table-arn, or --local-path');
         process.exit(1);
       }
 
@@ -73,6 +75,7 @@ export async function main(args: string[]): Promise<void> {
           startWindow,
           endWindow,
           awsS3TableArn,
+          localPath,
         });
         console.log('Export completed successfully');
       } catch (err) {
