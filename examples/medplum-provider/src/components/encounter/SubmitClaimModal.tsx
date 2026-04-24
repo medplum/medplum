@@ -8,6 +8,7 @@ import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
+import { showErrorNotification } from '../../utils/notifications';
 
 type BillingType = 'insurance' | 'self-pay';
 
@@ -164,20 +165,24 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
     if (!onSubmitToStedi) {
       return;
     }
-    let resolved: WithId<Coverage>[];
-    if (billingType === 'self-pay') {
-      if (!ensureSelfPayCoverage) {
-        return;
+    try {
+      let resolved: WithId<Coverage>[];
+      if (billingType === 'self-pay') {
+        if (!ensureSelfPayCoverage) {
+          return;
+        }
+        resolved = [await ensureSelfPayCoverage()];
+      } else {
+        resolved = insuranceCoverages.filter((c) => selectedIds.has(c.id));
+        if (resolved.length === 0) {
+          return;
+        }
       }
-      resolved = [await ensureSelfPayCoverage()];
-    } else {
-      resolved = insuranceCoverages.filter((c) => selectedIds.has(c.id));
-      if (resolved.length === 0) {
-        return;
-      }
+      onClose();
+      onSubmitToStedi(resolved.map((c) => createReference(c)));
+    } catch (err) {
+      showErrorNotification(err);
     }
-    onClose();
-    onSubmitToStedi(resolved.map((c) => createReference(c)));
   };
 
   const canSubmit = billingType === 'self-pay' || selectedIds.size > 0;

@@ -552,7 +552,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     if (!claim) {
       return null;
     }
-    if (candidLoading || backgroundChecking || getEncounterBot === undefined) {
+    if (candidLoading || backgroundChecking || getEncounterBot === undefined || stediBot === undefined) {
       return (
         <Card withBorder shadow="sm" p="md">
           <Skeleton height={20} width="60%" mb="sm" />
