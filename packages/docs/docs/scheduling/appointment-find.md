@@ -1,17 +1,19 @@
 ---
-sidebar_label: Schedule $find
+sidebar_label: Appointment $find
 sidebar_position: 2
 ---
 
-# Schedule $find
+# Appointment $find
 
 :::info[Alpha]
 
-The `$find` operation is currently in alpha. It supports only Schedules with a single actor.
+The `$find` operation is currently in alpha.
 
 :::
 
-The `$find` operation takes a [`Schedule`](/docs/api/fhir/resources/schedule) and a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) and returns a bundle of available (free) [`Slot`](/docs/api/fhir/resources/slot) resources within a specified time range. Slots are computed dynamically from the Schedule's [`SchedulingParameters`](/docs/scheduling/defining-availability) extension — no Slots need to be pre-generated.
+The `$find` operation takes a list of [`Schedule`](/docs/api/fhir/resources/schedule) references and a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) reference and returns a bundle of proposed [`Appointment`](/docs/api/fhir/resources/appointment) resources within a specified time range. Slots are computed dynamically from each [`SchedulingParameters`](/docs/scheduling/defining-availability) extensions on each Schedule and HealthcareService — no Slots need to be pre-generated.
+
+Existing slots from each input Schedule are used to restrict or expand that schedule's availability, based on the slot's `status`.
 
 ## Use Cases
 
@@ -22,7 +24,7 @@ The `$find` operation takes a [`Schedule`](/docs/api/fhir/resources/schedule) an
 ## Invoke the `$find` operation
 
 ```
-[base]/R4/Schedule/[id]/$find
+[base]/R4/Appointment/$find
 ```
 
 import Tabs from '@theme/Tabs';
@@ -33,41 +35,43 @@ import TabItem from '@theme/TabItem';
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
-import type { Bundle, Parameters, Slot } from '@medplum/fhirtypes';
+import type { Bundle, Parameters, Appointment } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
 const result = await medplum.post(
-  medplum.fhirUrl('Schedule', 'my-schedule-id', '$find'),
+  medplum.fhirUrl('Appointment', '$find'),
   {
     resourceType: 'Parameters',
     parameter: [
       { name: 'start', valueDateTime: '2026-03-10T09:00:00-05:00' },
       { name: 'end', valueDateTime: '2026-03-10T17:00:00-05:00' },
-      { name: 'service-type-reference', valueReference: { reference: "HealthcareService/my-healthcareservice-id"},
+      { name: 'service-type-reference', valueReference: { reference: "HealthcareService/my-healthcareservice-id"} },
+      { name: 'schedule', valueReference: { reference: "Schedule/my-schedule-id" } },
       // Optional: limit number of results
       { name: '_count', valueInteger: 10 },
     ],
   }
 ) as Parameters;
 
-const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
-const slots = bundle.entry?.map((e) => e.resource as Slot) ?? [];
+const bundle = result.parameter?.[0]?.resource as Bundle<Appointment>;
+const appointments = bundle.entry?.map((e) => e.resource as Appointment) ?? [];
 ```
 
 </TabItem>
 <TabItem value="curl" label="cURL">
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
+curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$find' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -d '{
     "resourceType": "Parameters",
     "parameter": [
       { "name": "start", "valueDateTime": "2026-03-10T09:00:00-05:00" },
-      { "name": "end",   "valueDateTime": "2026-03-10T17:00:00-05:00" }
-      { name: "service-type-reference", "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"},
+      { "name": "end",   "valueDateTime": "2026-03-10T17:00:00-05:00" },
+      { "name": "service-type-reference", "valueReference": { "reference": "HealthcareService/my-healthcareservice-id" } },
+      { "name": "schedule", "valueReference": { "reference": "Schedule/my-schedule-id" } },
     ]
   }'
 ```
@@ -82,19 +86,23 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Schedule/my-schedule-id/$find' \
 | `start`                  | `dateTime`                       | Start of the search window (inclusive)                                                       | Yes      |
 | `end`                    | `dateTime`                       | End of the search window (inclusive)                                                         | Yes      |
 | `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
-| `_count`                 | `integer`                        | Maximum number of Slot resources to return. Defaults to 20. Maximum is 1000.                 | No       |
+| `schedule`               | `reference(Schedule)`            | A schedule to check for availability. May be passed multiple times with different schedules. | Yes      |
+| `_count`                 | `integer`                        | Maximum number of Appointment resources to return. Defaults to 20. Maximum is 1000.          | No       |
 
 ### Constraints
 
 - `start` must be before `end`
 - The search window cannot exceed **31 days**
-- The Schedule must have exactly **one actor** reference
-- The Schedule's `serviceType` field must match the requested HealthcareService.type
-- The actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
+- At least one schedule must be provided
+- Each schedule must have exactly **one actor** reference
+- Each schedule's `serviceType` field must match the requested HealthcareService.type
+- Each schedule's actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 
 ## Output
 
-Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping a `Bundle` of `Slot` resources with `status: free`. The Slots are virtual — they are not persisted in the FHIR store.
+Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping a `Bundle` of `Appointment` resources with `status: proposed`.
+
+The Appointments are virtual — they are not persisted in the FHIR store. Each Appointment has a `contained` attribute holding virtual (not persisted) Slot resources. These contained resources represent Slot resources that will be created if this Appointment is booked.
 
 ### Example Response
 
@@ -110,46 +118,72 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
         "entry": [
           {
             "resource": {
-              "resourceType": "Slot",
-              "status": "free",
+              "resourceType": "Appointment",
+              "status": "proposed",
               "start": "2026-03-10T09:00:00.000Z",
               "end": "2026-03-10T10:00:00.000Z",
-              "schedule": { "reference": "Schedule/my-schedule-id" },
+              "participant": [
+                {
+                  "actor": { "reference": "Practitioner/my-practitioner-id" },
+                  "required": "required",
+                  "status": "needs-action"
+                }
+              ],
               "serviceType": [
                 {
-                  "coding": [
+                  "text": "Office Visit",
+                  "coding": [{ "system": "http://example.org/appointment-types", "code": "office-visit" }]
+                }
+              ],
+              "contained": [
+                {
+                  "resourceType": "Slot",
+                  "status": "busy",
+                  "start": "2026-03-10T09:00:00.000Z",
+                  "end": "2026-03-10T10:00:00.000Z",
+                  "serviceType": [
                     {
-                      "code": "office-visit"
+                      "text": "Office Visit",
+                      "coding": [{ "system": "http://example.org/appointment-types", "code": "office-visit" }]
                     }
                   ],
-                  "extension": [
-                    {
-                      "url": "https://medplum.com/fhir/service-type-reference",
-                      "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
-                    }
-                  ]
+                  "schedule": { "reference": "Schedule/my-schedule-id" }
                 }
               ]
             }
           },
           {
             "resource": {
-              "resourceType": "Slot",
-              "status": "free",
+              "resourceType": "Appointment",
+              "status": "proposed",
               "start": "2026-03-10T10:00:00.000Z",
               "end": "2026-03-10T11:00:00.000Z",
-              "schedule": { "reference": "Schedule/my-schedule-id" },
+              "participant": [
+                {
+                  "actor": { "reference": "Practitioner/my-practitioner-id" },
+                  "required": "required",
+                  "status": "needs-action"
+                }
+              ],
               "serviceType": [
                 {
-                  "coding": [
-                    { "code": "office-visit" }
-                  ]
-                  "extension": [
+                  "text": "Office Visit",
+                  "coding": [{ "system": "http://example.org/appointment-types", "code": "office-visit" }]
+                }
+              ],
+              "contained": [
+                {
+                  "resourceType": "Slot",
+                  "status": "busy",
+                  "start": "2026-03-10T10:00:00.000Z",
+                  "end": "2026-03-10T11:00:00.000Z",
+                  "serviceType": [
                     {
-                      "url": "https://medplum.com/fhir/service-type-reference",
-                      "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
+                      "text": "Office Visit",
+                      "coding": [{ "system": "http://example.org/appointment-types", "code": "office-visit" }]
                     }
-                  ]
+                  ],
+                  "schedule": { "reference": "Schedule/my-schedule-id" }
                 }
               ]
             }
@@ -166,11 +200,11 @@ Returns a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping 
 
 `$find` calculates available windows by:
 
-1. Reading the Schedule's `SchedulingParameters` extension to determine recurring availability windows, slot duration, buffer times, and alignment constraints
-2. Fetching any existing Slot resources for the Schedule in the requested range (busy, busy-tentative, busy-unavailable, and free slots)
+1. Reading each Schedule's `SchedulingParameters` extension to determine recurring availability windows, slot duration, buffer times, and alignment constraints
+2. Fetching existing Slot resources for each Schedule in the requested range (busy, busy-tentative, busy-unavailable, and free slots)
 3. Subtracting occupied time (including buffer windows around booked slots) from the availability windows
 4. Applying alignment intervals and offsets to produce valid start times
-5. Returning Slots up to `_count`
+5. Returning Appointments up to `_count`
 
 See [Defining Availability](/docs/scheduling/defining-availability) for full details on how `SchedulingParameters` are configured.
 
@@ -222,8 +256,9 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 ```
 ## Related
 
-- [Appointment `$book`](/docs/scheduling/appointment-book) - Book one of the returned Slots
+- [Appointment `$book`](/docs/scheduling/appointment-book) - Book one of the returned Appointments
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Schedule` resource](/docs/api/fhir/resources/schedule)
+- [`Appointment` resource](/docs/api/fhir/resources/appointment)
 - [`Slot` resource](/docs/api/fhir/resources/slot)
