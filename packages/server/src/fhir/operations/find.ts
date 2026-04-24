@@ -11,7 +11,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, HealthcareService, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, HealthcareService, OperationDefinition, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import { findSlotTimes } from './utils/find';
@@ -32,7 +32,14 @@ const findOperation = {
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
+    {
+      use: 'in',
+      name: 'service-type-reference',
+      type: 'Reference',
+      min: 1,
+      max: '1',
+      targetProfile: ['HealthcareService'],
+    },
     { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
@@ -41,7 +48,7 @@ const findOperation = {
 type FindParameters = {
   start: string;
   end: string;
-  'service-type-reference': string;
+  'service-type-reference': Reference<HealthcareService> & { reference: string };
   _count?: number;
 };
 
@@ -109,7 +116,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
-    ctx.repo.readReference<HealthcareService>({ reference: params['service-type-reference'] }).catch((err) => {
+    ctx.repo.readReference(params['service-type-reference']).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));
       }

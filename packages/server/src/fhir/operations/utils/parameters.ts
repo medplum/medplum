@@ -75,6 +75,12 @@ function parseQueryString(
     if (!value) {
       continue;
     }
+    if (param.type === 'Reference') {
+      // Reference params are passed as plain strings in query strings (e.g. Schedule/123)
+      parsed[param.name] = Array.isArray(value) ? value.map((v) => ({ reference: v })) : { reference: value };
+      continue;
+    }
+
     if (param.part || param.type?.match(/^[A-Z]/)) {
       // Query parameters cannot contain complex types
       throw new OperationOutcomeError(

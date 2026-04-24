@@ -330,11 +330,29 @@ describe('Operation Input/Output Parameters', () => {
       expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, multiIn: ['foo', 'bar'] });
     });
 
+    test('Parses Reference query string parameter as { reference } object', () => {
+      const req: Request = {
+        method: 'GET',
+        query: parse('requiredIn=true&complexIn=Patient/foo'),
+      } as unknown as Request;
+      expect(parseInputParameters(opDef, req)).toMatchObject({
+        requiredIn: true,
+        complexIn: { reference: 'Patient/foo' },
+      });
+    });
+
+    test('Parses multiple Reference query string parameters into an array', () => {
+      const req: Request = {
+        method: 'GET',
+        query: parse('requiredIn=true&complexIn=Patient/foo&complexIn=Patient/bar'),
+      } as unknown as Request;
+      expect(parseInputParameters(opDef, req)).toMatchObject({
+        requiredIn: true,
+        complexIn: [{ reference: 'Patient/foo' }, { reference: 'Patient/bar' }],
+      });
+    });
+
     test.each<[string, string]>([
-      [
-        'requiredIn=true&complexIn={"reference":"Patient/foo"}',
-        'Complex parameter complexIn (Reference) cannot be passed via query string',
-      ],
       ['requiredIn=false&numeric=wrong', `Invalid value 'wrong' provided for integer parameter 'numeric'`],
       ['requiredIn=false&fractional=wrong', `Invalid value 'wrong' provided for decimal parameter 'fractional'`],
       ['requiredIn=1', `Invalid value '1' provided for boolean parameter 'requiredIn'`],
