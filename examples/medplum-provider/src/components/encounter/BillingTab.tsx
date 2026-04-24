@@ -349,7 +349,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setSubmitting(true);
       debouncedUpdateClaim.cancel();
       try {
-        const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
+        const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
         showNotification({
           title: 'Claim Submitted',
           message: result?.message || 'Claim successfully submitted to Candid Health',

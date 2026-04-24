@@ -105,7 +105,6 @@ interface ClaimPickerProps {
   practitioner: WithId<Practitioner> | undefined;
   submitting: boolean;
   insuranceCoverages: WithId<Coverage>[];
-  selfPayCoverage: WithId<Coverage> | undefined;
   selfPayValue: string;
   initialBillingType: BillingType;
   showCandidButton?: boolean;
@@ -124,7 +123,6 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
     practitioner,
     submitting,
     insuranceCoverages,
-    selfPayCoverage,
     selfPayValue,
     initialBillingType,
     showCandidButton,
@@ -176,11 +174,10 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
     }
     let resolved: WithId<Coverage>[];
     if (billingType === 'self-pay') {
-      const selfPay = selfPayCoverage ?? (ensureSelfPayCoverage ? await ensureSelfPayCoverage() : undefined);
-      if (!selfPay) {
+      if (!ensureSelfPayCoverage) {
         return;
       }
-      resolved = [selfPay];
+      resolved = [await ensureSelfPayCoverage()];
     } else {
       resolved = insuranceCoverages.filter((c) => selectedIds.has(c.id));
       if (resolved.length === 0) {
@@ -355,7 +352,6 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
           practitioner={practitioner}
           submitting={submitting}
           insuranceCoverages={insuranceCoverages}
-          selfPayCoverage={selfPayCoverage}
           selfPayValue={selfPayValue}
           initialBillingType={initialBillingType}
           showCandidButton={showCandidButton}
