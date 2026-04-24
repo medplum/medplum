@@ -2376,12 +2376,17 @@ describe('Subscription Worker', () => {
         const allowedOrg = 'Organization/' + allowedOrgId;
         const deniedOrg = 'Organization/' + deniedOrgId;
 
-        const { repo: wsRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsRepo,
+          project: wsProject,
+          client,
+        } = await createTestProject({
           project: {
             name: 'WS Multiple Memberships Project',
             features: ['websocket-subscriptions'],
           },
           withRepo: true,
+          withClient: true,
         });
 
         const practitioner = await superAdminRepo.createResource<Practitioner>({
@@ -2412,7 +2417,7 @@ describe('Subscription Worker', () => {
         // `authorMembershipId` plumbing necessary in the first place.
         const noAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
-          user: createReference(practitioner),
+          user: createReference(client),
           profile: createReference(practitioner),
           project: createReference(wsProject),
           accessPolicy: createReference(noAccessPolicy),
@@ -2420,7 +2425,7 @@ describe('Subscription Worker', () => {
 
         const hasAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
-          user: createReference(practitioner),
+          user: createReference(client),
           profile: createReference(practitioner),
           project: createReference(wsProject),
           accessPolicy: createReference(hasAccessPolicy),
