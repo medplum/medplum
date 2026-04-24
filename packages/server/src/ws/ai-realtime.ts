@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, normalizeErrorString, ReconnectingWebSocket } from '@medplum/core';
 import type { IncomingMessage } from 'node:http';
+import os from 'node:os';
 import type { WebSocket as IncomingWebSocket, RawData } from 'ws';
 import WebSocket from 'ws';
 import { getConfig } from '../config/loader';
+import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
+import { setGauge } from '../otel/otel';
 
 export interface OpenAIRealtimeConnectRequest {
   type: 'ai-realtime:connect';
@@ -15,7 +18,35 @@ export interface OpenAIRealtimeConnectRequest {
 
 type OpenAIRealtimeControlMessage = OpenAIRealtimeConnectRequest;
 
+const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname } };
+const aiRealtimeWebSockets = new Set<IncomingWebSocket>();
+let aiRealtimeHeartbeatHandler: (() => void) | undefined;
+let aiRealtimeMessagesSent = 0;
+let aiRealtimeMessagesReceived = 0;
+
+function initAiRealtimeHeartbeat(): void {
+  if (!aiRealtimeHeartbeatHandler) {
+    aiRealtimeHeartbeatHandler = (): void => {
+      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
+      setGauge('medplum.aiRealtime.websocketCount', aiRealtimeWebSockets.size, METRIC_OPTIONS);
+      setGauge('medplum.aiRealtime.messagesSentPerSec', aiRealtimeMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge(
+        'medplum.aiRealtime.messagesReceivedPerSec',
+        aiRealtimeMessagesReceived / heartbeatSeconds,
+        METRIC_OPTIONS
+      );
+      aiRealtimeMessagesSent = 0;
+      aiRealtimeMessagesReceived = 0;
+    };
+    heartbeat.addEventListener('heartbeat', aiRealtimeHeartbeatHandler);
+  }
+}
+
 export async function handleAiRealtimeConnection(socket: IncomingWebSocket, request: IncomingMessage): Promise<void> {
+  aiRealtimeWebSockets.add(socket);
+  initAiRealtimeHeartbeat();
+
   const socketId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   let closed = false;
   let connected = false;
@@ -28,6 +59,8 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
   });
 
   socket.on('message', async (data: RawData, isBinary: boolean) => {
+    aiRealtimeMessagesReceived++;
+
     if (!connected) {
       if (connecting) {
         sendError('Upstream websocket is still connecting');
@@ -85,6 +118,7 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
       return;
     }
     closed = true;
+    aiRealtimeWebSockets.delete(socket);
     globalLogger.info('[WS] OpenAI realtime socket disconnected', { socketId });
     if (upstreamSocket && upstreamSocket.readyState < WebSocket.CLOSING) {
       upstreamSocket.close();
@@ -132,6 +166,7 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
     upstream.onmessage = (event) => {
       if (socket.readyState === WebSocket.OPEN) {
         socket.send(event.data, { binary: event.data instanceof ArrayBuffer });
+        aiRealtimeMessagesSent++;
       }
     };
 
@@ -158,6 +193,7 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
   function sendControlMessage(message: Record<string, unknown>): void {
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message), { binary: false });
+      aiRealtimeMessagesSent++;
     }
   }
 
