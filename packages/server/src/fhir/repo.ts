@@ -1519,22 +1519,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (ids.length === 0) {
       return;
     }
-    await this.withTransaction(async (client) => {
-      for (const id of ids) {
-        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
-      }
 
-      const db = this.getDatabaseClient(DatabaseMode.WRITER);
-      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(db);
-      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
-      await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
-    });
+    const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
+    const deletedIds = await this.withTransaction<string[]>(
+      async (client) => {
+        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
+        if (projectId) {
+          deleteQuery.where('projectId', '=', projectId);
+        }
+        const deleteResult = await deleteQuery.execute<{ id: string }>(client);
+        if (deleteResult.length === 0) {
+          return [];
+        }
+
+        const deletedIds = new Array<string>(deleteResult.length);
+        for (let i = 0; i < deleteResult.length; i++) {
+          const res = deleteResult[i];
+          deletedIds[i] = res.id;
+          await this.deleteFromLookupTables(client, { resourceType, id: res.id } as WithId<Resource>);
+        }
+
+        await new DeleteQuery(resourceType + '_History').where('id', 'IN', deletedIds).execute(client);
+        await this.postCommit(() => this.deleteCacheEntries(resourceType, deletedIds));
+        return deletedIds;
+      },
+      { serializable: true }
+    );
     incrementCounter(
       `medplum.fhir.interaction.delete.count`,
       { attributes: { resourceType, result: 'success' } },
-      ids.length
+      deletedIds.length
     );
-    await this.resourceCap()?.deleted(ids.length);
+    await this.resourceCap()?.deleted(deletedIds.length);
   }
 
   /**
@@ -2082,7 +2098,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param client - The database client inside the transaction.
    * @param resource - The resource to delete.
    */
-  private async deleteFromLookupTables(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  private async deleteFromLookupTables(client: Pool | PoolClient, resource: WithId<Resource>): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteValuesForResource(client, resource);
     }
