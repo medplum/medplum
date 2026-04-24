@@ -95,7 +95,7 @@ test-results/
 playwright-report/
 playwright/.cache/
 
-# Cursor
+# Cursor (local agent / editor metadata — do not commit)
 .cursor/
 
 # Claude

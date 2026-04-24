@@ -22,7 +22,7 @@ import { revokeHandler, revokeValidator } from './revoke';
 import { scopeHandler, scopeValidator } from './scope';
 import { setPasswordHandler, setPasswordValidator } from './setpassword';
 import { statusHandler, statusValidator } from './status';
-import { validateRecaptcha } from './utils';
+import { projectHasDefaultPatientAccess, validateRecaptcha } from './utils';
 import { verifyEmailHandler, verifyEmailValidator } from './verifyemail';
 
 export const authRouter = Router();
@@ -47,7 +47,7 @@ authRouter.get('/login/:login', statusValidator, statusHandler);
 authRouter.get('/clientinfo/:clientId', clientInfoHandler);
 
 function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
-  if (!project.defaultPatientAccessPolicy) {
+  if (!projectHasDefaultPatientAccess(project)) {
     return badRequest('Project does not allow open registration');
   }
   return undefined;

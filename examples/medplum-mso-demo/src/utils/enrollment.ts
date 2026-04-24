@@ -9,8 +9,8 @@ import type {
   ParametersParameter,
   Patient,
   Practitioner,
+  ParameterizedAccessParameter,
   ProjectMembership,
-  ProjectMembershipAccessParameter,
   Reference,
 } from '@medplum/fhirtypes';
 
@@ -203,8 +203,7 @@ export async function unEnrollPractitioner(
     // 2. Remove the organization from the access array of the practitioner's project membership
     membershipResource.access = membershipResource.access?.filter((access) =>
       access.parameter?.some(
-        (param: ProjectMembershipAccessParameter) =>
-          param.valueReference?.reference !== getReferenceString(organization)
+        (param: ParameterizedAccessParameter) => param.valueReference?.reference !== getReferenceString(organization)
       )
     );
 

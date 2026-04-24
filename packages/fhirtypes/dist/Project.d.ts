@@ -10,6 +10,7 @@ import type { Extension } from './Extension.d.ts';
 import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
+import type { ParameterizedAccess } from './ParameterizedAccess.d.ts';
 import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 import type { ResourceType } from './ResourceType.d.ts';
@@ -142,9 +143,17 @@ export interface Project {
       'graphql-introspection' | 'websocket-subscriptions' | 'transaction-bundles' | 'validate-terminology')[];
 
   /**
+   * @deprecated Use defaultAccessPolicy for Patient profile type instead.
    * The default access policy for patients using open registration.
    */
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
+
+  /**
+   * Default parameterized access policies applied when creating a project
+   * membership for a given profile resource type, if the membership does
+   * not specify access or accessPolicy.
+   */
+  defaultAccessPolicy?: ProjectDefaultAccessPolicy[];
 
   /**
    * Option or parameter that can be adjusted within the Medplum Project to
@@ -190,6 +199,26 @@ export interface Project {
    * The resource types exported by the project when linked
    */
   exportedResourceType?: ResourceType[];
+}
+
+/**
+ * Default parameterized access policies applied when creating a project
+ * membership for a given profile resource type, if the membership does
+ * not specify access or accessPolicy.
+ */
+export interface ProjectDefaultAccessPolicy {
+
+  /**
+   * Profile resource type this default applies to (Patient, Practitioner,
+   * or RelatedPerson).
+   */
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
+
+  /**
+   * Parameterized access policies to apply for this profile type when
+   * creating a membership.
+   */
+  access: ParameterizedAccess[];
 }
 
 /**

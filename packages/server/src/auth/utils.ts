@@ -6,6 +6,7 @@ import type {
   ContactPoint,
   Login,
   OperationOutcome,
+  ParameterizedAccess,
   Project,
   ProjectMembership,
   Reference,
@@ -24,6 +25,20 @@ import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+import { getDefaultMembershipAccessFields } from './membershipDefaults';
+
+export { getDefaultMembershipAccessFields, projectHasDefaultPatientAccess } from './membershipDefaults';
+
+/**
+ * Removes own properties whose values are `undefined` or `null` so merges / updates
+ * do not accidentally clear existing fields (JSON bodies often include explicit `null`).
+ *
+ * @param record - Plain object to copy while omitting `undefined` and `null` values.
+ * @returns A shallow copy of `record` containing only defined, non-null properties.
+ */
+export function stripUndefinedAndNullFields<T extends Record<string, unknown>>(record: T): T {
+  return Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined && v !== null)) as T;
+}
 
 export async function createProfile(
   systemRepo: SystemRepository,
@@ -57,18 +72,42 @@ export async function createProfile(
   return result;
 }
 
+function membershipDetailsHaveExplicitAccess(details?: Partial<ProjectMembership>): boolean {
+  return !!details?.accessPolicy || !!details?.access;
+}
+
 export async function createProjectMembership(
   systemRepo: SystemRepository,
   user: User,
   project: Project,
   profile: ProfileResource,
-  details?: Partial<ProjectMembership>
+  details?: Partial<ProjectMembership>,
+  options?: { skipDefaultAccessPolicy?: boolean }
 ): Promise<WithId<ProjectMembership>> {
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
+  // Strip null/undefined values so they don't overwrite defaults.
+  // invite.ts spreads all request fields unconditionally (many are null/undefined);
+  // callers that want "no policy" must pass an explicit non-null value such as [].
+  const cleanDetails = details
+    ? (stripUndefinedAndNullFields({ ...details } as Record<string, unknown>) as Partial<ProjectMembership>)
+    : {};
+
+  const skipDefaults = options?.skipDefaultAccessPolicy || membershipDetailsHaveExplicitAccess(cleanDetails);
+  const defaults = skipDefaults ? {} : getDefaultMembershipAccessFields(project, profile.resourceType);
+
+  // S1: When the caller explicitly opts out of defaults but supplies no access of their own, write
+  // access: [] so the legacy full-access wildcard in buildAccessPolicy does not fire at login time.
+  const explicitNoAccess: Partial<ProjectMembership> =
+    options?.skipDefaultAccessPolicy && !membershipDetailsHaveExplicitAccess(cleanDetails)
+      ? { access: [] as ParameterizedAccess[] }
+      : {};
+
   const result = await systemRepo.createResource<ProjectMembership>({
-    ...details,
+    ...defaults,
+    ...explicitNoAccess,
+    ...cleanDetails,
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),

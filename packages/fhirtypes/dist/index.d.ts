@@ -147,6 +147,8 @@ export type * from './Package.d.ts';
 export type * from './PackageInstallation.d.ts';
 export type * from './PackageRelease.d.ts';
 export type * from './ParameterDefinition.d.ts';
+export type * from './ParameterizedAccess.d.ts';
+export type * from './ParameterizedAccessParameter.d.ts';
 export type * from './Parameters.d.ts';
 export type * from './Patient.d.ts';
 export type * from './PaymentNotice.d.ts';

@@ -20,7 +20,12 @@ import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
+import {
+  bcryptHashPassword,
+  createProjectMembership,
+  getDefaultMembershipAccessFields,
+  stripUndefinedAndNullFields,
+} from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
@@ -42,6 +47,12 @@ export const inviteValidator = makeValidationMiddleware([
     ],
     { message: 'Either email or externalId is required' }
   ),
+  body('skipDefaultAccessPolicy')
+    .optional()
+    .isBoolean({ strict: true })
+    .withMessage('skipDefaultAccessPolicy must be a boolean'),
+  body('access').optional().isArray().withMessage('access must be an array'),
+  body('membership.access').optional().isArray().withMessage('membership.access must be an array'),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
@@ -254,11 +265,38 @@ async function upsertProfileResource(
 }
 
 /**
+ * Returns true when the invite specifies explicit access policies or opts out of project defaults.
+ * @param request - The invite request.
+ * @returns True when explicit access is set or `skipDefaultAccessPolicy` is enabled.
+ */
+function inviteRequestHasExplicitAccess(request: ServerInviteRequest): boolean {
+  if (request.skipDefaultAccessPolicy === true) {
+    return true;
+  }
+  if (request.accessPolicy !== undefined && request.accessPolicy !== null) {
+    return true;
+  }
+  // `[]` is intentional: callers pass an empty array to mean "no parameterized access" (do not apply project defaults).
+  if (Array.isArray(request.access)) {
+    return true;
+  }
+  if (request.membership?.accessPolicy !== undefined && request.membership.accessPolicy !== null) {
+    return true;
+  }
+  // Same `[]` semantics as top-level `access` above.
+  if (Array.isArray(request.membership?.access)) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Validates that all access policy references exist and belong to the project.
  * Uses batch reading to validate all policies in a single database query.
  * @param systemRepo - The system repository.
  * @param request - The invite request containing access policy references.
  * @param project - The project to validate against.
+ * @returns A promise that resolves when validation completes.
  * @throws OperationOutcomeError if any access policy is invalid.
  */
 async function validateAccessPolicies(
@@ -273,6 +311,10 @@ async function validateAccessPolicies(
     references.push(request.accessPolicy);
   }
 
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
+  }
+
   if (Array.isArray(request.access)) {
     for (const access of request.access) {
       if (access.policy) {
@@ -283,6 +325,18 @@ async function validateAccessPolicies(
 
   if (Array.isArray(request.membership?.access)) {
     for (const access of request.membership.access) {
+      if (access.policy) {
+        references.push(access.policy);
+      }
+    }
+  }
+
+  if (!inviteRequestHasExplicitAccess(request)) {
+    const defaults = getDefaultMembershipAccessFields(project, request.resourceType);
+    if (defaults.accessPolicy) {
+      references.push(defaults.accessPolicy);
+    }
+    for (const access of defaults.access ?? []) {
       if (access.policy) {
         references.push(access.policy);
       }
@@ -338,8 +392,12 @@ async function upsertProjectMembership(
     ...request.membership,
   };
 
+  // `skipDefaultAccessPolicy` only affects `createProjectMembership` (new rows). On upsert updates we merge
+  // `partialMembership` onto the existing resource directly — defaults are not re-applied and this flag is ignored.
+  const membershipOptions = { skipDefaultAccessPolicy: request.skipDefaultAccessPolicy };
+
   if (request.forceNewMembership) {
-    return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+    return createProjectMembership(systemRepo, user, project, profile, partialMembership, membershipOptions);
   }
 
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
@@ -359,9 +417,12 @@ async function upsertProjectMembership(
 
         // Update the existing membership
         // Be careful to preserve the critical properties: id, project, user, and profile
+        const cleanedPartial = stripUndefinedAndNullFields({
+          ...partialMembership,
+        } as Record<string, unknown>) as Partial<ProjectMembership>;
         return systemRepo.updateResource<ProjectMembership>({
           ...existingMembership,
-          ...partialMembership,
+          ...cleanedPartial,
           resourceType: 'ProjectMembership',
           id: existingMembership.id,
           project: createReference(project),
@@ -369,7 +430,7 @@ async function upsertProjectMembership(
           profile: createReference(profile),
         });
       } else {
-        return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+        return createProjectMembership(systemRepo, user, project, profile, partialMembership, membershipOptions);
       }
     },
     { serializable: true }

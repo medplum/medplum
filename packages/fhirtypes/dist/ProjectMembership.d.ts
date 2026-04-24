@@ -12,6 +12,7 @@ import type { Extension } from './Extension.d.ts';
 import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
+import type { ParameterizedAccess } from './ParameterizedAccess.d.ts';
 import type { Patient } from './Patient.d.ts';
 import type { Practitioner } from './Practitioner.d.ts';
 import type { Project } from './Project.d.ts';
@@ -170,7 +171,7 @@ export interface ProjectMembership {
   /**
    * Extended access configuration using parameterized access policies.
    */
-  access?: ProjectMembershipAccess[];
+  access?: ParameterizedAccess[];
 
   /**
    * The user configuration for the user within the project memebership
@@ -183,49 +184,3 @@ export interface ProjectMembership {
    */
   admin?: boolean;
 }
-
-/**
- * Extended access configuration using parameterized access policies.
- */
-export interface ProjectMembershipAccess {
-
-  /**
-   * The base access policy used as a template.  Variables in the template
-   * access policy are replaced by the values in the parameter.
-   */
-  policy: Reference<AccessPolicy>;
-
-  /**
-   * User options that control the display of the application.
-   */
-  parameter?: ProjectMembershipAccessParameter[];
-}
-
-/**
- * User options that control the display of the application.
- */
-export interface ProjectMembershipAccessParameter {
-
-  /**
-   * The unique name of the parameter.
-   */
-  name: string;
-
-  /**
-   * Value of the parameter - must be one of a constrained set of the data
-   * types (see [Extensibility](extensibility.html) for a list).
-   */
-  valueString?: string;
-
-  /**
-   * Value of the parameter - must be one of a constrained set of the data
-   * types (see [Extensibility](extensibility.html) for a list).
-   */
-  valueReference?: Reference;
-}
-
-/**
- * Value of the parameter - must be one of a constrained set of the data
- * types (see [Extensibility](extensibility.html) for a list).
- */
-export type ProjectMembershipAccessParameterValue = Reference | string;
