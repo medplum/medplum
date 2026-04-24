@@ -520,9 +520,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     await cleanupActiveSubs(projectId, expiredSubEntries);
   }
 
-  if (Object.keys(activeSubEntries).length) {
+  const activeSubKeys = Object.keys(activeSubEntries);
+  if (activeSubKeys.length) {
     const cacheRedis = getCacheRedis();
-    const redisOnlySubStrs = await cacheRedis.mget(Object.keys(activeSubEntries));
+    const redisOnlySubStrs = await cacheRedis.mget(activeSubKeys);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
@@ -538,7 +539,6 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
           projectId,
         });
         const inactiveSubs: string[] = [];
-        const activeSubKeys = Object.keys(activeSubEntries);
         for (let i = 0; i < redisOnlySubStrs.length; i++) {
           if (!redisOnlySubStrs[i]) {
             inactiveSubs.push(activeSubKeys[i]);
