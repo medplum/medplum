@@ -107,7 +107,6 @@ describe('FindPane', () => {
     range?: { start: Date; end: Date };
     onChange?: (slots: Slot[]) => void;
     onSuccess?: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
-    slots?: Slot[];
   };
 
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
@@ -206,7 +205,7 @@ describe('FindPane', () => {
       const user = userEvent.setup();
 
       await act(async () => {
-        setup({ slots: mockSlots });
+        setup();
       });
 
       await user.click(screen.getByText('Annual Checkup'));
@@ -284,7 +283,7 @@ describe('FindPane', () => {
       const onSuccess = vi.fn();
 
       await act(async () => {
-        setup({ slots: mockSlots, onSuccess });
+        setup({ onSuccess });
       });
 
       // Select a service type first
