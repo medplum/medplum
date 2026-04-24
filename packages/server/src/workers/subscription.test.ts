@@ -38,7 +38,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
-import type { SystemRepository } from '../fhir/repo';
+import type { RepositoryContext, SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
@@ -2017,8 +2017,14 @@ describe('Subscription Worker', () => {
      * @param projectId - The project ID the Subscription belongs to.
      * @returns A Promise that resolves to the reference string of the author.
      */
-    async function bindSubscription(subscription: WithId<Subscription>, projectId: string): Promise<string> {
-      const authorRef = subscription.meta?.author?.reference ?? 'Practitioner/test-author';
+    async function bindSubscription(
+      repo: Repository,
+      subscription: WithId<Subscription>,
+      projectId: string
+    ): Promise<string> {
+      /* @ts-ignore We access context directly in these tests to get what what normally be populated in the async storage authenticated context */
+      const ctx = repo.context as unknown as RepositoryContext;
+      const authorRef = ctx.author.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
       const subRef = `Subscription/${subscription.id}`;
@@ -2028,8 +2034,8 @@ describe('Subscription Worker', () => {
         criteria,
         expiration,
         author: authorRef,
-        loginId: randomUUID(),
-        membershipId: randomUUID(),
+        loginId: ctx.authState.login.id as string,
+        membershipId: ctx.membership.id,
       });
       return authorRef;
     }

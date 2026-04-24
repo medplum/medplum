@@ -538,9 +538,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
           projectId,
         });
         const inactiveSubs: string[] = [];
+        const activeSubKeys = Object.keys(activeSubEntries);
         for (let i = 0; i < redisOnlySubStrs.length; i++) {
           if (!redisOnlySubStrs[i]) {
-            inactiveSubs.push(Object.keys(activeSubEntries)[i]);
+            inactiveSubs.push(activeSubKeys[i]);
           }
         }
         await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);

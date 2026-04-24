@@ -314,9 +314,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     for (const field of REQUIRED_TOKEN_FIELDS) {
       if (!tokenPayload?.[field]) {
         socket.send(
-          JSON.stringify(
-            badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.')
-          )
+          JSON.stringify(badRequest(`Token claims missing ${field}. Make sure you are sending the correct token.`))
         );
         socket.terminate();
         return undefined;
