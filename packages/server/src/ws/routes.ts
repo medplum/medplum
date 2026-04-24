@@ -1,28 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import bytes from 'bytes';
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { randomUUID } from 'node:crypto';
 import type http from 'node:http';
 import type { IncomingMessage } from 'node:http';
-import os from 'node:os';
-import type { RawData, Server, WebSocket } from 'ws';
+import type { Server, WebSocket } from 'ws';
 import { WebSocketServer } from 'ws';
 import { getConfig } from '../config/loader';
 import { RequestContext } from '../context';
-import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
-import { setGauge } from '../otel/otel';
-import { publish } from '../pubsub';
-import { getPubSubRedisSubscriber } from '../redis';
 import { requestContextStore } from '../request-context-store';
 import { handleAgentConnection } from './agent';
+import { handleAiRealtimeConnection } from './ai-realtime';
+import { handleEchoConnection, initEchoHeartbeat, stopEchoHeartbeat } from './echo';
 import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat } from './fhircast';
 import { handleR4SubscriptionConnection } from './subscriptions';
 
 const handlerMap = new Map<string, (socket: WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('echo', handleEchoConnection);
 handlerMap.set('agent', handleAgentConnection);
+handlerMap.set('ai-realtime', handleAiRealtimeConnection);
 handlerMap.set('fhircast', handleFhircastConnection);
 handlerMap.set('subscriptions-r4', handleR4SubscriptionConnection);
 
@@ -34,13 +30,6 @@ type WebSocketState = {
 
 let wsServer: Server | undefined = undefined;
 let wsState: WebSocketState | undefined = undefined;
-
-const hostname = os.hostname();
-const METRIC_OPTIONS = { attributes: { hostname } };
-const echoWebSockets = new Set<WebSocket>();
-let echoHeartbeatHandler: (() => void) | undefined;
-let echoMessagesSent = 0;
-let echoMessagesReceived = 0;
 
 /**
  * Initializes a websocket listener on the given HTTP server.
@@ -113,57 +102,6 @@ function getWebSocketPath(path: string): string {
   return path.split('/').filter(Boolean)[1];
 }
 
-function initEchoHeartbeat(): void {
-  if (!echoHeartbeatHandler) {
-    echoHeartbeatHandler = (): void => {
-      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
-      setGauge('medplum.echo.websocketCount', echoWebSockets.size, METRIC_OPTIONS);
-      setGauge('medplum.echo.messagesSentPerSec', echoMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
-      setGauge('medplum.echo.messagesReceivedPerSec', echoMessagesReceived / heartbeatSeconds, METRIC_OPTIONS);
-      echoMessagesSent = 0;
-      echoMessagesReceived = 0;
-    };
-    heartbeat.addEventListener('heartbeat', echoHeartbeatHandler);
-  }
-}
-
-/**
- * Handles a new WebSocket connection to the echo service.
- * The echo service simply echoes back whatever it receives.
- * @param socket - The WebSocket connection.
- */
-async function handleEchoConnection(socket: WebSocket): Promise<void> {
-  echoWebSockets.add(socket);
-
-  // Create a redis client for this connection.
-  // According to Redis documentation: http://redis.io/commands/subscribe
-  // Once the client enters the subscribed state it is not supposed to issue any other commands,
-  // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redisSubscriber = getPubSubRedisSubscriber();
-  const channel = randomUUID();
-
-  await redisSubscriber.subscribe(channel);
-
-  redisSubscriber.on('message', (channel: string, message: string) => {
-    globalLogger.debug('[WS] redis message', { channel, message });
-    socket.send(message, { binary: false });
-    echoMessagesSent++;
-  });
-
-  socket.on(
-    'message',
-    AsyncLocalStorage.bind(async (data: RawData) => {
-      echoMessagesReceived++;
-      await publish(channel, data as Buffer);
-    })
-  );
-
-  socket.on('close', () => {
-    echoWebSockets.delete(socket);
-    redisSubscriber.disconnect();
-  });
-}
-
 export async function closeWebSockets(): Promise<void> {
   stopFhircastHeartbeat();
   stopEchoHeartbeat();
@@ -175,12 +113,5 @@ export async function closeWebSockets(): Promise<void> {
   if (wsState) {
     // Wait for all sockets to close
     await wsState.socketsClosedPromise;
-  }
-}
-
-function stopEchoHeartbeat(): void {
-  if (echoHeartbeatHandler) {
-    heartbeat.removeEventListener('heartbeat', echoHeartbeatHandler);
-    echoHeartbeatHandler = undefined;
   }
 }

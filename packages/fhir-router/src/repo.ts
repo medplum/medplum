@@ -184,7 +184,7 @@ export abstract class FhirRepository<TClient = unknown> {
    * @param searchRequest - The FHIR search request.
    * @param referenceField - The name of the reference field to search by (e.g. "patient" or "subject").
    * @param references - The reference values to search for (e.g. ["Patient/123", "Patient/456"]).
-   * @returns A record mapping reference values to the resources that reference them (e.g. { "Patient/123": [Observation1, Observation2], "Patient/456": [Observation3] }).
+   * @returns A record mapping reference values to the resources that reference them (e.g. \{ "Patient/123": [Observation1, Observation2], "Patient/456": [Observation3] \}).
    */
   abstract searchByReference<T extends Resource>(
     searchRequest: SearchRequest<T>,

@@ -93,6 +93,7 @@ export interface MedplumSourceInfraConfig {
   loadBalancerSecurityGroupId?: ValueOrExternalSecret<string>;
   loadBalancerLoggingBucket?: ValueOrExternalSecret<string>;
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
+  loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
   clamscanEnabled: ValueOrExternalSecret<boolean>;
   clamscanLoggingBucket: ValueOrExternalSecret<string>;
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
@@ -261,6 +262,7 @@ export interface MedplumInfraConfig {
   loadBalancerSecurityGroupId?: string;
   loadBalancerLoggingBucket?: string;
   loadBalancerLoggingPrefix?: string;
+  loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
   clamscanEnabled: boolean;
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;
