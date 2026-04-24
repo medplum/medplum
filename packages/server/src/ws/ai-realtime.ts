@@ -1,15 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, normalizeErrorString } from '@medplum/core';
+import { badRequest, normalizeErrorString, ReconnectingWebSocket } from '@medplum/core';
 import type { IncomingMessage } from 'node:http';
 import type { WebSocket as IncomingWebSocket, RawData } from 'ws';
 import WebSocket from 'ws';
+import { getConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
-
-const OPENAI_REALTIME_FEATURE = 'openai-realtime-transcription';
-const OPENAI_API_KEY_SECRET_NAME = 'OPENAI_API_KEY';
-type OpenAIRealtimeIntent = 'transcription';
 
 export interface OpenAIRealtimeConnectRequest {
   type: 'ai-realtime:connect';
@@ -18,20 +15,12 @@ export interface OpenAIRealtimeConnectRequest {
 
 type OpenAIRealtimeControlMessage = OpenAIRealtimeConnectRequest;
 
-type OpenAIRealtimeWebSocketFactory = (apiKey: string, intent: OpenAIRealtimeIntent) => WebSocket;
-
-let openAIRealtimeWebSocketFactory: OpenAIRealtimeWebSocketFactory = defaultCreateOpenAIRealtimeWebSocket;
-
-export function setOpenAIRealtimeWebSocketFactoryForTest(factory: OpenAIRealtimeWebSocketFactory | undefined): void {
-  openAIRealtimeWebSocketFactory = factory ?? defaultCreateOpenAIRealtimeWebSocket;
-}
-
 export async function handleAiRealtimeConnection(socket: IncomingWebSocket, request: IncomingMessage): Promise<void> {
   const socketId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   let closed = false;
   let connected = false;
   let connecting = false;
-  let upstreamSocket: WebSocket | undefined;
+  let upstreamSocket: ReconnectingWebSocket | undefined;
 
   globalLogger.info('[WS] OpenAI realtime socket connected', {
     socketId,
@@ -88,7 +77,7 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
       return;
     }
 
-    upstreamSocket.send(data, { binary: isBinary });
+    upstreamSocket.send((data as Buffer).toString('utf8'));
   });
 
   socket.on('close', () => {
@@ -111,56 +100,55 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
     }
 
     const { project } = authResult.authState;
-    if (!hasProjectFeature(project.features, OPENAI_REALTIME_FEATURE)) {
+    if (!hasProjectFeature(project.features, 'ai-realtime')) {
       sendError('OpenAI realtime transcription is not enabled for this project');
       closeClient(1008);
       return;
     }
 
-    const apiKey = project.secret?.find((s) => s.name === OPENAI_API_KEY_SECRET_NAME)?.valueString;
+    const apiKey = project.secret?.find((s) => s.name === 'OPENAI_API_KEY')?.valueString;
     if (!apiKey) {
       sendError('OpenAI API key not configured in project secrets');
       closeClient(1011);
       return;
     }
 
-    upstreamSocket = openAIRealtimeWebSocketFactory(apiKey, 'transcription');
+    upstreamSocket = new ReconnectingWebSocket(getConfig().aiRealtimeTranscriptionUrl, [
+      'realtime',
+      `openai-insecure-api-key.${apiKey}`,
+      'openai-beta.realtime-v1',
+    ]);
+
     bindUpstreamSocket(upstreamSocket);
   }
 
-  function bindUpstreamSocket(upstream: WebSocket): void {
-    upstream.on('open', () => {
+  function bindUpstreamSocket(upstream: ReconnectingWebSocket): void {
+    upstream.onopen = () => {
       connecting = false;
       connected = true;
       sendControlMessage({ type: 'ai-realtime:connected' });
-    });
+    };
 
-    upstream.on('message', (data, isBinary) => {
+    upstream.onmessage = (event) => {
       if (socket.readyState === WebSocket.OPEN) {
-        socket.send(data, { binary: isBinary });
+        socket.send(event.data, { binary: event.data instanceof ArrayBuffer });
       }
-    });
+    };
 
-    upstream.on('unexpected-response', (_request, response) => {
-      connecting = false;
-      sendError(`Upstream connection failed with status ${response.statusCode ?? 502}`);
-      closeClient(1011);
-    });
-
-    upstream.on('error', (err) => {
+    upstream.onerror = (err) => {
       connecting = false;
       globalLogger.error('[WS] OpenAI realtime upstream error', { socketId, error: err });
       if (!connected) {
         sendError(`Upstream websocket error: ${normalizeErrorString(err)}`);
       }
-    });
+    };
 
-    upstream.on('close', (code, reason) => {
+    upstream.onclose = (event) => {
       connecting = false;
       if (socket.readyState < WebSocket.CLOSING) {
-        socket.close(normalizeCloseCode(code), reason.toString('utf8'));
+        socket.close(normalizeCloseCode(event.code), event.reason);
       }
-    });
+    };
   }
 
   function sendError(body: string): void {
@@ -181,14 +169,6 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
       upstreamSocket.close();
     }
   }
-}
-
-function defaultCreateOpenAIRealtimeWebSocket(apiKey: string, intent: OpenAIRealtimeIntent): WebSocket {
-  return new WebSocket(`wss://api.openai.com/v1/realtime?intent=${encodeURIComponent(intent)}`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-  });
 }
 
 function normalizeCloseCode(code: number): number {

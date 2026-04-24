@@ -182,6 +182,12 @@ export interface MedplumServerConfig {
    * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
    */
   mtlsCertHeader?: string;
+
+  /**
+   * Optional URL for AI real-time transcription service.
+   * Default is `wss://api.openai.com/v1/realtime?intent=transcription`.
+   */
+  aiRealtimeTranscriptionUrl?: string;
 }
 
 export interface SubscriptionAutoDisableTrigger {

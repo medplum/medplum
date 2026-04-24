@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import request from 'superwstest';
-import WebSocket, { WebSocketServer } from 'ws';
+import type { AddressInfo } from 'ws';
+import { WebSocketServer } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { initTestAuth } from '../test.setup';
-import { setOpenAIRealtimeWebSocketFactoryForTest } from './ai-realtime';
 
 describe('AI realtime websocket', () => {
   let app: express.Express;
@@ -27,7 +26,6 @@ describe('AI realtime websocket', () => {
   });
 
   afterAll(async () => {
-    setOpenAIRealtimeWebSocketFactoryForTest(undefined);
     await shutdownApp();
   });
 
@@ -68,9 +66,7 @@ describe('AI realtime websocket', () => {
       upstreamServer.once('listening', () => resolve());
     });
 
-    setOpenAIRealtimeWebSocketFactoryForTest(
-      () => new WebSocket(`ws://127.0.0.1:${(upstreamServer.address() as AddressInfo).port}`)
-    );
+    config.aiRealtimeTranscriptionUrl = `ws://127.0.0.1:${(upstreamServer.address() as AddressInfo).port}`;
 
     upstreamServer.on('connection', (upstreamSocket) => {
       upstreamSocket.on('message', (data, isBinary) => {
@@ -80,7 +76,7 @@ describe('AI realtime websocket', () => {
 
     const accessToken = await initTestAuth({
       project: {
-        features: ['openai-realtime-transcription'] as any,
+        features: ['ai-realtime'] as any,
         secret: [{ name: 'OPENAI_API_KEY', valueString: 'sk-test-key' }],
       },
     });
