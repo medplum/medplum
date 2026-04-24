@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Binary,
   Bot,
   Bundle,
+  BundleEntry,
   Identifier,
   OperationOutcome,
   Patient,
@@ -2814,6 +2816,175 @@ describe('Client', () => {
           body: expect.stringContaining('Bundle'),
         })
       );
+    });
+
+    describe('executeBatchWithBinary', () => {
+      // Test fixtures - computed in beforeEach after environment mocks are set up
+      let base64Data: string;
+      let binaryEntry: BundleEntry;
+      let docRefEntry: BundleEntry;
+
+      beforeEach(() => {
+        base64Data = encodeBase64('hello world');
+        binaryEntry = {
+          fullUrl: 'urn:uuid:binary-1',
+          resource: {
+            resourceType: 'Binary',
+            contentType: ContentType.TEXT,
+            data: base64Data,
+          },
+          request: { method: 'POST', url: 'Binary' },
+        };
+        docRefEntry = {
+          fullUrl: 'urn:uuid:docref-1',
+          resource: {
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: 'urn:uuid:binary-1', contentType: ContentType.TEXT } }],
+          },
+          request: { method: 'POST', url: 'DocumentReference' },
+        };
+      });
+
+      test('uploads binary and rewrites references', async () => {
+        const binaryResource: Binary = { resourceType: 'Binary', id: 'abc123', contentType: ContentType.TEXT };
+        const batchResponseBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch-response',
+          entry: [{ response: { status: '201 Created' } }],
+        };
+
+        const fetch = vi.fn((url: string) => {
+          if (url.includes('/Binary')) {
+            return Promise.resolve(mockFetchResponse(201, binaryResource));
+          }
+          return Promise.resolve(mockFetchResponse(200, batchResponseBundle));
+        });
+
+        const client = new MedplumClient({ fetch });
+        const inputBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch',
+          entry: [binaryEntry, docRefEntry],
+        };
+
+        const result = await client.executeBatchWithBinary(inputBundle);
+
+        // Should have called Binary upload and then batch execute
+        expect(fetch).toHaveBeenCalledTimes(2);
+        expect(fetch).toHaveBeenCalledWith(
+          'https://api.medplum.com/fhir/R4/Binary',
+          expect.objectContaining({ method: 'POST' })
+        );
+        expect(fetch).toHaveBeenCalledWith(
+          'https://api.medplum.com/fhir/R4',
+          expect.objectContaining({ method: 'POST' })
+        );
+
+        // Response bundle should have 2 entries in original order
+        expect(result.resourceType).toBe('Bundle');
+        expect(result.type).toBe('batch-response');
+        expect(result.entry).toHaveLength(2);
+
+        // First entry (index 0) is the binary response
+        expect(result.entry?.[0].response?.status).toBe('201 Created');
+        expect(result.entry?.[0].response?.location).toBe('Binary/abc123');
+        expect(result.entry?.[0].resource).toMatchObject({ resourceType: 'Binary', id: 'abc123' });
+
+        // Second entry (index 1) is the docref response
+        expect(result.entry?.[1]).toMatchObject({ response: { status: '201 Created' } });
+      });
+
+      test('rewrites references in the shadow bundle sent to executeBatch', async () => {
+        const binaryResource: Binary = { resourceType: 'Binary', id: 'xyz789', contentType: ContentType.TEXT };
+        const batchResponseBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch-response',
+          entry: [],
+        };
+
+        let capturedBody: any;
+        const fetch = vi.fn((url: string, options: any) => {
+          if (url.includes('/Binary')) {
+            return Promise.resolve(mockFetchResponse(201, binaryResource));
+          }
+          capturedBody = JSON.parse(options.body);
+          return Promise.resolve(mockFetchResponse(200, batchResponseBundle));
+        });
+
+        const client = new MedplumClient({ fetch });
+        const inputBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch',
+          entry: [binaryEntry, docRefEntry],
+        };
+
+        await client.executeBatchWithBinary(inputBundle);
+
+        // The shadow bundle should have the reference rewritten
+        const shadowEntry = capturedBody.entry[0];
+        expect(shadowEntry.resource.content[0].attachment.url).toBe('Binary/xyz789');
+      });
+
+      test('throws if Binary entry is missing fullUrl', async () => {
+        const fetch = mockFetch(200, {});
+        const client = new MedplumClient({ fetch });
+        const inputBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch',
+          entry: [
+            {
+              // no fullUrl
+              resource: { resourceType: 'Binary', contentType: ContentType.TEXT, data: base64Data },
+              request: { method: 'POST', url: 'Binary' },
+            },
+          ],
+        };
+        await expect(client.executeBatchWithBinary(inputBundle)).rejects.toThrow('fullUrl');
+      });
+
+      test('handles bundle with no Binary entries', async () => {
+        const batchResponseBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch-response',
+          entry: [{ response: { status: '201 Created' } }],
+        };
+        const fetch = mockFetch(200, batchResponseBundle);
+        const client = new MedplumClient({ fetch });
+        const inputBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch',
+          entry: [docRefEntry],
+        };
+
+        const result = await client.executeBatchWithBinary(inputBundle);
+        // Only one call to executeBatch, no Binary upload
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(result.entry).toHaveLength(1);
+      });
+
+      test('handles bundle with only Binary entries', async () => {
+        const binaryResource: Binary = { resourceType: 'Binary', id: 'only-binary', contentType: ContentType.TEXT };
+
+        const emptyBatchResponse: Bundle = { resourceType: 'Bundle', type: 'batch-response', entry: [] };
+        const fetchWithFallback = vi.fn((url: string) => {
+          if (url.includes('/Binary')) {
+            return Promise.resolve(mockFetchResponse(201, binaryResource));
+          }
+          return Promise.resolve(mockFetchResponse(200, emptyBatchResponse));
+        });
+
+        const client2 = new MedplumClient({ fetch: fetchWithFallback });
+        const inputBundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch',
+          entry: [binaryEntry],
+        };
+
+        const result = await client2.executeBatchWithBinary(inputBundle);
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0].response?.location).toBe('Binary/only-binary');
+      });
     });
   });
 

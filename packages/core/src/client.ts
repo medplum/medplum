@@ -40,6 +40,7 @@ import type {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import type { ReturnAckCategory } from './agent';
 import { encodeBase64 } from './base64';
+import { executeBatchWithBinary as executeBatchWithBinaryHelper } from './bundle';
 import { LRUCache } from './cache';
 import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
 import { ContentType } from './contenttype';
@@ -2870,6 +2871,38 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
     return this.post(this.fhirBaseUrl, bundle, undefined, options);
+  }
+
+  /**
+   * Executes a FHIR batch or transaction Bundle that may contain `Binary` create entries.
+   *
+   * Binary resources present challenges in standard batch/transaction workflows (not searchable,
+   * inefficient base64 encoding, no streaming support). This method pre-processes the Bundle by:
+   *
+   * 1. Extracting `Binary` create entries (POST to `Binary` with base64 `data`)
+   * 2. Uploading them individually via createBinary (streaming-friendly)
+   * 3. Rewriting all `Reference.reference` and `Attachment.url` fields in the remaining entries
+   *    that reference those Binary `fullUrl` values
+   * 4. Executing the remaining Bundle via executeBatch
+   * 5. Returning a merged response Bundle that includes synthetic response entries for the
+   *    Binary uploads and the actual entries from the batch response
+   *
+   * **Important:** This is **not** a true FHIR transaction. Binary uploads happen outside the
+   * batch/transaction scope, so a partial failure (e.g. `createBinary` succeeding but
+   * `executeBatch` failing) may leave orphaned `Binary` resources on the server. Callers that
+   * require transactional guarantees should implement their own rollback / cleanup logic by
+   * catching errors thrown from this method and deleting any successfully uploaded `Binary`
+   * resources before retrying.
+   *
+   * @category Batch
+   * @param bundle - The FHIR batch/transaction bundle, which may contain Binary create entries.
+   * @param options - Optional fetch options passed to executeBatch.
+   * @returns A synthetic merged response Bundle. This is not a strict FHIR-compliant transaction
+   * response: the first entries correspond to the Binary uploads and the remaining entries come
+   * from the batch/transaction response.
+   */
+  async executeBatchWithBinary(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
+    return executeBatchWithBinaryHelper(this, bundle, options);
   }
 
   /**

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Binary,
   Bundle,
   BundleEntry,
   BundleEntryRequest,
@@ -8,7 +9,9 @@ import type {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
+import type { CreateBinaryOptions, MedplumClient, MedplumRequestOptions } from './client';
 import { generateId } from './crypto';
+import { getBuffer, isBrowserEnvironment } from './environment';
 import { isReference } from './types';
 import { deepClone, EMPTY } from './utils';
 
@@ -289,4 +292,172 @@ export function findResourceInBundle<K extends ResourceType>(
 ): ExtractResource<K> {
   return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
     ?.resource as ExtractResource<K>;
+}
+
+/**
+ * Returns true if the given Bundle entry represents a Binary create operation
+ * (i.e. a POST request to `Binary` with a `Binary` resource payload).
+ * @param entry - The Bundle entry to check.
+ * @returns True if the entry is a Binary create entry.
+ */
+export function isBinaryCreateEntry(entry: BundleEntry): boolean {
+  return (
+    entry.request?.method === 'POST' && entry.request?.url === 'Binary' && entry.resource?.resourceType === 'Binary'
+  );
+}
+
+/**
+ * Recursively rewrites `Reference.reference` and `Attachment.url` fields in an object tree,
+ * replacing any value that exactly matches a key in the provided map with the corresponding value.
+ *
+ * Only exact matches of full-URL strings are replaced (no substring replacement).
+ * @param obj - The object (or primitive) to traverse.
+ * @param map - A map from old reference strings (e.g. `urn:uuid:…`) to new reference strings (e.g. `Binary/{id}`).
+ * @returns The same structure with references rewritten.
+ */
+export function rewriteResourceReferences(obj: unknown, map: Map<string, string>): unknown {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => rewriteResourceReferences(item, map));
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const record = obj as Record<string, unknown>;
+    const result: Record<string, unknown> = {};
+    for (const key of Object.keys(record)) {
+      const value = record[key];
+      if (typeof value === 'string' && (key === 'reference' || key === 'url')) {
+        result[key] = map.get(value) ?? value;
+      } else {
+        result[key] = rewriteResourceReferences(value, map);
+      }
+    }
+    return result;
+  }
+  return obj;
+}
+
+/**
+ * Decodes a base64-encoded string to a `Uint8Array` of raw bytes.
+ * Works in both browser and Node.js environments.
+ * @param base64 - The base64-encoded string.
+ * @returns The decoded bytes.
+ */
+export function base64ToUint8Array(base64: string): Uint8Array {
+  if (isBrowserEnvironment()) {
+    const binaryString = window.atob(base64);
+    return Uint8Array.from(binaryString, (c) => c.codePointAt(0) ?? 0);
+  }
+  const BufferConstructor = getBuffer();
+  if (BufferConstructor) {
+    return new Uint8Array(BufferConstructor.from(base64, 'base64'));
+  }
+  throw new Error('Unable to decode base64: no suitable runtime available');
+}
+
+/**
+ * Converts a Binary Bundle entry into `CreateBinaryOptions` suitable for `MedplumClient.createBinary`.
+ *
+ * The `Binary.data` field (base64-encoded bytes) is decoded to a `Uint8Array`.
+ * @param entry - A Bundle entry whose resource is a FHIR `Binary`.
+ * @returns The corresponding `CreateBinaryOptions`.
+ * @throws Error if `contentType` or `data` is missing from the Binary resource.
+ */
+export function binaryOptionsFromEntry(entry: BundleEntry): CreateBinaryOptions {
+  const binary = entry.resource as Binary;
+  if (!binary.contentType) {
+    throw new Error('Binary resource is missing contentType');
+  }
+  if (!binary.data) {
+    throw new Error('Binary resource is missing data');
+  }
+  return {
+    data: base64ToUint8Array(binary.data),
+    contentType: binary.contentType,
+    securityContext: binary.securityContext,
+  };
+}
+
+/**
+ * Executes a FHIR batch or transaction Bundle that may contain `Binary` create entries.
+ *
+ * Binary resources present challenges in standard batch/transaction workflows (not searchable,
+ * inefficient base64 encoding, no streaming support). This function pre-processes the Bundle by:
+ *
+ * 1. Extracting `Binary` create entries (POST to `Binary` with base64 `data`)
+ * 2. Uploading them individually via `MedplumClient.createBinary` (streaming-friendly)
+ * 3. Rewriting all `Reference.reference` and `Attachment.url` fields in the remaining entries
+ *    that reference those Binary `fullUrl` values
+ * 4. Executing the remaining Bundle via `MedplumClient.executeBatch`
+ * 5. Returning a merged response Bundle that includes synthetic response entries for the
+ *    Binary uploads and the actual entries from the batch response
+ *
+ * **Important:** This is **not** a true FHIR transaction. Binary uploads happen outside the
+ * batch/transaction scope, so a partial failure (e.g. `createBinary` succeeding but
+ * `executeBatch` failing) may leave orphaned `Binary` resources on the server.
+ *
+ * @param medplum - The MedplumClient instance used to upload Binaries and execute the batch.
+ * @param bundle - The FHIR batch/transaction bundle, which may contain Binary create entries.
+ * @param options - Optional fetch options passed to `MedplumClient.executeBatch`.
+ * @returns A synthetic merged response Bundle preserving original entry order.
+ */
+export async function executeBatchWithBinary(
+  medplum: MedplumClient,
+  bundle: Bundle,
+  options?: MedplumRequestOptions
+): Promise<Bundle> {
+  const entries = bundle.entry ?? [];
+
+  // Split entries into Binary creates and everything else, preserving original indices
+  const binaryEntries: { index: number; entry: BundleEntry }[] = [];
+  const otherEntries: { index: number; entry: BundleEntry }[] = [];
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (isBinaryCreateEntry(entry)) {
+      binaryEntries.push({ index: i, entry });
+    } else {
+      otherEntries.push({ index: i, entry });
+    }
+  }
+
+  // Upload each Binary and build a fullUrl → "Binary/{id}" reference map
+  const fullUrlToReference = new Map<string, string>();
+  const binaryResults: { index: number; resource: Binary & { id: string } }[] = [];
+
+  for (const { index, entry } of binaryEntries) {
+    const { fullUrl } = entry;
+    if (!fullUrl) {
+      throw new Error('Binary entry is missing fullUrl, which is required for reference rewriting');
+    }
+    const binaryOptions = binaryOptionsFromEntry(entry);
+    const result = await medplum.createBinary(binaryOptions);
+    fullUrlToReference.set(fullUrl, `Binary/${result.id}`);
+    binaryResults.push({ index, resource: result });
+  }
+
+  // Rewrite references in the non-Binary entries and execute the shadow bundle
+  const rewrittenOtherEntries = otherEntries.map(({ index, entry }) => ({
+    index,
+    entry: rewriteResourceReferences(entry, fullUrlToReference) as BundleEntry,
+  }));
+
+  const shadowBundle: Bundle = { ...bundle, entry: rewrittenOtherEntries.map(({ entry }) => entry) };
+  const batchResponse = await medplum.executeBatch(shadowBundle, options);
+  const batchResponseEntries = batchResponse.entry ?? [];
+
+  // Reconstruct the response in the original entry order
+  const responseEntries: BundleEntry[] = new Array(entries.length);
+
+  for (const { index, resource } of binaryResults) {
+    responseEntries[index] = {
+      response: { status: '201 Created', location: `Binary/${resource.id}` },
+      resource,
+    };
+  }
+
+  for (let i = 0; i < rewrittenOtherEntries.length; i++) {
+    const { index } = rewrittenOtherEntries[i];
+    responseEntries[index] = batchResponseEntries[i] ?? {};
+  }
+
+  return { resourceType: 'Bundle', type: 'batch-response', entry: responseEntries };
 }
