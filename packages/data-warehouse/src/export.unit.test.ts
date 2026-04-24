@@ -1,21 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildExportQueries } from './export.js';
-
-vi.mock('duckdb', () => ({
-  Database: class {
-    exec(query: string, cb: any) {
-      cb(null);
-    }
-    all(query: string, cb: any) {
-      cb(null, []);
-    }
-    close() {}
-  },
-}));
 
 describe('Data Warehouse Export - Unit Tests', () => {
   it('should build correct SQL queries for production environment (Parquet fallback)', () => {

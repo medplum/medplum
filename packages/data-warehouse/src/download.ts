@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DuckDBInstance } from '@duckdb/node-api';
 import { execFile } from 'child_process';
-import duckdb from 'duckdb';
 import { createWriteStream, promises as fs } from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
@@ -98,35 +98,25 @@ async function downloadFileWithS3Client(
 }
 
 export async function downloadParquetFiles(options: DownloadParquetOptions): Promise<number> {
-  const db = new duckdb.Database(':memory:');
+  const instance = await DuckDBInstance.create(':memory:');
+  const connection = await instance.connect();
   const s3Client = new S3Client({ region: options.s3Region });
-
-  const execAsync = (query: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      db.exec(query, (err) => (err ? reject(err) : resolve()));
-    });
-  };
-
-  const allAsync = <T>(query: string): Promise<T[]> => {
-    return new Promise((resolve, reject) => {
-      db.all(query, (err, rows) => (err ? reject(err) : resolve(rows as T[])));
-    });
-  };
 
   try {
     const metadataLocation = await getTableMetadataLocation(options);
 
-    await execAsync('INSTALL aws;');
-    await execAsync('LOAD aws;');
-    await execAsync('INSTALL httpfs;');
-    await execAsync('LOAD httpfs;');
-    await execAsync('INSTALL iceberg;');
-    await execAsync('LOAD iceberg;');
-    await execAsync(`CREATE SECRET ( TYPE S3, PROVIDER CREDENTIAL_CHAIN, REGION '${options.s3Region}' );`);
+    await connection.run('INSTALL aws;');
+    await connection.run('LOAD aws;');
+    await connection.run('INSTALL httpfs;');
+    await connection.run('LOAD httpfs;');
+    await connection.run('INSTALL iceberg;');
+    await connection.run('LOAD iceberg;');
+    await connection.run(`CREATE SECRET ( TYPE S3, PROVIDER CREDENTIAL_CHAIN, REGION '${options.s3Region}' );`);
     const escapedMetadataLocation = metadataLocation.replace(/'/g, "''");
-    const rows = await allAsync<{ file_path: string }>(
+    const reader = await connection.runAndReadAll(
       `SELECT DISTINCT file_path FROM iceberg_metadata('${escapedMetadataLocation}') WHERE lower(file_format) = 'parquet' ORDER BY file_path;`
     );
+    const rows = reader.getRowObjectsJson() as { file_path: string }[];
 
     if (rows.length === 0) {
       return 0;
@@ -143,6 +133,6 @@ export async function downloadParquetFiles(options: DownloadParquetOptions): Pro
 
     return rows.length;
   } finally {
-    db.close();
+    connection.closeSync();
   }
 }

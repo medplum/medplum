@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { DuckDBInstance } from '@duckdb/node-api';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import duckdb from 'duckdb';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -11,7 +11,8 @@ import { exportData } from './export.js';
 describe('Data Warehouse Export', () => {
   let pgContainer: any;
   let databaseUrl: string;
-  let tempDir: string;
+  /** Set only after successful setup; undefined if `beforeAll` throws (e.g. no Docker). */
+  let tempDir: string | undefined;
 
   beforeAll(async () => {
     // Spin up Postgres
@@ -20,18 +21,14 @@ describe('Data Warehouse Export', () => {
     // Connect and create table + insert data
     databaseUrl = pgContainer.getConnectionUri();
 
-    const db = new duckdb.Database(':memory:');
-    const execAsync = (query: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        db.exec(query, (err) => (err ? reject(err) : resolve()));
-      });
-    };
+    const instance = await DuckDBInstance.create(':memory:');
+    const connection = await instance.connect();
 
-    await execAsync(`INSTALL postgres; LOAD postgres;`);
-    await execAsync(`ATTACH '${databaseUrl}' AS pg_db (TYPE postgres);`);
+    await connection.run(`INSTALL postgres; LOAD postgres;`);
+    await connection.run(`ATTACH '${databaseUrl}' AS pg_db (TYPE postgres);`);
 
     // Create AuditEvent table and insert sample data
-    await execAsync(`
+    await connection.run(`
       CREATE TABLE pg_db."AuditEvent" (
         id UUID PRIMARY KEY,
         content TEXT NOT NULL,
@@ -40,14 +37,14 @@ describe('Data Warehouse Export', () => {
       );
     `);
 
-    await execAsync(`
+    await connection.run(`
       INSERT INTO pg_db."AuditEvent" VALUES
         ('00000000-0000-0000-0000-000000000001', '{"event": 1}', '123e4567-e89b-12d3-a456-426614174000', '2026-04-11 10:00:00+00'),
         ('00000000-0000-0000-0000-000000000002', '{"event": 2}', '123e4567-e89b-12d3-a456-426614174000', '2026-04-11 10:15:00+00'),
         ('00000000-0000-0000-0000-000000000003', '{"event": 3}', '123e4567-e89b-12d3-a456-426614174000', '2026-04-11 10:30:00+00');
     `);
 
-    db.close();
+    connection.closeSync();
 
     // Create temp dir for mock S3 Iceberg catalog
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iceberg-test-'));
@@ -55,8 +52,12 @@ describe('Data Warehouse Export', () => {
   }, 10000);
 
   afterAll(async () => {
-    await pgContainer.stop();
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    if (pgContainer) {
+      await pgContainer.stop();
+    }
+    if (tempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   }, 10000);
 
   it('should incrementally export data to parquet files', async () => {
@@ -71,16 +72,14 @@ describe('Data Warehouse Export', () => {
     });
 
     // Verify
-    const db = new duckdb.Database(':memory:');
-    const allAsync = (query: string): Promise<any[]> => {
-      return new Promise((resolve, reject) => {
-        db.all(query, (err, res) => (err ? reject(err) : resolve(res)));
-      });
-    };
+    const instance = await DuckDBInstance.create(':memory:');
+    const connection = await instance.connect();
 
-    const res1 = await allAsync(`
+    const res1 = (
+      await connection.runAndReadAll(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
-    `);
+    `)
+    ).getRowObjectsJson() as { id: string }[];
 
     expect(res1.length).toBe(2);
     expect(res1[0].id).toBe('00000000-0000-0000-0000-000000000001');
@@ -95,9 +94,11 @@ describe('Data Warehouse Export', () => {
       localPath: tempDir,
     });
 
-    const res2 = await allAsync(`
+    const res2 = (
+      await connection.runAndReadAll(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
-    `);
+    `)
+    ).getRowObjectsJson();
     expect(res2.length).toBe(2);
 
     // 3. Incremental next window: 10:20 to 10:40 (Should add 1 row)
@@ -110,11 +111,13 @@ describe('Data Warehouse Export', () => {
       localPath: tempDir,
     });
 
-    const res3 = await allAsync(`
+    const res3 = (
+      await connection.runAndReadAll(`
       SELECT * FROM read_parquet('${tempDir}/audit_events/*.parquet') ORDER BY last_updated;
-    `);
+    `)
+    ).getRowObjectsJson();
     expect(res3.length).toBe(3);
 
-    db.close();
+    connection.closeSync();
   }, 10000);
 });
