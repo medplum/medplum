@@ -2025,7 +2025,7 @@ describe('Subscription Worker', () => {
       loginId: string,
       membershipId: string
     ): Promise<string> {
-      /* @ts-expect-error We access context directly in these tests to get what what normally be populated in the async storage authenticated context */
+      /* @ts-expect-error We access context directly in these tests to get what would normally be populated in the async storage authenticated context */
       const ctx = repo.context as unknown as RepositoryContext;
       const authorRef = ctx.author.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
