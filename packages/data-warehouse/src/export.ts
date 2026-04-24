@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import fs from 'node:fs';
 import { DuckDBInstance } from '@duckdb/node-api';
+import fs from 'node:fs';
 
 export interface ExportOptions {
   databaseUrl: string;

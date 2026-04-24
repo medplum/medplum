@@ -27,7 +27,10 @@ export async function main(args: string[]): Promise<void> {
     .option('-s, --s3-bucket <bucket>', 'S3 Bucket name', process.env.S3_BUCKET)
     .option('-r, --s3-region <region>', 'S3 Region', process.env.AWS_REGION || 'us-east-1')
     .option('-a, --aws-s3-table-arn <arn>', 'AWS S3 Table ARN (optional)', process.env.AWS_S3_TABLE_ARN)
-    .option('-l, --local-path <path>', 'Write Parquet files to local directory instead of S3 (no AWS credentials needed)')
+    .option(
+      '-l, --local-path <path>',
+      'Write Parquet files to local directory instead of S3 (no AWS credentials needed)'
+    )
     .option('--start-window <start>', 'Start window timestamp (ISO 8601)')
     .option('--end-window <end>', 'End window timestamp (ISO 8601)')
     .action(async (options) => {
