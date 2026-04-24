@@ -18,7 +18,7 @@ import { getServerVersion } from '../util/version';
  * @param projectId - The ID of the project to search in.
  * @param profile - The profile to find a project membership for.
  * @throws An error whenever there are multiple project memberships for the given user.
- * @returns A promise that resolves to a `ProjectMembership` or `undefined` if not `ProjectMembership` found.
+ * @returns A promise that resolves to a `ProjectMembership` or `undefined` if no `ProjectMembership` found.
  */
 export function findProjectMembership(
   projectId: string,
