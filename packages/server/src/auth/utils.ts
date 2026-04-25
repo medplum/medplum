@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+  resolveId,
+} from '@medplum/core';
 import type {
   ContactPoint,
   Login,
@@ -123,9 +130,19 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
+
+  const uniqueRefs = [...new Map(memberships.map((m) => [m.project.reference, m.project])).values()];
+  const projects = await systemRepo.readReferences<Project>(uniqueRefs);
+  const freshProjectMap = new Map<string, Reference<Project>>();
+  for (const project of projects) {
+    if (!(project instanceof Error)) {
+      freshProjectMap.set(getReferenceString(project), createReference(project));
+    }
+  }
+
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
-    project: m.project,
+    project: freshProjectMap.get(m.project.reference as string) ?? m.project,
     profile: m.profile,
     identifier: m.identifier,
   }));
