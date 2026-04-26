@@ -280,6 +280,16 @@ function applyProjectAdminAccessPolicy(
     // If the user is a project admin,
     // then grant limited access to the project admin resource types
     accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+
+    // Project admins can read all projects that they have access to
+    accessPolicy.resource.push({
+      resourceType: 'Project',
+      readonlyFields: ['features', 'link', 'systemSetting'],
+      hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
+      interaction: ['read', 'vread', 'history', 'search'],
+    });
+
+    // But they can only edit their own project
     accessPolicy.resource.push({
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
@@ -305,12 +315,12 @@ function applyProjectAdminAccessPolicy(
       },
       {
         resourceType: 'UserSecurityRequest',
-        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
+        criteria: `UserSecurityRequest?_project=${resolveId(membership.project)}`,
         readonly: true,
       },
       {
         resourceType: 'User',
-        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
+        criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
       },

@@ -52,6 +52,7 @@ import {
   parseReference,
   parseSearchRequest,
   preconditionFailed,
+  projectAdminResourceTypes,
   PropertyType,
   protectedResourceTypes,
   readInteractions,
@@ -1718,9 +1719,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const expressions: Expression[] = [];
 
+    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType as ResourceType);
+
     for (const policy of accessPolicy.resource) {
       if (
-        (policy.resourceType === resourceType || policy.resourceType === '*') &&
+        (policy.resourceType === resourceType || (policy.resourceType === '*' && !isProjectAdminResource)) &&
         (!policy.interaction || policy.interaction.includes(interaction))
       ) {
         const policyCompartmentId = resolveId(policy.compartment);
@@ -1916,6 +1919,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
       searchParam.code === '_deleted' ||
+      searchParam.code === '_project' ||
       searchParam.type === 'composite'
     ) {
       return;
