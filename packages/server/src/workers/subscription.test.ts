@@ -1694,7 +1694,7 @@ describe('Subscription Worker', () => {
       // This should trigger an error when the subscription is executed
       const accessPolicy = await repo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient', readonly: false }],
+        resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
       });
 
       const { repo: apTestRepo } = await createTestProject({
@@ -1764,7 +1764,7 @@ describe('Subscription Worker', () => {
       // This should trigger an error when the subscription is executed
       const accessPolicy = await repo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+        resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
       });
 
       const { repo: apTestRepo } = await createTestProject({
@@ -2214,7 +2214,7 @@ describe('Subscription Worker', () => {
         // This should trigger an error when the subscription is executed
         const accessPolicy = await repo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
         // Create an access policy in different project
@@ -2274,7 +2274,10 @@ describe('Subscription Worker', () => {
         // An access policy that restricts Patient to a specific ID that will never match our patient.
         const accessPolicy = await repo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+          resource: [
+            { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
+            { resourceType: 'Subscription' },
+          ],
         });
 
         // Create a project whose membership carries the denying access policy.
@@ -2316,8 +2319,9 @@ describe('Subscription Worker', () => {
         // any spurious WebSocket publish is caught immediately.
         const assertPromise = assertNoWsNotifications();
 
-        const patient = await testRepo.createResource<Patient>({
+        const patient = await superAdminRepo.createResource<Patient>({
           resourceType: 'Patient',
+          meta: { project: testProject.id },
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
@@ -2338,7 +2342,7 @@ describe('Subscription Worker', () => {
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
         const {
@@ -2402,7 +2406,7 @@ describe('Subscription Worker', () => {
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
         const {

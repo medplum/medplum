@@ -1677,7 +1677,7 @@ describe('FHIR Repo', () => {
 
   test('Super admin can edit User.meta.project', async () =>
     withTestContext(async () => {
-      const { project, repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       // Create a user in the project
       const user1 = await repo.createResource<User>({
@@ -1813,6 +1813,7 @@ describe('FHIR Repo', () => {
         withRepo: true,
         withAccessToken: true,
         withClient: true,
+        extendedMode: false,
       });
       const extendedRepo = await getRepoForLogin(
         { login, project, membership, userConfig: {} as UserConfiguration },

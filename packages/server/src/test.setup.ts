@@ -47,6 +47,7 @@ export interface TestProjectOptions {
   withClient?: boolean;
   withAccessToken?: boolean;
   withRepo?: boolean;
+  extendedMode?: boolean;
 }
 
 type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
@@ -150,7 +151,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 
       if (options?.withRepo) {
         const userConfig = { resourceType: 'UserConfiguration' } as const;
-        repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+        repo = await getRepoForLogin({ login, project, membership, userConfig }, options?.extendedMode ?? true);
       }
     }
   }
