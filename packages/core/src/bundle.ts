@@ -66,10 +66,14 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
 }
 
 function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if (key === 'reference' && typeof value === 'string') {
+  if ((key === 'reference' || key === 'url') && typeof value === 'string') {
     let id;
+    if (key === 'url' && !value.startsWith('Binary/')) {
+      return value;
+    }
     if (value.includes('/')) {
-      id = value.split('/')[1];
+      const parts = value.split('/');
+      id = parts[parts.length - 1];
     } else if (value.startsWith('urn:uuid:')) {
       id = value.slice(9);
     } else if (value.startsWith('#')) {

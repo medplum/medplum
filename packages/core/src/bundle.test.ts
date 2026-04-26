@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Binary,
   Bundle,
   BundleEntry,
   DiagnosticReport,
@@ -232,6 +233,48 @@ describe('Bundle tests', () => {
           },
         ],
       });
+    });
+
+    test('Rewrite Attachment.url references to Binary resources in the same bundle', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Binary/file-123',
+            resource: {
+              resourceType: 'Binary',
+              id: 'file-123',
+              contentType: 'text/plain',
+              data: 'aGVsbG8=',
+            } satisfies Binary,
+          },
+          {
+            fullUrl: 'https://example.com/DocumentReference/doc-123',
+            resource: {
+              resourceType: 'DocumentReference',
+              id: 'doc-123',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'text/plain',
+                    url: 'Binary/file-123',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      const binaryEntry = result.entry?.find((entry) => entry.resource?.resourceType === 'Binary');
+      const documentReference = result.entry?.find((entry) => entry.resource?.resourceType === 'DocumentReference')
+        ?.resource as any;
+
+      expect(binaryEntry?.fullUrl).toMatch(/^urn:uuid:/);
+      expect(documentReference?.content?.[0]?.attachment?.url).toBe(binaryEntry?.fullUrl);
     });
 
     test('Remove empty resource.meta', () => {
