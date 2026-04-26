@@ -1666,10 +1666,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private getPermittedProjectIds(resourceType: string): string[] | undefined {
     if (!this.context.projects?.length) {
+      // The repository is system-level, so all projects are permitted.
       return undefined;
     }
 
     const projectIds = [this.context.projects[0].id]; // Always include the first project
+
+    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType as ResourceType)) {
+      // If the resource type is a project admin resource, only include the current project (the first project)
+      return projectIds;
+    }
+
     for (let i = 1; i < this.context.projects.length; i++) {
       const project = this.context.projects[i];
       if (
