@@ -245,9 +245,88 @@ class ResourceValidator implements CrawlerVisitor {
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
         }
+
+        // Validate sub-elements against the matched slice's schema, not the base schema.
+        // Without this, required sub-elements from other slices are incorrectly enforced.
+        // See: https://github.com/medplum/medplum/issues/8677
+        if (sliceName && element.slicing) {
+          const matchedSlice = element.slicing.slices.find((s) => s.name === sliceName);
+          if (matchedSlice && Object.keys(matchedSlice.elements).length > 0) {
+            this.validateSliceSubElements(value, matchedSlice, path);
+          }
+        }
       }
 
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
+    }
+  }
+
+  /**
+   * Validates a matched slice value's sub-elements against the slice-specific schema.
+   * This ensures that required sub-elements from other slices are not incorrectly enforced.
+   * For example, if a Patient.identifier is matched to the "nationalid" slice, only
+   * nationalid's sub-element constraints are checked, not passport's.
+   * @param value - The typed value that matched the slice.
+   * @param slice - The slice definition whose sub-element constraints should be applied.
+   * @param parentPath - The FHIR element path of the matched value, used as the prefix for issue paths.
+   */
+  private validateSliceSubElements(
+    value: TypedValueWithPath,
+    slice: SliceDefinition,
+    parentPath: string
+  ): void {
+    if (!value.value || typeof value.value !== 'object') {
+      return;
+    }
+
+    for (const [key, sliceElement] of Object.entries(slice.elements)) {
+      // Slice elements with dotted paths (e.g., 'value[x].value') describe constraints
+      // on grandchildren and require hierarchical context (such as dataAbsentReason
+      // alternatives) to evaluate correctly. Defer those to other validation passes
+      // and only enforce direct sub-element constraints here.
+      if (key.includes('.')) {
+        continue;
+      }
+
+      // getNestedProperty returns a length-1 outer array containing undefined for
+      // missing properties or a TypedValue array for repeating fields. Drop missing
+      // entries and unwrap arrays so cardinality reflects the real count.
+      const childValues: TypedValue[] = [];
+      for (const v of getNestedProperty(value, key)) {
+        if (v === undefined) {
+          continue;
+        }
+        if (Array.isArray(v)) {
+          childValues.push(...v);
+        } else {
+          childValues.push(v);
+        }
+      }
+      const childCount = childValues.length;
+
+      if (childCount < sliceElement.min || childCount > sliceElement.max) {
+        this.issues.push(
+          createStructureIssue(
+            `${parentPath}.${key}`,
+            `Invalid number of values: expected ${sliceElement.min}..${
+              Number.isFinite(sliceElement.max) ? sliceElement.max : '*'
+            }, but found ${childCount}`
+          )
+        );
+      }
+
+      if (sliceElement.slicing && childCount > 0) {
+        const subSliceCounts: Record<string, number> = Object.fromEntries(
+          sliceElement.slicing.slices.map((s) => [s.name, 0])
+        );
+        for (const childValue of childValues) {
+          const subSliceName = checkSliceElement(childValue, sliceElement.slicing);
+          if (subSliceName) {
+            subSliceCounts[subSliceName] += 1;
+          }
+        }
+        this.validateSlices(sliceElement.slicing.slices, subSliceCounts, parentPath);
+      }
     }
   }
 
