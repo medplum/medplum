@@ -64,6 +64,7 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
 }
 
 async function startWebServer(medplum: MedplumClient): Promise<void> {
+  let authComplete = false;
   const server = createServer(async (req, res) => {
     const url = new URL(req.url as string, 'http://localhost:9615');
     const code = url.searchParams.get('code');
@@ -84,12 +85,17 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
         res.writeHead(400, { 'Content-Type': ContentType.TEXT });
         res.end(`Error: ${normalizeErrorString(err)}`);
       } finally {
+        authComplete = true;
         server.close();
         process.exit(0);
       }
     } else {
       res.writeHead(404, { 'Content-Type': ContentType.TEXT });
       res.end('Not found');
+      if (authComplete) {
+        server.close();
+        process.exit(0);
+      }
     }
   }).listen(9615);
 }
