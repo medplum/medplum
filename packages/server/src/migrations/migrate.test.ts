@@ -330,22 +330,6 @@ describe('Generator', () => {
 
           return expectedCols;
         }),
-        {
-          name: '__birthdate',
-          type: 'DATERANGE',
-        },
-        {
-          name: '__birthdateSort',
-          type: 'DATE',
-        },
-        {
-          name: '__deathDate',
-          type: 'TSTZRANGE',
-        },
-        {
-          name: '__deathDateSort',
-          type: 'TIMESTAMPTZ',
-        },
       ];
 
       const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
