@@ -38,7 +38,6 @@ import {
   gone,
   isGone,
   isNotFound,
-  isObject,
   isOk,
   isResource,
   isResourceType,
@@ -53,7 +52,6 @@ import {
   parseSearchRequest,
   preconditionFailed,
   projectAdminResourceTypes,
-  PropertyType,
   protectedResourceTypes,
   readInteractions,
   resolveId,
@@ -142,6 +140,7 @@ import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
+import { removeField } from './repository/field-utils';
 import type { StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { ResourceCap } from './resource-cap';
@@ -2387,7 +2386,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   removeHiddenFields<T extends Resource>(input: T): T {
     const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
     for (const field of policy?.hiddenFields ?? EMPTY) {
-      this.removeField(input, field);
+      removeField(input, field);
     }
     if (!this.context.extendedMode && input.meta) {
       const meta = input.meta;
@@ -2424,7 +2423,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       fieldsToRestore.push(...policy.hiddenFields);
     }
     for (const field of fieldsToRestore) {
-      this.removeField(input, field);
+      removeField(input, field);
       // only top-level fields can be restored.
       // choice-of-type fields technically aren't allowed in readonlyFields/hiddenFields,
       // but that isn't currently enforced at write time, so exclude them here
@@ -2436,43 +2435,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
     return input;
-  }
-
-  /**
-   * Removes a field from the input resource; supports nested fields.
-   * @param input - The input resource.
-   * @param path - The path to the field to remove
-   */
-  private removeField<T extends Resource>(input: T, path: string): void {
-    let last: any[] = [input];
-    const pathParts = path.split('.');
-    for (let i = 0; i < pathParts.length; i++) {
-      const pathPart = pathParts[i];
-
-      if (i === pathParts.length - 1) {
-        // final key part
-        for (const item of last) {
-          for (const key of resolveFieldName(item, pathPart)) {
-            delete item[key];
-          }
-        }
-      } else {
-        // intermediate key part
-        const next: any[] = [];
-        for (const lastItem of last) {
-          for (const key of resolveFieldName(lastItem, pathPart)) {
-            if (lastItem[key] !== undefined) {
-              if (Array.isArray(lastItem[key])) {
-                next.push(...lastItem[key]);
-              } else if (isObject(lastItem[key])) {
-                next.push(lastItem[key]);
-              }
-            }
-          }
-        }
-        last = next;
-      }
-    }
   }
 
   isSuperAdmin(): boolean {
@@ -2895,35 +2857,6 @@ export async function getProjectSystemRepo(
   // a SystemRepository for that shard.
   // But for now, all projects are on the global shard.
   return getGlobalSystemRepo();
-}
-
-function lowercaseFirstLetter(str: string): string {
-  return str.charAt(0).toLowerCase() + str.slice(1);
-}
-
-function resolveFieldName(input: any, fieldName: string): string[] {
-  if (!fieldName.endsWith('[x]')) {
-    return [fieldName];
-  }
-
-  const baseKey = fieldName.slice(0, -3);
-  return Object.keys(input).filter((k) => {
-    if (k.startsWith(baseKey)) {
-      const maybePropertyType = k.substring(baseKey.length);
-      if (maybePropertyType in PropertyType || lowercaseFirstLetter(maybePropertyType) in PropertyType) {
-        return true;
-      }
-    }
-    return false;
-  });
-}
-
-export function setTypedPropertyValue(target: TypedValue, path: string, replacement: TypedValue): void {
-  let patchPath = '/' + path.replaceAll(/\[|\]\.|\./g, '/');
-  if (patchPath.endsWith(']')) {
-    patchPath = patchPath.slice(0, -1);
-  }
-  patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
 }
 
 function getArrayPaddingConfig(

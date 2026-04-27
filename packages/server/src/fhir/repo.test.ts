@@ -16,7 +16,6 @@ import {
   Operator,
   parseSearchRequest,
   preconditionFailed,
-  toTypedValue,
 } from '@medplum/core';
 import type {
   Binary,
@@ -58,14 +57,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import type { ColumnValue } from './repo';
-import {
-  compareColumnValues,
-  getGlobalSystemRepo,
-  getProjectSystemRepo,
-  getShardSystemRepo,
-  Repository,
-  setTypedPropertyValue,
-} from './repo';
+import { compareColumnValues, getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { RepositoryConnection } from './repository/repository-connection';
 import { PostgresError, SelectQuery } from './sql';
 
@@ -1821,24 +1813,6 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
-  test('setTypedValue', () => {
-    const patient: Patient = {
-      resourceType: 'Patient',
-      photo: [
-        {
-          contentType: 'image/png',
-          url: 'https://example.com/photo.png',
-        },
-        {
-          contentType: 'image/png',
-          data: 'base64data',
-        },
-      ],
-    };
-
-    setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
-    expect(patient.photo?.[1].contentType).toStrictEqual('image/jpeg');
-  });
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
     const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
