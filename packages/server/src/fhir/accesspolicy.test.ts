@@ -3086,7 +3086,6 @@ describe('AccessPolicy', () => {
       expect(usersB[0].id).toStrictEqual(userB.id);
 
       const membershipsB = await repoB.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
-      console.log(JSON.stringify(membershipsB, null, 2));
       expect(membershipsB).toHaveLength(1);
     }));
 });
