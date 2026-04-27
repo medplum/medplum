@@ -145,6 +145,51 @@ function exactlyZero(arr: unknown[], attribute: string, resourceType: string): v
   }
 }
 
+function allMatch<T>(values: T[]): boolean {
+  const first = values[0];
+  return values.every((value) => value === first);
+}
+
+export function chooseSchedulingParameterGroup(
+  schedules: Schedule[],
+  healthcareService: WithId<HealthcareService>
+): Map<Schedule, SchedulingParameters | undefined> {
+  const serviceParams = parseSchedulingParametersExtensions(healthcareService).at(0);
+  const result = new Map<Schedule, SchedulingParameters | undefined>();
+
+  for (const schedule of schedules) {
+    const params = parseSchedulingParametersExtensions(schedule).find((parameters) =>
+      isReferenceTo(parameters.service, healthcareService)
+    );
+
+    // prefer schedule-specific overrides matching the requested service type,
+    // fall back to service-defined parameters otherwise.
+    result.set(schedule, params ?? serviceParams);
+  }
+
+  return result;
+}
+
+export function extractCommonParameters(
+  schedulingParameters: SchedulingParameters[]
+): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset'> {
+  if (!allMatch(schedulingParameters.map((x) => x.duration))) {
+    throw new Error('Scheduling parameters `duration` does not match');
+  }
+  if (!allMatch(schedulingParameters.map((x) => x.alignmentInterval))) {
+    throw new Error('Scheduling parameters `alignmentInterval` does not match');
+  }
+  if (!allMatch(schedulingParameters.map((x) => x.alignmentOffset))) {
+    throw new Error('Scheduling parameters `alignmentOffset` does not match');
+  }
+
+  return {
+    duration: schedulingParameters[0].duration,
+    alignmentInterval: schedulingParameters[0].alignmentInterval,
+    alignmentOffset: schedulingParameters[0].alignmentOffset,
+  };
+}
+
 /**
  * Given a Schedule and a HealthcareService, return the SchedulingParameters to
  * use.

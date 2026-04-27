@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { flatMapMax } from '../../../util/array';
 import type { Interval } from '../../../util/date';
-import { addMinutes } from '../../../util/date';
-import type { SchedulingParameters } from './scheduling-parameters';
+import { addMinutes, clamp } from '../../../util/date';
+import { normalizeIntervals, pairWithOverlaps } from './scheduling';
 
 // Given a date that could have a seconds / milliseconds component, return
 // the input date if it does not have any, and the start of the next minute
@@ -74,38 +73,19 @@ export function findAlignedSlotTimes(
 }
 
 /**
- * Given scheduling parameters and availability information, compute the slot
- * times within those availability windows, accounting for things like buffer
- * time and alignment requirements.
- *
- * @param schedulingParameters - The SchedulingParameters definition to use
- * @param availability - An array of intervals to consider
- * @param options - Optional parameters
- * @param options.maxCount - A maximum count of slots to return
- * @returns An array of slot intervals
+ * @param left - A normalized interval list
+ * @param right - A normalized interval list
+ * @returns A normalized interval list of intervals covered by both input lists
  */
-export function findSlotTimes(
-  schedulingParameters: SchedulingParameters,
-  availability: Interval[],
-  options?: { maxCount?: number }
-): Interval[] {
-  const alignmentOptions = {
-    // Search for slots that are large enough to include the duration with any
-    // buffer before/after included.
-    durationMinutes:
-      schedulingParameters.duration + schedulingParameters.bufferBefore + schedulingParameters.bufferAfter,
-    alignment: schedulingParameters.alignmentInterval,
-    // Shift our search alignment by any `bufferBefore`; Example: if we are
-    // trying to find a slot at :30 with a 10 minute bufferBefore free, we need
-    // to find slots starting at :20 (with the buffer included in the duration)
-    offsetMinutes: schedulingParameters.alignmentOffset - schedulingParameters.bufferBefore,
-  };
-  return flatMapMax(
-    availability,
-    (interval, _idx, count) => findAlignedSlotTimes(interval, { ...alignmentOptions, maxCount: count }),
-    options?.maxCount ?? Infinity
-  ).map((interval) => ({
-    start: addMinutes(interval.start, schedulingParameters.bufferBefore),
-    end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
-  }));
+export function overlappingIntervals(left: Interval[], right: Interval[]): Interval[] {
+  const result: Interval[] = [];
+  for (const [interval, overlaps] of pairWithOverlaps(left, right)) {
+    for (const overlap of overlaps) {
+      result.push({
+        start: clamp(interval.start, overlap),
+        end: clamp(interval.end, overlap),
+      });
+    }
+  }
+  return normalizeIntervals(result);
 }

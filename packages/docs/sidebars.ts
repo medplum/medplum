@@ -63,7 +63,7 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'doc', id: 'scheduling/defining-availability' },
         { type: 'doc', id: 'scheduling/state-by-state-licensure' },
-        { type: 'doc', id: 'scheduling/schedule-find' },
+        { type: 'doc', id: 'scheduling/appointment-find' },
         { type: 'doc', id: 'scheduling/appointment-book' },
         { type: 'doc', id: 'scheduling/timezones' },
       ],
