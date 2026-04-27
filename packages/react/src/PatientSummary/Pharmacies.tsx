@@ -92,7 +92,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
           })
         );
         if (!cancelled) {
-          const validResults = results.filter((result): result is PharmacyWithPrimary => result !== null);
+          const validResults = results.filter((result): result is NonNullable<typeof result> => result !== null);
           setResolvedPharmacies(validResults);
           // If all references failed to resolve, show error state
           // If some resolved successfully, show loaded state with partial results
