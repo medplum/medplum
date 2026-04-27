@@ -781,6 +781,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Appointment-date",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Appointment-date",
+        "url": "https://medplum.com/fhir/SearchParameter/Appointment-date",
+        "version": "4.0.1",
+        "name": "date",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Appointment date/time",
+        "code": "date",
+        "base": ["Appointment"],
+        "type": "date",
+        "expression": "Appointment.start",
+        "target": ["Appointment"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Slot-end",
       "resource": {
         "resourceType": "SearchParameter",
