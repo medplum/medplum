@@ -1175,8 +1175,8 @@ class CcdaToFhirConverter {
 
     for (const entryRelationship of observation.entryRelationship ?? EMPTY) {
       target.push({
-        measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-        detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+        measure: this.mapCode(entryRelationship.act?.[0]?.code),
+        detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code),
         dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
       });
     }

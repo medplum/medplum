@@ -4,7 +4,6 @@
 import { createReference } from '@medplum/core';
 import type {
   Bundle,
-  Composition,
   CompositionSection,
   Condition,
   Observation,
@@ -44,7 +43,7 @@ describe('Condition Entry Functions', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };

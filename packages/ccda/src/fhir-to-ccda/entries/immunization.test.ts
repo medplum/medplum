@@ -4,7 +4,6 @@
 import { createReference } from '@medplum/core';
 import type {
   Bundle,
-  Composition,
   Immunization,
   Organization,
   Patient,
@@ -44,7 +43,7 @@ describe('immunization entry functions', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };
