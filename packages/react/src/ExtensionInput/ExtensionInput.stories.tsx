@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Extension } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -17,7 +16,7 @@ export const Basic = (): JSX.Element => (
     <ExtensionInput
       name="interpreterRequired"
       defaultValue={
-        { url: 'http://hl7.org/fhir/StructureDefinition/patient-interpreterRequired', valueBoolean: true } as Extension
+        { url: 'http://hl7.org/fhir/StructureDefinition/patient-interpreterRequired', valueBoolean: true }
       }
       path="Patient.interpreterRequired"
       onChange={undefined}

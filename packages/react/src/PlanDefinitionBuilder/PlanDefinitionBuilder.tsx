@@ -210,7 +210,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
     props.onChange({
       ...action,
       [property]: value,
-    } as PlanDefinitionAction);
+    });
   }
 
   const className = cx(classes.section, {
@@ -393,7 +393,7 @@ function ensurePlanDefinitionKeys(planDefinition: PlanDefinition): PlanDefinitio
   return {
     ...planDefinition,
     action: ensurePlanDefinitionActionKeys(planDefinition.action),
-  } as PlanDefinition;
+  };
 }
 
 function ensurePlanDefinitionActionKeys(

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { Range } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -26,7 +25,7 @@ export const Basic = (): JSX.Element => (
             value: 10,
             unit: 'mg',
           },
-        } as Range
+        }
       }
     />
   </Document>
@@ -45,7 +44,7 @@ export const Disabled = (): JSX.Element => (
             value: 10,
             unit: 'mg',
           },
-        } as Range
+        }
       }
     />
   </Document>
@@ -79,7 +78,7 @@ export const PartiallyDisabled = (): JSX.Element => {
               value: 10,
               unit: 'mg',
             },
-          } as Range
+          }
         }
       />
     </Document>

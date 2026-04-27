@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { ContactDetail } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -27,7 +26,7 @@ export const Basic = (): JSX.Element => (
               value: 'abc@example.com',
             },
           ],
-        } as ContactDetail
+        }
       }
       onChange={console.log}
       name="contact"
@@ -51,7 +50,7 @@ export const Disabled = (): JSX.Element => (
               value: 'abc@example.com',
             },
           ],
-        } as ContactDetail
+        }
       }
       onChange={console.log}
       name="contact"
@@ -90,7 +89,7 @@ export const PartiallyDisabled = (): JSX.Element => {
                 value: 'abc@example.com',
               },
             ],
-          } as ContactDetail
+          }
         }
         onChange={console.log}
         name="contact"

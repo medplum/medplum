@@ -111,7 +111,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            newItems.push(entry.resource as Resource);
+            newItems.push(entry.resource);
           }
         }
       }

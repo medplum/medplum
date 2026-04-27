@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { formatHumanName, resolveId } from '@medplum/core';
-import type { HumanName, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, usePatientSummaryData, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -60,9 +60,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         <Group align="center" gap="sm" p={16}>
           <ResourceAvatar value={patient} size={48} radius={48} style={{ border: '2px solid white' }} />
           <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-            <Tooltip label={formatHumanName(patient.name?.[0] as HumanName)} position="top-start" openDelay={650}>
+            <Tooltip label={formatHumanName(patient.name?.[0])} position="top-start" openDelay={650}>
               <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
-                {formatHumanName(patient.name?.[0] as HumanName)}
+                {formatHumanName(patient.name?.[0])}
               </Text>
             </Tooltip>
             {(() => {

@@ -13,7 +13,7 @@ import {
 } from '@mantine/core';
 import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
-import type { HumanName, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
 import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch, IconX } from '@tabler/icons-react';
 import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
@@ -224,7 +224,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 >
                   <ResourceAvatar value={profile} radius="xl" size={24} />
                   <span className={classes.linkLabel} data-opened={opened || undefined}>
-                    {formatHumanName(profile?.name?.[0] as HumanName)}
+                    {formatHumanName(profile?.name?.[0])}
                   </span>
                 </UnstyledButton>
               </Menu.Target>

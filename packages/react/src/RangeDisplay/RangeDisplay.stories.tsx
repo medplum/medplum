@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Range } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -24,7 +23,7 @@ export const Basic = (): JSX.Element => (
             value: 11.2,
             unit: 'mg',
           },
-        } as Range
+        }
       }
     />
   </Document>
@@ -39,7 +38,7 @@ export const HighOnly = (): JSX.Element => (
             value: 11.2,
             unit: 'mg',
           },
-        } as Range
+        }
       }
     />
   </Document>
@@ -54,7 +53,7 @@ export const LowOnly = (): JSX.Element => (
             value: 10,
             unit: 'mg',
           },
-        } as Range
+        }
       }
     />
   </Document>

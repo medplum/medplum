@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Ratio } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -18,7 +17,7 @@ export const Basic = (): JSX.Element => (
         {
           numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
           denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
-        } as Ratio
+        }
       }
     />
   </Document>

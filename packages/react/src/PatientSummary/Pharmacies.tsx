@@ -61,7 +61,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
       if (props.pharmacies) {
         // If pharmacies were provided as props, use them directly
         if (!cancelled) {
-          setResolvedPharmacies(props.pharmacies as PharmacyWithPrimary[]);
+          setResolvedPharmacies(props.pharmacies);
           setLoadState('loaded');
         }
         return;
@@ -82,7 +82,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
           pharmacyRefs.map(async (pharmacyRef) => {
             try {
               const org = await medplum.readReference(pharmacyRef.organizationRef);
-              return { ...org, isPrimary: pharmacyRef.isPrimary } as PharmacyWithPrimary;
+              return { ...org, isPrimary: pharmacyRef.isPrimary };
             } catch (error) {
               if (!isNotFoundError(error)) {
                 // Error logged by Medplum error handler

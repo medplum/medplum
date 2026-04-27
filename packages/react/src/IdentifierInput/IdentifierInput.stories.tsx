@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { Identifier } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -23,7 +22,7 @@ export const Basic = (): JSX.Element => (
         {
           system: 'http://hl7.org/fhir/sid/us-ssn',
           value: '011-11-1234',
-        } as Identifier
+        }
       }
       onChange={console.log}
       outcome={undefined}
@@ -41,7 +40,7 @@ export const Disabled = (): JSX.Element => (
         {
           system: 'http://hl7.org/fhir/sid/us-ssn',
           value: '011-11-1234',
-        } as Identifier
+        }
       }
       onChange={console.log}
       outcome={undefined}
@@ -74,7 +73,7 @@ export const PartiallyDisabled = (): JSX.Element => {
           {
             system: 'http://hl7.org/fhir/sid/us-ssn',
             value: '011-11-1234',
-          } as Identifier
+          }
         }
         onChange={console.log}
         outcome={undefined}

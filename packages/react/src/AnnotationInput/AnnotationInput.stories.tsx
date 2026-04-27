@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { Annotation } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -20,7 +19,7 @@ export const Basic = (): JSX.Element => (
         {
           authorReference: createReference(DrAliceSmith),
           text: 'This is an annotation',
-        } as Annotation
+        }
       }
       onChange={console.log}
       name="annotation"
@@ -37,7 +36,7 @@ export const Disabled = (): JSX.Element => (
         {
           authorReference: createReference(DrAliceSmith),
           text: 'This is an annotation',
-        } as Annotation
+        }
       }
       onChange={console.log}
       name="annotation"

@@ -176,7 +176,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
             return Promise.resolve(item);
           }
           if (isReference(item)) {
-            return medplum.readReference(item as Reference<T>);
+            return medplum.readReference(item);
           }
           return Promise.reject(new Error('Not a resolvable item'));
         })

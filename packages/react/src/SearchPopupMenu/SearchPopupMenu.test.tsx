@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
-import type { Filter, SearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Operator, globalSchema } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -118,7 +118,7 @@ describe('SearchPopupMenu', () => {
         code: 'birthdate',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -283,7 +283,7 @@ describe('SearchPopupMenu', () => {
         code: 'value-quantity',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -401,7 +401,7 @@ describe('SearchPopupMenu', () => {
         code: 'organization',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -525,7 +525,7 @@ describe('SearchPopupMenu', () => {
         code: 'name',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -590,7 +590,7 @@ describe('SearchPopupMenu', () => {
         code: 'code',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -623,7 +623,7 @@ describe('SearchPopupMenu', () => {
         code: 'url',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
