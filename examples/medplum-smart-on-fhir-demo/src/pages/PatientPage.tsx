@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Badge, Container, Divider, Group, Loader, Paper, Stack, Table, Text, Title } from '@mantine/core';
 import { calculateAgeString, formatDate, formatHumanName } from '@medplum/core';
-import type { Bundle, Condition, HumanName, Observation, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Condition, Observation, Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconArrowLeft } from '@tabler/icons-react';
 import type { ChartData } from 'chart.js';
@@ -235,7 +235,7 @@ export function PatientPage(): JSX.Element {
   const bmiValue = latestBmi?.valueQuantity?.value;
   const bmiUnit = latestBmi?.valueQuantity?.unit ?? 'kg/m²';
 
-  const patientName = formatHumanName(patient.name?.[0] as HumanName);
+  const patientName = formatHumanName(patient.name?.[0]);
   const gender = patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : undefined;
 
   return (
