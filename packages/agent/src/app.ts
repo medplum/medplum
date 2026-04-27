@@ -912,12 +912,15 @@ export class App {
           () => reject(new Error('Timed out while waiting for message from child')),
           15000
         );
-        child.on('message', (msg: { type: string }) => {
+        child.on('message', (msg: { type: 'STARTED' } | { type: 'ERROR'; err: string }) => {
           clearTimeout(childTimeout);
+          if (!['STARTED', 'ERROR'].includes(msg.type)) {
+            reject(new Error(`Received unexpected message type ${msg.type}, expected 'STARTED' or 'ERROR'`));
+          }
           if (msg.type === 'STARTED') {
             resolve();
-          } else {
-            reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
+          } else if (msg.type === 'ERROR') {
+            reject(new Error(msg.err));
           }
         });
 
