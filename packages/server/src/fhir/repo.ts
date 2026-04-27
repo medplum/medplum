@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  BackgroundJobInteraction,
-  Filter,
-  SearchRequest,
-  TypedValueWithPath,
-  ValidatorOptions,
-  WithId,
-} from '@medplum/core';
+import type { BackgroundJobInteraction, Filter, SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
@@ -22,7 +15,6 @@ import {
   extractAccountReferences,
   forbidden,
   formatSearchQuery,
-  getReferenceString,
   getStatus,
   gone,
   isGone,
@@ -36,7 +28,6 @@ import {
   normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
-  Operator,
   parseReference,
   parseSearchRequest,
   preconditionFailed,
@@ -47,7 +38,6 @@ import {
   satisfiedAccessPolicy,
   sleep,
   stringify,
-  validateResource,
   validateResourceType,
 } from '@medplum/core';
 import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
@@ -58,17 +48,12 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
-  CodeableConcept,
-  Coding,
   Meta,
   OperationOutcome,
-  OperationOutcomeIssue,
   Project,
   Reference,
   Resource,
   ResourceType,
-  StructureDefinition,
-  ValueSet,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
@@ -109,16 +94,14 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import type { FhirRateLimiter } from './fhirquota';
-import { validateResourceWithJsonSchema } from './jsonschema';
 import { clamp } from './operations/utils/parameters';
-import { findTerminologyResource } from './operations/utils/terminology';
-import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
-import { cacheProfile, getCachedProfile, removeCachedProfile } from './repository/profile-cache';
+import { removeCachedProfile } from './repository/profile-cache';
 import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
+import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -842,7 +825,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resultMeta.compartment = this.getCompartments(result);
 
     // Validate resource after all modifications and touchups above are done
-    await this.validateResource(result);
+    await validateRepositoryResource(this, result);
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       const projectId = result.meta?.project;
@@ -968,191 +951,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
     }
-  }
-
-  /**
-   * Validates a resource against the current project configuration.
-   * If strict mode is enabled (default), validates against base StructureDefinition and all profiles.
-   * If strict mode is disabled, validates against the legacy JSONSchema validator.
-   * Throws on validation errors.
-   * Returns silently on success.
-   * @param resource - The candidate resource to validate.
-   */
-  async validateResource(resource: Resource): Promise<void> {
-    if (this.context.strictMode) {
-      await this.validateResourceStrictly(resource);
-    } else {
-      // Perform loose validation first to detect any severe issues
-      validateResourceWithJsonSchema(resource);
-
-      // Attempt strict validation and log warnings on failure
-      try {
-        await this.validateResourceStrictly(resource);
-      } catch (err: any) {
-        getLogger().warn('Strict validation would fail', {
-          resource: getReferenceString(resource),
-          err,
-        });
-      }
-    }
-  }
-
-  async validateResourceStrictly(resource: Resource): Promise<void> {
-    const logger = getLogger();
-    const start = process.hrtime.bigint();
-
-    // Prepare validator options
-    let options: ValidatorOptions | undefined;
-    if (this.context.validateTerminology) {
-      const tokens = Object.create(null);
-      options = { ...options, collect: { tokens } };
-    }
-
-    // Validate resource against base FHIR spec
-    const issues = validateResource(resource, { ...options, base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes });
-
-    for (const issue of issues) {
-      logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
-    }
-
-    // Validate profiles after verifying compliance with base spec
-    const profileUrls = resource.meta?.profile;
-    if (profileUrls) {
-      await this.validateProfiles(resource, profileUrls, options);
-    }
-
-    // (Optionally) check any required terminology bindings found
-    if (this.context.validateTerminology && options?.collect?.tokens) {
-      await this.validateTerminology(options.collect.tokens, issues);
-      if (issues.some((iss) => iss.severity === 'error')) {
-        throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
-      }
-    }
-
-    // Track latency for successful validation
-    const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
-    recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
-    if (durationMs > 10) {
-      logger.debug('High validator latency', {
-        resourceType: resource.resourceType,
-        id: resource.id,
-        durationMs,
-      });
-    }
-  }
-
-  private async validateProfiles(resource: Resource, profileUrls: string[], options?: ValidatorOptions): Promise<void> {
-    const logger = getLogger();
-    for (const url of profileUrls) {
-      const loadStart = process.hrtime.bigint();
-      const profile = await this.loadProfile(url);
-      const loadTime = Number(process.hrtime.bigint() - loadStart);
-      if (!profile) {
-        logger.warn('Unknown profile referenced', {
-          resource: `${resource.resourceType}/${resource.id}`,
-          url,
-        });
-        continue;
-      }
-
-      const validateStart = process.hrtime.bigint();
-      validateResource(resource, { ...options, profile });
-      const validateTime = Number(process.hrtime.bigint() - validateStart);
-      logger.debug('Profile loaded', {
-        url,
-        loadTime,
-        validateTime,
-      });
-    }
-  }
-
-  private async validateTerminology(
-    tokens: Record<string, TypedValueWithPath[]>,
-    issues: OperationOutcomeIssue[]
-  ): Promise<void> {
-    for (const [url, values] of Object.entries(tokens)) {
-      const valueSet = await findTerminologyResource<ValueSet>(this, 'ValueSet', url);
-
-      const resultCache: Record<string, boolean | undefined> = Object.create(null);
-      for (const value of values) {
-        let codings: Coding[] | undefined;
-        switch (value.type) {
-          case 'CodeableConcept':
-            codings = (value.value as CodeableConcept).coding;
-            break;
-          case 'Coding':
-            codings = [value.value as Coding];
-            break;
-          default: {
-            const cachedResult = resultCache[`${value.type}|${value.value}`];
-            if (cachedResult === false) {
-              issues.push({
-                severity: 'error',
-                code: 'value',
-                details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
-                expression: [value.path],
-              });
-            }
-            if (cachedResult !== undefined) {
-              continue;
-            }
-            codings = [{ code: value.value as string }];
-            break;
-          }
-        }
-        if (!codings?.length) {
-          continue;
-        }
-
-        const matchedCoding = await validateCodingInValueSet(this, valueSet, codings);
-        resultCache[`${value.type}|${value.value}`] = Boolean(matchedCoding);
-        if (!matchedCoding) {
-          issues.push({
-            severity: 'error',
-            code: 'value',
-            details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
-            expression: [value.path],
-          });
-        }
-      }
-    }
-  }
-
-  private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
-    if (this.context.projects?.length) {
-      // Try loading from cache, using all available Project IDs
-      const cachedProfile = await getCachedProfile(this.context.projects, url);
-      if (cachedProfile) {
-        return cachedProfile;
-      }
-    }
-
-    // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
-    const profile = await this.searchOne<StructureDefinition>({
-      resourceType: 'StructureDefinition',
-      filters: [
-        {
-          code: 'url',
-          operator: Operator.EQUALS,
-          value: url,
-        },
-      ],
-      sortRules: [
-        {
-          code: 'version',
-          descending: true,
-        },
-        {
-          code: 'date',
-          descending: true,
-        },
-      ],
-    });
-
-    if (this.context.projects?.length && profile) {
-      await cacheProfile(profile);
-    }
-    return profile;
   }
 
   /**
