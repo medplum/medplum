@@ -56,6 +56,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-features",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-features",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-features",
+        "version": "4.0.1",
+        "name": "features",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The features of the project",
+        "code": "features",
+        "base": ["Project"],
+        "type": "token",
+        "expression": "Project.features"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-google-client-id",
       "resource": {
         "resourceType": "SearchParameter",
