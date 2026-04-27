@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReleaseManifest } from '@medplum/core';
 import { fetchVersionManifest } from '@medplum/core';
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, unlinkSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type streamWeb from 'node:stream/web';
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
@@ -31,11 +32,13 @@ export async function downloadRelease(version: string, path: string): Promise<vo
   }
 
   const readable = Readable.fromWeb(result.body as streamWeb.ReadableStream);
-  const writeStream = readable.pipe(createWriteStream(path));
 
-  return new Promise<void>((resolve) => {
-    writeStream.once('close', resolve);
-  });
+  try {
+    await pipeline(readable, createWriteStream(path));
+  } catch (err) {
+    unlinkSync(path);
+    throw new Error(`Error while downloading release version ${version} to ${path}`, { cause: err });
+  }
 }
 
 export function parseDownloadUrl(release: ReleaseManifest, os: ReturnType<typeof platform>): string {
