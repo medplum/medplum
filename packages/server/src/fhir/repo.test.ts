@@ -1151,7 +1151,7 @@ describe('FHIR Repo', () => {
     let repo: Repository;
     let profile: StructureDefinition;
     beforeAll(async () => {
-      const result = await createTestProject({ withRepo: { validateTerminology: true } });
+      const result = await createTestProject({ withRepo: true, project: { features: ['validate-terminology'] } });
       repo = result.repo;
 
       // Create modified US Core Patient profile to have 'required' binding for communication.language
@@ -1677,7 +1677,7 @@ describe('FHIR Repo', () => {
 
   test('Super admin can edit User.meta.project', async () =>
     withTestContext(async () => {
-      const { project, repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       // Create a user in the project
       const user1 = await repo.createResource<User>({
@@ -1810,9 +1810,10 @@ describe('FHIR Repo', () => {
   test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
       const { project, repo, login, membership } = await createTestProject({
-        withRepo: { extendedMode: false },
+        withRepo: true,
         withAccessToken: true,
         withClient: true,
+        extendedMode: false,
       });
       const extendedRepo = await getRepoForLogin(
         { login, project, membership, userConfig: {} as UserConfiguration },
@@ -2127,6 +2128,79 @@ describe('FHIR Repo', () => {
       expect(orgs.length).toStrictEqual(2);
       expect(orgs.map((p) => p.id)).toContain(org.id);
       expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
+    }));
+
+  test('Project.exportedResourceType enforced on cached reads', () =>
+    withTestContext(async () => {
+      // Regression: a non-exported resource in a linked project should not be
+      // readable even when it is present in the Redis cache. Previously,
+      // canPerformInteraction only checked project-compartment membership and
+      // ignored the linked project's `exportedResourceType`, so the cache path
+      // bypassed the filter enforced by addProjectFilters in SQL.
+      const { project: linkedProject, repo: linkedRepo } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+        withRepo: true,
+      });
+
+      const regRequest: RegisterRequest = {
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      };
+
+      const regResult = await registerNew(regRequest);
+      let project = regResult.project;
+      project = await globalSystemRepo.updateResource({
+        ...project,
+        link: [{ project: createReference(linkedProject) }],
+      });
+
+      const repo = await getRepoForLogin({
+        project,
+        membership: regResult.membership,
+        login: regResult.login,
+        userConfig: {} as UserConfiguration,
+      });
+
+      // Creating via linkedRepo warms the Redis cache for this resource.
+      const linkedOrg = await linkedRepo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Linked Organization',
+      });
+      const linkedPatient = await linkedRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Linked'], family: 'Patient' }],
+        managingOrganization: createReference(linkedOrg),
+      });
+
+      // Exported type: should still be readable from the linked project.
+      const readOrg = await repo.readResource<Organization>('Organization', linkedOrg.id);
+      expect(readOrg.id).toStrictEqual(linkedOrg.id);
+
+      // Non-exported type: must not be readable even with a cache hit.
+      await expect(repo.readResource<Patient>('Patient', linkedPatient.id)).rejects.toThrow(
+        new OperationOutcomeError(notFound)
+      );
+    }));
+
+  test('Project.exportedResourceType allows resources in primary project', () =>
+    withTestContext(async () => {
+      // Sanity check: exportedResourceType on the *primary* project is not
+      // used to filter access to the owner's own resources.
+      const { repo } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+        withRepo: true,
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Primary'], family: 'Patient' }],
+      });
+
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id);
+      expect(readPatient.id).toStrictEqual(patient.id);
     }));
 
   test('Binary writes no search parameter columns', () =>

@@ -52,6 +52,7 @@ import {
   parseReference,
   parseSearchRequest,
   preconditionFailed,
+  projectAdminResourceTypes,
   PropertyType,
   protectedResourceTypes,
   readInteractions,
@@ -86,10 +87,10 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
-import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
@@ -135,14 +136,14 @@ import { findTerminologyResource } from './operations/utils/terminology';
 import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
+import { buildRangeColumns } from './range-column';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import type { ColumnSearchParameterImplementation } from './searchparameter';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { getSearchParameterImplementation, lookupTables, SearchStrategies } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
@@ -464,7 +465,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   generateId(): string {
-    return v4();
+    return randomUUID();
   }
 
   async readResource<T extends Resource>(
@@ -1659,24 +1660,45 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
+   * Returns the permitted project IDs the Repository is allowed to access for the given resource type.
+   * @param resourceType - The resource type.
+   * @returns The permitted project IDs or undefined if all projects are permitted
+   */
+  private getPermittedProjectIds(resourceType: string): string[] | undefined {
+    if (!this.context.projects?.length) {
+      // The repository is system-level, so all projects are permitted.
+      return undefined;
+    }
+
+    const projectIds = [this.context.projects[0].id]; // Always include the first project
+
+    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType as ResourceType)) {
+      // If the resource type is a project admin resource, only include the current project (the first project)
+      return projectIds;
+    }
+
+    for (let i = 1; i < this.context.projects.length; i++) {
+      const project = this.context.projects[i];
+      if (
+        resourceType === 'Project' || // When searching for projects, include all projects
+        project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
+        !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
+        project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
+      ) {
+        projectIds.push(project.id);
+      }
+    }
+    return projectIds;
+  }
+
+  /**
    * Adds the "project" filter to the select query.
    * @param builder - The select query builder.
    * @param resourceType - The resource type being searched.
    */
   private addProjectFilters(builder: SelectQuery, resourceType: string): void {
-    if (this.context.projects?.length) {
-      const projectIds = [this.context.projects[0].id]; // Always include the first project
-      for (let i = 1; i < this.context.projects.length; i++) {
-        const project = this.context.projects[i];
-        if (
-          resourceType === 'Project' || // When searching for projects, include all projects
-          project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
-          !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
-          project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
-        ) {
-          projectIds.push(project.id);
-        }
-      }
+    const projectIds = this.getPermittedProjectIds(resourceType);
+    if (projectIds) {
       builder.where('projectId', 'IN', projectIds);
     }
   }
@@ -1704,9 +1726,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const expressions: Expression[] = [];
 
+    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType as ResourceType);
+
     for (const policy of accessPolicy.resource) {
       if (
-        (policy.resourceType === resourceType || policy.resourceType === '*') &&
+        (policy.resourceType === resourceType || (policy.resourceType === '*' && !isProjectAdminResource)) &&
         (!policy.interaction || policy.interaction.includes(interaction))
       ) {
         const policyCompartmentId = resolveId(policy.compartment);
@@ -1902,6 +1926,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
       searchParam.code === '_deleted' ||
+      searchParam.code === '_project' ||
       searchParam.type === 'composite'
     ) {
       return;
@@ -1924,21 +1949,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
-    // Handle special case for "MeasureReport-period"
-    // This is a trial for using "tstzrange" columns for date/time ranges.
-    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
-    if (searchParam.id === 'MeasureReport-period') {
-      columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
-    }
-
     if (impl.searchStrategy === 'token-column') {
       buildTokenColumns(searchParam, impl, columns, resource, {
         paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
       });
       return;
     }
+    if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+      buildRangeColumns(searchParam, impl, columns, resource);
 
-    impl satisfies ColumnSearchParameterImplementation;
+      // Handle special case for "MeasureReport-period"
+      // This is a trial for using "tstzrange" columns for date/time ranges.
+      // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+      if (searchParam.id === 'MeasureReport-period') {
+        columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+      }
+      // TODO: return here once migration is complete
+    }
+
+    // TODO: Re-enable after migration
+    // impl satisfies ColumnSearchParameterImplementation;
     const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
     if (impl.array) {
       columnValues.sort(compareColumnValues);
@@ -1946,6 +1976,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     } else {
       columns[impl.columnName] = columnValues[0];
     }
+  }
+
+  supportsRangeSearch(): boolean {
+    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
   }
 
   /**
@@ -2259,7 +2293,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       // Non-Superusers can only access resources in their Project, with read-only access to linked Projects
       if (readInteractions.includes(interaction)) {
-        if (!this.context.projects?.some((p) => p.id === resource.meta?.project)) {
+        const resourceProjectId = resource.meta?.project;
+        if (!resourceProjectId) {
+          return undefined;
+        }
+
+        const permittedProjectIds = this.getPermittedProjectIds(resource.resourceType);
+        if (permittedProjectIds && !permittedProjectIds.includes(resourceProjectId)) {
           return undefined;
         }
       } else if (resource.meta?.project !== this.context.projects?.[0]?.id) {

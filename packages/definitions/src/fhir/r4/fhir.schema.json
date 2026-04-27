@@ -29392,6 +29392,13 @@
           "description": "The organization that provides this healthcare service.",
           "$ref": "#/definitions/Reference"
         },
+        "offeredIn": {
+          "description": "The service within which this service is offered",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
+        },
         "category": {
           "description": "Identifies the broad category of service being performed or delivered.",
           "items": {
@@ -61408,7 +61415,8 @@
               "graphql-introspection",
               "websocket-subscriptions",
               "transaction-bundles",
-              "validate-terminology"
+              "validate-terminology",
+              "range-search"
             ]
           },
           "type": "array"

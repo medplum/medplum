@@ -144,6 +144,7 @@ describe('FHIR Rate Limits', () => {
     await initApp(app, config);
 
     const { accessToken, repo, membership } = await createTestProject({
+      membership: { admin: true },
       withAccessToken: true,
       withRepo: true,
       withClient: true,
