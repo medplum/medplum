@@ -18,12 +18,10 @@ export const Basic = (): JSX.Element => (
     <RatioInput
       path=""
       name="dosage"
-      defaultValue={
-        {
-          numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
-          denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
-        }
-      }
+      defaultValue={{
+        numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
+        denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
+      }}
     />
   </Document>
 );
@@ -34,12 +32,10 @@ export const Disabled = (): JSX.Element => (
       disabled
       path=""
       name="dosage"
-      defaultValue={
-        {
-          numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
-          denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
-        }
-      }
+      defaultValue={{
+        numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
+        denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
+      }}
     />
   </Document>
 );
@@ -64,12 +60,10 @@ export const PartiallyDisabled = (): JSX.Element => {
       <RatioInput
         path="Medication.amount"
         name="dosage"
-        defaultValue={
-          {
-            numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
-            denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
-          }
-        }
+        defaultValue={{
+          numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
+          denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
+        }}
       />
     </Document>
   );

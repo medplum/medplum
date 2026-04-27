@@ -62,9 +62,7 @@ export function SecurityPage(): JSX.Element | null {
             <Anchor href={`/${getReferenceString(details.profile)}`}>{details.profile.id}</Anchor>
           </DescriptionListEntry>
           <DescriptionListEntry term="Resource Type">{details.profile.resourceType}</DescriptionListEntry>
-          <DescriptionListEntry term="Name">
-            {formatHumanName(details.profile.name?.[0])}
-          </DescriptionListEntry>
+          <DescriptionListEntry term="Name">{formatHumanName(details.profile.name?.[0])}</DescriptionListEntry>
         </DescriptionList>
       </Document>
       <Document>

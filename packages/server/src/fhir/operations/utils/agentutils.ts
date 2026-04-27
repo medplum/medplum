@@ -190,7 +190,7 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
       // Create a timer for 5 seconds for timeout
       const timer = setTimeout(() => {
         cleanup();
-         
+
         reject(new OperationOutcomeError(badRequest('Timeout')));
       }, options?.timeout ?? 5000);
 

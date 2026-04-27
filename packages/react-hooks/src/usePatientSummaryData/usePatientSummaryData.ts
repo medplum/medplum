@@ -194,7 +194,7 @@ export function usePatientSummaryData(
           const sectionResult: SectionResults = {};
           for (const { searchIdx, resultKey } of mapping) {
             const settled = settledResults[searchIdx];
-            sectionResult[resultKey] = settled.status === 'fulfilled' ? (settled.value) : [];
+            sectionResult[resultKey] = settled.status === 'fulfilled' ? settled.value : [];
           }
           return sectionResult;
         });

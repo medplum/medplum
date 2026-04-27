@@ -13,12 +13,10 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <RatioDisplay
-      value={
-        {
-          numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
-          denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
-        }
-      }
+      value={{
+        numerator: { value: 10, unit: 'mg', system: 'http://unitsofmeasure.org' },
+        denominator: { value: 1, unit: 'h', system: 'http://unitsofmeasure.org' },
+      }}
     />
   </Document>
 );

@@ -13,12 +13,10 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <IdentifierDisplay
-      value={
-        {
-          system: 'http://hl7.org/fhir/sid/us-ssn',
-          value: '011-11-1234',
-        }
-      }
+      value={{
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '011-11-1234',
+      }}
     />
   </Document>
 );

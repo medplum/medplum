@@ -15,12 +15,10 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <AnnotationInput
-      defaultValue={
-        {
-          authorReference: createReference(DrAliceSmith),
-          text: 'This is an annotation',
-        }
-      }
+      defaultValue={{
+        authorReference: createReference(DrAliceSmith),
+        text: 'This is an annotation',
+      }}
       onChange={console.log}
       name="annotation"
       path="Extension.value[x]"
@@ -32,12 +30,10 @@ export const Disabled = (): JSX.Element => (
   <Document>
     <AnnotationInput
       disabled={true}
-      defaultValue={
-        {
-          authorReference: createReference(DrAliceSmith),
-          text: 'This is an annotation',
-        }
-      }
+      defaultValue={{
+        authorReference: createReference(DrAliceSmith),
+        text: 'This is an annotation',
+      }}
       onChange={console.log}
       name="annotation"
       path="Extension.value[x]"

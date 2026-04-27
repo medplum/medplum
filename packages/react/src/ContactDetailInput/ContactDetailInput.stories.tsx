@@ -16,18 +16,16 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <ContactDetailInput
-      defaultValue={
-        {
-          name: 'Foo',
-          telecom: [
-            {
-              use: 'home',
-              system: 'email',
-              value: 'abc@example.com',
-            },
-          ],
-        }
-      }
+      defaultValue={{
+        name: 'Foo',
+        telecom: [
+          {
+            use: 'home',
+            system: 'email',
+            value: 'abc@example.com',
+          },
+        ],
+      }}
       onChange={console.log}
       name="contact"
       path="Patient.contact"
@@ -40,18 +38,16 @@ export const Disabled = (): JSX.Element => (
   <Document>
     <ContactDetailInput
       disabled
-      defaultValue={
-        {
-          name: 'Foo',
-          telecom: [
-            {
-              use: 'home',
-              system: 'email',
-              value: 'abc@example.com',
-            },
-          ],
-        }
-      }
+      defaultValue={{
+        name: 'Foo',
+        telecom: [
+          {
+            use: 'home',
+            system: 'email',
+            value: 'abc@example.com',
+          },
+        ],
+      }}
       onChange={console.log}
       name="contact"
       path="Patient.contact"
@@ -79,18 +75,16 @@ export const PartiallyDisabled = (): JSX.Element => {
     context,
     <Document>
       <ContactDetailInput
-        defaultValue={
-          {
-            name: 'Foo',
-            telecom: [
-              {
-                use: 'home',
-                system: 'email',
-                value: 'abc@example.com',
-              },
-            ],
-          }
-        }
+        defaultValue={{
+          name: 'Foo',
+          telecom: [
+            {
+              use: 'home',
+              system: 'email',
+              value: 'abc@example.com',
+            },
+          ],
+        }}
         onChange={console.log}
         name="contact"
         path="Patient.contact"

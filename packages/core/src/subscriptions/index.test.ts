@@ -1,12 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  Bundle,
-  Communication,
-  Parameters,
-  Subscription,
-  SubscriptionChannel,
-} from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
 import type { CriteriaState, SubscriptionEventMap } from '.';

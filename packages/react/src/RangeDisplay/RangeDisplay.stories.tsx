@@ -13,18 +13,16 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <RangeDisplay
-      value={
-        {
-          low: {
-            value: 10,
-            unit: 'mg',
-          },
-          high: {
-            value: 11.2,
-            unit: 'mg',
-          },
-        }
-      }
+      value={{
+        low: {
+          value: 10,
+          unit: 'mg',
+        },
+        high: {
+          value: 11.2,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -32,14 +30,12 @@ export const Basic = (): JSX.Element => (
 export const HighOnly = (): JSX.Element => (
   <Document>
     <RangeDisplay
-      value={
-        {
-          high: {
-            value: 11.2,
-            unit: 'mg',
-          },
-        }
-      }
+      value={{
+        high: {
+          value: 11.2,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -47,14 +43,12 @@ export const HighOnly = (): JSX.Element => (
 export const LowOnly = (): JSX.Element => (
   <Document>
     <RangeDisplay
-      value={
-        {
-          low: {
-            value: 10,
-            unit: 'mg',
-          },
-        }
-      }
+      value={{
+        low: {
+          value: 10,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );

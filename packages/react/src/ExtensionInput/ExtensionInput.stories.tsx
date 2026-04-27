@@ -15,9 +15,7 @@ export const Basic = (): JSX.Element => (
   <Document>
     <ExtensionInput
       name="interpreterRequired"
-      defaultValue={
-        { url: 'http://hl7.org/fhir/StructureDefinition/patient-interpreterRequired', valueBoolean: true }
-      }
+      defaultValue={{ url: 'http://hl7.org/fhir/StructureDefinition/patient-interpreterRequired', valueBoolean: true }}
       path="Patient.interpreterRequired"
       onChange={undefined}
       outcome={undefined}

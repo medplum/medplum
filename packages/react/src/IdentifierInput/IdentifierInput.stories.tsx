@@ -18,12 +18,10 @@ export const Basic = (): JSX.Element => (
     <IdentifierInput
       name="patient-identifier"
       path="Patient.identifier"
-      defaultValue={
-        {
-          system: 'http://hl7.org/fhir/sid/us-ssn',
-          value: '011-11-1234',
-        }
-      }
+      defaultValue={{
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '011-11-1234',
+      }}
       onChange={console.log}
       outcome={undefined}
     />
@@ -36,12 +34,10 @@ export const Disabled = (): JSX.Element => (
       disabled
       name="patient-identifier"
       path="Patient.identifier"
-      defaultValue={
-        {
-          system: 'http://hl7.org/fhir/sid/us-ssn',
-          value: '011-11-1234',
-        }
-      }
+      defaultValue={{
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '011-11-1234',
+      }}
       onChange={console.log}
       outcome={undefined}
     />
@@ -69,12 +65,10 @@ export const PartiallyDisabled = (): JSX.Element => {
       <IdentifierInput
         name="patient-identifier"
         path="Patient.identifier"
-        defaultValue={
-          {
-            system: 'http://hl7.org/fhir/sid/us-ssn',
-            value: '011-11-1234',
-          }
-        }
+        defaultValue={{
+          system: 'http://hl7.org/fhir/sid/us-ssn',
+          value: '011-11-1234',
+        }}
         onChange={console.log}
         outcome={undefined}
       />

@@ -18,15 +18,13 @@ export const Basic = (): JSX.Element => (
     <RangeInput
       path=""
       name="range"
-      defaultValue={
-        {
-          low: {
-            comparator: '>',
-            value: 10,
-            unit: 'mg',
-          },
-        }
-      }
+      defaultValue={{
+        low: {
+          comparator: '>',
+          value: 10,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -37,15 +35,13 @@ export const Disabled = (): JSX.Element => (
       disabled
       path=""
       name="range"
-      defaultValue={
-        {
-          low: {
-            comparator: '>',
-            value: 10,
-            unit: 'mg',
-          },
-        }
-      }
+      defaultValue={{
+        low: {
+          comparator: '>',
+          value: 10,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -71,15 +67,13 @@ export const PartiallyDisabled = (): JSX.Element => {
       <RangeInput
         path="SpecimenDefinition.handling.temperatureRange"
         name="range"
-        defaultValue={
-          {
-            low: {
-              comparator: '>',
-              value: 10,
-              unit: 'mg',
-            },
-          }
-        }
+        defaultValue={{
+          low: {
+            comparator: '>',
+            value: 10,
+            unit: 'mg',
+          },
+        }}
       />
     </Document>
   );

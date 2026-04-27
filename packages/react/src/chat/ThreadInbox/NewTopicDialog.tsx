@@ -117,7 +117,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             defaultValue={patient}
             disabled={!allowPatientSelection && !!patient}
             onChange={(value) => {
-              setPatient(value ? (createReference(value)) : undefined);
+              setPatient(value ? createReference(value) : undefined);
             }}
           />
         </Stack>
