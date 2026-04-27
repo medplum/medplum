@@ -176,7 +176,7 @@ async function getTasksByRoleLinks(medplum: MedplumClient, profileReference: str
       const roleDisplay = formatCodeableConcept(roleCode);
       return { icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task${searchQuery}` };
     })
-    .filter((link): link is NavbarLink => !!link);
+    .filter((link): link is NonNullable<typeof link> => !!link);
 }
 
 /**
