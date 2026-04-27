@@ -70,7 +70,7 @@ const ALL_AOES: Record<string, Questionnaire | undefined> = {
         ],
       },
     ],
-  } as Questionnaire,
+  },
   RWS_AOE: {
     resourceType: 'Questionnaire',
     name: 'AOE Testing AOE questions',
@@ -102,7 +102,7 @@ const ALL_AOES: Record<string, Questionnaire | undefined> = {
         ],
       },
     ],
-  } as Questionnaire,
+  },
 };
 
 export function getMockAutocompleteBot({
@@ -137,7 +137,7 @@ export function getMockAutocompleteBot({
     const input = botInput as HGAutocompleteBotInput;
     switch (input.type) {
       case 'lab': {
-        const result = [];
+        const result: LabOrganization[] = [];
         if (invalidResultType) {
           result.push({ resourceType: 'Patient', name: [{ text: 'Test Patient' }] } as unknown as LabOrganization);
         }
