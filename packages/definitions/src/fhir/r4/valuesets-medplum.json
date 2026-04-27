@@ -183,6 +183,11 @@
             "code": "range-search",
             "display": "Range Search",
             "definition": "Precision-aware range search for datetime and number values"
+          },
+          {
+            "code": "log-streaming",
+            "display": "Log Streaming",
+            "definition": "Real-time streaming of log data for monitoring and analysis"
           }
         ]
       }
