@@ -96,7 +96,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    */
   const handleBatchResponse = useCallback(
     (batchResponse: PromiseSettledResult<Bundle>[]): void => {
-      const newItems = [];
+      const newItems: Resource[] = [];
 
       for (const settledResult of batchResponse) {
         if (settledResult.status !== 'fulfilled') {
@@ -111,7 +111,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            newItems.push(entry.resource);
+            newItems.push(entry.resource as Resource);
           }
         }
       }
