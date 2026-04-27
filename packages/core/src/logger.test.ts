@@ -353,7 +353,7 @@ describe('serializeError', () => {
       const errors = [new Error('First error'), new Error('Second error'), 'String error'];
       const aggregateError = new AggregateError(errors, 'Multiple errors occurred');
 
-      const result = serializeError(aggregateError as any);
+      const result = serializeError(aggregateError);
 
       expect(result.error).toContain('Multiple errors occurred');
       expect(result.message).toBe('Multiple errors occurred');

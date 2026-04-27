@@ -388,7 +388,7 @@ class StructureDefinitionParser {
         }
         return {
           path: d.path,
-          type: d.type as string,
+          type: d.type,
         };
       }),
       slices: [],
