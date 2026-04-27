@@ -113,7 +113,7 @@ describe('Deploy', () => {
       expect.objectContaining({
         resourceType: 'Binary',
         contentType: ContentType.JAVASCRIPT,
-      } as Binary)
+      })
     );
     expect(readStreamToStringSpy).toHaveBeenCalledWith(expect.any(Object));
     expect(deployLambdaSpy).toHaveBeenCalledWith(

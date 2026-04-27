@@ -74,7 +74,7 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
         </Text>
       </div>
       <div>
-        <StatusBadge status={vaccine.status as string} />
+        <StatusBadge status={vaccine.status} />
         {vaccine.occurrenceDateTime && (
           <Text c="gray.6">
             <IconCalendar size={16} style={{ marginRight: 4 }} />

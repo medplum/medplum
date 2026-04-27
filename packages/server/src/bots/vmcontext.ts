@@ -8,7 +8,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import type { Binary, Reference } from '@medplum/fhirtypes';
+import type { Binary } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
@@ -43,7 +43,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   }
 
   const systemRepo = await getProjectSystemRepo(runAs.project);
-  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl });
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();

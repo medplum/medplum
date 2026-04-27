@@ -91,7 +91,7 @@ export function MfaPage(): JSX.Element | null {
       <MfaForm
         title="Multi Factor Auth Setup"
         buttonText="Enroll"
-        qrCodeUrl={qrCodeUrl as string}
+        qrCodeUrl={qrCodeUrl}
         onSubmit={enableMfa}
       />
     </Document>

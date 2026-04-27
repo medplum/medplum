@@ -25,7 +25,7 @@ describe('spacePersistence', () => {
         resourceType: 'Communication',
         id: 'topic-1',
         status: 'in-progress',
-      } as Communication & { id: string });
+      });
 
       const result = await createConversationTopic(medplum, 'Test Topic', 'gpt-4');
 
@@ -72,7 +72,7 @@ describe('spacePersistence', () => {
         resourceType: 'Communication',
         id: 'message-1',
         status: 'completed',
-      } as Communication & { id: string });
+      });
 
       const message: Message = {
         role: 'user',
@@ -121,7 +121,7 @@ describe('spacePersistence', () => {
         resourceType: 'Communication',
         id: 'message-2',
         status: 'completed',
-      } as Communication & { id: string });
+      });
 
       const message: Message = {
         role: 'assistant',
@@ -154,7 +154,7 @@ describe('spacePersistence', () => {
         resourceType: 'Communication',
         id: 'message-3',
         status: 'completed',
-      } as Communication & { id: string });
+      });
 
       const message: Message = {
         role: 'tool',

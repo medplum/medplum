@@ -18,7 +18,6 @@ import type {
   CarePlan,
   DiagnosticReport,
   DocumentReference,
-  HumanName,
   MedicationRequest,
   QuestionnaireResponse,
   Reference,
@@ -434,7 +433,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                       <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
                         Ordering provider
                       </Text>
-                      <Text size="sm">{formatHumanName(requester.name?.[0] as HumanName)}</Text>
+                      <Text size="sm">{formatHumanName(requester.name?.[0])}</Text>
                     </Group>
                   )}
 
@@ -461,7 +460,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                       <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
                         Patient
                       </Text>
-                      <Text size="sm">{formatHumanName(patient.name?.[0] as HumanName)}</Text>
+                      <Text size="sm">{formatHumanName(patient.name?.[0])}</Text>
                     </Group>
                   )}
 

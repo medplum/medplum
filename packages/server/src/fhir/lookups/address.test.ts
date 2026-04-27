@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
-import type { Address, InsurancePlan, Location, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Address, InsurancePlan, Location, Patient, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
@@ -129,7 +129,7 @@ describe('Address Lookup Table', () => {
 
   test.each([
     [
-      'Patient' as ResourceType,
+      'Patient' as const,
       (address: string): Patient => ({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -137,7 +137,7 @@ describe('Address Lookup Table', () => {
       }),
     ],
     [
-      'InsurancePlan' as ResourceType,
+      'InsurancePlan' as const,
       (address: string): InsurancePlan => ({
         resourceType: 'InsurancePlan',
         name: 'Test Insurance Plan',
@@ -145,7 +145,7 @@ describe('Address Lookup Table', () => {
       }),
     ],
     [
-      'Location' as ResourceType,
+      'Location' as const,
       (address: string): Location => ({
         resourceType: 'Location',
         address: { use: 'home', line: [address] },
@@ -379,7 +379,7 @@ describe('Address Lookup Table', () => {
           state: 'CA',
           postalCode: '94109',
         },
-      ] as unknown as Address[],
+      ],
     };
 
     const result: AddressTableRow[] = [];
@@ -422,7 +422,7 @@ describe('Address Lookup Table', () => {
           state: 'CA',
           postalCode: '94109',
         },
-      ] as unknown as Address[],
+      ],
     };
 
     const extractValuesSpy = jest.spyOn(table, 'extractValues').mockImplementation(() => {

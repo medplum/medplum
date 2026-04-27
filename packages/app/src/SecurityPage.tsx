@@ -4,7 +4,7 @@ import { Anchor, Button, Table, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { ProfileResource } from '@medplum/core';
 import { formatDateTime, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { HumanName, UserConfiguration } from '@medplum/fhirtypes';
+import type { UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -63,7 +63,7 @@ export function SecurityPage(): JSX.Element | null {
           </DescriptionListEntry>
           <DescriptionListEntry term="Resource Type">{details.profile.resourceType}</DescriptionListEntry>
           <DescriptionListEntry term="Name">
-            {formatHumanName(details.profile.name?.[0] as HumanName)}
+            {formatHumanName(details.profile.name?.[0])}
           </DescriptionListEntry>
         </DescriptionList>
       </Document>

@@ -57,5 +57,5 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
   return res
     .status(getStatus(outcome))
     .type(ContentType.FHIR_JSON)
-    .json({ ...outcome, extension } as OperationOutcome);
+    .json({ ...outcome, extension });
 }

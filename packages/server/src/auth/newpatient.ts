@@ -79,7 +79,7 @@ async function createPatient(
     'Patient',
     firstName,
     lastName,
-    user.email as string
+    user.email
   )) as Patient;
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
   const membership = await createProjectMembership(systemRepo, user, project, profile, {

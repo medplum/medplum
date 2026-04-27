@@ -885,7 +885,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
 
@@ -944,7 +944,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
 
@@ -1002,7 +1002,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
 
@@ -1054,7 +1054,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
       const subscriptionEvents: SearchRequest<AuditEvent> = {

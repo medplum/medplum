@@ -299,7 +299,7 @@ describe('QuestionnaireResponse/$extract', () => {
     response = await repo.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
       status: 'completed',
-      questionnaire: questionnaire.url as string,
+      questionnaire: questionnaire.url,
       author: { reference: 'Practitioner/author' },
       authored: '2025-09-16T12:34:56.000-07:00',
       item: [

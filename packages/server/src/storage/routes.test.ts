@@ -3,7 +3,6 @@
 import { ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import type { Request } from 'express';
 import express from 'express';
 import { Readable } from 'stream';
 import request from 'supertest';
@@ -36,7 +35,7 @@ describe('Storage Routes', () => {
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req as Request);
+    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req);
   });
 
   afterAll(async () => {
@@ -182,7 +181,7 @@ describe('Storage Routes', () => {
       req.push('project hello');
       req.push(null);
       (req as any).headers = {};
-      await getBinaryStorage().writeBinary(projectBinary, 'hello.txt', ContentType.TEXT, req as Request);
+      await getBinaryStorage().writeBinary(projectBinary, 'hello.txt', ContentType.TEXT, req);
     });
 
     test('Presigned URL includes Project before Signature', async () => {

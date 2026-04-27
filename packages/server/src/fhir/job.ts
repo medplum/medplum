@@ -27,7 +27,7 @@ jobRouter.get('/:id/status', async (req: Request, res: Response) => {
   const asyncJob = await ctx.systemRepo.readResource<AsyncJob>('AsyncJob', id);
 
   let outcome: OperationOutcome;
-  if (finalJobStatusCodes.includes(asyncJob.status as string)) {
+  if (finalJobStatusCodes.includes(asyncJob.status)) {
     outcome = allOk;
   } else {
     const exec = new AsyncJobExecutor(ctx.repo, asyncJob);

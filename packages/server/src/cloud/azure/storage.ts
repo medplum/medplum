@@ -4,7 +4,6 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
 import { isString, splitN } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import type { IncomingMessage } from 'node:http';
 import type { Readable } from 'node:stream';
 import type { PresignedUrlOptions } from '../../storage/base';
 import { BaseBinaryStorage } from '../../storage/base';
@@ -47,7 +46,7 @@ export class AzureBlobStorage extends BaseBinaryStorage {
       });
     } else {
       // For streams, we pipe the data to a write stream provided by the client library.
-      await blockBlobClient.uploadStream(data as IncomingMessage, undefined, undefined, {
+      await blockBlobClient.uploadStream(data, undefined, undefined, {
         blobHTTPHeaders,
       });
     }
