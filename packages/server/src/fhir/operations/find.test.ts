@@ -1065,4 +1065,40 @@ describe('Schedule/:id/$find', () => {
     expect(response.body).toHaveProperty('entry');
     expect(response.body.entry).toHaveLength(2);
   });
+
+  test('POST with a Parameters body returns the same results as GET', async () => {
+    const schedule = await makeSchedule([{ service: genericVisit, duration: 30, availability: twoDaySchedule }]);
+
+    const getResponse = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${schedule.id}`,
+      });
+
+    const postResponse = await request
+      .post(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'start', valueDateTime: new Date('2026-03-16T00:00:00-04:00').toISOString() },
+          { name: 'end', valueDateTime: new Date('2026-03-17T00:00:00-04:00').toISOString() },
+          { name: 'service-type-reference', valueReference: { reference: `HealthcareService/${genericVisit.id}` } },
+          { name: 'schedule', valueReference: { reference: `Schedule/${schedule.id}` } },
+        ],
+      });
+
+    expect(postResponse.body).not.toHaveProperty('issue');
+    expect(postResponse.status).toBe(200);
+
+    const getStarts = (getResponse.body as Bundle<Slot>).entry?.map((e) => e.resource?.start);
+    const postStarts = (postResponse.body as Bundle<Slot>).entry?.map((e) => e.resource?.start);
+    expect(postStarts).toEqual(getStarts);
+  });
 });

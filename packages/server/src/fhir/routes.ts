@@ -375,6 +375,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Schedule $find operation
   router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
+  router.add('POST', '/Schedule/:id/$find', scheduleFindHandler);
 
   // Appointment $book operation
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
