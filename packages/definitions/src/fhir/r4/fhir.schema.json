@@ -61415,8 +61415,7 @@
               "graphql-introspection",
               "websocket-subscriptions",
               "transaction-bundles",
-              "validate-terminology",
-              "range-search"
+              "validate-terminology"
             ]
           },
           "type": "array"
