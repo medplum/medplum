@@ -23,7 +23,6 @@ import {
   convertToSearchableStrings,
   convertToSearchableTokens,
   convertToSearchableUris,
-  createReference,
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
@@ -141,6 +140,7 @@ import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
+import { cacheProfile, getCachedProfile, removeCachedProfile } from './repository/profile-cache';
 import type { StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { ResourceCap } from './resource-cap';
@@ -1173,11 +1173,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
     if (this.context.projects?.length) {
       // Try loading from cache, using all available Project IDs
-      const cacheKeys = this.context.projects.map((p) => getProfileCacheKey(p.id, url));
-      const results = await getCacheRedis().mget(...cacheKeys);
-      const cachedProfile = results.find(Boolean) as string | undefined;
+      const cachedProfile = await getCachedProfile(this.context.projects, url);
       if (cachedProfile) {
-        return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
+        return cachedProfile;
       }
     }
 
@@ -1204,8 +1202,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     });
 
     if (this.context.projects?.length && profile) {
-      // Store loaded profile in cache
-      await cacheProfile(this.getSystemRepo(), profile);
+      await cacheProfile(profile);
     }
     return profile;
   }
@@ -2708,7 +2705,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
-const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
 
 /**
  * Returns the redis cache key for the given resource type and resource ID.
@@ -2718,45 +2714,6 @@ const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
  */
 function getCacheKey(resourceType: string, id: string): string {
   return `${resourceType}/${id}`;
-}
-
-/**
- * Writes a FHIR profile cache entry to Redis.
- * @param systemRepo - The system repository.
- * @param profile - The profile structure definition.
- */
-async function cacheProfile(systemRepo: SystemRepository, profile: StructureDefinition): Promise<void> {
-  if (!profile.url || !profile.meta?.project) {
-    return;
-  }
-  profile = await systemRepo.readReference(createReference(profile));
-  await getCacheRedis().set(
-    getProfileCacheKey(profile.meta?.project as string, profile.url),
-    JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
-    'EX',
-    PROFILE_CACHE_EX_SECONDS
-  );
-}
-
-/**
- * Writes a FHIR profile cache entry to Redis.
- * @param profile - The profile structure definition.
- */
-async function removeCachedProfile(profile: StructureDefinition): Promise<void> {
-  if (!profile.url || !profile.meta?.project) {
-    return;
-  }
-  await getCacheRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
-}
-
-/**
- * Returns the redis cache key for the given profile resource.
- * @param projectId - The ID of the Project to which the profile belongs.
- * @param url - The canonical URL of the profile.
- * @returns The Redis cache key.
- */
-function getProfileCacheKey(projectId: string, url: string): string {
-  return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
 export class SystemRepository extends Repository {}
