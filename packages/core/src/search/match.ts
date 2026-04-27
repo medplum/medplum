@@ -137,8 +137,8 @@ function matchesTokenValue(resourceValue: SearchableToken, filterValue: string):
     if (!system && !value) {
       return false;
     } else if (!system) {
-      // [parameter]=|[code]: the value of [code] matches a Coding.code or Identifier.value, and the Coding/Identifier has no system property
-      return !resourceValue.system && resourceValue.value?.toLowerCase() === value;
+      // [parameter]=|[code]: the value of [code] matches a Coding.code or Identifier.value, and the Coding/Identifier has any system property (|value matches regardless of system)
+      return resourceValue.value?.toLowerCase() === value;
     }
 
     // [parameter]=[system]|: any element where the value of [system] matches the system property of the Identifier or Coding
