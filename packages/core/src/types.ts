@@ -223,6 +223,12 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         type: 'token',
         expression: resourceType + '.meta.tag',
       } as SearchParameter,
+      _project: {
+        base: [resourceType],
+        code: '_project',
+        type: 'token', // Intentionally use `token`, similar to `_id`
+        expression: resourceType + '.meta.project',
+      } as SearchParameter,
     };
   }
 

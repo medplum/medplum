@@ -1151,7 +1151,7 @@ describe('FHIR Repo', () => {
     let repo: Repository;
     let profile: StructureDefinition;
     beforeAll(async () => {
-      const result = await createTestProject({ withRepo: { validateTerminology: true } });
+      const result = await createTestProject({ withRepo: true, project: { features: ['validate-terminology'] } });
       repo = result.repo;
 
       // Create modified US Core Patient profile to have 'required' binding for communication.language
@@ -1677,7 +1677,7 @@ describe('FHIR Repo', () => {
 
   test('Super admin can edit User.meta.project', async () =>
     withTestContext(async () => {
-      const { project, repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       // Create a user in the project
       const user1 = await repo.createResource<User>({
@@ -1810,9 +1810,10 @@ describe('FHIR Repo', () => {
   test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
       const { project, repo, login, membership } = await createTestProject({
-        withRepo: { extendedMode: false },
+        withRepo: true,
         withAccessToken: true,
         withClient: true,
+        extendedMode: false,
       });
       const extendedRepo = await getRepoForLogin(
         { login, project, membership, userConfig: {} as UserConfiguration },
