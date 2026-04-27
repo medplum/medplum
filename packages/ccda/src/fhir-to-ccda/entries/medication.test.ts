@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import type { Bundle, Composition, Medication, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Medication, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { OID_LOINC_CODE_SYSTEM, OID_MEDICATION_ACTIVITY, OID_MEDICATION_FREE_TEXT_SIG } from '../../oids';
 import { LOINC_MEDICATION_INSTRUCTIONS } from '../../systems';
 import type { CcdaText } from '../../types';
@@ -37,7 +37,7 @@ describe('medication entry functions', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };

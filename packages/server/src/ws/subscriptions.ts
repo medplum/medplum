@@ -528,11 +528,12 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   subscriptionId: string,
   options?: SubEventsOptions
 ): Bundle {
-  const { status, includeResource } = {
+  const merged: { status: SubStatus; includeResource: boolean } = {
     status: 'active',
     includeResource: false,
     ...options,
-  } as { status: SubStatus; includeResource: boolean };
+  };
+  const { status, includeResource } = merged;
   const timestamp = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
@@ -658,7 +659,7 @@ export async function markInMemorySubscriptionsInactive(
 }
 
 export async function checkWebSocketSubscriptionLimit(project: WithId<Project>, authorRef: string): Promise<void> {
-  const maxUserWsSubs =
+  const maxUserWsSubs: number =
     project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
     // We know this is defined in defaults so this is safe to cast
     (getConfig().defaultMaxUserWebSocketSubscriptions as number);

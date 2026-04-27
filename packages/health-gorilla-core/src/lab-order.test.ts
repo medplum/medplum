@@ -126,7 +126,7 @@ describe('createLabOrderBundle', () => {
     if (!performingLab) {
       throw new Error('Performing lab not found from common input bundle');
     }
-    ctx.performingLab = performingLab as LabOrganization;
+    ctx.performingLab = performingLab;
 
     // Should not find any existing lab orders for this patient
     expect(
@@ -143,7 +143,7 @@ describe('createLabOrderBundle', () => {
     const selectedTests: TestCoding[] = [];
     const testMetadata: Record<string, LabOrderTestMetadata> = {};
     for (const code of TEST_CODES) {
-      selectedTests.push({ code } as TestCoding);
+      selectedTests.push({ code });
       testMetadata[code] = {};
     }
 
@@ -182,7 +182,7 @@ describe('createLabOrderBundle', () => {
     const selectedTests: TestCoding[] = [];
     const testMetadata: Record<string, LabOrderTestMetadata> = {};
     for (const code of TEST_CODES) {
-      selectedTests.push({ code } as TestCoding);
+      selectedTests.push({ code });
       testMetadata[code] = { notes: 'test notes' };
     }
 
@@ -229,7 +229,7 @@ describe('createLabOrderBundle', () => {
     const selectedTests: TestCoding[] = [];
     const testMetadata: Record<string, LabOrderTestMetadata> = {};
     for (const code of TEST_CODES) {
-      selectedTests.push({ code } as TestCoding);
+      selectedTests.push({ code });
       testMetadata[code] = {};
     }
 
@@ -321,7 +321,7 @@ describe('createLabOrderBundle', () => {
     const selectedTests: TestCoding[] = [];
     const testMetadata: Record<string, LabOrderTestMetadata> = {};
     for (const code of TEST_CODES) {
-      selectedTests.push({ code } as TestCoding);
+      selectedTests.push({ code });
     }
 
     const bundle = createLabOrderBundle({
@@ -381,7 +381,7 @@ describe('createLabOrderBundle', () => {
       const selectedTests: TestCoding[] = [];
       const testMetadata: Record<string, LabOrderTestMetadata> = {};
       for (const code of TEST_CODES) {
-        selectedTests.push({ code } as TestCoding);
+        selectedTests.push({ code });
         testMetadata[code] = { notes: 'test notes', priority: 'urgent' };
       }
 
@@ -404,7 +404,7 @@ describe('createLabOrderBundle', () => {
       const selectedTests: TestCoding[] = [];
       const testMetadata: Record<string, LabOrderTestMetadata> = {};
       for (const code of TEST_CODES) {
-        selectedTests.push({ code } as TestCoding);
+        selectedTests.push({ code });
         testMetadata[code] = { notes: 'test notes', priority: 'super duper urgent' as any };
       }
 
@@ -441,7 +441,7 @@ describe('createLabOrderBundle', () => {
       const selectedTests: TestCoding[] = [];
       const testMetadata: Record<string, LabOrderTestMetadata> = {};
       for (const code of TEST_CODES) {
-        selectedTests.push({ code } as TestCoding);
+        selectedTests.push({ code });
       }
 
       const inputs: PartialLabOrderInputs = {

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import type { Request } from 'express';
 import { Readable } from 'stream';
 import { loadTestConfig } from '../config/loader';
 import { streamToString } from '../test.setup';
@@ -38,7 +37,7 @@ describe('FileSystemStorage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
-    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
     // Request the binary
     const stream = await storage.readBinary(binary);

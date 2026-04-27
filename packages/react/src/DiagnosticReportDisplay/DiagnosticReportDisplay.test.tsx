@@ -241,7 +241,7 @@ describe('DiagnosticReportDisplay', () => {
     // although it doesn't really make sense.
     // It uses "Observation Grouping" to create a cycle.
     let obs = await medplum.createResource({ resourceType: 'Observation', valueString: 'XYZ' } as Observation);
-    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] } as Observation);
+    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] });
 
     const report: DiagnosticReport = {
       resourceType: 'DiagnosticReport',

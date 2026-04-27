@@ -275,7 +275,7 @@ describe('EncounterCoverageEligibilityModal', () => {
     beforeEach(() => {
       mockSearchResources(medplum, { coverages: [mockCoverage] });
       mockSearchOne(medplum, { bot: ExampleBot, practitionerRole: mockPractitionerRole });
-      vi.spyOn(medplum, 'createResource').mockResolvedValue(mockEligibilityRequest as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(mockEligibilityRequest);
       vi.spyOn(medplum, 'executeBot').mockResolvedValue({} as any);
     });
 

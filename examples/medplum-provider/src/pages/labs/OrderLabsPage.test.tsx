@@ -64,7 +64,7 @@ describe('OrderLabsPage', () => {
           value: 'HG123',
         },
       ],
-    } as LabOrganization;
+    };
 
     mockLabOrderReturn = {
       state: {
@@ -169,7 +169,7 @@ describe('OrderLabsPage', () => {
     mockLabOrderReturn.state.performingLab = {
       resourceType: 'Organization',
       id: 'lab-123',
-    } as LabOrganization;
+    };
     vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
 
     await act(async () => setup({ patientId: 'patient-123' }));

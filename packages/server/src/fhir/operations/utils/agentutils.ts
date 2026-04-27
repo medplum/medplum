@@ -190,8 +190,8 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
       // Create a timer for 5 seconds for timeout
       const timer = setTimeout(() => {
         cleanup();
-        // eslint-disable-next-line prefer-promise-reject-errors
-        reject(new OperationOutcomeError(badRequest('Timeout')) as Error);
+
+        reject(new OperationOutcomeError(badRequest('Timeout')));
       }, options?.timeout ?? 5000);
 
       const cleanup = (): void => {

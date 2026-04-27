@@ -239,7 +239,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'post').mockResolvedValue({
       resourceType: 'Media',
       content: { url: 'https://example.com/claim.pdf' },
-    } as any);
+    });
 
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
@@ -877,11 +877,11 @@ describe('BillingTab', () => {
         return updatedEncounter as any;
       }
       if (resource.resourceType === 'Claim') {
-        return updatedClaim as any;
+        return updatedClaim;
       }
       return resource;
     });
-    vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
+    vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2);
 
     await setup({
       claim: existingClaim,
@@ -988,7 +988,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'post').mockResolvedValue({
       resourceType: 'Media',
       content: { url: 'https://example.com/claim.pdf' },
-    } as any);
+    });
 
     // Setup with a claim but with undefined id
     await setup({ claim: { ...mockClaim, id: undefined as unknown as string } });
@@ -1016,7 +1016,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'post').mockResolvedValue({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid' }],
-    } as any);
+    });
 
     await setup({ claim: mockClaim });
 
@@ -1051,7 +1051,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'post').mockResolvedValue({
       resourceType: 'Media',
       content: { url: 'https://example.com/claim.pdf' },
-    } as any);
+    });
 
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
@@ -1202,7 +1202,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'post').mockResolvedValue({
       resourceType: 'Media',
       content: { url: 'https://example.com/claim.pdf' },
-    } as any);
+    });
 
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 

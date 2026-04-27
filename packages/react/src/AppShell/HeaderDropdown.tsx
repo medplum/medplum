@@ -4,7 +4,6 @@ import type { MantineColorScheme } from '@mantine/core';
 import { Avatar, Group, Menu, SegmentedControl, Stack, Text, useMantineColorScheme } from '@mantine/core';
 import type { ProfileResource } from '@medplum/core';
 import { getReferenceString, locationUtils } from '@medplum/core';
-import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -35,7 +34,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
     <>
       <Stack align="center" p="xl">
         <ResourceAvatar size="xl" radius={100} value={context.profile} />
-        <HumanNameDisplay value={context.profile?.name?.[0] as HumanName} />
+        <HumanNameDisplay value={context.profile?.name?.[0]} />
         <Text c="dimmed" size="xs">
           {medplum.getActiveLogin()?.project.display}
         </Text>

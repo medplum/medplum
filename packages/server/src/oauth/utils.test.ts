@@ -575,7 +575,7 @@ describe('OAuth utils', () => {
           granted: true,
           authTime: new Date().toISOString(),
           nonce: randomUUID(),
-        } as Login);
+        });
 
         const tokens = await getAuthTokens(user, login, createReference(patient));
 
@@ -625,7 +625,7 @@ describe('OAuth utils', () => {
           granted: true,
           authTime: new Date().toISOString(),
           nonce: randomUUID(),
-        } as Login);
+        });
 
         const tokens = await getAuthTokens(user, login, createReference(patient));
 
@@ -674,7 +674,7 @@ describe('OAuth utils', () => {
           granted: true,
           authTime: new Date().toISOString(),
           nonce: randomUUID(),
-        } as Login);
+        });
 
         const tokens = await getAuthTokens(client, login, createReference(patient));
 
@@ -723,7 +723,7 @@ describe('OAuth utils', () => {
           granted: true,
           authTime: new Date().toISOString(),
           nonce: randomUUID(),
-        } as Login);
+        });
 
         const tokens = await getAuthTokens(user, login, createReference(patient));
 

@@ -62,7 +62,7 @@ const mockTask: Task = {
       },
       valueReference: {
         reference: 'Questionnaire/questionnaire-123',
-      } as Reference<Questionnaire>,
+      },
     },
   ],
   output: [
@@ -72,7 +72,7 @@ const mockTask: Task = {
       },
       valueReference: {
         reference: 'QuestionnaireResponse/response-123',
-      } as Reference<QuestionnaireResponse>,
+      },
     },
   ],
 };
@@ -103,7 +103,7 @@ const mockTaskWithEncounter: Task = {
   ...mockTask,
   encounter: {
     reference: 'Encounter/encounter-123',
-  } as Reference<Encounter>,
+  },
 };
 
 const mockPractitioner: Practitioner = {

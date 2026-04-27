@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDateTime, formatHumanName } from '@medplum/core';
-import type { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -20,7 +20,7 @@ export interface ChatListItemProps {
 export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const { topic, lastCommunication, isSelected, getThreadUri } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
-  const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
+  const patientName = formatHumanName(patientResource?.name?.[0]);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
   const trimmedMsg = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
   const senderName = lastCommunication?.sender?.display ? `${lastCommunication?.sender?.display}: ` : '';
@@ -37,7 +37,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
           [classes.selected]: isSelected,
         })}
       >
-        <ResourceAvatar value={topic.subject as Reference<Patient>} radius="xl" size={36} />
+        <ResourceAvatar value={topic.subject} radius="xl" size={36} />
         <Stack gap={0}>
           <Text size="sm" fw={700} truncate="end">
             {patientName}

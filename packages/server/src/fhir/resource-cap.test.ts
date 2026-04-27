@@ -158,7 +158,7 @@ describe('FHIR Resource Limits', () => {
           { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
           { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
         ],
-      } as Bundle);
+      });
     expect(res.status).toBe(200);
   });
 

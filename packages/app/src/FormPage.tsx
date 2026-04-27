@@ -13,7 +13,7 @@ import { getPatient } from './utils';
 export function FormPage(): JSX.Element {
   const { id } = useParams() as { id: string };
   const location = useLocation();
-  const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
+  const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries());
   const subjectParam = queryParams.subject;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
@@ -54,10 +54,10 @@ export function FormPage(): JSX.Element {
       .executeBatch(requestBundle)
       .then((bundle) => {
         if (bundle.entry?.[0]?.response?.status !== '200') {
-          setError(bundle.entry?.[0]?.response?.outcome as OperationOutcome);
+          setError(bundle.entry?.[0]?.response?.outcome);
         } else {
           setQuestionnaire(bundle.entry[0]?.resource as Questionnaire);
-          setSubject(bundle.entry[1]?.resource as Resource);
+          setSubject(bundle.entry[1]?.resource);
         }
         setLoading(false);
       })

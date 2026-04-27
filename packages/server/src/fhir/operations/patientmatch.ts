@@ -294,7 +294,7 @@ function getFamilyName(patient: Patient): string | undefined {
 }
 
 function getGivenNames(patient: Patient): readonly string[] {
-  return patient.name?.flatMap((n) => n.given ?? EMPTY) ?? (EMPTY as readonly string[]);
+  return patient.name?.flatMap((n) => n.given ?? EMPTY) ?? EMPTY;
 }
 
 function hasMatchableField(patient: Patient): boolean {

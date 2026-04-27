@@ -291,7 +291,7 @@ describe('PatientSummary - Insurance', () => {
 
     // Should not throw error when clicking
     await act(async () => {
-      fireEvent.click(summaryItems[0] as HTMLElement);
+      fireEvent.click(summaryItems[0]);
     });
   });
 

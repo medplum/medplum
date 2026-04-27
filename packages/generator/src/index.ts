@@ -251,7 +251,7 @@ function getTypeScriptProperties(
   } else {
     result.push({
       name,
-      typeName: getTypeScriptTypeForProperty(property, property.type?.[0] as ElementDefinitionType, path),
+      typeName: getTypeScriptTypeForProperty(property, property.type?.[0], path),
       required,
     });
   }

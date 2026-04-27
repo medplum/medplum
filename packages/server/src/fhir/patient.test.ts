@@ -106,12 +106,10 @@ describe('FHIR Patient utils', () => {
       })
     ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatients({ resourceType: 'Patient' } as Patient)).toStrictEqual([]);
-    expect(getPatients({ resourceType: 'Patient', id: undefined } as Patient)).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Patient' })).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: undefined })).toStrictEqual([]);
     expect(getPatients({ resourceType: 'Patient', id: null } as unknown as Patient)).toStrictEqual([]);
-    expect(getPatients({ resourceType: 'Patient', id: '123' } as Patient)).toMatchObject([
-      { reference: 'Patient/123' },
-    ]);
+    expect(getPatients({ resourceType: 'Patient', id: '123' })).toMatchObject([{ reference: 'Patient/123' }]);
   });
 
   test('Multiple patients', () => {

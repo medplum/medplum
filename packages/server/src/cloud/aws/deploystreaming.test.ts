@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CreateFunctionRequest } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
   GetFunctionCommand,
@@ -164,7 +163,7 @@ describe('Deploy Streaming', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    } as CreateFunctionRequest);
+    });
 
     // Verify that this was uploaded as a CJS zip file with streaming wrapper
     const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);

@@ -82,7 +82,7 @@ describe('FHIR Rate Limits', () => {
         resourceType: 'Bundle',
         type: 'batch',
         entry: [{ request: { method: 'GET', url: 'Patient' } }],
-      } as Bundle);
+      });
     expect(res.status).toBe(200);
   });
 

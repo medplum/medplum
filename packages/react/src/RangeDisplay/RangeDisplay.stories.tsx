@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Range } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -14,18 +13,16 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <RangeDisplay
-      value={
-        {
-          low: {
-            value: 10,
-            unit: 'mg',
-          },
-          high: {
-            value: 11.2,
-            unit: 'mg',
-          },
-        } as Range
-      }
+      value={{
+        low: {
+          value: 10,
+          unit: 'mg',
+        },
+        high: {
+          value: 11.2,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -33,14 +30,12 @@ export const Basic = (): JSX.Element => (
 export const HighOnly = (): JSX.Element => (
   <Document>
     <RangeDisplay
-      value={
-        {
-          high: {
-            value: 11.2,
-            unit: 'mg',
-          },
-        } as Range
-      }
+      value={{
+        high: {
+          value: 11.2,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -48,14 +43,12 @@ export const HighOnly = (): JSX.Element => (
 export const LowOnly = (): JSX.Element => (
   <Document>
     <RangeDisplay
-      value={
-        {
-          low: {
-            value: 10,
-            unit: 'mg',
-          },
-        } as Range
-      }
+      value={{
+        low: {
+          value: 10,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );

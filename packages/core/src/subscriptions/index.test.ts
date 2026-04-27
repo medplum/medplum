@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  Bundle,
-  Communication,
-  Parameters,
-  Subscription,
-  SubscriptionChannel,
-  SubscriptionStatus,
-} from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
 import type { CriteriaState, SubscriptionEventMap } from '.';
@@ -139,7 +132,7 @@ describe('ReconnectingWebSocket', () => {
     await wsServer.connected;
     const receivedEvent = await new Promise<CloseEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('close', (event) => {
-        resolve(event as CloseEvent);
+        resolve(event);
       });
       wsServer.close();
     });
@@ -246,7 +239,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
     });
 
@@ -284,7 +277,7 @@ describe('SubscriptionManager', () => {
               type: 'event-notification',
               subscription: { reference: `Subscription/${subscriptionId}` },
               notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
-            } as SubscriptionStatus,
+            },
           },
           {
             resource,
@@ -325,7 +318,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       const criteriaEmitter1 = manager1.addCriteria('Communication');
@@ -368,7 +361,7 @@ describe('SubscriptionManager', () => {
               valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
             },
           ],
-        } as Parameters;
+        };
       });
 
       const manager2 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -431,7 +424,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       medplum.router.addRoute('GET', `fhir/R4/Subscription/${SECOND_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -451,7 +444,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       defaultManager.addCriteria('Communication');
@@ -511,7 +504,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
@@ -621,7 +614,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       wsServer = new WS('wss://example.com/ws/subscriptions-r4');
@@ -819,7 +812,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       medplum.router.addRoute('GET', `fhir/R4/Subscription/${SECOND_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -839,7 +832,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -874,7 +867,7 @@ describe('SubscriptionManager', () => {
               type: 'event-notification',
               subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
               notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
-            } as SubscriptionStatus,
+            },
           },
           {
             resource,
@@ -904,7 +897,7 @@ describe('SubscriptionManager', () => {
               status: 'active',
               type: 'heartbeat',
               subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
-            } as SubscriptionStatus,
+            },
           },
         ],
       } as Bundle;
@@ -1374,7 +1367,7 @@ describe('SubscriptionManager', () => {
             },
             { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
           ],
-        } as Parameters;
+        };
       });
 
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1425,7 +1418,7 @@ describe('SubscriptionManager', () => {
             },
             { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
           ],
-        } as Parameters;
+        };
       });
 
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1546,7 +1539,7 @@ describe('SubscriptionManager', () => {
             },
             { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
           ],
-        } as Parameters;
+        };
       });
 
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1573,7 +1566,7 @@ describe('SubscriptionManager', () => {
       const getSpy = vi.spyOn(medplum, 'get').mockImplementationOnce(
         () =>
           new Promise((resolve) => {
-            resolveRefreshGet = resolve as (value: Parameters) => void;
+            resolveRefreshGet = resolve;
           }) as any
       );
 
@@ -1595,7 +1588,7 @@ describe('SubscriptionManager', () => {
           { name: 'expiration', valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString() },
           { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
         ],
-      } as Parameters);
+      });
       await sleep(0);
 
       // Entry fully removed, nothing left in the lookup

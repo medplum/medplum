@@ -154,7 +154,7 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   validate(): OperationOutcomeIssue[] {
-    checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
+    checkObjectForNull(this.root.value, this.schema.path, this.issues);
 
     // Check root constraints
     this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);

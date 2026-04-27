@@ -10,7 +10,7 @@ export function BulkAppPage(): JSX.Element {
     resourceType: string;
     id: string;
   };
-  const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
+  const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries());
   const ids = (queryParams.ids || '').split(',').filter((e) => !!e);
   const [questionnaires] = useSearchResources('Questionnaire', `subject-type=${resourceType}`);
 

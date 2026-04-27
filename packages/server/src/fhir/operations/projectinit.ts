@@ -99,7 +99,7 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     });
     ownerRef = createReference(user);
   } else if (login.user.reference?.startsWith('User/')) {
-    ownerRef = login.user as Reference;
+    ownerRef = login.user;
   }
 
   const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
@@ -178,7 +178,7 @@ export async function createProject(
       'Practitioner',
       admin.firstName,
       admin.lastName,
-      admin.email as string
+      admin.email
     );
     const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };

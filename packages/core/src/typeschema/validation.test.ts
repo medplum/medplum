@@ -1550,7 +1550,7 @@ describe('FHIR resource validation', () => {
       validateResource({
         resourceType: 'Patient',
         multipleBirthInteger: 2,
-      } as Patient)
+      })
     ).toHaveLength(0);
 
     expect(
@@ -1589,7 +1589,7 @@ describe('FHIR resource validation', () => {
         resourceType: 'Patient',
         multipleBirthBoolean: true,
         multipleBirthInteger: 2,
-      } as Patient,
+      },
       DUPLICATE_CHOICE_OF_TYPE_PROPERTY
     );
 

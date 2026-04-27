@@ -119,7 +119,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   const propertyTypes = props.elementDefinitionTypes;
   let initialPropertyType: ElementDefinitionType | undefined = undefined;
   if (props.defaultPropertyType) {
-    initialPropertyType = propertyTypes.find((t) => t.code === props.defaultPropertyType) as ElementDefinitionType;
+    initialPropertyType = propertyTypes.find((t) => t.code === props.defaultPropertyType);
   }
   if (!initialPropertyType) {
     initialPropertyType = propertyTypes[0];

@@ -39,7 +39,7 @@ import {
 describe('Intake form', async () => {
   let medplum: MockClient,
     response: QuestionnaireResponse,
-    patient: Patient | undefined,
+    patient: Patient,
     payor1: Organization,
     payor2: Organization,
     pharmacy: Organization;

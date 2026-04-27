@@ -31,7 +31,7 @@ function createMockLab(id: string, name: string): LabOrganization {
     resourceType: 'Organization',
     id,
     name,
-  } as LabOrganization;
+  };
 }
 
 describe('PerformingLabInput', () => {

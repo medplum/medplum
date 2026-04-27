@@ -24,7 +24,7 @@ export function useDebouncedUpdateResource<T extends Resource>(
   timeoutMs: number = DEFAULT_SAVE_TIMEOUT_MS
 ): DebouncedUpdateResource<T> {
   const debouncedCallback = useDebouncedCallback(async (resourcePayload: T): Promise<T> => {
-    return (await medplum.updateResource(resourcePayload)) as T;
+    return medplum.updateResource(resourcePayload);
   }, timeoutMs);
 
   return useMemo<DebouncedUpdateResource<T>>(

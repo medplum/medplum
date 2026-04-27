@@ -79,7 +79,7 @@ describe('CcdaDisplay', () => {
       return Promise.reject(new Error(`Invalid URL or options in test: ${urlString}`));
     });
 
-    global.fetch = fetchSpy as unknown as typeof global.fetch;
+    global.fetch = fetchSpy;
   });
 
   afterEach(() => {
@@ -213,7 +213,7 @@ describe('CcdaDisplay', () => {
       return Promise.reject(new Error(`Invalid URL or options in test: ${urlString}`));
     });
 
-    global.fetch = fetchSpy as unknown as typeof global.fetch;
+    global.fetch = fetchSpy;
 
     setup(EXAMPLE_CCDA_URL);
 
@@ -259,7 +259,7 @@ describe('CcdaDisplay', () => {
       return Promise.reject(new Error(`Invalid URL or options in test: ${urlString}`));
     });
 
-    global.fetch = fetchSpy as unknown as typeof global.fetch;
+    global.fetch = fetchSpy;
 
     setup(EXAMPLE_CCDA_URL);
 

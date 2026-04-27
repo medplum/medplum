@@ -106,7 +106,7 @@ export class MockMedplumClient extends MedplumClient {
     // @ts-expect-error need to pass something for fetch otherwise MedplumClient ctor will complain
     super({ fetch: options?.fetch ?? (() => undefined) });
     this.router = new MockFhirRouter();
-    this.profile = { resourceType: 'Practitioner', id: generateId() } as Practitioner;
+    this.profile = { resourceType: 'Practitioner', id: generateId() };
     this.nextResourceId = 'DEFAULT_MOCK_ID';
   }
 

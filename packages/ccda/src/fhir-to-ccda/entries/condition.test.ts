@@ -2,15 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import type {
-  Bundle,
-  Composition,
-  CompositionSection,
-  Condition,
-  Observation,
-  Patient,
-  Practitioner,
-} from '@medplum/fhirtypes';
+import type { Bundle, CompositionSection, Condition, Observation, Patient, Practitioner } from '@medplum/fhirtypes';
 import { OID_HEALTH_CONCERN_ACT, OID_PROBLEM_ACT, OID_PROBLEM_OBSERVATION } from '../../oids';
 import { LOINC_HEALTH_CONCERNS_SECTION, LOINC_PROBLEMS_SECTION } from '../../systems';
 import { FhirToCcdaConverter } from '../convert';
@@ -44,7 +36,7 @@ describe('Condition Entry Functions', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };

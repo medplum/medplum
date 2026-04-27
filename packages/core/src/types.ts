@@ -174,7 +174,7 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
   if (!typeSchema) {
     typeSchema = {
       searchParamsDetails: {},
-    } as TypeInfo;
+    };
     globalSchema.types[resourceType] = typeSchema;
   }
 

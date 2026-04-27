@@ -100,7 +100,7 @@ export function createTestHl7ClientPool(
   }
 ): { pool: Hl7ClientPool; messageTracker: Hl7MessageTracker; heartbeatEmitter: HeartbeatEmitter } {
   const messageTracker = options.messageTracker ?? new Hl7MessageTracker();
-  const heartbeatEmitter = options.heartbeatEmitter ?? (new TypedEventTarget() as HeartbeatEmitter);
+  const heartbeatEmitter = options.heartbeatEmitter ?? new TypedEventTarget();
   const pool = new Hl7ClientPool({ ...options, messageTracker, heartbeatEmitter });
   return { pool, messageTracker, heartbeatEmitter };
 }

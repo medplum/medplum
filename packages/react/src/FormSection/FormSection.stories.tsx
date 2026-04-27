@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MultiSelect, NativeSelect, Stack } from '@mantine/core';
-import type { HumanName } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -27,7 +26,7 @@ export const Basic = (): JSX.Element => (
           <HumanNameInput
             name="patient-name"
             path="Patient.name"
-            defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+            defaultValue={{ given: ['Homer'], family: 'Simpson' }}
             onChange={undefined}
             outcome={undefined}
           />
@@ -55,7 +54,7 @@ export const Readonly = (): JSX.Element => (
         disabled
         name="patient-name"
         path="Patient.name"
-        defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+        defaultValue={{ given: ['Homer'], family: 'Simpson' }}
         onChange={undefined}
         outcome={undefined}
       />
