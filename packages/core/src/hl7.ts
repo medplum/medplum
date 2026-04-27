@@ -210,7 +210,7 @@ export class Hl7Message {
 
   /**
    * Parses the segment at the given index (if not already parsed), caches it back into
-   * the segments array and the name map, and wires up the onModified callback.
+   * the segments array, and wires up the onModified callback.
    * @param index - The HL7 segment index.
    * @returns The parsed HL7 segment, or undefined if the index is out of range.
    */
@@ -385,6 +385,7 @@ export class Hl7Message {
     this.segmentsByName = buildSegmentMap(this._segments);
     this.cachedString = undefined;
     this.bindSegments();
+    // NOTE: We don't clear allSegmentsMap here because beyond this point all new segments have to be `Hl7Segment` types, not strings
   }
 
   private bindSegments(): void {
@@ -646,9 +647,6 @@ export class Hl7Segment {
       return false;
     }
     const result = field.setComponent(component, value, subcomponent, repetition);
-    if (result) {
-      this.cachedString = undefined;
-    }
     return result;
   }
 
