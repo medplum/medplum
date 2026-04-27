@@ -1408,6 +1408,7 @@ describe('WebSocket Subscription', () => {
         project: { features: ['websocket-subscriptions'] },
         withAccessToken: true,
         withRepo: true,
+        withClient: true,
       });
 
       const subscription = await testRepo.createResource<Subscription>({
@@ -1471,7 +1472,7 @@ describe('WebSocket Subscription', () => {
           // Fail fast if the ws receives any further message after revocation.
           const messageGuard = new Promise<void>((_, reject) => {
             ws.addEventListener('message', (event) => {
-              reject(new Error(`Expected no notification after revocation, got: ${String(event.data)}`));
+              reject(new Error(`Expected no notification after revocation, got: ${event.data as string}`));
             });
           });
 
@@ -1578,7 +1579,7 @@ describe('WebSocket Subscription', () => {
 
           const messageGuard = new Promise<void>((_, reject) => {
             ws.addEventListener('message', (event) => {
-              reject(new Error(`Expected no notification after revocation, got: ${String(event.data)}`));
+              reject(new Error(`Expected no notification after revocation, got: ${event.data as string}`));
             });
           });
 
