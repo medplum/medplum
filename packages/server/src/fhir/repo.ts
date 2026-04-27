@@ -52,6 +52,7 @@ import {
   parseReference,
   parseSearchRequest,
   preconditionFailed,
+  projectAdminResourceTypes,
   PropertyType,
   protectedResourceTypes,
   readInteractions,
@@ -1665,10 +1666,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private getPermittedProjectIds(resourceType: string): string[] | undefined {
     if (!this.context.projects?.length) {
+      // The repository is system-level, so all projects are permitted.
       return undefined;
     }
 
     const projectIds = [this.context.projects[0].id]; // Always include the first project
+
+    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType as ResourceType)) {
+      // If the resource type is a project admin resource, only include the current project (the first project)
+      return projectIds;
+    }
+
     for (let i = 1; i < this.context.projects.length; i++) {
       const project = this.context.projects[i];
       if (
@@ -1718,9 +1726,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const expressions: Expression[] = [];
 
+    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType as ResourceType);
+
     for (const policy of accessPolicy.resource) {
       if (
-        (policy.resourceType === resourceType || policy.resourceType === '*') &&
+        (policy.resourceType === resourceType || (policy.resourceType === '*' && !isProjectAdminResource)) &&
         (!policy.interaction || policy.interaction.includes(interaction))
       ) {
         const policyCompartmentId = resolveId(policy.compartment);
@@ -1916,6 +1926,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
       searchParam.code === '_deleted' ||
+      searchParam.code === '_project' ||
       searchParam.type === 'composite'
     ) {
       return;
