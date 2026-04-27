@@ -70,7 +70,7 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe('project-scoped Repository', () => {
+describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {
   let config: MedplumServerConfig;
   let repo: Repository;
   let systemRepo: SystemRepository;
@@ -78,7 +78,7 @@ describe('project-scoped Repository', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     await initAppServices(config);
-    const { project } = await createTestProject();
+    const { project } = await createTestProject({ project: { features } });
     repo = new Repository({
       strictMode: true,
       projects: [project],
@@ -3449,6 +3449,75 @@ describe('project-scoped Repository', () => {
       expect(result2.entry?.[0]?.resource?.id).toStrictEqual(obs2.id);
     }));
 
+  test.each<[number, string]>([
+    [0, 'Z'],
+    [1, 'Z'],
+    [6, 'Z'],
+    [12, 'Z'],
+    [23, 'Z'],
+    [0, '-08:00'],
+    [23, '-08:00'],
+    [0, '+03:00'],
+    [23, '+03:00'],
+  ])('birthdate covers all hours: %d (%s)', (hour, tz) =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01T${hour.toString().padStart(2, '0')}:00:00${tz}`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    })
+  );
+
+  test('birthdate with multiple values', () =>
+    withTestContext(async () => {
+      if (!features) {
+        return; // Skip test without feature flag
+      }
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01,2001-01-01`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    }));
+
   test('_filter search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -3864,12 +3933,12 @@ describe('project-scoped Repository', () => {
       [Operator.LESS_THAN, start, false],
       [Operator.LESS_THAN_OR_EQUALS, start, true],
       [Operator.GREATER_THAN_OR_EQUALS, start, true],
-      [Operator.GREATER_THAN, start, false],
+      [Operator.GREATER_THAN, start, features?.includes('range-search')],
 
       [Operator.LESS_THAN, startPlusOneSecond, true],
       [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true],
-      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, false],
-      [Operator.GREATER_THAN, startPlusOneSecond, false],
+      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, features?.includes('range-search')],
+      [Operator.GREATER_THAN, startPlusOneSecond, features?.includes('range-search')],
 
       [Operator.GREATER_THAN, '2025-05-01', true],
       [Operator.GREATER_THAN, '2025-06-01', false],
@@ -5081,20 +5150,29 @@ describe('project-scoped Repository', () => {
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
-  test('Date array columns', async () =>
-    withTestContext(async () => {
-      const result = await repo.search({
-        resourceType: 'MedicationRequest',
-        filters: [
-          {
-            code: 'date',
-            operator: Operator.EQUALS,
-            value: new Date().toISOString(),
-          },
-        ],
-      });
-      expect(result.entry).toHaveLength(0);
-    }));
+  test.each(['2028-06-01T23:45:56.890-11:00', '2028-06', 'lt2028-06-06'])(
+    'Date array columns match search value %s',
+    async (value) =>
+      withTestContext(async () => {
+        if (!features) {
+          return; // Skip test without feature flag
+        }
+        const identifier = randomUUID();
+        const resource = await repo.createResource<Goal>({
+          resourceType: 'Goal',
+          identifier: [{ value: identifier }],
+          lifecycleStatus: 'active',
+          description: { text: 'Test' },
+          subject: { reference: 'Patient/example' },
+          target: [{ dueDate: '2028-06-01' }],
+        });
+
+        const searchReq = parseSearchRequest(`Goal?identifier=${identifier}&target-date=${value}`);
+        const res = await repo.search(searchReq);
+        expect(res.entry).toHaveLength(1);
+        expect(res.entry?.[0].resource?.id).toStrictEqual(resource.id);
+      })
+  );
 
   describe('discourage sequential scans', () => {
     let querySpy: jest.SpyInstance;
@@ -5142,11 +5220,12 @@ describe('project-scoped Repository', () => {
   });
 });
 
-describe('systemRepo', () => {
+describe.each([true, false])('systemRepo', (rangeSearch) => {
   const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.rangeSearch = rangeSearch;
     await initAppServices(config);
   });
 

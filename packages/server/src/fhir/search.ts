@@ -49,10 +49,11 @@ import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
+import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
-import { getSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
@@ -1031,14 +1032,34 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-
-  if (impl.searchStrategy === 'token-column') {
-    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
-  } else if (impl.searchStrategy === 'lookup-table') {
-    return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  switch (impl.searchStrategy) {
+    case SearchStrategies.TOKEN_COLUMN:
+      return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    case SearchStrategies.LOOKUP_TABLE:
+      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+    case SearchStrategies.RANGE_COLUMN:
+      if (!repo.supportsRangeSearch()) {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          { ...impl, searchStrategy: 'column' },
+          filter
+        );
+      }
+      if (param.id === 'MeasureReport-period') {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          impl as unknown as ColumnSearchParameterImplementation,
+          filter
+        );
+      }
+      return buildRangeColumnsSearchFilter(resourceType, table, param, filter);
+    default:
+      return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
   }
-
-  return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
 /**
@@ -1556,9 +1577,11 @@ function addOrderByClause(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'token-column') {
+  if (impl.searchStrategy === SearchStrategies.TOKEN_COLUMN) {
     addTokenColumnsOrderBy(builder, impl, sortRule);
-  } else if (impl.searchStrategy === 'lookup-table') {
+  } else if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+    addRangeColumnsOrderBy(builder, impl, sortRule);
+  } else if (impl.searchStrategy === SearchStrategies.LOOKUP_TABLE) {
     impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
