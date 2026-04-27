@@ -234,6 +234,110 @@ describe('Bundle tests', () => {
       });
     });
 
+    test('Rewrites Attachment.url referencing a Binary in the bundle', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'https://example.com/DocumentReference/doc1',
+            resource: {
+              resourceType: 'DocumentReference',
+              id: 'doc1',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'application/pdf',
+                    url: 'Binary/bin1',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            fullUrl: 'https://example.com/Binary/bin1',
+            resource: {
+              resourceType: 'Binary',
+              id: 'bin1',
+              contentType: 'application/pdf',
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      const docRef = result.entry?.find((e) => e.resource?.resourceType === 'DocumentReference');
+      const attachmentUrl = (docRef?.resource as any)?.content?.[0]?.attachment?.url;
+      expect(attachmentUrl).toMatch(/^urn:uuid:[a-f0-9-]+$/);
+    });
+
+    test('Does not rewrite Attachment.url for external URLs', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'https://example.com/DocumentReference/doc1',
+            resource: {
+              resourceType: 'DocumentReference',
+              id: 'doc1',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'image/png',
+                    url: 'https://example.com/images/photo.png',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      const docRef = result.entry?.find((e) => e.resource?.resourceType === 'DocumentReference');
+      const attachmentUrl = (docRef?.resource as any)?.content?.[0]?.attachment?.url;
+      expect(attachmentUrl).toBe('https://example.com/images/photo.png');
+    });
+
+    test('Orders Binary before DocumentReference when Attachment.url references it', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'https://example.com/DocumentReference/doc1',
+            resource: {
+              resourceType: 'DocumentReference',
+              id: 'doc1',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'application/pdf',
+                    url: 'Binary/bin1',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            fullUrl: 'https://example.com/Binary/bin1',
+            resource: {
+              resourceType: 'Binary',
+              id: 'bin1',
+              contentType: 'application/pdf',
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      expect(result.entry?.map((e) => e.resource?.resourceType)).toStrictEqual(['Binary', 'DocumentReference']);
+    });
+
     test('Remove empty resource.meta', () => {
       const patient: Patient = {
         resourceType: 'Patient',
