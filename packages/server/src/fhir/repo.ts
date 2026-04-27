@@ -1672,7 +1672,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectIds = [this.context.projects[0].id]; // Always include the first project
 
-    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType as ResourceType)) {
+    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
       // If the resource type is a project admin resource, only include the current project (the first project)
       return projectIds;
     }
@@ -1726,7 +1726,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const expressions: Expression[] = [];
 
-    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType as ResourceType);
+    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType);
 
     for (const policy of accessPolicy.resource) {
       if (

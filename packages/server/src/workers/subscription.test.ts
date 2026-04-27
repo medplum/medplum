@@ -38,7 +38,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
-import type { RepositoryContext, SystemRepository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
@@ -2026,7 +2026,7 @@ describe('Subscription Worker', () => {
       membershipId: string
     ): Promise<string> {
       /* @ts-expect-error We access context directly in these tests to get what would normally be populated in the async storage authenticated context */
-      const ctx = repo.context as unknown as RepositoryContext;
+      const ctx = repo.context;
       const authorRef = ctx.author.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
