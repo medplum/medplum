@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+§// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
   AccessPolicy,
@@ -228,9 +228,13 @@ export interface MedplumClientOptions {
   accessToken?: string;
 
   /**
-   * Specifies through which part of the HTTP request the client credentials should be sent.
+   * Specifies through which part of the HTTP request the client credentials should be sent
+   * when using {@link MedplumClient.startClientLogin | client credentials flow}.
    *
-   * Body is the default for backwards compatibility, but header may be more desirable for applications.
+   * - `'body'` (default): credentials sent as `client_id` and `client_secret` in the request body.
+   * - `'header'`: credentials sent as an `Authorization: Basic` header per RFC 6749 §2.3.1.
+   *
+   * Use `'header'` for OAuth 2.0 servers that do not support request-body client authentication.
    */
   authCredentialsMethod?: 'body' | 'header';
 
@@ -4099,6 +4103,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    * @param clientId - The client ID.
    * @param clientSecret - The client secret.
+   * @remarks
+   * Some OAuth 2.0 servers do not support request-body client authentication (RFC 6749 §2.3.1) and
+   * require credentials to be sent via the HTTP `Authorization: Basic` header instead.
+   * To enable this, set `authCredentialsMethod: 'header'` in {@link MedplumClientOptions} when
+   * constructing the `MedplumClient`:
+   * ```typescript
+   * const medplum = new MedplumClient({ authCredentialsMethod: 'header' });
+   * await medplum.startClientLogin(clientId, clientSecret);
+   * ```
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
