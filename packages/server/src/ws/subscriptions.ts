@@ -6,6 +6,7 @@ import type { Bundle, Project, Resource, ResourceType, Subscription } from '@med
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
 import crypto, { randomUUID } from 'node:crypto';
+import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
@@ -291,14 +292,17 @@ const REQUIRED_TOKEN_FIELDS = ['subscription_id', 'login_id', 'membership_id'] a
 // Each project entry becomes a map of subscriptions to their current ref count (how many subscribers each has)
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
-export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
+export async function handleR4SubscriptionConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
   const redis = getCacheRedis();
   const socketId = randomUUID();
   let onDisconnect: (() => Promise<void>) | undefined;
   let userRef: string | undefined;
   let socketProjectId: string | undefined;
 
-  globalLogger.info('[WS] FHIR subscription socket connected', { socketId });
+  globalLogger.info('[WS] FHIR subscription socket connected', {
+    socketId,
+    remoteAddress: request.socket.remoteAddress,
+  });
 
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
     let tokenPayload: JWTPayload;
