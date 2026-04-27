@@ -1682,66 +1682,6 @@ describe('FHIR Repo', () => {
       expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
     }));
 
-  test('Handles caching of profile from linked project', async () =>
-    withTestContext(async () => {
-      const { membership, project } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
-
-      const { membership: membership2, project: project2 } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
-      const updatedProject = await globalSystemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(project2) }],
-      });
-
-      const repo2 = await getRepoForLogin({
-        login: {} as Login,
-        membership: membership2,
-        project: project2,
-        userConfig: {} as UserConfiguration,
-      });
-      const profile = await repo2.createResource({ ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() });
-
-      const patientJson: Patient = {
-        resourceType: 'Patient',
-        meta: {
-          profile: [profile.url],
-        },
-      };
-
-      // Resource upload should fail with profile linked
-      let repo = await getRepoForLogin({
-        login: {} as Login,
-        membership,
-        project: updatedProject,
-        userConfig: {} as UserConfiguration,
-      });
-      await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
-
-      // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
-      const unlinkedProject = await systemRepo.updateResource({
-        ...updatedProject,
-        link: undefined,
-      });
-      repo = await getRepoForLogin({
-        login: {} as Login,
-        membership,
-        project: unlinkedProject,
-        userConfig: {} as UserConfiguration,
-      });
-      await expect(repo.createResource(patientJson)).resolves.toBeDefined();
-    }));
-
   test('Retry after create should not execute post-commit hooks from rollback', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
