@@ -1580,7 +1580,11 @@ function addOrderByClause(
   if (impl.searchStrategy === SearchStrategies.TOKEN_COLUMN) {
     addTokenColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
-    addRangeColumnsOrderBy(builder, impl, sortRule);
+    if (repo.supportsRangeSearch()) {
+      addRangeColumnsOrderBy(builder, impl, sortRule);
+    } else {
+      builder.orderBy(impl.columnName, sortRule.descending);
+    }
   } else if (impl.searchStrategy === SearchStrategies.LOOKUP_TABLE) {
     impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {
