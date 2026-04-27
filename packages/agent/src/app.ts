@@ -1002,7 +1002,7 @@ export class App {
       // Use the latest access token
       // This can be necessary if the message was queued before the access token was refreshed
       await this.medplum.refreshIfExpired();
-      message.accessToken = this.medplum.getAccessToken() as string;
+      message.accessToken = this.medplum.getAccessToken();
     }
     this.webSocket.send(JSON.stringify(message));
   }
