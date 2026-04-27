@@ -55,7 +55,7 @@ flowchart TD
 | `servicedPeriod.start` | Service period start date | No (defaults to current date if not provided) |
 | `item` | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. | No |
 
-:::note
+:::note[]
 In the CoverageEligibilityRequest.item field, STEDI insurance eligibility check only supports **Plan Coverage and General Benefits**. If it is not provided, it will default to Plan Coverage and General Benefits. 
 
 Example:
@@ -83,7 +83,7 @@ item: [
 | `identifier` | System must be `https://www.stedi.com/healthcare/network` | Yes |
 | `name` | Organization name | Yes |
 
-:::info
+:::info[]
 If you are using an Organization from the Medplum Payer Directory, it will have the correct Payer identifier, so you can just use that.
 :::
 
@@ -115,21 +115,28 @@ If you are using an Organization from the Medplum Payer Directory, it will have 
 
 ## Executing the Eligibility Check
 
-The **Insurance Eligibility Bot** will execute the eligibility check by sending the CoverageEligibilityRequest resource to the Stedi API.
+The **Insurance Eligibility Bot** runs the Stedi (X12 270/271) eligibility check and returns a `CoverageEligibilityResponse`. Invoke the `$stedi-check-eligibility` [custom operation](/docs/api/fhir/operations/custom-operations) on `CoverageEligibilityRequest` in either of these ways:
+
+- **Instance level** — on a stored request: `POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility`
+- **Type level** — with a `CoverageEligibilityRequest` in the request body: `POST {base}/fhir/R4/CoverageEligibilityRequest/$stedi-check-eligibility`
+
+**Instance level** (after you have created and stored the `CoverageEligibilityRequest`):
 
 ```ts
-const response = await medplum.executeBot(
-    {
-      system: 'https://www.medplum.com/',
-      value: 'eligibility',
-    },
-    coverageEligibilityRequest
+const response = await medplum.post(
+  medplum.fhirUrl('CoverageEligibilityRequest', coverageEligibilityRequest.id, '$stedi-check-eligibility')
 );
+```
+
+Or via the FHIR REST API:
+
+```http
+POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
 ```
 
 ### Stedi sandbox testing
 
-:::note
+:::note[]
 The Stedi sandbox successfully validates only a few payloads. **We recommend using the transaction Bundle below** when testing against the sandbox.
 :::
 

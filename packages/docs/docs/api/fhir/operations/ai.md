@@ -152,7 +152,7 @@ data: {"content": "Resources) "}
 data: [DONE]
 ```
 
-:::note
+:::note[]
 Tool calls are not supported in streaming mode.
 :::
 

@@ -4,7 +4,7 @@ import { OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { JsonWebKey } from '@medplum/fhirtypes';
 import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import type { MedplumServerConfig } from '../config/types';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -221,7 +221,7 @@ export function generateAccessToken(
   options?: { additionalClaims?: Record<string, string | number>; lifetime?: string }
 ): Promise<string> {
   const duration = options?.lifetime ?? DEFAULT_ACCESS_LIFETIME;
-  return generateJwt(duration, options?.additionalClaims ? { ...claims, ...options.additionalClaims } : claims);
+  return generateJwt(duration, { aud: issuer, ...claims, ...options?.additionalClaims });
 }
 
 /**
@@ -232,8 +232,7 @@ export function generateAccessToken(
  */
 export function generateRefreshToken(claims: MedplumRefreshTokenClaims, lifetime?: string): Promise<string> {
   const duration = lifetime ?? DEFAULT_REFRESH_LIFETIME;
-
-  return generateJwt(duration, claims);
+  return generateJwt(duration, { aud: issuer, ...claims });
 }
 
 /**
@@ -258,10 +257,11 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
       kid: jsonWebKey.id,
       typ: 'JWT',
     })
+    .setJti(randomUUID())
     .setIssuedAt()
     .setNotBefore(new Date())
     .setIssuer(issuer)
-    .setAudience(claims.client_id as string)
+    .setAudience(claims.aud ?? (claims.client_id as string))
     .setExpirationTime(exp)
     .sign(signingKey);
 }

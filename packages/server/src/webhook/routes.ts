@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, getStatus, isOperationOutcome, singularize } from '@medplum/core';
-import type { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { isOperationOutcome, singularize } from '@medplum/core';
+import type { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
+import { sendBotResponse } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-import { sendBinaryResponse } from '../fhir/response';
 
 /**
  * Handles HTTP requests for anonymous webhooks.
@@ -59,14 +58,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  const responseBody = getResponseBodyFromResult(result);
-  const outcome = result.success ? allOk : badRequest(result.logResult);
-
-  if (result.returnValue?.resourceType === 'Binary') {
-    await sendBinaryResponse(res, result.returnValue as Binary);
-  } else {
-    res.status(getStatus(outcome)).contentType(getResponseContentType(req)).send(responseBody);
-  }
+  await sendBotResponse(req, res, result);
 };
 
 export const webhookRouter = Router();

@@ -243,7 +243,7 @@ To satisfy the profile declared in `meta.profile`, values for the required field
 }
 ```
 
-:::tip
+:::tip[]
 
 The corresponding `StructureDefinition` resource for the profile (i.e. one with a `url` matching that in
 `meta.profile`) must be present in your Project: make sure to upload the resource JSON for any profiles you

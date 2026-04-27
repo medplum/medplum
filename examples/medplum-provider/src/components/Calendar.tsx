@@ -204,7 +204,7 @@ export function Calendar(props: {
   }, []);
 
   return (
-    <div data-testid="calendar">
+    <div data-testid="calendar" style={{ height: '100%' }}>
       <ReactBigCalendar
         components={COMPONENTS}
         view={view}

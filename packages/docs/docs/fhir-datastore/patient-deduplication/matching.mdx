@@ -7,6 +7,10 @@ import TabItem from '@theme/TabItem';
 
 The best deduplication systems use a library of matching rules with different strengths and weaknesses. While the effectiveness of different patient matching rules will vary depending on the clinical context, here we suggest some rules to get you started.
 
+:::tip Built-in matching
+Medplum provides a built-in [Patient $match](/docs/api/fhir/operations/patient-match) operation that scores candidates using weighted demographics (identifier, phone, email, name, birth date, gender). It's a good starting point before building custom matching rules.
+:::
+
 These have been trialed in previous deduplication projects, and are rated by their false positive rates (i.e. incorrect matches) and false negative rates (i.e. missed matches). Note that three matching identifiers is the standard.
 
 1. **Exact match on email address / phone number, name, gender, and date of birth:** We recommend starting here. Email and phone act as pseudo-unique identifiers, and have a very low false positive rate. Using name, gender, and date of birth help eliminate false positives caused by family members sharing the same contact info. Note that phone numbers should be normalized before use.

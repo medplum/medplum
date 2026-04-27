@@ -1889,6 +1889,23 @@
         "type": "token",
         "expression": "PackageInstallation.version"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/HealthcareService-offered-in",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "HealthcareService-offered-in",
+        "url": "https://medplum.com/fhir/SearchParameter/HealthcareService-offered-in",
+        "version": "4.0.1",
+        "name": "offered-in",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The service within which this service is offered",
+        "code": "offered-in",
+        "base": ["HealthcareService"],
+        "type": "reference",
+        "expression": "HealthcareService.offeredIn"
+      }
     }
   ]
 }

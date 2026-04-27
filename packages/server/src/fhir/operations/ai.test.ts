@@ -317,7 +317,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   test('Missing API key in project settings', async () => {

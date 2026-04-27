@@ -6,8 +6,11 @@ import {
   badRequest,
   ContentType,
   createReference,
+  getStatus,
   Hl7Message,
+  isOk,
   isOperationOutcome,
+  isResource,
   normalizeErrorString,
   OperationOutcomeError,
   resolveId,
@@ -24,12 +27,14 @@ import type {
   ProjectSetting,
   Reference,
 } from '@medplum/fhirtypes';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
+import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
@@ -74,9 +79,15 @@ export function getBotDefaultHeaders(req: Request | FhirRequest, bot: WithId<Bot
   }
   return defaultHeaders;
 }
-export function getResponseBodyFromResult(
-  result: BotExecutionResult
-): string | { [key: string]: any } | any[] | boolean {
+
+/**
+ * Returns the response body to send to the client based on the bot execution result.
+ * If the bot execution result does not include a return value, then an OperationOutcome is returned with the log result.
+ * If the bot execution result includes a return value, then that is returned directly.
+ * @param result - The bot execution result.
+ * @returns The response body to send to the client.
+ */
+function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
   let responseBody = result.returnValue;
   if (responseBody === undefined) {
     // If the bot did not return a value, then return an OperationOutcome
@@ -274,7 +285,7 @@ async function addBotSecrets(
 
 const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
 
-export function getResponseContentType(req: Request): string {
+function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
   if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;
@@ -308,4 +319,44 @@ export function getJsFileExtension(bot: Bot, code: string): string {
 
   // 3. Default to CJS
   return '.cjs';
+}
+
+/**
+ * Sends the bot execution result to the client.
+ * If the bot execution result is an OperationOutcome, then it is sent as an OperationOutcome response.
+ * Otherwise, the return value is sent as the response body. If the return value is undefined, then the log result is sent as an OperationOutcome.
+ *
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param result - The bot execution result.
+ * @returns A promise that resolves when the response is sent.
+ */
+export async function sendBotResponse(
+  req: Request,
+  res: Response,
+  result: OperationOutcome | BotExecutionResult
+): Promise<void> {
+  if (isOperationOutcome(result)) {
+    sendOutcome(res, result);
+    return;
+  }
+
+  const responseBody = getResponseBodyFromResult(result);
+
+  // If the bot returned an error OperationOutcome, send it with proper HTTP status
+  if (isOperationOutcome(responseBody) && !isOk(responseBody)) {
+    sendOutcome(res, responseBody);
+    return;
+  }
+
+  const outcome = result.success ? allOk : badRequest(result.logResult);
+
+  if (isResource(responseBody)) {
+    await sendFhirResponse(req, res, outcome, responseBody, { forceRawBinaryResponse: true });
+    return;
+  }
+
+  // Send the response
+  // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
+  res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
 }
