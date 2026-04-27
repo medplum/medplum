@@ -108,7 +108,7 @@ describe('Send to Partner Lab', () => {
       ],
     });
 
-    specimen = await medplum.updateResource({ ...specimen, request: [createReference(order)] } as Specimen);
+    specimen = await medplum.updateResource({ ...specimen, request: [createReference(order)] });
 
     Object.assign(ctx, { medplum, patient, requestingPhysician, order, specimen });
   });

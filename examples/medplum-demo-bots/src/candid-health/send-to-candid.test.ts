@@ -149,7 +149,7 @@ describe('Candid Health Tests', () => {
       ],
       serviceProvider: createReference(serviceProvider),
       resourceType: 'Encounter',
-    } as Encounter);
+    });
 
     const coverage: Coverage = await medplum.createResource(
       // start-block exampleCoverage

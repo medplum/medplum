@@ -11,7 +11,6 @@ import {
 import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
 import type {
   Bundle,
-  Identifier,
   Patient,
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
@@ -191,7 +190,7 @@ export function mergePatientRecords(
     }
     // If this identifier is not present on the target, add it to the merged record and mark it as 'old'
     else {
-      mergedIdentifiers.push({ ...srcIdentifier, use: 'old' } as Identifier);
+      mergedIdentifiers.push({ ...srcIdentifier, use: 'old' });
     }
   }
 
