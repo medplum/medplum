@@ -39,14 +39,12 @@ import type { Bundle, Appointment } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-const params = new URLSearchParams({
-  start: '2026-03-10T09:00:00-05:00',
-  end: '2026-03-10T17:00:00-05:00',
-  'service-type-reference': 'HealthcareService/my-healthcareservice-id',
-  schedule:  'Schedule/my-schedule-id'
-})
-
-const bundle = await medplum.get(medplum.fhirUrl('Appointment', '$find?${params}')) as Bundle<Appointment>;
+const url = medplum.fhirUrl('Appointment', '$find');
+url.searchParams.append('start', '2026-03-10T09:00:00-05:00')
+url.searchParams.append('end', '2026-03-10T17:00:00-05:00');
+url.searchParams.append('service-type-reference', 'HealthcareService/my-healthcareservice-id')
+url.searchParams.append('schedule', 'Schedule/my-schedule-id')
+const bundle = await medplum.get<Bundle<Appointment>>(url);
 const appointments = bundle.entry?.map((e) => e.resource as Appointment) ?? [];
 ```
 

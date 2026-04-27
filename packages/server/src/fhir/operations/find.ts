@@ -226,6 +226,15 @@ async function handler(params: {
       end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
     }));
 
+    // Optimization: restrict to windows long enough for the requested duration
+    // here before trying to do intersections with other schedules later. This
+    // also ensures that we don't return intervals having an `end` before the
+    // `start` after our previous buffer-trimming step.
+    availability = availability.filter((interval) => {
+      const durationMs = interval.end.getTime() - interval.start.getTime();
+      return durationMs > schedulingParameters.duration * 1000;
+    });
+
     return availability;
   });
 
