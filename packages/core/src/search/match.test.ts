@@ -1130,4 +1130,44 @@ describe('Search matching', () => {
     };
     expect(matchesSearchRequest(resource, search1)).toBe(false);
   });
+
+  test('token: |value syntax matches resource with any system (issue #1241)', () => {
+    // Resource with a system set on the identifier
+    const resource: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      identifier: [{ system: 'http://customer.example/ids', value: 'abc123' }],
+    };
+
+    // |value (pipe with empty system) MUST match regardless of whether resource has a system
+    // Before fix: !resourceValue.system was checked, so this returned false when system was set
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'ServiceRequest',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|abc123' }],
+      })
+    ).toBe(true);
+
+    // system|value still works for exact system match
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'ServiceRequest',
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: 'http://customer.example/ids|abc123',
+          },
+        ],
+      })
+    ).toBe(true);
+
+    // |value should NOT match when value is wrong
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'ServiceRequest',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|wrongvalue' }],
+      })
+    ).toBe(false);
+  });
+
 });
