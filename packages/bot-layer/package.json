@@ -33,7 +33,7 @@
     "pdfmake": "0.2.21",
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.1.1",
-    "twilio": "5.13.1",
+    "twilio": "6.0.0",
     "undici": "7.25.0"
   },
   "devDependencies": {
