@@ -6,7 +6,7 @@ import type { Bundle, Project, Resource, ResourceType, Subscription } from '@med
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
 import crypto, { randomUUID } from 'node:crypto';
-import { IncomingMessage } from 'node:http';
+import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
