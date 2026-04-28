@@ -1230,8 +1230,8 @@ export const EnableWhen = (): JSX.Element => (
 export const EnableWhenOnSubmit = (): JSX.Element => (
   <Document>
     <p>
-      Select "Yes" on Q1, answer Q2, then switch Q1 to "No" and submit. The submitted response logged
-      to the console will not contain Q2's answer because Q2 is disabled.
+      Select "Yes" on Q1, answer Q2, then switch Q1 to "No" and submit. The submitted response logged to the console
+      will not contain Q2's answer because Q2 is disabled.
     </p>
     <QuestionnaireForm
       questionnaire={{
