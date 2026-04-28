@@ -1091,6 +1091,115 @@ describe('BillingTab', () => {
     });
   });
 
+  describe('claim submission with coverage references', () => {
+    test('sends claimToSubmit with updated insurance references to the bot', async () => {
+      const user = userEvent.setup();
+      const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
+      const mockCondition = {
+        resourceType: 'Condition' as const,
+        id: 'condition-1',
+        code: {
+          coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51', display: 'Headache' }],
+          text: 'Headache',
+        },
+      };
+      const updatedClaim: WithId<Claim> = {
+        ...mockClaim,
+        insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/coverage-123' } }],
+      };
+
+      vi.spyOn(medplum, 'searchOne')
+        .mockResolvedValueOnce(mockBot as WithId<Bot>)
+        .mockResolvedValue(undefined);
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim as any);
+      vi.spyOn(medplum, 'readResource').mockResolvedValue(updatedClaim as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({ message: 'Claim submitted successfully' });
+
+      await setup({
+        claim: mockClaim,
+        encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
+      });
+
+      await waitFor(() => expect(screen.getByText('Submit Claim')).toBeInTheDocument());
+
+      await user.click(screen.getByText('Submit Claim'));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Submit claim' })).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+
+      await waitFor(() => {
+        expect(medplum.updateResource).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Claim',
+            insurance: [
+              expect.objectContaining({
+                sequence: 1,
+                focal: true,
+                coverage: expect.objectContaining({ reference: 'Coverage/coverage-123' }),
+              }),
+            ],
+          })
+        );
+        expect(medplum.executeBot).toHaveBeenCalledWith(
+          'bot-123',
+          expect.objectContaining({
+            insurance: [
+              expect.objectContaining({ coverage: expect.objectContaining({ reference: 'Coverage/coverage-123' }) }),
+            ],
+          }),
+          'application/fhir+json'
+        );
+      });
+    });
+
+    test('creates self-pay coverage before opening modal when patient has only insurance', async () => {
+      const user = userEvent.setup();
+      const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
+      const mockCondition = {
+        resourceType: 'Condition' as const,
+        id: 'condition-1',
+        code: { text: 'Headache' },
+      };
+
+      vi.spyOn(medplum, 'searchOne')
+        .mockResolvedValueOnce(mockBot as WithId<Bot>)
+        .mockResolvedValue(undefined);
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
+      const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({
+        resourceType: 'Coverage',
+        id: 'new-self-pay',
+        status: 'active',
+        beneficiary: { reference: 'Patient/patient-123' },
+        type: { coding: [{ code: 'SELFPAY' }] },
+      } as any);
+
+      await setup({
+        claim: mockClaim,
+        encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
+      });
+
+      await waitFor(() => expect(screen.getByText('Submit Claim')).toBeInTheDocument());
+
+      await user.click(screen.getByText('Submit Claim'));
+
+      await waitFor(() => {
+        expect(createSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Coverage',
+            type: expect.objectContaining({
+              coding: expect.arrayContaining([expect.objectContaining({ code: 'SELFPAY' })]),
+            }),
+          })
+        );
+        expect(screen.getByText('Review before submitting claim')).toBeInTheDocument();
+      });
+    });
+  });
+
   describe('Candid Health integration', () => {
     const mockCandidClaim: WithId<Claim> = {
       ...mockClaim,

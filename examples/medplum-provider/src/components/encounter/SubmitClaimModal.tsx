@@ -3,11 +3,11 @@
 import { Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName } from '@medplum/core';
-import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { Condition, Coverage, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
+import { isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 
 type BillingType = 'insurance' | 'self-pay';
@@ -91,45 +91,51 @@ const CoverageCard = ({ coverage, selected, onToggle }: CoverageCardProps): JSX.
   );
 };
 
-interface ClaimPickerProps {
+interface ClaimReviewPanelProps {
   patient: WithId<Patient>;
   conditions: Condition[];
-  chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   submitting: boolean;
   insuranceCoverages: WithId<Coverage>[];
-  selfPayValue: string;
+  selectedCoverage: WithId<Coverage> | undefined;
+  selfPayCoverage: WithId<Coverage> | undefined;
   initialBillingType: BillingType;
   showCandidButton?: boolean;
   showStediButton?: boolean;
   stediSubmitting?: boolean;
   onClose: () => void;
-  onConfirm: (coverageIds: string[]) => void;
+  onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
   ensureSelfPayCoverage?: () => Promise<WithId<Coverage>>;
 }
 
-const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
+const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
   const {
     patient,
     conditions,
     practitioner,
     submitting,
     insuranceCoverages,
-    selfPayValue,
+    selectedCoverage,
+    selfPayCoverage,
     initialBillingType,
     showCandidButton,
     showStediButton,
     stediSubmitting,
     onClose,
-    onConfirm,
+    onSubmitClaim,
     onSubmitToStedi,
     ensureSelfPayCoverage,
   } = props;
 
   const [billingType, setBillingType] = useState<BillingType>(initialBillingType);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(initialBillingType === 'insurance' ? insuranceCoverages.map((c) => c.id) : [])
+    () =>
+      new Set(
+        initialBillingType === 'insurance' && selectedCoverage && !isSelfPayCoverage(selectedCoverage)
+          ? [selectedCoverage.id]
+          : []
+      )
   );
 
   const patientName = patient.name?.[0] ? formatHumanName(patient.name[0]) : 'Unknown Patient';
@@ -155,9 +161,9 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
   };
   const handleConfirm = (): void => {
     if (billingType === 'self-pay') {
-      onConfirm([selfPayValue]);
+      onSubmitClaim(selfPayCoverage ? [createReference(selfPayCoverage)] : []);
     } else {
-      onConfirm(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map((c) => c.id));
+      onSubmitClaim(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map(createReference));
     }
   };
 
@@ -224,9 +230,9 @@ const ClaimPicker = (props: ClaimPickerProps): JSX.Element => {
               Coverage on file
             </Text>
             {insuranceCoverages.length > 1 && (
-              <Text size="xs" c="blue" style={{ cursor: 'pointer' }} onClick={() => toggleCoverageAll()}>
+              <Button variant="subtle" size="xs" onClick={toggleCoverageAll}>
                 {selectedIds.size === insuranceCoverages.length ? 'Deselect all' : 'Select all'}
-              </Text>
+              </Button>
             )}
           </Group>
           <Box style={{ maxHeight: 320, overflowY: 'auto' }}>
@@ -299,15 +305,13 @@ export interface SubmitClaimModalProps {
   coverages: WithId<Coverage>[];
   selectedCoverage: WithId<Coverage> | undefined;
   patient: WithId<Patient>;
-  encounter: WithId<Encounter>;
   conditions: Condition[];
-  chargeItems: WithId<ChargeItem>[] | undefined;
   practitioner: WithId<Practitioner> | undefined;
   showCandidButton?: boolean;
   showStediButton?: boolean;
   stediSubmitting?: boolean;
   onClose: () => void;
-  onConfirm: (coverageIds: string[]) => void;
+  onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
   ensureSelfPayCoverage?: () => Promise<WithId<Coverage>>;
 }
@@ -320,42 +324,39 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
     selectedCoverage,
     patient,
     conditions,
-    chargeItems,
     practitioner,
     showCandidButton = true,
     showStediButton,
     stediSubmitting,
     onClose,
-    onConfirm,
+    onSubmitClaim,
     onSubmitToStedi,
     ensureSelfPayCoverage,
   } = props;
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
   const insuranceCoverages = coverages.filter((c) => !isSelfPayCoverage(c));
-  const selfPayValue = selfPayCoverage?.id ?? SELF_PAY_VALUE;
+  const selectedIsSelfPay = selectedCoverage !== undefined && isSelfPayCoverage(selectedCoverage);
   const initialBillingType: BillingType =
-    insuranceCoverages.length > 0 && selectedCoverage && !isSelfPayCoverage(selectedCoverage)
-      ? 'insurance'
-      : 'self-pay';
+    !selectedIsSelfPay && insuranceCoverages.length > 0 ? 'insurance' : 'self-pay';
 
   return (
     <Modal opened={opened} onClose={onClose} centered size="lg" padding="xl" title="Review before submitting claim">
       {opened && (
-        <ClaimPicker
+        <ClaimReviewPanel
           patient={patient}
           conditions={conditions}
-          chargeItems={chargeItems}
           practitioner={practitioner}
           submitting={submitting}
           insuranceCoverages={insuranceCoverages}
-          selfPayValue={selfPayValue}
+          selectedCoverage={selectedCoverage}
+          selfPayCoverage={selfPayCoverage}
           initialBillingType={initialBillingType}
           showCandidButton={showCandidButton}
           showStediButton={showStediButton}
           stediSubmitting={stediSubmitting}
           onClose={onClose}
-          onConfirm={onConfirm}
+          onSubmitClaim={onSubmitClaim}
           onSubmitToStedi={onSubmitToStedi}
           ensureSelfPayCoverage={ensureSelfPayCoverage}
         />
