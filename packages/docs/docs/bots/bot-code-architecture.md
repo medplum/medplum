@@ -25,7 +25,7 @@ If you're writing TypeScript for the first time, the build step may feel unfamil
 
 ## The Single-File Constraint
 
-Medplum deploys **one JavaScript file per bot**. This is by design: it keeps the deployment unit simple and portable across runtimes (Lambda, VM context).
+Medplum deploys **one JavaScript file per bot**. This is by design: it keeps the deployment unit simple and portable across runtimes (Lambda, VM context). That file must contain your shared `src/` modules and any **third-party** libraries you depend on, **except** packages you mark as `external` because they are already supplied by the Medplum bot runtime (for AWS Lambda, the [bot Lambda layer](https://github.com/medplum/medplum/blob/main/packages/bot-layer/package.json)).
 
 For a single bot this is fine. For a project with many bots sharing common logic, you need a way to write modular source code while still producing a single file per bot at deploy time. The answer is a bundler.
 
@@ -57,7 +57,7 @@ Each file in `src/bots/` exports a single `handler` function. Each file in `src/
 
 ## Bundling with esbuild
 
-[esbuild](https://esbuild.github.io/) is a fast JavaScript bundler that compiles each bot into a self-contained file, inlining all your `../common/` imports. Large runtime-provided packages like `@medplum/core` are left as `require()` calls — they're already installed in the Medplum runtime and don't need to be shipped. Other bundlers work too, as long as they support inlining local imports and marking external packages as external.
+[esbuild](https://esbuild.github.io/) is a fast JavaScript bundler that compiles each bot into one deployable file, inlining your `../common/` imports and (by default) **npm packages** from `node_modules`. Packages listed in **`external`** are left as `require()` calls — on AWS Lambda, Medplum resolves those from the **bot Lambda layer**, so list every layer-provided package you import to avoid bloating the bundle or duplicating runtime libraries. The layer’s package catalog is defined in Medplum’s [`packages/bot-layer/package.json`](https://github.com/medplum/medplum/blob/main/packages/bot-layer/package.json). Other bundlers work too, as long as they support inlining local imports and marking those imports as external.
 
 ### Installation
 
@@ -78,13 +78,14 @@ esbuild
   .build({
     entryPoints: botEntryPoints,
     outdir: './dist/bots',
-    bundle: true,       // Inline all local imports (your src/common/ code)
+    bundle: true,       // Inline local imports and npm deps not listed in external
     platform: 'node',
     format: 'cjs',
     loader: { '.ts': 'ts' },
     target: 'es2020',
     external: [
-      // These packages are pre-installed in the Medplum runtime — don't bundle them
+      // Every Medplum layer package you import should appear here (expand as needed).
+      // Catalog: https://github.com/medplum/medplum/blob/main/packages/bot-layer/package.json
       '@medplum/core',
       '@medplum/definitions',
     ],
@@ -115,9 +116,21 @@ npm run build
 | Source | After bundling |
 |--------|---------------|
 | `import { connectToApi } from '../common/connection'` | Inlined into the bot's `.js` file |
-| `import { MedplumClient } from '@medplum/core'` | Left as `require('@medplum/core')` — resolved at runtime |
+| `import { MedplumClient } from '@medplum/core'` | Left as `require('@medplum/core')` when listed in `external` — resolved at runtime from the layer |
+| `import { RRule } from 'rrule'` (after `npm install rrule`) | Inlined into the bot's `.js` file — not on the layer, so do **not** add `rrule` to `external` |
 
-Each file in `dist/bots/` is fully self-contained. Your `src/common/` folder never gets deployed — its code is merged into each bot that imports it.
+Each file under `dist/bots/` contains every **non-external** dependency (your shared modules and bundled npm libraries). Your `src/common/` folder is never deployed separately — its code is merged into each bot that imports it. Layer packages stay as `require()` calls.
+
+### Third-party npm dependencies
+
+To ship a one-off library (for example `rrule`, `lodash`, or a small HTTP helper):
+
+1. **`npm install <package>`** (dependency or devDependency according to your repo conventions).
+2. **`import`** it from a bot under `src/bots/` or from `src/common/` as usual.
+3. **Omit it from `external`** unless that exact package is already provided by the Medplum bot Lambda layer (see the `dependencies` in the same [`bot-layer` `package.json`](https://github.com/medplum/medplum/blob/main/packages/bot-layer/package.json) linked in the esbuild example). If it is not on the layer, esbuild **bundles** it into the compiled `.js` file.
+
+:::warning[Note] If you use **transpile-only** tooling or wrongly list a non-layer package in `external`, the output can still contain `require('some-package')`. The Medplum CLI uploads **only** that single `dist` file — there is no `node_modules` on Lambda — so the bot will **fail at runtime**. [Bots in Production](/docs/bots/bots-in-production) describes the deploy path, `medplum.config.json`, and related constraints (for example deployment size).
+:::
 
 ## Writing Bots and Shared Modules
 
