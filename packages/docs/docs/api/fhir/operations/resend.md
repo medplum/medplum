@@ -89,7 +89,7 @@ If the supplied `versionId` does not exist in history, the operation returns `40
 
 When `versionId` is supplied without an explicit `interaction`, the server derives one from the version's position in history: the first version of a resource resolves to `create`, any later version resolves to `update`. Pass `interaction` explicitly to override this — e.g. `interaction: 'update'` against a first version (which has no prior) returns `412 Precondition Failed`.
 
-When neither `versionId` nor `interaction` is supplied, `interaction` defaults to `update` and the resource must have a prior version in history; otherwise the operation returns `412 Precondition Failed`. Pass `interaction: 'create'` to resend the very first version of a resource.
+When neither `versionId` nor `interaction` is supplied, `interaction` defaults to `update` and the resource must have a prior version in history; otherwise the operation returns `412 Precondition Failed`.
 
 ### Output
 
