@@ -385,7 +385,7 @@ export class Hl7Message {
     this.segmentsByName = buildSegmentMap(this._segments);
     this.cachedString = undefined;
     this.bindSegments();
-    // NOTE: We don't clear allSegmentsMap here because beyond this point all new segments have to be `Hl7Segment` types, not strings
+    // NOTE: We don't clear allSegmentsParsed here because beyond this point all new segments have to be `Hl7Segment` types, not strings
   }
 
   private bindSegments(): void {
