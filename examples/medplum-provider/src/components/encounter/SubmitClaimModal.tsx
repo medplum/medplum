@@ -8,6 +8,7 @@ import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { isSelfPayCoverage } from '../../utils/coverage';
+import { showErrorNotification } from '../../utils/notifications';
 
 type BillingType = 'insurance' | 'self-pay';
 
@@ -99,7 +100,13 @@ interface ClaimReviewPanelProps {
   selectedCoverage: WithId<Coverage> | undefined;
   selfPayCoverage: WithId<Coverage> | undefined;
   initialBillingType: BillingType;
+  showCandidButton?: boolean;
+  showStediButton?: boolean;
+  stediSubmitting?: boolean;
+  onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
+  onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
+  ensureSelfPayCoverage?: () => Promise<WithId<Coverage>>;
 }
 
 const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
@@ -112,7 +119,13 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
     selectedCoverage,
     selfPayCoverage,
     initialBillingType,
+    showCandidButton,
+    showStediButton,
+    stediSubmitting,
+    onClose,
     onSubmitClaim,
+    onSubmitToStedi,
+    ensureSelfPayCoverage,
   } = props;
 
   const [billingType, setBillingType] = useState<BillingType>(initialBillingType);
@@ -151,6 +164,30 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
       onSubmitClaim(selfPayCoverage ? [createReference(selfPayCoverage)] : []);
     } else {
       onSubmitClaim(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map(createReference));
+    }
+  };
+
+  const handleSubmitToStedi = async (): Promise<void> => {
+    if (!onSubmitToStedi) {
+      return;
+    }
+    try {
+      let resolved: WithId<Coverage>[];
+      if (billingType === 'self-pay') {
+        if (!ensureSelfPayCoverage) {
+          return;
+        }
+        resolved = [await ensureSelfPayCoverage()];
+      } else {
+        resolved = insuranceCoverages.filter((c) => selectedIds.has(c.id));
+        if (resolved.length === 0) {
+          return;
+        }
+      }
+      onClose();
+      onSubmitToStedi(resolved.map((c) => createReference(c)));
+    } catch (err) {
+      showErrorNotification(err);
     }
   };
 
@@ -235,15 +272,28 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
       </Grid>
 
       <Group justify="flex-end">
-        <Button
-          size="md"
-          rightSection={<IconArrowUpRight size={16} />}
-          loading={submitting}
-          disabled={!canSubmit}
-          onClick={handleConfirm}
-        >
-          Submit claim
-        </Button>
+        {showStediButton && (
+          <Button
+            size="md"
+            variant="outline"
+            rightSection={<IconArrowUpRight size={16} />}
+            disabled={submitting || !canSubmit}
+            onClick={handleSubmitToStedi}
+          >
+            Submit to Stedi
+          </Button>
+        )}
+        {showCandidButton !== false && (
+          <Button
+            size="md"
+            rightSection={<IconArrowUpRight size={16} />}
+            loading={submitting}
+            disabled={!canSubmit || !!stediSubmitting}
+            onClick={handleConfirm}
+          >
+            Submit to Candid
+          </Button>
+        )}
       </Group>
     </Stack>
   );
@@ -257,13 +307,32 @@ export interface SubmitClaimModalProps {
   patient: WithId<Patient>;
   conditions: Condition[];
   practitioner: WithId<Practitioner> | undefined;
+  showCandidButton?: boolean;
+  showStediButton?: boolean;
+  stediSubmitting?: boolean;
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
+  onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
+  ensureSelfPayCoverage?: () => Promise<WithId<Coverage>>;
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
-  const { opened, submitting, coverages, selectedCoverage, patient, conditions, practitioner, onClose, onSubmitClaim } =
-    props;
+  const {
+    opened,
+    submitting,
+    coverages,
+    selectedCoverage,
+    patient,
+    conditions,
+    practitioner,
+    showCandidButton = true,
+    showStediButton,
+    stediSubmitting,
+    onClose,
+    onSubmitClaim,
+    onSubmitToStedi,
+    ensureSelfPayCoverage,
+  } = props;
 
   const selfPayCoverage = coverages.find(isSelfPayCoverage);
   const insuranceCoverages = coverages.filter((c) => !isSelfPayCoverage(c));
@@ -283,7 +352,13 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
           selectedCoverage={selectedCoverage}
           selfPayCoverage={selfPayCoverage}
           initialBillingType={initialBillingType}
+          showCandidButton={showCandidButton}
+          showStediButton={showStediButton}
+          stediSubmitting={stediSubmitting}
+          onClose={onClose}
           onSubmitClaim={onSubmitClaim}
+          onSubmitToStedi={onSubmitToStedi}
+          ensureSelfPayCoverage={ensureSelfPayCoverage}
         />
       )}
     </Modal>

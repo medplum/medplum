@@ -537,6 +537,8 @@ export class BackEnd extends Construct {
     }
 
     // Load Balancer
+    const loadBalancingAlgorithm = resolveLoadBalancingAlgorithmType(config.loadBalancerAlgorithm);
+
     this.loadBalancer = this.createLoadBalancer(
       config.stackName,
       '',
@@ -546,7 +548,9 @@ export class BackEnd extends Construct {
       config.loadBalancerLoggingBucket,
       config.apiWafIpSetArn,
       config.wafLogGroupName,
-      config.wafLogGroupCreate
+      config.wafLogGroupCreate,
+      undefined,
+      loadBalancingAlgorithm
     );
 
     // Optional mTLS Load Balancer
@@ -561,7 +565,8 @@ export class BackEnd extends Construct {
         config.mtlsWafIpSetArn,
         config.wafLogGroupName,
         config.wafLogGroupCreate,
-        { mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH }
+        { mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH },
+        loadBalancingAlgorithm
       );
     }
 
@@ -953,6 +958,7 @@ export class BackEnd extends Construct {
    * @param wafLogGroupName - Optional WAF log group name.
    * @param wafLogGroupCreate - Optional WAF log group create flag.
    * @param mutualAuthentication - Optional mutual authentication configuration for the HTTPS listener.
+   * @param loadBalancingAlgorithmType - Optional target group load balancing algorithm.
    * @returns The created Application Load Balancer.
    */
   private createLoadBalancer(
@@ -965,7 +971,8 @@ export class BackEnd extends Construct {
     wafIpSetArn: string | undefined,
     wafLogGroupName: string | undefined,
     wafLogGroupCreate: boolean | undefined,
-    mutualAuthentication?: elbv2.MutualAuthentication
+    mutualAuthentication?: elbv2.MutualAuthentication,
+    loadBalancingAlgorithmType?: elbv2.TargetGroupLoadBalancingAlgorithmType
   ): elbv2.ApplicationLoadBalancer {
     const targetGroup = new elbv2.ApplicationTargetGroup(this, `${namePrefix}TargetGroup`, {
       vpc: this.vpc,
@@ -978,6 +985,7 @@ export class BackEnd extends Construct {
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 5,
       },
+      loadBalancingAlgorithmType,
       targets: [this.fargateService],
     });
 
@@ -1019,6 +1027,26 @@ export class BackEnd extends Construct {
     assert.ok(wafAssociation, 'Failed to create WAF association');
 
     return loadBalancer;
+  }
+}
+
+function resolveLoadBalancingAlgorithmType(
+  value: string | undefined
+): elbv2.TargetGroupLoadBalancingAlgorithmType | undefined {
+  if (!value) {
+    return undefined;
+  }
+  switch (value) {
+    case 'round_robin':
+      return elbv2.TargetGroupLoadBalancingAlgorithmType.ROUND_ROBIN;
+    case 'least_outstanding_requests':
+      return elbv2.TargetGroupLoadBalancingAlgorithmType.LEAST_OUTSTANDING_REQUESTS;
+    case 'weighted_random':
+      return elbv2.TargetGroupLoadBalancingAlgorithmType.WEIGHTED_RANDOM;
+    default:
+      throw new Error(
+        `Invalid loadBalancerAlgorithm '${value}'. Expected one of: round_robin, least_outstanding_requests, weighted_random`
+      );
   }
 }
 

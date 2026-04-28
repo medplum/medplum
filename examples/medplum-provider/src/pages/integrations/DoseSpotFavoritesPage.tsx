@@ -14,13 +14,12 @@ import {
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { formatSearchQuery, isCodeableConcept, normalizeErrorString } from '@medplum/core';
+import { formatSearchQuery, generateId, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import type { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
 import { AsyncAutocomplete, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { showErrorNotification } from '../../utils/notifications';
 import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
 
@@ -98,7 +97,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   };
 
   const toOption = (medication: CodeableConcept): { value: string; label: string; resource: CodeableConcept } => ({
-    value: uuidv4(),
+    value: generateId(),
     label: medication.text || 'Unknown Medication',
     resource: medication,
   });

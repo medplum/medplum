@@ -28,4 +28,34 @@ describe('ResourceDiff', () => {
     expect(added).toBeDefined();
     expect(added).toHaveClass('added');
   });
+
+  test('Handles empty original', () => {
+    const original = {} as Patient;
+
+    const revised: Patient = {
+      resourceType: 'Patient',
+      id: '123',
+    };
+
+    render(<ResourceDiff original={original} revised={revised} />);
+
+    const added = screen.getByText(/"resourceType": "Patient",\s+"id": "123"/, { exact: false });
+    expect(added).toBeDefined();
+    expect(added).toHaveClass('added');
+  });
+
+  test('Handles empty revised', () => {
+    const original: Patient = {
+      resourceType: 'Patient',
+      id: '123',
+    };
+
+    const revised = {} as Patient;
+
+    render(<ResourceDiff original={original} revised={revised} />);
+
+    const removed = screen.getByText(/"resourceType": "Patient",\s+"id": "123"/, { exact: false });
+    expect(removed).toBeDefined();
+    expect(removed).toHaveClass('removed');
+  });
 });
