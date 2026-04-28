@@ -20,6 +20,7 @@ import type {
   ClientApplication,
   CodeableConcept,
   Encounter,
+  Location,
   Organization,
   Patient,
   PlanDefinition,
@@ -242,6 +243,14 @@ async function createActivityDefinitionTask(
 
   switch (activityDefinition.kind) {
     case 'ServiceRequest': {
+      let performer: ServiceRequest['performer'] | undefined;
+      if (activityDefinition.location) {
+        const location = await repo.readReference<Location>(activityDefinition.location);
+        if (location.managingOrganization) {
+          performer = [location.managingOrganization];
+        }
+      }
+
       const serviceRequest = await repo.createResource({
         resourceType: 'ServiceRequest',
         status: 'draft',
@@ -250,6 +259,9 @@ async function createActivityDefinitionTask(
         requester: requester as ServiceRequest['requester'],
         encounter: encounter,
         code: activityDefinition.code,
+        category: activityDefinition.topic,
+        locationReference: activityDefinition.location ? [activityDefinition.location] : undefined,
+        performer: performer,
         extension: activityDefinition.extension,
       });
 

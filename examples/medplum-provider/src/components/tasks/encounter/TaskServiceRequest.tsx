@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type { DiagnosticReport, Encounter, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type {
+  DiagnosticReport,
+  Encounter,
+  Organization,
+  Reference,
+  ServiceRequest,
+  Task,
+} from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { useMedplum, useResource } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
@@ -25,17 +32,21 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
   const serviceRequest = useResource(task.focus as Reference<ServiceRequest>);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [labServiceRequest, setLabServiceRequest] = useState<ServiceRequest | undefined>(undefined);
-  const performingLab: LabOrganization = {
-    resourceType: 'Organization',
-    id: '258a1dbb-ccec-4cb3-b9ff-4dc28f8f28a0',
-    name: 'HGDX LabCorp',
-    identifier: [
-      {
-        system: 'https://www.healthgorilla.com',
-        value: 'f-388554647b89801ea5e8320b',
-      },
-    ],
-  };
+  const [performingLab, setPerformingLab] = useState<LabOrganization | undefined>(undefined);
+  const performerReferences = serviceRequest?.performer;
+
+  useEffect(() => {
+    const fetchPerformingLabFromPerformer = async (): Promise<void> => {
+      const orgRef = performerReferences?.find((ref) => ref.reference?.startsWith('Organization/'));
+      if (!orgRef) {
+        setPerformingLab(undefined);
+        return;
+      }
+      const org = await medplum.readReference(orgRef as Reference<Organization>);
+      setPerformingLab(org as LabOrganization);
+    };
+    fetchPerformingLabFromPerformer().catch(showErrorNotification);
+  }, [medplum, performerReferences]);
 
   const tests: TestCoding[] | undefined = serviceRequest?.code?.coding
     ?.filter((coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)
