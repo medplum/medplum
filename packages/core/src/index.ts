@@ -34,6 +34,7 @@ export * from './hl7';
 export * from './jwt';
 export * from './keyvalue';
 export * from './logger';
+export * from './medication-order-utils';
 export * from './outcomes';
 export * from './pharmacy-utils';
 export * from './readablepromise';
