@@ -676,25 +676,160 @@ describe('FHIR Routes', () => {
       })
     );
 
+    // Bump to a second version so interaction='update' has a prior version to diff against
+    const profileRef = getReferenceString(profile);
+    const get = await request(app)
+      .get(`/fhir/R4/${profileRef}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(get.status).toBe(200);
+    const updateRes = await request(app)
+      .put(`/fhir/R4/${profileRef}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...get.body, telecom: [{ system: 'phone', value: '555-0100' }] });
+    expect(updateRes.status).toBe(200);
+
     const res = await request(app)
-      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .post(`/fhir/R4/${profileRef}/$resend`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res.status).toBe(200);
 
     // Resend with verbose=true
     const res2 = await request(app)
-      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .post(`/fhir/R4/${profileRef}/$resend`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ verbose: true });
     expect(res2.status).toBe(200);
 
     // Resend with subscription option
     const res3 = await request(app)
-      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .post(`/fhir/R4/${profileRef}/$resend`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ subscription: 'Subscription/123' });
     expect(res3.status).toBe(200);
+
+    // interaction='create' does not require a prior version
+    const resCreate = await request(app)
+      .post(`/fhir/R4/${profileRef}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ interaction: 'create' });
+    expect(resCreate.status).toBe(200);
+  });
+
+  test('Resend with no prior version returns 412', async () => {
+    const { profile, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Edith',
+        lastName: 'Smith',
+        projectName: `Edith Project ${randomUUID()}`,
+        email: `edith${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // First version of the resource — interaction='update' (default) has no prior to diff
+    const res = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res.status).toBe(412);
+
+    // interaction='create' avoids the prior-version requirement
+    const resCreate = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ interaction: 'create' });
+    expect(resCreate.status).toBe(200);
+  });
+
+  test('Resend with versionId targets historical version', async () => {
+    const { profile, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Carol',
+        lastName: 'Smith',
+        projectName: `Carol Project ${randomUUID()}`,
+        email: `carol${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Create a patient
+    const create = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: true, name: [{ family: 'Original' }] });
+    expect(create.status).toBe(201);
+    const created = create.body as WithId<Patient>;
+    const v1 = created.meta?.versionId as string;
+
+    // Update the patient -> creates v2
+    const update = await request(app)
+      .put(`/fhir/R4/Patient/${created.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...created, name: [{ family: 'Updated' }] });
+    expect(update.status).toBe(200);
+    const v2 = (update.body as WithId<Patient>).meta?.versionId as string;
+    expect(v2).not.toEqual(v1);
+
+    // Resend pinned to v1 with no explicit interaction succeeds: server
+    // auto-derives interaction='create' because v1 has no prior version
+    const pinnedV1Auto = await request(app)
+      .post(`/fhir/R4/Patient/${created.id}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ versionId: v1 });
+    expect(pinnedV1Auto.status).toBe(200);
+
+    // Resend pinned to v1 with explicit interaction='update' fails: v1 has no prior version
+    const pinnedV1Update = await request(app)
+      .post(`/fhir/R4/Patient/${created.id}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ versionId: v1, interaction: 'update' });
+    expect(pinnedV1Update.status).toBe(412);
+
+    // Resend pinned to v1 with explicit interaction='create' succeeds
+    const pinnedV1Create = await request(app)
+      .post(`/fhir/R4/Patient/${created.id}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ versionId: v1, interaction: 'create' });
+    expect(pinnedV1Create.status).toBe(200);
+
+    // Resend pinned to v2 (current) succeeds — has v1 as prior
+    const pinnedCurrent = await request(app)
+      .post(`/fhir/R4/Patient/${created.id}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ versionId: v2 });
+    expect(pinnedCurrent.status).toBe(200);
+
+    // Default (no versionId) succeeds since v2 is current and has v1 as prior
+    const defaultResend = await request(app)
+      .post(`/fhir/R4/Patient/${created.id}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(defaultResend.status).toBe(200);
+
+    // profile is unused beyond auth context here; reference it to satisfy lint
+    expect(profile).toBeDefined();
+  });
+
+  test('Resend with unknown versionId returns 404', async () => {
+    const { profile, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Dave',
+        lastName: 'Smith',
+        projectName: `Dave Project ${randomUUID()}`,
+        email: `dave${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ versionId: randomUUID() });
+    expect(res.status).toBe(404);
   });
 
   test('ProjectMembership with null access policy', async () =>

@@ -245,6 +245,13 @@ export interface ReadResourceOptions extends InteractionOptions {
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
   subscription?: string;
+  /**
+   * Resend subscriptions for a specific historical version of the resource
+   * instead of the current version. When set, `previousVersion` passed to
+   * subscription evaluation is the version immediately prior to this one
+   * in history (if any).
+   */
+  versionId?: string;
 }
 
 export interface ProcessAllResourcesOptions {
@@ -777,6 +784,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  /**
+   * Reads the version of a resource immediately preceding the given resource
+   * in history (ordered by `meta.lastUpdated`). Returns `undefined` if the
+   * given resource is the first version.
+   *
+   * Unlike scanning a paged `readHistory()` result, this query is bounded to
+   * one row regardless of how many historical versions the resource has.
+   * @param resource - A version of the resource (current or historical) to look back from.
+   * @returns The prior version, or `undefined` if none exists.
+   */
+  async readPreviousVersion<T extends Resource>(resource: WithId<T>): Promise<T | undefined> {
+    const lastUpdated = resource.meta?.lastUpdated;
+    if (!lastUpdated) {
+      throw new OperationOutcomeError(preconditionFailed);
+    }
+    if (!isUUID(resource.id)) {
+      throw new OperationOutcomeError(notFound);
+    }
+    const rows = await new SelectQuery(resource.resourceType + '_History')
+      .column('content')
+      .where('id', '=', resource.id)
+      .where('lastUpdated', '<', lastUpdated)
+      .orderBy('lastUpdated', true)
+      .limit(1)
+      .execute(this.getDatabaseClient(DatabaseMode.READER));
+    if (rows.length === 0 || !rows[0].content) {
+      return undefined;
+    }
+    return this.removeHiddenFields(JSON.parse(rows[0].content as string)) as T;
+  }
+
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
@@ -1150,16 +1188,29 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    const resource = await this.readResourceImpl<T>(resourceType, id);
-    const interaction = options?.interaction ?? 'update';
+    const resource = options?.versionId
+      ? await this.readVersion<T>(resourceType, id, options.versionId)
+      : await this.readResourceImpl<T>(resourceType, id);
+    let interaction = options?.interaction;
     let previousVersion: T | undefined;
 
-    if (interaction === 'update') {
-      const history = await this.readHistory(resourceType, id, { limit: 2 });
-      if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
-        throw new OperationOutcomeError(preconditionFailed);
+    if (options?.versionId && !interaction) {
+      // When a caller pins to a specific historical version but doesn't
+      // specify the interaction, derive it from the version's position in
+      // history: a version with no prior is the create event for the
+      // resource; otherwise it's an update.
+      previousVersion = await this.readPreviousVersion<T>(resource);
+      interaction = previousVersion ? 'update' : 'create';
+    } else {
+      interaction = interaction ?? 'update';
+      if (interaction === 'update') {
+        previousVersion = await this.readPreviousVersion<T>(resource);
+        if (!previousVersion) {
+          // interaction='update' implies a state transition, so a prior version
+          // is required. Use interaction='create' to resend the first version.
+          throw new OperationOutcomeError(preconditionFailed);
+        }
       }
-      previousVersion = history.entry?.[1]?.resource;
     }
 
     return addSubscriptionJobs(
