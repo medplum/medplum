@@ -73,6 +73,56 @@ export function isChoiceQuestion(item: QuestionnaireItem): boolean {
 }
 
 /**
+ * Returns a copy of the questionnaire response with response items for disabled
+ * questionnaire items removed.
+ *
+ * Per the FHIR R4 spec, a QuestionnaireResponse should not include answers for items
+ * whose `enableWhen` evaluates to false or whose `questionnaire-hidden` extension is
+ * true. The form preserves answers in local state so that re-enabling an item
+ * restores its previous value, so callers must strip disabled items before
+ * persisting or transmitting the response.
+ *
+ * @param questionnaire - The questionnaire defining the items.
+ * @param response - The current questionnaire response.
+ * @returns A new questionnaire response with disabled items removed.
+ */
+export function removeDisabledItems(
+  questionnaire: Questionnaire,
+  response: QuestionnaireResponse
+): QuestionnaireResponse {
+  return {
+    ...response,
+    item: filterEnabledResponseItems(questionnaire.item, response.item, response),
+  };
+}
+
+function filterEnabledResponseItems(
+  items: QuestionnaireItem[] | undefined,
+  responseItems: QuestionnaireResponseItem[] | undefined,
+  response: QuestionnaireResponse
+): QuestionnaireResponseItem[] | undefined {
+  if (!responseItems) {
+    return responseItems;
+  }
+  const result: QuestionnaireResponseItem[] = [];
+  for (const responseItem of responseItems) {
+    const item = items?.find((i) => i.linkId === responseItem.linkId);
+    if (item && !isQuestionEnabled(item, response)) {
+      continue;
+    }
+    if (item?.item && responseItem.item) {
+      result.push({
+        ...responseItem,
+        item: filterEnabledResponseItems(item.item, responseItem.item, response),
+      });
+    } else {
+      result.push(responseItem);
+    }
+  }
+  return result;
+}
+
+/**
  * Returns true if the questionnaire item is enabled based on the enableWhen conditions or expression.
  * @param item - The questionnaire item to check.
  * @param questionnaireResponse - The questionnaire response to check against.
