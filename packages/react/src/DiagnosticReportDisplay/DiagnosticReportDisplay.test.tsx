@@ -72,6 +72,7 @@ const syntheaReport: DiagnosticReport = {
       data: 'SGVsbG8gd29ybGQ=',
     },
   ],
+  conclusion: 'All values within normal range',
 };
 
 const medplum = new MockClient();
