@@ -1113,8 +1113,8 @@ describe('BillingTab', () => {
         .mockResolvedValue(undefined);
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
-      vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim as any);
-      vi.spyOn(medplum, 'readResource').mockResolvedValue(updatedClaim as any);
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim);
+      vi.spyOn(medplum, 'readResource').mockResolvedValue(updatedClaim);
       vi.spyOn(medplum, 'executeBot').mockResolvedValue({ message: 'Claim submitted successfully' });
 
       await setup({
