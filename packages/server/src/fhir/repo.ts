@@ -790,7 +790,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * given resource is the first version.
    *
    * Unlike scanning a paged `readHistory()` result, this query is bounded to
-   * one row regardless of how many historical versions the resource has.
+   * a small constant number of rows regardless of history length.
+   *
+   * Caveat: history rows are ordered solely by `meta.lastUpdated`, which is
+   * generated from `new Date().toISOString()` (millisecond precision) and may
+   * also be set directly by ClientApplications with elevated permissions. As
+   * a result, multiple history rows can share the same `lastUpdated` value.
+   * When that happens, the row immediately preceding the given resource is
+   * not deterministically defined and this method may return any one of the
+   * tied rows. The query uses `<=` and filters out the supplied resource's
+   * own `versionId` so siblings at the exact same timestamp are still
+   * considered as candidates for the prior version.
    * @param resource - A version of the resource (current or historical) to look back from.
    * @returns The prior version, or `undefined` if none exists.
    */
@@ -802,15 +812,46 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!isUUID(resource.id)) {
       throw new OperationOutcomeError(notFound);
     }
+    // Fetch up to 2 candidates so we can detect ties at the same `lastUpdated`.
+    // We use `<=` (rather than `<`) and filter out the supplied versionId
+    // ourselves so siblings sharing the resource's exact timestamp are still
+    // considered as candidates for the prior version.
     const rows = await new SelectQuery(resource.resourceType + '_History')
+      .column('versionId')
       .column('content')
+      .column('lastUpdated')
       .where('id', '=', resource.id)
-      .where('lastUpdated', '<', lastUpdated)
+      .where('lastUpdated', '<=', lastUpdated)
+      .where('versionId', '!=', resource.meta?.versionId)
       .orderBy('lastUpdated', true)
-      .limit(1)
+      .limit(2)
       .execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0 || !rows[0].content) {
       return undefined;
+    }
+    // Compare timestamps via numeric ms epoch. `new Date(x).getTime()` accepts
+    // both Date instances (which the pg driver currently returns for
+    // TIMESTAMPTZ columns) and ISO date strings (defensive against future
+    // driver/config changes), and yields a primitive number that is safe to
+    // compare with `===`. An invalid value would produce `NaN`, which would
+    // simply not match — we'd skip the warn but still return the first row,
+    // so this can't break the correctness of the prior-version lookup.
+    if (
+      rows.length > 1 &&
+      new Date(rows[0].lastUpdated).getTime() === new Date(rows[1].lastUpdated).getTime()
+    ) {
+      // Two or more candidate prior versions share the same `lastUpdated`
+      // timestamp, so the chosen prior is nondeterministic. This is rare
+      // (high-throughput writes within the same millisecond, or callers
+      // setting protected meta directly) but worth surfacing.
+      // TODO: emit a metric for this collision rate so we can decide whether
+      // a monotonic ordering column on `_History` is justified.
+      getLogger().warn('readPreviousVersion: ambiguous prior version (lastUpdated tie)', {
+        resource: { reference: getReferenceString(resource) },
+        versionId: resource.meta?.versionId,
+        lastUpdated,
+        candidateVersionIds: rows.map((r) => r.versionId),
+      });
     }
     return this.removeHiddenFields(JSON.parse(rows[0].content as string)) as T;
   }
