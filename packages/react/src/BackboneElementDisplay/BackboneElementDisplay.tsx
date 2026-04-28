@@ -5,7 +5,7 @@ import { buildElementsContext, getPathDisplayName, isEmpty, tryGetDataType } fro
 import type { AccessPolicyResource } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useContext, useMemo } from 'react';
-import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
+import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
@@ -13,7 +13,6 @@ import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisp
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 const EXTENSION_KEYS = ['extension', 'modifierExtension'];
-const IGNORED_PROPERTIES = DEFAULT_IGNORED_PROPERTIES.filter((prop) => !EXTENSION_KEYS.includes(prop));
 
 export interface BackboneElementDisplayProps {
   readonly value: TypedValue;
@@ -80,10 +79,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
       {Object.entries(elementsContext.elements).map(([key, property]) => {
         if (EXTENSION_KEYS.includes(key) && isEmpty(property.slicing?.slices)) {
           // an extension property without slices has no nested extensions
-          return null;
-        } else if (IGNORED_PROPERTIES.includes(key)) {
-          return null;
-        } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
+          return null; else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
           return null;
         }
 
