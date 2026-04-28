@@ -20,6 +20,7 @@ When a subscription notification fails or you need to reprocess a resource throu
 - **Debugging Subscriptions**: Test subscription logic during development by manually triggering notifications
 - **Data Synchronization**: Force re-sync of specific resources to external systems after fixing integration issues
 - **Selective Replay**: Re-trigger a specific subscription for a resource instead of all subscriptions
+- **Historical Replay**: Replay a notification against a specific historical `versionId` so subscription handlers that diff `previousVersion` against `resource` see the same state as the original event, even if the resource has since been updated
 - **Integration Testing**: Verify that subscriptions fire correctly without creating new test data
 
 :::note[Admin Required]
@@ -28,13 +29,14 @@ The User, Bot, or ClientApplication invoking this operation must have [project a
 
 ## Parameters
 
-The operation takes an optional `option` parameter, which is an object containing three fields:
+The operation takes an optional `option` parameter, which is an object containing the following fields:
 
-| Option         | Description                                                                                                                                                                                                                       | Data Type                                | Default Value |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
-| `verbose`      | Indicates if verbose logging should be enabled.                                                                                                                                                                                   | `boolean`                                | `false`       |
-| `interaction`  | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent. | `update` &#124; `create` &#124; `delete` | `update`      |
-| `subscription` | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.               | `string`                                 | `undefined`   |
+| Option         | Description                                                                                                                                                                                                                                                                                                                          | Data Type                                | Default Value |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- | ------------- |
+| `verbose`      | Indicates if verbose logging should be enabled.                                                                                                                                                                                                                                                                                      | `boolean`                                | `false`       |
+| `interaction`  | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent.                                                                                                    | `update` &#124; `create` &#124; `delete` | `update`      |
+| `subscription` | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.                                                                                                                  | `string`                                 | `undefined`   |
+| `versionId`    | Resend subscriptions for a specific historical version of the resource instead of the current version. When set, the `previousVersion` passed to subscription evaluation is the version immediately prior to this one in history (if any). Useful for replaying a failed notification when the resource has since been updated.     | `string`                                 | `undefined`   |
 
 ## Invoke the `$resend` operation
 
@@ -71,6 +73,23 @@ curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/$resend' \
 
   </TabItem>
 </Tabs>
+
+### Replay a specific historical version
+
+To replay a subscription using a specific past version of the resource (rather than the current version), pass `versionId`. The server will load that exact version, set `previousVersion` to the version immediately preceding it in history, and evaluate subscriptions against that pair.
+
+```ts
+await medplum.post(medplum.fhirUrl('Patient', patientId, '$resend'), {
+  versionId: 'a1b2c3d4-...', // a versionId from the resource's history
+  subscription: 'Subscription/123',
+});
+```
+
+If the supplied `versionId` does not exist in history, the operation returns `404 Not Found`.
+
+When `versionId` is supplied without an explicit `interaction`, the server derives one from the version's position in history: the first version of a resource resolves to `create`, any later version resolves to `update`. Pass `interaction` explicitly to override this — e.g. `interaction: 'update'` against a first version (which has no prior) returns `412 Precondition Failed`.
+
+When neither `versionId` nor `interaction` is supplied, `interaction` defaults to `update` and the resource must have a prior version in history; otherwise the operation returns `412 Precondition Failed`. Pass `interaction: 'create'` to resend the very first version of a resource.
 
 ### Output
 
