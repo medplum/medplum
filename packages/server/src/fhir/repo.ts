@@ -841,8 +841,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // timestamp, so the chosen prior is nondeterministic. This is rare
       // (high-throughput writes within the same millisecond, or callers
       // setting protected meta directly) but worth surfacing.
-      // TODO: emit a metric for this collision rate so we can decide whether
-      // a monotonic ordering column on `_History` is justified.
       getLogger().warn('readPreviousVersion: ambiguous prior version (lastUpdated tie)', {
         resource: { reference: getReferenceString(resource) },
         versionId: resource.meta?.versionId,

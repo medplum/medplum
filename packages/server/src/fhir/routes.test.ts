@@ -717,32 +717,6 @@ describe('FHIR Routes', () => {
     expect(resCreate.status).toBe(200);
   });
 
-  test('Resend with no prior version returns 412', async () => {
-    const { profile, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Edith',
-        lastName: 'Smith',
-        projectName: `Edith Project ${randomUUID()}`,
-        email: `edith${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
-
-    // First version of the resource — interaction='update' (default) has no prior to diff
-    const res = await request(app)
-      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
-    expect(res.status).toBe(412);
-
-    // interaction='create' avoids the prior-version requirement
-    const resCreate = await request(app)
-      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({ interaction: 'create' });
-    expect(resCreate.status).toBe(200);
-  });
-
   test('Resend with versionId targets historical version', async () => {
     const { profile, accessToken } = await withTestContext(() =>
       registerNew({
@@ -810,8 +784,14 @@ describe('FHIR Routes', () => {
       .send({});
     expect(defaultResend.status).toBe(200);
 
-    // profile is unused beyond auth context here; reference it to satisfy lint
-    expect(profile).toBeDefined();
+    // Default (no versionId) on a resource with no prior version returns 412.
+    // `profile` is the freshly registered Practitioner from registerNew, which
+    // is still on its first version.
+    const noPrior = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(noPrior.status).toBe(412);
   });
 
   test('Resend with unknown versionId returns 404', async () => {
