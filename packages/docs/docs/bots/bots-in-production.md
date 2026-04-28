@@ -126,15 +126,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 Congratulations! You’ve just written your first bot. Our next step will be to compile this code and link it to a [`Bot` resource](/docs/api/fhir/medplum/bot).
 
-First, compile your code:
+First, build your code:
 
 ```bash
 npm run build
 ```
 
-This runs the `tsc` compiler to translate your TypeScript code to Javascript.
+:::note[Note]
+In the [medplum-demo-bots](https://github.com/medplum/medplum-demo-bots) template, **`npm run build`** runs **`tsc`** and then an **esbuild** script. TypeScript produces typings and intermediate output; esbuild bundles each bot entry into the **JavaScript files** under `dist/` that you deploy. The path in `medplum.config.json` **`dist`** must point at that **deployable** artifact. Other repositories may use esbuild alone, Rollup, webpack, or another bundler, as long as the `dist` file is the code you want running in AWS Lambda.
+:::
 
-Next, take a look at your `dist/` directory and notice how there is now a file called `my-first-bot.js` with the compiled version of your code.
+Next, take a look at your `dist/` directory and notice how there is now a file called `my-first-bot.js` with the bundled version of your code.
 
 ```bash
 cd ..
@@ -147,6 +149,25 @@ ls dist
 # ...
 
 ```
+
+## Including npm dependencies
+
+When you run `npx medplum bot deploy`, the CLI reads **one file**: the path configured as **`dist`** in `medplum.config.json` (typically a single `.js` file). It does **not** upload your `node_modules` directory or the entire `dist` folder tree - only the contents of that file are sent for Lambda deployment.
+
+To use **npm packages** that are not on the Medplum bot Lambda layer, your build must **bundle** them into that file:
+
+- Use a bundler with **`bundle: true`** (or equivalent). In the demo repo, see [`esbuild-script.mjs`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/esbuild-script.mjs), which bundles each bot and lists **`external`** only for packages supplied by the layer (derived from [`@medplum/bot-layer`](https://github.com/medplum/medplum/blob/main/packages/bot-layer/package.json) **dependencies** in the main Medplum repository).
+- Any package **not** marked `external` is included in the output. If you skip bundling and ship plain transpiled JS that still `require`s or `import`s a dependency that is neither on the layer nor in that single file, the bot **will fail at runtime** in Lambda.
+
+**Typical workflow:** `npm install` → `npm run build` → `npx medplum bot deploy <bot-name>`. Use the same sequence in CI/CD before deploy.
+
+### Limitations
+
+- **Deployment size:** AWS Lambda enforces maximum deployment size for the function package and for the **combined unzipped** size of the function and all layers (currently **250 MB** total). Very large bundles can exceed these limits or slow cold starts.
+- **Native code:** Packages that ship platform-specific binaries must be built for the **Lambda execution environment** (OS and CPU architecture). Pure JavaScript dependencies are the most straightforward.
+- **Runtime:** Lambda bots use the **Node.js version** configured on the Medplum server (open-source defaults use a current AWS Lambda Node.js **22.x** runtime). Self-hosted deployments should match their build target to their server's bot runtime.
+- **Bundler edge cases:** Dynamic `require()` with a **variable** path can be skipped by bundlers. Prefer static imports or explicit configuration.
+- **Secrets:** Do not embed credentials in bundled source. Use [Bot secrets](/docs/bots/bot-secrets) or your deployment's recommended secret mechanism.
 
 ## Creating your Bot
 
@@ -192,7 +213,7 @@ After creating the bot, you should go to `medplum.config.json` and you should se
 | `name`    | Name of the bot used in the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) (below). **Note**: This name can be whatever your want. It does not have to match the filename of the bot code, nor anything in the Medplum App |
 | `id`      | The Bot Resource `id`. Can be found by navigating to [app.medplum.com/Bot](https://app.medplum.com/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](./bot-basics#bot_id) for more information                 |
 | `source`  | This is the location of the typescript source file for your bot. **Note**: Currently, Medplum only supports single-file Bots.                                                                                                                        |
-| `dist`    | This is the location of the transpiled javascript file for your bot. For most setups, this will be in your `dist` directory of your package.                                                                                                         |
+| `dist`    | This is the path to the **deployable** JavaScript file for your bot (usually **bundled** for AWS Lambda). For most setups, this will be in your `dist` directory.                                                                                    |
 
 ## Deploying your Bot
 
@@ -217,10 +238,11 @@ This would allow us to deploy bots as part of a CI/CD pipeline, without having t
 npx medplum bot deploy *staging*
 ```
 
-Running this command does two things:
+Running this command does three things:
 
-1. Save the TypeScript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
-2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
+1. Saves the TypeScript source on your [`Bot` resource](/docs/api/fhir/medplum/bot) (attached as source code)
+2. Deploys the JavaScript from your **`dist`** file as an AWS Lambda function with your Medplum deployment
+3. Packages that file with Medplum's Lambda wrapper; at runtime the [Medplum bot Lambda layer](https://github.com/medplum/medplum/blob/main/packages/bot-layer/package.json) supplies the dependencies listed there (your bundler should usually mark those as `external`)
 
 :::caution[Note]
 There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
