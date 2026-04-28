@@ -836,10 +836,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // compare with `===`. An invalid value would produce `NaN`, which would
     // simply not match — we'd skip the warn but still return the first row,
     // so this can't break the correctness of the prior-version lookup.
-    if (
-      rows.length > 1 &&
-      new Date(rows[0].lastUpdated).getTime() === new Date(rows[1].lastUpdated).getTime()
-    ) {
+    if (rows.length > 1 && new Date(rows[0].lastUpdated).getTime() === new Date(rows[1].lastUpdated).getTime()) {
       // Two or more candidate prior versions share the same `lastUpdated`
       // timestamp, so the chosen prior is nondeterministic. This is rare
       // (high-throughput writes within the same millisecond, or callers
