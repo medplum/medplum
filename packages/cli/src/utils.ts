@@ -84,6 +84,10 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
     code,
     filename: basename(codePath),
   });
+  const failedIssues = deployResult.issue?.filter((i) => i.severity === 'error' || i.severity === 'fatal');
+  if (failedIssues?.length) {
+    throw new Error(`Bot deploy failed: ${failedIssues[0].details?.text ?? 'Unknown error'}`);
+  }
   console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
 }
 
