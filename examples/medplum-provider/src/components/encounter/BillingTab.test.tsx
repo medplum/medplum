@@ -1126,9 +1126,9 @@ describe('BillingTab', () => {
 
       await user.click(screen.getByText('Submit Claim'));
 
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Submit claim' })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByRole('button', { name: /Submit to Candid/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+      await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
       await waitFor(() => {
         expect(medplum.updateResource).toHaveBeenCalledWith(

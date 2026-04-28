@@ -138,7 +138,7 @@ describe('SubmitClaimModal', () => {
         onSubmitClaim,
       });
 
-      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+      await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
       expect(onSubmitClaim).toHaveBeenCalledWith([createReference(mockInsurance1)]);
     });
@@ -150,7 +150,7 @@ describe('SubmitClaimModal', () => {
 
       await user.click(getCoverageCheckbox('Blue Cross'));
 
-      expect(screen.getByRole('button', { name: 'Submit claim' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Submit to Candid/i })).toBeDisabled();
     });
 
     test('submits deselected-then-reselected coverage correctly', async () => {
@@ -166,7 +166,7 @@ describe('SubmitClaimModal', () => {
       await user.click(getCoverageCheckbox('Blue Cross')); // deselect coverage1
       await user.click(getCoverageCheckbox('Aetna')); // select coverage2
 
-      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+      await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
       expect(onSubmitClaim).toHaveBeenCalledWith([createReference(mockInsurance2)]);
     });
@@ -182,7 +182,7 @@ describe('SubmitClaimModal', () => {
       });
 
       await user.click(screen.getByText('Select all'));
-      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+      await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
       expect(onSubmitClaim).toHaveBeenCalledWith([createReference(mockInsurance1), createReference(mockInsurance2)]);
     });
@@ -201,7 +201,7 @@ describe('SubmitClaimModal', () => {
       for (const checkbox of screen.getAllByRole('checkbox')) {
         expect(checkbox).not.toBeChecked();
       }
-      expect(screen.getByRole('button', { name: 'Submit claim' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Submit to Candid/i })).toBeDisabled();
     });
   });
 
@@ -217,7 +217,7 @@ describe('SubmitClaimModal', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Self-pay' }));
-      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+      await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
       expect(onSubmitClaim).toHaveBeenCalledWith([createReference(mockSelfPay)]);
     });
@@ -233,7 +233,7 @@ describe('SubmitClaimModal', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Self-pay' }));
-      await user.click(screen.getByRole('button', { name: 'Submit claim' }));
+      await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
       expect(onSubmitClaim).toHaveBeenCalledWith([]);
     });
@@ -245,7 +245,7 @@ describe('SubmitClaimModal', () => {
 
       await user.click(screen.getByRole('button', { name: 'Self-pay' }));
 
-      expect(screen.getByRole('button', { name: 'Submit claim' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: /Submit to Candid/i })).not.toBeDisabled();
     });
   });
 });
