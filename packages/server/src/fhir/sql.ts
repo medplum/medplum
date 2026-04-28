@@ -30,8 +30,6 @@ export const ColumnType = {
   TIMESTAMP: 'timestamp',
   TEXT: 'text',
   TSTZRANGE: 'tstzrange',
-  NUMRANGE: 'numrange',
-  DATERANGE: 'daterange',
 } as const;
 export type ColumnType = (typeof ColumnType)[keyof typeof ColumnType];
 
