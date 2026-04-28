@@ -81,9 +81,9 @@ const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
  * The upper limit on the number of times a job can be attempted.
- * Using exponential backoff, 19 attempts is about 73 hours (2^18 seconds).
+ * Using exponential backoff, 15 attempts is ~91 hours (20*2^14 seconds).
  */
-const MAX_JOB_ATTEMPTS = 19;
+const MAX_JOB_ATTEMPTS = 15;
 
 /**
  * The default number of times a job will be attempted.
@@ -149,10 +149,11 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
+      attempts: MAX_JOB_ATTEMPTS, // 20 seconds * 2^14 = 91 hours
       backoff: {
         type: 'exponential',
-        delay: 1000,
+        delay: 20_000,
+        jitter: 0.1,
       },
     },
   });
