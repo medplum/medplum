@@ -121,6 +121,11 @@ export interface SubscriptionJobData {
   readonly verbose?: boolean;
 }
 
+export interface SatisfiesAccessPolicyOpts {
+  /** The `ProjectMembership` ID of the author of the `Subscription`, for which the `AccessPolicy` should be taken from.  */
+  readonly authorMembershipId?: string;
+}
+
 function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string | undefined> {
   return {
     subscription: 'Subscription/' + job.data.subscriptionId,
@@ -215,19 +220,29 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param resource - The resource to evaluate against the `AccessPolicy`.
  * @param project - The project containing the resource.
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
+ * @param options - Optional options for configuring `satisfiesAccessPolicy`.
  * @returns True if access policy is satisfied for this Subscription notification, otherwise returns false
  */
 async function satisfiesAccessPolicy(
   resource: Resource,
   project: WithId<Project>,
-  subscription: Subscription
+  subscription: Subscription,
+  options?: SatisfiesAccessPolicyOpts
 ): Promise<boolean> {
   let satisfied = true;
   try {
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
     // The current Repository author, which must exist for Repository to successfully construct
     const subAuthor = subscription.meta?.author as Reference;
-    const membership = await findProjectMembership(project.id, subAuthor);
+    let membership: WithId<ProjectMembership> | undefined;
+    if (options?.authorMembershipId) {
+      membership = await getGlobalSystemRepo().readResource<ProjectMembership>(
+        'ProjectMembership',
+        options.authorMembershipId
+      );
+    } else {
+      membership = await findProjectMembership(project.id, subAuthor);
+    }
     if (membership) {
       const accessPolicy = await buildAccessPolicy(membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
@@ -318,7 +333,7 @@ export async function addSubscriptionJobs(
   // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
   // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
   const accessPolicyCache = new Map<string, boolean>();
-  for (const subscription of subscriptions) {
+  for (const { subscription, authorMembershipId } of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
       continue;
@@ -348,10 +363,13 @@ export async function addSubscriptionJobs(
       // return `true` for rest-hook subscriptions (see the TODO comment on that function).
       // Without it, a cached `true` from a rest-hook sub could bypass the real policy check
       // for a websocket sub sharing the same author.
-      const cacheKey = `${authorRef}:${subscription.channel.type}`;
+      const cacheKey =
+        subscription.channel.type === 'websocket' && authorMembershipId
+          ? authorMembershipId
+          : `${authorRef}:${subscription.channel.type}`;
       let satisfied = accessPolicyCache.get(cacheKey);
       if (satisfied === undefined) {
-        satisfied = await satisfiesAccessPolicy(resource, project, subscription);
+        satisfied = await satisfiesAccessPolicy(resource, project, subscription, { authorMembershipId });
         accessPolicyCache.set(cacheKey, satisfied);
       }
       if (!satisfied) {
@@ -419,16 +437,21 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
   }
 }
 
+interface SubscriptionWithMetadata {
+  subscription: WithId<Subscription>;
+  authorMembershipId?: string;
+}
+
 /**
  * Loads the list of all subscriptions in this repository.
  * @param resource - The resource that was created or updated.
  * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
+async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<SubscriptionWithMetadata[]> {
   const projectId = project.id;
   const systemRepo = await getProjectSystemRepo(projectId);
-  const subscriptions = await systemRepo.searchResources<Subscription>({
+  const restHookSubscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
     filters: [
@@ -445,7 +468,11 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     ],
   });
 
-  const redisOnlySubRefStrs: string[] = [];
+  const subscriptionsWithMetadata: SubscriptionWithMetadata[] = restHookSubscriptions.map((subscription) => ({
+    subscription,
+  }));
+
+  const activeSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
   const expiredSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
   const entries = await getActiveSubscriptions(projectId, resource.resourceType);
 
@@ -474,7 +501,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
         }
 
         if (matches) {
-          redisOnlySubRefStrs.push(ref);
+          activeSubEntries[ref] = entry;
         }
       } catch (err) {
         getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
@@ -493,9 +520,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     await cleanupActiveSubs(projectId, expiredSubEntries);
   }
 
-  if (redisOnlySubRefStrs.length) {
+  const activeSubKeys = Object.keys(activeSubEntries);
+  if (activeSubKeys.length) {
     const cacheRedis = getCacheRedis();
-    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
+    const redisOnlySubStrs = await cacheRedis.mget(activeSubKeys);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
@@ -506,14 +534,14 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       // Trying 5 for now (50 -> 5)
       if (redisOnlySubStrs.length - activeSubStrs.length >= 5) {
         getLogger().warn('Excessive subscription cache miss', {
-          numKeys: redisOnlySubRefStrs.length,
+          numKeys: redisOnlySubStrs.length,
           hitRate: activeSubStrs.length / redisOnlySubStrs.length,
           projectId,
         });
         const inactiveSubs: string[] = [];
         for (let i = 0; i < redisOnlySubStrs.length; i++) {
           if (!redisOnlySubStrs[i]) {
-            inactiveSubs.push(redisOnlySubRefStrs[i]);
+            inactiveSubs.push(activeSubKeys[i]);
           }
         }
         await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
@@ -521,7 +549,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
       for (const { resource } of inMemorySubs) {
-        subscriptions.push(resource);
+        subscriptionsWithMetadata.push({
+          subscription: resource,
+          authorMembershipId: activeSubEntries[getReferenceString(resource)].membershipId,
+        });
       }
     } else {
       globalLogger.debug(
@@ -529,7 +560,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       );
     }
   }
-  return subscriptions;
+  return subscriptionsWithMetadata;
 }
 
 /**

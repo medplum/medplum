@@ -19,6 +19,7 @@ import type {
   DocumentReference,
   Observation,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   Resource,
@@ -37,7 +38,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
-import type { SystemRepository } from '../fhir/repo';
+import type { RepositoryContext, SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
@@ -2014,10 +2015,19 @@ describe('Subscription Worker', () => {
      * that the subscription worker can find the entry when evaluating criteria.
      * @param subscription - The Subscription to simulate binding to.
      * @param projectId - The project ID the Subscription belongs to.
+     * @param loginId - The login ID for the author of the Subscription.
+     * @param membershipId - The membership ID for the author of the Subscription.
      * @returns A Promise that resolves to the reference string of the author.
      */
-    async function bindSubscription(subscription: WithId<Subscription>, projectId: string): Promise<string> {
-      const authorRef = subscription.meta?.author?.reference ?? 'Practitioner/test-author';
+    async function bindSubscription(
+      subscription: WithId<Subscription>,
+      projectId: string,
+      loginId: string,
+      membershipId: string
+    ): Promise<string> {
+      /* @ts-expect-error We access context directly in these tests to get what would normally be populated in the async storage authenticated context */
+      const ctx = repo.context as unknown as RepositoryContext;
+      const authorRef = ctx.author.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
       const subRef = `Subscription/${subscription.id}`;
@@ -2027,17 +2037,24 @@ describe('Subscription Worker', () => {
         criteria,
         expiration,
         author: authorRef,
-        loginId: randomUUID(),
-        membershipId: randomUUID(),
+        loginId,
+        membershipId,
       });
       return authorRef;
     }
 
     test('Enabled', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
           project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const subscription = await wsSubRepo.createResource<Subscription>({
@@ -2052,7 +2069,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         let nextArgsPromise = waitForNextSubNotification<Patient>();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2169,8 +2186,15 @@ describe('Subscription Worker', () => {
         const originalConsoleLog = console.log;
         console.log = jest.fn();
 
-        const { repo: noWsSubRepo, project } = await createTestProject({
+        const {
+          repo: noWsSubRepo,
+          project,
+          login,
+          membership,
+        } = await createTestProject({
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
           project: { name: 'No WebSocket Subs Project' },
         });
 
@@ -2185,7 +2209,7 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -2219,9 +2243,15 @@ describe('Subscription Worker', () => {
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
-        const { repo: wsRepo, project } = await createTestProject({
+        const {
+          repo: wsRepo,
+          project,
+          login,
+          membership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSockets AccessPolicy Denied Project',
             features: ['websocket-subscriptions'],
@@ -2244,7 +2274,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -2283,9 +2313,15 @@ describe('Subscription Worker', () => {
         // Create a project whose membership carries the denying access policy.
         // The project must have 'websocket-subscriptions' enabled so that the websocket
         // subscription is fetched and evaluated.
-        const { repo: testRepo, project: testProject } = await createTestProject({
+        const {
+          repo: testRepo,
+          project: testProject,
+          login: testLogin,
+          membership: testMembership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'Access Policy Cache Channel Type Isolation Project',
             features: ['websocket-subscriptions'],
@@ -2313,7 +2349,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
         expect(wsSub.id).toBeDefined();
-        await bindSubscription(wsSub, testProject.id);
+        await bindSubscription(wsSub, testProject.id, testLogin.id, testMembership.id);
 
         // Register the no-notification assertion before creating the patient so that
         // any spurious WebSocket publish is caught immediately.
@@ -2334,7 +2370,149 @@ describe('Subscription Worker', () => {
         await findAndExecSubscriptionJob(patient, 'create', restHookSub);
       }));
 
-    test('Subscription Author Has No Membership', () =>
+    test('Uses correct AccessPolicy when author has multiple ProjectMemberships', () =>
+      withTestContext(async () => {
+        // A Practitioner may hold multiple ProjectMemberships in the same Project, each
+        // backed by a different AccessPolicy.  The active-subscription entry records the
+        // specific membership the WebSocket client bound with, and the subscription worker
+        // must evaluate the notification against that membership -- NOT whichever
+        // membership happens to come back first from `findProjectMembership`.
+        const allowedOrgId = randomUUID();
+        const deniedOrgId = randomUUID();
+        const allowedOrg = 'Organization/' + allowedOrgId;
+        const deniedOrg = 'Organization/' + deniedOrgId;
+
+        const {
+          repo: wsRepo,
+          project: wsProject,
+          client,
+        } = await createTestProject({
+          project: {
+            name: 'WS Multiple Memberships Project',
+            features: ['websocket-subscriptions'],
+          },
+          withRepo: true,
+          withClient: true,
+        });
+
+        const practitioner = await superAdminRepo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          meta: { project: wsProject.id },
+          name: [{ given: ['Dr.'], family: 'Multi' }],
+        });
+        const practitionerRef = getReferenceString(practitioner);
+
+        // The denying policy only grants access to Patients in `deniedOrg`'s compartment.
+        const noAccessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: wsProject.id },
+          compartment: { reference: deniedOrg },
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${deniedOrgId}` }],
+        });
+
+        // The allowing policy grants access to Patients in `allowedOrg`'s compartment.
+        const hasAccessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: wsProject.id },
+          compartment: { reference: allowedOrg },
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${allowedOrgId}` }],
+        });
+
+        // Create the "no access" membership FIRST so that `findProjectMembership` returns
+        // it ahead of the "has access" membership -- this is what makes the
+        // `authorMembershipId` plumbing necessary in the first place.
+        const noAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(practitioner),
+          project: createReference(wsProject),
+          accessPolicy: createReference(noAccessPolicy),
+        });
+
+        const hasAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(practitioner),
+          project: createReference(wsProject),
+          accessPolicy: createReference(hasAccessPolicy),
+        });
+
+        // Sanity check: the unordered membership lookup returns the denying membership
+        // first.  If this ever changes, the rest of the test stops exercising what it
+        // intends to exercise.
+        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        expect(firstFound?.id).toStrictEqual(noAccessMembership.id);
+
+        // Two WebSocket subscriptions, one bound with each membership.
+        const noAccessSub = await wsRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const hasAccessSub = await wsRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const expiration = Math.floor(Date.now() / 1000) + 3600;
+        const noAccessSubRef = `Subscription/${noAccessSub.id}`;
+        const hasAccessSubRef = `Subscription/${hasAccessSub.id}`;
+
+        await addUserActiveWebSocketSubscription(practitionerRef, noAccessSubRef);
+        await setActiveSubscription(wsProject.id, 'Patient', noAccessSubRef, {
+          criteria: 'Patient',
+          expiration,
+          author: practitionerRef,
+          loginId: randomUUID(),
+          membershipId: noAccessMembership.id,
+        });
+
+        await addUserActiveWebSocketSubscription(practitionerRef, hasAccessSubRef);
+        await setActiveSubscription(wsProject.id, 'Patient', hasAccessSubRef, {
+          criteria: 'Patient',
+          expiration,
+          author: practitionerRef,
+          loginId: randomUUID(),
+          membershipId: hasAccessMembership.id,
+        });
+
+        // Create a Patient that lives in the `allowedOrg` compartment.  Only the
+        // hasAccessMembership's policy should permit this.
+        const patient = await superAdminRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            project: wsProject.id,
+            account: { reference: allowedOrg },
+          },
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient.meta?.compartment).toContainEqual({ reference: allowedOrg });
+
+        // The hasAccessSub must receive exactly one notification; the noAccessSub must
+        // NOT fire.  If the worker picked the first-found (denying) membership for both
+        // subscriptions, neither would fire -- or if it picked the allowing membership
+        // for both, we would see two notifications.
+        const nextArgsPromise = waitForNextSubNotification<Patient>();
+        await findAndExecDispatchJob(patient, 'create');
+
+        const notificationArgs = await nextArgsPromise;
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
+          expect.objectContaining({ id: patient.id }),
+          hasAccessSub.id,
+          { includeResource: true },
+        ]);
+
+        // No other notification should arrive.
+        await assertNoWsNotifications();
+      }));
+
+    test('Subscription Author Access Policy Removed', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -2349,9 +2527,11 @@ describe('Subscription Worker', () => {
           repo: wsRepo,
           project,
           membership,
+          login,
         } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSockets AccessPolicy No Membership Project',
             features: ['websocket-subscriptions'],
@@ -2376,7 +2556,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         await superAdminRepo.deleteResource('ProjectMembership', membership.id);
 
@@ -2392,8 +2572,11 @@ describe('Subscription Worker', () => {
         await assertPromise;
 
         expect(console.log).toHaveBeenCalledWith(
-          expect.stringContaining('[Subscription Access Policy]: No membership for subscription author')
+          expect.stringContaining(
+            '[Subscription Access Policy]: Error occurred while checking access policy for resource'
+          )
         );
+        expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Gone'));
         console.log = originalConsoleLog;
         globalLogger.level = LogLevel.NONE;
       }));
@@ -2413,9 +2596,11 @@ describe('Subscription Worker', () => {
           repo: wsRepo,
           membership,
           project,
+          login,
         } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSockets AccessPolicy Error Project',
             features: ['websocket-subscriptions'],
@@ -2440,7 +2625,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
@@ -2466,9 +2651,16 @@ describe('Subscription Worker', () => {
 
     test('Criteria stored in Redis hash alongside subscription reference', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WebSocket Subs Redis Hash Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const subscription = await wsSubRepo.createResource<Subscription>({
@@ -2486,7 +2678,7 @@ describe('Subscription Worker', () => {
         const preBindSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
         expect(preBindSubs[`Subscription/${subscription.id}`]).toBeUndefined();
 
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         const activeSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
         expect(activeSubs[`Subscription/${subscription.id}`]).toMatchObject({
@@ -2520,9 +2712,16 @@ describe('Subscription Worker', () => {
 
     test('Resource type filtering - only matching subscriptions fetched from Redis', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WebSocket Subs Filtering Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         // Create a subscription watching Observation
@@ -2536,7 +2735,7 @@ describe('Subscription Worker', () => {
           },
         });
         expect(observationSub).toBeDefined();
-        await bindSubscription(observationSub, wsProject.id);
+        await bindSubscription(observationSub, wsProject.id, login.id, membership.id);
 
         // Create a subscription watching Patient
         const patientSub = await wsSubRepo.createResource<Subscription>({
@@ -2549,7 +2748,7 @@ describe('Subscription Worker', () => {
           },
         });
         expect(patientSub).toBeDefined();
-        await bindSubscription(patientSub, wsProject.id);
+        await bindSubscription(patientSub, wsProject.id, login.id, membership.id);
 
         // Creating a Patient should only trigger the Patient subscription, not the Observation one
         const nextArgsPromise = waitForNextSubNotification<Patient>();
@@ -2601,9 +2800,15 @@ describe('Subscription Worker', () => {
 
     test('Supported Interaction Extension', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSocket Subs Project',
             features: ['websocket-subscriptions'],
@@ -2628,7 +2833,7 @@ describe('Subscription Worker', () => {
 
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         const nextArgsPromise = waitForNextSubNotification<Patient>();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2661,9 +2866,16 @@ describe('Subscription Worker', () => {
 
     test('Cached criteria - multiple subscriptions with same matching criteria all receive notification', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Cached Criteria Match Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const criteria = 'Patient?name=Alice';
@@ -2675,7 +2887,7 @@ describe('Subscription Worker', () => {
           criteria,
           channel: { type: 'websocket' },
         });
-        await bindSubscription(sub1, wsProject.id);
+        await bindSubscription(sub1, wsProject.id, login.id, membership.id);
 
         const sub2 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2684,7 +2896,7 @@ describe('Subscription Worker', () => {
           criteria,
           channel: { type: 'websocket' },
         });
-        await bindSubscription(sub2, wsProject.id);
+        await bindSubscription(sub2, wsProject.id, login.id, membership.id);
 
         const sub3 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2693,7 +2905,7 @@ describe('Subscription Worker', () => {
           criteria,
           channel: { type: 'websocket' },
         });
-        await bindSubscription(sub3, wsProject.id);
+        await bindSubscription(sub3, wsProject.id, login.id, membership.id);
 
         const nextMessagePromise = waitForNextSubMessage();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2754,9 +2966,16 @@ describe('Subscription Worker', () => {
 
     test('Cached criteria - subscriptions with different criteria are evaluated independently', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Cached Criteria Mixed Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         // Two subscriptions with criteria that will match
@@ -2767,7 +2986,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Alice',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(aliceSub1, wsProject.id);
+        await bindSubscription(aliceSub1, wsProject.id, login.id, membership.id);
 
         const aliceSub2 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2776,7 +2995,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Alice',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(aliceSub2, wsProject.id);
+        await bindSubscription(aliceSub2, wsProject.id, login.id, membership.id);
 
         // Two subscriptions with criteria that will NOT match
         const bobSub1 = await wsSubRepo.createResource<Subscription>({
@@ -2786,7 +3005,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Bob',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(bobSub1, wsProject.id);
+        await bindSubscription(bobSub1, wsProject.id, login.id, membership.id);
 
         const bobSub2 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2795,7 +3014,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Bob',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(bobSub2, wsProject.id);
+        await bindSubscription(bobSub2, wsProject.id, login.id, membership.id);
 
         const nextMessagePromise = waitForNextSubMessage();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2815,9 +3034,16 @@ describe('Subscription Worker', () => {
 
     test('Logs WS subscription eval info after evaluating criteria', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Sub Eval Log Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const subscription = await wsSubRepo.createResource<Subscription>({
@@ -2829,7 +3055,7 @@ describe('Subscription Worker', () => {
         });
 
         expect(subscription).toBeDefined();
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         const mockInfo = jest.fn();
         const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockReturnValue({
@@ -2861,9 +3087,16 @@ describe('Subscription Worker', () => {
 
     test('Expired entries are removed from active subscriptions hash', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
           project: { name: 'WS Expiry Cleanup Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withAccessToken: true,
+          withClient: true,
         });
 
         const authorRef = `Practitioner/${randomUUID()}`;
@@ -2896,8 +3129,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: futureExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         await addUserActiveWebSocketSubscription(authorRef, expiredSubRef);
@@ -2905,8 +3138,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         // Both entries should be in the hash before the worker runs
@@ -2932,9 +3165,16 @@ describe('Subscription Worker', () => {
 
     test('Expired entries are removed from the user active set', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Expiry User Set Cleanup Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withAccessToken: true,
+          withClient: true,
         });
 
         const authorRef = `Practitioner/${randomUUID()}`;
@@ -2965,8 +3205,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: futureExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         await addUserActiveWebSocketSubscription(authorRef, expiredSubRef);
@@ -2974,8 +3214,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         const countBefore = await getUserActiveWebSocketSubscriptionCount(authorRef);
