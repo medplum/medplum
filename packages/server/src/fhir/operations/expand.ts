@@ -177,6 +177,9 @@ async function computeExpansion(
   const maxCount = params.count ?? MAX_EXPANSION_SIZE;
   const expansion: ValueSetExpansionContains[] = [];
   for (const include of valueSet.compose.include) {
+    let includeExpansion: ValueSetExpansionContains[] = [];
+
+    // 1. Process include.valueSet if present
     if (include.valueSet) {
       for (const url of include.valueSet) {
         const includedValueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
@@ -187,46 +190,66 @@ async function computeExpansion(
           includedValueSet,
           {
             ...params,
-            count: maxCount - expansion.length,
+            count: maxCount, // Get full potential list to allow for downstream filtering
           },
           terminologyResources
         );
-        expansion.push(...nestedExpansion);
-
-        if (expansion.length >= maxCount) {
-          // Skip further expansion
-          break;
-        }
+        includeExpansion.push(...nestedExpansion);
       }
-      continue;
     }
-    if (!include.system) {
+
+    // 2. Process system and concept constraints
+    if (include.system) {
+      const codeSystem =
+        (terminologyResources[include.system] as WithId<CodeSystem>) ??
+        (await findTerminologyResource(repo, 'CodeSystem', include.system));
+      terminologyResources[include.system] = codeSystem;
+
+      if (include.concept) {
+        // If specific concepts are listed, validate and filter them
+        const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
+        const validCodings = await validateCodings(codeSystem, filteredCodings, params);
+        
+        const conceptExpansion: ValueSetExpansionContains[] = [];
+        for (const c of validCodings) {
+          if (c) {
+            c.id = undefined;
+            conceptExpansion.push(c);
+          }
+        }
+
+        if (include.valueSet) {
+          // INTERSECTION: Only keep concepts that were also found in the referenced valueSets
+          const existingCodes = new Set(includeExpansion.map((e) => e.code));
+          includeExpansion = conceptExpansion.filter((c) => existingCodes.has(c.code as string));
+        } else {
+          includeExpansion = conceptExpansion;
+        }
+      } else if (!include.valueSet) {
+        // No valueSet or specific concepts, fetch via system/filters from DB
+        await includeInExpansion(include, includeExpansion, codeSystem, params);
+      } else {
+        // valueSet was present, but no specific concepts. 
+        // Filter the existing results from the valueSet to this specific system.
+        includeExpansion = includeExpansion.filter((c) => c.system === include.system);
+      }
+    } else if (!include.valueSet) {
+      // Must have at least system or valueSet
       throw new OperationOutcomeError(
         badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
       );
     }
 
-    if (expansion.length >= maxCount) {
-      // Skip further expansion
-      break;
+    // Add this include block's results to the total expansion
+    for (const item of includeExpansion) {
+      if (expansion.length >= maxCount) {
+        break;
+      }
+      expansion.push(item);
     }
 
-    const codeSystem =
-      (terminologyResources[include.system] as WithId<CodeSystem>) ??
-      (await findTerminologyResource(repo, 'CodeSystem', include.system));
-    terminologyResources[include.system] = codeSystem;
-
-    if (include.concept) {
-      const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
-      const validCodings = await validateCodings(codeSystem, filteredCodings, params);
-      for (const c of validCodings) {
-        if (c) {
-          c.id = undefined;
-          expansion.push(c);
-        }
-      }
-    } else {
-      await includeInExpansion(include, expansion, codeSystem, params);
+    if (expansion.length >= maxCount) {
+      break;
     }
   }
 
