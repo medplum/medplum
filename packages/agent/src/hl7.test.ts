@@ -2012,7 +2012,7 @@ describe('HL7', () => {
       }
 
       // Reload config without changing channel name
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -2176,7 +2176,7 @@ describe('HL7', () => {
       });
 
       // Reload config with new channel name
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -2544,7 +2544,7 @@ describe('HL7', () => {
       });
 
       // Send reload config request
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -2632,7 +2632,7 @@ describe('HL7', () => {
       });
 
       // Send reload config request
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({

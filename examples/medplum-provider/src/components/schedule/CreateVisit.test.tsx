@@ -35,7 +35,7 @@ describe('CreateVisit', () => {
       end: endDate,
       slots: [],
       action: 'select',
-    } as SlotInfo;
+    };
 
     await medplum.createResource(mockPatient);
     medplum.getProfile = vi.fn().mockResolvedValue({
@@ -173,7 +173,7 @@ describe('CreateVisit', () => {
         end: new Date('2024-02-20T14:30:00Z'),
         slots: [],
         action: 'select',
-      } as SlotInfo;
+      };
 
       await act(async () => {
         rerender(

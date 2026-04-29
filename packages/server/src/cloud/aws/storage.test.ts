@@ -91,7 +91,7 @@ describe('Storage', () => {
     const sdkStream = sdkStreamMixin(req);
     mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
 
-    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
     expect(mockS3Client.send.callCount).toBe(1);
     expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
@@ -128,7 +128,7 @@ describe('Storage', () => {
     const sdkStream = sdkStreamMixin(req);
     mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
 
-    await storage.writeBinary(binary, undefined, undefined, req as Request);
+    await storage.writeBinary(binary, undefined, undefined, req);
     expect(mockS3Client.send.callCount).toBe(1);
     expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
       Bucket: 'foo',
@@ -198,7 +198,7 @@ describe('Storage', () => {
     const sdkStream = sdkStreamMixin(req);
     mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
 
-    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
     expect(mockS3Client.send.callCount).toBe(1);
     expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
@@ -248,7 +248,7 @@ describe('Storage', () => {
       req.push(null);
       (req as any).headers = {};
 
-      await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+      await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
       expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
         Bucket: 'foo',

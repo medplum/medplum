@@ -165,7 +165,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     redirectUrl.searchParams.set('code_challenge', login.codeChallenge);
   }
   if (login.codeChallengeMethod) {
-    redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
+    redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod);
   }
   res.redirect(redirectUrl.toString());
 }

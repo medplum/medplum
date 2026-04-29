@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CreateFunctionRequest } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
   GetFunctionCommand,
@@ -173,7 +172,7 @@ describe('Deploy', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    } as CreateFunctionRequest);
+    });
 
     // Verify that this was uploaded as a CJS zip file
     const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
@@ -261,7 +260,7 @@ describe('Deploy', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    } as CreateFunctionRequest);
+    });
     mockLambdaClient.resetHistory();
 
     // Step 3: Simulate releasing a new version of the lambda layer

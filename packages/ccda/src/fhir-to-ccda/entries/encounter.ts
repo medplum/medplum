@@ -9,7 +9,7 @@ import {
   OID_SNOMED_CT_CODE_SYSTEM,
 } from '../../oids';
 import { mapCodeableConceptToCcdaCode, mapCodeableConceptToCcdaValue } from '../../systems';
-import type { CcdaEntry, CcdaEntryRelationship, CcdaId } from '../../types';
+import type { CcdaEntry, CcdaEntryRelationship } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapEffectivePeriod, mapEffectiveTime, mapIdentifiers } from '../utils';
 
@@ -87,7 +87,7 @@ function createEncounterDiagnosis(
                   { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
                   { '@_root': OID_PROBLEM_OBSERVATION },
                 ],
-                id: mapIdentifiers(condition.id, condition.identifier) as CcdaId[],
+                id: mapIdentifiers(condition.id, condition.identifier),
                 code: {
                   '@_code': '282291009', // Diagnosis interpretation
                   '@_displayName': 'Diagnosis interpretation',

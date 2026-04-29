@@ -30,7 +30,7 @@ const TEXT_MSG_FOR_ACK_CODE = {
   CA: 'Commit Accept',
   CE: 'Commit Error',
   CR: 'Commit Reject',
-} as Record<AckCode, string>;
+};
 
 /**
  * The Hl7Context class represents the parsing context for an HL7 message.

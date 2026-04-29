@@ -912,12 +912,15 @@ export class App {
           () => reject(new Error('Timed out while waiting for message from child')),
           15000
         );
-        child.on('message', (msg: { type: string }) => {
+        child.on('message', (msg: { type: 'STARTED' } | { type: 'ERROR'; err: string }) => {
           clearTimeout(childTimeout);
+          if (!['STARTED', 'ERROR'].includes(msg.type)) {
+            reject(new Error(`Received unexpected message type ${msg.type}, expected 'STARTED' or 'ERROR'`));
+          }
           if (msg.type === 'STARTED') {
             resolve();
-          } else {
-            reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
+          } else if (msg.type === 'ERROR') {
+            reject(new Error(msg.err));
           }
         });
 
@@ -1002,7 +1005,7 @@ export class App {
       // Use the latest access token
       // This can be necessary if the message was queued before the access token was refreshed
       await this.medplum.refreshIfExpired();
-      message.accessToken = this.medplum.getAccessToken() as string;
+      message.accessToken = this.medplum.getAccessToken();
     }
     this.webSocket.send(JSON.stringify(message));
   }

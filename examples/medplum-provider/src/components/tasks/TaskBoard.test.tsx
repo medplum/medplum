@@ -427,7 +427,7 @@ describe('TaskBoard', () => {
         { resource: { ...inProgressTask1, id: 'task-in-progress-1' } },
         { resource: { ...inProgressTask2, id: 'task-in-progress-2' } },
       ],
-    } as Bundle<Task & { id: string }>);
+    });
 
     vi.spyOn(medplum, 'readResource').mockResolvedValue({ ...inProgressTask1, id: 'task-in-progress-1' });
 
@@ -481,7 +481,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 1,
       entry: [{ resource: { ...inProgressTask2, id: 'task-in-progress-2' } }],
-    } as Bundle<Task & { id: string }>);
+    });
 
     const completeButton = screen.getByLabelText('Mark as Completed');
     await user.click(completeButton);
@@ -514,7 +514,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup();
 
@@ -625,7 +625,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup('', { onChange });
 
@@ -668,7 +668,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup('priority=urgent', { onChange });
 
@@ -708,7 +708,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup('status=in-progress', { onChange });
 

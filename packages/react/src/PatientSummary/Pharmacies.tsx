@@ -61,7 +61,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
       if (props.pharmacies) {
         // If pharmacies were provided as props, use them directly
         if (!cancelled) {
-          setResolvedPharmacies(props.pharmacies as PharmacyWithPrimary[]);
+          setResolvedPharmacies(props.pharmacies);
           setLoadState('loaded');
         }
         return;
@@ -82,7 +82,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
           pharmacyRefs.map(async (pharmacyRef) => {
             try {
               const org = await medplum.readReference(pharmacyRef.organizationRef);
-              return { ...org, isPrimary: pharmacyRef.isPrimary } as PharmacyWithPrimary;
+              return { ...org, isPrimary: pharmacyRef.isPrimary };
             } catch (error) {
               if (!isNotFoundError(error)) {
                 // Error logged by Medplum error handler
@@ -92,7 +92,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
           })
         );
         if (!cancelled) {
-          const validResults = results.filter((result): result is PharmacyWithPrimary => result !== null);
+          const validResults = results.filter((result): result is NonNullable<typeof result> => result !== null);
           setResolvedPharmacies(validResults);
           // If all references failed to resolve, show error state
           // If some resolved successfully, show loaded state with partial results
