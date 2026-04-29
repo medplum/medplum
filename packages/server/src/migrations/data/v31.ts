@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PoolClient } from 'pg';
 import { getShardSystemRepo } from '../../fhir/repo';
+import { RepositoryConnection } from '../../fhir/repository/repository-connection';
 import { PLACEHOLDER_SHARD_ID } from '../../fhir/sharding';
 import { rebuildR4ValueSets } from '../../seeds/valuesets';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
@@ -16,7 +17,7 @@ export const migration: CustomPostDeployMigration = {
 
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
-  const repo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client); // client will eventually know its shard ID
+  const repo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, RepositoryConnection.fromClient(client)); // client will eventually know its shard ID
   const start = Date.now();
   await rebuildR4ValueSets(repo);
   results.push({ name: 'rebuildR4ValueSets', durationMs: Date.now() - start });

@@ -7,6 +7,7 @@ import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
+import { RepositoryConnection } from '../repository/repository-connection';
 import type { CountResult } from '../search';
 import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
@@ -81,7 +82,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
   let countResult: CountResult | undefined;
   if (params.count) {
     countResult = await withLongRunningDatabaseClient((client) => {
-      const countRepo = repo.clone(client);
+      const countRepo = repo.clone(RepositoryConnection.fromClient(client));
       return getCount(countRepo, searchReq, { forceAccurate: true });
     }, DatabaseMode.READER);
   }

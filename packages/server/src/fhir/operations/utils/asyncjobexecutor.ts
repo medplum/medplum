@@ -14,12 +14,13 @@ import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
+import { RepositoryConnection } from '../../repository/repository-connection';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
   private resource: WithId<AsyncJob> | undefined;
   constructor(repo: Repository, resource?: WithId<AsyncJob>) {
-    this.repo = repo.clone();
+    this.repo = repo.clone(new RepositoryConnection());
     this.resource = resource;
   }
 

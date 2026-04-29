@@ -397,7 +397,7 @@ describe('FHIR Repo Transactions', () => {
       expect(cb2).toHaveBeenCalledTimes(1);
     }));
 
-  test.failing('getSystemRepo() shares parent post-commit state', () =>
+  test('getSystemRepo() shares parent post-commit state', () =>
     withTestContext(async () => {
       const callback = jest.fn();
       let calledBeforeCommit = false;
@@ -411,7 +411,7 @@ describe('FHIR Repo Transactions', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     }));
 
-  test.failing('getSystemRepo() withTransaction() nests in the parent transaction', () =>
+  test('getSystemRepo() withTransaction() nests in the parent transaction', () =>
     withTestContext(async () => {
       let queries: string[] = [];
 
@@ -433,7 +433,7 @@ describe('FHIR Repo Transactions', () => {
       expect(queries).not.toContain('COMMIT');
     }));
 
-  test.failing('getSystemRepo() defers cache writes while parent transaction is active', () =>
+  test('getSystemRepo() defers cache writes while parent transaction is active', () =>
     withTestContext(async () => {
       let patient: WithId<Patient> | undefined;
       let cacheReadDuringTransaction = false;
@@ -455,7 +455,7 @@ describe('FHIR Repo Transactions', () => {
       ).resolves.toBeDefined();
     }));
 
-  test.failing('clone() shares parent transaction rollback and callback state', () =>
+  test('clone() shares parent transaction rollback and callback state', () =>
     withTestContext(async () => {
       const callback = jest.fn();
       let patient: WithId<Patient> | undefined;

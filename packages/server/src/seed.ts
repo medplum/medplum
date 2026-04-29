@@ -8,6 +8,7 @@ import { r4ProjectId } from './constants';
 import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
+import { RepositoryConnection } from './fhir/repository/repository-connection';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
@@ -17,7 +18,7 @@ import { rebuildR4ValueSets } from './seeds/valuesets';
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   await withPoolClient(async (client) => {
     // client will eventually know its shard ID
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client, {
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, RepositoryConnection.fromClient(client), {
       skipBackgroundJobs: true,
     });
 

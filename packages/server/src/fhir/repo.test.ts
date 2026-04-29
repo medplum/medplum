@@ -1903,8 +1903,8 @@ describe('FHIR Repo', () => {
     }
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).transactionDepth).toBe(0);
-    expect((repo as any).conn).toBeUndefined();
+    expect((repo as any).connection.transactionDepth).toBe(0);
+    expect((repo as any).connection.conn).toBeUndefined();
 
     // Dead client must be released with a truthy err so pg-pool discards it
     expect(releaseSpy).toHaveBeenCalledTimes(1);
@@ -2234,20 +2234,20 @@ describe('FHIR Repo', () => {
       buildResourceRowSpy.mockRestore();
     }));
 
-  test('clone() uses provided connection', async () =>
+  test('clone() uses provided session', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      // Clone without connection argument - should use original connection
+      // Clone without session argument and no active connection - should use the default database pool
       const clonedRepo1 = repo.clone();
       expect(clonedRepo1).toBeInstanceOf(Repository);
       expect(clonedRepo1.getDatabaseClient(DatabaseMode.READER)).toBe(repo.getDatabaseClient(DatabaseMode.READER));
 
-      // Clone with explicit connection argument
+      // Clone with explicit session argument
       const pool = getDatabasePool(DatabaseMode.READER);
       const client = await pool.connect();
       try {
-        const clonedRepo2 = repo.clone(client);
+        const clonedRepo2 = repo.clone(RepositoryConnection.fromClient(client));
         expect(clonedRepo2).toBeInstanceOf(Repository);
         expect(clonedRepo2.getDatabaseClient(DatabaseMode.READER)).toBe(client);
         expect(clonedRepo2.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
