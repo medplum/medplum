@@ -6,7 +6,6 @@ import type {
   ActivityDefinition,
   CarePlan,
   Encounter,
-  Location,
   OperationOutcome,
   Organization,
   Patient,
@@ -503,106 +502,6 @@ describe('PlanDefinition apply', () => {
     expect(res7.body.resourceType).toBe('ServiceRequest');
   });
 
-  test('ActivityDefinition location is copied to ServiceRequest', async () => {
-    // 1. Create a Location
-    const resLocation = await request(app)
-      .post(`/fhir/R4/Location`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Location',
-        name: 'Main Lab',
-        status: 'active',
-      });
-    expect(resLocation.status).toBe(201);
-    const location = resLocation.body as WithId<Location>;
-
-    // 2. Create an ActivityDefinition referencing the Location
-    const resActivityDefinition = await request(app)
-      .post(`/fhir/R4/ActivityDefinition`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'ActivityDefinition',
-        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
-        status: 'active',
-        kind: 'ServiceRequest',
-        name: 'CompleteBloodCountOrder',
-        title: 'Complete Blood Count Order',
-        intent: 'order',
-        location: createReference(location),
-      });
-    expect(resActivityDefinition.status).toBe(201);
-
-    // 3. Create a PlanDefinition
-    const resPlanDefinition = await request(app)
-      .post(`/fhir/R4/PlanDefinition`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'PlanDefinition',
-        title: 'Example Plan Definition',
-        status: 'active',
-        action: [
-          {
-            title: 'Order a CBC',
-            definitionCanonical: (resActivityDefinition.body as ActivityDefinition).url,
-          },
-        ],
-      });
-    expect(resPlanDefinition.status).toBe(201);
-
-    // 4. Create a Patient
-    const resPatient = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Patient',
-        name: [{ given: ['Workflow'], family: 'Demo' }],
-      });
-    expect(resPatient.status).toBe(201);
-
-    // 5. Apply the PlanDefinition
-    const resApply = await request(app)
-      .post(`/fhir/R4/PlanDefinition/${resPlanDefinition.body.id}/$apply`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'subject',
-            valueString: getReferenceString(resPatient.body as Patient),
-          },
-        ],
-      });
-    expect(resApply.status).toBe(200);
-    const carePlan = resApply.body as WithId<CarePlan>;
-
-    // 6. Get the RequestGroup -> Task -> ServiceRequest
-    const resRequestGroup = await request(app)
-      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRequestGroup.status).toBe(200);
-
-    const resTask = await request(app)
-      .get(`/fhir/R4/${(resRequestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(resTask.status).toBe(200);
-
-    const resServiceRequest = await request(app)
-      .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(resServiceRequest.status).toBe(200);
-    expect(resServiceRequest.body.resourceType).toBe('ServiceRequest');
-
-    // 7. Verify the ServiceRequest's locationReference was populated from the ActivityDefinition's location
-    const serviceRequest = resServiceRequest.body as ServiceRequest;
-    expect(serviceRequest.locationReference).toHaveLength(1);
-    expect(serviceRequest.locationReference?.[0]).toMatchObject(createReference(location));
-  });
-
   test('ActivityDefinition dynamicValue populates ServiceRequest fields', async () => {
     // 1. Create a Practitioner to reference via %practitioner
     const resPractitioner = await request(app)
@@ -826,90 +725,6 @@ describe('PlanDefinition apply', () => {
       code: '108252007',
       display: 'Laboratory procedure',
     });
-  });
-
-  test('ActivityDefinition without location does not set ServiceRequest locationReference', async () => {
-    // 1. Create an ActivityDefinition without a location
-    const resActivityDefinition = await request(app)
-      .post(`/fhir/R4/ActivityDefinition`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'ActivityDefinition',
-        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
-        status: 'active',
-        kind: 'ServiceRequest',
-        name: 'NoLocationOrder',
-        title: 'No Location Order',
-        intent: 'order',
-      });
-    expect(resActivityDefinition.status).toBe(201);
-
-    // 2. Create a PlanDefinition
-    const resPlanDefinition = await request(app)
-      .post(`/fhir/R4/PlanDefinition`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'PlanDefinition',
-        title: 'Example Plan Definition',
-        status: 'active',
-        action: [
-          {
-            title: 'No location action',
-            definitionCanonical: (resActivityDefinition.body as ActivityDefinition).url,
-          },
-        ],
-      });
-    expect(resPlanDefinition.status).toBe(201);
-
-    // 3. Create a Patient
-    const resPatient = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Patient',
-        name: [{ given: ['Workflow'], family: 'Demo' }],
-      });
-    expect(resPatient.status).toBe(201);
-
-    // 4. Apply the PlanDefinition
-    const resApply = await request(app)
-      .post(`/fhir/R4/PlanDefinition/${resPlanDefinition.body.id}/$apply`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'subject',
-            valueString: getReferenceString(resPatient.body as Patient),
-          },
-        ],
-      });
-    expect(resApply.status).toBe(200);
-    const carePlan = resApply.body as WithId<CarePlan>;
-
-    // 5. Get the RequestGroup -> Task -> ServiceRequest
-    const resRequestGroup = await request(app)
-      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRequestGroup.status).toBe(200);
-
-    const resTask = await request(app)
-      .get(`/fhir/R4/${(resRequestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(resTask.status).toBe(200);
-
-    const resServiceRequest = await request(app)
-      .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(resServiceRequest.status).toBe(200);
-
-    // 6. Verify locationReference is not set
-    const serviceRequest = resServiceRequest.body as ServiceRequest;
-    expect(serviceRequest.locationReference).toBeUndefined();
   });
 
   test('Dynamic and static assigned owner and performerType', async () => {

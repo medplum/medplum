@@ -251,7 +251,6 @@ async function createActivityDefinitionTask(
         requester: requester as ServiceRequest['requester'],
         encounter: encounter,
         code: activityDefinition.code,
-        locationReference: activityDefinition.location ? [activityDefinition.location] : undefined,
         extension: activityDefinition.extension,
       };
 
