@@ -34,22 +34,17 @@ export async function agentStatsHandler(req: FhirRequest): Promise<FhirResponse>
 }
 
 async function fetchStats(agent: WithId<Agent>): Promise<FhirResponse> {
-  return sendAndHandleAgentRequest<AgentStatsResponse>(
-    agent,
-    { type: 'agent:stats:request' },
-    'agent:stats:response',
-    {
-      successHandler: (response) => {
-        return {
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'stats',
-              valueString: JSON.stringify(response.stats),
-            },
-          ],
-        };
-      },
-    }
-  );
+  return sendAndHandleAgentRequest<AgentStatsResponse>(agent, { type: 'agent:stats:request' }, 'agent:stats:response', {
+    successHandler: (response) => {
+      return {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify(response.stats),
+          },
+        ],
+      };
+    },
+  });
 }
