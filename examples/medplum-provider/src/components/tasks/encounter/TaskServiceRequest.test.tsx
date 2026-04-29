@@ -27,7 +27,7 @@ vi.mock('react-router', async () => {
 });
 
 const SNOMED_SYSTEM = 'http://snomed.info/sct';
-const SNOMED_DIAGNOSTIC_REPORT_CODE = '108252007';
+const SNOMED_LAB_PROCEDURE_CODE = '108252007';
 
 describe('TaskServiceRequest', () => {
   let medplum: MockClient;
@@ -58,7 +58,7 @@ describe('TaskServiceRequest', () => {
           },
           {
             system: SNOMED_SYSTEM,
-            code: SNOMED_DIAGNOSTIC_REPORT_CODE,
+            code: SNOMED_LAB_PROCEDURE_CODE,
             display: 'Diagnostic Report',
           },
         ],
@@ -297,7 +297,7 @@ describe('TaskServiceRequest', () => {
       const testsPassed = calls[calls.length - 1][0];
       // Should only have 2 tests, not 3 (diagnostic report code filtered out)
       expect(testsPassed).toHaveLength(2);
-      expect(testsPassed.every((test: { code: string }) => test.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)).toBe(true);
+      expect(testsPassed.every((test: { code: string }) => test.code !== SNOMED_LAB_PROCEDURE_CODE)).toBe(true);
     });
   });
 

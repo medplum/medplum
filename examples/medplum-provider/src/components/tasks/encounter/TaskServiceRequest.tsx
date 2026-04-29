@@ -17,7 +17,7 @@ interface TaskServiceRequestProps {
 }
 
 const SNOMED_SYSTEM = 'http://snomed.info/sct';
-const SNOMED_DIAGNOSTIC_REPORT_CODE = '108252007';
+const SNOMED_LAB_PROCEDURE_CODE = '108252007';
 
 export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element => {
   const { task } = props;
@@ -42,12 +42,18 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
   }, [medplum, performerReferences]);
 
   const tests: TestCoding[] | undefined = serviceRequest?.code?.coding
-    ?.filter((coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)
+    ?.filter((coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_LAB_PROCEDURE_CODE)
     .map((coding) => ({
       system: 'urn:uuid:f:388554647b89801ea5e8320b',
       code: coding.code,
       display: coding.display,
     })) as TestCoding[];
+
+  const isLabServiceRequest = serviceRequest?.category?.some((category) =>
+    category.coding?.some(
+      (coding) => coding.system === SNOMED_SYSTEM && coding.code === SNOMED_LAB_PROCEDURE_CODE
+    )
+  );
 
   useEffect(() => {
     const fetchServiceRequest = async (): Promise<void> => {
@@ -73,15 +79,21 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           <Title>{getDisplayString(task)}</Title>
         </Stack>
 
-        {(labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
-          <Group>
-            <Button onClick={() => setNewOrderModalOpened(true)} variant="outline" leftSection={<IconPlus size={16} />}>
-              Request Labs
-            </Button>
-          </Group>
-        )}
+        {isLabServiceRequest &&
+          (labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
+            <Group>
+              <Button
+                onClick={() => setNewOrderModalOpened(true)}
+                variant="outline"
+                leftSection={<IconPlus size={16} />}
+              >
+                Request Labs
+              </Button>
+            </Group>
+          )}
 
-        {task.for &&
+        {isLabServiceRequest &&
+          task.for &&
           labServiceRequest?.status !== 'draft' &&
           labServiceRequest?.status !== 'on-hold' &&
           labServiceRequest?.id && (
