@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, WithId } from '@medplum/core';
+import type { ProfileResource, TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
   concatUrls,
@@ -11,6 +11,7 @@ import {
   getReferenceString,
   Operator,
   toTypedValue,
+  tryGetDataType,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
@@ -20,7 +21,6 @@ import type {
   ClientApplication,
   CodeableConcept,
   Encounter,
-  Location,
   Organization,
   Patient,
   PlanDefinition,
@@ -243,15 +243,7 @@ async function createActivityDefinitionTask(
 
   switch (activityDefinition.kind) {
     case 'ServiceRequest': {
-      let performer: ServiceRequest['performer'] | undefined;
-      if (activityDefinition.location) {
-        const location = await repo.readReference<Location>(activityDefinition.location);
-        if (location.managingOrganization) {
-          performer = [location.managingOrganization];
-        }
-      }
-
-      const serviceRequest = await repo.createResource({
+      const serviceRequest: ServiceRequest = {
         resourceType: 'ServiceRequest',
         status: 'draft',
         intent: activityDefinition.intent as ServiceRequest['intent'],
@@ -259,11 +251,18 @@ async function createActivityDefinitionTask(
         requester: requester as ServiceRequest['requester'],
         encounter: encounter,
         code: activityDefinition.code,
-        category: activityDefinition.topic,
         locationReference: activityDefinition.location ? [activityDefinition.location] : undefined,
-        performer: performer,
         extension: activityDefinition.extension,
+      };
+
+      applyDynamicValues(serviceRequest as unknown as Record<string, unknown>, 'ServiceRequest', activityDefinition, {
+        '%practitioner': toTypedValue(practitioner),
+        '%organization': toTypedValue(organization),
+        '%subject': toTypedValue(subject),
+        '%encounter': toTypedValue(encounter),
       });
+
+      const persisted = await repo.createResource(serviceRequest);
 
       return createTask(repo, planDefinition, requester, subject, action, encounter, owner, performerType, [
         {
@@ -272,7 +271,7 @@ async function createActivityDefinitionTask(
           },
           valueReference: {
             display: action.title,
-            reference: getReferenceString(serviceRequest),
+            reference: getReferenceString(persisted),
           },
         },
       ]);
@@ -334,6 +333,59 @@ async function createTask(
     title: action.title,
     resource: createReference(task),
   };
+}
+
+function applyDynamicValues(
+  target: Record<string, unknown>,
+  resourceType: string,
+  activityDefinition: ActivityDefinition,
+  variables: Record<string, TypedValue>
+): void {
+  for (const dv of activityDefinition.dynamicValue ?? EMPTY) {
+    const expression = dv.expression?.expression;
+    if (!expression || !dv.path) {
+      continue;
+    }
+    const result = evalFhirPathTyped(expression, [toTypedValue(target)], variables);
+    setValueAtPath(
+      target,
+      resourceType,
+      dv.path,
+      result.map((r) => r.value)
+    );
+  }
+}
+
+function setValueAtPath(
+  target: Record<string, unknown>,
+  resourceType: string,
+  path: string,
+  values: unknown[]
+): void {
+  if (values.length === 0) {
+    return;
+  }
+  const parts = path.split('.');
+  let cur: Record<string, unknown> = target;
+  let curType = resourceType;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const key = parts[i];
+    const element = tryGetDataType(curType)?.elements?.[key];
+    if (!element) {
+      return;
+    }
+    if (cur[key] === undefined) {
+      cur[key] = element.isArray ? [{}] : {};
+    }
+    cur = (element.isArray ? (cur[key] as object[])[0] : cur[key]) as Record<string, unknown>;
+    curType = element.type[0].code;
+  }
+  const finalKey = parts[parts.length - 1];
+  const finalElement = tryGetDataType(curType)?.elements?.[finalKey];
+  if (!finalElement) {
+    return;
+  }
+  cur[finalKey] = finalElement.isArray ? values : values[0];
 }
 
 async function readCanonical<T extends Questionnaire | ActivityDefinition | PlanDefinition>(
