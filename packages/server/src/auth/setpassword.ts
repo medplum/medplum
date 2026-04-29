@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest } from '@medplum/core';
-import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import { allOk, badRequest, EMPTY, getReferenceString, Operator } from '@medplum/core';
+import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
@@ -47,6 +47,16 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
 
   await setPassword({ ...user, emailVerified: true }, req.body.password);
   await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
+
+  const activeSessions = await systemRepo.search<Login>({
+    resourceType: 'Login',
+    filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
+  });
+  for (const entry of activeSessions.entry ?? EMPTY) {
+    const login = entry.resource as Login;
+    await systemRepo.updateResource({ ...login, revoked: true });
+  }
+
   sendOutcome(res, allOk);
 }
 
