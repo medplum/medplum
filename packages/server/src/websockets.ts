@@ -30,7 +30,10 @@ type WebSocketState = {
   readonly sockets: Set<WebSocket>;
   readonly socketsClosedPromise: Promise<void>;
   readonly socketsClosedResolve: () => void;
+  closing: boolean;
 };
+
+const WS_CLOSE_TIMEOUT_MS = 30_000;
 
 let wsServer: Server | undefined = undefined;
 let wsState: WebSocketState | undefined = undefined;
@@ -53,23 +56,17 @@ export function initWebSockets(server: http.Server): void {
   });
 
   wsServer.on('connection', async (socket, request) => {
-    // Set binary type to 'nodebuffer' so that data is returned as Buffer objects
-    // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
-    socket.binaryType = 'nodebuffer';
-
     if (!wsState) {
       let socketsClosedResolve!: () => void;
       const socketsClosedPromise = new Promise<void>((resolve) => {
         socketsClosedResolve = () => {
-          if (wsState?.sockets.size) {
-            return;
-          }
           wsState = undefined;
           resolve();
         };
       });
-      wsState = { sockets: new Set(), socketsClosedPromise, socketsClosedResolve };
+      wsState = { sockets: new Set(), socketsClosedPromise, socketsClosedResolve, closing: false };
     }
+
     wsState.sockets.add(socket);
 
     // Add a default error handler to the socket
@@ -85,11 +82,21 @@ export function initWebSockets(server: http.Server): void {
       const { sockets, socketsClosedResolve } = wsState;
       if (sockets.size) {
         sockets.delete(socket);
-        if (sockets.size === 0) {
+        if (wsState.closing && sockets.size === 0) {
           socketsClosedResolve();
         }
       }
     });
+
+    // If this socket somehow connected right before closing began, let's close it with code 1001 (Going away, graceful shutdown).
+    if (wsState.closing) {
+      socket.close(1001);
+      return;
+    }
+
+    // Set binary type to 'nodebuffer' so that data is returned as Buffer objects
+    // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
+    socket.binaryType = 'nodebuffer';
 
     const path = getWebSocketPath(request.url as string);
     const handler = handlerMap.get(path);
@@ -101,9 +108,18 @@ export function initWebSockets(server: http.Server): void {
   });
 
   server.on('upgrade', (request, socket, head) => {
+    if (wsState?.closing || !wsServer) {
+      socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+      socket.destroy();
+      return;
+    }
     if (handlerMap.has(getWebSocketPath(request.url as string))) {
-      wsServer?.handleUpgrade(request, socket, head, (socket) => {
-        wsServer?.emit('connection', socket, request);
+      wsServer.handleUpgrade(request, socket, head, (ws) => {
+        if (!wsServer) {
+          globalLogger.error('[WS] WebSocket server undefined after upgrade');
+          return;
+        }
+        wsServer.emit('connection', ws, request);
       });
     } else {
       socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
@@ -179,8 +195,24 @@ export async function closeWebSockets(): Promise<void> {
     wsServer = undefined;
   }
   if (wsState) {
-    // Wait for all sockets to close
-    await wsState.socketsClosedPromise;
+    wsState.closing = true;
+    const localState = wsState;
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<void>((resolve) => {
+      timeoutHandle = setTimeout(() => {
+        globalLogger.warn('WebSocket shutdown timeout — terminating remaining sockets', {
+          remaining: localState.sockets.size,
+        });
+        for (const socket of localState.sockets) {
+          socket.terminate();
+        }
+        resolve();
+      }, WS_CLOSE_TIMEOUT_MS);
+    });
+    await Promise.race([localState.socketsClosedPromise, timeoutPromise]);
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
   }
 }
 
