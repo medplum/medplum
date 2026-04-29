@@ -3,15 +3,18 @@
 import type { ProfileResource, TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
+  badRequest,
+  capitalize,
   concatUrls,
   createReference,
   EMPTY,
   evalFhirPathTyped,
+  getElementDefinition,
   getExtension,
   getReferenceString,
+  OperationOutcomeError,
   Operator,
   toTypedValue,
-  tryGetDataType,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
@@ -345,47 +348,60 @@ function applyDynamicValues(
     if (!expression || !dv.path) {
       continue;
     }
+    const language = dv.expression?.language;
+    if (language && language !== 'text/fhirpath') {
+      throw new OperationOutcomeError(
+        badRequest(
+          `ActivityDefinition.dynamicValue expression uses unsupported language: ${language} (path: ${dv.path})`
+        )
+      );
+    }
     const result = evalFhirPathTyped(expression, [toTypedValue(target)], variables);
-    setValueAtPath(
-      target,
-      resourceType,
-      dv.path,
-      result.map((r) => r.value)
-    );
+    setValueAtPath(target, resourceType, dv.path, result);
   }
 }
 
-function setValueAtPath(target: Record<string, unknown>, resourceType: string, path: string, values: unknown[]): void {
+function setValueAtPath(
+  target: Record<string, unknown>,
+  resourceType: string,
+  path: string,
+  values: TypedValue[]
+): void {
   if (values.length === 0) {
     return;
   }
-  const parts = path.split('.');
-  let cur: Record<string, unknown> = target;
-  let curType = resourceType;
-  for (let i = 0; i < parts.length - 1; i++) {
-    const key = parts[i];
-    if (key === '__proto__' || key === 'prototype' || key === 'constructor') {
+  const pathSegments = path.split('.');
+  let currentNode: Record<string, unknown> = target;
+  let currentFhirType = resourceType;
+  for (let i = 0; i < pathSegments.length - 1; i++) {
+    const segmentKey = pathSegments[i];
+    if (segmentKey === '__proto__' || segmentKey === 'prototype' || segmentKey === 'constructor') {
       return;
     }
-    const element = tryGetDataType(curType)?.elements?.[key];
+    const element = getElementDefinition(currentFhirType, segmentKey);
     if (!element) {
       return;
     }
-    if (cur[key] === undefined) {
-      cur[key] = element.isArray ? [{}] : {};
+    if (currentNode[segmentKey] === undefined) {
+      currentNode[segmentKey] = element.isArray ? [{}] : {};
     }
-    cur = (element.isArray ? (cur[key] as object[])[0] : cur[key]) as Record<string, unknown>;
-    curType = element.type[0].code;
+    currentNode = (
+      element.isArray ? (currentNode[segmentKey] as object[])[0] : currentNode[segmentKey]
+    ) as Record<string, unknown>;
+    currentFhirType = element.type[0].code;
   }
-  const finalKey = parts[parts.length - 1];
-  if (finalKey === '__proto__' || finalKey === 'prototype' || finalKey === 'constructor') {
+  const finalSegmentKey = pathSegments[pathSegments.length - 1];
+  if (finalSegmentKey === '__proto__' || finalSegmentKey === 'prototype' || finalSegmentKey === 'constructor') {
     return;
   }
-  const finalElement = tryGetDataType(curType)?.elements?.[finalKey];
+  const finalElement = getElementDefinition(currentFhirType, finalSegmentKey);
   if (!finalElement) {
     return;
   }
-  cur[finalKey] = finalElement.isArray ? values : values[0];
+  const writeKey = finalSegmentKey.includes('[x]')
+    ? finalSegmentKey.replace('[x]', capitalize(values[0].type))
+    : finalSegmentKey;
+  currentNode[writeKey] = finalElement.isArray ? values.map((v) => v.value) : values[0].value;
 }
 
 async function readCanonical<T extends Questionnaire | ActivityDefinition | PlanDefinition>(
