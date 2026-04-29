@@ -303,6 +303,14 @@ export function compareColumnValues(a: ColumnValue, b: ColumnValue): number {
   return String(a).localeCompare(String(b));
 }
 
+function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
+  if (context.projects && !context.projects.some((project) => project.id === syntheticR4Project.id)) {
+    // Repositories with a project scope can also see the synthetic R4 project,
+    // but repeated construction from the same context must not append duplicates.
+    context.projects.push(syntheticR4Project);
+  }
+}
+
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -341,10 +349,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   constructor(context: RepositoryContext, connection?: RepositoryConnection) {
     super();
+    addSyntheticR4ProjectIfMissing(context);
     this.context = context;
     this.ownsConnection = connection === undefined;
     this.connection = connection ?? new RepositoryConnection();
-    this.context.projects?.push(syntheticR4Project);
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
@@ -380,6 +388,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
     if (this.connection.hasConnection()) {
+      this.assertNotClosed();
       return createSystemRepository(this.shardId, this.connection, contextDefaults);
     }
     return createSystemRepository(this.shardId, undefined, contextDefaults);

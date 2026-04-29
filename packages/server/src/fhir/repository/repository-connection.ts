@@ -38,6 +38,7 @@ export type StatementTimeoutOptions = {
  */
 export class RepositoryConnection implements Disposable {
   private conn?: PoolClient;
+  private connMode?: DatabaseMode;
   private readonly ownsClient: boolean;
   private transactionDepth = 0;
   private pinDepth = 0;
@@ -50,15 +51,20 @@ export class RepositoryConnection implements Disposable {
   private callbackStack: CallbackFrame[] = [];
 
   constructor(options?: RepositoryConnectionOptions) {
-    this.conn = options?.client;
     this.ownsClient = options?.ownsClient ?? true;
+    this.conn = options?.client;
+    if (!this.ownsClient && !this.conn) {
+      throw new Error('Borrowed repository connections require a database client');
+    }
     this.mode = options?.mode ?? RepositoryMode.WRITER;
+    this.connMode = this.conn ? toDatabaseMode(this.mode) : undefined;
   }
 
-  static fromClient(client: PoolClient, options?: { ownsClient?: boolean }): RepositoryConnection {
+  static fromClient(client: PoolClient, options?: { ownsClient?: boolean; mode?: DatabaseMode }): RepositoryConnection {
     return new RepositoryConnection({
       client,
       ownsClient: options?.ownsClient ?? false,
+      mode: options?.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER,
     });
   }
 
@@ -83,9 +89,12 @@ export class RepositoryConnection implements Disposable {
   getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
     this.assertNotClosed();
     if (this.conn) {
-      // If in a transaction, then use the transaction client.
+      // A held client might be pinned outside a transaction, but it still has one physical
+      // database role. Do not let writer work accidentally run on a reader connection.
+      this.assertConnectionMode(mode);
       return this.conn;
     }
+    this.assertCanAcquireConnection();
     if (mode === DatabaseMode.WRITER) {
       // If we ever use a writer, then all subsequent operations must use a writer.
       this.mode = RepositoryMode.WRITER;
@@ -101,7 +110,14 @@ export class RepositoryConnection implements Disposable {
    */
   private async getConnection(mode: DatabaseMode): Promise<PoolClient> {
     this.assertNotClosed();
-    this.conn ??= await getDatabasePool(mode).connect();
+    if (this.conn) {
+      this.assertConnectionMode(mode);
+      return this.conn;
+    }
+
+    this.assertCanAcquireConnection();
+    this.conn = await getDatabasePool(mode).connect();
+    this.connMode = mode;
     return this.conn;
   }
 
@@ -115,25 +131,29 @@ export class RepositoryConnection implements Disposable {
     if (!this.conn) {
       return;
     }
-    // if something still has pinned the connection, only consider releasing it if err is truthy
+    // Normal releases wait for all active pin scopes to unwind. Error releases are forced
+    // because the current physical client is no longer safe to reuse.
     if (this.pinDepth > 0 && !err) {
       return;
     }
     const releaseErr = err || this.discardOnRelease;
     if (this.ownsClient) {
+      const conn = this.conn;
+      this.conn = undefined;
+      this.connMode = undefined;
+      this.discardOnRelease = false;
       try {
-        this.conn.release(releaseErr);
-      } catch (releaseErr) {
+        conn.release(releaseErr);
+      } catch (releaseError) {
         // pg-pool throws if release() is called twice (e.g. socket already errored out).
         // We've done our part; just log and move on.
-        getLogger().warn('Error releasing database client', { err: normalizeErrorString(releaseErr) });
+        getLogger().warn('Error releasing database client', { err: normalizeErrorString(releaseError) });
       }
-      this.conn = undefined;
-      this.discardOnRelease = false;
     } else if (releaseErr) {
       // Shared connection is known to be dead. Drop our reference so we don't reuse it.
       // The owner of the connection is responsible for the actual release.
       this.conn = undefined;
+      this.connMode = undefined;
       this.discardOnRelease = false;
     }
   }
@@ -235,14 +255,25 @@ export class RepositoryConnection implements Disposable {
 
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
-    this.transactionDepth++;
-    this.pushCallbackFrame();
+    const nextDepth = this.transactionDepth + 1;
     const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
-      await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
-    } else {
-      await conn.query('SAVEPOINT sp' + this.transactionDepth);
+    try {
+      if (nextDepth === 1) {
+        await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
+      } else {
+        await conn.query('SAVEPOINT sp' + nextDepth);
+      }
+    } catch (err) {
+      if (nextDepth === 1) {
+        // If BEGIN itself fails, no transaction exists to roll back. Drop the client
+        // with the original error so pg-pool does not return a questionable session.
+        this.releaseConnection(err instanceof Error ? err : true);
+      }
+      throw err;
     }
+    // Publish transaction state only after Postgres confirms BEGIN/SAVEPOINT.
+    this.transactionDepth = nextDepth;
+    this.pushCallbackFrame();
     return conn;
   }
 
@@ -327,6 +358,24 @@ export class RepositoryConnection implements Disposable {
   private assertOwnsClient(): void {
     if (!this.ownsClient) {
       throw new Error('Does not own database client');
+    }
+  }
+
+  private assertCanAcquireConnection(): void {
+    if (!this.ownsClient) {
+      // A borrowed RepositoryConnection wraps someone else's PoolClient. If that
+      // client is gone, acquiring a replacement here would leak it because this
+      // object is intentionally not allowed to release clients.
+      throw new Error('Borrowed repository connection is no longer available');
+    }
+  }
+
+  private assertConnectionMode(mode: DatabaseMode): void {
+    if (!this.connMode) {
+      throw new Error('Repository connection has no database mode');
+    }
+    if (this.connMode === DatabaseMode.READER && mode === DatabaseMode.WRITER) {
+      throw new Error('Cannot use reader database connection for writer operation');
     }
   }
 
@@ -434,4 +483,8 @@ export class RepositoryConnection implements Disposable {
       throw new Error('Already closed');
     }
   }
+}
+
+function toDatabaseMode(mode: RepositoryMode): DatabaseMode {
+  return mode === RepositoryMode.READER ? DatabaseMode.READER : DatabaseMode.WRITER;
 }

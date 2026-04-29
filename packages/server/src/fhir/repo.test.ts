@@ -44,6 +44,7 @@ import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import assert from 'node:assert';
 import { resolve } from 'path';
+import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
@@ -65,6 +66,7 @@ import {
   Repository,
   setTypedPropertyValue,
 } from './repo';
+import { RepositoryConnection } from './repository/repository-connection';
 import { PostgresError, SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -1962,6 +1964,89 @@ describe('FHIR Repo', () => {
     });
   });
 
+  test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(
+        repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
+          // The timeout wrapper pins one physical reader client. A nested transaction
+          // must not silently reuse that reader client for writer work.
+          await repo.withTransaction(async () => undefined);
+        })
+      ).rejects.toThrow('reader database connection');
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('borrowed repository connections do not reacquire clients after forced release', async () => {
+    const rollbackError = new Error('rollback failed');
+    const client = {
+      query: jest.fn(async (query: string) => {
+        if (query === 'ROLLBACK') {
+          throw rollbackError;
+        }
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo('test-shard', RepositoryConnection.fromClient(client));
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => Promise.reject(new Error('work failed')))).rejects.toThrow(
+        'work failed'
+      );
+
+      // The repository only borrowed this PoolClient, so it drops its local reference
+      // after the fatal rollback path but never releases a client it does not own.
+      expect(client.release).not.toHaveBeenCalled();
+
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow(
+        'Borrowed repository connection is no longer available'
+      );
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('borrowed RepositoryConnection requires an initial client', () => {
+    // Borrowed connections cannot ask the pool for a replacement later because
+    // they are not allowed to release PoolClients they did not receive.
+    expect(() => new (RepositoryConnection as any)({ ownsClient: false })).toThrow(
+      'Borrowed repository connections require a database client'
+    );
+  });
+
+  test('withTransaction does not publish transaction state when BEGIN fails', async () => {
+    const beginError = new Error('begin failed');
+    const client = {
+      query: jest.fn(async () => Promise.reject(beginError)),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.fromClient(client, { ownsClient: true })
+    );
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('begin failed');
+
+      // BEGIN never succeeded, so the in-memory state must not claim an active
+      // transaction or hold callback frames for one.
+      expect((repo as any).connection.transactionDepth).toBe(0);
+      expect((repo as any).connection.callbackStack).toHaveLength(0);
+      expect(client.release).toHaveBeenCalledWith(beginError);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
@@ -2271,6 +2356,42 @@ describe('FHIR Repo', () => {
 
       buildResourceRowSpy.mockRestore();
     }));
+
+  test('constructor and clone add the synthetic R4 project only once to shared context', () => {
+    const project: WithId<Project> = {
+      resourceType: 'Project',
+      id: randomUUID(),
+    };
+    const context = {
+      projects: [project],
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    };
+
+    const repo = new Repository(context);
+    const clonedRepo = repo.clone();
+
+    // Repository construction mutates the shared context in place, but repeated
+    // construction from that context must not append duplicate synthetic projects.
+    expect(context.projects.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
+    expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+    expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+  });
+
+  test('closed repository cannot create derived repositories', () => {
+    const repo = new Repository({
+      superAdmin: true,
+      author: {
+        reference: 'system',
+      },
+    });
+
+    repo[Symbol.dispose]();
+
+    expect(() => repo.clone()).toThrow('Already closed');
+    expect(() => repo.getSystemRepo()).toThrow('Already closed');
+  });
 
   test('clone does not share the same connection as the original repository', async () =>
     withTestContext(async () => {
