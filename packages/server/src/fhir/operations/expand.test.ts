@@ -141,10 +141,6 @@ describe('Expand', () => {
   });
 
   test('Marital status', async () => {
-    // This is a good test, because it covers a bunch of edge cases.
-    // Marital status is the combination of two code systems: http://hl7.org/fhir/v3/MaritalStatus and http://hl7.org/fhir/v3/NullFlavor
-    // For NullFlavor, it specifies a subset of codes
-    // For MaritalStatus, it does not
     const valueSet = 'http://hl7.org/fhir/ValueSet/marital-status';
     const filter = 'married';
     const res = await request(app)
@@ -1444,5 +1440,70 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + superAdminToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains[0].display).toStrictEqual('ClientApplication');
+  });
+
+  test('Intersection of valueSet and concepts', async () => {
+    const system = 'http://example.com/system-' + randomUUID();
+
+    // 1. Create a CodeSystem first so the system exists in the DB
+    await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        url: system,
+        status: 'active',
+        content: 'complete',
+        concept: [{ code: 'A' }, { code: 'B' }, { code: 'C' }],
+      });
+
+    // 2. Create a parent ValueSet with 3 codes
+    const parentUrl = 'http://example.com/parent-' + randomUUID();
+    await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: parentUrl,
+        status: 'active',
+        compose: {
+          include: [{ system, concept: [{ code: 'A' }, { code: 'B' }, { code: 'C' }] }],
+        },
+      });
+
+    // 3. Create a child ValueSet intersecting parentUrl with only code 'A' and 'B'
+    const childUrl = 'http://example.com/child-' + randomUUID();
+    await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: childUrl,
+        status: 'active',
+        compose: {
+          include: [
+            {
+              valueSet: [parentUrl],
+              system: system,
+              concept: [{ code: 'A' }, { code: 'B' }],
+            },
+          ],
+        },
+      });
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(childUrl)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+    const contains = res.body.expansion.contains;
+    expect(contains).toHaveLength(2);
+    const codes = contains.map((c: any) => c.code);
+    expect(codes).toContain('A');
+    expect(codes).toContain('B');
+    expect(codes).not.toContain('C');
   });
 });
