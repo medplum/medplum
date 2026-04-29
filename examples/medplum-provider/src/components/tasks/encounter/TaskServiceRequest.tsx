@@ -50,9 +50,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
     })) as TestCoding[];
 
   const isLabServiceRequest = serviceRequest?.category?.some((category) =>
-    category.coding?.some(
-      (coding) => coding.system === SNOMED_SYSTEM && coding.code === SNOMED_LAB_PROCEDURE_CODE
-    )
+    category.coding?.some((coding) => coding.system === SNOMED_SYSTEM && coding.code === SNOMED_LAB_PROCEDURE_CODE)
   );
 
   useEffect(() => {
@@ -79,18 +77,13 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           <Title>{getDisplayString(task)}</Title>
         </Stack>
 
-        {isLabServiceRequest &&
-          (labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
-            <Group>
-              <Button
-                onClick={() => setNewOrderModalOpened(true)}
-                variant="outline"
-                leftSection={<IconPlus size={16} />}
-              >
-                Request Labs
-              </Button>
-            </Group>
-          )}
+        {isLabServiceRequest && (labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
+          <Group>
+            <Button onClick={() => setNewOrderModalOpened(true)} variant="outline" leftSection={<IconPlus size={16} />}>
+              Request Labs
+            </Button>
+          </Group>
+        )}
 
         {isLabServiceRequest &&
           task.for &&
