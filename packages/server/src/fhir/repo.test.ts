@@ -1924,6 +1924,44 @@ describe('FHIR Repo', () => {
     errorSpy.mockRestore();
   });
 
+  test('withStatementTimeout pins connection and discards it after callback', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    let releaseSpy: jest.SpyInstance | undefined;
+
+    await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
+      releaseSpy = jest.spyOn(client, 'release');
+
+      await repo.withTransaction(async (txClient) => {
+        expect(txClient).toBe(client);
+      });
+
+      expect(releaseSpy).not.toHaveBeenCalled();
+    });
+
+    expect(releaseSpy).toHaveBeenCalledWith(true);
+    releaseSpy?.mockRestore();
+  });
+
+  test('withStatementTimeout rejects borrowed repository connections', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    await repo.withTransaction(async () => {
+      await expect(repo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
+        'borrowed repository connection'
+      );
+    });
+  });
+
+  test('withStatementTimeout rejects active transactions', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    await repo.withTransaction(async () => {
+      await expect(repo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
+        'active transaction'
+      );
+    });
+  });
+
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});

@@ -142,6 +142,7 @@ import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
+import type { StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
@@ -162,6 +163,8 @@ import {
   truncateTextColumn,
 } from './sql';
 import { buildTokenColumns } from './token-column';
+
+export type { StatementTimeoutOptions };
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -2548,6 +2551,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<TResult> {
     this.assertNotClosed();
     return this.connection.withTransaction(callback, options);
+  }
+
+  async withStatementTimeout<TResult>(
+    options: StatementTimeoutOptions,
+    callback: (client: PoolClient) => Promise<TResult>
+  ): Promise<TResult> {
+    this.assertNotClosed();
+    if (!this.ownsConnection) {
+      throw new Error('Cannot set statement timeout on a borrowed repository connection');
+    }
+    return this.connection.withStatementTimeout(options, callback);
   }
 
   async preCommit(fn: () => Promise<void>): Promise<void> {

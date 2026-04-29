@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type { OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
-import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
-import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
-import { RepositoryConnection } from '../repository/repository-connection';
-import type { CountResult } from '../search';
 import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
 import {
@@ -41,7 +38,7 @@ const operation: OperationDefinition = {
 };
 
 export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { repo } = requireSuperAdmin();
+  const ctx = requireSuperAdmin();
   const params = parseInputParameters<{
     query: string;
     project?: Reference<Project>;
@@ -50,6 +47,8 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     count?: boolean;
   }>(operation, req);
   const searchReq = parseSearchRequest(params.query);
+  const repo = ctx.repo.clone();
+  repo.setMode(RepositoryMode.READER);
   const selectQuery = getSelectQueryForSearch(repo, searchReq);
 
   // Capture SQL query and parameters before adding EXPLAIN
@@ -69,7 +68,11 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const result = await withLongRunningDatabaseClient((client) => selectQuery.execute(client), DatabaseMode.READER);
+  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
+    const result = await selectQuery.execute(client);
+    const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
+    return { result, countResult };
+  });
 
   let explain: string;
   if (params.format === 'json') {
@@ -77,14 +80,6 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     explain = JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0);
   } else {
     explain = result.map((r) => r['QUERY PLAN']).join('\n');
-  }
-
-  let countResult: CountResult | undefined;
-  if (params.count) {
-    countResult = await withLongRunningDatabaseClient((client) => {
-      const countRepo = repo.clone(RepositoryConnection.fromClient(client));
-      return getCount(countRepo, searchReq, { forceAccurate: true });
-    }, DatabaseMode.READER);
   }
 
   const output = buildOutputParameters(operation, {

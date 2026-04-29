@@ -24,6 +24,11 @@ type RepositoryConnectionOptions = {
   mode?: RepositoryMode;
 };
 
+export type StatementTimeoutOptions = {
+  timeoutMs: number;
+  mode?: DatabaseMode;
+};
+
 /**
  * Shared database-session state for one or more Repository facades.
  *
@@ -35,6 +40,8 @@ export class RepositoryConnection implements Disposable {
   private conn?: PoolClient;
   private readonly ownsClient: boolean;
   private transactionDepth = 0;
+  private pinDepth = 0;
+  private discardOnRelease = false;
   private closed = false;
   mode: RepositoryMode;
 
@@ -108,19 +115,51 @@ export class RepositoryConnection implements Disposable {
     if (!this.conn) {
       return;
     }
+    // if something still has pinned the connection, only consider releasing it if err is truthy
+    if (this.pinDepth > 0 && !err) {
+      return;
+    }
+    const releaseErr = err || this.discardOnRelease;
     if (this.ownsClient) {
       try {
-        this.conn.release(err);
+        this.conn.release(releaseErr);
       } catch (releaseErr) {
         // pg-pool throws if release() is called twice (e.g. socket already errored out).
         // We've done our part; just log and move on.
         getLogger().warn('Error releasing database client', { err: normalizeErrorString(releaseErr) });
       }
       this.conn = undefined;
-    } else if (err) {
+      this.discardOnRelease = false;
+    } else if (releaseErr) {
       // Shared connection is known to be dead. Drop our reference so we don't reuse it.
       // The owner of the connection is responsible for the actual release.
       this.conn = undefined;
+      this.discardOnRelease = false;
+    }
+  }
+
+  async withStatementTimeout<TResult>(
+    options: StatementTimeoutOptions,
+    callback: (client: PoolClient) => Promise<TResult>
+  ): Promise<TResult> {
+    this.assertNotClosed();
+    this.assertOwnsClient();
+    if (this.transactionDepth > 0) {
+      throw new Error('Cannot set statement timeout during an active transaction');
+    }
+
+    const client = await this.getConnection(options.mode ?? DatabaseMode.WRITER);
+    this.pinDepth++;
+    this.discardOnRelease = true;
+
+    try {
+      await client.query(`SELECT set_config('statement_timeout', $1, false)`, [String(options.timeoutMs)]);
+      return await callback(client);
+    } finally {
+      this.pinDepth--;
+      if (this.pinDepth === 0) {
+        this.releaseConnection();
+      }
     }
   }
 
@@ -282,6 +321,12 @@ export class RepositoryConnection implements Disposable {
   private assertInTransaction(): void {
     if (this.transactionDepth <= 0) {
       throw new Error('Not in transaction');
+    }
+  }
+
+  private assertOwnsClient(): void {
+    if (!this.ownsClient) {
+      throw new Error('Does not own database client');
     }
   }
 
