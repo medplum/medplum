@@ -364,6 +364,9 @@ function setValueAtPath(target: Record<string, unknown>, resourceType: string, p
   let curType = resourceType;
   for (let i = 0; i < parts.length - 1; i++) {
     const key = parts[i];
+    if (key === '__proto__' || key === 'prototype' || key === 'constructor') {
+      return;
+    }
     const element = tryGetDataType(curType)?.elements?.[key];
     if (!element) {
       return;
@@ -375,6 +378,9 @@ function setValueAtPath(target: Record<string, unknown>, resourceType: string, p
     curType = element.type[0].code;
   }
   const finalKey = parts[parts.length - 1];
+  if (finalKey === '__proto__' || finalKey === 'prototype' || finalKey === 'constructor') {
+    return;
+  }
   const finalElement = tryGetDataType(curType)?.elements?.[finalKey];
   if (!finalElement) {
     return;
