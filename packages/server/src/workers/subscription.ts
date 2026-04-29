@@ -82,7 +82,7 @@ const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 /**
  * The upper limit on the number of times a job can be attempted.
  * Using exponential backoff capped at 8 hours delay, 19 attempts takes ~72-80 hours (10 attempts to reach ~5 hours delay + 9 attempts spaced 8 hours apart).
- * Jitter is applied, and may cause the actual delay to be up to 10% shorter than the full calculated delay.
+ * Jitter is applied, and may cause the actual delay to vary up to 10% from the calculated delay.
  */
 const MAX_JOB_ATTEMPTS = 19;
 
@@ -160,7 +160,8 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
         if (type !== 'cappedExponential') {
           throw new Error('Invalid backoff strategy for subscription queue');
         }
-        return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1), MAX_DELAY);
+        const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
+        return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
       },
     } as AdvancedOptions,
     defaultJobOptions: {
