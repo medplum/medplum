@@ -91,7 +91,7 @@ export interface AgentLogsResponse extends BaseAgentMessage {
   logs: LogMessage[];
 }
 
-export interface AgentRttStats {
+export type AgentRttStats = {
   count: number;
   min: number;
   max: number;
@@ -100,11 +100,19 @@ export interface AgentRttStats {
   p95: number;
   p99: number;
   pendingCount: number;
-}
+};
 
-export interface AgentChannelStats {
+export type AgentChannelStats = {
   rtt: AgentRttStats;
-}
+};
+
+export type AgentStatPrimitiveValue = string | boolean | number;
+export type AgentStatValue =
+  | AgentStatPrimitiveValue
+  | Record<
+      string,
+      AgentStatPrimitiveValue | Record<string, AgentStatPrimitiveValue | Record<string, AgentStatPrimitiveValue>>
+    >;
 
 /**
  * Statistics about the running agent. Known fields are typed; additional
@@ -118,9 +126,9 @@ export interface AgentStats {
   hl7ClientCount: number;
   live: boolean;
   outstandingHeartbeats: number;
-  channelStats: Record<string, AgentChannelStats | undefined>;
-  clientStats: Record<string, AgentChannelStats | undefined>;
-  [key: string]: unknown;
+  channelStats: Record<string, AgentChannelStats>;
+  clientStats: Record<string, AgentChannelStats>;
+  [key: string]: AgentStatValue;
 }
 
 export interface AgentStatsRequest extends BaseAgentRequestMessage {

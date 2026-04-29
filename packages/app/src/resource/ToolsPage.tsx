@@ -15,8 +15,8 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import type { AgentChannelStats, AgentStats } from '@medplum/core';
+import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
@@ -95,17 +95,20 @@ const SUMMARY_STAT_KEYS = [
   'outstandingHeartbeats',
 ] as const satisfies readonly (keyof AgentStats)[];
 
-function formatStatValue(value: unknown): string {
+function formatStatValue(value: Record<string, unknown> | boolean | number | string): string {
   if (value === null || value === undefined) {
     return '';
   }
   if (typeof value === 'object') {
     return JSON.stringify(value);
   }
-  return String(value);
+  return value.toString();
 }
 
-function AgentChannelStatsTable(props: { readonly title: string; readonly entries: Record<string, AgentChannelStats | undefined> }): JSX.Element | null {
+function AgentChannelStatsTable(props: {
+  readonly title: string;
+  readonly entries: Record<string, AgentChannelStats>;
+}): JSX.Element | null {
   const names = Object.keys(props.entries).filter((name) => props.entries[name]?.rtt);
   if (!names.length) {
     return null;
@@ -131,18 +134,18 @@ function AgentChannelStatsTable(props: { readonly title: string; readonly entrie
         </Table.Thead>
         <Table.Tbody>
           {names.map((name) => {
-            const rtt = props.entries[name]?.rtt;
+            const rtt = props.entries[name].rtt;
             return (
               <Table.Tr key={name}>
                 <Table.Td>{name}</Table.Td>
-                <Table.Td>{rtt?.count}</Table.Td>
-                <Table.Td>{rtt?.pendingCount}</Table.Td>
-                <Table.Td>{rtt?.min}</Table.Td>
-                <Table.Td>{rtt?.average}</Table.Td>
-                <Table.Td>{rtt?.max}</Table.Td>
-                <Table.Td>{rtt?.p50}</Table.Td>
-                <Table.Td>{rtt?.p95}</Table.Td>
-                <Table.Td>{rtt?.p99}</Table.Td>
+                <Table.Td>{rtt.count}</Table.Td>
+                <Table.Td>{rtt.pendingCount}</Table.Td>
+                <Table.Td>{rtt.min}</Table.Td>
+                <Table.Td>{rtt.average}</Table.Td>
+                <Table.Td>{rtt.max}</Table.Td>
+                <Table.Td>{rtt.p50}</Table.Td>
+                <Table.Td>{rtt.p95}</Table.Td>
+                <Table.Td>{rtt.p99}</Table.Td>
               </Table.Tr>
             );
           })}
