@@ -385,9 +385,10 @@ function setValueAtPath(
     if (currentNode[segmentKey] === undefined) {
       currentNode[segmentKey] = element.isArray ? [{}] : {};
     }
-    currentNode = (
-      element.isArray ? (currentNode[segmentKey] as object[])[0] : currentNode[segmentKey]
-    ) as Record<string, unknown>;
+    currentNode = (element.isArray ? (currentNode[segmentKey] as object[])[0] : currentNode[segmentKey]) as Record<
+      string,
+      unknown
+    >;
     currentFhirType = element.type[0].code;
   }
   const finalSegmentKey = pathSegments[pathSegments.length - 1];
