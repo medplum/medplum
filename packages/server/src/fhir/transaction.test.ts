@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -449,32 +450,29 @@ describe('FHIR Repo Transactions', () => {
       });
 
       expect(cacheReadDuringTransaction).toBe(false);
-      expect(patient).toBeDefined();
+      assert(patient);
       await expect(
-        systemRepo.readResource<Patient>('Patient', patient?.id as string, { checkCacheOnly: true })
+        systemRepo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true })
       ).resolves.toBeDefined();
     }));
 
-  test('clone() shares parent transaction rollback and callback state', () =>
+  test('clone() does NOT share parent transaction state', () =>
     withTestContext(async () => {
-      const callback = jest.fn();
+      const callbackFn = jest.fn();
       let patient: WithId<Patient> | undefined;
-      let calledBeforeRollback = false;
-
       await expect(
         repo.withTransaction(async () => {
           const clonedRepo = repo.clone();
           patient = await clonedRepo.createResource<Patient>({ resourceType: 'Patient' });
-          await clonedRepo.postCommit(callback);
-          calledBeforeRollback = callback.mock.calls.length > 0;
+          await clonedRepo.postCommit(callbackFn);
+          expect(callbackFn).toHaveBeenCalledTimes(1);
           throw new Error('rollback clone transaction');
         })
       ).rejects.toThrow('rollback clone transaction');
 
-      expect(calledBeforeRollback).toBe(false);
-      expect(callback).not.toHaveBeenCalled();
-      expect(patient).toBeDefined();
-      await expect(repo.readResource('Patient', patient?.id as string)).rejects.toThrow('Not found');
+      expect(callbackFn).toHaveBeenCalledTimes(1);
+      assert(patient);
+      await expect(repo.readResource('Patient', patient.id)).resolves.toStrictEqual(patient);
     }));
 
   test('Conflicting concurrent writes', () =>

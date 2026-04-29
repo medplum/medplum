@@ -2234,26 +2234,20 @@ describe('FHIR Repo', () => {
       buildResourceRowSpy.mockRestore();
     }));
 
-  test('clone() uses provided session', async () =>
+  test('clone does not share the same connection as the original repository', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      // Clone without session argument and no active connection - should use the default database pool
-      const clonedRepo1 = repo.clone();
-      expect(clonedRepo1).toBeInstanceOf(Repository);
-      expect(clonedRepo1.getDatabaseClient(DatabaseMode.READER)).toBe(repo.getDatabaseClient(DatabaseMode.READER));
-
-      // Clone with explicit session argument
-      const pool = getDatabasePool(DatabaseMode.READER);
-      const client = await pool.connect();
-      try {
-        const clonedRepo2 = repo.clone(RepositoryConnection.fromClient(client));
-        expect(clonedRepo2).toBeInstanceOf(Repository);
-        expect(clonedRepo2.getDatabaseClient(DatabaseMode.READER)).toBe(client);
-        expect(clonedRepo2.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
-      } finally {
-        client.release();
-      }
+      let checked = false;
+      await repo.withTransaction(async (client) => {
+        // starting a transaction will have pinned a connection to `repo`.
+        // so ensure that cloning after that pinning does not propagate the pinned connection
+        // to the cloned repository.
+        const clonedRepo1 = repo.clone();
+        expect(clonedRepo1.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(client);
+        checked = true;
+      });
+      expect(checked).toBe(true);
     }));
 });
 

@@ -336,15 +336,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   static readonly VERSION: number = 14;
 
-  constructor(
-    context: RepositoryContext,
-    connection?: RepositoryConnection,
-    ownsConnection = connection === undefined
-  ) {
+  constructor(context: RepositoryContext, connection?: RepositoryConnection) {
     super();
     this.context = context;
+    this.ownsConnection = connection === undefined;
     this.connection = connection ?? new RepositoryConnection();
-    this.ownsConnection = ownsConnection;
     this.context.projects?.push(syntheticR4Project);
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
@@ -359,13 +355,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.connection.mode = mode;
   }
 
-  clone(connection?: RepositoryConnection): Repository {
-    if (connection) {
-      return new Repository(this.context, connection, true);
-    }
-    if (this.connection.hasConnection()) {
-      return new Repository(this.context, this.connection, false);
-    }
+  /**
+   * Convenience method to create a new repository with the same context but a new connection.
+   * @returns A new repository with the same context but a new connection.
+   */
+  clone(): Repository {
     return new Repository(this.context);
   }
 
@@ -383,7 +377,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
     if (this.connection.hasConnection()) {
-      return createSystemRepository(this.shardId, this.connection, contextDefaults, false);
+      return createSystemRepository(this.shardId, this.connection, contextDefaults);
     }
     return createSystemRepository(this.shardId, undefined, contextDefaults);
   }
@@ -2770,14 +2764,12 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
  * @param shardId - The shard ID.
  * @param connection - Optional repository connection for transaction support.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
- * @param ownsConnection - If true, disposing the repository disposes the connection.
  * @returns A SystemRepository instance.
  */
 function createSystemRepository(
   shardId: string,
   connection?: RepositoryConnection,
-  contextDefaults?: SystemRepositoryContextDefaults,
-  ownsConnection = connection === undefined
+  contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
   return new SystemRepository(
     {
@@ -2791,8 +2783,7 @@ function createSystemRepository(
       },
       // System repo does not have an associated Project; it can write to any
     },
-    connection ?? new RepositoryConnection(),
-    ownsConnection
+    connection
   );
 }
 
