@@ -134,7 +134,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
       active: true,
       alg: PREFERRED_ALG,
       ...jwk,
-    } as JsonWebKey);
+    });
     jsonWebKeys = [createResult];
   }
 
@@ -151,7 +151,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     if (jwk.alg === OAuthSigningAlgorithm.ES256) {
       publicKey.x = jwk.x;
       publicKey.y = jwk.y;
-      publicKey.crv = jwk.crv as string;
+      publicKey.crv = jwk.crv;
     } else {
       publicKey.e = jwk.e;
       publicKey.n = jwk.n;

@@ -144,7 +144,7 @@ async function buildStackDetails(
 
   if (client === cloudFormationClient) {
     result.stack = stack;
-    result.tag = medplumTag.Value as string;
+    result.tag = medplumTag.Value;
   }
 
   for (const resource of stackResources.StackResources) {
