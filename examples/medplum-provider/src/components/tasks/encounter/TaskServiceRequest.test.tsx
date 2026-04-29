@@ -44,6 +44,11 @@ describe('TaskServiceRequest', () => {
       resourceType: 'ServiceRequest',
       id: 'service-request-123',
       status: 'draft',
+      category: [
+        {
+          coding: [{ system: SNOMED_SYSTEM, code: SNOMED_LAB_PROCEDURE_CODE, display: 'Laboratory procedure' }],
+        },
+      ],
       code: {
         coding: [
           {
@@ -59,7 +64,7 @@ describe('TaskServiceRequest', () => {
           {
             system: SNOMED_SYSTEM,
             code: SNOMED_LAB_PROCEDURE_CODE,
-            display: 'Diagnostic Report',
+            display: 'Laboratory procedure',
           },
         ],
       },
