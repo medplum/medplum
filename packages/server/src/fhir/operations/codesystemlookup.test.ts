@@ -104,7 +104,7 @@ describe('CodeSystem lookup', () => {
           { name: 'system', valueUri: codeSystem.url },
           { name: 'code', valueCode: '1' },
         ],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -134,7 +134,7 @@ describe('CodeSystem lookup', () => {
           { name: 'system', valueUri: codeSystem.url },
           { name: 'code', valueCode: '2' },
         ],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -169,7 +169,7 @@ describe('CodeSystem lookup', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -199,7 +199,7 @@ describe('CodeSystem lookup', () => {
           { name: 'system', valueUri: codeSystem.url },
           { name: 'code', valueCode: 'wrong code' },
         ],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -215,7 +215,7 @@ describe('CodeSystem lookup', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: '1' }],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -232,7 +232,7 @@ describe('CodeSystem lookup', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -264,7 +264,7 @@ describe('CodeSystem lookup', () => {
           { name: 'coding', valueCoding: { system: codeSystem.url, code: '5' } },
           { name: 'version', valueString: '3.1.4' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -344,7 +344,7 @@ describe('CodeSystem lookup', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { code: '1' } }],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -371,7 +371,7 @@ describe('CodeSystem lookup', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: 'incorrect', code: '1' } }],
-      } as Parameters);
+      });
     expect(res.status).toStrictEqual(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -412,7 +412,7 @@ describe('CodeSystem lookup', () => {
             ],
           },
         ],
-      } as Parameters);
+      });
     expect(res.status).toBe(200);
 
     const res2 = await request(app)
@@ -422,7 +422,7 @@ describe('CodeSystem lookup', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: '1' }],
-      } as Parameters);
+      });
     expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',

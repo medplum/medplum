@@ -2,14 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type {
-  DiagnosticReport,
-  Encounter,
-  Organization,
-  Reference,
-  ServiceRequest,
-  Task,
-} from '@medplum/fhirtypes';
+import type { DiagnosticReport, Organization, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { useMedplum, useResource } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
@@ -115,8 +108,8 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
         title="Order Labs"
       >
         <OrderLabsPage
-          encounter={task.encounter as Reference<Encounter>}
-          task={task as Reference<Task>}
+          encounter={task.encounter}
+          task={task}
           tests={tests}
           performingLab={performingLab}
           onSubmitLabOrder={handleNewOrderCreated}

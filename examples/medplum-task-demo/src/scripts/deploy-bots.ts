@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import fs from 'fs';
 import path from 'path';
 
@@ -53,7 +53,7 @@ async function main(): Promise<void> {
             contentType: ContentType.JAVASCRIPT,
             url: distEntry.fullUrl,
           },
-        } as Bot,
+        },
       });
 
       if (botDescription.criteria) {
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
             reason: botName,
             channel: { endpoint: botUrlPlaceholder, type: 'rest-hook' },
             criteria: botDescription.criteria,
-          } as Subscription,
+          },
         });
       }
 

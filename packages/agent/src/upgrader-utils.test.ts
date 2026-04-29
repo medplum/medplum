@@ -58,7 +58,7 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (_platform) => {
   let platformSpy: jest.SpyInstance;
 
-  beforeAll(() => {
+  beforeEach(() => {
     // @ts-expect-error Platform type is not exported
     platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
   });
@@ -160,6 +160,124 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
       expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toStrictEqual(
         'Hello, Medplum!'
+      );
+
+      fetchSpy.mockRestore();
+    });
+
+    test('Cleans up file when stream errors', async () => {
+      const manifest = {
+        tag_name: 'v4.2.4',
+        assets: [
+          {
+            name: 'medplum-agent-4.2.4-linux',
+            browser_download_url: 'https://example.com/linux',
+          },
+          {
+            name: 'medplum-agent-installer-4.2.4-windows.exe',
+            browser_download_url: 'https://example.com/win32',
+          },
+        ],
+      } satisfies ReleaseManifest;
+
+      let count = 0;
+
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+        jest.fn(async () => {
+          return new Promise((resolve) => {
+            switch (count) {
+              case 0:
+                count++;
+                resolve(
+                  new Response(JSON.stringify(manifest), {
+                    headers: { 'content-type': 'application/json' },
+                    status: 200,
+                  })
+                );
+                break;
+              case 1:
+                count++;
+                resolve(
+                  new Response(
+                    new ReadableStream({
+                      start(controller) {
+                        const textEncoder = new TextEncoder();
+                        controller.enqueue(textEncoder.encode('Hello'));
+                        controller.error(new Error('Simulated stream failure'));
+                      },
+                    }),
+                    {
+                      status: 200,
+                      headers: { 'content-type': 'application/octet-stream' },
+                    }
+                  )
+                );
+                break;
+              default:
+                throw new Error('Too many calls');
+            }
+          });
+        })
+      );
+
+      const downloadPath = resolve(__dirname, 'tmp', 'test-release-binary-cleanup');
+
+      await expect(downloadRelease('4.2.4', downloadPath)).rejects.toThrow(
+        `Error while downloading release version 4.2.4 to ${downloadPath}`
+      );
+      expect(existsSync(downloadPath)).toStrictEqual(false);
+
+      fetchSpy.mockRestore();
+    });
+
+    test('Download returns 404', async () => {
+      const manifest = {
+        tag_name: 'v4.2.4',
+        assets: [
+          {
+            name: 'medplum-agent-4.2.4-linux',
+            browser_download_url: 'https://example.com/linux',
+          },
+          {
+            name: 'medplum-agent-installer-4.2.4-windows.exe',
+            browser_download_url: 'https://example.com/win32',
+          },
+        ],
+      } satisfies ReleaseManifest;
+
+      let count = 0;
+
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+        jest.fn(async () => {
+          return new Promise((resolve) => {
+            switch (count) {
+              case 0:
+                count++;
+                resolve(
+                  new Response(JSON.stringify(manifest), {
+                    headers: { 'content-type': 'application/json' },
+                    status: 200,
+                  })
+                );
+                break;
+              case 1:
+                count++;
+                resolve(
+                  new Response(null, {
+                    status: 404,
+                    statusText: 'Not Found',
+                  })
+                );
+                break;
+              default:
+                throw new Error('Too many calls');
+            }
+          });
+        })
+      );
+
+      await expect(downloadRelease('4.2.4', resolve(__dirname, 'tmp', 'test-release-binary'))).rejects.toThrow(
+        'Failed to download installer with status code: 404'
       );
 
       fetchSpy.mockRestore();

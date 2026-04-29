@@ -51,7 +51,7 @@ export function Profile(): JSX.Element | null {
         });
       });
     if (updatedProfile) {
-      setProfile(updatedProfile as Patient);
+      setProfile(updatedProfile);
     }
     setLoading(false);
   }
@@ -62,7 +62,7 @@ export function Profile(): JSX.Element | null {
       <Form onSubmit={handleProfileEdit}>
         <Stack align="center">
           <ResourceAvatar size={200} radius={100} value={profile} />
-          <Title order={2}>{formatHumanName(profile.name?.[0] as HumanName)}</Title>
+          <Title order={2}>{formatHumanName(profile.name?.[0])}</Title>
           <InfoSection title="Personal Information">
             <Box p="xl">
               <Stack>

@@ -24,24 +24,36 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   }
 
   let rejectOnTimeout!: () => void;
-  const disconnectedPromise = new Promise<void>((resolve, reject) => {
-    rejectOnTimeout = () => reject(new Error('Timed out while waiting for IPC to disconnect'));
-    process.once('disconnect', resolve);
-  });
+  let disconnectedPromise: Promise<void>;
+  let version: string;
+  let binPath: string;
 
-  // Make sure if version is given, it matches semver
-  if (argv[3] && !isValidMedplumSemver(argv[3])) {
-    throw new Error('Invalid version specified');
-  }
-  const version = argv[3] ?? (await fetchLatestVersionString('agent-upgrader'));
-  const binPath = getReleaseBinPath(version);
+  try {
+    disconnectedPromise = new Promise<void>((resolve, reject) => {
+      rejectOnTimeout = () => reject(new Error('Timed out while waiting for IPC to disconnect'));
+      process.once('disconnect', resolve);
+    });
 
-  // If release in not locally downloaded, download it first
-  if (!existsSync(binPath)) {
-    // Download release
-    globalLogger.info(`Could not find binary at "${binPath}". Downloading release from GitHub...`);
-    await downloadRelease(version, binPath);
-    globalLogger.info('Release successfully downloaded');
+    // Make sure if version is given, it matches semver
+    if (argv[3] && !isValidMedplumSemver(argv[3])) {
+      throw new Error('Invalid version specified');
+    }
+    version = argv[3] ?? (await fetchLatestVersionString('agent-upgrader'));
+    binPath = getReleaseBinPath(version);
+
+    // If release in not locally downloaded, download it first
+    if (!existsSync(binPath)) {
+      // Download release
+      globalLogger.info(`Could not find binary at "${binPath}". Downloading release from GitHub...`);
+      await downloadRelease(version, binPath);
+      globalLogger.info('Release successfully downloaded');
+    }
+  } catch (err) {
+    // Let the parent process know quickly that something happened.
+    // Normalize to a string since Node's default IPC serialization is JSON and Error instances flatten to {}.
+    process.send({ type: 'ERROR', err: normalizeErrorString(err) });
+    // Rethrow error to shutdown process
+    throw err;
   }
 
   process.send({ type: 'STARTED' });

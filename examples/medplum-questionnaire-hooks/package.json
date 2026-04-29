@@ -24,7 +24,7 @@
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "typescript": "6.0.3",
-    "vite": "8.0.8"
+    "vite": "8.0.10"
   },
   "packageManager": "npm@10.9.8",
   "engines": {
