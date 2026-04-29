@@ -18,11 +18,17 @@ type CallbackFrame = {
   post: number;
 };
 
-type RepositoryConnectionOptions = {
-  client?: PoolClient;
-  ownsClient?: boolean;
-  mode?: RepositoryMode;
-};
+type RepositoryConnectionOptions =
+  | {
+      client?: undefined;
+      ownsClient?: true;
+      mode?: never;
+    }
+  | {
+      client: PoolClient;
+      ownsClient?: boolean;
+      mode: DatabaseMode;
+    };
 
 export type StatementTimeoutOptions = {
   timeoutMs: number;
@@ -56,15 +62,18 @@ export class RepositoryConnection implements Disposable {
     if (!this.ownsClient && !this.conn) {
       throw new Error('Borrowed repository connections require a database client');
     }
-    this.mode = options?.mode ?? RepositoryMode.WRITER;
-    this.connMode = this.conn ? toDatabaseMode(this.mode) : undefined;
+    this.mode = options?.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER;
+    this.connMode = options?.client ? options.mode : undefined;
   }
 
-  static fromClient(client: PoolClient, options?: { ownsClient?: boolean; mode?: DatabaseMode }): RepositoryConnection {
+  static fromClient(
+    client: PoolClient,
+    options: { mode: DatabaseMode; ownsClient?: boolean }
+  ): RepositoryConnection {
     return new RepositoryConnection({
       client,
       ownsClient: options?.ownsClient ?? false,
-      mode: options?.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER,
+      mode: options.mode,
     });
   }
 
@@ -483,8 +492,4 @@ export class RepositoryConnection implements Disposable {
       throw new Error('Already closed');
     }
   }
-}
-
-function toDatabaseMode(mode: RepositoryMode): DatabaseMode {
-  return mode === RepositoryMode.READER ? DatabaseMode.READER : DatabaseMode.WRITER;
 }

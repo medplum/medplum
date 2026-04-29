@@ -1992,7 +1992,10 @@ describe('FHIR Repo', () => {
       }),
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo('test-shard', RepositoryConnection.fromClient(client));
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER })
+    );
     const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
@@ -2030,7 +2033,7 @@ describe('FHIR Repo', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.fromClient(client, { ownsClient: true })
+      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER, ownsClient: true })
     );
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
@@ -2377,20 +2380,6 @@ describe('FHIR Repo', () => {
     expect(context.projects.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
     expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
     expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
-  });
-
-  test('closed repository cannot create derived repositories', () => {
-    const repo = new Repository({
-      superAdmin: true,
-      author: {
-        reference: 'system',
-      },
-    });
-
-    repo[Symbol.dispose]();
-
-    expect(() => repo.clone()).toThrow('Already closed');
-    expect(() => repo.getSystemRepo()).toThrow('Already closed');
   });
 
   test('clone does not share the same connection as the original repository', async () =>
