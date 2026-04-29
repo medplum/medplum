@@ -5,6 +5,8 @@ import type {
   AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
+  AgentStats,
+  AgentStatsRequest,
   AgentTransmitRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
@@ -336,6 +338,9 @@ export class App {
           case 'agent:logs:request':
             await this.handleLogRequest(command);
             break;
+          case 'agent:stats:request':
+            await this.handleStatsRequest(command);
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
@@ -420,9 +425,7 @@ export class App {
     await this.hydrateListeners();
   }
 
-  private logStats(): void {
-    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
-
+  getStats(): AgentStats {
     const stats = getCurrentStats();
     let totalHl7Clients = 0;
     for (const pool of this.hl7Clients.values()) {
@@ -442,18 +445,21 @@ export class App {
       ])
     );
 
-    this.log.info('Agent stats', {
-      stats: {
-        ...stats,
-        webSocketQueueDepth: this.webSocketQueue.length,
-        hl7QueueDepth: this.hl7Queue.length,
-        hl7ClientCount: totalHl7Clients,
-        live: this.live,
-        outstandingHeartbeats: this.outstandingHeartbeats,
-        channelStats,
-        clientStats,
-      },
-    });
+    return {
+      ...stats,
+      webSocketQueueDepth: this.webSocketQueue.length,
+      hl7QueueDepth: this.hl7Queue.length,
+      hl7ClientCount: totalHl7Clients,
+      live: this.live,
+      outstandingHeartbeats: this.outstandingHeartbeats,
+      channelStats,
+      clientStats,
+    };
+  }
+
+  private logStats(): void {
+    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
+    this.log.info('Agent stats', { stats: this.getStats() });
   }
 
   /**
@@ -964,6 +970,24 @@ export class App {
       // If we already wrote a manifest, then when service restarts
       // We SHOULD send an error back to the server on the callback
       process.exit(1);
+    }
+  }
+
+  private async handleStatsRequest(command: AgentStatsRequest): Promise<void> {
+    try {
+      await this.sendToWebSocket({
+        type: 'agent:stats:response',
+        statusCode: 200,
+        stats: this.getStats(),
+        callback: command.callback,
+      });
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: normalizeErrorString(err),
+        callback: command.callback,
+      });
     }
   }
 

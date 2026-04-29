@@ -91,13 +91,56 @@ export interface AgentLogsResponse extends BaseAgentMessage {
   logs: LogMessage[];
 }
 
+export interface AgentRttStats {
+  count: number;
+  min: number;
+  max: number;
+  average: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  pendingCount: number;
+}
+
+export interface AgentChannelStats {
+  rtt: AgentRttStats;
+}
+
+/**
+ * Statistics about the running agent. Known fields are typed; additional
+ * fields may be present and are preserved as unknown values.
+ */
+export interface AgentStats {
+  hl7ConnectionsOpen: number;
+  ping: number;
+  webSocketQueueDepth: number;
+  hl7QueueDepth: number;
+  hl7ClientCount: number;
+  live: boolean;
+  outstandingHeartbeats: number;
+  channelStats: Record<string, AgentChannelStats | undefined>;
+  clientStats: Record<string, AgentChannelStats | undefined>;
+  [key: string]: unknown;
+}
+
+export interface AgentStatsRequest extends BaseAgentRequestMessage {
+  type: 'agent:stats:request';
+}
+
+export interface AgentStatsResponse extends BaseAgentMessage {
+  type: 'agent:stats:response';
+  statusCode: number;
+  stats: AgentStats;
+}
+
 export type AgentRequestMessage =
   | AgentConnectRequest
   | AgentHeartbeatRequest
   | AgentTransmitRequest
   | AgentReloadConfigRequest
   | AgentUpgradeRequest
-  | AgentLogsRequest;
+  | AgentLogsRequest
+  | AgentStatsRequest;
 
 export type AgentResponseMessage =
   | AgentConnectResponse
@@ -106,6 +149,7 @@ export type AgentResponseMessage =
   | AgentReloadConfigResponse
   | AgentUpgradeResponse
   | AgentLogsResponse
+  | AgentStatsResponse
   | AgentError;
 
 export type AgentMessage = AgentRequestMessage | AgentResponseMessage;

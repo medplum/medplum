@@ -52,6 +52,7 @@ const agentPingCommand = new MedplumCommand('ping');
 const agentPushCommand = new MedplumCommand('push');
 const agentReloadConfigCommand = new MedplumCommand('reload-config');
 const agentUpgradeCommand = new MedplumCommand('upgrade');
+const agentStatsCommand = new MedplumCommand('stats');
 
 export const agent = new MedplumCommand('agent');
 addSubcommand(agent, agentStatusCommand);
@@ -59,6 +60,7 @@ addSubcommand(agent, agentPingCommand);
 addSubcommand(agent, agentPushCommand);
 addSubcommand(agent, agentReloadConfigCommand);
 addSubcommand(agent, agentUpgradeCommand);
+addSubcommand(agent, agentStatsCommand);
 
 agentStatusCommand
   .description('Get the status of a specified agent')
@@ -229,6 +231,37 @@ agentUpgradeCommand
           id: response.agent.id,
           name: response.agent.name,
           version: options.agentVersion ?? 'latest',
+        };
+      },
+    });
+  });
+
+agentStatsCommand
+  .description('Get runtime statistics for the specified agent(s)')
+  .argument(
+    '[agentIds...]',
+    'The ID(s) of the agent(s) to get stats for. Mutually exclusive with --criteria <criteria> flag'
+  )
+  .option(
+    '--criteria <criteria>',
+    'An optional FHIR search criteria to resolve the agent(s) to get stats for. Mutually exclusive with [agentIds...] arg'
+  )
+  .addOption(
+    new Option('--output <format>', 'An optional output format, defaults to table')
+      .choices(['table', 'json'])
+      .default('table')
+  )
+  .action(async (agentIds, options) => {
+    await callAgentBulkOperation({
+      operation: '$stats',
+      agentIds,
+      options,
+      parseSuccessfulResponse: (response: AgentBulkOpResponse<Parameters>) => {
+        const { stats } = parseParameterValues(response.result, { required: ['stats'] });
+        return {
+          id: response.agent.id,
+          name: response.agent.name,
+          stats,
         };
       },
     });

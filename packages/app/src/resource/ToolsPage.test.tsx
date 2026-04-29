@@ -631,6 +631,73 @@ describe('ToolsPage', () => {
     expect((await screen.findAllByText(/there is an error/i))[0]).toBeInTheDocument();
   });
 
+  test('Get stats -- Success', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify({
+              hl7ConnectionsOpen: 1,
+              ping: 5,
+              webSocketQueueDepth: 0,
+              hl7QueueDepth: 0,
+              hl7ClientCount: 0,
+              live: true,
+              outstandingHeartbeats: 0,
+              channelStats: {},
+              clientStats: {},
+            }),
+          },
+        ],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Stats success',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /get stats/i }));
+    });
+
+    expect((await screen.findAllByText(/hl7ConnectionsOpen/i))[0]).toBeInTheDocument();
+    expect(screen.getByText('ping')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  test('Get stats -- Error', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [serverError(new Error('Something is broken'))]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Stats error',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /get stats/i }));
+    });
+
+    await act(async () => {
+      await sleep(500);
+    });
+
+    expect(await screen.findByText(/something is broken/i)).toBeInTheDocument();
+  });
+
   test('Fetch logs -- Error', async () => {
     medplum = new MockClient();
     medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => [
