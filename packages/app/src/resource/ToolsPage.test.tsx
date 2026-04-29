@@ -108,7 +108,7 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
-    await expect(screen.findByText('statistics', { exact: false })).resolves.toBeInTheDocument();
+    await expect(screen.findByText('ping statistics', { exact: false })).resolves.toBeInTheDocument();
   });
 
   test('Displays error notification whenever invalid IP entered', async () => {
@@ -167,7 +167,7 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
-    await expect(screen.findByText('statistics', { exact: false })).resolves.toBeInTheDocument();
+    await expect(screen.findByText('ping statistics', { exact: false })).resolves.toBeInTheDocument();
     expect(pushToAgentSpy).toHaveBeenLastCalledWith(
       { reference: getReferenceString(agent) },
       '8.8.8.8',
@@ -197,7 +197,7 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
-    await expect(screen.findByText('statistics', { exact: false })).rejects.toThrow();
+    await expect(screen.findByText('ping statistics', { exact: false })).rejects.toThrow();
     expect(pushToAgentSpy).not.toHaveBeenCalled();
     pushToAgentSpy.mockRestore();
   });
