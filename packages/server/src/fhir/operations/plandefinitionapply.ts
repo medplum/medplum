@@ -355,12 +355,7 @@ function applyDynamicValues(
   }
 }
 
-function setValueAtPath(
-  target: Record<string, unknown>,
-  resourceType: string,
-  path: string,
-  values: unknown[]
-): void {
+function setValueAtPath(target: Record<string, unknown>, resourceType: string, path: string, values: unknown[]): void {
   if (values.length === 0) {
     return;
   }
