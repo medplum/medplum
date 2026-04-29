@@ -36,7 +36,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
         return;
       }
       const org = await medplum.readReference(orgRef as Reference<Organization>);
-      setPerformingLab(org as LabOrganization);
+      setPerformingLab(org);
     };
     fetchPerformingLabFromPerformer().catch(showErrorNotification);
   }, [medplum, performerReferences]);
