@@ -397,6 +397,86 @@ describe('FHIR Repo Transactions', () => {
       expect(cb2).toHaveBeenCalledTimes(1);
     }));
 
+  test.failing('getSystemRepo() shares parent post-commit state', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      let calledBeforeCommit = false;
+
+      await repo.withTransaction(async () => {
+        await repo.getSystemRepo().postCommit(callback);
+        calledBeforeCommit = callback.mock.calls.length > 0;
+      });
+
+      expect(calledBeforeCommit).toBe(false);
+      expect(callback).toHaveBeenCalledTimes(1);
+    }));
+
+  test.failing('getSystemRepo() withTransaction() nests in the parent transaction', () =>
+    withTestContext(async () => {
+      let queries: string[] = [];
+
+      await repo.withTransaction(async (client) => {
+        const querySpy = jest.spyOn(client, 'query');
+        try {
+          await repo.getSystemRepo().withTransaction(async () => undefined);
+        } finally {
+          queries = querySpy.mock.calls.map(([query]) =>
+            typeof query === 'string' ? query : (query as { text: string }).text
+          );
+          querySpy.mockRestore();
+        }
+      });
+
+      expect(queries).toContain('SAVEPOINT sp2');
+      expect(queries).toContain('RELEASE SAVEPOINT sp2');
+      expect(queries).not.toContain('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      expect(queries).not.toContain('COMMIT');
+    }));
+
+  test.failing('getSystemRepo() defers cache writes while parent transaction is active', () =>
+    withTestContext(async () => {
+      let patient: WithId<Patient> | undefined;
+      let cacheReadDuringTransaction = false;
+
+      await repo.withTransaction(async () => {
+        patient = await repo.getSystemRepo().createResource<Patient>({ resourceType: 'Patient' });
+        try {
+          await systemRepo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
+          cacheReadDuringTransaction = true;
+        } catch {
+          cacheReadDuringTransaction = false;
+        }
+      });
+
+      expect(cacheReadDuringTransaction).toBe(false);
+      expect(patient).toBeDefined();
+      await expect(
+        systemRepo.readResource<Patient>('Patient', patient?.id as string, { checkCacheOnly: true })
+      ).resolves.toBeDefined();
+    }));
+
+  test.failing('clone() shares parent transaction rollback and callback state', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      let patient: WithId<Patient> | undefined;
+      let calledBeforeRollback = false;
+
+      await expect(
+        repo.withTransaction(async () => {
+          const clonedRepo = repo.clone();
+          patient = await clonedRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await clonedRepo.postCommit(callback);
+          calledBeforeRollback = callback.mock.calls.length > 0;
+          throw new Error('rollback clone transaction');
+        })
+      ).rejects.toThrow('rollback clone transaction');
+
+      expect(calledBeforeRollback).toBe(false);
+      expect(callback).not.toHaveBeenCalled();
+      expect(patient).toBeDefined();
+      await expect(repo.readResource('Patient', patient?.id as string)).rejects.toThrow('Not found');
+    }));
+
   test('Conflicting concurrent writes', () =>
     withTestContext(async () => {
       const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
