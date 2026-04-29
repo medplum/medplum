@@ -719,7 +719,7 @@ async function sendRestHook(
   try {
     log.info('Sending rest hook', {
       url,
-      subscription: subscription.id,
+      subscriptionId: subscription.id,
       projectId: subscription.meta?.project,
     });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
@@ -727,7 +727,7 @@ async function sendRestHook(
     fetchEndTime = Date.now();
     log.info('Received rest hook response', {
       status: response.status,
-      subscription: subscription.id,
+      subscriptionId: subscription.id,
       projectId: subscription.meta?.project,
     });
     const success = isJobSuccessful(subscription, response.status);
@@ -747,7 +747,7 @@ async function sendRestHook(
     fetchEndTime = Date.now();
     log.info('Subscription exception', {
       err: ex,
-      subscription: subscription.id,
+      subscriptionId: subscription.id,
       projectId: subscription.meta?.project,
     });
     await createSubscriptionAuditEvent(
@@ -765,7 +765,7 @@ async function sendRestHook(
   recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
   log.info('Subscription rest hook fetch duration', {
     fetchDurationMs,
-    subscription: subscription.id,
+    subscriptionId: subscription.id,
     projectId: subscription?.meta?.project,
   });
 
