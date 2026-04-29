@@ -3,12 +3,22 @@
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
 import {
   evalFhirPathTyped,
+  flatMapFilter,
   getSearchParameterDetails,
   Operator,
   SearchParameterType,
   toTypedValue,
 } from '@medplum/core';
-import type { Money, Period, Quantity, Range, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type {
+  Money,
+  Period,
+  Quantity,
+  Range,
+  Resource,
+  ResourceType,
+  SearchParameter,
+  Timing,
+} from '@medplum/fhirtypes';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
@@ -51,8 +61,11 @@ function extractDateTimeParameter(
 
   if (impl.array) {
     let lowest: Date | undefined;
-    const values = typedValues.map((v) => {
+    const values = flatMapFilter(typedValues, (v) => {
       const range = buildDateTimeRange(v);
+      if (!range) {
+        return undefined;
+      }
       const lowerBound = range.left ?? range.right;
       if (!lowest || (lowerBound && lowest > lowerBound)) {
         lowest = lowerBound;
@@ -64,26 +77,35 @@ function extractDateTimeParameter(
     columns[impl.columnName] = typedValues.map((t) => t.value);
   } else {
     const range = buildDateTimeRange(typedValues[0]);
-    columns[impl.rangeColumnName] = formatRange(range);
-    columns[impl.sortColumnName] = range.left?.toISOString() ?? range.right?.toISOString();
-    columns[impl.columnName] = typedValues[0].value;
+    if (range) {
+      columns[impl.rangeColumnName] = formatRange(range);
+      columns[impl.sortColumnName] = range.left?.toISOString() ?? range.right?.toISOString();
+      columns[impl.columnName] = typedValues[0].value;
+    }
   }
 }
 
-function buildDateTimeRange(typed: TypedValue): Interval<Date> {
+function buildDateTimeRange(typed: TypedValue): Interval<Date> | undefined {
   switch (typed.type) {
-    case 'Period': {
-      const { start, end } = typed.value as Period;
-      const range: Interval<Date> = {};
-      if (start) {
-        range.left = new Date(start);
-        range.lInc = true;
+    case 'Period':
+      return buildRangeFromPeriod(typed.value);
+    case 'Timing': {
+      const t = typed.value as Timing;
+      if (t.event) {
+        const sortedTimestamps = t.event.toSorted();
+        const start = parseDateTimeToRange(sortedTimestamps[0]);
+        const end = parseDateTimeToRange(sortedTimestamps.at(-1) as string);
+        return {
+          lInc: start.lInc,
+          left: start.left,
+          right: end.right,
+          rInc: end.rInc,
+        };
+      } else if (t.repeat?.boundsPeriod) {
+        return buildRangeFromPeriod(t.repeat.boundsPeriod);
+      } else {
+        return undefined;
       }
-      if (end) {
-        range.right = new Date(end);
-        range.rInc = true;
-      }
-      return range;
     }
     case 'date':
     case 'dateTime':
@@ -95,6 +117,19 @@ function buildDateTimeRange(typed: TypedValue): Interval<Date> {
     default:
       throw new Error('Cannot build datetime range from ' + typed.type);
   }
+}
+
+function buildRangeFromPeriod({ start, end }: Period): Interval<Date> {
+  const range: Interval<Date> = {};
+  if (start) {
+    range.left = new Date(start);
+    range.lInc = true;
+  }
+  if (end) {
+    range.right = new Date(end);
+    range.rInc = true;
+  }
+  return range;
 }
 
 export function parseDateTimeToRange(dt: string, approximate?: boolean): Interval<Date> {
@@ -149,8 +184,11 @@ function extractNumberParameter(
 
   if (impl.array) {
     let lowest: number | undefined;
-    const values = typedValues.map((v) => {
+    const values = flatMapFilter(typedValues, (v) => {
       const range = buildNumericRange(v);
+      if (!range) {
+        return undefined;
+      }
       const lowerBound = range.left ?? range.right;
       if (lowest === undefined || (lowerBound !== undefined && lowest > lowerBound)) {
         lowest = lowerBound;
@@ -161,13 +199,15 @@ function extractNumberParameter(
     columns[impl.sortColumnName] = lowest;
   } else {
     const range = buildNumericRange(typedValues[0]);
-    const value = formatRange(range);
-    columns[impl.rangeColumnName] = value;
-    columns[impl.sortColumnName] = range.left ?? range.right;
+    if (range) {
+      const value = formatRange(range);
+      columns[impl.rangeColumnName] = value;
+      columns[impl.sortColumnName] = range.left ?? range.right;
+    }
   }
 }
 
-function buildNumericRange(typed: TypedValue): Interval<number> {
+function buildNumericRange(typed: TypedValue): Interval<number> | undefined {
   switch (typed.type) {
     case 'Range': {
       const { low, high } = typed.value as Range;
@@ -187,10 +227,39 @@ function buildNumericRange(typed: TypedValue): Interval<number> {
     case 'unsignedInt':
     case 'positiveInt':
       return parseNumberToRange(typed.value);
-    case 'Quantity':
     case 'Money': // Not technically a Quantity, but referenced by ChargeItem.priceOverride
-      // TODO: Omit missing value?
-      return parseNumberToRange((typed.value as Quantity | Money).value ?? 0);
+    case 'Quantity': {
+      const q = typed.value as Quantity | Money;
+      if (q.value === undefined) {
+        return undefined;
+      }
+      const range = parseNumberToRange(q.value);
+      if ('comparator' in q && q.comparator) {
+        switch (q.comparator) {
+          case '<':
+            range.left = undefined;
+            range.lInc = false;
+            range.rInc = false;
+            break;
+          case '<=':
+            range.left = undefined;
+            range.lInc = false;
+            range.rInc = true;
+            break;
+          case '>':
+            range.lInc = false;
+            range.right = undefined;
+            range.rInc = false;
+            break;
+          case '>=':
+            range.lInc = true;
+            range.right = undefined;
+            range.rInc = false;
+            break;
+        }
+      }
+      return range;
+    }
     default:
       throw new Error('Cannot build numeric range from ' + typed.type);
   }

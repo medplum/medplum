@@ -3,7 +3,15 @@
 
 import type { Filter } from '@medplum/core';
 import { getSearchParameter, Operator } from '@medplum/core';
-import type { AllergyIntolerance, Observation, RiskAssessment } from '@medplum/fhirtypes';
+import type {
+  AllergyIntolerance,
+  CarePlan,
+  Observation,
+  Period,
+  Quantity,
+  RiskAssessment,
+  Timing,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { buildRangeColumns, buildRangeColumnsSearchFilter } from './range-column';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
@@ -78,7 +86,15 @@ describe('buildRangeColumns', () => {
     expect(columns.__valueDateSort).toStrictEqual('2026-04-01T12:34:56.000Z');
   });
 
-  test('explicit Period', () => {
+  test.each<[Period, string, string]>([
+    [
+      { start: '2026-04-04T12:34:56Z', end: '2026-04-18T11:22:33.456Z' },
+      `[2026-04-04T12:34:56.000Z,2026-04-18T11:22:33.456Z]`,
+      '2026-04-04T12:34:56.000Z',
+    ],
+    [{ start: '2026-04-18T11:22:33.456Z' }, `[2026-04-18T11:22:33.456Z,)`, '2026-04-18T11:22:33.456Z'],
+    [{ end: '2026-04-18T11:22:33.456Z' }, `(,2026-04-18T11:22:33.456Z]`, '2026-04-18T11:22:33.456Z'],
+  ])('explicit Period: %j', (period, expectedRange, expectedSort) => {
     const valueDate = getSearchParameter('Observation', 'value-date');
     if (!valueDate) {
       throw new Error('Missing search parameter');
@@ -93,44 +109,14 @@ describe('buildRangeColumns', () => {
       status: 'final',
       code: { text: 'test' },
       subject: { reference: `Patient/${randomUUID()}` },
-      valuePeriod: {
-        start: '2026-04-04T12:34:56Z',
-        end: '2026-04-18T11:22:33.456Z',
-      },
+      valuePeriod: period,
     };
 
     const columns: Record<string, any> = {};
     buildRangeColumns(valueDate, impl, columns, resource);
 
-    expect(columns.__valueDate).toStrictEqual(`[2026-04-04T12:34:56.000Z,2026-04-18T11:22:33.456Z]`);
-    expect(columns.__valueDateSort).toStrictEqual('2026-04-04T12:34:56.000Z');
-  });
-
-  test('one-sided Period', () => {
-    const valueDate = getSearchParameter('Observation', 'value-date');
-    if (!valueDate) {
-      throw new Error('Missing search parameter');
-    }
-    const impl = getSearchParameterImplementation('Observation', valueDate) as RangeColumnSearchParameterImplementation;
-    expect(impl.searchStrategy).toStrictEqual('range-column');
-    expect(impl.rangeColumnName).toStrictEqual('__valueDate');
-    expect(impl.sortColumnName).toStrictEqual('__valueDateSort');
-
-    const resource: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      code: { text: 'test' },
-      subject: { reference: `Patient/${randomUUID()}` },
-      valuePeriod: {
-        end: '2026-04-18T11:22:33.456Z',
-      },
-    };
-
-    const columns: Record<string, any> = {};
-    buildRangeColumns(valueDate, impl, columns, resource);
-
-    expect(columns.__valueDate).toStrictEqual(`(,2026-04-18T11:22:33.456Z]`);
-    expect(columns.__valueDateSort).toStrictEqual('2026-04-18T11:22:33.456Z');
+    expect(columns.__valueDate).toStrictEqual(expectedRange);
+    expect(columns.__valueDateSort).toStrictEqual(expectedSort);
   });
 
   test('multi number range', () => {
@@ -179,7 +165,7 @@ describe('buildRangeColumns', () => {
     expect(columns.__probabilitySort).toStrictEqual(0.00002);
   });
 
-  test('quantity range', () => {
+  test('Quantity range', () => {
     const value = getSearchParameter('Observation', 'value-quantity');
     if (!value) {
       throw new Error('Missing search parameter');
@@ -205,6 +191,91 @@ describe('buildRangeColumns', () => {
 
     expect(columns.__valueQuantity).toStrictEqual(`[102,102]`);
     expect(columns.__valueQuantitySort).toStrictEqual(102);
+  });
+
+  test.each<[Quantity['comparator'], string]>([
+    ['>', '(98.6,)'],
+    ['>=', '[98.6,)'],
+    ['<', '(,98.6)'],
+    ['<=', '(,98.6]'],
+  ])('Quantity range with comparator: %s', (comparator, expected) => {
+    const value = getSearchParameter('Observation', 'value-quantity');
+    if (!value) {
+      throw new Error('Missing search parameter');
+    }
+    const impl = getSearchParameterImplementation('Observation', value) as RangeColumnSearchParameterImplementation;
+    expect(impl.searchStrategy).toStrictEqual('range-column');
+    expect(impl.rangeColumnName).toStrictEqual('__valueQuantity');
+    expect(impl.sortColumnName).toStrictEqual('__valueQuantitySort');
+
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: `Patient/${randomUUID()}` },
+      valueQuantity: {
+        comparator,
+        value: 98.6,
+        unit: 'deg.',
+      },
+    };
+
+    const columns: Record<string, any> = {};
+    buildRangeColumns(value, impl, columns, resource);
+
+    expect(columns.__valueQuantity).toStrictEqual(expected);
+    expect(columns.__valueQuantitySort).toStrictEqual(98.6);
+  });
+
+  test.each<[Timing, string, string]>([
+    [
+      { event: ['2024', '2026-02-11T12:34:56.999Z', '2000-01-01'] },
+      `{[2000-01-01T00:00:00.000Z,2026-02-11T12:34:57.000Z)}`,
+      '2000-01-01T00:00:00.000Z',
+    ],
+    [{ event: ['1999-12'] }, '{[1999-12-01T00:00:00.000Z,2000-01-01T00:00:00.000Z)}', '1999-12-01T00:00:00.000Z'],
+    [
+      {
+        repeat: {
+          boundsPeriod: {
+            start: '2026-04-04T12:34:56Z',
+            end: '2026-04-18T11:22:33.456Z',
+          },
+        },
+      },
+      '{[2026-04-04T12:34:56.000Z,2026-04-18T11:22:33.456Z]}',
+      '2026-04-04T12:34:56.000Z',
+    ],
+  ])('Timing range %j', (timing, expectedRange, expectedSort) => {
+    const activityDate = getSearchParameter('CarePlan', 'activity-date');
+    if (!activityDate) {
+      throw new Error('Missing search parameter');
+    }
+    const impl = getSearchParameterImplementation('CarePlan', activityDate) as RangeColumnSearchParameterImplementation;
+    expect(impl.searchStrategy).toStrictEqual('range-column');
+    expect(impl.rangeColumnName).toStrictEqual('__activityDate');
+    expect(impl.sortColumnName).toStrictEqual('__activityDateSort');
+
+    const resource: CarePlan = {
+      resourceType: 'CarePlan',
+      status: 'draft',
+      intent: 'plan',
+      subject: { reference: `Patient/${randomUUID()}` },
+      activity: [
+        {
+          detail: {
+            status: 'not-started',
+            scheduledTiming: timing,
+          },
+        },
+      ],
+    };
+
+    const columns: Record<string, any> = {};
+    buildRangeColumns(activityDate, impl, columns, resource);
+
+    expect(columns.__activityDate).toStrictEqual(expectedRange);
+    expect(columns.__activityDateSort).toStrictEqual(expectedSort);
   });
 });
 
