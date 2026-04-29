@@ -64,6 +64,7 @@ packages/agent/agent.properties
 packages/agent/src/.*-audit.json
 packages/agent/src/medplum-agent-main-*.log
 packages/agent/src/medplum-agent-channels-*.log
+packages/agent/src/stop-service-logs-*.txt
 
 # Local .terraform directories
 **/.terraform/*
