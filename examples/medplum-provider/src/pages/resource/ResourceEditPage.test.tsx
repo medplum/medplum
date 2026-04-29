@@ -81,7 +81,7 @@ describe('ResourceEditPage', () => {
     });
 
     const updateButton = screen.getByRole('button', { name: /update|save|submit/i });
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(practitioner as any);
+    vi.spyOn(medplum, 'updateResource').mockResolvedValue(practitioner);
 
     await user.click(updateButton);
 

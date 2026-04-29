@@ -1,79 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Flex, Group, PasswordInput, Stack, Title } from '@mantine/core';
-import { badRequest, normalizeOperationOutcome } from '@medplum/core';
-import type { OperationOutcome } from '@medplum/fhirtypes';
-import {
-  Document,
-  Form,
-  Logo,
-  MedplumLink,
-  OperationOutcomeAlert,
-  getErrorsForInput,
-  getIssuesForExpression,
-  useMedplum,
-} from '@medplum/react';
+import { SetPasswordForm } from '@medplum/react';
 import type { JSX } from 'react';
-import { useState } from 'react';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 export function SetPasswordPage(): JSX.Element {
   const { id, secret } = useParams() as { id: string; secret: string };
-  const medplum = useMedplum();
-  const [outcome, setOutcome] = useState<OperationOutcome>();
-  const [success, setSuccess] = useState(false);
-  const issues = getIssuesForExpression(outcome, undefined);
+  const navigate = useNavigate();
 
-  return (
-    <Document width={450}>
-      <OperationOutcomeAlert issues={issues} />
-      <Form
-        onSubmit={(formData: Record<string, string>) => {
-          if (formData.password !== formData.confirmPassword) {
-            setOutcome(badRequest('Passwords do not match', 'confirmPassword'));
-            return;
-          }
-          setOutcome(undefined);
-          const body = {
-            id,
-            secret,
-            password: formData.password,
-          };
-          medplum
-            .post('auth/setpassword', body)
-            .then(() => setSuccess(true))
-            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
-        }}
-      >
-        <Flex direction="column" align="center" justify="center">
-          <Logo size={32} />
-          <Title>Set password</Title>
-        </Flex>
-        {!success && (
-          <Stack>
-            <PasswordInput
-              name="password"
-              label="New password"
-              required={true}
-              error={getErrorsForInput(outcome, 'password')}
-            />
-            <PasswordInput
-              name="confirmPassword"
-              label="Confirm new password"
-              required={true}
-              error={getErrorsForInput(outcome, 'confirmPassword')}
-            />
-            <Group justify="flex-end" mt="xl">
-              <Button type="submit">Set password</Button>
-            </Group>
-          </Stack>
-        )}
-        {success && (
-          <div data-testid="success">
-            Password set. You can now&nbsp;<MedplumLink to="/signin">sign in</MedplumLink>.
-          </div>
-        )}
-      </Form>
-    </Document>
-  );
+  return <SetPasswordForm id={id} secret={secret} onSignIn={() => navigate('/signin')?.catch(console.error)} />;
 }

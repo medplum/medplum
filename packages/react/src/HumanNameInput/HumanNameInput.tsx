@@ -12,7 +12,7 @@ export type HumanNameInputProps = ComplexTypeInputProps<HumanName>;
 
 export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   const { outcome, path } = props;
-  const [value, setValue] = useState<HumanName | undefined>(props.defaultValue);
+  const [value, setValue] = useState(props.defaultValue);
   const { getExtendedProps } = useContext(ElementsContext);
   const [useProps, prefixProps, givenProps, familyProps, suffixProps] = useMemo(
     () => ['use', 'prefix', 'given', 'family', 'suffix'].map((field) => getExtendedProps(props.path + '.' + field)),

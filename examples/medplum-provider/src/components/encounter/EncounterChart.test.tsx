@@ -310,7 +310,7 @@ describe('EncounterChart', () => {
 
     const getSignButton = (): HTMLElement | null => {
       const buttons = screen.getAllByRole('button');
-      return buttons.find((btn) => btn.querySelector('svg')) || null;
+      return buttons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim()) || null;
     };
 
     test('signs without locking - textarea remains enabled', async () => {

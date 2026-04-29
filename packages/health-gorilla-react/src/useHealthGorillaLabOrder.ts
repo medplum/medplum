@@ -209,7 +209,7 @@ function aoeError(prev: TestsReducerState, action: AoeErrorAction): TestsReducer
   let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
   for (const test of action.tests) {
     const prevMetadata = prev.testMetadata[test.code];
-    if (!prevMetadata || prevMetadata.aoeStatus !== 'loading') {
+    if (prevMetadata?.aoeStatus !== 'loading') {
       continue;
     }
 
@@ -268,8 +268,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     selectedTests: INITIAL_TESTS,
     testMetadata: INITIAL_TEST_METADATA,
   });
-  const [diagnoses, privateSetDiagnoses] = useState<DiagnosisCodeableConcept[]>(INITIAL_DIAGNOSES);
-  const [billingInformation, setBillingInformation] = useState<BillingInformation>(INITIAL_BILLING_INFORMATION);
+  const [diagnoses, privateSetDiagnoses] = useState(INITIAL_DIAGNOSES);
+  const [billingInformation, setBillingInformation] = useState(INITIAL_BILLING_INFORMATION);
   const [orderNotes, privateSetOrderNotes] = useState<string | undefined>();
 
   const healthGorillaAutocomplete = useMemo(() => {
@@ -350,7 +350,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     if (isReferenceOfType('Practitioner', opts.requester)) {
       return opts.requester;
     } else if (isResource(opts.requester)) {
-      return createReference(opts.requester) as Reference<Practitioner> & { reference: string };
+      return createReference(opts.requester);
     } else {
       opts.requester satisfies undefined;
       return undefined;
@@ -404,9 +404,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
   const getActivePatientCoverages = useCallback(async (): Promise<ResourceArray<Coverage>> => {
     if (!patientRef) {
       const emptyResult: Coverage[] = [];
-      return Object.assign(emptyResult, {
-        bundle: { resourceType: 'Bundle', type: 'searchset', entry: [], total: 0 } as Bundle<Coverage>,
-      });
+      const bundle: Bundle<Coverage> = { resourceType: 'Bundle', type: 'searchset', entry: [], total: 0 };
+      return Object.assign(emptyResult, { bundle });
     }
 
     const coverageSearch = new URLSearchParams({

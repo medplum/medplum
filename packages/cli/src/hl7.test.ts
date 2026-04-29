@@ -11,7 +11,7 @@ describe('HL7 commands', () => {
     console.log = jest.fn();
     process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
-    }) as unknown as typeof process.exit;
+    });
     const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
 
     const originalCreateServer = net.createServer;

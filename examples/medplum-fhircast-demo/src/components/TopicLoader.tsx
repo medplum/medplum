@@ -8,7 +8,7 @@ interface TopicLoaderProps {
   readonly onSetTopic: (topic: string | undefined) => void;
 }
 export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
-  const [topicInput, setTopicInput] = useState<string>('');
+  const [topicInput, setTopicInput] = useState('');
   const [topic, setTopic] = useState<string>();
   const { onSetTopic } = props;
 

@@ -7,7 +7,7 @@ Highly customizable and integrated data management solution for clinical researc
 * Ordering systems for diagnostics, equipment and medications
 * Assessment management and planning tools
 
-:::caution Note
+:::caution[Note]
 
 This section is under construction. Check back frequently for updates.
 

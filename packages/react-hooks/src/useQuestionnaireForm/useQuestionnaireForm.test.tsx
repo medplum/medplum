@@ -315,7 +315,7 @@ describe('useQuestionnaireForm', () => {
     });
 
     await act(async () => {
-      formState2.onAddAnswer([], questionnaire.item[0] as QuestionnaireItem);
+      formState2.onAddAnswer([], questionnaire.item[0]);
     });
 
     const updatedState = result.current as QuestionnaireFormLoadedState;

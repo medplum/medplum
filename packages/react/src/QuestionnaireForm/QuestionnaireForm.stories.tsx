@@ -1067,19 +1067,6 @@ export const Choices = (): JSX.Element => (
                   coding: [
                     {
                       system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
                       code: 'multi-select',
                       display: 'Multi select',
                     },
@@ -1235,6 +1222,41 @@ export const EnableWhen = (): JSX.Element => (
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const EnableWhenOnSubmit = (): JSX.Element => (
+  <Document>
+    <p>
+      Select "Yes" on Q1, answer Q2, then switch Q1 to "No" and submit. The submitted response logged to the console
+      will not contain Q2's answer because Q2 is disabled.
+    </p>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'enable-when-strip',
+        status: 'active',
+        title: 'Enable When (strip disabled on submit)',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Q1 — Enable Q2 when "Yes"',
+            type: 'choice',
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+          {
+            linkId: 'q2',
+            text: 'Q2 — only visible when Q1 is "Yes"',
+            type: 'choice',
+            enableWhen: [{ question: 'q1', operator: '=', answerString: 'Yes' }],
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+        ],
+      }}
+      onSubmit={(response) => {
+        console.log('submit', response);
       }}
     />
   </Document>
@@ -1697,6 +1719,20 @@ export const KitchenSink = (): JSX.Element => (
             linkId: 'quantity',
             type: 'quantity',
             text: 'Quantity',
+          },
+        ],
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: 'urn:iso-astm:E1762-95:2013',
+                  code: '1.2.840.10065.1.12.1.1',
+                  display: "Author's Signature",
+                },
+              ],
+            },
           },
         ],
       }}

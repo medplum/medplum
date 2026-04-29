@@ -295,4 +295,13 @@ export const medplumEslintConfig = [
   },
   coreConfig,
   tsConfig,
+  /**
+   * vite.config.ts is often outside package tsconfig include (e.g. rootDir src); skip type-aware parsing.
+   *
+   * we don't need type checking for vite.config.ts files
+   */
+  {
+    files: ['**/vite.config.ts'],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
 ];

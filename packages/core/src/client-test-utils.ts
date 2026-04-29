@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { encodeBase64Url } from './base64';
 import type { FetchLike } from './client';
 import { MedplumClient } from './client';
@@ -15,9 +17,9 @@ export function mockFetch(
   status: number,
   body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
   contentType = ContentType.FHIR_JSON
-): FetchLike & jest.Mock {
+): FetchLike & Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
-  return jest.fn((url: string, options?: any) => {
+  return vi.fn((url: string, options?: any) => {
     const response = bodyFn(url, options);
     const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
     return Promise.resolve(mockFetchResponse(responseStatus, response, { 'content-type': contentType }));
@@ -27,8 +29,8 @@ export function mockFetch(
 export function mockFetchWithStatus(
   onFetch: (url: string, options?: any) => [number, any],
   contentType = ContentType.FHIR_JSON
-): FetchLike & jest.Mock {
-  return jest.fn((url: string, options?: any) => {
+): FetchLike & Mock {
+  return vi.fn((url: string, options?: any) => {
     const [status, response] = onFetch(url, options);
     const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
     return Promise.resolve(mockFetchResponse(responseStatus, response, { 'content-type': contentType }));
@@ -104,7 +106,7 @@ export class MockMedplumClient extends MedplumClient {
     // @ts-expect-error need to pass something for fetch otherwise MedplumClient ctor will complain
     super({ fetch: options?.fetch ?? (() => undefined) });
     this.router = new MockFhirRouter();
-    this.profile = { resourceType: 'Practitioner', id: generateId() } as Practitioner;
+    this.profile = { resourceType: 'Practitioner', id: generateId() };
     this.nextResourceId = 'DEFAULT_MOCK_ID';
   }
 

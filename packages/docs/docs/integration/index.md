@@ -188,6 +188,12 @@ Medplum provides templates and playbooks for common medical integrations.
       <td><a href="/docs/integration/smart-app-launch">SMART App Launch</a></td>
     </tr>
     <tr>
+      <td>CDS Hooks</td>
+      <td>EHR</td>
+      <td>Contextual CDS service discovery and invocation</td>
+      <td><a href="/docs/integration/cds-hooks">CDS Hooks</a></td>
+    </tr>
+    <tr>
       <td>FHIRcast</td>
       <td>Radiology</td>
       <td>Event driven workflow for workstations</td>
@@ -311,7 +317,7 @@ Medplum provides building blocks for custom integrations. Some examples are belo
 
 ## Integration Building Blocks and Testing
 
-Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions/index.md), [authentication and authorization](/docs/auth/index.md) and the [TypeScript SDK](/docs/sdk/).
+Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions), [authentication and authorization](/docs/auth) and the [TypeScript SDK](/docs/sdk/).
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers

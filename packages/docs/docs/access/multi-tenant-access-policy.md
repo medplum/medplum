@@ -218,7 +218,7 @@ Once you've decided on your tenant resource type and created your tenant resourc
 
 Most implementations will be able to just assign Patients to tenants. This is because Patient is the only resource where _"propagation"_ is supported to the Patient's _"related"_ resources. See [Why is Patient a special case?](#why-is-patient-a-special-case) for more details.
 
-:::info
+:::info[]
 If your Patient is also a User that can log in, this will not impact what that Patient User can access. Instead, this impacts who can access that Patient.
 :::
 
@@ -696,3 +696,12 @@ Multi-tenant access control in Medplum enables you to securely partition healthc
 
 By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Medplum](/blog/multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
 
+<details>
+  <summary>Example LLM Prompt: Recommending Tenanting Resources and Access Policies</summary>
+  Answer the questions in the below prompt, and copy and paste it into an LLM. 
+
+<MedplumCodeBlock language="md" selectBlocks="tenanting-prompt">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+</details>

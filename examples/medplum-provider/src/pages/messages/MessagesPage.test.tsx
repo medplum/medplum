@@ -45,7 +45,7 @@ describe('MessagesPage', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('In progress')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('MessagesPage', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In progress')).toBeInTheDocument();
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
       },
       { timeout: 3000 }
     );

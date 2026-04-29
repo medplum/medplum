@@ -30,7 +30,7 @@ describe('SCIM Routes', () => {
       password: 'password!@#',
     });
     accessToken = registration.accessToken;
-    systemRepo = getProjectSystemRepo(registration.project);
+    systemRepo = await getProjectSystemRepo(registration.project);
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -194,7 +194,7 @@ describe('SCIM Routes', () => {
       });
 
       // Make the project super admin
-      const systemRepo = getProjectSystemRepo(reg.project);
+      const systemRepo = await getProjectSystemRepo(reg.project);
       await systemRepo.updateResource({
         ...reg.project,
         superAdmin: true,

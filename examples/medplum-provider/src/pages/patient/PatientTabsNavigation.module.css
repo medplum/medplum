@@ -1,0 +1,7 @@
+.list {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  padding: 0 16px 16px;
+}

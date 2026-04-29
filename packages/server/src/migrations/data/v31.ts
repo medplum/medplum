@@ -10,7 +10,7 @@ import type { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
-  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+  prepareJobData: (asyncJob) => ({ ...prepareCustomMigrationJobData(asyncJob), skipInFirstBootMode: true }),
   run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 

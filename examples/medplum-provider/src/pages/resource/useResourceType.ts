@@ -15,7 +15,7 @@ export function useResourceType(
 ): ResourceType | undefined {
   const medplum = useMedplum();
 
-  const lastInput = useRef<string | undefined>(resourceType);
+  const lastInput = useRef(resourceType);
   const [validatedResourceType, setValidatedResourceType] = useState<ResourceType | undefined>();
 
   useEffect(() => {

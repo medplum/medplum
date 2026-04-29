@@ -19,7 +19,7 @@ describe('SuperAdminPage', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-          <MantineProvider>
+          <MantineProvider env="test">
             <Notifications />
             <AppRoutes />
           </MantineProvider>
@@ -299,6 +299,107 @@ describe('SuperAdminPage', () => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
     setup();
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
+  });
+
+  describe('Clear All WebSocket Subscriptions', () => {
+    test('Clears all projects when no project selected', async () => {
+      medplum.router.add('POST', '$clear-all-ws-subs', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'pubSubKeysDeleted',
+                valueInteger: 1,
+              },
+              {
+                name: 'cacheKeysDeleted',
+                valueInteger: 1,
+              },
+            ],
+          },
+        ];
+      });
+      setup();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText(/Are you sure you want to completely clear/)).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-all-ws-subs', undefined);
+      expect(await screen.findByText('Done')).toBeInTheDocument();
+    });
+
+    test('Clears specific project when a project is selected', async () => {
+      const projectId = '11111111-1111-1111-1111-111111111111';
+      medplum.router.add('GET', 'Project', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'searchset',
+            entry: [{ resource: { resourceType: 'Project', id: projectId, name: 'Test Project' } }],
+          } as any,
+        ];
+      });
+      medplum.router.add('POST', '$clear-all-ws-subs', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'pubSubKeysDeleted',
+                valueInteger: 1,
+              },
+              {
+                name: 'cacheKeysDeleted',
+                valueInteger: 1,
+              },
+            ],
+          },
+        ];
+      });
+      setup();
+
+      // Select a project via the ReferenceInput
+      const input = screen.getByPlaceholderText('All projects');
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'Test' } });
+      });
+      // Advance the debounce timer so the dropdown populates
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText(/Are you sure you want to completely clear/)).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-all-ws-subs', {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'projectId', valueString: projectId }],
+      });
+    });
   });
 
   describe('ExplainSearchForm', () => {

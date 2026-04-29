@@ -115,8 +115,8 @@ describe('Revoke', () => {
     const bobEmail = `bob${randomUUID()}@example.com`;
     const bobPassword = randomUUID();
 
-    const { bobLogin, accessToken } = await withTestContext(async () => {
-      const { project, accessToken } = await registerNew({
+    const { bobLogin, aliceAccessToken } = await withTestContext(async () => {
+      const aliceRegResult = await registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
         projectName: 'Revoke Project',
@@ -127,8 +127,8 @@ describe('Revoke', () => {
       });
 
       // Second, Alice invites Bob to the project
-      const { user } = await inviteUser({
-        project,
+      const { user: bobUser } = await inviteUser({
+        project: aliceRegResult.project,
         resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
@@ -136,7 +136,7 @@ describe('Revoke', () => {
       });
 
       // Set Bob password
-      await setPassword(user, bobPassword);
+      await setPassword(bobUser, bobPassword);
 
       // Login as Bob
       const bobLogin = await tryLogin({
@@ -147,14 +147,14 @@ describe('Revoke', () => {
         nonce: 'nonce',
       });
       expect(bobLogin).toBeDefined();
-      return { bobLogin, accessToken };
+      return { bobLogin, aliceAccessToken: aliceRegResult.accessToken };
     });
 
     // Try to revoke Bob's session as Alice
     // This should fail
     const revokeResponse = await request(app)
       .post('/auth/revoke')
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Authorization', `Bearer ${aliceAccessToken}`)
       .type('json')
       .send({ loginId: bobLogin.id });
     expect(revokeResponse.status).toBe(404);

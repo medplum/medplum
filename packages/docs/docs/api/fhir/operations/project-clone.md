@@ -12,7 +12,7 @@ The `$clone` operation creates a complete copy of a Medplum project, including a
 - **Creating a Project Template**: Clone configuration and bots without patient data for new client projects
 - **Cloning Specific Resources**: Selectively clone bots, questionnaires, or other resources
 
-:::caution Self-Hosted Deployments Only
+:::caution[Self-Hosted Deployments Only]
 This operation requires super admin privileges, which are only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need to clone a project, please contact [Medplum support](/contact).
 :::
 

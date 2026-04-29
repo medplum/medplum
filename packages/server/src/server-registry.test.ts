@@ -27,7 +27,7 @@ describe('server-registry', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.setSystemTime(now);
+    jest.setSystemTime(now.getTime());
 
     (getCacheRedis as jest.Mock).mockReturnValue(mockRedis);
     (randomUUID as jest.Mock).mockReturnValue(UUID);

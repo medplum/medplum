@@ -14,7 +14,7 @@ export function SitesPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
-  const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [sites, setSites] = useState<ProjectSite[] | undefined>();
 
   useEffect(() => {

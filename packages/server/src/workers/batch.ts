@@ -15,7 +15,7 @@ import type { AsyncJob, Bundle } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
-import { getAuthenticatedContext, runInAsyncContext } from '../context';
+import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -23,8 +23,8 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import type { WorkerInitializer } from './utils';
-import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -42,7 +42,7 @@ export interface BatchJobData {
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
 
-export const initBatchWorker: WorkerInitializer = (config) => {
+export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -52,17 +52,22 @@ export const initBatchWorker: WorkerInitializer = (config) => {
     defaultJobOptions: { attempts: 1 },
   });
 
-  const worker = new Worker<BatchJobData>(
-    queueName,
-    (job) => {
-      const { authState, requestId, traceId } = job.data;
-      return runInAsyncContext(authState, requestId, traceId, () => execBatchJob(job));
-    },
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
+  let worker: Worker<BatchJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'batch');
+    worker = new Worker<BatchJobData>(
+      queueName,
+      (job) => {
+        const { authState, requestId, traceId } = job.data;
+        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJob(job));
+      },
+      {
+        ...defaultOptions,
+        concurrency: 1,
+        ...workerBullmq,
+      }
+    );
+  }
 
   return { queue, worker, name: queueName };
 };

@@ -21,7 +21,7 @@ The recommended phases are:
 
 Let's explore each phase in detail.
 
-## Write-only / Dual Write {#write-only}
+## Write-only / Dual Write {/* #write-only */}
 
 When write/update operations come into your existing services, have your existing services write to both Medplum and your existing store.
 
@@ -50,7 +50,7 @@ Existing API-->>Client: Response
 - Implement error handling and logging to catch any discrepancies between writes to the old system and Medplum.
 - Start with less critical data types to minimize risk.
 
-## Backfill Data {#backfill}
+## Backfill Data {/* #backfill */}
 
 Migrate older data from the existing data store to Medplum.
 
@@ -72,7 +72,7 @@ graph LR
 - Start with a small subset of data to validate your migration scripts before running on the entire dataset.
 - Implement data validation checks to ensure the integrity of migrated data.
 
-## Read from Medplum in the Client {#read-from-medplum}
+## Read from Medplum in the Client {/* #read-from-medplum */}
 
 Update your UX to read from Medplum's API rather than your existing API.
 
@@ -102,7 +102,7 @@ sequenceDiagram
 - Start with read-only views or reports before moving to more critical user interactions.
 - Monitor performance and user feedback closely during this phase.
 
-## Front-End Write to Medplum {#front-end-write}
+## Front-End Write to Medplum {/* #front-end-write */}
 
 Update your UX to write directly to Medplum rather than through your existing services.
 
@@ -134,7 +134,7 @@ sequenceDiagram
 - Consider maintaining dual writes (to both old system and Medplum) for a period to allow for easy rollback if needed.
 - Provide additional user support during this transition.
 
-## Deprecate Old System {#deprecate}
+## Deprecate Old System {/* #deprecate */}
 
 Phase out the old data store once you're confident in the Medplum implementation.
 

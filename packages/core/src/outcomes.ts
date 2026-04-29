@@ -252,16 +252,23 @@ export function conflict(details: string, code?: string): OperationOutcome {
   };
 }
 
-export function validationError(details: string): OperationOutcome {
+export function validationError(
+  details: string,
+  expressions?: string[],
+  code?: IssueType,
+  diagnostics?: string
+): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     issue: [
       {
         severity: 'error',
-        code: 'structure',
+        code: code ?? 'structure',
         details: {
           text: details,
         },
+        ...(expressions ? { expression: expressions } : undefined),
+        ...(diagnostics ? { diagnostics } : undefined),
       },
     ],
   };

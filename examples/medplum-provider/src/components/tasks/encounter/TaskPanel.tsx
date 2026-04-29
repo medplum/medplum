@@ -43,9 +43,9 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
     async (task: Task, response: QuestionnaireResponse): Promise<void> => {
       try {
         if (response.id) {
-          await medplum.updateResource<QuestionnaireResponse>(response);
+          await medplum.updateResource(response);
         } else {
-          const updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
+          const updatedResponse = await medplum.createResource(response);
           const updatedTask = await medplum.updateResource<Task>({
             ...task,
             output: [

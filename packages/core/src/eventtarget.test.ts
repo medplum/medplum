@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { vi } from 'vitest';
 import { EventTarget, TypedEventTarget } from './eventtarget';
 
 describe('EventTarget', () => {
@@ -9,7 +10,7 @@ describe('EventTarget', () => {
   });
 
   test('Add event listener', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback);
     target.dispatchEvent({ type: 'test' });
@@ -17,8 +18,8 @@ describe('EventTarget', () => {
   });
 
   test('Add multiple event listeners', () => {
-    const myCallback1 = jest.fn();
-    const myCallback2 = jest.fn();
+    const myCallback1 = vi.fn();
+    const myCallback2 = vi.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback1);
     target.addEventListener('test', myCallback2);
@@ -28,7 +29,7 @@ describe('EventTarget', () => {
   });
 
   test('Remove event listener', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback);
     target.removeEventListener('test', myCallback);
@@ -37,11 +38,11 @@ describe('EventTarget', () => {
   });
 
   test('Remove event listener not found', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new EventTarget();
-    target.removeEventListener('test', jest.fn());
+    target.removeEventListener('test', vi.fn());
     target.addEventListener('test', myCallback);
-    target.removeEventListener('test', jest.fn());
+    target.removeEventListener('test', vi.fn());
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
     expect(myCallback).toHaveBeenCalled();
   });
@@ -49,9 +50,9 @@ describe('EventTarget', () => {
   test('Remove all event listeners', () => {
     const target = new EventTarget();
 
-    const myCallback1 = jest.fn();
-    const myCallback2 = jest.fn();
-    const myCallback3 = jest.fn();
+    const myCallback1 = vi.fn();
+    const myCallback2 = vi.fn();
+    const myCallback3 = vi.fn();
 
     target.addEventListener('test1', myCallback1);
     target.addEventListener('test1', myCallback2);
@@ -69,12 +70,12 @@ describe('EventTarget', () => {
 
   test('Listener count', () => {
     const target = new EventTarget();
-    target.addEventListener('test1', jest.fn());
+    target.addEventListener('test1', vi.fn());
 
     expect(target.listenerCount('test1')).toStrictEqual(1);
     expect(target.listenerCount('test2')).toStrictEqual(0);
 
-    target.addEventListener('test1', jest.fn());
+    target.addEventListener('test1', vi.fn());
     expect(target.listenerCount('test1')).toStrictEqual(2);
 
     target.removeAllListeners();
@@ -89,7 +90,7 @@ describe('TypedEventTarget', () => {
   });
 
   test('Add event listener', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new TypedEventTarget<{ test: { type: 'test' } }>();
     target.addEventListener('test', myCallback);
     target.dispatchEvent({ type: 'test' });
@@ -97,8 +98,8 @@ describe('TypedEventTarget', () => {
   });
 
   test('Add multiple event listeners', () => {
-    const myCallback1 = jest.fn();
-    const myCallback2 = jest.fn();
+    const myCallback1 = vi.fn();
+    const myCallback2 = vi.fn();
     const target = new TypedEventTarget<{ test: { type: 'test' } }>();
     target.addEventListener('test', myCallback1);
     target.addEventListener('test', myCallback2);
@@ -108,7 +109,7 @@ describe('TypedEventTarget', () => {
   });
 
   test('Remove event listener', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new TypedEventTarget<{ test: { type: 'test' } }>();
     target.addEventListener('test', myCallback);
     target.removeEventListener('test', myCallback);
@@ -117,11 +118,11 @@ describe('TypedEventTarget', () => {
   });
 
   test('Remove event listener not found', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new TypedEventTarget<{ test: { type: 'test' } }>();
-    target.removeEventListener('test', jest.fn());
+    target.removeEventListener('test', vi.fn());
     target.addEventListener('test', myCallback);
-    target.removeEventListener('test', jest.fn());
+    target.removeEventListener('test', vi.fn());
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
     expect(myCallback).toHaveBeenCalled();
   });
@@ -129,9 +130,9 @@ describe('TypedEventTarget', () => {
   test('Remove all event listeners', () => {
     const target = new TypedEventTarget<{ test1: { type: 'test1' }; test2: { type: 'test2' } }>();
 
-    const myCallback1 = jest.fn();
-    const myCallback2 = jest.fn();
-    const myCallback3 = jest.fn();
+    const myCallback1 = vi.fn();
+    const myCallback2 = vi.fn();
+    const myCallback3 = vi.fn();
 
     target.addEventListener('test1', myCallback1);
     target.addEventListener('test1', myCallback2);
@@ -149,12 +150,12 @@ describe('TypedEventTarget', () => {
 
   test('Listener count', () => {
     const target = new TypedEventTarget<{ test1: { type: 'test1' }; test2: { type: 'test2' } }>();
-    target.addEventListener('test1', jest.fn());
+    target.addEventListener('test1', vi.fn());
 
     expect(target.listenerCount('test1')).toStrictEqual(1);
     expect(target.listenerCount('test2')).toStrictEqual(0);
 
-    target.addEventListener('test1', jest.fn());
+    target.addEventListener('test1', vi.fn());
     expect(target.listenerCount('test1')).toStrictEqual(2);
 
     target.removeAllListeners();

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { EMPTY, getExtensionValue, isDefined } from '@medplum/core';
-import type { Coding, Resource, Slot } from '@medplum/fhirtypes';
+import type { CodeableConcept, Resource, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp } from '../../../util/date';
@@ -25,7 +25,7 @@ function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.Zoned
   return results;
 }
 
-function hasMatchingServiceType(slot: Slot, inputCoding: readonly Coding[]): boolean {
+function hasMatchingServiceType(slot: Slot, concepts: readonly CodeableConcept[]): boolean {
   const serviceType = slot.serviceType ?? [];
   // Slots without any service type are considered as "wildcard" slots that support
   // any service type codes
@@ -33,17 +33,21 @@ function hasMatchingServiceType(slot: Slot, inputCoding: readonly Coding[]): boo
     return true;
   }
 
-  // If we didn't get a specific code to test for, we should only match wildcard slots,
+  // If we didn't get a specific concept to test for, we should only match wildcard slots,
   // which we ruled out above.
-  if (inputCoding.length === 0) {
+  if (concepts.length === 0) {
     return false;
   }
 
-  const codes = new Set(inputCoding.map((coding) => `${coding.system}|${coding.code}`));
+  const codes = new Set(
+    concepts.flatMap((concept) =>
+      (concept.coding ?? EMPTY).map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`)
+    )
+  );
 
   // Check if there any of the Slot's service type codes match the input code
   for (const codeableConcept of serviceType) {
-    if (codeableConcept.coding?.some((c) => codes.has(`${c.system}|${c.code}`))) {
+    if (codeableConcept.coding?.some((c) => codes.has(`${c.system ?? ''}|${c.code ?? ''}`))) {
       return true;
     }
   }
@@ -115,15 +119,17 @@ export function resolveAvailability(
     const dayOfWeek = dayNames[dayStart.dayOfWeek];
     return schedulingParameters.availability
       .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
-      .flatMap((availability) =>
-        availability.timeOfDay.map((timeOfDay) => {
-          const [hour, minute, second] = timeOfDay.split(':').map(Number);
-          const start = dayStart.withPlainTime({ hour, minute, second });
-          const end = start.add({ minutes: availability.duration });
-          const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
-          return intersectIntervals(availableInterval, interval);
-        })
-      )
+      .map((availability) => {
+        const [sH, sM, sS] = availability.availableStartTime.split(':').map(Number);
+        const [eH, eM, eS] = availability.availableEndTime.split(':').map(Number);
+        const start = dayStart.withPlainTime({ hour: sH, minute: sM, second: sS });
+        let end = dayStart.withPlainTime({ hour: eH, minute: eM, second: eS });
+        if (end.epochMilliseconds <= start.epochMilliseconds) {
+          end = end.add({ days: 1 });
+        }
+        const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
+        return intersectIntervals(availableInterval, interval);
+      })
       .filter(isDefined);
   });
 }
@@ -246,7 +252,7 @@ export function applyExistingSlots(params: {
   availability: Interval[];
   slots: Slot[];
   range: Interval;
-  serviceType?: readonly Coding[];
+  serviceType?: readonly CodeableConcept[];
 }): Interval[] {
   const freeSlotIntervals = params.slots
     .filter((slot) => slot.status === 'free')

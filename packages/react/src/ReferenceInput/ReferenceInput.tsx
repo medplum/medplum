@@ -43,7 +43,7 @@ type TargetType = ResourceTypeTargetType | ProfileTargetType;
 export function ReferenceInput<T extends Resource = Resource>(props: ReferenceInputProps<T>): JSX.Element {
   const { onChange } = props;
   const medplum = useMedplum();
-  const [value, setValue] = useState<Reference<T> | undefined>(props.defaultValue);
+  const [value, setValue] = useState(props.defaultValue);
   const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
   const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
     getInitialTargetType(props.defaultValue, targetTypes)
@@ -127,7 +127,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
 
   const setValueHelper = useCallback(
     (item: T | undefined) => {
-      const newValue = item ? createReference<T>(item) : undefined;
+      const newValue = item ? createReference(item) : undefined;
       setValue(newValue);
       if (onChange) {
         onChange(newValue);

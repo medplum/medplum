@@ -38,6 +38,10 @@ export interface MedplumSourceInfraConfig {
   storageBucketName: ValueOrExternalSecret<string>;
   storageDomainName: ValueOrExternalSecret<string>;
   storageSslCertArn: ValueOrExternalSecret<string>;
+  mtlsDomainName?: ValueOrExternalSecret<string>;
+  mtlsSslCertArn?: ValueOrExternalSecret<string>;
+  mtlsInternetFacing?: ValueOrExternalSecret<boolean>;
+  mtlsWafIpSetArn?: ValueOrExternalSecret<string>;
   signingKeyId: ValueOrExternalSecret<string>;
   storagePublicKey: ValueOrExternalSecret<string>;
   storageWafIpSetArn: ValueOrExternalSecret<string>;
@@ -89,6 +93,7 @@ export interface MedplumSourceInfraConfig {
   loadBalancerSecurityGroupId?: ValueOrExternalSecret<string>;
   loadBalancerLoggingBucket?: ValueOrExternalSecret<string>;
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
+  loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
   clamscanEnabled: ValueOrExternalSecret<boolean>;
   clamscanLoggingBucket: ValueOrExternalSecret<string>;
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
@@ -123,6 +128,40 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
+  workerServices?: {
+    id: ValueOrExternalSecret<string>;
+    serverImage?: ValueOrExternalSecret<string>;
+    serverMemory?: ValueOrExternalSecret<number>;
+    serverCpu?: ValueOrExternalSecret<number>;
+    desiredCount: ValueOrExternalSecret<number>;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: ValueOrExternalSecret<number>;
+      maxCapacity: ValueOrExternalSecret<number>;
+      targetUtilizationPercent: ValueOrExternalSecret<number>;
+      scaleInCooldown: ValueOrExternalSecret<number>;
+      scaleOutCooldown: ValueOrExternalSecret<number>;
+    };
+    additionalContainers?: {
+      name: ValueOrExternalSecret<string>;
+      image: ValueOrExternalSecret<string>;
+      cpu?: ValueOrExternalSecret<number>;
+      memory?: ValueOrExternalSecret<number>;
+      essential?: ValueOrExternalSecret<boolean>;
+      command?: ValueOrExternalSecret<string>[];
+      environment?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
   rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
@@ -173,6 +212,10 @@ export interface MedplumInfraConfig {
   storageWafIpSetArn?: string;
   storageLoggingBucket?: string;
   storageLoggingPrefix?: string;
+  mtlsDomainName?: string;
+  mtlsSslCertArn?: string;
+  mtlsInternetFacing?: boolean;
+  mtlsWafIpSetArn?: string;
   baseUrl: string;
   maxAzs: number;
   rdsInstances: number;
@@ -219,6 +262,7 @@ export interface MedplumInfraConfig {
   loadBalancerSecurityGroupId?: string;
   loadBalancerLoggingBucket?: string;
   loadBalancerLoggingPrefix?: string;
+  loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
   clamscanEnabled: boolean;
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;
@@ -253,6 +297,40 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
+  workerServices?: {
+    id: string;
+    serverImage?: string;
+    serverMemory?: number;
+    serverCpu?: number;
+    desiredCount: number;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: number;
+      maxCapacity: number;
+      targetUtilizationPercent: number;
+      scaleInCooldown: number;
+      scaleOutCooldown: number;
+    };
+    additionalContainers?: {
+      name: string;
+      image: string;
+      cpu?: number;
+      memory?: number;
+      essential?: boolean;
+      command?: string[];
+      environment?: {
+        [key: string]: string;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;

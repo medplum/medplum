@@ -6,6 +6,18 @@ sidebar_position: 400
 
 Visit management is at the heart of clinical documentation and patient care delivery. The Medplum Provider app provides comprehensive tools for documenting patient Visits, streamlining clinical workflows through Care Templates, and customizing documentation to meet specific practice needs. This section covers the essential Visit management functions.
 
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/sa_UswEWKTI"
+    title="YouTube video player" frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+<br/>
+
+:::info[Prerequisites]
+Before following the guide below, make sure you have [data in your project](./getting-started#importing-data) (patients, practitioners, etc.) and that you are [signed in](/docs/provider#registering--signing-in) to Medplum Provider.
+:::
+
 ## Understanding Visits
 
 While "Visit" isn't a defined FHIR resource, we've combined the Appointment and Encounter resources into this single, simplified concept to improve the provider experience. Each Visit also automatically generates related FHIR resources:
@@ -36,7 +48,7 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
    - Be sure to change the status of your Visit as it progresses, using the status manager in the upper right corner. Here are the statuses available to choose:
      - **Planned**: the visit is scheduled or arranged but has not yet begun (e.g. a visit that has been scheduled but the patient hasn't arrived yet)
      - **In Progress**: the visit is currently active and ongoing (e.g. the patient is present and receiving care or services from healthcare providers)
-     - **Finished**: the visit has been completed successfully (e.g. all planned activities have been carried out and the visit has been concluded)
+     - **Finished**: the visit has been completed successfully (e.g. all planned activities have been carried out and the visit has been concluded). Before marking a visit as Finished, ensure all associated tasks and questionnaires have been completed
      - **Cancelled**: the visit was Planned but has been called off before it began (e.g. due to patient cancellation, provider unavailability, or other circumstances that prevented the visit from taking place)
    - Before, during, and/or after the Visit, you will also need to add other details about the visit on the “Details & Billing” tab
      - **Check in**: the time the Visit started (auto-filled when the status is changed to In Progress)
@@ -52,6 +64,8 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
 ---
 
 ## Setting Up Care Templates (via Medplum App)
+
+Because Care Templates are built from definitional resources like [PlanDefinitions](../api/fhir/resources/plandefinition), [Questionnaires](../api/fhir/resources/questionnaire), and [ActivityDefinitions](../api/fhir/resources/activitydefinition), you can customize care experiences directly in the Medplum App without any code changes.
 
 Before setting up your Care Templates, it’s important to understand the separate but connected resources they incorporate. In the Medplum App, Care Templates are represented by the PlanDefinition FHIR resource which can include other, linked resources:
 
@@ -770,7 +784,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 
 </details>
 
-:::tip SDC Extraction
+:::tip[SDC Extraction]
 
 The Vital Signs Assessment questionnaire above uses [Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) patterns to automatically extract `Observation` resources from questionnaire responses. Each vital sign item includes:
 

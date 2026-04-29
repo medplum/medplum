@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 Multi-Factor Authentication (MFA) adds an extra layer of security to user accounts by requiring a second authentication factor beyond a password. Medplum supports Time-based One-Time Password (TOTP) authentication, which is compatible with authenticator apps like Google Authenticator, Microsoft Authenticator, Authy, and others.
 
-:::note
+:::note[]
 Users enrolled in MFA will only be asked for an MFA code during a login with Username/Password
 :::
 
@@ -91,6 +91,43 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 For more details on the invite endpoint, see the [Invite User Endpoint](/docs/api/project-admin/invite) documentation.
 
+
+## Admin MFA Reset
+
+Project admins can reset MFA enrollment for users who have lost access to their authenticator device via the `POST /admin/projects/:projectId/members/:membershipId/mfa/reset` endpoint.
+
+When reset:
+- The user's `mfaEnrolled` flag is cleared
+- The TOTP secret is rotated (the old authenticator app entry cannot be reused)
+- The user receives an email notification
+- The user must re-enroll in MFA on their next login (if `mfaRequired` is set) or via the Security settings page
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+
+```ts
+await medplum.post(`admin/projects/${projectId}/members/${membershipId}/mfa/reset`, {});
+```
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum post admin/projects/:projectId/members/:membershipId/mfa/reset '{}'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl -X POST https://api.medplum.com/admin/projects/:projectId/members/:membershipId/mfa/reset \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+  </TabItem>
+</Tabs>
 
 ## Using Medplum's SignInForm Component
 

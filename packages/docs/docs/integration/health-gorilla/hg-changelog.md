@@ -53,5 +53,3 @@ This page tracks updates, improvements, and changes to the HealthGorilla integra
 1. Created Detected Issues for unsolicited reports with unknown patients.
 2. Improved resource sync and subscription logic.
 3. Practitioner sync supports multiple names and new order of operations.
-
-<!-- Add new entries below as changes are made -->

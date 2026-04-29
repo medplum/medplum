@@ -119,6 +119,24 @@
       "id": "",
       "source": "src/twilio/voice-webhook.ts",
       "dist": "dist/twilio/voice-webhook.js"
+    },
+    {
+      "name": "ai-fhir-request-tools",
+      "id": "",
+      "source": "src/spaces-bots/fhir-translator-bot.ts",
+      "dist": "dist/spaces-bots/fhir-translator-bot.js"
+    },
+    {
+      "name": "ai-resource-summary-sse",
+      "id": "",
+      "source": "src/spaces-bots/fhir-summary-bot.ts",
+      "dist": "dist/spaces-bots/fhir-summary-bot.js"
+    },
+    {
+      "name": "ai-component-generator-sse",
+      "id": "",
+      "source": "src/spaces-bots/fhir-visualizer-bot.ts",
+      "dist": "dist/spaces-bots/fhir-visualizer-bot.js"
     }
   ]
 }

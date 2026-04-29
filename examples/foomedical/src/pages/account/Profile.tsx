@@ -3,18 +3,18 @@
 import { Box, Button, InputLabel, LoadingOverlay, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatFamilyName, formatGivenName, formatHumanName, normalizeErrorString } from '@medplum/core';
-import type { Address, HumanName, Patient } from '@medplum/fhirtypes';
+import type { HumanName, Patient } from '@medplum/fhirtypes';
 import { AddressInput, Form, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Profile(): JSX.Element | null {
   const medplum = useMedplum();
-  const [profile, setProfile] = useState<Patient>(medplum.getProfile() as Patient);
+  const [profile, setProfile] = useState(medplum.getProfile() as Patient);
   const [loading, setLoading] = useState(false);
-  const [address, setAddress] = useState<Address>(profile.address?.[0] || {});
+  const [address, setAddress] = useState(profile.address?.[0] || {});
 
   async function handleProfileEdit(formData: Record<string, string>): Promise<void> {
     setLoading(true);
@@ -51,7 +51,7 @@ export function Profile(): JSX.Element | null {
         });
       });
     if (updatedProfile) {
-      setProfile(updatedProfile as Patient);
+      setProfile(updatedProfile);
     }
     setLoading(false);
   }
@@ -62,7 +62,7 @@ export function Profile(): JSX.Element | null {
       <Form onSubmit={handleProfileEdit}>
         <Stack align="center">
           <ResourceAvatar size={200} radius={100} value={profile} />
-          <Title order={2}>{formatHumanName(profile.name?.[0] as HumanName)}</Title>
+          <Title order={2}>{formatHumanName(profile.name?.[0])}</Title>
           <InfoSection title="Personal Information">
             <Box p="xl">
               <Stack>

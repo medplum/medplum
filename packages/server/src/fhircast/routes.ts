@@ -340,8 +340,8 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   const { event } = req.body as FhircastMessagePayload;
   const projectId = ctx.project.id;
 
-  const currentContext = await getCurrentContext<'DiagnosticReport'>(projectId, event['hub.topic']);
-  if (!currentContext) {
+  const currentContext = await getCurrentContext(projectId, event['hub.topic']);
+  if (currentContext?.['context.type'] !== 'DiagnosticReport') {
     sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));
     return;
   }
@@ -378,8 +378,8 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
 }
 
 function processUpdateBundle(updatesBundle: Bundle, currentContext: CurrentContext<'DiagnosticReport'>): void {
+  const contentBundle = currentContext.context.find((ctx) => ctx.key === 'content')?.resource as Bundle;
   for (const entry of updatesBundle?.entry ?? EMPTY) {
-    const contentBundle = currentContext.context.find((ctx) => ctx.key === 'content')?.resource as Bundle;
     // Only PUT and DELETE are supported
     // See: https://build.fhir.org/ig/HL7/fhircast-docs/StructureDefinition-fhircast-content-update-bundle.html
     switch (entry.request?.method) {

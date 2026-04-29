@@ -1,6 +1,6 @@
 # Candid Health
 
-:::danger
+:::danger[]
 
 This page is under construction and should not be used as reference material.
 

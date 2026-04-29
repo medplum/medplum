@@ -55,7 +55,7 @@ flowchart TD
 | `servicedPeriod.start` | Service period start date | No (defaults to current date if not provided) |
 | `item` | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. | No |
 
-:::note
+:::note[]
 In the CoverageEligibilityRequest.item field, STEDI insurance eligibility check only supports **Plan Coverage and General Benefits**. If it is not provided, it will default to Plan Coverage and General Benefits. 
 
 Example:
@@ -83,7 +83,7 @@ item: [
 | `identifier` | System must be `https://www.stedi.com/healthcare/network` | Yes |
 | `name` | Organization name | Yes |
 
-:::info
+:::info[]
 If you are using an Organization from the Medplum Payer Directory, it will have the correct Payer identifier, so you can just use that.
 :::
 
@@ -115,17 +115,178 @@ If you are using an Organization from the Medplum Payer Directory, it will have 
 
 ## Executing the Eligibility Check
 
-The **Insurance Eligibility Bot** will execute the eligibility check by sending the CoverageEligibilityRequest resource to the Stedi API.
+The **Insurance Eligibility Bot** runs the Stedi (X12 270/271) eligibility check and returns a `CoverageEligibilityResponse`. Invoke the `$stedi-check-eligibility` [custom operation](/docs/api/fhir/operations/custom-operations) on `CoverageEligibilityRequest` in either of these ways:
+
+- **Instance level** — on a stored request: `POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility`
+- **Type level** — with a `CoverageEligibilityRequest` in the request body: `POST {base}/fhir/R4/CoverageEligibilityRequest/$stedi-check-eligibility`
+
+**Instance level** (after you have created and stored the `CoverageEligibilityRequest`):
 
 ```ts
-const response = await medplum.executeBot(
-    {
-      system: 'https://www.medplum.com/',
-      value: 'eligibility',
-    },
-    coverageEligibilityRequest
+const response = await medplum.post(
+  medplum.fhirUrl('CoverageEligibilityRequest', coverageEligibilityRequest.id, '$stedi-check-eligibility')
 );
 ```
+
+Or via the FHIR REST API:
+
+```http
+POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
+```
+
+### Stedi sandbox testing
+
+:::note[]
+The Stedi sandbox successfully validates only a few payloads. **We recommend using the transaction Bundle below** when testing against the sandbox.
+:::
+
+<details>
+<summary>Example transaction Bundle (recommended for Stedi sandbox testing)</summary>
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [
+          {
+            "family": "Doe",
+            "given": ["John"]
+          }
+        ],
+        "birthDate": "1994-04-04"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Provider Name",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1999999984"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Aetna",
+        "identifier": [
+          {
+            "system": "https://www.stedi.com/healthcare/network",
+            "value": "68069"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b",
+      "resource": {
+        "resourceType": "Coverage",
+        "status": "active",
+        "subscriberId": "AMBETTER123",
+        "subscriber": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "John Doe"
+        },
+        "beneficiary": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "John Doe"
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+            "display": "Aetna"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e5a6b7c8-9d0e-4f1a-82b3-4d5e6f7a8b9c",
+      "resource": {
+        "resourceType": "CoverageEligibilityRequest",
+        "status": "active",
+        "purpose": ["benefits"],
+        "patient": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "John Doe"
+        },
+        "created": "2026-03-16",
+        "provider": {
+          "reference": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+          "display": "Provider Name"
+        },
+        "insurer": {
+          "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+          "display": "Aetna"
+        },
+        "insurance": [
+          {
+            "coverage": {
+              "reference": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b"
+            },
+            "focal": true
+          }
+        ],
+        "item": [
+          {
+            "category": {
+              "coding": [
+                {
+                  "system": "https://x12.org/codes/service-type-codes",
+                  "code": "30",
+                  "display": "Plan Coverage and General Benefits"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "CoverageEligibilityRequest"
+      }
+    }
+  ]
+}
+```
+
+</details>
 
 ## Receiving the Eligibility Response
 

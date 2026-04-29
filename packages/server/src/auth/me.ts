@@ -89,6 +89,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
       resourceType: 'Project',
       id: project.id,
       name: project.name,
+      features: project.features,
       description: project.description,
       strictMode: project.strictMode,
       superAdmin: project.superAdmin,

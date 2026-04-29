@@ -3,7 +3,7 @@
 import { Group, TextInput } from '@mantine/core';
 import type { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
@@ -12,9 +12,6 @@ export type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 
 export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element {
   const [contactDetail, setContactDetail] = useState(props.defaultValue);
-
-  const ref = useRef<ContactDetail>(contactDetail);
-  ref.current = contactDetail;
 
   const { getExtendedProps } = useContext(ElementsContext);
   const [nameProps, telecomProps] = useMemo(
@@ -30,7 +27,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   }
 
   function setName(name: string): void {
-    const newValue: ContactDetail = { ...ref.current, name };
+    const newValue: ContactDetail = { ...contactDetail, name };
     if (!name) {
       delete newValue.name;
     }
@@ -38,7 +35,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   }
 
   function setTelecom(telecom: ContactPoint | undefined): void {
-    const newValue: ContactDetail = { ...ref.current, telecom: telecom && [telecom] };
+    const newValue: ContactDetail = { ...contactDetail, telecom: telecom && [telecom] };
     if (!telecom) {
       delete newValue.telecom;
     }

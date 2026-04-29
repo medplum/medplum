@@ -28,7 +28,7 @@ export interface TimingInputProps extends ComplexTypeInputProps<Timing> {
 }
 
 export function TimingInput(props: TimingInputProps): JSX.Element {
-  const [value, setValue] = useState<Timing | undefined>(props.defaultValue);
+  const [value, setValue] = useState(props.defaultValue);
   const [open, setOpen] = useState(!props.disabled && (props.defaultModalOpen ?? false));
 
   return (
@@ -74,7 +74,7 @@ const defaultValue: Timing = {
 };
 
 function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
-  const [value, setValue] = useState<Timing>(props.defaultValue || defaultValue);
+  const [value, setValue] = useState(props.defaultValue || defaultValue);
   const [timeOfDayItems, setTimeOfDayItems] = useState<TimeOfDayItem[]>(() =>
     (props.defaultValue?.repeat?.timeOfDay ?? []).map((v, i) => ({ id: i, value: v }))
   );

@@ -243,7 +243,6 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
           });
         }
       } catch (error) {
-        console.error('Error searching pharmacies:', error);
         showNotification({
           color: 'red',
           title: 'Search Error',
@@ -285,7 +284,6 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
         });
       }
     } catch (error) {
-      console.error('Error adding pharmacy:', error);
       showNotification({
         color: 'red',
         title: 'Error',

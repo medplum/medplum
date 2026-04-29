@@ -133,7 +133,7 @@ async function getConnectionPromise(ws: WebSocket, agentId: string, accessToken:
     // Put the promise in a map so that any call to mockAgentResponse for this agent will get the same promise
     connectionPromiseMap.set(agentId, connectionPromise);
   }
-  return connectionPromiseMap.get(agentId) as Promise<void>;
+  return connectionPromiseMap.get(agentId);
 }
 
 function parseWebSocketMessageEvent<T extends AgentMessage = AgentMessage>(event: MessageEvent): T {
@@ -153,7 +153,7 @@ export function expectBundleToContainOutcome(
       parameter: expect.arrayContaining<ParametersParameter>([
         expect.objectContaining<ParametersParameter>({
           name: 'agent',
-          resource: expect.objectContaining<Agent>(agent),
+          resource: expect.objectContaining(agent),
         }),
         expect.objectContaining<ParametersParameter>({
           name: 'result',

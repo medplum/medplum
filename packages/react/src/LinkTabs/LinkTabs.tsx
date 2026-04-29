@@ -26,7 +26,7 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
   const tabs = normalizeTabDefinitions(tabDefinitions);
   const navigate = useMedplumNavigate();
 
-  const [currentTab, setCurrentTab] = useState<string>(() => {
+  const [currentTab, setCurrentTab] = useState(() => {
     const tab = locationUtils.getPathname().split('/').pop();
     return tab && tabs.some((t) => t.value === tab) ? tab : tabs[0].value;
   });

@@ -6,4 +6,5 @@ export * from './useDoseSpotIFrame';
 export * from './useDoseSpotNotifications';
 export * from './useDoseSpotPatientPharmacy';
 export * from './useDoseSpotPharmacySearch';
+export * from './useDoseSpotSelfEnrollment';
 export * from './utils';

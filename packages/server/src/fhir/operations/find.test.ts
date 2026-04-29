@@ -2,57 +2,107 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bundle, Extension, Location, Practitioner, Project, Schedule, Slot, Timing } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  CodeableConcept,
+  Extension,
+  HealthcareService,
+  Location,
+  Practitioner,
+  Project,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import { createTestProject } from '../../test.setup';
+import { ServiceTypeReferenceURI, toCodeableReferenceLike } from '../../util/servicetype';
+import type { SchedulingParametersExtensionExtension } from './utils/scheduling-parameters';
 
 const app = express();
 const request = supertest(app);
 
-// indicator that availability should be created without specific service-type matching
-const wildcard = '__WILDCARD__';
-
 type AvailabilityOptions = {
+  service: WithId<HealthcareService>;
   bufferBefore?: number;
   bufferAfter?: number;
   alignmentInterval?: number;
   alignmentOffset?: number;
   duration?: number;
-  availability: Timing['repeat'];
+  availability: SchedulingParametersExtensionExtension;
   timezone?: string;
 };
 
-const fourDayWorkWeek: Timing['repeat'] = {
-  dayOfWeek: ['mon', 'tue', 'wed', 'thu'],
-  timeOfDay: ['09:30:00', '13:15:00'],
-  duration: 3,
-  durationUnit: 'h',
-};
+const fourDayWorkWeek = {
+  url: 'availability',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'mon' },
+        { url: 'daysOfWeek', valueCode: 'tue' },
+        { url: 'daysOfWeek', valueCode: 'wed' },
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'availableStartTime', valueTime: '09:30:00' },
+        { url: 'availableEndTime', valueTime: '12:30:00' },
+      ],
+    },
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'mon' },
+        { url: 'daysOfWeek', valueCode: 'tue' },
+        { url: 'daysOfWeek', valueCode: 'wed' },
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'availableStartTime', valueTime: '13:15:00' },
+        { url: 'availableEndTime', valueTime: '16:15:00' },
+      ],
+    },
+  ],
+} satisfies SchedulingParametersExtensionExtension;
 
-const twoDaySchedule: Timing['repeat'] = {
-  dayOfWeek: ['thu', 'fri'],
-  timeOfDay: ['12:00:00'],
-  duration: 8,
-  durationUnit: 'h',
-};
+const twoDaySchedule = {
+  url: 'availability',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'thu' },
+        { url: 'daysOfWeek', valueCode: 'fri' },
+        { url: 'availableStartTime', valueTime: '12:00:00' },
+        { url: 'availableEndTime', valueTime: '20:00:00' },
+      ],
+    },
+  ],
+} satisfies SchedulingParametersExtensionExtension;
 
-const fridayOnly: Timing['repeat'] = {
-  dayOfWeek: ['fri'],
-  timeOfDay: ['10:30:00'],
-  duration: 8,
-  durationUnit: 'h',
-};
+const fridayOnly = {
+  url: 'availability',
+  extension: [
+    {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'fri' },
+        { url: 'availableStartTime', valueTime: '10:30:00' },
+        { url: 'availableEndTime', valueTime: '18:30:00' },
+      ],
+    },
+  ],
+} satisfies SchedulingParametersExtensionExtension;
 
 describe('Schedule/:id/$find', () => {
   let location: Location;
   let practitioner: Practitioner;
+  let officeVisit: WithId<HealthcareService>;
+  let genericVisit: WithId<HealthcareService>;
   let project: WithId<Project>;
   let accessToken: string;
   let systemRepo: SystemRepository;
+
+  const servicesMap: Record<string, HealthcareService> = {};
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -72,28 +122,61 @@ describe('Schedule/:id/$find', () => {
       meta: { project: project.id },
       extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
     });
+    genericVisit = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      type: [{ coding: [{ system: 'http://example.com', code: 'generic-visit' }] }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'duration',
+              valueDuration: { value: 20, unit: 'min' },
+            },
+          ],
+        },
+      ],
+      name: 'Visit',
+    });
+    officeVisit = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      type: [{ coding: [{ code: 'office-visit' }] }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'duration',
+              valueDuration: { value: 20, unit: 'min' },
+            },
+          ],
+        },
+      ],
+      name: 'Office Visit',
+    });
+
+    servicesMap[genericVisit.id] = genericVisit;
+    servicesMap[officeVisit.id] = officeVisit;
   });
 
   afterAll(async () => {
     await shutdownApp();
   });
 
-  async function makeSchedule(
-    availability: Record<string, AvailabilityOptions>,
-    opts?: { actor?: Schedule['actor'] }
-  ): Promise<Schedule> {
-    const extension = Object.entries(availability).map(([serviceType, options]) => {
-      const { availability, timezone, ...durations } = options;
+  function makeSchedulingExtension(availability: AvailabilityOptions[]): Extension[] {
+    return availability.map((options) => {
+      const { availability, timezone, service, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-        extension: [
-          {
-            url: 'availability',
-            valueTiming: { repeat: availability },
-          },
-        ] as Extension[],
+        extension: [] as Extension[],
       } satisfies Extension;
+
+      if (availability) {
+        extension.extension.push(availability);
+      }
 
       if (timezone) {
         extension.extension.push({
@@ -102,14 +185,10 @@ describe('Schedule/:id/$find', () => {
         });
       }
 
-      if (serviceType !== wildcard) {
-        extension.extension.push({
-          url: 'serviceType',
-          valueCodeableConcept: {
-            coding: [{ code: serviceType, system: 'http://example.com' }],
-          },
-        });
-      }
+      extension.extension.push({
+        url: 'service',
+        valueReference: createReference(service),
+      });
 
       Object.entries(durations).forEach(([key, value]) =>
         extension.extension.push({ url: key, valueDuration: { value, unit: 'min' } })
@@ -117,12 +196,19 @@ describe('Schedule/:id/$find', () => {
 
       return extension;
     });
+  }
 
+  async function makeSchedule(
+    availability: AvailabilityOptions[],
+    opts?: { actor?: Schedule['actor'] }
+  ): Promise<Schedule> {
+    const serviceType = availability.flatMap((entry) => toCodeableReferenceLike(entry.service));
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: opts?.actor ?? [createReference(practitioner)],
-      extension,
+      extension: makeSchedulingExtension(availability),
+      serviceType,
     });
   }
 
@@ -131,6 +217,7 @@ describe('Schedule/:id/$find', () => {
     end: Date;
     status: 'busy' | 'free' | 'busy-unavailable';
     schedule: Schedule;
+    serviceType?: CodeableConcept[];
   }): Promise<Slot> {
     return systemRepo.createResource<Slot>({
       resourceType: 'Slot',
@@ -139,19 +226,19 @@ describe('Schedule/:id/$find', () => {
       end: params.end.toISOString(),
       status: params.status,
       schedule: createReference(params.schedule),
+      serviceType: params.serviceType,
     });
   }
 
   test('searching an interval not overlapping availability returns an empty bundle', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00'),
         end: new Date('2025-12-01T09:00:00.000-05:00'),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -163,15 +250,14 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('finds slots that overlap with the availability in the range', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00'),
         end: new Date('2025-12-01T14:00:00.000-05:00'),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -211,9 +297,7 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('discovers and removes busy slots from the search results', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }]);
     await makeSlot({
       start: new Date('2025-12-01T11:10:00.000-05:00'),
       end: new Date('2025-12-01T11:40:00.000-05:00'),
@@ -228,6 +312,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -259,14 +344,24 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('discovers and adds "free" slots into the search results', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }]);
+
+    // Free slots with no service type can be used for any service type
     await makeSlot({
       start: new Date('2025-12-01T09:00:00.000-05:00'),
       end: new Date('2025-12-01T10:00:00.000-05:00'),
       status: 'free',
       schedule,
+    });
+
+    // Free slots with a service type that matches the service type from the scheduling
+    // parameters used can be chosen
+    await makeSlot({
+      start: new Date('2025-12-01T13:00:00.000-05:00'),
+      end: new Date('2025-12-01T14:00:00.000-05:00'),
+      status: 'free',
+      schedule,
+      serviceType: genericVisit.type,
     });
 
     const response = await request
@@ -276,6 +371,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -290,6 +386,16 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T09:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
           },
         },
         {
@@ -299,6 +405,16 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T10:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
           },
         },
         {
@@ -308,6 +424,16 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T11:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
           },
         },
         {
@@ -317,6 +443,26 @@ describe('Schedule/:id/$find', () => {
             end: new Date('2025-12-01T12:20:00.000-05:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
+            serviceType: [
+              {
+                coding: [
+                  {
+                    code: 'generic-visit',
+                    system: 'http://example.com',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2025-12-01T13:00:00.000-05:00').toISOString(),
+            end: new Date('2025-12-01T13:20:00.000-05:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+            serviceType: [{ coding: [{ system: 'http://example.com', code: 'generic-visit' }] }],
           },
         },
       ],
@@ -324,14 +470,15 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('resolving availability with bufferBefore and bufferAfter', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: {
+    const schedule = await makeSchedule([
+      {
+        service: genericVisit,
         availability: fourDayWorkWeek,
         bufferBefore: 15,
         bufferAfter: 5,
         duration: 20,
       },
-    });
+    ]);
 
     // Mark busy directly after the 12:00 slot, blocking it
     await makeSlot({
@@ -364,6 +511,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -387,9 +535,7 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('search input in another timezone finds appropriate overlap', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -397,6 +543,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T11:00:00.000-05:00').toISOString(),
         end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -427,9 +574,7 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('uses default search page size of 20 results', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 60 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 60 }]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -437,6 +582,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -444,15 +590,16 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('can override search page size with `_count`', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: {
+    const schedule = await makeSchedule([
+      {
+        service: genericVisit,
         // Alignment slot options to every-two-minutes means that there are
         // lots of results so we can test the maximum page size of 1000
         alignmentInterval: 2,
         availability: fourDayWorkWeek,
         duration: 60,
       },
-    });
+    ]);
     const smallResponse = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -461,6 +608,7 @@ describe('Schedule/:id/$find', () => {
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
         _count: 10,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(smallResponse.body).not.toHaveProperty('issue');
     expect(smallResponse.status).toBe(200);
@@ -474,6 +622,7 @@ describe('Schedule/:id/$find', () => {
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
         _count: 1000,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(largeResponse.body).not.toHaveProperty('issue');
     expect(largeResponse.status).toBe(200);
@@ -481,9 +630,7 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('errors if _count is too low', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 60 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 60 }]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -492,6 +639,7 @@ describe('Schedule/:id/$find', () => {
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
         _count: 0,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.status).toBe(400);
     expect(response.body.issue).toEqual([
@@ -506,9 +654,7 @@ describe('Schedule/:id/$find', () => {
   });
 
   test('errors if _count is too high', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 60 },
-    });
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 60 }]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -517,6 +663,7 @@ describe('Schedule/:id/$find', () => {
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
         end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
         _count: 1001,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.status).toBe(400);
     expect(response.body.issue).toEqual([
@@ -532,12 +679,9 @@ describe('Schedule/:id/$find', () => {
 
   test("gets timezone data from the schedule's actor", async () => {
     // `location` has timezone set to America/Phoenix, which is always at offset -07:00
-    const schedule = await makeSchedule(
-      {
-        [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-      },
-      { actor: [createReference(location)] }
-    );
+    const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }], {
+      actor: [createReference(location)],
+    });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -545,6 +689,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T00:00:00.000-07:00').toISOString(),
         end: new Date('2025-12-01T12:00:00.000-07:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -578,9 +723,7 @@ describe('Schedule/:id/$find', () => {
     // `location` has timezone set to America/Phoenix, which is always at offset -07:00
     // scheduling params have timezone set to Pacific/Honolulu, which is always at offset -10:00
     const schedule = await makeSchedule(
-      {
-        [wildcard]: { availability: fourDayWorkWeek, duration: 20, timezone: 'Pacific/Honolulu' },
-      },
+      [{ service: genericVisit, availability: fourDayWorkWeek, duration: 20, timezone: 'Pacific/Honolulu' }],
       { actor: [createReference(location)] }
     );
     const response = await request
@@ -590,6 +733,7 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-01T00:00:00.000-10:00').toISOString(),
         end: new Date('2025-12-01T12:00:00.000-10:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
@@ -619,11 +763,8 @@ describe('Schedule/:id/$find', () => {
     });
   });
 
-  test('with a service-type parameter', async () => {
-    const schedule = await makeSchedule({
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
-      'new-patient': { availability: twoDaySchedule, duration: 30 },
-    });
+  test('without a service-type parameter', async () => {
+    const schedule = await makeSchedule([]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -631,44 +772,185 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-04T10:00:00.000-05:00'),
         end: new Date('2025-12-04T14:00:00.000-05:00'),
-        'service-type': 'http://example.com|new-patient,http://example.com|other',
       });
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject<Bundle>({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [
+    expect(response.body).toHaveProperty('issue');
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
         {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-04T12:00:00.000-05:00').toISOString(),
-            end: new Date('2025-12-04T12:30:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'new-patient', system: 'http://example.com' }] }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-04T13:00:00.000-05:00').toISOString(),
-            end: new Date('2025-12-04T13:30:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'new-patient', system: 'http://example.com' }] }],
+          code: 'invalid',
+          severity: 'error',
+          details: {
+            text: "Expected at least 1 value(s) for required input parameter 'service-type-reference'",
           },
         },
       ],
     });
   });
 
-  test('when no matching serviceType is found, uses any wildcard availability', async () => {
-    const schedule = await makeSchedule({
-      'new-patient': { availability: fridayOnly, duration: 45, bufferBefore: 15 },
-      'office-visit': { availability: twoDaySchedule, duration: 30, alignmentOffset: 15, alignmentInterval: 30 },
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20, alignmentOffset: 30 },
+  describe('Loading schedulingParameters from HealthcareServices', () => {
+    test('works when scheduling parameters only exist on a HealthcareService', async () => {
+      const bloodDonation: CodeableConcept = {
+        coding: [{ system: 'http://example.com', code: 'blood-donation' }],
+      };
+
+      const service = await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        name: 'Blood Donation',
+        meta: { project: project.id },
+        active: true,
+        type: [bloodDonation],
+        availableTime: [
+          {
+            daysOfWeek: ['thu', 'fri'],
+            availableStartTime: '12:00:00',
+            availableEndTime: '20:00:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }],
+          },
+        ],
+      });
+
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.id },
+        actor: [createReference(practitioner)],
+        serviceType: toCodeableReferenceLike(service),
+      });
+
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-04T10:00:00.000-05:00'),
+          end: new Date('2025-12-04T14:00:00.000-05:00'),
+          'service-type-reference': `HealthcareService/${service.id}`,
+        });
+      expect(response.body).not.toHaveProperty('issue');
+      expect(response.status).toBe(200);
+
+      expect(response.body).toMatchObject<Bundle>({
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T12:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T12:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [bloodDonation],
+            },
+          },
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T13:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T13:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [bloodDonation],
+            },
+          },
+        ],
+      });
     });
+
+    test('schedule-specific parameters override those on the HealthcareService', async () => {
+      const concept = { coding: [{ system: 'http://example.com', code: 'yoga' }] };
+      const service = await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        meta: { project: project.id },
+        type: [concept],
+        availableTime: [
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu'],
+            availableStartTime: '09:30:00',
+            availableEndTime: '12:30:00',
+          },
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu'],
+            availableStartTime: '13:15:00',
+            availableEndTime: '16:15:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }],
+          },
+        ],
+      });
+
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.id },
+        actor: [createReference(practitioner)],
+        serviceType: toCodeableReferenceLike(service),
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              twoDaySchedule,
+              { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+              { url: 'service', valueReference: createReference(service) },
+            ],
+          },
+        ],
+      });
+
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-04T10:00:00.000-05:00'),
+          end: new Date('2025-12-04T14:00:00.000-05:00'),
+          'service-type-reference': `HealthcareService/${service.id}`,
+        });
+      expect(response.body).not.toHaveProperty('issue');
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject<Bundle>({
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T12:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T12:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [concept],
+            },
+          },
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T13:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T13:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [concept],
+            },
+          },
+        ],
+      });
+    });
+  });
+
+  test('when the healthcare service is not found', async () => {
+    const schedule = await makeSchedule([
+      { service: genericVisit, availability: fridayOnly, duration: 45, bufferBefore: 15 },
+      { service: officeVisit, availability: twoDaySchedule, duration: 30, alignmentOffset: 15, alignmentInterval: 30 },
+    ]);
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -676,53 +958,99 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-04T10:00:00.000-05:00'),
         end: new Date('2025-12-04T14:00:00.000-05:00'),
-        'service-type': 'http://example.com|new-patient-visit',
+        'service-type-reference': 'HealthcareService/12345',
       });
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject<Bundle>({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [
-        // wildcard slots are 20 minutes long, start on the half-hour, and have no `serviceType` attribute
+    expect(response.body).toHaveProperty('issue');
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
         {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-04T10:30:00.000-05:00').toISOString(),
-            end: new Date('2025-12-04T10:50:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-04T11:30:00.000-05:00').toISOString(),
-            end: new Date('2025-12-04T11:50:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-          },
-        },
-        // No entry at 12:30; there is a lunch gap in the scheduled availability
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-04T13:30:00.000-05:00').toISOString(),
-            end: new Date('2025-12-04T13:50:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
+          code: 'invalid',
+          severity: 'error',
+          details: {
+            text: 'HealthcareService not found',
           },
         },
       ],
     });
   });
 
-  test('returns appropriate slots for each serviceType passed', async () => {
-    const schedule = await makeSchedule({
-      'new-patient': { availability: fridayOnly, duration: 45, bufferBefore: 15 },
-      'office-visit': { availability: twoDaySchedule, duration: 30, alignmentOffset: 15, alignmentInterval: 30 },
-      [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
+  test(`when the HealthcareService.type  does not match Schedule.serviceType`, async () => {
+    const schedule = await makeSchedule([
+      { service: genericVisit, availability: fridayOnly, duration: 45, bufferBefore: 15 },
+    ]);
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-04T10:00:00.000-05:00'),
+        end: new Date('2025-12-04T14:00:00.000-05:00'),
+        'service-type-reference': `HealthcareService/${officeVisit.id}`,
+      });
+    expect(response.body).toHaveProperty('issue');
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          code: 'invalid',
+          severity: 'error',
+          details: {
+            text: 'Schedule is not scheduleable for requested service type',
+          },
+        },
+      ],
     });
+  });
+
+  test('when serviceType has no codes', async () => {
+    // create a HealthcareService with no `type` attribute
+    const emptyService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      name: 'Empty Service',
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'duration',
+              valueDuration: { value: 20, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    // Link a schedule to it
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [
+        {
+          extension: [
+            {
+              url: ServiceTypeReferenceURI,
+              valueReference: createReference(emptyService),
+            },
+          ],
+        },
+      ],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            twoDaySchedule,
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            { url: 'service', valueReference: createReference(emptyService) },
+          ],
+        },
+      ],
+    });
+
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -730,80 +1058,11 @@ describe('Schedule/:id/$find', () => {
       .query({
         start: new Date('2025-12-05T10:00:00.000-05:00').toISOString(),
         end: new Date('2025-12-05T14:00:00.000-05:00').toISOString(),
-        'service-type': 'http://example.com|new-patient,http://example.com|office-visit',
+        'service-type-reference': `HealthcareService/${emptyService.id}`,
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject<Bundle>({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [
-        // new-patient slots are 45 minutes long and start on the hour
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-05T11:00:00.000-05:00').toISOString(),
-            end: new Date('2025-12-05T11:45:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'new-patient', system: 'http://example.com' }] }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-05T12:00:00.000-05:00').toISOString(),
-            end: new Date('2025-12-05T12:45:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'new-patient', system: 'http://example.com' }] }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-05T13:00:00.000-05:00').toISOString(),
-            end: new Date('2025-12-05T13:45:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'new-patient', system: 'http://example.com' }] }],
-          },
-        },
-
-        // office-visit slots are 30 minutes long and start at X:15 or X:45
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-05T12:15:00.000-05:00').toISOString(),
-            end: new Date('2025-12-05T12:45:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'office-visit', system: 'http://example.com' }] }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-05T12:45:00.000-05:00').toISOString(),
-            end: new Date('2025-12-05T13:15:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'office-visit', system: 'http://example.com' }] }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            start: new Date('2025-12-05T13:15:00.000-05:00').toISOString(),
-            end: new Date('2025-12-05T13:45:00.000-05:00').toISOString(),
-            status: 'free',
-            schedule: createReference(schedule),
-            serviceType: [{ coding: [{ code: 'office-visit', system: 'http://example.com' }] }],
-          },
-        },
-
-        // no wildcard slots returned because we had exact matches
-      ],
-    });
+    expect(response.body).toHaveProperty('entry');
+    expect(response.body.entry).toHaveLength(2);
   });
 });

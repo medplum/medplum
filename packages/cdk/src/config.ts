@@ -110,7 +110,7 @@ export class InfraConfigNormalizer {
       obj[key] = await this.fetchExternalSecret(currentVal);
     }
     // --- case 3: an array of:
-    else if (Array.isArray(currentVal) && currentVal.length) {
+    else if (Array.isArray(currentVal)) {
       obj[key] = await this.normalizeInfraConfigArray(currentVal);
     }
     // --- case 4: other object (recurse)

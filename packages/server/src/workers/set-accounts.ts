@@ -5,15 +5,15 @@ import type { AsyncJob, Reference, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
-import { runInAsyncContext } from '../context';
+import { runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
-import type { WorkerInitializer } from './utils';
-import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The set-accounts worker asynchronously updates all account references
@@ -33,7 +33,7 @@ export interface SetAccountsJobData {
 const queueName = 'SetAccountsQueue';
 const jobName = 'SetAccountsJobData';
 
-export const initSetAccountsWorker: WorkerInitializer = (config) => {
+export const initSetAccountsWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -43,17 +43,21 @@ export const initSetAccountsWorker: WorkerInitializer = (config) => {
     defaultJobOptions: { attempts: 1 },
   });
 
-  const worker = new Worker<SetAccountsJobData>(
-    queueName,
-    (job) => {
-      const { authState, requestId, traceId } = job.data;
-      return runInAsyncContext(authState, requestId, traceId, () => execSetAccountsJob(job));
-    },
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
+  let worker: Worker<SetAccountsJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'set-accounts');
+    worker = new Worker<SetAccountsJobData>(
+      queueName,
+      (job) => {
+        const { authState, requestId, traceId } = job.data;
+        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
+      },
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
+    );
+  }
 
   return { queue, worker, name: queueName };
 };

@@ -6,19 +6,18 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  EMPTY,
+  isNotFound,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, CodeableConcept, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, HealthcareService, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { flatMapMax } from '../../util/array';
+import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
-import type { SchedulingParameters } from './utils/scheduling-parameters';
-import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
+import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const findOperation = {
   resourceType: 'OperationDefinition',
@@ -28,12 +27,12 @@ const findOperation = {
   code: 'find',
   resource: ['Schedule'],
   system: false,
-  type: true,
+  type: false,
   instance: true,
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type', type: 'string', min: 0, max: '*' },
+    { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
     { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
@@ -42,38 +41,9 @@ const findOperation = {
 type FindParameters = {
   start: string;
   end: string;
-  'service-type'?: string;
+  'service-type-reference': string;
   _count?: number;
 };
-
-// Given scheduling parameter descriptions, and an array of input service types, return
-// [SchedulingParameters, serviceType] pairs.
-//
-// - Each schedulingParameters description is returned at most once
-// - If no specific matches are found, falls back to "wildcard" matches
-//   (scheduling parameters having no associated codes match any input codes)
-function filterByServiceTypes(
-  schedulingParameters: SchedulingParameters[],
-  serviceTypes: string[]
-): [SchedulingParameters, CodeableConcept | undefined][] {
-  if (serviceTypes.length) {
-    const results: [SchedulingParameters, CodeableConcept][] = [];
-    for (const params of schedulingParameters) {
-      const serviceType = params.serviceType.find((codeableConcept) =>
-        codeableConcept.coding?.some((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`))
-      );
-      if (serviceType) {
-        results.push([params, serviceType]);
-      }
-    }
-    if (results.length) {
-      return results;
-    }
-  }
-
-  // We didn't find any parameters matching serviceType entries, use any wildcard results instead
-  return schedulingParameters.filter((params) => params.serviceType.length === 0).map((params) => [params, undefined]);
-}
 
 /**
  * Handles HTTP requests for the Schedule $find operation.
@@ -88,9 +58,6 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<FindParameters>(findOperation, req);
   const { start, end, _count } = params;
-
-  // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypes = params['service-type']?.split(',') ?? [];
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
@@ -112,7 +79,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedule, slots] = await Promise.all([
+  const [schedule, existingSlots, healthcareService] = await Promise.all([
     ctx.repo.readResource<Schedule>('Schedule', req.params.id),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
@@ -142,11 +109,21 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
+    ctx.repo.readReference<HealthcareService>({ reference: params['service-type-reference'] }).catch((err) => {
+      if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+        throw new OperationOutcomeError(badRequest('HealthcareService not found'));
+      }
+      throw err;
+    }),
   ]);
+
+  if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
+    throw new OperationOutcomeError(badRequest('Schedule is not scheduleable for requested service type'));
+  }
 
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.
-  if (slots.length === DEFAULT_MAX_SEARCH_COUNT) {
+  if (existingSlots.length === DEFAULT_MAX_SEARCH_COUNT) {
     throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
   }
 
@@ -161,36 +138,39 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     );
   }
 
-  const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
+  const schedulingParameters = chooseSchedulingParameters(schedule, healthcareService);
+  if (!schedulingParameters) {
+    throw new OperationOutcomeError(badRequest('SchedulingParameters not present on Schedule or HealthcareService'));
+  }
 
-  const resultSlots: Slot[] = flatMapMax(
-    filterByServiceTypes(allSchedulingParameters, serviceTypes),
-    ([schedulingParameters, serviceType], _idx, maxCount) => {
-      // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
-      const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
-      let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
-      availability = applyExistingSlots({
-        availability,
-        slots,
-        range,
-        serviceType: serviceType ? [serviceType] : EMPTY,
-      });
-      return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
+  const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
+
+  let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
+  availability = applyExistingSlots({
+    availability,
+    slots: existingSlots,
+    range,
+    serviceType: healthcareService.type,
+  });
+
+  const serviceType = toCodeableReferenceLike(healthcareService);
+
+  const resultSlots = findSlotTimes(schedulingParameters, availability, { maxCount: pageSize }).map(
+    ({ start, end }) =>
+      ({
         resourceType: 'Slot',
         start: start.toISOString(),
         end: end.toISOString(),
         schedule: createReference(schedule),
         status: 'free',
-        ...(serviceType ? { serviceType: [serviceType] } : {}),
-      }));
-    },
-    pageSize
+        serviceType,
+      }) satisfies Slot
   );
 
   const bundle: Bundle<Slot> = {
     resourceType: 'Bundle',
     type: 'searchset',
-    entry: resultSlots.slice(0, pageSize).map((slot) => ({ resource: slot })),
+    entry: resultSlots.map((slot) => ({ resource: slot })),
   };
 
   return [allOk, buildOutputParameters(findOperation, bundle)];

@@ -100,7 +100,7 @@ Use [Bots](/docs/bots/bot-for-questionnaire-response) to automatically process `
 
 A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) should link to a specific [`Questionnaire`](/docs/api/fhir/resources/questionnaire). It does not necessarily need to provide answers to each question, but all required questions must be answered.
 
-:::caution Structuring Answers
+:::caution[Structuring Answers]
 The answer items in a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) should follow the same structure in terms of grouping and nesting and adhere to all data types for answers defined in the linked [`Questionnaire`](/docs/api/fhir/resources/questionnaire).
 :::
 

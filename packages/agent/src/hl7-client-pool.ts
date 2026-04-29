@@ -7,6 +7,7 @@ import type { ChannelStats } from './channel-stats-tracker';
 import { calculateRttStats } from './channel-stats-tracker';
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
+import { Hl7MessageTracker } from './hl7-message-tracker';
 import type { HeartbeatEmitter } from './types';
 
 export interface Hl7ClientPoolOptions {
@@ -17,6 +18,7 @@ export interface Hl7ClientPoolOptions {
   maxClients: number;
   log: ILogger;
   heartbeatEmitter: HeartbeatEmitter;
+  messageTracker?: Hl7MessageTracker;
 }
 
 /**
@@ -37,6 +39,7 @@ export class Hl7ClientPool {
   private closingPromise: Promise<void> | undefined;
   private nextClientIdx: number = 0;
   private readonly heartbeatEmitter: HeartbeatEmitter;
+  readonly messageTracker: Hl7MessageTracker;
   private trackingStats = false;
   private gcListener: (() => void) | undefined;
 
@@ -48,6 +51,7 @@ export class Hl7ClientPool {
     this.maxClients = options.maxClients;
     this.log = options.log;
     this.heartbeatEmitter = options.heartbeatEmitter;
+    this.messageTracker = options.messageTracker ?? new Hl7MessageTracker();
 
     this.startAutoClientGc();
   }
@@ -190,6 +194,9 @@ export class Hl7ClientPool {
 
     // We wait for the closing promise to resolve
     await this.closingPromise;
+
+    // Reject any messages still tracked — connections are gone and won't resolve them
+    this.messageTracker.drainAll();
   }
 
   /**
@@ -239,6 +246,7 @@ export class Hl7ClientPool {
       encoding: this.encoding,
       keepAlive: this.keepAlive,
       log: this.log,
+      messageTracker: this.messageTracker,
     });
 
     // If GC is running, we should add the current timestamp as last used for this client
@@ -267,6 +275,12 @@ export class Hl7ClientPool {
           `Persistent connection to remote 'mllp://${this.host}:${this.port}' encountered error: '${normalizeErrorString(event.error)}' - Closing connection...`
         );
       }
+    });
+
+    client.addEventListener('warning', (event) => {
+      this.log.warn(
+        `Connection to remote 'mllp://${this.host}:${this.port}' warning: '${normalizeErrorString(event.error)}'`
+      );
     });
 
     return client;

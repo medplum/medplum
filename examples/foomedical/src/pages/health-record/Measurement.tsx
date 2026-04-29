@@ -17,7 +17,7 @@ export function Measurement(): JSX.Element | null {
   const { code, title, description, chartDatasets } = measurementsMeta[measurementId as string];
   const medplum = useMedplum();
   const patient = medplum.getProfile() as Patient;
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [chartData, setChartData] = useState<ChartData<'line', number[]>>();
 
   const observations = medplum

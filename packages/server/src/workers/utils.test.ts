@@ -5,9 +5,10 @@ import type { Job, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
 import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { withTestContext } from '../test.setup';
-import { addVerboseQueueLogging, DefaultQueueRegistry, isJobSuccessful } from './utils';
+import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
 
 describe('worker utils', () => {
   beforeAll(async () => {
@@ -217,6 +218,24 @@ describe('worker utils', () => {
       expect(queueRegistry.get(queueName)).toBe(queue);
       expect(queueRegistry.isClosing(queueName)).toBe(false);
     });
+
+    test('add with worker undefined (queue-only mode)', async () => {
+      const queueRegistry = new DefaultQueueRegistry();
+
+      // Should not throw when worker is undefined
+      queueRegistry.add(queueName, queue, undefined);
+      expect(queueRegistry.get(queueName)).toBe(queue);
+      expect(queueRegistry.isClosing(queueName)).toBe(false);
+
+      // closeAll should close only the queue (no worker to close)
+      const promises = queueRegistry.closeAll();
+      expect(promises.length).toBe(1);
+      await Promise.all(promises);
+      expect(queue.close).toHaveBeenCalledTimes(1);
+
+      // queue should be removed from registry after closeAll
+      expect(queueRegistry.get(queueName)).toBeUndefined();
+    });
   });
 
   describe('addVerboseQueueLogging', () => {
@@ -319,6 +338,59 @@ describe('worker utils', () => {
 
       // Restore the spy
       loggerInfoSpy.mockRestore();
+    });
+  });
+
+  describe('getWorkerBullmqConfig', () => {
+    test('returns global bullmq config when no per-worker overrides', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'subscription');
+      expect(result).toStrictEqual(config.bullmq);
+    });
+
+    test('returns global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+        workers: { enabled: ['subscription'] },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'subscription');
+      expect(result).toStrictEqual(config.bullmq);
+    });
+
+    test('merges per-worker bullmq overrides on top of global config', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+        workers: {
+          bullmq: {
+            subscription: { concurrency: 50 },
+          },
+        },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'subscription');
+      expect(result).toStrictEqual({
+        concurrency: 50,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
+    test('per-worker overrides do not affect other workers', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+        workers: {
+          bullmq: {
+            subscription: { concurrency: 50 },
+          },
+        },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'download');
+      expect(result).toStrictEqual(config.bullmq);
     });
   });
 });

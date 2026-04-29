@@ -5,6 +5,12 @@ import type { Readable } from 'node:stream';
 import type { BinarySource, BinaryStorage } from './types';
 import { checkFileMetadata } from './utils';
 
+/** Options for getPresignedUrl() */
+export type PresignedUrlOptions = {
+  /** If true, generate a URL for upload instead of download. */
+  upload?: boolean;
+};
+
 export abstract class BaseBinaryStorage implements BinaryStorage {
   abstract writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void>;
 
@@ -12,7 +18,7 @@ export abstract class BaseBinaryStorage implements BinaryStorage {
 
   abstract copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 
-  abstract getPresignedUrl(binary: Binary): Promise<string>;
+  abstract getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string>;
 
   readBinary(binary: Binary): Promise<Readable> {
     return this.readFile(this.getKey(binary));

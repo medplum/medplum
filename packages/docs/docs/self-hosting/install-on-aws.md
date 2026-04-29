@@ -6,7 +6,7 @@ sidebar_position: 2
 
 This guide will perform a complete production-ready installation in your AWS environment using [AWS CDK](https://aws.amazon.com/cdk/).
 
-:::caution
+:::caution[]
 
 This is a complex multi step process, and requires high proficiency with AWS, Node.js, and command line tools.
 
@@ -16,7 +16,7 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 :::
 
-:::tip
+:::tip[]
 
 If you are new to AWS CDK, we strongly recommend reading [Getting started with the AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
 
@@ -188,7 +188,7 @@ Make note of the CDK config file name.
 
 See [Config Settings](/docs/self-hosting/aws-cdk-settings) for more details on each of the individual configuration settings.
 
-:::caution
+:::caution[]
 After the init tool completes, check all parameters in **AWS Systems Manager > Parameter Store**.
 
 Ensure that all signing keys and configuration values are present (there should be approximately 13 parameters). If any are missing, you may run into deployment issues.
@@ -200,7 +200,7 @@ If you are using Route 53 as your DNS service, we recommend you select `dns` met
 
 Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#setting-up-dns-validation) from AWS to finish the validation process.
 
-:::tip
+:::tip[]
 After creating records in Route 53, you may have to wait for your certificate in AWS Certificate Manager to change from `Pending validation` to `Issued` state before deploying. If the state doesn't change to `Issued` in 30 minutes, check on the status of your domain. AWS will reject your deploy without a fully-qualified domain for the certificate.
 :::
 
@@ -257,7 +257,7 @@ Note that you may receive warnings about changing security details. This is norm
 
 When deploying to any region other than `us-east-1`, there is one additional step. AWS CloudFront needs access to S3 buckets. At present, this is not possible entirely within CDK.
 
-:::info
+:::info[]
 
 This is due to cross-region circular dependencies:
 
@@ -289,7 +289,7 @@ npx medplum aws update-bucket-policies [env name] --dryrun
 
 ### Deploy the app
 
-:::tip
+:::tip[]
 
 Historically this step required building from source. You can now deploy the app from prebuilt images.
 
@@ -428,7 +428,7 @@ Next, make sure that your AWS account has permission to assume the role via `sts
 }
 ```
 
-:::tip
+:::tip[]
 
 "IAM Full Access" is not enough! The IAM Full Access policy does not include `sts:AssumeRole`.
 

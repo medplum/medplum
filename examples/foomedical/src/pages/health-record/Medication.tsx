@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Box, Button, Modal, Stack, Text, Title } from '@mantine/core';
 import { formatDateTime, formatHumanName, formatTiming } from '@medplum/core';
-import type { HumanName, MedicationRequest } from '@medplum/fhirtypes';
+import type { MedicationRequest } from '@medplum/fhirtypes';
 import { ResourceTable, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import type { JSX } from 'react';
@@ -11,7 +11,7 @@ import { InfoSection } from '../../components/InfoSection';
 
 export function Medication(): JSX.Element {
   const medplum = useMedplum();
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const { medicationId = '' } = useParams();
   const med: MedicationRequest = medplum.readResource('MedicationRequest', medicationId).read();
 
@@ -50,7 +50,7 @@ function RenewalModal({
       title={<Title order={3}>Request a Renewal</Title>}
     >
       <Stack gap="md">
-        <KeyValue name="Patient" value={formatHumanName(patient?.name?.[0] as HumanName)} />
+        <KeyValue name="Patient" value={formatHumanName(patient?.name?.[0])} />
         <KeyValue name="Last Prescribed" value={formatDateTime(prev.authoredOn)} />
         <KeyValue name="Status" value={prev.status} />
         <KeyValue name="Medication" value={prev.medicationCodeableConcept?.text} />

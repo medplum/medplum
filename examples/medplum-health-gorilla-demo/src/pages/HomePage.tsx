@@ -19,6 +19,7 @@ import {
   ResourceInput,
   useMedplum,
   ValueSetAutocomplete,
+  valueSetElementToCoding,
 } from '@medplum/react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { useState } from 'react';
@@ -135,7 +136,9 @@ export function HomePage(): JSX.Element {
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {
-                  const codeableConcepts = items.map((item) => ({ coding: [item] })) as DiagnosisCodeableConcept[];
+                  const codeableConcepts = items.map((item) => ({
+                    coding: [valueSetElementToCoding(item)],
+                  })) as DiagnosisCodeableConcept[];
                   setDiagnoses(codeableConcepts);
                 }}
               />

@@ -1,4 +1,4 @@
-# Referral Creation & Capture {#referral-creation}
+# Referral Creation & Capture {/* #referral-creation */}
 
 ## Capturing Referral Requests
 

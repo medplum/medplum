@@ -18,7 +18,15 @@ export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Log
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-export const projectAdminResourceTypes = ['UserSecurityRequest', 'Project', 'ProjectMembership', 'User'];
+export const projectAdminResourceTypes = [
+  'Package',
+  'PackageRelease',
+  'PackageInstallation',
+  'Project',
+  'ProjectMembership',
+  'User',
+  'UserSecurityRequest',
+];
 
 /**
  * Interactions with a resource that can be controlled via an access policy.

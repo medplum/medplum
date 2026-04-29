@@ -38,6 +38,9 @@ describe('SpacesPage', () => {
 
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile);
+    medplum.getProject = vi
+      .fn()
+      .mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
     medplum.searchResources = vi.fn().mockResolvedValue([]);
     medplum.readReference = vi.fn().mockResolvedValue(mockTopic);
   });
@@ -59,6 +62,37 @@ describe('SpacesPage', () => {
       </MemoryRouter>
     );
   };
+
+  test('shows disabled message when bots and ai features are not enabled', async () => {
+    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: [] });
+
+    await act(async () => {
+      setup(['/Spaces']);
+    });
+
+    expect(screen.getByText('Spaces is not available')).toBeInTheDocument();
+    expect(screen.getByText(/requires both/i)).toBeInTheDocument();
+  });
+
+  test('shows disabled message when only bots feature is enabled', async () => {
+    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots'] });
+
+    await act(async () => {
+      setup(['/Spaces']);
+    });
+
+    expect(screen.getByText('Spaces is not available')).toBeInTheDocument();
+  });
+
+  test('shows disabled message when only ai feature is enabled', async () => {
+    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['ai'] });
+
+    await act(async () => {
+      setup(['/Spaces']);
+    });
+
+    expect(screen.getByText('Spaces is not available')).toBeInTheDocument();
+  });
 
   test('renders SpaceInbox with no topicId when at root', async () => {
     await act(async () => {

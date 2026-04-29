@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Period, Resource } from '@medplum/fhirtypes';
+import { LRUCache } from '../cache';
+import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toPeriod, toTypedValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
@@ -34,6 +36,8 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
   return true;
 }
 
+const searchExprCache = new LRUCache<FhirPathAtom>(1000);
+
 /**
  * Determines if the resource matches the search filter.
  * @param resource - The resource that was created or updated.
@@ -46,7 +50,12 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
   if (!searchParam) {
     return false;
   }
-  const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
+  const typedValues = evalFhirPathTyped(
+    searchParam.expression as string,
+    [toTypedValue(resource)],
+    undefined,
+    searchExprCache
+  );
   if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
     return matchesMissingOrPresent(typedValues, filter);
   }

@@ -7,6 +7,7 @@ import { resolve, sep } from 'node:path';
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream';
 import { getLogger } from '../logger';
+import type { PresignedUrlOptions } from './base';
 import { BaseBinaryStorage } from './base';
 import { generatePresignedUrl } from './presign';
 import type { BinarySource } from './types';
@@ -79,8 +80,8 @@ export class FileSystemStorage extends BaseBinaryStorage {
     await copyFile(sourcePath, destinationPath);
   }
 
-  async getPresignedUrl(binary: Binary): Promise<string> {
-    return generatePresignedUrl(binary);
+  async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
+    return generatePresignedUrl(binary, opts);
   }
 
   private async ensureDirForFileExists(filePath: string): Promise<void> {

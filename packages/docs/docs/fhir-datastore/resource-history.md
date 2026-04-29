@@ -62,7 +62,7 @@ The Medplum SDK also provides the `readHistory` helper function to access the `/
 
 These requests return a `Bundle` resource with the different versions stored as an array of resources in the `entry` field.
 
-:::note Resource Creation Time
+:::note[Resource Creation Time]
 There is currently no support for directly accessing the time and date that a resource was initially created. To do this use the `/_history` endpoint to retrieve all versions and view the `lastUpdated` field of the original version. Note that the GraphQL endpoint does not currently have a spec for the history API.
 :::
 

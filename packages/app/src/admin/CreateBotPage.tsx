@@ -13,8 +13,8 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function CreateBotPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
-  const [name, setName] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [bot, setBot] = useState<Bot | undefined>(undefined);

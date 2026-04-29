@@ -116,7 +116,7 @@ You can search for all unassigned tasks using the [`:missing`](/docs/search/basi
   </TabItem>
 </Tabs>
 
-:::tip Assigning tasks to roles
+:::tip[Assigning tasks to roles]
 
 A common pattern in telehealth practices is the assignment of tasks to all practitioners with a given role (e.g., clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 
@@ -194,7 +194,7 @@ The most common use for this field is to record comments from the task assignee 
 
 `Tasks` can be organized into a hierarchical structure to create subtasks. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field that can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
 
-:::caution
+:::caution[]
 
 While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
 

@@ -386,9 +386,9 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Switch to All Tasks (this should navigate to reset pagination)
-    const allTasksLink = screen.getByRole('link', { name: 'All Tasks' });
-    expect(allTasksLink).toHaveAttribute('href', '/Task?_sort=-_lastUpdated');
+    // Switch to All Tasks tab (this should navigate to reset pagination)
+    const allTasksTab = screen.getByRole('tab', { name: 'All Tasks' });
+    expect(allTasksTab).toBeInTheDocument();
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
@@ -427,7 +427,7 @@ describe('TaskBoard', () => {
         { resource: { ...inProgressTask1, id: 'task-in-progress-1' } },
         { resource: { ...inProgressTask2, id: 'task-in-progress-2' } },
       ],
-    } as Bundle<Task & { id: string }>);
+    });
 
     vi.spyOn(medplum, 'readResource').mockResolvedValue({ ...inProgressTask1, id: 'task-in-progress-1' });
 
@@ -481,7 +481,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 1,
       entry: [{ resource: { ...inProgressTask2, id: 'task-in-progress-2' } }],
-    } as Bundle<Task & { id: string }>);
+    });
 
     const completeButton = screen.getByLabelText('Mark as Completed');
     await user.click(completeButton);
@@ -514,7 +514,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup();
 
@@ -625,7 +625,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup('', { onChange });
 
@@ -641,10 +641,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -668,7 +668,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup('priority=urgent', { onChange });
 
@@ -685,10 +685,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -708,7 +708,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as Bundle<WithId<Task>>);
+    });
 
     setup('status=in-progress', { onChange });
 
@@ -725,10 +725,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();

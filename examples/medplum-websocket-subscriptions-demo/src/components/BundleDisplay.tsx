@@ -27,7 +27,7 @@ export function BundleDisplay(props: BundleDisplayProps): JSX.Element | undefine
           ...communication,
           received: new Date().toISOString(), // Mark as received
           status: 'completed', // Mark as read
-          // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+          // See: https://www.medplum.com/docs/communications/messaging-data-model#communication-lifecycle
           // for more info about recommended `Communication` lifecycle
         })
         .catch(console.error);

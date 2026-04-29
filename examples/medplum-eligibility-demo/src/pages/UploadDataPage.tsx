@@ -23,7 +23,7 @@ export function UploadDataPage(): JSX.Element {
   const { dataType } = useParams();
   const navigate = useNavigate();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
-  const [pageDisabled, setPageDisabled] = useState<boolean>(false);
+  const [pageDisabled, setPageDisabled] = useState(false);
 
   const handleDataUpload = useCallback((): void => {
     setPageDisabled(true);

@@ -113,7 +113,7 @@ A corresponding `QuestionnaireResponse` shows how the data will be parsed:
 }
 ```
 
-:::info Value Extraction
+:::info[Value Extraction]
 
 The template extraction extensions are expected to contain [FHIRPath][fhirpath] expressions that return the value(s) to
 be inserted into the template. If no values are returned, the field is removed from the template; more than one result

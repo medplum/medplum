@@ -55,7 +55,11 @@ describe('Admin Invite', () => {
 
   test('New user to project', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await withTestContext(() =>
+    const {
+      project,
+      accessToken,
+      user: aliceUser,
+    } = await withTestContext(() =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -78,6 +82,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
+    expect(res2.body.invitedBy).toMatchObject(createReference(aliceUser));
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
@@ -750,6 +755,7 @@ describe('Admin Invite', () => {
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
     expect(res4.body.id).toStrictEqual(res2.body.id);
+    expect(res4.body.invitedBy).toBeDefined();
 
     // Invite Bob again with different profiile - should fail
     const res5 = await request(app)

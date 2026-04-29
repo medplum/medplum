@@ -12,7 +12,7 @@
         "extension": [
           {
             "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
-            "valueCanonical": "https://www.medplum.com/chargeItemDefinition/simpleinitialvisit"
+            "valueCanonical": "https://www.medplum.com/chargeItemDefinition/samplevisit"
           }
         ],
         "code": {
@@ -46,6 +46,11 @@
               "system": "http://snomed.info/sct",
               "code": "35650009",
               "display": "Thyroid panel (procedure)"
+            },
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "code": "80050",
+              "display": "General health panel"
             }
           ]
         },
@@ -58,10 +63,40 @@
       }
     },
     {
+      "fullUrl": "urn:uuid:a9b8c7d6-e5f4-3210-abcd-fedcba987654",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/activitydefinition/office-visit-established-patient",
+        "name": "Office Visit Established Patient",
+        "status": "active",
+        "kind": "ServiceRequest",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/chargeItemDefinition/samplevisit"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "code": "99213",
+              "display": "Office or other outpatient visit for the evaluation and management of an established patient, low to moderate complexity"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ActivityDefinition"
+      }
+    },
+    {
       "fullUrl": "urn:uuid:b2c3d4e5-f6a7-8901-bcde-23456789abcd",
       "resource": {
         "resourceType": "ChargeItemDefinition",
-        "url": "https://www.medplum.com/chargeItemDefinition/simpleinitialvisit",
+        "url": "https://www.medplum.com/chargeItemDefinition/samplevisit",
         "title": "Simple Initial Visit",
         "status": "active",
         "propertyGroup": [
@@ -73,14 +108,41 @@
                   "coding": [
                     {
                       "system": "http://www.ama-assn.org/go/cpt",
-                      "code": "99203",
-                      "display": "New patient office visit"
+                      "code": "99213",
+                      "display": "Office visit, established patient, low complexity"
                     }
                   ]
                 },
                 "factor": 1,
                 "amount": {
                   "value": 180,
+                  "currency": "USD"
+                }
+              }
+            ]
+          },
+          {
+            "applicability": [
+              {
+                "description": "Comprehensive Laboratory Screening (80050)",
+                "expression": "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='80050').exists()"
+              }
+            ],
+            "priceComponent": [
+              {
+                "type": "surcharge",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://www.ama-assn.org/go/cpt",
+                      "code": "80050",
+                      "display": "General health panel"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 500,
                   "currency": "USD"
                 }
               }
@@ -133,18 +195,8 @@
           },
           {
             "id": "charge-consultation",
-            "title": "Initial Patient E&M (99203)",
-            "code": [
-              {
-                "coding": [
-                  {
-                    "system": "http://www.ama-assn.org/go/cpt",
-                    "code": "99203",
-                    "display": "Office or other outpatient visit for the evaluation and management of a new patient"
-                  }
-                ]
-              }
-            ]
+            "title": "Office Visit Established Patient",
+            "definitionCanonical": "https://www.medplum.com/activitydefinition/office-visit-established-patient"
           }
         ]
       },

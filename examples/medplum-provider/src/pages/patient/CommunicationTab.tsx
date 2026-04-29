@@ -65,7 +65,7 @@ export function CommunicationTab(): JSX.Element {
   };
 
   return (
-    <div style={{ height: `calc(100vh - 98px)` }}>
+    <div style={{ height: '100%' }}>
       <ThreadInbox
         threadId={messageId}
         query={formatSearchQuery(parsedSearch).substring(1)}

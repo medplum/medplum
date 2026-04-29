@@ -116,7 +116,7 @@ export interface DoseSpotPatientPharmacyReturn {
  */
 export function useDoseSpotPatientPharmacy(): DoseSpotPatientPharmacyReturn {
   const [selectedPharmacy, privateSetSelectedPharmacy] = useState<Organization | undefined>(undefined);
-  const [setAsPrimaryState, privateSetAsPrimary] = useState<boolean>(false);
+  const [setAsPrimaryState, privateSetAsPrimary] = useState(false);
   const medplum = useMedplum();
 
   const state: DoseSpotPatientPharmacyState = {

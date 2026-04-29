@@ -13,7 +13,7 @@ import { Logo } from './Logo';
 
 const navigation = [
   { name: 'Health Record', href: '/health-record' },
-  { name: 'Messages', href: '/messages' },
+  { name: 'Messages', href: '/Communication' },
   { name: 'Care Plan', href: '/care-plan' },
   { name: 'Get Care', href: '/get-care' },
 ];

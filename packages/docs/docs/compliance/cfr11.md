@@ -1,6 +1,6 @@
 # CFR Part 11 Certification
 
-:::caution Note
+:::caution[Note]
 
 This section is under active development.
 

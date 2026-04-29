@@ -45,7 +45,7 @@ export interface SexualOrientationProps {
 export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
   const { patient, encounter } = props;
   const medplum = useMedplum();
-  const [sexualOrientation, setSexualOrientation] = useState<Observation | undefined>(props.sexualOrientation);
+  const [sexualOrientation, setSexualOrientation] = useState(props.sexualOrientation);
   const [opened, { open, close }] = useDisclosure(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 

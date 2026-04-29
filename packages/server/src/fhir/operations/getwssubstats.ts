@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk } from '@medplum/core';
+import { allOk, isResourceType } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project } from '@medplum/fhirtypes';
+import type { OperationDefinition, Project, ResourceType } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
+import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -29,15 +30,9 @@ const operation: OperationDefinition = {
   ],
 };
 
-export interface WsSubCriteriaStats {
-  criteria: string;
-  count: number;
-}
-
 export interface WsSubResourceTypeStats {
   resourceType: string;
   count: number;
-  criteria: WsSubCriteriaStats[];
 }
 
 export interface WsSubProjectStats {
@@ -51,20 +46,27 @@ export interface WsSubStats {
   projects: WsSubProjectStats[];
 }
 
-const ACTIVE_SUB_KEY_PREFIX = 'medplum:subscriptions:r4:project:';
-const ACTIVE_PART = ':active:';
+// Derive key structure from getActiveSubsKey to avoid duplicating key format
+const testProjectId = 'abc123';
+const testResourceType = 'Patient';
+const testSubsKey = getActiveSubsKey(testProjectId, testResourceType);
+const [ACTIVE_SUB_KEY_PREFIX, restOfSubsKey] = testSubsKey.split(testProjectId);
+const ACTIVE_KEY_SEPARATOR = restOfSubsKey.split(testResourceType)[0];
 
-export function parseActiveSubKey(key: string): { projectId: string; resourceType: string } | undefined {
+export function parseActiveSubKey(key: string): { projectId: string; resourceType: ResourceType } | undefined {
   if (!key.startsWith(ACTIVE_SUB_KEY_PREFIX)) {
     return undefined;
   }
-  const withoutPrefix = key.slice(ACTIVE_SUB_KEY_PREFIX.length);
-  const activeIdx = withoutPrefix.lastIndexOf(ACTIVE_PART);
-  if (activeIdx === -1) {
+  const rest = key.slice(ACTIVE_SUB_KEY_PREFIX.length);
+  const sepIdx = rest.indexOf(ACTIVE_KEY_SEPARATOR);
+  if (sepIdx === -1) {
     return undefined;
   }
-  const projectId = withoutPrefix.slice(0, activeIdx);
-  const resourceType = withoutPrefix.slice(activeIdx + ACTIVE_PART.length);
+  const projectId = rest.slice(0, sepIdx);
+  const resourceType = rest.slice(sepIdx + ACTIVE_KEY_SEPARATOR.length);
+  if (!isResourceType(resourceType)) {
+    return undefined;
+  }
   return { projectId, resourceType };
 }
 
@@ -74,7 +76,7 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
   const redis = getPubSubRedis();
 
   // Scan for all active subscription hash keys
-  const pattern = 'medplum:subscriptions:r4:project:*:active:*';
+  const pattern = getActiveSubsKey('*', '*');
   const keys: string[] = [];
   let cursor = '0';
   do {
@@ -83,8 +85,8 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
     keys.push(...foundKeys);
   } while (cursor !== '0');
 
-  // Build stats: projectId -> resourceType -> criteria -> count
-  const projectMap = new Map<string, Map<string, Map<string, number>>>();
+  // Build stats: projectId -> resourceType -> count
+  const projectMap = new Map<string, Map<string, number>>();
 
   for (const key of keys) {
     const parsed = parseActiveSubKey(key);
@@ -99,16 +101,8 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
       projectMap.set(projectId, resourceTypeMap);
     }
 
-    let criteriaMap = resourceTypeMap.get(resourceType);
-    if (!criteriaMap) {
-      criteriaMap = new Map();
-      resourceTypeMap.set(resourceType, criteriaMap);
-    }
-
-    const entries = await redis.hvals(key);
-    for (const criteria of Object.values(entries)) {
-      criteriaMap.set(criteria, (criteriaMap.get(criteria) ?? 0) + 1);
-    }
+    const count = await redis.hlen(key);
+    resourceTypeMap.set(resourceType, (resourceTypeMap.get(resourceType) ?? 0) + count);
   }
 
   // Convert to output structure, sorted by count descending at each level
@@ -117,24 +111,9 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
     const resourceTypes: WsSubResourceTypeStats[] = [];
     let totalCount = 0;
 
-    for (const [resourceType, criteriaMap] of resourceTypeMap) {
-      const criteriaStats: WsSubCriteriaStats[] = [];
-      let resourceTypeCount = 0;
-
-      for (const [criteria, count] of criteriaMap) {
-        criteriaStats.push({ criteria, count });
-        resourceTypeCount += count;
-      }
-
-      criteriaStats.sort((a, b) => b.count - a.count);
-
-      resourceTypes.push({
-        resourceType,
-        count: resourceTypeCount,
-        criteria: criteriaStats,
-      });
-
-      totalCount += resourceTypeCount;
+    for (const [resourceType, count] of resourceTypeMap) {
+      resourceTypes.push({ resourceType, count });
+      totalCount += count;
     }
 
     resourceTypes.sort((a, b) => b.count - a.count);

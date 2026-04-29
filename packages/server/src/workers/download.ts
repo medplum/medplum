@@ -23,8 +23,8 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
-import type { WorkerInitializer } from './utils';
-import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -48,7 +48,7 @@ export interface DownloadJobData {
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
 
-export const initDownloadWorker: WorkerInitializer = (config) => {
+export const initDownloadWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -64,16 +64,20 @@ export const initDownloadWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<DownloadJobData>(
-    queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
-  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  let worker: Worker<DownloadJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'download');
+    worker = new Worker<DownloadJobData>(
+      queueName,
+      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
+    );
+    worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
+    worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  }
 
   return { queue, worker, name: queueName };
 };

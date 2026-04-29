@@ -26,6 +26,13 @@ export function DoseSpotTab(): JSX.Element {
 
   const iframeUrl = useDoseSpotIFrame({
     patientId,
+    selfEnroll: true,
+    onSelfEnrollSuccess: (result) =>
+      showNotification({
+        color: 'blue',
+        title: 'DoseSpot Enrollment',
+        message: result.nextSteps[0] ?? 'Enrollment in progress...',
+      }),
     onPatientSyncSuccess: () => {
       syncedRef.current = true;
       checkAndNotify();

@@ -38,6 +38,9 @@ describe('FHIRcast Utils', () => {
         get(_key: string): this {
           return this;
         }
+        expire(_key: string, _seconds: number): this {
+          return this;
+        }
         async exec(): Promise<null> {
           return null;
         }
@@ -77,6 +80,9 @@ describe('FHIRcast Utils', () => {
           return this;
         }
         get(_key: string): this {
+          return this;
+        }
+        expire(_key: string, _seconds: number): this {
           return this;
         }
         async exec(): Promise<(null | [Error, string | null])[]> {

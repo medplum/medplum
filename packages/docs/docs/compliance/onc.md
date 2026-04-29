@@ -20,7 +20,7 @@ Medplum is ONC Certified. Below are certification resources and documentation.
 
 This Health IT Module is compliant with the ONC Certification Criteria for Health IT and has been certified by an ONC-ACB in accordance with the applicable certification criteria adopted by the Secretary of Health and Human Services. This certification does not represent an endorsement by the U.S. Department of Health and Human Services.
 
-## Standards Version Advancement Process Notices {#svap}
+## Standards Version Advancement Process Notices {/* #svap */}
 
 Notice of Intent to Implement HL7 FHIR US Core Implementation Guide STU 5.0.1 for 170.315(g)(10)
 

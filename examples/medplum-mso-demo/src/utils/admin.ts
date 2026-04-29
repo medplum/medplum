@@ -29,8 +29,8 @@ export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
  */
 export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
   const medplum = useMedplum();
-  const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAdminStatus = async (): Promise<void> => {

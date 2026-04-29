@@ -10,7 +10,7 @@ Medplum is an open source implementation of [SMART App Launch 2.0.0](https://www
 - Navigate to the "Edit" tab
 - Add the `JWKS URI`, `Redirect URI` and `Launch URI` to the Client Application and save
 
-:::tip SMART Launch Configuration
+:::tip[SMART Launch Configuration]
 The `launchUri` is the most critical field on the `ClientApplication` resource in the context of a SMART launch. This URI serves as the entry point where Medplum will redirect the user to initiate the authentication handshake.
 :::
 
@@ -113,6 +113,7 @@ In addition to supporting Smart app launch from the [Medplum app](/docs/app), im
 ## Related Reading
 
 - [SMART Scopes](/docs/access/smart-scopes) access control guide
+- [CDS Hooks](/docs/integration/cds-hooks) for standards-based clinical decision support invocation
 - [SMART-on-FHIR sample application](https://github.com/medplum/medplum/tree/main/examples/medplum-smart-on-fhir-demo) on GitHub
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
 - [ONC Compliance Documentation](/docs/compliance/onc)
