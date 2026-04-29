@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger } from '@medplum/core';
+import type { AgentChannelStats, ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import { DEFAULT_ENCODING } from '@medplum/hl7';
-import type { ChannelStats } from './channel-stats-tracker';
 import { calculateRttStats } from './channel-stats-tracker';
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
@@ -312,7 +311,7 @@ export class Hl7ClientPool {
     return this.trackingStats;
   }
 
-  getPoolStats(): ChannelStats | undefined {
+  getPoolStats(): AgentChannelStats | undefined {
     if (!this.trackingStats) {
       return undefined;
     }

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  AgentChannelStats,
   AgentError,
   AgentLogsRequest,
   AgentMessage,
@@ -43,7 +44,6 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
-import type { ChannelStats } from './channel-stats-tracker';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
   DEFAULT_PING_TIMEOUT,
@@ -434,14 +434,14 @@ export class App {
 
     const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
     const channelStats = Object.fromEntries(
-      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as AgentChannelStats])
     );
 
     const pools = Array.from(this.hl7Clients.values());
     const clientStats = Object.fromEntries(
       pools.map((pool) => [
         `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
-        pool.getPoolStats() as ChannelStats,
+        pool.getPoolStats() as AgentChannelStats,
       ])
     );
 
