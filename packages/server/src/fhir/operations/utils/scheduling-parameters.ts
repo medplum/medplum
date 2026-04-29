@@ -146,6 +146,9 @@ function exactlyZero(arr: unknown[], attribute: string, resourceType: string): v
 }
 
 function allMatch<T>(values: T[]): boolean {
+  if (values.length <= 1) {
+    return true;
+  }
   const first = values[0];
   return values.every((value) => value === first);
 }

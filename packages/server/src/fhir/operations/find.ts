@@ -9,6 +9,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   isDefined,
   isNotFound,
+  isReference,
   isResource,
   OperationOutcomeError,
   Operator,
@@ -203,8 +204,7 @@ async function handler(params: {
     const schedulingParameters = parameterGroup.get(schedule);
     invariant(schedulingParameters);
     const actor = actors[idx];
-    const actorTimeZone = getTimeZone(actor);
-    const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
+    const activeTimeZone = schedulingParameters.timezone ?? getTimeZone(actor);
     if (!activeTimeZone) {
       throw new OperationOutcomeError(
         badRequest('No timezone specified', `Parameters.schedule[${idx}].actor[0].extension(${TimezoneExtensionURI})`)
@@ -232,7 +232,7 @@ async function handler(params: {
     // `start` after our previous buffer-trimming step.
     availability = availability.filter((interval) => {
       const durationMs = interval.end.getTime() - interval.start.getTime();
-      return durationMs > schedulingParameters.duration * 1000;
+      return durationMs >= schedulingParameters.duration * 60 * 1000;
     });
 
     return availability;
@@ -369,6 +369,10 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
   const { schedule, start, end, _count } = params;
 
   const scheduleRefs = arrayify(schedule).map((reference) => ({ reference }));
+  const invalidIndex = scheduleRefs.findIndex((ref) => !isReference(ref, 'Schedule'));
+  if (invalidIndex !== -1) {
+    throw new OperationOutcomeError(badRequest('Invalid schedule reference', `Parameters.schedule[${invalidIndex}]`));
+  }
 
   const appointments = await handler({
     start,
