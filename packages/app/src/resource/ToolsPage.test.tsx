@@ -633,6 +633,26 @@ describe('ToolsPage', () => {
 
   test('Get stats -- Success', async () => {
     medplum = new MockClient();
+    const channelRtt = {
+      count: 10,
+      pendingCount: 1,
+      min: 2,
+      max: 50,
+      average: 12,
+      p50: 11,
+      p95: 40,
+      p99: 48,
+    };
+    const clientRtt = {
+      count: 7,
+      pendingCount: 0,
+      min: 3,
+      max: 33,
+      average: 9,
+      p50: 8,
+      p95: 27,
+      p99: 31,
+    };
     medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [
       allOk,
       {
@@ -648,8 +668,14 @@ describe('ToolsPage', () => {
               hl7ClientCount: 0,
               live: true,
               outstandingHeartbeats: 0,
-              channelStats: {},
-              clientStats: {},
+              extraField: 'custom-value',
+              channelStats: {
+                'channel-A': { rtt: channelRtt },
+                'channel-empty': { rtt: undefined },
+              },
+              clientStats: {
+                'client-X': { rtt: clientRtt },
+              },
             }),
           },
         ],
@@ -669,9 +695,73 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /get stats/i }));
     });
 
+    // Summary table
     expect((await screen.findAllByText(/hl7ConnectionsOpen/i))[0]).toBeInTheDocument();
     expect(screen.getByText('ping')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('live')).toBeInTheDocument();
+    expect(screen.getByText('true')).toBeInTheDocument();
+    // Extra (unknown) field is rendered
+    expect(screen.getByText('extraField')).toBeInTheDocument();
+    expect(screen.getByText('custom-value')).toBeInTheDocument();
+
+    // Channel Stats table
+    expect(screen.getByRole('heading', { name: 'Channel Stats' })).toBeInTheDocument();
+    expect(screen.getByText('channel-A')).toBeInTheDocument();
+    // Entries with no rtt are filtered out
+    expect(screen.queryByText('channel-empty')).not.toBeInTheDocument();
+    expect(screen.getByText(channelRtt.count.toString())).toBeInTheDocument();
+    expect(screen.getByText(channelRtt.p95.toString())).toBeInTheDocument();
+    expect(screen.getByText(channelRtt.p99.toString())).toBeInTheDocument();
+
+    // Client Stats table
+    expect(screen.getByRole('heading', { name: 'Client Stats' })).toBeInTheDocument();
+    expect(screen.getByText('client-X')).toBeInTheDocument();
+    expect(screen.getByText(clientRtt.average.toString())).toBeInTheDocument();
+    expect(screen.getByText(clientRtt.p50.toString())).toBeInTheDocument();
+  });
+
+  test('Get stats -- Empty channel and client stats hide tables', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify({
+              hl7ConnectionsOpen: 0,
+              ping: 1,
+              webSocketQueueDepth: 0,
+              hl7QueueDepth: 0,
+              hl7ClientCount: 0,
+              live: true,
+              outstandingHeartbeats: 0,
+              channelStats: {},
+              clientStats: {},
+            }),
+          },
+        ],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Stats empty channels',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /get stats/i }));
+    });
+
+    expect((await screen.findAllByText(/hl7ConnectionsOpen/i))[0]).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Channel Stats' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Client Stats' })).not.toBeInTheDocument();
   });
 
   test('Get stats -- Error', async () => {
