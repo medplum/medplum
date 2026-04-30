@@ -209,7 +209,7 @@ async function computeExpansion(
         // If specific concepts are listed, validate and filter them
         const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
         const validCodings = await validateCodings(codeSystem, filteredCodings, params);
-        
+
         const conceptExpansion: ValueSetExpansionContains[] = [];
         for (const c of validCodings) {
           if (c) {
@@ -229,7 +229,7 @@ async function computeExpansion(
         // No valueSet or specific concepts, fetch via system/filters from DB
         await includeInExpansion(include, includeExpansion, codeSystem, params);
       } else {
-        // valueSet was present, but no specific concepts. 
+        // valueSet was present, but no specific concepts.
         // Filter the existing results from the valueSet to this specific system.
         includeExpansion = includeExpansion.filter((c) => c.system === include.system);
       }
