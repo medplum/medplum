@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Coding } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -14,7 +13,7 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <CodingDisplay
-      value={{ system: 'http://loinc.org', code: '15074-8', display: 'Glucose [Moles/volume] in Blood' } as Coding}
+      value={{ system: 'http://loinc.org', code: '15074-8', display: 'Glucose [Moles/volume] in Blood' }}
     />
   </Document>
 );

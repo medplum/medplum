@@ -144,7 +144,7 @@ describe('App', () => {
     }
 
     // Send a heartbeat request
-    const wsClient = state.mySocket as unknown as Client;
+    const wsClient = state.mySocket;
     wsClient.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:request' })));
 
     // Wait for heartbeat response
@@ -3695,7 +3695,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -3786,7 +3786,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -3898,7 +3898,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -4030,7 +4030,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -4143,7 +4143,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -4288,7 +4288,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -4377,7 +4377,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -4465,7 +4465,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Include defaultReturnAck=application in the Device URL
       wsClient.send(
         Buffer.from(
@@ -4554,7 +4554,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Device URL has defaultReturnAck=application, but message specifies returnAck=first
       wsClient.send(
         Buffer.from(
@@ -4643,7 +4643,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Device URL has an invalid defaultReturnAck value
       wsClient.send(
         Buffer.from(
@@ -4737,7 +4737,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Per-message returnAck has an invalid value
       wsClient.send(
         Buffer.from(
@@ -4832,7 +4832,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Use uppercase APPLICATION in the URL
       wsClient.send(
         Buffer.from(
@@ -4920,7 +4920,7 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Use uppercase FIRST in the URL - should return CA (first ACK received)
       wsClient.send(
         Buffer.from(

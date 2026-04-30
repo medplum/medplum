@@ -352,7 +352,7 @@ async function getSearchEntries<T extends Resource>(
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      } as WithId<T>);
+      });
     }
   }
   let nextResource: T | undefined;

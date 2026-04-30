@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -31,7 +30,7 @@ describe('AssaysPage', () => {
         unit: { text: 'mg/dL' },
         decimalPrecision: 2,
       },
-    } as ObservationDefinition);
+    });
 
     await setup();
     expect(screen.getByText('Assay 1')).toBeInTheDocument();
@@ -43,7 +42,7 @@ describe('AssaysPage', () => {
       id: '2',
       code: { coding: [{ display: 'Assay 2' }] },
       qualifiedInterval: [{ range: { low: { value: 0, unit: 'mg/dL' }, high: { value: 100, unit: 'mg/dL' } } }],
-    } as ObservationDefinition);
+    });
 
     await setup();
     expect(screen.getByText('Assay 2')).toBeInTheDocument();
@@ -77,7 +76,7 @@ describe('AssaysPage', () => {
           range: { low: { value: 0, unit: 'mg/dL' }, high: { value: 100, unit: 'mg/dL' } },
         },
       ],
-    } as ObservationDefinition);
+    });
 
     await setup();
     expect(screen.getByText('Assay 3')).toBeInTheDocument();

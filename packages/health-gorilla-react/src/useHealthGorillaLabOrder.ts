@@ -350,7 +350,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     if (isReferenceOfType('Practitioner', opts.requester)) {
       return opts.requester;
     } else if (isResource(opts.requester)) {
-      return createReference(opts.requester) as Reference<Practitioner> & { reference: string };
+      return createReference(opts.requester);
     } else {
       opts.requester satisfies undefined;
       return undefined;
@@ -404,9 +404,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
   const getActivePatientCoverages = useCallback(async (): Promise<ResourceArray<Coverage>> => {
     if (!patientRef) {
       const emptyResult: Coverage[] = [];
-      return Object.assign(emptyResult, {
-        bundle: { resourceType: 'Bundle', type: 'searchset', entry: [], total: 0 } as Bundle<Coverage>,
-      });
+      const bundle: Bundle<Coverage> = { resourceType: 'Bundle', type: 'searchset', entry: [], total: 0 };
+      return Object.assign(emptyResult, { bundle });
     }
 
     const coverageSearch = new URLSearchParams({

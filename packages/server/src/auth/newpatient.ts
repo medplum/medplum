@@ -73,14 +73,7 @@ async function createPatient(
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
-  const profile = (await createProfile(
-    systemRepo,
-    project,
-    'Patient',
-    firstName,
-    lastName,
-    user.email as string
-  )) as Patient;
+  const profile = (await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email)) as Patient;
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
   const membership = await createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),

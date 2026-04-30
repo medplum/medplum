@@ -84,7 +84,7 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
     });
   } else {
     const binary = await repo.readReference<Binary>({
-      reference: (bot.executableCode as Attachment).url as string,
+      reference: (bot.executableCode as Attachment).url,
     });
     const stream = await getBinaryStorage().readBinary(binary);
     codeToDeploy = await readStreamToString(stream);
