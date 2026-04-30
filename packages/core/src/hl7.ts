@@ -145,7 +145,11 @@ export class Hl7Message {
    * @returns The HL7 message header.
    */
   get header(): Hl7Segment {
-    return this.parseSegment(0) as Hl7Segment;
+    const headerSegment = this.parseSegment(0);
+    if (!headerSegment) {
+      throw new Error("Can't get header before first segment added");
+    }
+    return headerSegment;
   }
 
   /**
