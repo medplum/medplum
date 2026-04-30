@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Sending Orders
 
-:::info Prerequisites
+:::info[Prerequisites]
 For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data model, see [Labs & Imaging](/docs/labs-imaging) and [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging).
 :::
 
@@ -22,15 +22,13 @@ Laboratory ordering involves unique complexities: coordinating between providers
 
 The following concepts form the foundation of laboratory ordering:
 
-
-| Concept                  | Description                                                                                                      | Importance                                                                                                                                                                                                                                  |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Order                    | Request for one or more lab tests, uniquely identified and tracked.                                              | Organizes tests, specimens and results. Maintains chain of custody and enables status tracking.                                                                                                                                             |
-| Test                     | Specific diagnostic procedure with defined requirements for specimen and data collection.                        | Determines specimen needs, required clinical data, and handling protocols. Impacts turnaround times and costs.                                                                                                                              |
-| Specimen                 | Physical sample (blood, urine, etc.) for analysis.                                                               | Samples are only valid for a certain amount of time after collection. Accurately measuring sample collection time is critical for accurate processing Samples can either be collected by the performing lab, or by the requesting provider. |
-| Ask on Order Entry (AOE) | **Required** questions for some labs to gather additional clinical context for test processing.                  | Affects lab processing, result interpretation, and billing. Missing data can cause rejections or delays.                                                                                                                                    |
-| Order Splitting          | Breaking a single order into multiple independent orders, typically when tests require different specimen types. | Allows labs to process specimens independently and maintain separate workflows for different test types. Prevents delays when specimens are collected at different times.                                                                   |
-
+| Concept                  | Description                                                                                                      | Importance                                                                                                                                                                                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Order                    | Request for one or more lab tests, uniquely identified and tracked.                                              | Organizes tests, specimens and results. Maintains chain of custody and enables status tracking.                                                                                                                                                        |
+| Test                     | Specific diagnostic procedure with defined requirements for specimen and data collection.                        | Determines specimen needs, required clinical data, and handling protocols. Impacts turnaround times and costs.                                                                                                                                         |
+| Specimen                 | Physical sample (blood, urine, etc.) for analysis.                                                               | Samples are only valid for a certain amount of time after collection. Accurately measuring sample collection time is critical for accurate processing <br/><br/> Samples can either be collected by the performing lab, or by the requesting provider. |
+| Ask on Order Entry (AOE) | **Required** questions for some labs to gather additional clinical context for test processing.                  | Affects lab processing, result interpretation, and billing. Missing data can cause rejections or delays.                                                                                                                                               |
+| Order Splitting          | Breaking a single order into multiple independent orders, typically when tests require different specimen types. | Allows labs to process specimens independently and maintain separate workflows for different test types. Prevents delays when specimens are collected at different times.                                                                              |
 
 ## Creating an Order Form in React
 
@@ -75,7 +73,7 @@ function OrderPage() {
 }
 ```
 
-1. Initialize with context:
+2. Initialize with context:
 
 ```tsx
 function OrderForm() {
@@ -89,7 +87,7 @@ function OrderForm() {
 }
 ```
 
-1. Access operations:
+3. Access operations:
 
 ```tsx
 const {
@@ -104,7 +102,6 @@ const {
 } = labOrderReturn;
 ```
 
-
 | Command                         | Purpose                                                                                                         |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `searchAvailableTests`          | Uses the `autocomplete` bot to fetch available lab tests from Health Gorilla's API based on search string       |
@@ -118,7 +115,6 @@ const {
 | `setPerformingLab`              | Sets which lab will process the tests                                                                           |
 | `setPerformingLabAccountNumber` | Sets the clients lab account number to be used for selected lab (e.g. Quest account number)                     |
 | `validateOrder`                 | Checks order for required fields and valid data                                                                 |
-
 
 #### Example
 
@@ -265,8 +261,6 @@ graph TD
     class Specimen specimen
 ```
 
-
-
 ### Order Structure
 
 The parent order is represented by a `ServiceRequest` resource with the profile `https://medplum.com/profiles/integrations/health-gorilla/StructureDefinition/MedplumHealthGorillaOrder`. This order contains high-level information like:
@@ -287,45 +281,51 @@ Each individual test within the order is represented by its own `ServiceRequest`
 Several additional FHIR resources provide important order details:
 
 1. **Ask on Entry (AoE) Responses**
-  - Stored as `QuestionnaireResponse` resources
-  - Referenced by each test's `ServiceRequest.supportingInfo`
-  - Contains answers to test-specific questions
+   - Stored as `QuestionnaireResponse` resources
+   - Referenced by each test's `ServiceRequest.supportingInfo`
+   - Contains answers to test-specific questions
+
 2. **Specimens**
-  - The `Specimen` resource tracks specimen details
-  - Particularly important for recording `collectionDate` with in-house collections
-  - Links specimen type and collection method information
+   - The `Specimen` resource tracks specimen details
+   - Particularly important for recording `collectionDate` with in-house collections
+   - Links specimen type and collection method information
+
 3. **Documents**
-  Two types of `DocumentReference` resources are linked through `ServiceRequest.supportingInfo`:
-  - **Requisition Form**: The official order documentation with the lab's requisition number
-  - **Specimen Label**: PDF with specimen labeling information that can be affixed to sample collection tubes (used for in-house specimen collection)
+   Two types of `DocumentReference` resources are linked through `ServiceRequest.supportingInfo`:
+   - **Requisition Form**: The official order documentation with the lab's requisition number
+   - **Specimen Label**: PDF with specimen labeling information that can be affixed to sample collection tubes (used for in-house specimen collection)
 
 ## Order Lifecycle
 
 Orders progress through several states:
 
 1. `draft`
-  - Initial state from the order form
-  - Order has not yet been sent to the Health Gorilla
-  - All updates and changes are allowed in Medplum
+   - Initial state from the order form
+   - Order has not yet been sent to the Health Gorilla
+   - All updates and changes are allowed in Medplum
+
 2. `active`
-  - Order has been transmitted to Health Gorilla and the performing lab
-  - The downstream lab (e.g Quest, Labcorp) consider this order immutable
-  - No modifications allowed in lab's system
-  - Set by the `send-to-health-gorilla` bot
+   - Order has been transmitted to Health Gorilla and the performing lab
+   - The downstream lab (e.g Quest, Labcorp) consider this order immutable
+   - No modifications allowed in lab's system
+   - Set by the `send-to-health-gorilla` bot
+
 3. `completed`
-  - Results have been received
-  - Order processing is finished
-  - Set by the `receive-from-health-gorilla` bot
+   - Results have been received
+   - Order processing is finished
+   - Set by the `receive-from-health-gorilla` bot
+
 4. `on-hold`
-  - An error occurred during processing
-  - Set
-  - Error details can be found
-  - Requires intervention to resolve
-  - Set by the `send-to-health-gorilla` bot
+   - An error occurred during processing
+   - Set
+   - Error details can be found
+   - Requires intervention to resolve
+   - Set by the `send-to-health-gorilla` bot
+
 5. `revoked`
-  - Order has been canceled
-  - Cannot be reactivated
-  - Set by the client application
+   - Order has been canceled
+   - Cannot be reactivated
+   - Set by the client application
 
 ::: caution
 
@@ -346,8 +346,8 @@ Actions:
 3. Transmits order with billing information
 4. Updates order status
 5. Downloads and stores:
-  - Requisition forms
-  - Specimen labels
+   - Requisition forms
+   - Specimen labels
 
 ### split-order Bot
 
