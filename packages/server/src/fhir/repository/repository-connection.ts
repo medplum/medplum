@@ -66,10 +66,7 @@ export class RepositoryConnection implements Disposable {
     this.connMode = options?.client ? options.mode : undefined;
   }
 
-  static fromClient(
-    client: PoolClient,
-    options: { mode: DatabaseMode; ownsClient?: boolean }
-  ): RepositoryConnection {
+  static fromClient(client: PoolClient, options: { mode: DatabaseMode; ownsClient?: boolean }): RepositoryConnection {
     return new RepositoryConnection({
       client,
       ownsClient: options?.ownsClient ?? false,
