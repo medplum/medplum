@@ -38,7 +38,7 @@ describe('CodeSystem subsumes', () => {
           { name: 'codeA', valueCode: 'SIB' },
           { name: 'codeB', valueCode: 'ITWINBRO' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -57,7 +57,7 @@ describe('CodeSystem subsumes', () => {
           { name: 'codeA', valueCode: 'WIFE' },
           { name: 'codeB', valueCode: 'SIGOTHR' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -76,7 +76,7 @@ describe('CodeSystem subsumes', () => {
           { name: 'codeA', valueCode: 'INLAW' },
           { name: 'codeB', valueCode: 'INLAW' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -95,7 +95,7 @@ describe('CodeSystem subsumes', () => {
           { name: 'codeA', valueCode: 'BRO' },
           { name: 'codeB', valueCode: 'VET' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -113,7 +113,7 @@ describe('CodeSystem subsumes', () => {
           { name: 'system', valueUri: system },
           { name: 'codeA', valueCode: 'SIB' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(400);
     expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
   });

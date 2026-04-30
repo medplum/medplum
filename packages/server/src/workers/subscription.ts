@@ -717,11 +717,19 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
-    log.info('Sending rest hook to: ' + url);
+    log.info('Sending rest hook', {
+      url,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
     fetchEndTime = Date.now();
-    log.info('Received rest hook status: ' + response.status);
+    log.info('Received rest hook response', {
+      status: response.status,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
       systemRepo,
@@ -737,7 +745,11 @@ async function sendRestHook(
     }
   } catch (ex) {
     fetchEndTime = Date.now();
-    log.info('Subscription exception: ' + ex);
+    log.info('Subscription exception', {
+      err: ex,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     await createSubscriptionAuditEvent(
       systemRepo,
       resource,
@@ -753,8 +765,8 @@ async function sendRestHook(
   recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
   log.info('Subscription rest hook fetch duration', {
     fetchDurationMs,
-    subscription: subscription.id,
-    project: subscription?.meta?.project,
+    subscriptionId: subscription.id,
+    projectId: subscription?.meta?.project,
   });
 
   if (error) {

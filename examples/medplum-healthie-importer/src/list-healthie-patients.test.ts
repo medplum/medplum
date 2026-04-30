@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BotEvent } from '@medplum/core';
-import type { Bot, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ListHealthiePatientsInput } from './list-healthie-patients';
@@ -28,7 +27,7 @@ function createTestEvent(
     input,
     contentType: 'application/json',
     secrets,
-    bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+    bot: { reference: 'Bot/test-bot' },
   };
 }
 

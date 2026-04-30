@@ -450,7 +450,7 @@ describe('ParticipantFilter', () => {
 
   test('handles no profile (logged out state)', async () => {
     const medplum = new MockClient();
-    medplum.setProfile(undefined as unknown as Practitioner);
+    medplum.setProfile(undefined);
 
     const user = await setup(medplum);
 
@@ -504,7 +504,7 @@ describe('ParticipantFilter', () => {
     jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [{ resource: mockPatient as WithId<Patient> }, { resource: undefined as unknown as WithId<Patient> }, {}],
+      entry: [{ resource: mockPatient as WithId<Patient> }, { resource: undefined }, {}],
     });
     const user = await setup(medplum);
 

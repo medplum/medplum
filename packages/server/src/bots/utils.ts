@@ -227,7 +227,7 @@ export async function getBotAccessToken(runAs: ProjectMembership): Promise<strin
   // Create the access token
   const accessToken = await generateAccessToken({
     login_id: login.id,
-    sub: resolveId(runAs.user?.reference as Reference) as string,
+    sub: resolveId(runAs.user?.reference as Reference),
     username: resolveId(runAs.user?.reference as Reference) as string,
     profile: runAs.profile?.reference as string,
     scope: 'openid',

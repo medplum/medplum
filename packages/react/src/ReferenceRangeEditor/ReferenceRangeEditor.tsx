@@ -76,7 +76,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
         size="sm"
         onClick={(e: MouseEvent) => {
           killEvent(e);
-          addGroup({ id: `group-id-${groupId}`, filters: {} as IntervalGroup['filters'], intervals: [] });
+          addGroup({ id: `group-id-${groupId}`, filters: {}, intervals: [] });
           setGroupId((id) => id + 1);
         }}
       >
@@ -417,7 +417,7 @@ function groupQualifiedIntervals(
     if (!(groupKey in groups)) {
       groups[groupKey] = {
         id: `group-id-${groupId++}`,
-        filters: Object.fromEntries(intervalFilters.map((f) => [f, interval[f]])) as Record<string, any>,
+        filters: Object.fromEntries(intervalFilters.map((f) => [f, interval[f]])),
         intervals: [],
       };
     }

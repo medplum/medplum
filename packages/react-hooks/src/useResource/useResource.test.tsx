@@ -54,14 +54,14 @@ describe('useResource', () => {
     });
 
     test('Renders undefined', async () => {
-      await setup(<TestComponent value={undefined as unknown as Reference} />);
+      await setup(<TestComponent value={undefined} />);
       const el = screen.getByTestId('test-component');
       expect(el).toBeInTheDocument();
       expect(el.innerHTML).toBe('');
     });
 
     test('Handles invalid value', async () => {
-      await setup(<TestComponent value={{} as unknown as Reference} />);
+      await setup(<TestComponent value={{}} />);
       const el = screen.getByTestId('test-component');
       expect(el).toBeInTheDocument();
       expect(el.innerHTML).toBe('');
