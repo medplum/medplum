@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Organization, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { useMedplum, useResource } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
@@ -17,7 +17,7 @@ interface TaskServiceRequestProps {
 }
 
 const SNOMED_SYSTEM = 'http://snomed.info/sct';
-const SNOMED_DIAGNOSTIC_REPORT_CODE = '108252007';
+const SNOMED_LAB_PROCEDURE_CODE = '108252007';
 
 export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element => {
   const { task } = props;
@@ -25,25 +25,33 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
   const serviceRequest = useResource(task.focus as Reference<ServiceRequest>);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [labServiceRequest, setLabServiceRequest] = useState<ServiceRequest | undefined>(undefined);
-  const performingLab: LabOrganization = {
-    resourceType: 'Organization',
-    id: '258a1dbb-ccec-4cb3-b9ff-4dc28f8f28a0',
-    name: 'HGDX LabCorp',
-    identifier: [
-      {
-        system: 'https://www.healthgorilla.com',
-        value: 'f-388554647b89801ea5e8320b',
-      },
-    ],
-  };
+  const [performingLab, setPerformingLab] = useState<LabOrganization | undefined>(undefined);
+  const performerReferences = serviceRequest?.performer;
+
+  useEffect(() => {
+    const fetchPerformingLabFromPerformer = async (): Promise<void> => {
+      const orgRef = performerReferences?.find((ref) => ref.reference?.startsWith('Organization/'));
+      if (!orgRef) {
+        setPerformingLab(undefined);
+        return;
+      }
+      const org = await medplum.readReference(orgRef as Reference<Organization>);
+      setPerformingLab(org);
+    };
+    fetchPerformingLabFromPerformer().catch(showErrorNotification);
+  }, [medplum, performerReferences]);
 
   const tests: TestCoding[] | undefined = serviceRequest?.code?.coding
-    ?.filter((coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)
+    ?.filter((coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_LAB_PROCEDURE_CODE)
     .map((coding) => ({
       system: 'urn:uuid:f:388554647b89801ea5e8320b',
       code: coding.code,
       display: coding.display,
     })) as TestCoding[];
+
+  const isLabServiceRequest = serviceRequest?.category?.some((category) =>
+    category.coding?.some((coding) => coding.system === SNOMED_SYSTEM && coding.code === SNOMED_LAB_PROCEDURE_CODE)
+  );
 
   useEffect(() => {
     const fetchServiceRequest = async (): Promise<void> => {
@@ -69,7 +77,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           <Title>{getDisplayString(task)}</Title>
         </Stack>
 
-        {(labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
+        {isLabServiceRequest && (labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
           <Group>
             <Button onClick={() => setNewOrderModalOpened(true)} variant="outline" leftSection={<IconPlus size={16} />}>
               Request Labs
@@ -77,7 +85,8 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           </Group>
         )}
 
-        {task.for &&
+        {isLabServiceRequest &&
+          task.for &&
           labServiceRequest?.status !== 'draft' &&
           labServiceRequest?.status !== 'on-hold' &&
           labServiceRequest?.id && (
