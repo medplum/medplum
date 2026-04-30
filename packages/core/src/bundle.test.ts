@@ -335,6 +335,46 @@ describe('Bundle tests', () => {
       const result = convertToTransactionBundle(inputBundle);
       expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
     });
+
+    test('rewrites attachment.url Binary references', () => {
+      const binaryId = '11111111-1111-1111-1111-111111111111';
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Binary',
+              id: binaryId,
+              contentType: 'text/html',
+            },
+          },
+          {
+            resource: {
+              resourceType: 'DocumentReference',
+              id: '22222222-2222-2222-2222-222222222222',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'text/html',
+                    url: `Binary/${binaryId}`,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      const docRefEntry = result.entry?.find((e) => e.resource?.resourceType === 'DocumentReference');
+      const binaryEntry = result.entry?.find((e) => e.resource?.resourceType === 'Binary');
+
+      const attachmentUrl = (docRefEntry?.resource as any)?.content?.[0]?.attachment?.url;
+      expect(attachmentUrl).toBe(binaryEntry?.fullUrl);
+      expect(attachmentUrl).toMatch(/^urn:uuid:/);
+    });
   });
 
   describe('convertContainedResourcesToBundle', () => {

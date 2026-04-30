@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isStringArray } from './utils';
 
 export const AckCode = {
   /** AA - Application Accept */
@@ -86,16 +85,59 @@ export class Hl7Context {
  */
 export class Hl7Message {
   readonly context: Hl7Context;
-  readonly segments: Hl7Segment[];
+  /**
+   * Internal lazy-parsed segment storage. Entries are `string` until they
+   * are accessed (via {@link getSegment}, {@link getAllSegments}, {@link header},
+   * or the public {@link segments} getter), at which point they are parsed in
+   * place and replaced with their {@link Hl7Segment} form.
+   */
+  private readonly _segments: (Hl7Segment | string)[];
+  /**
+   * Maps segment name → indices into {@link _segments}. Storing indices (rather
+   * than references to the segments themselves) keeps this map in sync with
+   * {@link _segments} without needing a per-parse update step, and is immune to
+   * collisions when two segments have identical raw text.
+   */
+  private segmentsByName: Map<string, number[]>;
+  private cachedString: string | undefined;
+  /** Becomes true once every entry in `_segments` has been parsed. */
+  private allSegmentsParsed: boolean;
 
   /**
    * Creates a new HL7 message.
+   *
+   * Segment strings are not parsed until they are accessed via {@link getSegment},
+   * {@link getAllSegments}, {@link header}, or the {@link segments} getter.
+   *
    * @param segments - The HL7 segments.
    * @param context - Optional HL7 parsing context.
    */
-  constructor(segments: Hl7Segment[], context = new Hl7Context()) {
+  constructor(segments: (Hl7Segment | string)[], context = new Hl7Context()) {
     this.context = context;
-    this.segments = segments;
+    this._segments = segments;
+    this.segmentsByName = buildSegmentMap(segments);
+    this.allSegmentsParsed = segments.every((s) => typeof s !== 'string');
+    this.bindSegments();
+  }
+
+  /**
+   * Returns all HL7 segments, parsing any unparsed segment strings on first access.
+   *
+   * Prefer {@link getSegment} or {@link getAllSegments} when you only need a subset
+   * of segments; those methods avoid parsing unrelated segments.
+   *
+   * @returns The HL7 segments array.
+   */
+  get segments(): Hl7Segment[] {
+    if (!this.allSegmentsParsed) {
+      for (let i = 0; i < this._segments.length; i++) {
+        if (typeof this._segments[i] === 'string') {
+          this.parseSegment(i);
+        }
+      }
+      this.allSegmentsParsed = true;
+    }
+    return this._segments as Hl7Segment[];
   }
 
   /**
@@ -103,7 +145,11 @@ export class Hl7Message {
    * @returns The HL7 message header.
    */
   get header(): Hl7Segment {
-    return this.segments[0];
+    const headerSegment = this.parseSegment(0);
+    if (!headerSegment) {
+      throw new Error("Can't get header before first segment added");
+    }
+    return headerSegment;
   }
 
   /**
@@ -133,31 +179,74 @@ export class Hl7Message {
    *
    * When using a string index, this method returns the first segment with the specified name.
    *
+   * Segments are lazily parsed; the requested segment is parsed and cached on demand.
+   *
    * @param index - The HL7 segment index or name.
    * @returns The HL7 segment if found; otherwise, undefined.
    */
   getSegment(index: number | string): Hl7Segment | undefined {
     if (typeof index === 'number') {
-      return this.segments[index];
+      return this.parseSegment(index);
     }
-    return this.segments.find((s) => s.name === index);
+    const indices = this.segmentsByName.get(index);
+    if (!indices?.length) {
+      return undefined;
+    }
+    return this.parseSegment(indices[0]);
   }
 
   /**
    * Returns all HL7 segments of a given name.
+   *
+   * Only the segments that match the requested name are parsed, which avoids parsing
+   * unrelated segments when scanning a message.
+   *
    * @param name - The HL7 segment name.
    * @returns An array of HL7 segments with the specified name.
    */
   getAllSegments(name: string): Hl7Segment[] {
-    return this.segments.filter((s) => s.name === name);
+    const indices = this.segmentsByName.get(name);
+    if (!indices) {
+      return [];
+    }
+    return indices.map((i) => this.parseSegment(i) as Hl7Segment);
+  }
+
+  /**
+   * Parses the segment at the given index (if not already parsed), caches it back into
+   * the segments array, and wires up the onModified callback.
+   * @param index - The HL7 segment index.
+   * @returns The parsed HL7 segment, or undefined if the index is out of range.
+   */
+  private parseSegment(index: number): Hl7Segment | undefined {
+    const raw = this._segments[index];
+    if (raw === undefined) {
+      return undefined;
+    }
+    if (typeof raw !== 'string') {
+      return raw;
+    }
+    const parsed = Hl7Segment.parse(raw, this.context);
+    parsed.onModified = () => {
+      this.cachedString = undefined;
+    };
+    this._segments[index] = parsed;
+    return parsed;
   }
 
   /**
    * Returns the HL7 message as a string.
+   *
+   * Unparsed segments are emitted directly from their original string form, which
+   * preserves the source text without forcing a parse.
+   *
    * @returns The HL7 message as a string.
    */
   toString(): string {
-    return this.segments.map((s) => s.toString()).join(this.context.segmentSeparator);
+    this.cachedString ??= this._segments
+      .map((s) => (typeof s === 'string' ? s : s.toString()))
+      .join(this.context.segmentSeparator);
+    return this.cachedString;
   }
 
   /**
@@ -237,10 +326,9 @@ export class Hl7Message {
       text.charAt(6), // Escape character, recommended "\"
       text.charAt(7) // Subcomponent separator, recommended "&"
     );
-    return new Hl7Message(
-      text.split(/[\r\n]+/).map((line) => Hl7Segment.parse(line, context)),
-      context
-    );
+    const msg = new Hl7Message(text.split(/[\r\n]+/), context);
+    msg.cachedString = text;
+    return msg;
   }
 
   /**
@@ -260,7 +348,7 @@ export class Hl7Message {
           return false; // MSH can only be the first segment
         }
       } else {
-        const existingIndex = this.segments.findIndex((s) => s.name === index);
+        const existingIndex = this.findSegmentIndexByName(index);
         if (existingIndex !== 0) {
           return false; // MSH can only be the first segment
         }
@@ -270,25 +358,65 @@ export class Hl7Message {
     }
 
     if (typeof index === 'number') {
-      if (index >= this.segments.length) {
+      if (index >= this._segments.length) {
         // Append as last segment
-        this.segments.push(segment);
+        this._segments.push(segment);
+        this.invalidateCache();
         return true;
       }
-      this.segments[index] = segment;
+      this._segments[index] = segment;
+      this.invalidateCache();
       return true;
     }
 
-    const existingIndex = this.segments.findIndex((s) => s.name === index);
+    const existingIndex = this.findSegmentIndexByName(index);
     if (existingIndex === 0 && segment.name !== 'MSH') {
       return false; // Cannot replace MSH segment with non-MSH segment
     }
     if (existingIndex !== -1) {
-      this.segments[existingIndex] = segment;
+      this._segments[existingIndex] = segment;
+      this.invalidateCache();
       return true;
     }
     return false;
   }
+
+  private findSegmentIndexByName(name: string): number {
+    return this.segmentsByName.get(name)?.[0] ?? -1;
+  }
+
+  private invalidateCache(): void {
+    this.segmentsByName = buildSegmentMap(this._segments);
+    this.cachedString = undefined;
+    this.bindSegments();
+    // NOTE: We don't clear allSegmentsParsed here because beyond this point all new segments have to be `Hl7Segment` types, not strings
+  }
+
+  private bindSegments(): void {
+    const callback = (): void => {
+      this.cachedString = undefined;
+    };
+    for (const segment of this._segments) {
+      if (typeof segment !== 'string') {
+        segment.onModified = callback;
+      }
+    }
+  }
+}
+
+function buildSegmentMap(segments: (Hl7Segment | string)[]): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const name = typeof segment === 'string' ? segment.slice(0, 3) : segment.name;
+    const existing = map.get(name);
+    if (existing) {
+      existing.push(i);
+    } else {
+      map.set(name, [i]);
+    }
+  }
+  return map;
 }
 
 /**
@@ -299,21 +427,55 @@ export class Hl7Message {
 export class Hl7Segment {
   readonly context: Hl7Context;
   readonly name: string;
-  readonly fields: Hl7Field[];
+  /**
+   * Internal lazy-parsed field storage. Entries are `string` until they are
+   * accessed (via {@link getField} or the public {@link fields} getter), at
+   * which point they are parsed in place and replaced with their
+   * {@link Hl7Field} form.
+   */
+  private readonly _fields: (Hl7Field | string)[];
+  /** Becomes true once every entry in `_fields` has been parsed. */
+  private allFieldsParsed: boolean;
+  private cachedString: string | undefined;
+  /** @internal */
+  onModified?: () => void;
 
   /**
    * Creates a new HL7 segment.
+   *
+   * Field strings are not parsed until they are accessed via {@link getField}
+   * or via the {@link fields} getter.
+   *
    * @param fields - The HL7 fields. The first field is the segment name.
    * @param context - Optional HL7 parsing context.
    */
-  constructor(fields: Hl7Field[] | string[], context = new Hl7Context()) {
+  constructor(fields: (Hl7Field | string)[], context = new Hl7Context()) {
     this.context = context;
-    if (isStringArray(fields)) {
-      this.fields = fields.map((f) => Hl7Field.parse(f, context));
-    } else {
-      this.fields = fields;
+    this._fields = fields;
+    this.allFieldsParsed = fields.every((f) => typeof f !== 'string');
+    const first = fields[0];
+    this.name = typeof first === 'string' ? first : first.components[0][0];
+    this.bindFields();
+  }
+
+  /**
+   * Returns all HL7 fields, parsing any unparsed field strings on first access.
+   *
+   * Prefer {@link getField} when you only need a subset of fields; that method
+   * avoids parsing unrelated fields.
+   *
+   * @returns The HL7 fields array.
+   */
+  get fields(): Hl7Field[] {
+    if (!this.allFieldsParsed) {
+      for (let i = 0; i < this._fields.length; i++) {
+        if (typeof this._fields[i] === 'string') {
+          this.parseField(i);
+        }
+      }
+      this.allFieldsParsed = true;
     }
-    this.name = this.fields[0].components[0][0];
+    return this._fields as Hl7Field[];
   }
 
   /**
@@ -323,7 +485,7 @@ export class Hl7Segment {
    * @deprecated Use getField() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
    */
   get(index: number): Hl7Field {
-    return this.fields[index];
+    return this.parseField(index) as Hl7Field;
   }
 
   /**
@@ -336,6 +498,8 @@ export class Hl7Segment {
    * This aligns with HL7 field names such as PID.1, PID.2, etc.
    *
    * Field zero is the segment name.
+   *
+   * Fields are lazily parsed; the requested field is parsed and cached on demand.
    *
    * @param index - The HL7 field index.
    * @returns The HL7 field.
@@ -353,10 +517,33 @@ export class Hl7Segment {
       }
       if (index > 2) {
         // MSH.3 through MSH.n are offset by 1
-        return this.fields[index - 1];
+        return this.parseField(index - 1) as Hl7Field;
       }
     }
-    return this.fields[index];
+    return this.parseField(index) as Hl7Field;
+  }
+
+  /**
+   * Parses the field at the given index (if not already parsed), caches it back into
+   * the fields array, and wires up the onModified callback.
+   * @param index - The HL7 field index.
+   * @returns The parsed HL7 field, or undefined if the index is out of range.
+   */
+  private parseField(index: number): Hl7Field | undefined {
+    const raw = this._fields[index];
+    if (raw === undefined) {
+      return undefined;
+    }
+    if (typeof raw !== 'string') {
+      return raw;
+    }
+    const parsed = Hl7Field.parse(raw, this.context);
+    parsed.onModified = () => {
+      this.cachedString = undefined;
+      this.onModified?.();
+    };
+    this._fields[index] = parsed;
+    return parsed;
   }
 
   /**
@@ -382,10 +569,17 @@ export class Hl7Segment {
 
   /**
    * Returns the HL7 segment as a string.
+   *
+   * Unparsed fields are emitted directly from their original string form, which
+   * preserves the source text without forcing a parse.
+   *
    * @returns The HL7 segment as a string.
    */
   toString(): string {
-    return this.fields.map((f) => f.toString()).join(this.context.fieldSeparator);
+    this.cachedString ??= this._fields
+      .map((f) => (typeof f === 'string' ? f : f.toString()))
+      .join(this.context.fieldSeparator);
+    return this.cachedString;
   }
 
   /**
@@ -395,10 +589,9 @@ export class Hl7Segment {
    * @returns The parsed HL7 segment.
    */
   static parse(text: string, context = new Hl7Context()): Hl7Segment {
-    return new Hl7Segment(
-      text.split(context.fieldSeparator).map((f) => Hl7Field.parse(f, context)),
-      context
-    );
+    const segment = new Hl7Segment(text.split(context.fieldSeparator), context);
+    segment.cachedString = text;
+    return segment;
   }
 
   /**
@@ -423,19 +616,21 @@ export class Hl7Segment {
         // MSH.3 through MSH.n are offset by 1
         const actualIndex = index - 1;
         // Add new fields if needed
-        while (this.fields.length <= actualIndex) {
-          this.fields.push(new Hl7Field([['']], this.context));
+        while (this._fields.length <= actualIndex) {
+          this._fields.push(new Hl7Field([['']], this.context));
         }
-        this.fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+        this._fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+        this.invalidateCache();
         return true;
       }
     }
 
     // Add new fields if needed
-    while (this.fields.length <= index) {
-      this.fields.push(new Hl7Field([['']], this.context));
+    while (this._fields.length <= index) {
+      this._fields.push(new Hl7Field([['']], this.context));
     }
-    this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+    this._fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+    this.invalidateCache();
     return true;
   }
 
@@ -455,7 +650,26 @@ export class Hl7Segment {
     if (!field) {
       return false;
     }
-    return field.setComponent(component, value, subcomponent, repetition);
+    const result = field.setComponent(component, value, subcomponent, repetition);
+    return result;
+  }
+
+  private invalidateCache(): void {
+    this.cachedString = undefined;
+    this.bindFields();
+    this.onModified?.();
+  }
+
+  private bindFields(): void {
+    const callback = (): void => {
+      this.cachedString = undefined;
+      this.onModified?.();
+    };
+    for (const field of this._fields) {
+      if (typeof field !== 'string') {
+        field.onModified = callback;
+      }
+    }
   }
 }
 
@@ -466,6 +680,9 @@ export class Hl7Segment {
 export class Hl7Field {
   readonly context: Hl7Context;
   readonly components: string[][];
+  /** @internal */
+  onModified?: () => void;
+  private cachedString: string | undefined;
 
   /**
    * Creates a new HL7 field.
@@ -518,7 +735,10 @@ export class Hl7Field {
    * @returns The HL7 field as a string.
    */
   toString(): string {
-    return this.components.map((r) => r.join(this.context.componentSeparator)).join(this.context.repetitionSeparator);
+    this.cachedString ??= this.components
+      .map((r) => r.join(this.context.componentSeparator))
+      .join(this.context.repetitionSeparator);
+    return this.cachedString;
   }
 
   /**
@@ -528,10 +748,12 @@ export class Hl7Field {
    * @returns The parsed HL7 field.
    */
   static parse(text: string, context = new Hl7Context()): Hl7Field {
-    return new Hl7Field(
+    const field = new Hl7Field(
       text.split(context.repetitionSeparator).map((r) => r.split(context.componentSeparator)),
       context
     );
+    field.cachedString = text;
+    return field;
   }
 
   /**
@@ -555,10 +777,12 @@ export class Hl7Field {
       }
     }
 
-    if (subcomponent !== undefined) {
-      if (subcomponent < 0) {
-        return false;
-      }
+    if (subcomponent === undefined) {
+      // Handle regular component setting
+      this.components[repetition][component - 1] = value;
+    } else if (subcomponent < 0) {
+      return false;
+    } else {
       // Handle subcomponent setting
       const currentValue = this.components[repetition][component - 1] || '';
       const subcomponents = currentValue.split(this.context.subcomponentSeparator);
@@ -570,12 +794,15 @@ export class Hl7Field {
 
       subcomponents[subcomponent] = value;
       this.components[repetition][component - 1] = subcomponents.join(this.context.subcomponentSeparator);
-    } else {
-      // Handle regular component setting
-      this.components[repetition][component - 1] = value;
     }
 
+    this.invalidateCache();
     return true;
+  }
+
+  private invalidateCache(): void {
+    this.cachedString = undefined;
+    this.onModified?.();
   }
 }
 

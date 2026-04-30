@@ -258,7 +258,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 && (vars.SONAR_ENABLED == 'true' || github.ref == 'refs/heads/main') }}
+        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:

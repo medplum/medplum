@@ -66,7 +66,7 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
 }
 
 function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if (key === 'reference' && typeof value === 'string') {
+  if ((key === 'reference' || key === 'url') && typeof value === 'string') {
     let id;
     if (value.includes('/')) {
       id = value.split('/')[1];
