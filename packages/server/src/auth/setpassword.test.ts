@@ -276,7 +276,7 @@ describe('Set Password', () => {
       password: 'breached',
     });
     expect(res3.status).toBe(400);
-    expect(res3.body).toMatchObject(badRequest('Password found in breach database', 'password'));
+    expect(res3.body).toMatchObject(badRequest('Password found in breach database'));
   });
 
   test('Missing id', async () => {

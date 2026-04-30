@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, EMPTY, getReferenceString, Operator } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest, EMPTY, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
 import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { sendOutcome } from '../fhir/outcomes';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -38,15 +40,20 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   const user = await systemRepo.readReference(securityRequest.user);
+  await setPassword(systemRepo, { ...user, emailVerified: true }, req.body.password);
+  await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
 
-  const numPwns = await pwnedPassword(req.body.password);
+  sendOutcome(res, allOk);
+}
+
+export async function setPassword(systemRepo: SystemRepository, user: WithId<User>, password: string): Promise<void> {
+  const numPwns = await pwnedPassword(password);
   if (numPwns > 0) {
-    sendOutcome(res, badRequest('Password found in breach database', 'password'));
-    return;
+    throw new OperationOutcomeError(badRequest('Password found in breach database'));
   }
 
-  await setPassword({ ...user, emailVerified: true }, req.body.password);
-  await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
+  const passwordHash = await bcryptHashPassword(password);
+  await systemRepo.updateResource<User>({ ...user, passwordHash });
 
   const activeSessions = await systemRepo.search<Login>({
     resourceType: 'Login',
@@ -56,12 +63,4 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     const login = entry.resource as Login;
     await systemRepo.updateResource({ ...login, revoked: true });
   }
-
-  sendOutcome(res, allOk);
-}
-
-export async function setPassword(user: User, password: string): Promise<void> {
-  const passwordHash = await bcryptHashPassword(password);
-  const systemRepo = getGlobalSystemRepo();
-  await systemRepo.updateResource<User>({ ...user, passwordHash });
 }
