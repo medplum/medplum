@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Login, User } from '@medplum/fhirtypes';
-import { authenticator } from 'otplib';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { authenticator } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -264,10 +264,13 @@ describe('Scope', () => {
       expect(loginRes.status).toBe(200);
       expect(loginRes.body.mfaRequired).toBe(true);
 
-      const mfaRes = await request(app).post('/auth/mfa/verify').type('json').send({
-        login: loginRes.body.login,
-        token: authenticator.generate(mfaSecret),
-      });
+      const mfaRes = await request(app)
+        .post('/auth/mfa/verify')
+        .type('json')
+        .send({
+          login: loginRes.body.login,
+          token: authenticator.generate(mfaSecret),
+        });
       expect(mfaRes.status).toBe(200);
       expect(mfaRes.body.code).toBeDefined();
 
