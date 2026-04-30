@@ -301,7 +301,7 @@ export class RepositoryConnection implements Disposable {
     if (this.transactionDepth === 1) {
       await this.processPreCommit();
       await conn.query('COMMIT');
-      this.transactionDepth--;
+      this.transactionDepth = 0;
       this.transactionIsolationLevel = undefined;
       this.releaseConnection();
       this.clearCallbackStack();
@@ -312,7 +312,7 @@ export class RepositoryConnection implements Disposable {
       // even against an aborted transaction to recover — aborting here would discard work the outer
       // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
-      this.transactionDepth--;
+      this.transactionDepth--; // safe to decrement since assertInTransaction() ensures transactionDepth > 0
       this.popCallbackFrame();
     }
   }
@@ -320,7 +320,7 @@ export class RepositoryConnection implements Disposable {
   private async rollbackTransaction(error: Error): Promise<void> {
     // Tolerate being called after state has already been reset (e.g. when a prior
     // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
-    if (this.transactionDepth <= 0) {
+    if (this.transactionDepth === 0) {
       return;
     }
     const conn = await this.getConnection(DatabaseMode.WRITER);
@@ -342,7 +342,7 @@ export class RepositoryConnection implements Disposable {
       this.abortTransaction(error);
       return;
     }
-    this.transactionDepth--;
+    this.transactionDepth--; // safe to decrement since early return if transactionDepth === 0
     this.truncateCommitCallbacks();
     if (isOuter) {
       this.transactionIsolationLevel = undefined;
@@ -371,7 +371,7 @@ export class RepositoryConnection implements Disposable {
   }
 
   private assertInTransaction(): void {
-    if (this.transactionDepth <= 0) {
+    if (this.transactionDepth === 0) {
       throw new Error('Not in transaction');
     }
   }
