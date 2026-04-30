@@ -9,10 +9,11 @@ send many requests in quick succession may receive HTTP error responses with sta
 
 ## Total Requests Rate Limit
 
-| Category                      | Free tier                        | Paid tier                         |
-| ----------------------------- | -------------------------------- | --------------------------------- |
-| Auth (`/auth/*`, `/oauth2/*`) | 160 requests per IP per minute   | 160 requests per IP per minute    |
-| Others (including `/auth/me`) | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
+| Category                                                              | Free tier                        | Paid tier                         |
+| --------------------------------------------------------------------- | -------------------------------- | --------------------------------- |
+| Login (`/auth/login`, `/auth/newuser`, `/auth/newproject`)            | 5 requests per IP per minute     | 5 requests per IP per minute      |
+| Auth (other `/auth/*` and `/oauth2/*` endpoints)                      | 160 requests per IP per minute   | 160 requests per IP per minute    |
+| Default (all other endpoints, including `/auth/me`)                   | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
 
 All rate limits are calculated per IP address over a one minute window.
 
