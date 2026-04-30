@@ -4,7 +4,7 @@ import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import type { MedplumServerConfig } from './config/types';
-import { getLogger } from './logger';
+import { getLogger, globalLogger } from './logger';
 
 /*
  * The `duplicate` method is intentionally omitted to prevent accidental calling of `Redis.quit`
@@ -168,7 +168,7 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
 
   const subscriberId = randomUUID();
   const logLifecycleEvent = (event: string, extra?: Record<string, unknown>): void => {
-    getLogger().info('PubSub subscriber lifecycle', {
+    globalLogger.info('PubSub subscriber lifecycle', {
       subscriberId,
       event,
       status: subscriber.status,
