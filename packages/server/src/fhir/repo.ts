@@ -2556,7 +2556,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async withTransaction<TResult>(
     callback: (client: PoolClient) => Promise<TResult>,
-    options?: { serializable: boolean }
+    options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertNotClosed();
     return this.connection.withTransaction(callback, options);

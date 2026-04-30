@@ -2050,6 +2050,52 @@ describe('FHIR Repo', () => {
     }
   });
 
+  test('withTransaction rejects nested isolation upgrades', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER, ownsClient: true })
+    );
+
+    await repo.withTransaction(async () => {
+      await expect(repo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
+        'Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction'
+      );
+    });
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
+  });
+
+  test('withTransaction allows nested calls at a weaker isolation level', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER, ownsClient: true })
+    );
+
+    await repo.withTransaction(
+      async () => {
+        await repo.withTransaction(async () => undefined);
+      },
+      { serializable: true }
+    );
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
+      'BEGIN ISOLATION LEVEL SERIALIZABLE',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});

@@ -12,6 +12,10 @@ import { isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
+const transactionIsolationLevelPriority: Record<TransactionIsolationLevel, number> = {
+  'REPEATABLE READ': 1,
+  SERIALIZABLE: 2,
+};
 
 type CallbackFrame = {
   pre: number;
@@ -47,6 +51,7 @@ export class RepositoryConnection implements Disposable {
   private connMode?: DatabaseMode;
   private readonly ownsClient: boolean;
   private transactionDepth = 0;
+  private transactionIsolationLevel?: TransactionIsolationLevel;
   private pinDepth = 0;
   private discardOnRelease = false;
   private closed = false;
@@ -191,15 +196,19 @@ export class RepositoryConnection implements Disposable {
 
   async withTransaction<TResult>(
     callback: (client: PoolClient) => Promise<TResult>,
-    options?: { serializable: boolean }
+    options?: { serializable?: boolean }
   ): Promise<TResult> {
+    this.assertNotClosed();
+    const isolationLevel = options?.serializable ? 'SERIALIZABLE' : 'REPEATABLE READ';
+    this.assertCompatibleTransactionIsolationLevel(isolationLevel);
+
     const config = getConfig();
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       const attemptStartTime = Date.now();
       try {
-        const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
+        const client = await this.beginTransaction(isolationLevel);
         const result = await callback(client);
         await this.commitTransaction();
         if (attempt > 0) {
@@ -259,7 +268,7 @@ export class RepositoryConnection implements Disposable {
     throw error;
   }
 
-  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
+  private async beginTransaction(isolationLevel: TransactionIsolationLevel): Promise<PoolClient> {
     this.assertNotClosed();
     const nextDepth = this.transactionDepth + 1;
     const conn = await this.getConnection(DatabaseMode.WRITER);
@@ -278,6 +287,9 @@ export class RepositoryConnection implements Disposable {
       throw err;
     }
     // Publish transaction state only after Postgres confirms BEGIN/SAVEPOINT.
+    if (nextDepth === 1) {
+      this.transactionIsolationLevel = isolationLevel;
+    }
     this.transactionDepth = nextDepth;
     this.pushCallbackFrame();
     return conn;
@@ -290,6 +302,7 @@ export class RepositoryConnection implements Disposable {
       await this.processPreCommit();
       await conn.query('COMMIT');
       this.transactionDepth--;
+      this.transactionIsolationLevel = undefined;
       this.releaseConnection();
       this.clearCallbackStack();
       await this.processPostCommit();
@@ -332,6 +345,7 @@ export class RepositoryConnection implements Disposable {
     this.transactionDepth--;
     this.truncateCommitCallbacks();
     if (isOuter) {
+      this.transactionIsolationLevel = undefined;
       this.releaseConnection(error);
     }
   }
@@ -345,6 +359,7 @@ export class RepositoryConnection implements Disposable {
    */
   private abortTransaction(err: Error): void {
     this.transactionDepth = 0;
+    this.transactionIsolationLevel = undefined;
     this.clearCallbackStack();
     this.releaseConnection(err);
   }
@@ -382,6 +397,21 @@ export class RepositoryConnection implements Disposable {
     }
     if (this.connMode === DatabaseMode.READER && mode === DatabaseMode.WRITER) {
       throw new Error('Cannot use reader database connection for writer operation');
+    }
+  }
+
+  private assertCompatibleTransactionIsolationLevel(isolationLevel: TransactionIsolationLevel): void {
+    if (this.transactionDepth === 0) {
+      return;
+    }
+
+    const activeIsolationLevel = this.transactionIsolationLevel;
+    if (!activeIsolationLevel) {
+      throw new Error('Active transaction is missing isolation level');
+    }
+
+    if (transactionIsolationLevelPriority[isolationLevel] > transactionIsolationLevelPriority[activeIsolationLevel]) {
+      throw new Error(`Cannot start ${isolationLevel} transaction inside active ${activeIsolationLevel} transaction`);
     }
   }
 
