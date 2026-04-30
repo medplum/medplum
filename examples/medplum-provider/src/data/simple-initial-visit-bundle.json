@@ -98,7 +98,6 @@
         "method": "POST",
         "url": "ActivityDefinition"
       }
-   
     },
     {
       "fullUrl": "urn:uuid:a9b8c7d6-e5f4-3210-abcd-fedcba987654",
