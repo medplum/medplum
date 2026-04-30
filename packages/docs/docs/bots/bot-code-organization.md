@@ -3,7 +3,7 @@ sidebar_position: 3
 toc_max_heading_level: 3
 ---
 
-# Bot Code Architecture
+# Bot Code Organization and Build Setup
 
 As your integration grows, you will likely end up with multiple bots that share common logic — API client setup, FHIR resource transforms, shared constants, and so on. Without a strategy, this leads to duplicated logic across bot files that become hard to maintain, quickly growing to thousands of lines.
 
