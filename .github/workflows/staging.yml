@@ -64,7 +64,7 @@ jobs:
         run: npm run build -- --force --filter=@medplum/graphiql
         env:
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
-          MEDPLUM_INTROSPECTION_URL: ${{ secrets.STAGING_MEDPLUM_INTROSPECTION_URL }}
+          MEDPLUM_INTROSPECTION_URL: https://graphiql.staging.medplum.dev/schema/schema-latest.json
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
 
       - name: Deploy GraphiQL
