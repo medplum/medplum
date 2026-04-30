@@ -10,8 +10,6 @@ This page tracks updates, improvements, and changes to the HealthGorilla integra
 
 ## [April 2026]
 
-- Multiple Locations Support: Added the `sync-locations` bot to sync practice locations to Health Gorilla and updated the `sync-practitioner` bot to enroll practitioners at specific locations.
-- Physician-Level Lab Accounts: The `sync-practitioner` bot now syncs physician-level lab account numbers (AN identifiers) to Health Gorilla.
 - Security Enhancement: Removed email sync to Health Gorilla in the `sync-practitioner` bot to prevent self-service password reset attacks.
 - Shared Project Deployment: Health Gorilla bots and OperationDefinitions can now be deployed from a shared Medplum project, streamlining customer installations.
 - Subscription Management: The integration now automatically recreates Health Gorilla subscriptions when the webhook URL becomes stale.
