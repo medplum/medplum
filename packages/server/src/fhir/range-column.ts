@@ -92,7 +92,7 @@ function buildDateTimeRange(typed: TypedValue): Interval<Date> | undefined {
     case 'Timing': {
       const t = typed.value as Timing;
       if (t.event) {
-        const sortedTimestamps = t.event.toSorted();
+        const sortedTimestamps = t.event.toSorted((a, b) => a.localeCompare(b));
         const start = parseDateTimeToRange(sortedTimestamps[0]);
         const end = parseDateTimeToRange(sortedTimestamps.at(-1) as string);
         return {
@@ -134,7 +134,7 @@ function buildRangeFromPeriod({ start, end }: Period): Interval<Date> {
 
 export function parseDateTimeToRange(dt: string, approximate?: boolean): Interval<Date> {
   let start = new Date(dt);
-  let end = new Date(start.getTime()); // Copy start time before modifying
+  let end = new Date(start); // Copy start time before modifying
   const len = dt.length;
   if (len <= 4) {
     // Year precision
