@@ -381,7 +381,11 @@ describe('Bundle tests', () => {
 
     test('Synthea collection bundle (Abbott509) should not fail topological sort', () => {
       // given
-      const syntheaPath = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'Abbott509_Aaron203_44-subset.json');
+      const syntheaPath = join(
+        dirname(fileURLToPath(import.meta.url)),
+        '__fixtures__',
+        'Abbott509_Aaron203_44-subset.json'
+      );
       let bundle = JSON.parse(readFileSync(syntheaPath, 'utf8')) as Bundle;
       expect(bundle.type).toStrictEqual('collection');
       // when
