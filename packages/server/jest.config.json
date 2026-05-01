@@ -4,6 +4,7 @@
     "globalsCleanup": "on"
   },
   "testTimeout": 30000,
+  "globalSetup": "<rootDir>/src/jest.global-setup.ts",
   "testSequencer": "<rootDir>/jest.sequencer.mjs",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"

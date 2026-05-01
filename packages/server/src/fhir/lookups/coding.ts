@@ -14,7 +14,8 @@ import type { Pool, PoolClient } from 'pg';
 import type { Designation, ImportedProperty } from '../operations/codesystemimport';
 import { importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
-import { Column, Condition, Conjunction } from '../sql';
+import type { CTE } from '../sql';
+import { Column, Condition, Conjunction, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -96,6 +97,29 @@ export class CodingTable extends LookupTable {
         new Condition(new Column(resourceType, 'id'), '=', resource.id),
       ]),
     });
+  }
+
+  buildDeleteValuesCtes(resourceType: ResourceType, deletedResourceCte: string): CTE[] {
+    if (resourceType !== 'CodeSystem') {
+      return [];
+    }
+
+    return [
+      this.buildDeleteByDeletedResourceIdCte(
+        'deleted_code_system_property',
+        'CodeSystem_Property',
+        'system',
+        deletedResourceCte
+      ),
+      {
+        name: 'deleted_coding_property',
+        expr: new DeleteQuery('Coding_Property')
+          .using('Coding', deletedResourceCte)
+          .whereExpr(new Condition(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id')))
+          .whereExpr(new Condition(new Column('Coding', 'system'), '=', new Column(deletedResourceCte, 'id'))),
+      },
+      this.buildDeleteByDeletedResourceIdCte('deleted_coding', 'Coding', 'system', deletedResourceCte),
+    ];
   }
 
   /**

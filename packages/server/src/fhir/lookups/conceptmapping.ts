@@ -4,7 +4,8 @@ import type { WithId } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { importConceptMap } from '../operations/conceptmapimport';
-import { Column, Condition, Conjunction } from '../sql';
+import type { CTE } from '../sql';
+import { Column, Condition, Conjunction, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -81,6 +82,32 @@ export class ConceptMappingTable extends LookupTable {
       tableName: resourceType,
       joinCondition: linkedToTargetResource,
     });
+  }
+
+  buildDeleteValuesCtes(resourceType: ResourceType, deletedResourceCte: string): CTE[] {
+    if (resourceType !== 'ConceptMap') {
+      return [];
+    }
+
+    return [
+      {
+        name: 'deleted_concept_mapping_attribute',
+        expr: new DeleteQuery('ConceptMapping_Attribute')
+          .using('ConceptMapping', deletedResourceCte)
+          .whereExpr(
+            new Condition(new Column('ConceptMapping_Attribute', 'mapping'), '=', new Column('ConceptMapping', 'id'))
+          )
+          .whereExpr(
+            new Condition(new Column('ConceptMapping', 'conceptMap'), '=', new Column(deletedResourceCte, 'id'))
+          ),
+      },
+      this.buildDeleteByDeletedResourceIdCte(
+        'deleted_concept_mapping',
+        'ConceptMapping',
+        'conceptMap',
+        deletedResourceCte
+      ),
+    ];
   }
 
   /**

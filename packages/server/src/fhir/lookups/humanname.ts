@@ -13,6 +13,7 @@ import type {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
+import type { CTE } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -143,6 +144,21 @@ export class HumanNameTable extends LookupTable {
     const tableName = this.getTableName();
     const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  buildDeleteValuesCtes(resourceType: ResourceType, deletedResourceCte: string): CTE[] {
+    if (!HumanNameTable.hasHumanName(resourceType)) {
+      return [];
+    }
+
+    return [
+      this.buildDeleteByDeletedResourceIdCte(
+        'deleted_human_name',
+        this.getTableName(),
+        'resourceId',
+        deletedResourceCte
+      ),
+    ];
   }
 
   /**

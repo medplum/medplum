@@ -717,6 +717,30 @@ export interface CTE {
   recursive?: boolean;
 }
 
+function appendCtes(sql: SqlBuilder, ctes: CTE[]): void {
+  if (ctes.length === 0) {
+    return;
+  }
+
+  sql.append('WITH ');
+  if (ctes.some((cte) => cte.recursive)) {
+    sql.append('RECURSIVE ');
+  }
+
+  let first = true;
+  for (const cte of ctes) {
+    if (!first) {
+      sql.append(', ');
+    }
+    sql.appendIdentifier(cte.name);
+    sql.append(' AS (');
+    sql.appendExpression(cte.expr);
+    sql.append(')');
+    first = false;
+  }
+  sql.append(' ');
+}
+
 export class SelectQuery extends BaseQuery {
   readonly innerQuery?: BaseQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
@@ -725,7 +749,7 @@ export class SelectQuery extends BaseQuery {
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
   private readonly alias?: string;
-  with?: CTE;
+  private readonly ctes: CTE[];
   limit_: number;
   offset_: number;
   joinCount = 0;
@@ -739,6 +763,7 @@ export class SelectQuery extends BaseQuery {
     this.groupBys = [];
     this.orderBys = [];
     this.alias = alias;
+    this.ctes = [];
     this.limit_ = 0;
     this.offset_ = 0;
   }
@@ -748,12 +773,12 @@ export class SelectQuery extends BaseQuery {
   }
 
   withCte(name: string, expr: Expression): this {
-    this.with = { name, expr };
+    this.ctes.push({ name, expr });
     return this;
   }
 
   withRecursive(name: string, expr: Expression): this {
-    this.with = { name, expr, recursive: true };
+    this.ctes.push({ name, expr, recursive: true });
     return this;
   }
 
@@ -823,16 +848,7 @@ export class SelectQuery extends BaseQuery {
         sql.append(')');
       }
     }
-    if (this.with) {
-      sql.append('WITH ');
-      if (this.with.recursive) {
-        sql.append('RECURSIVE ');
-      }
-      sql.appendIdentifier(this.with.name);
-      sql.append(' AS (');
-      sql.appendExpression(this.with.expr);
-      sql.append(') ');
-    }
+    appendCtes(sql, this.ctes);
     sql.append('SELECT ');
     this.buildDistinctOn(sql);
     this.buildColumns(sql);

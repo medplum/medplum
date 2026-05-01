@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import { formatAddress } from '@medplum/core';
 import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
+import type { CTE } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -201,6 +202,16 @@ export class AddressTable extends LookupTable {
     const tableName = this.getTableName();
     const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  buildDeleteValuesCtes(resourceType: ResourceType, deletedResourceCte: string): CTE[] {
+    if (!AddressTable.hasAddress(resourceType)) {
+      return [];
+    }
+
+    return [
+      this.buildDeleteByDeletedResourceIdCte('deleted_address', this.getTableName(), 'resourceId', deletedResourceCte),
+    ];
   }
 
   /**

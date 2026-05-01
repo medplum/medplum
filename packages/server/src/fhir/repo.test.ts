@@ -1008,16 +1008,23 @@ describe('FHIR Repo', () => {
       return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
     }
 
+    async function countRowsByColumn(tableName: string, columnName: string, id: string): Promise<number> {
+      const query = new SelectQuery(tableName).column(columnName).where(columnName, '=', id);
+      return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
+    }
+
     async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
       expect(await countRows('Patient', patient.id)).toStrictEqual(0);
       expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+      expect(await countRowsByColumn('HumanName', 'resourceId', patient.id)).toStrictEqual(0);
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
       expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
       expect(await countRows('Patient', patient.id)).toStrictEqual(1);
       expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
+      expect(await countRowsByColumn('HumanName', 'resourceId', patient.id)).toBeGreaterThan(0);
     }
 
     async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {

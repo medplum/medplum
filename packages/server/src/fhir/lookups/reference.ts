@@ -14,6 +14,7 @@ import {
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
+import type { CTE } from '../sql';
 import { InsertQuery, SelectQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -37,6 +38,17 @@ export class ReferenceTable extends LookupTable {
 
   getColumnName(): string {
     throw new Error('ReferenceTable.getColumnName not implemented');
+  }
+
+  buildDeleteValuesCtes(resourceType: ResourceType, deletedResourceCte: string): CTE[] {
+    return [
+      this.buildDeleteByDeletedResourceIdCte(
+        'deleted_references',
+        this.getTableName(resourceType),
+        'resourceId',
+        deletedResourceCte
+      ),
+    ];
   }
 
   /**

@@ -6,6 +6,7 @@ import {
   Column,
   Condition,
   Constant,
+  DeleteQuery,
   InsertQuery,
   isValidColumnName,
   isValidTableName,
@@ -47,6 +48,30 @@ describe('SqlBuilder', () => {
         .whereExpr(new Condition('name', '=', 'x'))
         .buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "name" = $1');
+    });
+
+    test('Select with multiple CTEs', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('deleted')
+        .column('id')
+        .withCte(
+          'deleted',
+          new DeleteQuery('Patient')
+            .where('id', 'IN', ['id1', 'id2'])
+            .where('projectId', '=', 'project')
+            .returning('id')
+        )
+        .withCte(
+          'deleted_history',
+          new DeleteQuery('Patient_History')
+            .using('deleted')
+            .whereExpr(new Condition(new Column('Patient_History', 'id'), '=', new Column('deleted', 'id')))
+        )
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'WITH "deleted" AS (DELETE FROM "Patient" WHERE ("Patient"."id" IN ($1,$2) AND "Patient"."projectId" = $3) RETURNING "Patient"."id"), "deleted_history" AS (DELETE FROM "Patient_History" USING "deleted" WHERE "Patient_History"."id" = "deleted"."id") SELECT "deleted"."id" FROM "deleted"'
+      );
+      expect(sql.getValues()).toStrictEqual(['id1', 'id2', 'project']);
     });
 
     test('Select where negation', () => {

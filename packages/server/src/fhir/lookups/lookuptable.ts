@@ -11,7 +11,7 @@ import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes
 import type { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
 import type { LookupTableSearchParameterImplementation } from '../searchparameter';
-import type { Expression } from '../sql';
+import type { CTE, Expression } from '../sql';
 import {
   Column,
   Condition,
@@ -73,6 +73,14 @@ export abstract class LookupTable {
    * @param resource - The resource to extract values from.
    */
   protected abstract extractValues(result: LookupTableRow[], resource: WithId<Resource>): void;
+
+  /**
+   * Builds CTEs to delete lookup table rows for resources deleted by the parent expunge CTE.
+   * @param resourceType - The FHIR resource type.
+   * @param deletedResourceCte - The CTE name containing resource IDs in the "id" column to be deleted from the lookup table.
+   * @returns CTEs that delete lookup table rows for the deleted resources.
+   */
+  abstract buildDeleteValuesCtes(resourceType: ResourceType, deletedResourceCte: string): CTE[];
 
   /**
    * Indexes the resource in the lookup table.
@@ -283,6 +291,20 @@ export abstract class LookupTable {
     const tableName = this.getTableName(resources[0].resourceType);
     const resourceIds = resources.map((r) => r.id);
     await new DeleteQuery(tableName).where('resourceId', 'IN', resourceIds).execute(client);
+  }
+
+  protected buildDeleteByDeletedResourceIdCte(
+    cteName: string,
+    tableName: string,
+    columnName: string,
+    deletedResourceCte: string
+  ): CTE {
+    return {
+      name: cteName,
+      expr: new DeleteQuery(tableName)
+        .using(deletedResourceCte)
+        .whereExpr(new Condition(new Column(tableName, columnName), '=', new Column(deletedResourceCte, 'id'))),
+    };
   }
 
   /**

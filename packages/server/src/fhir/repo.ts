@@ -147,6 +147,7 @@ import { getSearchParameterImplementation, lookupTables } from './searchparamete
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
+  Column,
   Condition,
   DeleteQuery,
   Disjunction,
@@ -1526,24 +1527,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (client) => {
-        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
-        if (projectId) {
-          deleteQuery.where('projectId', '=', projectId);
+        const deleteResult = await this.buildExpungeResourcesQuery(resourceType, ids, projectId).execute<{
+          id: string;
+        }>(client);
+        const deletedIds = deleteResult.map((row) => row.id);
+        if (deletedIds.length) {
+          await this.postCommit(() => this.deleteCacheEntries(resourceType, deletedIds));
         }
-        const deleteResult = await deleteQuery.execute<{ id: string }>(client);
-        if (deleteResult.length === 0) {
-          return [];
-        }
-
-        const deletedIds = new Array<string>(deleteResult.length);
-        for (let i = 0; i < deleteResult.length; i++) {
-          const res = deleteResult[i];
-          deletedIds[i] = res.id;
-          await this.deleteFromLookupTables(client, { resourceType, id: res.id } as WithId<Resource>);
-        }
-
-        await new DeleteQuery(resourceType + '_History').where('id', 'IN', deletedIds).execute(client);
-        await this.postCommit(() => this.deleteCacheEntries(resourceType, deletedIds));
         return deletedIds;
       },
       { serializable: true }
@@ -1554,6 +1544,41 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       deletedIds.length
     );
     await this.resourceCap()?.deleted(deletedIds.length);
+  }
+
+  private buildExpungeResourcesQuery(resourceType: string, ids: string[], projectId?: string): SelectQuery {
+    const deletedCte = 'deleted';
+    const deleteResource = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
+    if (projectId) {
+      deleteResource.where('projectId', '=', projectId);
+    }
+
+    const query = new SelectQuery(deletedCte).column('id').withCte(deletedCte, deleteResource);
+
+    for (const lookupTable of lookupTables) {
+      for (const cte of lookupTable.buildDeleteValuesCtes(resourceType as ResourceType, deletedCte)) {
+        query.withCte(cte.name, cte.expr);
+      }
+    }
+
+    this.addDeleteByDeletedIdCte(query, 'deleted_history', resourceType + '_History', 'id', deletedCte);
+
+    return query;
+  }
+
+  private addDeleteByDeletedIdCte(
+    query: SelectQuery,
+    cteName: string,
+    tableName: string,
+    columnName: string,
+    deletedCte: string
+  ): void {
+    query.withCte(
+      cteName,
+      new DeleteQuery(tableName)
+        .using(deletedCte)
+        .whereExpr(new Condition(new Column(tableName, columnName), '=', new Column(deletedCte, 'id')))
+    );
   }
 
   /**
