@@ -9,6 +9,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendLoginResult } from './utils';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -40,9 +41,5 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const { membership } = await createProject(projectName, user);
   const updatedLogin = await setLoginMembership(login, membership);
-
-  res.status(200).json({
-    login: updatedLogin.id,
-    code: updatedLogin.code,
-  });
+  await sendLoginResult(res, updatedLogin);
 }

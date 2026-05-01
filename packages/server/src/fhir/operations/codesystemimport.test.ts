@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, EMPTY } from '@medplum/core';
-import type { CodeSystem, Parameters } from '@medplum/fhirtypes';
+import type { CodeSystem } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -152,7 +152,7 @@ describe('CodeSystem $import', () => {
             ],
           },
         ],
-      } as Parameters);
+      });
     expect(res.status).toBe(200);
 
     await assertCodeExists(snomed.id, '702707005');

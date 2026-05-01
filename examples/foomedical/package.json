@@ -1,6 +1,6 @@
 {
   "name": "foomedical",
-  "version": "5.1.9",
+  "version": "5.1.10",
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
@@ -24,11 +24,11 @@
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@mantine/spotlight": "8.3.18",
-    "@medplum/core": "5.1.9",
-    "@medplum/eslint-config": "5.1.9",
-    "@medplum/fhirtypes": "5.1.9",
-    "@medplum/mock": "5.1.9",
-    "@medplum/react": "5.1.9",
+    "@medplum/core": "5.1.10",
+    "@medplum/eslint-config": "5.1.10",
+    "@medplum/fhirtypes": "5.1.10",
+    "@medplum/mock": "5.1.10",
+    "@medplum/react": "5.1.10",
     "@tabler/icons-react": "3.41.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
@@ -49,9 +49,9 @@
     "react": "19.2.5",
     "react-chartjs-2": "5.3.1",
     "react-dom": "19.2.5",
-    "react-router": "7.14.1",
+    "react-router": "7.14.2",
     "typescript": "6.0.3",
-    "vite": "8.0.8"
+    "vite": "8.0.10"
   },
   "packageManager": "npm@10.9.8",
   "engines": {

@@ -5,7 +5,7 @@ import type { ServiceRequest } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDateTime } from '../../datetime';
 import { OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION, OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
-import type { CcdaCode, CcdaEntry, CcdaId } from '../../types';
+import type { CcdaCode, CcdaEntry } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapIdentifiers } from '../utils';
 
@@ -28,7 +28,7 @@ export function createPlanOfTreatmentServiceRequestEntry(
             { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
             { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2022-06-01' },
           ],
-          id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+          id: mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
           statusCode: { '@_code': 'active' }, // USCDI v2 requires statusCode to be "active"
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.authoredOn) }],

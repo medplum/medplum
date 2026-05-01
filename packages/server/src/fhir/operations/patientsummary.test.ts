@@ -287,15 +287,14 @@ describe('Patient Summary Operation', () => {
       ];
 
       const everything = categories.map(
-        (category, index) =>
-          ({
-            resourceType: 'Observation',
-            id: `obs${index}`,
-            subject,
-            status: 'final',
-            category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
-            code: { text: 'test' },
-          }) as WithId<Observation>
+        (category, index): WithId<Observation> => ({
+          resourceType: 'Observation',
+          id: `obs${index}`,
+          subject,
+          status: 'final',
+          category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
+          code: { text: 'test' },
+        })
       );
 
       const builder = new PatientSummaryBuilder(author, patient, everything);

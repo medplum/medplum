@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { ContactPoint } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -19,7 +18,7 @@ export const Basic = (): JSX.Element => (
     <ContactPointInput
       name="test"
       path="Patient.contact"
-      defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' } as ContactPoint}
+      defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' }}
       onChange={console.log}
       outcome={undefined}
     />
@@ -32,7 +31,7 @@ export const Disabled = (): JSX.Element => (
       disabled
       name="test"
       path="Patient.contact"
-      defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' } as ContactPoint}
+      defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' }}
       onChange={console.log}
       outcome={undefined}
     />
@@ -59,7 +58,7 @@ export const PartiallyDisabled = (): JSX.Element => {
       <ContactPointInput
         name="test"
         path="Patient.contact.telecom"
-        defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' } as ContactPoint}
+        defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' }}
         onChange={console.log}
         outcome={undefined}
       />

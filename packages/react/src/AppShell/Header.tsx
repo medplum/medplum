@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, AppShell as MantineAppShell, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName } from '@medplum/core';
-import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -63,7 +62,7 @@ export function Header(props: HeaderProps): JSX.Element {
                 <Group gap={7}>
                   <ResourceAvatar value={profile} radius="xl" size={24} />
                   <Text size="sm" className={classes.userName}>
-                    {formatHumanName(profile?.name?.[0] as HumanName)}
+                    {formatHumanName(profile?.name?.[0])}
                   </Text>
                   <IconChevronDown size={12} stroke={1.5} />
                 </Group>

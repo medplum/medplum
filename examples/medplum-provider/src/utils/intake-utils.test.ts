@@ -418,7 +418,7 @@ describe('intake utils', () => {
       // it will try to access coding[0] which causes an error
       // So we test with undefined code to trigger the early return
       await upsertObservation(
-        medplum as any,
+        medplum,
         patient,
         undefined as any,
         observationCategoryMapping.socialHistory,
@@ -431,7 +431,7 @@ describe('intake utils', () => {
     test('upserts dateTime observation', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       await upsertObservation(
-        medplum as any,
+        medplum,
         patient,
         observationCodeMapping.estimatedDeliveryDate,
         observationCategoryMapping.socialHistory,
@@ -449,7 +449,7 @@ describe('intake utils', () => {
     test('adds profile URL when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       await upsertObservation(
-        medplum as any,
+        medplum,
         patient,
         observationCodeMapping.smokingStatus,
         observationCategoryMapping.socialHistory,
@@ -492,7 +492,7 @@ describe('intake utils', () => {
 
     test('addAllergy includes reaction when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addAllergy(medplum as any, patient, {
+      await addAllergy(medplum, patient, {
         'allergy-substance': { valueCoding: { system: 'http://example.com', code: 'peanut' } },
         'allergy-reaction': { valueString: 'Hives' },
       });
@@ -506,7 +506,7 @@ describe('intake utils', () => {
 
     test('addAllergy includes onsetDateTime when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addAllergy(medplum as any, patient, {
+      await addAllergy(medplum, patient, {
         'allergy-substance': { valueCoding: { system: 'http://example.com', code: 'peanut' } },
         'allergy-onset': { valueDateTime: '2020-01-01T00:00:00Z' },
       });
@@ -521,7 +521,7 @@ describe('intake utils', () => {
     test('addCoverage upserts coverage resource', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'self' } },
       };
@@ -563,7 +563,7 @@ describe('intake utils', () => {
     test('addConsent creates resource with rejected status when consentGiven is false', async () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       await addConsent(
-        medplum as any,
+        medplum,
         patient,
         false,
         observationCategoryMapping.socialHistory,
@@ -582,7 +582,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const policyRule = { coding: [{ code: 'hipaa-npp' }] };
       await addConsent(
-        medplum as any,
+        medplum,
         patient,
         true,
         observationCategoryMapping.socialHistory,
@@ -599,13 +599,13 @@ describe('intake utils', () => {
 
     test('addMedication returns early without code', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource');
-      await addMedication(medplum as any, patient, {});
+      await addMedication(medplum, patient, {});
       expect(upsertSpy).not.toHaveBeenCalled();
     });
 
     test('addMedication upserts when code present', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addMedication(medplum as any, patient, {
+      await addMedication(medplum, patient, {
         'medication-code': { valueCoding: { system: 'http://example.com', code: 'aspirin' } },
       });
       expect(upsertSpy).toHaveBeenCalledWith(
@@ -620,7 +620,7 @@ describe('intake utils', () => {
 
     test('addMedication includes note when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addMedication(medplum as any, patient, {
+      await addMedication(medplum, patient, {
         'medication-code': { valueCoding: { system: 'http://example.com', code: 'aspirin' } },
         'medication-note': { valueString: 'Take with food' },
       });
@@ -634,13 +634,13 @@ describe('intake utils', () => {
 
     test('addCondition returns early without code', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource');
-      await addCondition(medplum as any, patient, {});
+      await addCondition(medplum, patient, {});
       expect(upsertSpy).not.toHaveBeenCalled();
     });
 
     test('addCondition upserts when code present', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addCondition(medplum as any, patient, {
+      await addCondition(medplum, patient, {
         'medical-history-problem': { valueCoding: { system: 'http://example.com', code: 'diabetes' } },
       });
       expect(upsertSpy).toHaveBeenCalledWith(
@@ -653,7 +653,7 @@ describe('intake utils', () => {
 
     test('addCondition includes clinicalStatus when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addCondition(medplum as any, patient, {
+      await addCondition(medplum, patient, {
         'medical-history-problem': { valueCoding: { system: 'http://example.com', code: 'diabetes' } },
         'medical-history-clinical-status': { valueCoding: { system: 'http://example.com', code: 'active' } },
       });
@@ -667,7 +667,7 @@ describe('intake utils', () => {
 
     test('addCondition includes onsetDateTime when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addCondition(medplum as any, patient, {
+      await addCondition(medplum, patient, {
         'medical-history-problem': { valueCoding: { system: 'http://example.com', code: 'diabetes' } },
         'medical-history-onset': { valueDateTime: '2020-01-01T00:00:00Z' },
       });
@@ -681,7 +681,7 @@ describe('intake utils', () => {
 
     test('addFamilyMemberHistory returns early without condition or relationship', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource');
-      await addFamilyMemberHistory(medplum as any, patient, {
+      await addFamilyMemberHistory(medplum, patient, {
         'family-member-history-problem': { valueCoding: { system: 'http://example.com', code: 'diabetes' } },
       });
       expect(upsertSpy).not.toHaveBeenCalled();
@@ -689,7 +689,7 @@ describe('intake utils', () => {
 
     test('addFamilyMemberHistory upserts when condition and relationship present', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addFamilyMemberHistory(medplum as any, patient, {
+      await addFamilyMemberHistory(medplum, patient, {
         'family-member-history-problem': { valueCoding: { system: 'http://example.com', code: 'diabetes' } },
         'family-member-history-relationship': { valueCoding: { system: 'http://example.com', code: 'mother' } },
       });
@@ -704,7 +704,7 @@ describe('intake utils', () => {
 
     test('addFamilyMemberHistory includes deceasedBoolean when provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addFamilyMemberHistory(medplum as any, patient, {
+      await addFamilyMemberHistory(medplum, patient, {
         'family-member-history-problem': { valueCoding: { system: 'http://example.com', code: 'diabetes' } },
         'family-member-history-relationship': { valueCoding: { system: 'http://example.com', code: 'mother' } },
         'family-member-history-deceased': { valueBoolean: true },
@@ -719,7 +719,7 @@ describe('intake utils', () => {
 
     test('addImmunization returns early without code or date', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource');
-      await addImmunization(medplum as any, patient, {
+      await addImmunization(medplum, patient, {
         'immunization-vaccine': { valueCoding: { system: 'http://example.com', code: 'flu' } },
       });
       expect(upsertSpy).not.toHaveBeenCalled();
@@ -727,7 +727,7 @@ describe('intake utils', () => {
 
     test('addImmunization upserts when code and date present', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addImmunization(medplum as any, patient, {
+      await addImmunization(medplum, patient, {
         'immunization-vaccine': { valueCoding: { system: 'http://example.com', code: 'flu' } },
         'immunization-date': { valueDateTime: '2024-01-01T00:00:00Z' },
       });
@@ -743,7 +743,7 @@ describe('intake utils', () => {
     test('addPharmacy upserts CareTeam with pharmacy', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const pharmacy: Reference<Organization> = { reference: 'Organization/pharmacy-1' };
-      await addPharmacy(medplum as any, patient, pharmacy);
+      await addPharmacy(medplum, patient, pharmacy);
       expect(upsertSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           resourceType: 'CareTeam',
@@ -761,7 +761,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'child', system: 'http://example.com' } },
         'related-person': {
@@ -770,7 +770,7 @@ describe('intake utils', () => {
         } as any,
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -784,12 +784,12 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource');
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'self', system: 'http://example.com' } },
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).not.toHaveBeenCalled();
       expect(upsertSpy).toHaveBeenCalled();
@@ -799,12 +799,12 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource');
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'other', system: 'http://example.com' } },
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).not.toHaveBeenCalled();
       expect(upsertSpy).toHaveBeenCalled();
@@ -814,12 +814,12 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource');
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'injured', system: 'http://example.com' } },
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).not.toHaveBeenCalled();
       expect(upsertSpy).toHaveBeenCalled();
@@ -829,12 +829,12 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource');
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { system: 'http://example.com' } },
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).not.toHaveBeenCalled();
       expect(upsertSpy).toHaveBeenCalled();
@@ -844,12 +844,12 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource');
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'child', system: 'http://example.com' } },
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).not.toHaveBeenCalled();
       expect(upsertSpy).toHaveBeenCalled();
@@ -859,7 +859,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'parent', system: 'http://example.com' } },
         'related-person': {
@@ -870,7 +870,7 @@ describe('intake utils', () => {
         } as any,
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -886,7 +886,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'parent', system: 'http://example.com' } },
         'related-person': {
@@ -895,7 +895,7 @@ describe('intake utils', () => {
         } as any,
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -916,7 +916,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'spouse', system: 'http://example.com' } },
         'related-person': {
@@ -925,7 +925,7 @@ describe('intake utils', () => {
         } as any,
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -944,7 +944,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'common', system: 'http://example.com' } },
         'related-person': {
@@ -953,7 +953,7 @@ describe('intake utils', () => {
         } as any,
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -972,7 +972,7 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'unknown-relationship', system: 'http://example.com' } },
         'related-person': {
@@ -981,7 +981,7 @@ describe('intake utils', () => {
         } as any,
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -996,13 +996,13 @@ describe('intake utils', () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       const answers: Record<string, QuestionnaireResponseItemAnswer> = {
-        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } as Reference<Organization> },
+        'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
         'subscriber-id': { valueString: 'sub-1' },
         'relationship-to-subscriber': { valueCoding: { code: 'child', system: 'http://example.com' } },
-        'related-person': {} as any,
+        'related-person': {},
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({

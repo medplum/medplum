@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { NativeSelect, Stack } from '@mantine/core';
-import type { HumanName } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -23,7 +22,7 @@ export const Basic = (): JSX.Element => (
           path="name"
           onChange={undefined}
           outcome={undefined}
-          defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+          defaultValue={{ given: ['Homer'], family: 'Simpson' }}
         />
         <NativeSelect name="appointment-type" data={['Sick', 'Well']} />
         <SubmitButton mt="sm">Submit</SubmitButton>

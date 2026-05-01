@@ -8,6 +8,24 @@ sidebar_position: 99
 
 This page tracks updates, improvements, and changes to the HealthGorilla integration in Medplum.
 
+## [April 2026]
+
+- Security Enhancement: Removed email sync to Health Gorilla in the `sync-practitioner` bot to prevent self-service password reset attacks.
+- Shared Project Deployment: Health Gorilla bots and OperationDefinitions can now be deployed from a shared Medplum project, streamlining customer installations.
+- Subscription Management: The integration now automatically recreates Health Gorilla subscriptions when the webhook URL becomes stale.
+
+## [March 2026]
+
+- OAuth Token Caching: Improved the Health Gorilla OAuth integration by caching the access token across bot invocations, reducing frequent token requests.
+- Order Sync Reliability: Refactored the `send-to-health-gorilla` bot to always read the latest `ServiceRequest` to prevent syncing outdated orders.
+- Async Batch Upload: Switched to asynchronous batch uploads for Health Gorilla organization resources during sync to mitigate rate-limiting issues.
+- Identifier Merging: Enhanced organization syncing to preserve existing payor identifiers when syncing the Health Gorilla ID back to the Medplum organization.
+- Address Syncing: The `send-to-health-gorilla` bot now includes default address fields if none exist, ensuring full address structure is sent.
+
+## [February 2026]
+
+- Resource Sync Logic: Enhanced the `receive-from-health-gorilla` bot to use safe update operations for modifying the status and supporting info of lab orders, ensuring data integrity.
+
 ## [October 2025]
 
 - Atomic ServiceRequest Updates: Switched to batched PATCH operations to sync HealthGorilla order identifiers, preventing race conditions.
@@ -53,3 +71,4 @@ This page tracks updates, improvements, and changes to the HealthGorilla integra
 1. Created Detected Issues for unsolicited reports with unknown patients.
 2. Improved resource sync and subscription logic.
 3. Practitioner sync supports multiple names and new order of operations.
+
