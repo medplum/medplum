@@ -1,8 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type {
   Bundle,
   BundleEntry,
@@ -12,6 +9,9 @@ import type {
   Resource,
   Specimen,
 } from '@medplum/fhirtypes';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { vi } from 'vitest';
 import {
   convertContainedResourcesToBundle,
