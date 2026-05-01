@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, isReference, OperationOutcomeError } from '@medplum/core';
+import { arrayify, badRequest, isReference, OperationOutcomeError } from '@medplum/core';
 import type { Duration, Extension, Reference, Resource } from '@medplum/fhirtypes';
 import type { WithPath } from './withpath';
 import { filterWithPaths, getPath } from './withpath';
@@ -10,12 +10,17 @@ type Extensible = { extension?: Extension[] };
 // Like core utils `getExtension`, but returns an array of all matching
 // extensions instead of stopping after a single match is found. Returned
 // extensions are decorated with `WithPath`.
-export function getExtensions(extensible: WithPath<Extensible>, url: string): WithPath<Extension>[] {
-  return filterWithPaths(
-    extensible.extension,
-    (extension) => extension.url === url,
-    `${getPath(extensible)}.extension`
-  );
+export function getExtensions(extensible: WithPath<Extensible>, urlOrUrls: string | string[]): WithPath<Extension>[] {
+  const [url, ...restUrls] = arrayify(urlOrUrls);
+  if (!url) {
+    return [];
+  }
+  const pathPrefix = `${getPath(extensible)}.extension`;
+  const extensions = filterWithPaths(extensible.extension, (extension) => extension.url === url, pathPrefix);
+  if (!restUrls.length) {
+    return extensions;
+  }
+  return extensions.flatMap((extension) => getExtensions(extension, restUrls));
 }
 
 export function assertExtensionBoolean(
