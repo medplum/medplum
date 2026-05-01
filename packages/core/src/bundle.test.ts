@@ -20,7 +20,7 @@ import {
   reorderBundle,
 } from './bundle';
 import { getDataType } from './typeschema/types';
-import { deepClone, isUUID } from './utils';
+import { deepClone, EMPTY, isUUID } from './utils';
 
 let jsonFile: any;
 
@@ -379,16 +379,18 @@ describe('Bundle tests', () => {
       expect(attachmentUrl).toMatch(/^urn:uuid:/);
     });
 
-    test('Synthea collection bundle (Abbott509) matches BatchPage convert path', () => {
-      const syntheaPath = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'Abbott509_Aaron203_44.json');
+    test('Synthea collection bundle (Abbott509) should not fail topological sort', () => {
+      // given
+      const syntheaPath = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'Abbott509_Aaron203_44-subset.json');
       let bundle = JSON.parse(readFileSync(syntheaPath, 'utf8')) as Bundle;
-      if (bundle.type !== 'batch' && bundle.type !== 'transaction') {
-        bundle = convertToTransactionBundle(bundle);
-      }
+      expect(bundle.type).toStrictEqual('collection');
+      // when
+      bundle = convertToTransactionBundle(bundle);
+      // then
       expect(bundle.resourceType).toBe('Bundle');
       expect(bundle.type).toBe('transaction');
       expect(bundle.entry?.length).toBeGreaterThan(0);
-      for (const entry of bundle.entry ?? []) {
+      for (const entry of bundle.entry ?? EMPTY) {
         expect(entry.request?.method).toBe('POST');
       }
     });

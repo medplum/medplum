@@ -175,7 +175,7 @@ function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cy
 
     // Visit all neighbors
     let hasCycle = false;
-    for (const neighbor of graph[vertex] ?? []) {
+    for (const neighbor of graph[vertex] ?? EMPTY) {
       if (!visit(neighbor, path)) {
         hasCycle = true;
       }
