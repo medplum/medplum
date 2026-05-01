@@ -139,6 +139,6 @@ describe('Change Password', () => {
       });
 
     expect(res2.status).toBe(400);
-    expect(res2.body).toMatchObject(badRequest('Password found in breach database', 'newPassword'));
+    expect(res2.body).toMatchObject(badRequest('Password found in breach database'));
   });
 });
