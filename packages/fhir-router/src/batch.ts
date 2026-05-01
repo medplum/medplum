@@ -460,7 +460,7 @@ class BatchProcessor {
     }
 
     return {
-      method: request.method as HttpMethod,
+      method: request.method,
       url: route?.query ? request.url.slice(0, request.url.indexOf('?')) : request.url,
       pathname: '',
       params: route?.params ?? Object.create(null),

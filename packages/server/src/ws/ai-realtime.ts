@@ -1,0 +1,216 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { badRequest, normalizeErrorString, ReconnectingWebSocket } from '@medplum/core';
+import type { IncomingMessage } from 'node:http';
+import os from 'node:os';
+import type { WebSocket as IncomingWebSocket, RawData } from 'ws';
+import WebSocket from 'ws';
+import { getConfig } from '../config/loader';
+import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
+import { globalLogger } from '../logger';
+import { getLoginForAccessToken } from '../oauth/utils';
+import { setGauge } from '../otel/otel';
+
+export interface OpenAIRealtimeConnectRequest {
+  type: 'ai-realtime:connect';
+  accessToken: string;
+}
+
+type OpenAIRealtimeControlMessage = OpenAIRealtimeConnectRequest;
+
+const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname } };
+const aiRealtimeWebSockets = new Set<IncomingWebSocket>();
+let aiRealtimeHeartbeatHandler: (() => void) | undefined;
+let aiRealtimeMessagesSent = 0;
+let aiRealtimeMessagesReceived = 0;
+
+function initAiRealtimeHeartbeat(): void {
+  if (!aiRealtimeHeartbeatHandler) {
+    aiRealtimeHeartbeatHandler = (): void => {
+      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
+      setGauge('medplum.aiRealtime.websocketCount', aiRealtimeWebSockets.size, METRIC_OPTIONS);
+      setGauge('medplum.aiRealtime.messagesSentPerSec', aiRealtimeMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge(
+        'medplum.aiRealtime.messagesReceivedPerSec',
+        aiRealtimeMessagesReceived / heartbeatSeconds,
+        METRIC_OPTIONS
+      );
+      aiRealtimeMessagesSent = 0;
+      aiRealtimeMessagesReceived = 0;
+    };
+    heartbeat.addEventListener('heartbeat', aiRealtimeHeartbeatHandler);
+  }
+}
+
+export async function handleAiRealtimeConnection(socket: IncomingWebSocket, request: IncomingMessage): Promise<void> {
+  aiRealtimeWebSockets.add(socket);
+  initAiRealtimeHeartbeat();
+
+  const socketId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  let closed = false;
+  let connected = false;
+  let connecting = false;
+  let upstreamSocket: ReconnectingWebSocket | undefined;
+
+  globalLogger.info('[WS] OpenAI realtime socket connected', {
+    socketId,
+    remoteAddress: request.socket.remoteAddress,
+  });
+
+  socket.on('message', async (data: RawData, isBinary: boolean) => {
+    aiRealtimeMessagesReceived++;
+
+    if (!connected) {
+      if (connecting) {
+        sendError('Upstream websocket is still connecting');
+        return;
+      }
+
+      if (isBinary) {
+        sendError('Expected JSON connect message before proxying data');
+        closeClient(1008);
+        return;
+      }
+
+      let message: OpenAIRealtimeControlMessage;
+      try {
+        message = JSON.parse((data as Buffer).toString('utf8')) as OpenAIRealtimeControlMessage;
+      } catch (err) {
+        sendError(`Invalid connect message: ${normalizeErrorString(err)}`);
+        closeClient(1008);
+        return;
+      }
+
+      if (message.type !== 'ai-realtime:connect') {
+        sendError('Expected ai-realtime:connect as the first message');
+        closeClient(1008);
+        return;
+      }
+
+      if (!message.accessToken) {
+        sendError('Missing access token');
+        closeClient(1008);
+        return;
+      }
+
+      try {
+        connecting = true;
+        await connectToUpstream(message.accessToken);
+      } catch (err) {
+        sendError(normalizeErrorString(err));
+        closeClient(1011);
+      }
+      return;
+    }
+
+    if (upstreamSocket?.readyState !== WebSocket.OPEN) {
+      sendError('Upstream websocket is not connected');
+      closeClient(1011);
+      return;
+    }
+
+    upstreamSocket.send((data as Buffer).toString('utf8'));
+  });
+
+  socket.on('close', () => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    aiRealtimeWebSockets.delete(socket);
+    globalLogger.info('[WS] OpenAI realtime socket disconnected', { socketId });
+    if (upstreamSocket && upstreamSocket.readyState < WebSocket.CLOSING) {
+      upstreamSocket.close();
+    }
+  });
+
+  async function connectToUpstream(accessToken: string): Promise<void> {
+    const authResult = await getLoginForAccessToken(undefined, accessToken);
+    if (!authResult) {
+      sendError('Invalid access token');
+      closeClient(1008);
+      return;
+    }
+
+    const { project } = authResult.authState;
+    if (!hasProjectFeature(project.features, 'ai-realtime')) {
+      sendError('OpenAI realtime transcription is not enabled for this project');
+      closeClient(1008);
+      return;
+    }
+
+    const apiKey = project.secret?.find((s) => s.name === 'OPENAI_API_KEY')?.valueString;
+    if (!apiKey) {
+      sendError('OpenAI API key not configured in project secrets');
+      closeClient(1011);
+      return;
+    }
+
+    upstreamSocket = new ReconnectingWebSocket(getConfig().aiRealtimeTranscriptionUrl, [
+      'realtime',
+      `openai-insecure-api-key.${apiKey}`,
+      'openai-beta.realtime-v1',
+    ]);
+
+    bindUpstreamSocket(upstreamSocket);
+  }
+
+  function bindUpstreamSocket(upstream: ReconnectingWebSocket): void {
+    upstream.onopen = () => {
+      connecting = false;
+      connected = true;
+      sendControlMessage({ type: 'ai-realtime:connected' });
+    };
+
+    upstream.onmessage = (event) => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(event.data, { binary: event.data instanceof ArrayBuffer });
+        aiRealtimeMessagesSent++;
+      }
+    };
+
+    upstream.onerror = (err) => {
+      connecting = false;
+      globalLogger.error('[WS] OpenAI realtime upstream error', { socketId, error: err });
+      if (!connected) {
+        sendError(`Upstream websocket error: ${normalizeErrorString(err)}`);
+      }
+    };
+
+    upstream.onclose = (event) => {
+      connecting = false;
+      if (socket.readyState < WebSocket.CLOSING) {
+        socket.close(normalizeCloseCode(event.code), event.reason);
+      }
+    };
+  }
+
+  function sendError(body: string): void {
+    sendControlMessage({ type: 'ai-realtime:error', body, resource: badRequest(body) });
+  }
+
+  function sendControlMessage(message: Record<string, unknown>): void {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message), { binary: false });
+      aiRealtimeMessagesSent++;
+    }
+  }
+
+  function closeClient(code: number): void {
+    if (socket.readyState < WebSocket.CLOSING) {
+      socket.close(code);
+    }
+    if (upstreamSocket && upstreamSocket.readyState < WebSocket.CLOSING) {
+      upstreamSocket.close();
+    }
+  }
+}
+
+function normalizeCloseCode(code: number): number {
+  return code >= 1000 && code <= 4999 ? code : 1011;
+}
+
+function hasProjectFeature(features: readonly string[] | undefined, feature: string): boolean {
+  return !!features?.includes(feature);
+}

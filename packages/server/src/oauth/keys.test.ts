@@ -133,6 +133,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
+    expect(result.payload.jti).toBeDefined();
     expect(result.payload.login_id).toStrictEqual('123');
   });
 
@@ -150,6 +151,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
+    expect(result.payload.jti).toBeDefined();
     expect(result.payload.login_id).toStrictEqual('123');
   });
 
@@ -165,6 +167,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
+    expect(result.payload.jti).toBeDefined();
     expect(result.payload.login_id).toStrictEqual('123');
   });
 

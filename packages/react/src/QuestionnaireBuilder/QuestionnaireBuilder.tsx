@@ -3,7 +3,6 @@
 import { Anchor, Box, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
 import type {
-  Extension,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -143,7 +142,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     props.onChange({
       ...curr,
       item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
-    } as T);
+    });
   }
 
   function addItem(addedItem: QuestionnaireItem, disableSubmit?: boolean): void {
@@ -167,7 +166,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     props.onChange({
       ...itemRef.current,
       [property]: value,
-    } as T);
+    });
   }
 
   function updateItem(updatedItem: QuestionnaireItem): void {
@@ -334,7 +333,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                   linkId: generateLinkId('q'),
                   type: 'string',
                   text: 'Question',
-                } as QuestionnaireItem);
+                });
               }}
             >
               Add item
@@ -349,7 +348,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                     linkId: generateLinkId('g'),
                     type: 'group',
                     text: 'Group',
-                  } as QuestionnaireItem,
+                  },
                   true
                 );
               }}
@@ -609,7 +608,7 @@ function ensureQuestionnaireKeys(questionnaire: Questionnaire): Questionnaire {
     ...questionnaire,
     id: questionnaire.id || generateId(),
     item: ensureQuestionnaireItemKeys(questionnaire.item),
-  } as Questionnaire;
+  };
 }
 
 function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): QuestionnaireItem[] | undefined {
@@ -661,9 +660,9 @@ function createPage(): QuestionnaireItem {
             },
           ],
         },
-      } as Extension,
+      },
     ],
-  } as QuestionnaireItem;
+  };
 }
 
 function reorderItems(items: QuestionnaireItem[] | undefined, itemIndex: number, delta: number): QuestionnaireItem[] {

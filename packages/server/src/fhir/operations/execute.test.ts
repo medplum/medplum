@@ -239,7 +239,6 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({
-        resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
         identifier: [],
       });
@@ -253,7 +252,6 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({
-        resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
         identifier: [],
       });

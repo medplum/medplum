@@ -30,6 +30,7 @@ import {
   IconFileText,
   IconHelpCircle,
   IconMail,
+  IconMedicalCross,
   IconUser,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -43,6 +44,7 @@ export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
+  const [importingIcd10, setImportingIcd10] = useState(false);
 
   const handleImportPatient = useCallback(async () => {
     setImportingPatient(true);
@@ -84,6 +86,35 @@ export function GetStartedPage(): JSX.Element {
       showErrorNotification(error);
     } finally {
       setImportingVisit(false);
+    }
+  }, [medplum]);
+
+  const handleImportIcd10 = useCallback(async () => {
+    setImportingIcd10(true);
+    try {
+      await medplum.upsertResource(
+        {
+          resourceType: 'ValueSet',
+          status: 'active',
+          url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable',
+          title: 'ICD-10-CM Billable Codes',
+          name: 'icd10cm-billable',
+          compose: {
+            include: [
+              {
+                system: 'http://hl7.org/fhir/sid/icd-10-cm',
+                filter: [{ property: 'tty', op: '=', value: 'PT' }],
+              },
+            ],
+          },
+        },
+        { url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable' }
+      );
+      showNotification({ color: 'green', title: 'Success', message: 'ICD-10-CM Billable Codes ValueSet ready' });
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      setImportingIcd10(false);
     }
   }, [medplum]);
 
@@ -207,6 +238,37 @@ export function GetStartedPage(): JSX.Element {
                   mt="sm"
                 >
                   {importingVisit ? 'Importing...' : 'Import Care Template'}
+                </Button>
+              </Paper>
+              <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
+                <Stack gap="md" className={classes.flexOne}>
+                  <Group gap="sm" align="center">
+                    <IconMedicalCross size={24} color="var(--icon-secondary)" />
+                    <Stack gap={0}>
+                      <Text size="11px" fw={500} className={classes.textLabel}>
+                        Code System
+                      </Text>
+                      <Text fw={600} size="lg">
+                        ICD-10-CM Billable Codes
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Divider />
+                  <Text size="md" className={classes.textSecondary} mb="sm" style={{ flex: 1 }}>
+                    Registers the ICD-10-CM billable codes ValueSet used for diagnosis code lookup.
+                  </Text>
+                </Stack>
+                <Button
+                  variant="filled"
+                  size="sm"
+                  fullWidth
+                  onClick={handleImportIcd10}
+                  loading={importingIcd10}
+                  disabled={importingIcd10}
+                  leftSection={<IconDownload size={14} />}
+                  mt="sm"
+                >
+                  {importingIcd10 ? 'Importing...' : 'Import ValueSet'}
                 </Button>
               </Paper>
               <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>

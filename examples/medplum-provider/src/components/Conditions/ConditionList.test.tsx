@@ -242,7 +242,7 @@ describe('ConditionList', () => {
     medplum.valueSetExpand = vi
       .fn()
       .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-        if (params.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs') {
+        if (params.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable') {
           const choleraCodes = [
             {
               system: 'http://hl7.org/fhir/sid/icd-10-cm',
@@ -359,7 +359,7 @@ describe('ConditionList', () => {
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
           const choleraCall = calls.find(
             (call) =>
-              call[0]?.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs' &&
+              call[0]?.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable' &&
               call[0]?.filter?.toLowerCase().includes('cholera')
           );
           expect(choleraCall).toBeDefined();

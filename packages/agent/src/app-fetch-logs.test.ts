@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { AgentError, AgentLogsRequest, AgentLogsResponse } from '@medplum/core';
+import type { AgentError, AgentLogsResponse } from '@medplum/core';
 import { allOk, LogLevel, sleep } from '@medplum/core';
 import type { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -116,7 +116,7 @@ describe('Fetch Logs', () => {
         JSON.stringify({
           type: 'agent:logs:request',
           callback: randomUUID(),
-        } as AgentLogsRequest)
+        })
       )
     );
 
@@ -210,7 +210,7 @@ describe('Fetch Logs', () => {
         JSON.stringify({
           type: 'agent:logs:request',
           callback: randomUUID(),
-        } as AgentLogsRequest)
+        })
       )
     );
 
@@ -308,7 +308,7 @@ describe('Fetch Logs', () => {
           type: 'agent:logs:request',
           limit: 10,
           callback: randomUUID(),
-        } as AgentLogsRequest)
+        })
       )
     );
 
@@ -408,7 +408,7 @@ describe('Fetch Logs', () => {
             type: 'agent:logs:request',
             limit, // Invalid limits
             callback: randomUUID(),
-          } as AgentLogsRequest)
+          })
         )
       );
 

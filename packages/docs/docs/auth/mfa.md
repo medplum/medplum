@@ -92,6 +92,43 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 For more details on the invite endpoint, see the [Invite User Endpoint](/docs/api/project-admin/invite) documentation.
 
 
+## Admin MFA Reset
+
+Project admins can reset MFA enrollment for users who have lost access to their authenticator device via the `POST /admin/projects/:projectId/members/:membershipId/mfa/reset` endpoint.
+
+When reset:
+- The user's `mfaEnrolled` flag is cleared
+- The TOTP secret is rotated (the old authenticator app entry cannot be reused)
+- The user receives an email notification
+- The user must re-enroll in MFA on their next login (if `mfaRequired` is set) or via the Security settings page
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+
+```ts
+await medplum.post(`admin/projects/${projectId}/members/${membershipId}/mfa/reset`, {});
+```
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum post admin/projects/:projectId/members/:membershipId/mfa/reset '{}'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl -X POST https://api.medplum.com/admin/projects/:projectId/members/:membershipId/mfa/reset \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+  </TabItem>
+</Tabs>
+
 ## Using Medplum's SignInForm Component
 
 **We recommend using Medplum's [`SignInForm`](https://storybook.medplum.com/?path=/story/medplum-auth-signinform--basic) React component** for handling authentication flows that include MFA. The `SignInForm` component automatically handles all MFA-related UI and flows, including:

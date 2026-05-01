@@ -316,7 +316,7 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
   );
 }
 
-const IgnoredSearchParameters = new Set(['_id', '_lastUpdated', '_profile', '_compartment', '_source']);
+const IgnoredSearchParameters = new Set(['_id', '_lastUpdated', '_profile', '_compartment', '_source', '_project']);
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
   for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {

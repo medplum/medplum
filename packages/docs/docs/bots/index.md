@@ -46,6 +46,7 @@ Implement frequently-needed functionality like file handling, document generatio
 ## Deployment & Infrastructure
 Deploy your bots to Medplum's cloud infrastructure or integrate with your existing AWS environment.
 - [Bots in Production](/docs/bots/bots-in-production)
+- [Bot Code Organization and Build Setup](/docs/bots/bot-code-organization)
 - [Running Bots on Fission](/docs/bots/running-bots-on-fission)
 - [External Lambda Functions](/docs/bots/external-function)
 - [Medplum Bot Layers](/docs/bots/bot-lambda-layer)

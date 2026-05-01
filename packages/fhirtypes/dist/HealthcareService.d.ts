@@ -118,6 +118,12 @@ export interface HealthcareService {
   providedBy?: Reference<Organization>;
 
   /**
+   * When the HealthcareService is representing a specific, schedulable
+   * service, the availableIn property can refer to a generic service.
+   */
+  offeredIn?: Reference<HealthcareService>[];
+
+  /**
    * Identifies the broad category of service being performed or delivered.
    */
   category?: CodeableConcept[];

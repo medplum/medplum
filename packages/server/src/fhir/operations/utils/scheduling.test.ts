@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { createReference, generateId } from '@medplum/core';
-import type { Practitioner, Project, Schedule, Slot } from '@medplum/fhirtypes';
+import type { HealthcareService, Practitioner, Project, Schedule, Slot } from '@medplum/fhirtypes';
 import type { Interval } from '../../../util/date';
 import { applyExistingSlots, normalizeIntervals, removeAvailability, resolveAvailability } from './scheduling';
 import type { SchedulingParameters } from './scheduling-parameters';
@@ -24,6 +25,12 @@ const schedule: Schedule = {
   actor: [createReference(practitioner)],
 };
 
+const service: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: generateId(),
+  meta: { project: project.id },
+};
+
 describe('resolveAvailability', () => {
   test('having multiple days and times', async () => {
     const schedulingParameters: SchedulingParameters = {
@@ -44,7 +51,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     const range = {
@@ -77,7 +84,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     const range = {
@@ -105,7 +112,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     const range = {
@@ -135,7 +142,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     const range = {
@@ -163,7 +170,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     const range = {
@@ -192,7 +199,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     const range = {
@@ -220,7 +227,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     // NY has a DST "spring forward" on March 8 2026
@@ -258,7 +265,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     // NY has a DST "spring forward" on March 8 2026
@@ -300,7 +307,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     // NY has a DST "fall back" on Nov 2 2025: 1:30am: happens twice
@@ -330,7 +337,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
-      serviceType: [],
+      service: createReference(service),
     };
 
     // NY has a DST "spring forward" on March 8 2026; 2:30am never happens

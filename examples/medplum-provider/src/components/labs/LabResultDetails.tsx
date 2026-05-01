@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Divider, Group, Paper, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import type { DiagnosticReport, HumanName, Reference } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Reference } from '@medplum/fhirtypes';
 import { ObservationTable, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 
@@ -74,7 +74,7 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
               <Text fw={500} size="sm">
                 Performed by:
               </Text>
-              <Text size="sm">{formatHumanName(performer.name?.[0] as HumanName)}</Text>
+              <Text size="sm">{formatHumanName(performer.name?.[0])}</Text>
             </Group>
           )}
 
@@ -83,7 +83,7 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
               <Text fw={500} size="sm">
                 Patient:
               </Text>
-              <Text size="sm">{formatHumanName(patient.name?.[0] as HumanName)}</Text>
+              <Text size="sm">{formatHumanName(patient.name?.[0])}</Text>
             </Group>
           )}
 

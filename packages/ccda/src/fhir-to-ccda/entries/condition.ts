@@ -20,7 +20,7 @@ import {
   mapCodeableConceptToCcdaValue,
   PROBLEM_STATUS_MAPPER,
 } from '../../systems';
-import type { CcdaEntry, CcdaEntryRelationship, CcdaId } from '../../types';
+import type { CcdaEntry, CcdaEntryRelationship } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapEffectivePeriod, mapIdentifiers } from '../utils';
 
@@ -125,7 +125,7 @@ export function createHealthConcernEntry(converter: FhirToCcdaConverter, healthC
                 { '@_root': OID_PROBLEM_OBSERVATION },
                 { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
               ],
-              id: mapIdentifiers(detail.id, detail.identifier) as CcdaId[],
+              id: mapIdentifiers(detail.id, detail.identifier),
               text: createTextFromExtensions(detail.extension),
               code: {
                 '@_code': '404684003',
