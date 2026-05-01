@@ -175,7 +175,7 @@ function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cy
 
     // Visit all neighbors
     let hasCycle = false;
-    for (const neighbor of graph[vertex]) {
+    for (const neighbor of graph[vertex] ?? []) {
       if (!visit(neighbor, path)) {
         hasCycle = true;
       }
@@ -232,8 +232,8 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
     if (entry.resource) {
       findReferences(entry.resource, (reference: string) => {
         // Add an incoming reference to the adjacency list
-        if (adjacencyList[reference]) {
-          adjacencyList[reference].push(fullUrl as string);
+        if (fullUrl && adjacencyList[reference]) {
+          adjacencyList[reference].push(fullUrl);
         }
       });
     }

@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type {
   Bundle,
   BundleEntry,
@@ -374,6 +377,20 @@ describe('Bundle tests', () => {
       const attachmentUrl = (docRefEntry?.resource as any)?.content?.[0]?.attachment?.url;
       expect(attachmentUrl).toBe(binaryEntry?.fullUrl);
       expect(attachmentUrl).toMatch(/^urn:uuid:/);
+    });
+
+    test('Synthea collection bundle (Abbott509) matches BatchPage convert path', () => {
+      const syntheaPath = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'Abbott509_Aaron203_44.json');
+      let bundle = JSON.parse(readFileSync(syntheaPath, 'utf8')) as Bundle;
+      if (bundle.type !== 'batch' && bundle.type !== 'transaction') {
+        bundle = convertToTransactionBundle(bundle);
+      }
+      expect(bundle.resourceType).toBe('Bundle');
+      expect(bundle.type).toBe('transaction');
+      expect(bundle.entry?.length).toBeGreaterThan(0);
+      for (const entry of bundle.entry ?? []) {
+        expect(entry.request?.method).toBe('POST');
+      }
     });
   });
 
