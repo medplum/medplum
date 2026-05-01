@@ -381,8 +381,14 @@ Section Uninstall
     # Uninstall the Start menu shortcuts
     RMDir /r /REBOOTOK "$SMPROGRAMS\${APP_NAME}"
 
-    # Delete the files
-    RMDir /r /REBOOTOK "$INSTDIR"
+    # Delete known agent files but preserve log files created during operation
+    Delete /REBOOTOK "$INSTDIR\${SERVICE_FILE_NAME}"
+    Delete /REBOOTOK "$INSTDIR\${SHAWL_EXE_NAME}"
+    Delete /REBOOTOK "$INSTDIR\shawl-${SHAWL_VERSION}-legal.txt"
+    Delete /REBOOTOK "$INSTDIR\README.md"
+    Delete /REBOOTOK "$INSTDIR\agent.properties"
+    # Remove directory only if empty; log files (*.log) are intentionally left in place
+    RMDir /REBOOTOK "$INSTDIR"
 
     # Unregister the program
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
