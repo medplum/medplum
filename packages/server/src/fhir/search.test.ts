@@ -2591,6 +2591,59 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
     }));
 
+  test('Reverse include on denied type', () =>
+    withTestContext(async () => {
+      const { repo, client } = await createTestProject({
+        withRepo: true,
+        withClient: true,
+        accessPolicy: { resource: [{ resourceType: 'ClientApplication' }] },
+      });
+
+      await expect(
+        repo.search({
+          resourceType: 'ClientApplication',
+          revInclude: [
+            {
+              resourceType: 'ProjectMembership',
+              searchParam: 'profile',
+            },
+          ],
+          total: 'accurate',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: client.id }],
+        })
+      ).rejects.toThrow('Forbidden');
+    }));
+
+  test('Chained search through denied type', () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: 'Observation' }, { resourceType: 'Organization' }] },
+      });
+
+      const organization = await repo.createResource({
+        resourceType: 'Organization',
+        name: randomUUID(),
+      });
+
+      const patient = await getGlobalSystemRepo().createResource({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        managingOrganization: createReference(organization),
+      });
+
+      await repo.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        code: { text: 'Seen by doctor' },
+      });
+
+      await expect(
+        repo.search(parseSearchRequest(`Observation?patient.organization.name=${organization.name}`))
+      ).rejects.toThrow('Forbidden');
+    }));
+
   test('_include:iterate', () =>
     withTestContext(async () => {
       /*
