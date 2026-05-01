@@ -245,7 +245,7 @@ function applyCountAndOffsetLimits<T extends Resource>(
  */
 function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequest): void {
   if (searchRequest.types) {
-    for (const resourceType of searchRequest.types ?? EMPTY) {
+    for (const resourceType of searchRequest.types) {
       validateSearchResourceType(repo, resourceType);
     }
   } else {
