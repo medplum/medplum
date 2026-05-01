@@ -40,7 +40,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
-import { getProjectSystemRepo, Repository } from './repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
@@ -3030,5 +3030,62 @@ describe('AccessPolicy', () => {
 
       const results = await repo2.searchResources<Device>({ resourceType: 'Device' });
       expect(results).toHaveLength(1);
+    }));
+
+  test('Protected resource types in linked projects', async () =>
+    withTestContext(async () => {
+      const systemRepo = getGlobalSystemRepo();
+
+      const { project: projectA, repo: repoA } = await createTestProject({
+        membership: { admin: true },
+        withRepo: true,
+      });
+      const userA = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        meta: { project: projectA.id },
+        project: createReference(projectA),
+        email: randomUUID() + '@example.com',
+        firstName: 'User',
+        lastName: 'A',
+      });
+
+      const projectsA = await repoA.searchResources<Project>({ resourceType: 'Project' });
+      expect(projectsA).toHaveLength(2);
+      expect(projectsA.find((p) => p.name === 'FHIR R4')).toBeDefined();
+      expect(projectsA.find((p) => p.id === projectA.id)).toBeDefined();
+
+      const usersA = await repoA.searchResources<User>({ resourceType: 'User' });
+      expect(usersA).toHaveLength(1);
+      expect(usersA[0].id).toStrictEqual(userA.id);
+
+      const membershipsA = await repoA.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
+      expect(membershipsA).toHaveLength(1);
+
+      const { project: projectB, repo: repoB } = await createTestProject({
+        project: { link: [{ project: createReference(projectA) }] },
+        membership: { admin: true },
+        withRepo: true,
+      });
+      const userB = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        meta: { project: projectB.id },
+        project: createReference(projectB),
+        email: randomUUID() + '@example.com',
+        firstName: 'User',
+        lastName: 'B',
+      });
+
+      const projectsB = await repoB.searchResources<Project>({ resourceType: 'Project' });
+      expect(projectsB).toHaveLength(3);
+      expect(projectsB.find((p) => p.name === 'FHIR R4')).toBeDefined();
+      expect(projectsB.find((p) => p.id === projectA.id)).toBeDefined();
+      expect(projectsB.find((p) => p.id === projectB.id)).toBeDefined();
+
+      const usersB = await repoB.searchResources<User>({ resourceType: 'User' });
+      expect(usersB).toHaveLength(1);
+      expect(usersB[0].id).toStrictEqual(userB.id);
+
+      const membershipsB = await repoB.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
+      expect(membershipsB).toHaveLength(1);
     }));
 });

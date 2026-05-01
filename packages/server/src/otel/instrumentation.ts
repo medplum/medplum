@@ -16,7 +16,12 @@ import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
 import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import type { MetricReader } from '@opentelemetry/sdk-metrics';
-import { AggregationType, InstrumentType, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import {
+  AggregationTemporality,
+  AggregationType,
+  InstrumentType,
+  PeriodicExportingMetricReader,
+} from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
@@ -50,7 +55,10 @@ export function initOpenTelemetry(): void {
 
   let metricReader: MetricReader | undefined = undefined;
   if (OTLP_METRICS_ENDPOINT) {
-    const exporter = new OTLPMetricExporter({ url: OTLP_METRICS_ENDPOINT });
+    const exporter = new OTLPMetricExporter({
+      url: OTLP_METRICS_ENDPOINT,
+      temporalityPreference: AggregationTemporality.DELTA,
+    });
     metricReader = new PeriodicExportingMetricReader({ exporter });
   }
 

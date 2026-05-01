@@ -48,7 +48,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 | Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
 | ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
+| `service`           | Reference(HealthcareService)                                | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
 | `availability`      | [Nested extension](#availability-extension)                 | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time).                                                                                          | Time is implicitly available by default (unless blocked by Slots or other constraints) |
 | `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified        | Uses the timezone defined on the Schedule's actor reference                            |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
@@ -67,9 +67,10 @@ All scheduling constraints are managed through a single consolidated extension: 
   "extension": [
     // Required on Schedule: you must specify what type of appointment these parameters apply to
     {
-      "url": "serviceType",
-      "valueCodeableConcept": {
-        "coding": [{"code": "bariatric-surgery"}]
+      "url": "service",
+      "valueReference": {
+        "reference": "HealthcareService/5d02acfd-fbe8-4537-84e4-31f5116be105",
+        "display": "Bariatric Surgery"
       }
     },
 
@@ -179,6 +180,8 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
+The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute.
+
 Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
 ```tsx
@@ -186,13 +189,31 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ],
+      "extension": [
+        {
+          "url": "https://medplum.com/fhir/service-type-reference",
+          "valueReference": {
+            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
+            "display": "Office Visit"
+          }
+        }
+      ]
+    }
+  ],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
-        "url": "serviceType",
-        "valueCodeableConcept": {
-          "coding": [{"code": "office-visit"}]
+        "url": "service",
+        "valueReference": {
+            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
+            "display": "Office Visit"
         }
       },
       {
@@ -243,13 +264,31 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ],
+      "extension":[
+        {
+          "url": "https://medplum.com/fhir/service-type-reference",
+          "valueReference": {
+            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
+            "display": "Office Visit"
+          }
+        }
+      ]
+    }
+  ],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
-        "url": "serviceType",
-        "valueCodeableConcept": {
-          "coding": [{"code": "office-visit"}]
+        "url": "service",
+        "valueReference": {
+            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
+            "display": "Office Visit"
         }
       },
       {
@@ -284,17 +323,17 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
 
 An [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define the default scheduling parameters for a specific service type (appointment type), which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, alignment intervals, and booking limits once and apply them across multiple providers.
 
-To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [HealthcareService](/docs/api/fhir/resources/healthcareservice)'s scheduling parameters, the `Schedule.serviceType` must match the `HealthcareService.type`.
+To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [HealthcareService](/docs/api/fhir/resources/healthcareservice)'s scheduling parameters, the `Schedule.serviceType` must include a reference to the HealthcareService in its extensions.
 
 ```tsx
 {
   "resourceType": "HealthcareService",
-  "id": "office-visit",
+  "id": "23c3f1cc-4f55-4990-9775-511b02487e7e",
   "type": [{
     "text": "Office Visit",
     "coding": [{
       "system": "http://example.org/appointment-types",
-      "code": "office-visit"  // ← This is the key
+      "code": "office-visit"
     }]
   }],
   "availableTime": [
@@ -323,6 +362,23 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [HealthcareS
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ],
+      "extension":[
+        {
+          "url": "https://medplum.com/fhir/service-type-reference",
+          "valueReference": {
+            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
+            "display": "Office Visit"
+          }
+        }
+      ]
+    }
+  ]
   //...
 }
 ```
@@ -339,8 +395,30 @@ Here is an example Schedule that overrides the availability for a specific servi
   "id": "dr-chen-schedule",
   "active": true,
   "serviceType": [
-    {"coding": [{"code": "new-patient-visit"}]},
-    {"coding": [{"code": "follow-up"}]}
+    {
+      "coding": [{"code": "new-patient-visit"}]
+      "extension":[
+        {
+          "url": "https://medplum.com/fhir/service-type-reference",
+          "valueReference": {
+            "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
+            "display": "New Patient visit"
+          }
+        }
+      ]
+    },
+    {
+      "coding": [{"code": "follow-up"}]
+      "extension":[
+        {
+          "url": "https://medplum.com/fhir/service-type-reference",
+          "valueReference": {
+            "reference": "HealthcareService/5f93269f-b5de-4d76-9672-e35ecb37f201",
+            "display": "Follow-up visit"
+          }
+        }
+      ]
+    }
   ],
   "actor": [{"reference": "Practitioner/dr-chen"}],
   "extension": [
@@ -349,9 +427,10 @@ Here is an example Schedule that overrides the availability for a specific servi
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
         {
-          "url": "serviceType",
-          "valueCodeableConcept": {
-            "coding": [{"code": "new-patient-visit"}]
+          "url": "service",
+          "valueReference": {
+            "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
+            "display": "New Patient visit"
           }
         },
         {
@@ -381,12 +460,12 @@ Here is an example Schedule that overrides the availability for a specific servi
 }
 ```
 
-**All-or-nothing rule**: When a `SchedulingParameters` extension includes a `serviceType`, it **completely replaces** the default configuration for that service type. No attribute-level merging occurs.
+**All-or-nothing rule**: When a `SchedulingParameters` extension includes a `service`, it **completely replaces** the default configuration for that service. No attribute-level merging occurs.
 
 **Priority order** (highest to lowest):
 
-1. Schedule where `https://medplum.com/fhir/StructureDefinition/SchedulingParameters.serviceType` extension matches `service-type` param on `$find` request.
-2. HealthcareService where `HealthcareService.code` matches `service-type` param on `$find` request. HealthcareService parameters are used.
+1. Schedule where `https://medplum.com/fhir/StructureDefinition/SchedulingParameters.service` extension matches `service-type-reference` parameter on `$find` request.
+2. HealthcareService matching `service-type-reference` param on `$find` request. HealthcareService parameters are used.
 
 ### Blocking Time by Service Type
 
@@ -464,6 +543,20 @@ Here is an example of a Schedule with multiple service types, each with its own 
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
+  "serviceType": [
+    {
+      "text": "Cardiac Surgery",
+      "coding": [
+        { "code": "cardiac-surgery" }
+      ]
+    },
+    {
+      "text": "Call Center Availability",
+      "coding": [
+        { "code": "call-center-availability" }
+      ]
+    }
+  ],
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
@@ -623,6 +716,15 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
     "start": "2025-01-01T00:00:00Z",
     "end": "2025-12-31T23:59:59Z"
   },
+  "serviceType": [
+    // This entry will allow using the office-visit shared HealthcareService definitions
+    {
+      "text": "Office Visit",
+      "coding": [
+        { "code": "office-visit" }
+      ]
+    }
+  ],
   "extension": [
     // No values here, everything is inherited from shared definitions
   ]
@@ -706,6 +808,8 @@ This HealthcareService defines a 60-minute new patient visit with 15-minute buff
 
 This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers and 10-minute alignment intervals for more frequent scheduling.
 
+It defines default availability of Monday-Friday, 9am-5pm.
+
 ```tsx
 {
   "resourceType": "HealthcareService",
@@ -718,6 +822,11 @@ This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers
       "display": "Follow-up Visit"
     }]
   },
+  "availableTime": [{
+    "daysOfWeek": ["mon","tue","wed","thu","fri"],
+    "availableStartTime": "09:00:00",
+    "availableEndTime": "17:00:00",
+  }],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
@@ -741,7 +850,9 @@ This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers
 <details>
 <summary>Schedule: Multi-Service with Overrides</summary>
 
-This Schedule shows how to configure default availability for all services (Mon-Fri 9am-5pm), then override new patient visits to only be available on Tuesday and Thursday mornings (9am-1pm).
+This schedule declares in its `serviceType` array that it can be booked for New Patient visits and Follow-Up visits.
+
+This Schedule will use the default availability for the "Follow-Up" service (Mon-Fri 9am-5pm), then override new patient visits to only be available on Tuesday and Thursday mornings (9am-1pm).
 
 ```tsx
 {
@@ -753,6 +864,26 @@ This Schedule shows how to configure default availability for all services (Mon-
     "start": "2025-01-01T00:00:00Z",
     "end": "2025-12-31T23:59:59Z"
   },
+  "serviceType": [
+    {
+      "text": "New Patient Visit",
+      "coding": [
+        {
+          "system": "http://example.org/appointment-types",
+          "code": "new-patient-visit"
+        }
+      ]
+    },
+    {
+      "text": "Follow-up Visit",
+      "coding": [
+        {
+          "system": "http://example.org/appointment-types",
+          "code": "follow-up"
+        }
+      ]
+    }
+  ],
   "extension": [
     // New patient visits only on Tuesday and Thursday mornings
     {
@@ -761,7 +892,10 @@ This Schedule shows how to configure default availability for all services (Mon-
         {
           "url": "serviceType",
           "valueCodeableConcept": {
-            "coding": [{"code": "new-patient-visit"}]
+            "coding": [{
+              "system": "http://example.org/appointment-types",
+              "code": "new-patient-visit"
+            }]
           }
         },
         {
@@ -882,7 +1016,13 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
   "id": "surgeon-martinez-schedule",
   "active": true,
   "serviceType": [
-    {"coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]}
+    {
+      "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
+      "extension": [{
+        "url": "https://medplum.com/fhir/service-type-reference",
+        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
+      }]
+    }
   ],
   "actor": [{
     "reference": "PractitionerRole/surgeon-martinez",
@@ -892,10 +1032,8 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
-        "url": "serviceType",
-        "valueCodeableConcept": {
-          "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
-        }
+        "url": "service",
+        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
       },
       {
         "url": "duration",
@@ -939,9 +1077,23 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
     "reference": "Location/or-3",
     "display": "Operating Room 3"
   }],
+  "serviceType": [
+    {
+      "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
+      "extension": [{
+        "url": "https://medplum.com/fhir/service-type-reference",
+        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
+      }]
+    }
+  ],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "service",
+        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
+        }
+      },
       {
         "url": "duration",
         "valueDuration": {
@@ -984,7 +1136,13 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
   "id": "anesthesiologist-kim-schedule",
   "active": true,
   "serviceType": [
-    {"coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]}
+    {
+      "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
+      "extension": [{
+        "url": "https://medplum.com/fhir/service-type-reference",
+        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
+      }]
+    }
   ],
   "actor": [{
     "reference": "PractitionerRole/anesthesiologist-kim",
@@ -994,10 +1152,8 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
-        "url": "serviceType",
-        "valueCodeableConcept": {
-          "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
-        }
+        "url": "service",
+        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
       },
       {
         "url": "duration",
@@ -1108,7 +1264,7 @@ graph TD
 
 #### 1. Use All-or-Nothing Overrides
 
-If adding a `serviceType` configuration on Schedule, **specify ALL attributes** to avoid confusion about inheritance.
+If adding a `service` configuration on Schedule, **specify ALL attributes** to avoid confusion about inheritance.
 
 #### 2. Minimize Pre-Generated Slots
 

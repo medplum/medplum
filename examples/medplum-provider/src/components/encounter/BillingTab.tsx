@@ -17,6 +17,7 @@ import type {
   Media,
   Patient,
   Practitioner,
+  Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
@@ -27,7 +28,7 @@ import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResour
 import { ChartNoteStatus } from '../../types/encounter';
 import { calculateTotalPrice } from '../../utils/chargeitems';
 import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
-import { createSelfPayCoverage, isSelfPayCoverage, SELF_PAY_VALUE } from '../../utils/coverage';
+import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
@@ -87,6 +88,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const [stediBot, setStediBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const [stediSubmitting, setStediSubmitting] = useState(false);
+  const [stediClaimId, setStediClaimId] = useState(
+    claim ? getIdentifier(claim, 'https://www.stedi.com/claims') : undefined
+  );
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
@@ -136,6 +142,17 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .then((bot) => setGetEncounterBot(bot ?? null))
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
+
+  useEffect(() => {
+    medplum
+      .searchOne('Bot', { identifier: 'https://www.medplum.com/bots|submit-claim-to-stedi' })
+      .then((bot) => setStediBot(bot ?? null))
+      .catch(() => setStediBot(null));
+  }, [medplum]);
+
+  useEffect(() => {
+    setStediClaimId(claim ? getIdentifier(claim, 'https://www.stedi.com/claims') : undefined);
+  }, [claim]);
 
   const processCandidResponse = useCallback((result: CandidBotResponse): void => {
     const encounterId = result?.fullEncounter?.encounterId;
@@ -332,7 +349,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setSubmitting(true);
       debouncedUpdateClaim.cancel();
       try {
-        const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
+        const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
         showNotification({
           title: 'Claim Submitted',
           message: result?.message || 'Claim successfully submitted to Candid Health',
@@ -361,6 +378,62 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     },
     [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]
   );
+
+  const submitToStedi = useCallback(
+    async (insurance: Reference<Coverage>[]): Promise<void> => {
+      if (!claim || !stediBot) {
+        return;
+      }
+      if (!conditionsRef.current?.length) {
+        showNotification({
+          title: 'Missing Diagnosis',
+          message: 'Please add at least one diagnosis before submitting a claim',
+          color: 'red',
+        });
+        return;
+      }
+      if (insurance.length === 0) {
+        return;
+      }
+      setStediSubmitting(true);
+      debouncedUpdateClaim.cancel();
+      try {
+        const claimPayload = {
+          ...claim,
+          insurance: insurance.map((cov, index) => ({
+            sequence: index + 1,
+            focal: index === 0,
+            coverage: cov,
+          })),
+        };
+        const result = await medplum.executeBot(stediBot.id, claimPayload, 'application/fhir+json');
+        const updatedClaim = await medplum.searchOne('Claim', { _id: claim.id }, { cache: 'no-cache' });
+        if (updatedClaim) {
+          setClaim(updatedClaim);
+        }
+        showNotification({
+          title: 'Submitted to Stedi',
+          message: result?.message || 'Claim successfully submitted to Stedi',
+          color: 'green',
+        });
+      } catch (err) {
+        showErrorNotification(err);
+      } finally {
+        setStediSubmitting(false);
+      }
+    },
+    [claim, debouncedUpdateClaim, medplum, setClaim, stediBot]
+  );
+
+  const ensureSelfPayCoverage = useCallback(async (): Promise<WithId<Coverage>> => {
+    const existing = coverages.find(isSelfPayCoverage);
+    if (existing) {
+      return existing;
+    }
+    const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
+    setCoverages((prev) => [...prev, created]);
+    return created;
+  }, [coverages, medplum, patient]);
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
 
@@ -418,52 +491,38 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   );
 
   const handleConfirmSubmit = useCallback(
-    async (coverageIds: string[]): Promise<void> => {
+    async (coverageRefs: Reference<Coverage>[]): Promise<void> => {
       setConfirmModalOpen(false);
-      if (!claim) {
+      if (!claim || coverageRefs.length === 0) {
+        showNotification({
+          title: 'Missing Coverage',
+          message: 'Please select at least one coverage before submitting a claim',
+          color: 'red',
+        });
         return;
       }
 
-      const resolved: WithId<Coverage>[] = [];
-      for (const id of coverageIds) {
-        if (id === SELF_PAY_VALUE) {
-          const existing = coverages.find(isSelfPayCoverage);
-          if (existing) {
-            resolved.push(existing);
-          } else {
-            const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
-            setCoverages((prev) => [...prev, created]);
-            resolved.push(created);
-          }
-        } else {
-          const found = coverages.find((c) => c.id === id);
-          if (found) {
-            resolved.push(found);
-          }
-        }
+      const firstCoverage = coverages.find((c) => getReferenceString(c) === coverageRefs[0].reference);
+      if (firstCoverage) {
+        setCoverage(firstCoverage);
       }
 
-      if (resolved.length === 0) {
-        return;
-      }
-
-      setCoverage(resolved[0]);
       debouncedUpdateClaim.cancel();
       const updatedClaim = await medplum.updateResource({
         ...claim,
-        insurance: resolved.map((cov, index) => ({
+        insurance: coverageRefs.map((ref, index) => ({
           sequence: index + 1,
           focal: index === 0,
-          coverage: { reference: getReferenceString(cov) },
+          coverage: ref,
         })),
       });
       setClaim(updatedClaim);
       await submitClaim(updatedClaim);
     },
-    [claim, coverages, debouncedUpdateClaim, medplum, patient, setClaim, submitClaim]
+    [claim, coverages, debouncedUpdateClaim, medplum, setClaim, submitClaim]
   );
 
-  const handleSubmitClaimClick = useCallback((): void => {
+  const handleSubmitClaimClick = useCallback(async (): Promise<void> => {
     if (!conditions.length) {
       showNotification({
         title: 'Missing Diagnosis',
@@ -472,14 +531,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       });
       return;
     }
+    if (!coverages.find(isSelfPayCoverage)) {
+      const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
+      setCoverages((prev) => [...prev, created]);
+    }
     setConfirmModalOpen(true);
-  }, [conditions]);
+  }, [conditions, coverages, medplum, patient]);
 
   const renderClaimCard = (): JSX.Element | null => {
     if (!claim) {
       return null;
     }
-    if (candidLoading || backgroundChecking || getEncounterBot === undefined) {
+    if (candidLoading || backgroundChecking || getEncounterBot === undefined || stediBot === undefined) {
       return (
         <Card withBorder shadow="sm" p="md">
           <Skeleton height={20} width="60%" mb="sm" />
@@ -487,12 +550,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         </Card>
       );
     }
-    if (candidEncounterId || candidStatus) {
+    if (candidEncounterId || candidStatus || stediClaimId) {
       return (
         <ClaimSubmittedPanel
-          status={candidStatus}
+          status={candidStatus ?? (stediClaimId ? 'submitted' : undefined)}
           claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
-          createdAt={candidCreatedAt}
+          createdAt={candidCreatedAt ?? claim.meta?.lastUpdated}
           candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
           exportMenu={exportClaimMenu()}
         />
@@ -502,7 +565,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       <Card withBorder shadow="sm">
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
-          {billingBot && (
+          {(billingBot || stediBot) && (
             <>
               <SubmitClaimModal
                 opened={confirmModalOpen}
@@ -510,21 +573,24 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                 coverages={coverages}
                 selectedCoverage={coverage}
                 patient={patient}
-                encounter={encounter}
                 conditions={conditions}
                 practitioner={practitioner}
-                chargeItems={chargeItems}
+                showCandidButton={!!billingBot}
+                showStediButton={!!stediBot}
+                stediSubmitting={stediSubmitting}
                 onClose={() => setConfirmModalOpen(false)}
-                onConfirm={handleConfirmSubmit}
+                onSubmitClaim={handleConfirmSubmit}
+                onSubmitToStedi={submitToStedi}
+                ensureSelfPayCoverage={ensureSelfPayCoverage}
               />
               <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
                 <Button
                   component="div"
                   variant="outline"
                   leftSection={<IconSend size={16} />}
-                  loading={submitting}
+                  loading={submitting || stediSubmitting}
                   onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
-                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || submitting || stediSubmitting}
                   data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
                 >
                   Submit Claim
@@ -532,7 +598,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
               </Tooltip>
             </>
           )}
-          {billingBot === null && (
+          {billingBot === null && stediBot === null && (
             <Button
               variant="outline"
               leftSection={<IconSend size={16} />}

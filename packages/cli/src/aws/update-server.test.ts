@@ -35,7 +35,7 @@ describe('update-server command', () => {
     ecsMock.on(UpdateServiceCommand).resolves({});
     process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
-    }) as unknown as typeof process.exit;
+    });
     processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
   });
 

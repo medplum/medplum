@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, SubscriptionStatus } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import type { WS } from 'vitest-websocket-mock';
 import type { MedplumClient } from '../client';
 import { generateId } from '../crypto';
@@ -18,7 +18,7 @@ export function sendHandshakeBundle(wsServer: WS, subscriptionId: string): void 
           resourceType: 'SubscriptionStatus',
           type: 'handshake',
           subscription: { reference: `Subscription/${subscriptionId}` },
-        } as SubscriptionStatus,
+        },
       },
     ],
   } satisfies Bundle);

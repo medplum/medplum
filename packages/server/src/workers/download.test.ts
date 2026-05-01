@@ -326,7 +326,7 @@ describe('Download Worker', () => {
 
   test('Stop retries if auto download disabled', () =>
     withTestContext(async () => {
-      const { project, repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
@@ -450,9 +450,9 @@ describe('Download Worker', () => {
       expect(afterSecondDownload.meta?.author?.reference).toBe('system');
     }));
 
-  test('Stop retries if auto download disabled', () =>
+  test('Stop retries if ignored url prefixes changes', () =>
     withTestContext(async () => {
-      const { project, repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
@@ -465,7 +465,7 @@ describe('Download Worker', () => {
       expect(media).toBeDefined();
 
       // At this point the job should be in the queue
-      // But let's disable auto download in the project
+      // But let's change the ignored URL prefixes in the project
       await repo.updateResource({
         ...project,
         setting: [{ name: 'autoDownloadIgnoredUrlPrefixes', valueString: 'https://example.com' }],

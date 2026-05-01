@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { WithId } from '@medplum/core';
 import { createReference, generateId } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule } from '@medplum/fhirtypes';
+import { toCodeableReferenceLike } from '../../../util/servicetype';
 import { chooseSchedulingParameters, parseSchedulingParametersExtensions } from './scheduling-parameters';
 
 describe('parseSchedulingParametersExtensions', () => {
@@ -18,17 +20,25 @@ describe('parseSchedulingParametersExtensions', () => {
   };
 
   test('minimally specified extension sets default values', () => {
+    const service: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'hs-12345',
+    };
+
     const schedule: Schedule = {
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: [createReference(practitioner)],
+      serviceType: toCodeableReferenceLike(service),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
-            // duration is required to have exactly one entry
+            // `duration` is required to have exactly one entry
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
-            // availability is required to have at least one entry
+            // `service` is required to have exactly one entry
+            { url: 'service', valueReference: createReference(service) },
+            // `availability` is required to have at least one entry
             {
               url: 'availability',
               extension: [
@@ -61,17 +71,23 @@ describe('parseSchedulingParametersExtensions', () => {
         alignmentInterval: 60,
         alignmentOffset: 0,
         duration: 120,
-        serviceType: [],
+        service: { reference: 'HealthcareService/hs-12345' },
         timezone: undefined,
       },
     ]);
   });
 
   test('with all the options', () => {
+    const service: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'hs-12345',
+    };
+
     const schedule: Schedule = {
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: [createReference(practitioner)],
+      serviceType: toCodeableReferenceLike(service),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -80,14 +96,7 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 5 } },
             { url: 'bufferAfter', valueDuration: { unit: 'min', value: 15 } },
             { url: 'bufferBefore', valueDuration: { unit: 'min', value: 10 } },
-            {
-              url: 'serviceType',
-              valueCodeableConcept: { coding: [{ code: 'new-patient', system: 'http://example.com' }] },
-            },
-            {
-              url: 'serviceType',
-              valueCodeableConcept: { coding: [{ code: 'office-visit', system: 'http://example.com' }] },
-            },
+            { url: 'service', valueReference: createReference(service) },
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             { url: 'timezone', valueCode: 'America/Phoenix' },
             {
@@ -141,26 +150,30 @@ describe('parseSchedulingParametersExtensions', () => {
         alignmentInterval: 30,
         alignmentOffset: 5,
         duration: 120,
-        serviceType: [
-          { coding: [{ code: 'new-patient', system: 'http://example.com' }] },
-          { coding: [{ code: 'office-visit', system: 'http://example.com' }] },
-        ],
+        service: { reference: `HealthcareService/${service.id}` },
         timezone: 'America/Phoenix',
       },
     ]);
   });
 
   describe('with availability extension', () => {
+    const service: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'hs-12345',
+    };
+
     test('basic start/end time pair parses to correct availability', () => {
       const schedule: Schedule = {
         resourceType: 'Schedule',
         meta: { project: project.id },
         actor: [createReference(practitioner)],
+        serviceType: toCodeableReferenceLike(service),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
               { url: 'duration', valueDuration: { unit: 'h', value: 1 } },
+              { url: 'service', valueReference: createReference(service) },
               {
                 url: 'availability',
                 extension: [
@@ -184,20 +197,29 @@ describe('parseSchedulingParametersExtensions', () => {
         {
           availability: [{ dayOfWeek: ['mon', 'wed'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
           duration: 60,
+          service: { reference: `HealthcareService/${service.id}` },
         },
       ]);
     });
 
     test('allDay: true produces full-day availability', () => {
+      const hs: WithId<HealthcareService> = {
+        resourceType: 'HealthcareService',
+        id: 'hs-12345',
+        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
+      };
+
       const schedule: Schedule = {
         resourceType: 'Schedule',
         meta: { project: project.id },
         actor: [createReference(practitioner)],
+        serviceType: toCodeableReferenceLike(hs),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
+              { url: 'service', valueReference: createReference(hs) },
               {
                 url: 'availability',
                 extension: [
@@ -233,15 +255,23 @@ describe('parseSchedulingParametersExtensions', () => {
     });
 
     test('notAvailableTime is accepted without error and does not affect parsed availability', () => {
+      const hs: WithId<HealthcareService> = {
+        resourceType: 'HealthcareService',
+        id: 'hs-12345',
+        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
+      };
+
       const schedule: Schedule = {
         resourceType: 'Schedule',
         meta: { project: project.id },
         actor: [createReference(practitioner)],
+        serviceType: toCodeableReferenceLike(hs),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
+              { url: 'service', valueReference: createReference(hs) },
               {
                 url: 'availability',
                 extension: [
@@ -274,15 +304,23 @@ describe('parseSchedulingParametersExtensions', () => {
     });
 
     test('availableTime missing both allDay and start/end is filtered out', () => {
+      const hs: WithId<HealthcareService> = {
+        resourceType: 'HealthcareService',
+        id: 'hs-12345',
+        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
+      };
+
       const schedule: Schedule = {
         resourceType: 'Schedule',
         meta: { project: project.id },
         actor: [createReference(practitioner)],
+        serviceType: toCodeableReferenceLike(hs),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
               { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
+              { url: 'service', valueReference: createReference(hs) },
               {
                 url: 'availability',
                 extension: [
@@ -425,16 +463,24 @@ describe('parseSchedulingParametersExtensions', () => {
   );
 
   test('with an ambiguous duration unit', () => {
+    const hs: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'hs-12345',
+      type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
+    };
+
     const unit = 'm'; // 'm' is "month" which is ambiguous (anywhere from 28 - 31 days)
     const schedule: Schedule = {
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: [createReference(practitioner)],
+      serviceType: toCodeableReferenceLike(hs),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
             { url: 'duration', valueDuration: { unit, value: 1 } },
+            { url: 'service', valueReference: createReference(hs) },
             {
               url: 'availability',
               extension: [
@@ -463,6 +509,7 @@ describe('parseSchedulingParametersExtensions', () => {
     test('derives serviceType from HealthcareService.type and availability from availableTime', () => {
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
+        id: 'hs-12345',
         type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
         availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
         extension: [
@@ -475,7 +522,7 @@ describe('parseSchedulingParametersExtensions', () => {
 
       expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
         {
-          serviceType: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
+          service: { reference: `HealthcareService/${hs.id}` },
           availability: [{ dayOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
           duration: 30,
           bufferBefore: 0,
@@ -550,6 +597,7 @@ describe('parseSchedulingParametersExtensions', () => {
       // No availableTime on resource, no availability in extension — should not throw
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
+        id: 'hs-123',
         extension: [
           { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
         ],
@@ -559,7 +607,7 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
         {
           availability: [],
-          serviceType: [],
+          service: { reference: 'HealthcareService/hs-123' },
           duration: 30,
         },
       ]);
@@ -618,19 +666,19 @@ describe('parseSchedulingParametersExtensions', () => {
       );
     });
 
-    test('"serviceType" is not allowed in HealthcareService extension', () => {
+    test('"service" is not allowed in HealthcareService extension', () => {
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [durationExt, { url: 'serviceType', valueCodeableConcept: {} }],
+            extension: [durationExt, { url: 'service', valueReference: { reference: 'HealthcareService/123' } }],
           },
         ],
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
-        "Scheduling parameter attribute 'serviceType' is not allowed on HealthcareService"
+        "Scheduling parameter attribute 'service' is not allowed on HealthcareService"
       );
     });
   });
@@ -638,7 +686,7 @@ describe('parseSchedulingParametersExtensions', () => {
 
 describe('chooseSchedulingParameters', () => {
   const consultType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
-  const consultToken = 'http://example.com|consult';
+  const yogaType = { coding: [{ code: 'yoga' }] };
 
   // Reusable availability extension for Schedule resources (required on Schedule, not on HealthcareService)
   const mondayAvailability = {
@@ -655,98 +703,198 @@ describe('chooseSchedulingParameters', () => {
     ],
   };
 
-  function makeSchedule(extensions?: Schedule['extension']): Schedule {
-    return {
-      resourceType: 'Schedule',
-      actor: [{ reference: 'Practitioner/test' }],
-      extension: extensions,
-    };
-  }
-
-  function makeHealthcareService(duration: number): HealthcareService {
-    return {
+  test('returns undefined when neither Schedule nor HealthcareService have the SchedulingParameters extension', () => {
+    const service: WithId<HealthcareService> = {
       resourceType: 'HealthcareService',
       type: [consultType],
+      id: 'hcs-100',
+      availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
+    };
+
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      serviceType: toCodeableReferenceLike(service),
+      actor: [{ reference: 'Practitioner/test' }],
+    };
+
+    expect(chooseSchedulingParameters(schedule, service)).toEqual(undefined);
+  });
+
+  test('returns undefined when the Schedule has no SchedulingParameters matching HealthcareService.type', () => {
+    const service1: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      type: [consultType],
+      id: 'hcs-100',
+    };
+
+    const service2: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      type: [yogaType],
+      id: 'hcs-123',
+    };
+
+    // Linked to service1 in serviceType, but only has scheduling parameters set for service2.
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      serviceType: toCodeableReferenceLike(service1),
+      actor: [{ reference: 'Practitioner/test' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
+            { url: 'service', valueReference: createReference(service2) },
+            mondayAvailability,
+          ],
+        },
+      ],
+    };
+
+    expect(chooseSchedulingParameters(schedule, service1)).toEqual(undefined);
+  });
+
+  test('falls back to HealthcareService when Schedule has no SchedulingParameters extension', () => {
+    const service: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      type: [consultType],
+      id: 'hcs-100',
       availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: duration } }],
+          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 30 } }],
         },
       ],
     };
-  }
 
-  test('returns [] when neither Schedule nor HealthcareService match the token', () => {
-    expect(chooseSchedulingParameters(makeSchedule(), [], ['http://example.com|no-match'])).toEqual([]);
-  });
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      serviceType: toCodeableReferenceLike(service),
+      actor: [{ reference: 'Practitioner/test' }],
+    };
 
-  test('returns [] when no service type tokens are given', () => {
-    expect(chooseSchedulingParameters(makeSchedule(), [makeHealthcareService(30)], [])).toEqual([]);
+    const result = chooseSchedulingParameters(schedule, service);
+    expect(result?.duration).toBe(30);
   });
 
   test('falls back to HealthcareService when Schedule has no matching parameters', () => {
-    const result = chooseSchedulingParameters(makeSchedule(), [makeHealthcareService(30)], [consultToken]);
+    // Schedule has two extensions — each points at a different service.
+    // We query with a third service that has its own parameters. Neither Schedule
+    // extension matches, so chooseSchedulingParameters should fall through to
+    // the HealthcareService's own parameters.
+    const service1: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'hcs-1' };
+    const service2: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'hcs-2' };
+    const targetService: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'hcs-target',
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 45 } }],
+        },
+      ],
+    };
 
-    expect(result).toHaveLength(1);
-    expect(result[0][0].duration).toBe(30);
-    expect(result[0][1]).toMatchObject(consultType);
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      actor: [{ reference: 'Practitioner/test' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
+            { url: 'service', valueReference: createReference(service1) },
+            mondayAvailability,
+          ],
+        },
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
+            { url: 'service', valueReference: createReference(service2) },
+            mondayAvailability,
+          ],
+        },
+      ],
+    };
+
+    const result = chooseSchedulingParameters(schedule, targetService);
+    expect(result?.duration).toBe(45);
   });
 
   test('Schedule-specific parameters take priority over HealthcareService', () => {
-    const schedule = makeSchedule([
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-        extension: [
-          { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
-          mondayAvailability,
-          { url: 'serviceType', valueCodeableConcept: consultType },
-        ],
-      },
-    ]);
+    const service: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      type: [consultType],
+      id: 'hcs-100',
+      availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 30 } }],
+        },
+      ],
+    };
+
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      serviceType: toCodeableReferenceLike(service),
+      actor: [{ reference: 'Practitioner/test' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
+            mondayAvailability,
+            { url: 'service', valueReference: createReference(service) },
+          ],
+        },
+      ],
+    };
+
     // HealthcareService says 30 min — Schedule's 60 min should win
-    const result = chooseSchedulingParameters(schedule, [makeHealthcareService(30)], [consultToken]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0][0].duration).toBe(60);
-  });
-
-  test('multiple HealthcareServices each contribute when they match the token', () => {
-    const result = chooseSchedulingParameters(
-      makeSchedule(),
-      [makeHealthcareService(30), makeHealthcareService(60)],
-      [consultToken]
-    );
-
-    expect(result).toHaveLength(2);
-    expect(result.map((r) => r[0].duration)).toEqual(expect.arrayContaining([30, 60]));
+    const result = chooseSchedulingParameters(schedule, service);
+    expect(result?.duration).toBe(60);
   });
 
   test('only the matching Schedule entry is returned when multiple extensions exist', () => {
-    const yogaType = { coding: [{ system: 'http://example.com', code: 'yoga' }] };
-    const schedule = makeSchedule([
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-        extension: [
-          { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
-          mondayAvailability,
-          { url: 'serviceType', valueCodeableConcept: consultType },
-        ],
-      },
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-        extension: [
-          { url: 'duration', valueDuration: { unit: 'min', value: 45 } },
-          mondayAvailability,
-          { url: 'serviceType', valueCodeableConcept: yogaType },
-        ],
-      },
-    ]);
+    const service1: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      type: [consultType],
+      id: 'hcs-100',
+    };
 
-    const result = chooseSchedulingParameters(schedule, [], [consultToken]);
+    const service2: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      type: [yogaType],
+      id: 'hcs-123',
+    };
 
-    expect(result).toHaveLength(1);
-    expect(result[0][0].duration).toBe(60);
-    expect(result[0][1]).toMatchObject(consultType);
+    const schedule: Schedule = {
+      resourceType: 'Schedule',
+      serviceType: [...toCodeableReferenceLike(service1), ...toCodeableReferenceLike(service2)],
+      actor: [{ reference: 'Practitioner/test' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
+            { url: 'service', valueReference: createReference(service1) },
+            mondayAvailability,
+          ],
+        },
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'duration', valueDuration: { unit: 'min', value: 45 } },
+            { url: 'service', valueReference: createReference(service2) },
+            mondayAvailability,
+          ],
+        },
+      ],
+    };
+
+    const result = chooseSchedulingParameters(schedule, service1);
+    expect(result?.duration).toBe(60);
   });
 });

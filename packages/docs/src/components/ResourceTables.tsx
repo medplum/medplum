@@ -1,4 +1,5 @@
 import { buildTypeName } from '@medplum/core';
+import { marked } from 'marked';
 import { JSX } from 'react';
 import styles from './ResourceTables.module.css';
 
@@ -46,8 +47,8 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
               <p>{property.short}</p>
               <details open={false}>
                 <summary>Details</summary>
-                <p>{property.definition}</p>
-                <p>{property.comment}</p>
+                <MarkdownContent content={property.definition} />
+                <MarkdownContent content={property.comment} />
               </details>
             </td>
           </tr>
@@ -144,6 +145,14 @@ function getTypeLink(type: PropertyTypeDocInfo, linkText?: string): JSX.Element 
     );
   }
   return <>{linkText}</>;
+}
+
+function MarkdownContent({ content }: { content?: string }): JSX.Element | null {
+  if (!content) {
+    return null;
+  }
+  const html = marked(content, { async: false });
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function pluralize(location: DocumentationLocation): string {

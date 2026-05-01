@@ -117,6 +117,10 @@ export function initOtelHeartbeat(): void {
     const writerPool = getDatabasePool(DatabaseMode.WRITER);
     const readerPool = getDatabasePool(DatabaseMode.READER);
 
+    setGauge('medplum.db.totalConnections', writerPool.totalCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
+    });
     setGauge('medplum.db.idleConnections', writerPool.idleCount, {
       ...BASE_METRIC_OPTIONS,
       attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
@@ -127,6 +131,10 @@ export function initOtelHeartbeat(): void {
     });
 
     if (writerPool !== readerPool) {
+      setGauge('medplum.db.totalConnections', readerPool.totalCount, {
+        ...BASE_METRIC_OPTIONS,
+        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
+      });
       setGauge('medplum.db.idleConnections', readerPool.idleCount, {
         ...BASE_METRIC_OPTIONS,
         attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },

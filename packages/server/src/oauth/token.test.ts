@@ -131,7 +131,7 @@ describe('OAuth2 Token', () => {
     });
 
     // Set the test user password
-    await setPassword(user, password);
+    await setPassword(systemRepo, user, password);
 
     // Create a new client application with external auth
     externalAuthClient = await createClient(systemRepo, {
@@ -1427,7 +1427,7 @@ describe('OAuth2 Token', () => {
       expect(patient.profile).toBeDefined();
 
       // Force set the password
-      await setPassword(patient.user, patientPassword);
+      await setPassword(systemRepo, patient.user, patientPassword);
       return patient;
     });
 

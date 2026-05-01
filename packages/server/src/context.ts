@@ -181,20 +181,18 @@ export function tryRunInRequestContext<T>(requestId: string | undefined, traceId
   }
 }
 
-export async function runInAsyncContext<T>(
+export async function runInAuthenticatedContext<T>(
   authState: Readonly<AuthState>,
   requestId: string | undefined,
   traceId: string | undefined,
+  options: AuthenticatedContextOptions | undefined,
   fn: () => T
 ): Promise<T> {
   const repo = await getRepoForLogin(authState, true);
   requestId ??= randomUUID();
   traceId ??= randomUUID();
 
-  return requestContextStore.run(
-    new AuthenticatedRequestContext(requestId, traceId, authState, repo, { async: true }),
-    fn
-  );
+  return requestContextStore.run(new AuthenticatedRequestContext(requestId, traceId, authState, repo, options), fn);
 }
 
 export function getTraceId(req: Request): string | undefined {

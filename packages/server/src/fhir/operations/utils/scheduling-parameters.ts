@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { codeableConceptMatchesToken, EMPTY, isDefined } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { EMPTY, createReference, isDefined } from '@medplum/core';
 import type {
-  CodeableConcept,
   Duration,
   HealthcareService,
   HealthcareServiceAvailableTime,
   Period,
+  Reference,
+  Resource,
   Schedule,
 } from '@medplum/fhirtypes';
 
@@ -55,7 +57,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
-  | { url: 'serviceType'; valueCodeableConcept: CodeableConcept }
+  | { url: 'service'; valueReference: Reference<HealthcareService> & { reference: string } }
   | { url: 'timezone'; valueCode: string }
   | {
       url: 'availability';
@@ -82,9 +84,17 @@ export type SchedulingParameters = {
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
   duration: number; // minutes
-  serviceType: CodeableConcept[]; // codes that may be booked into this availability
+  service: Reference<HealthcareService> & { reference: string };
   timezone?: string;
 };
+
+function isReferenceTo<T extends Resource>(reference: Reference<T>, resource: WithId<T>): boolean {
+  if (!reference.reference) {
+    return false;
+  }
+  const [refType, id] = reference.reference.split('/');
+  return refType === resource.resourceType && id === resource.id;
+}
 
 function durationToMinutes(duration: Duration): number {
   const { value, unit } = duration;
@@ -136,61 +146,39 @@ function exactlyZero(arr: unknown[], attribute: string, resourceType: string): v
 }
 
 /**
- * Given a Schedule, HealthcareServices, and an array of input service type
- * tokens, return [SchedulingParameters, serviceType] pairs that satisfy the
- * requested service types.
+ * Given a Schedule and a HealthcareService, return the SchedulingParameters to
+ * use.
  *
  * Priority order (highest to lowest):
- *  1. Entries from the Schedule matching a requested service-type
- *  2. Entries from HealthcareService matching a requested service-type
+ *  1. Entries from the Schedule matching the requested service-type
+ *  2. Entries from HealthcareService
  *
- * Each SchedulingParameters description is returned at most once. If matches are found at a given
- * priority level, lower-priority levels are not returned.
- *
- * @param schedule - The schedule resource to consider
- * @param healthcareServices - HealthcareServices to consider
- * @param serviceTypeTokens - Service type tokens to restrict scheduling parameters to
- * @returns pairs of [SchedulingParameters, CodeableConcept]
+ * @param schedule - Schedule resource
+ * @param healthcareService - HealthcareService resource
+ * @returns SchedulingParameters
  */
 export function chooseSchedulingParameters(
   schedule: Schedule,
-  healthcareServices: HealthcareService[],
-  serviceTypeTokens: string[]
-): (readonly [SchedulingParameters, CodeableConcept])[] {
+  healthcareService: WithId<HealthcareService>
+): SchedulingParameters | undefined {
   const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 
-  // Top priority: entries on an individual schedule matching a service type
-  const specificMatches = scheduleSchedulingParameters
-    .map((schedulingParameters) => {
-      const serviceType = schedulingParameters.serviceType.find((st) =>
-        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
-      );
-      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
-    })
-    .filter(isDefined);
-
-  if (specificMatches.length) {
-    return specificMatches;
-  }
-
-  // Next: entries on HealthcareService resources matching a service type
-  const healthcareServiceSchedulingParameters = healthcareServices.flatMap((healthcareService) =>
-    parseSchedulingParametersExtensions(healthcareService)
+  // Top priority: entries on the schedule pointing at this service
+  const specificMatch = scheduleSchedulingParameters.find((schedulingParameters) =>
+    isReferenceTo(schedulingParameters.service, healthcareService)
   );
-  const sharedMatches = healthcareServiceSchedulingParameters
-    .map((schedulingParameters) => {
-      const serviceType = schedulingParameters.serviceType.find((st) =>
-        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
-      );
-      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
-    })
-    .filter(isDefined);
 
-  if (sharedMatches.length) {
-    return sharedMatches;
+  if (specificMatch) {
+    return specificMatch;
   }
 
-  return [];
+  // Return the first scheduling extension on HealthcareService
+  const healthcareServiceSchedulingParameters = parseSchedulingParametersExtensions(healthcareService);
+  if (healthcareServiceSchedulingParameters.length) {
+    return healthcareServiceSchedulingParameters[0];
+  }
+
+  return undefined;
 }
 
 // Convert a single availability extension into SchedulingParametersAvailability entries.
@@ -265,7 +253,7 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
   // each extension on the resource
   const resourceParameters: Partial<SchedulingParameters> = {};
   if (resource.resourceType === 'HealthcareService') {
-    resourceParameters.serviceType = resource.type ?? [];
+    resourceParameters.service = createReference(resource);
     resourceParameters.availability = (resource.availableTime ?? EMPTY).map(extractAvailability).filter(isDefined);
   }
 
@@ -313,13 +301,13 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
       resource.resourceType
     );
 
-    // `serviceType` is expected in Schedule, not allowed in HealthcareService
-    // (where we read from HealthcareService.type instead)
-    const rawServiceType = extension.extension.filter((ext) => ext.url === 'serviceType');
+    // `service` is expected in Schedule, not allowed in HealthcareService
+    const rawService = extension.extension.filter((ext) => ext.url === 'service');
     if (resource.resourceType === 'HealthcareService') {
-      exactlyZero(rawServiceType, 'serviceType', resource.resourceType);
+      exactlyZero(rawService, 'service', resource.resourceType);
     }
-    const serviceType = resourceParameters.serviceType ?? rawServiceType.map((ext) => ext.valueCodeableConcept);
+    const service =
+      resourceParameters.service ?? exactlyOne(rawService, 'service', resource.resourceType).valueReference;
 
     // default alignmentInterval is "on the hour" (0)
     let alignmentInterval = rawAlignmentInterval ? durationToMinutes(rawAlignmentInterval.valueDuration) : 0;
@@ -328,7 +316,7 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
     alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
 
     return {
-      serviceType, // HealthcareService.type or `serviceType` extension parameter
+      service, // Reference to a HealthcareService these parameters are used for
       availability, // HealthcareService.availableTime or `availability` extension parameter
 
       // These attributes always come from the extension

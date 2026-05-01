@@ -59,7 +59,7 @@ The SuperAdmin has the following privileges:
 - Ability to overwrite the `id` of a resource, which is normally server generated
 - Ability to overwrite fields in the `meta` element of resources such as `author`, `lastUpdated`, etc.
 
-:::warning
+:::warning[]
 
 Logging into the Super Admin project allows for potentially dangerous operations and is only intended for server administrators
 

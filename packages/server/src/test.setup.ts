@@ -28,13 +28,13 @@ import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
-import type { RepositoryContext } from './fhir/repo';
-import { getProjectSystemRepo, getShardSystemRepo, Repository } from './fhir/repo';
+import { getRepoForLogin } from './fhir/accesspolicy';
+import type { Repository } from './fhir/repo';
+import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
-
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
 
@@ -46,7 +46,8 @@ export interface TestProjectOptions {
   superAdmin?: boolean;
   withClient?: boolean;
   withAccessToken?: boolean;
-  withRepo?: boolean | Partial<RepositoryContext>;
+  withRepo?: boolean;
+  extendedMode?: boolean;
 }
 
 type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
@@ -59,7 +60,7 @@ export type TestProjectResult<T extends TestProjectOptions> = {
   membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
   login: T['withAccessToken'] extends true ? WithId<Login> : undefined;
   accessToken: T['withAccessToken'] extends true ? string : undefined;
-  repo: T['withRepo'] extends true | Partial<RepositoryContext> ? Repository : undefined;
+  repo: T['withRepo'] extends true ? Repository : undefined;
 };
 
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
@@ -86,7 +87,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 
   let client: WithId<ClientApplication> | undefined;
   let accessPolicy: AccessPolicy | undefined;
-  let membership: ProjectMembership | undefined;
+  let membership: WithId<ProjectMembership> | undefined;
   let login: WithId<Login> | undefined;
   let accessToken: string | undefined;
   let repo: Repository | undefined;
@@ -126,7 +127,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       ...options?.membership,
     });
 
-    if (options?.withAccessToken) {
+    if (options?.withAccessToken || options?.withRepo) {
       const scope = 'openid';
 
       login = await systemRepo.createResource<Login>({
@@ -147,25 +148,11 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         profile: client.resourceType + '/' + client.id,
         scope,
       });
-    }
 
-    if (options?.withRepo) {
-      const repoContext: RepositoryContext = {
-        projects: [project],
-        currentProject: project,
-        author: createReference(client),
-        superAdmin: options?.superAdmin,
-        projectAdmin: options?.membership?.admin,
-        accessPolicy,
-        strictMode: project.strictMode,
-        extendedMode: true,
-        checkReferencesOnWrite: project.checkReferencesOnWrite,
-      };
-
-      if (typeof options.withRepo === 'object') {
-        Object.assign(repoContext, options.withRepo);
+      if (options?.withRepo) {
+        const userConfig = { resourceType: 'UserConfiguration' } as const;
+        repo = await getRepoForLogin({ login, project, membership, userConfig }, options?.extendedMode ?? true);
       }
-      repo = new Repository(repoContext);
     }
   }
 

@@ -174,7 +174,7 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
   if (!typeSchema) {
     typeSchema = {
       searchParamsDetails: {},
-    } as TypeInfo;
+    };
     globalSchema.types[resourceType] = typeSchema;
   }
 
@@ -222,6 +222,12 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         code: '_tag',
         type: 'token',
         expression: resourceType + '.meta.tag',
+      } as SearchParameter,
+      _project: {
+        base: [resourceType],
+        code: '_project',
+        type: 'token', // Intentionally use `token`, similar to `_id`
+        expression: resourceType + '.meta.project',
       } as SearchParameter,
     };
   }

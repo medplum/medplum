@@ -80,7 +80,7 @@ The `category` field determines where a report appears in the UI. The Medplum pr
 | `CH` | Chemistry | Specialty subtype (always pair with `LAB`) |
 | `MB` | Microbiology | Specialty subtype (always pair with `LAB`) |
 
-:::caution
+:::caution[]
 Reports that only include a specialty code without `LAB` will not appear in the patient summary sidebar. Always include at least one `LAB` category entry alongside any specialty categories.
 :::
 
