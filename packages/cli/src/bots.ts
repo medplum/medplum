@@ -33,7 +33,12 @@ botDeployCommand
   .action(async (botName, options) => {
     const medplum = await createMedplumClient(options);
 
-    await botWrapper(medplum, botName, true);
+    try {
+      await botWrapper(medplum, botName, true);
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
   });
 
 botCreateCommand
@@ -96,7 +101,12 @@ deployBotDeprecate
   .action(async (botName, options) => {
     const medplum = await createMedplumClient(options);
 
-    await botWrapper(medplum, botName, true);
+    try {
+      await botWrapper(medplum, botName, true);
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
   });
 
 createBotDeprecate
