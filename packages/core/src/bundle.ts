@@ -229,10 +229,10 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
   for (const entry of bundle.entry ?? EMPTY) {
     const fullUrl = entry.fullUrl;
 
-    if (entry.resource) {
+    if (fullUrl && entry.resource) {
       findReferences(entry.resource, (reference: string) => {
         // Add an incoming reference to the adjacency list
-        if (fullUrl && adjacencyList[reference]) {
+        if (adjacencyList[reference]) {
           adjacencyList[reference].push(fullUrl);
         }
       });
