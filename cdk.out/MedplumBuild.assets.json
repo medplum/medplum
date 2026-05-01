@@ -1,0 +1,21 @@
+{
+  "version": "53.0.0",
+  "files": {
+    "e4ec9e2cc21f3f60a5663d3c597845edc17d5829e11a586bbb840c08ed473619": {
+      "displayName": "MedplumBuild Template",
+      "source": {
+        "path": "MedplumBuild.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "476905305808-us-east-1-e5b7cd7f": {
+          "bucketName": "cdk-hnb659fds-assets-476905305808-us-east-1",
+          "objectKey": "e4ec9e2cc21f3f60a5663d3c597845edc17d5829e11a586bbb840c08ed473619.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::476905305808:role/cdk-hnb659fds-file-publishing-role-476905305808-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

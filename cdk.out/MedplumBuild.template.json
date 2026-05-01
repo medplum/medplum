@@ -1,0 +1,3151 @@
+{
+ "Resources": {
+  "BackEndVpcFlowLogs8C3147DB": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/medplum/flowlogs/build",
+    "RetentionInDays": 731,
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VpcFlowLogs/Resource"
+   }
+  },
+  "BackEndVPCF5C5F769": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/Resource"
+   }
+  },
+  "BackEndVPCPublicSubnet1Subnet4C7F70D8": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.0.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet1/Subnet"
+   }
+  },
+  "BackEndVPCPublicSubnet1RouteTable3EEA4071": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet1/RouteTable"
+   }
+  },
+  "BackEndVPCPublicSubnet1RouteTableAssociation8ED2AF8E": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "BackEndVPCPublicSubnet1RouteTable3EEA4071"
+    },
+    "SubnetId": {
+     "Ref": "BackEndVPCPublicSubnet1Subnet4C7F70D8"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "BackEndVPCPublicSubnet1DefaultRoute370C926C": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "BackEndVPCIGW0223DDE2"
+    },
+    "RouteTableId": {
+     "Ref": "BackEndVPCPublicSubnet1RouteTable3EEA4071"
+    }
+   },
+   "DependsOn": [
+    "BackEndVPCVPCGW9F01DD98"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "BackEndVPCPublicSubnet1EIPD431B170": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet1/EIP"
+   }
+  },
+  "BackEndVPCPublicSubnet1NATGateway4C349CEA": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "BackEndVPCPublicSubnet1EIPD431B170",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "BackEndVPCPublicSubnet1Subnet4C7F70D8"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "BackEndVPCPublicSubnet1DefaultRoute370C926C",
+    "BackEndVPCPublicSubnet1RouteTableAssociation8ED2AF8E"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet1/NATGateway"
+   }
+  },
+  "BackEndVPCPublicSubnet2SubnetB2482B61": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.64.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet2/Subnet"
+   }
+  },
+  "BackEndVPCPublicSubnet2RouteTableDC044BF7": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet2/RouteTable"
+   }
+  },
+  "BackEndVPCPublicSubnet2RouteTableAssociation699E0957": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "BackEndVPCPublicSubnet2RouteTableDC044BF7"
+    },
+    "SubnetId": {
+     "Ref": "BackEndVPCPublicSubnet2SubnetB2482B61"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "BackEndVPCPublicSubnet2DefaultRoute6941FB68": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "BackEndVPCIGW0223DDE2"
+    },
+    "RouteTableId": {
+     "Ref": "BackEndVPCPublicSubnet2RouteTableDC044BF7"
+    }
+   },
+   "DependsOn": [
+    "BackEndVPCVPCGW9F01DD98"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "BackEndVPCPublicSubnet2EIP71028A8E": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet2/EIP"
+   }
+  },
+  "BackEndVPCPublicSubnet2NATGateway27C81982": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "BackEndVPCPublicSubnet2EIP71028A8E",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "BackEndVPCPublicSubnet2SubnetB2482B61"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PublicSubnet2"
+     }
+    ]
+   },
+   "DependsOn": [
+    "BackEndVPCPublicSubnet2DefaultRoute6941FB68",
+    "BackEndVPCPublicSubnet2RouteTableAssociation699E0957"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PublicSubnet2/NATGateway"
+   }
+  },
+  "BackEndVPCPrivateSubnet1SubnetD50C9513": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.128.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet1/Subnet"
+   }
+  },
+  "BackEndVPCPrivateSubnet1RouteTableCA04C34E": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet1/RouteTable"
+   }
+  },
+  "BackEndVPCPrivateSubnet1RouteTableAssociation016A73CD": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "BackEndVPCPrivateSubnet1RouteTableCA04C34E"
+    },
+    "SubnetId": {
+     "Ref": "BackEndVPCPrivateSubnet1SubnetD50C9513"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet1/RouteTableAssociation"
+   }
+  },
+  "BackEndVPCPrivateSubnet1DefaultRoute3102191D": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "BackEndVPCPublicSubnet1NATGateway4C349CEA"
+    },
+    "RouteTableId": {
+     "Ref": "BackEndVPCPrivateSubnet1RouteTableCA04C34E"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet1/DefaultRoute"
+   }
+  },
+  "BackEndVPCPrivateSubnet2SubnetFF24486C": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.192.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet2/Subnet"
+   }
+  },
+  "BackEndVPCPrivateSubnet2RouteTable83BBF543": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet2/RouteTable"
+   }
+  },
+  "BackEndVPCPrivateSubnet2RouteTableAssociationF41FDF7E": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "BackEndVPCPrivateSubnet2RouteTable83BBF543"
+    },
+    "SubnetId": {
+     "Ref": "BackEndVPCPrivateSubnet2SubnetFF24486C"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet2/RouteTableAssociation"
+   }
+  },
+  "BackEndVPCPrivateSubnet2DefaultRoute2FCE066C": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "BackEndVPCPublicSubnet2NATGateway27C81982"
+    },
+    "RouteTableId": {
+     "Ref": "BackEndVPCPrivateSubnet2RouteTable83BBF543"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/PrivateSubnet2/DefaultRoute"
+   }
+  },
+  "BackEndVPCIGW0223DDE2": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/IGW"
+   }
+  },
+  "BackEndVPCVPCGW9F01DD98": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "BackEndVPCIGW0223DDE2"
+    },
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/VPCGW"
+   }
+  },
+  "BackEndVPCcloudwatchIAMRole06786F5F": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "vpc-flow-logs.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/cloudwatch"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/cloudwatch/IAMRole/Resource"
+   }
+  },
+  "BackEndVPCcloudwatchIAMRoleDefaultPolicy5B431E61": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "BackEndVpcFlowLogs8C3147DB",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "BackEndVPCcloudwatchIAMRoleDefaultPolicy5B431E61",
+    "Roles": [
+     {
+      "Ref": "BackEndVPCcloudwatchIAMRole06786F5F"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/cloudwatch/IAMRole/DefaultPolicy/Resource"
+   }
+  },
+  "BackEndVPCcloudwatchFlowLog707064B0": {
+   "Type": "AWS::EC2::FlowLog",
+   "Properties": {
+    "DeliverLogsPermissionArn": {
+     "Fn::GetAtt": [
+      "BackEndVPCcloudwatchIAMRole06786F5F",
+      "Arn"
+     ]
+    },
+    "LogDestinationType": "cloud-watch-logs",
+    "LogGroupName": {
+     "Ref": "BackEndVpcFlowLogs8C3147DB"
+    },
+    "ResourceId": {
+     "Ref": "BackEndVPCF5C5F769"
+    },
+    "ResourceType": "VPC",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/BackEnd/VPC/cloudwatch"
+     }
+    ],
+    "TrafficType": "ALL"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/VPC/cloudwatch/FlowLog"
+   }
+  },
+  "BackEndBotLambdaRoleBBE7DB26": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/BotLambdaRole/Resource"
+   }
+  },
+  "BackEndMedplumDatabaseClusterParamsF04B446D": {
+   "Type": "AWS::RDS::DBClusterParameterGroup",
+   "Properties": {
+    "Description": "Cluster parameter group for aurora-postgresql16",
+    "Family": "aurora-postgresql16",
+    "Parameters": {
+     "statement_timeout": "60000",
+     "default_transaction_isolation": "REPEATABLE READ"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/MedplumDatabaseClusterParams/Resource"
+   }
+  },
+  "BackEndDatabaseClusterSubnetsEE06EF7A": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnets for DatabaseCluster database",
+    "SubnetIds": [
+     {
+      "Ref": "BackEndVPCPrivateSubnet1SubnetD50C9513"
+     },
+     {
+      "Ref": "BackEndVPCPrivateSubnet2SubnetFF24486C"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/Subnets/Default"
+   }
+  },
+  "BackEndDatabaseClusterSecurityGroup1EAC9C2D": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "RDS security group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/SecurityGroup/Resource"
+   }
+  },
+  "BackEndDatabaseClusterSecurityGroupfromMedplumBuildBackEndServiceSecurityGroup68E47C5FIndirectPort80FEAF59": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "from MedplumBuildBackEndServiceSecurityGroup68E47C5F:{IndirectPort}",
+    "FromPort": {
+     "Fn::GetAtt": [
+      "BackEndDatabaseCluster8B2F7305",
+      "Endpoint.Port"
+     ]
+    },
+    "GroupId": {
+     "Fn::GetAtt": [
+      "BackEndDatabaseClusterSecurityGroup1EAC9C2D",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "BackEndServiceSecurityGroupAB991791",
+      "GroupId"
+     ]
+    },
+    "ToPort": {
+     "Fn::GetAtt": [
+      "BackEndDatabaseCluster8B2F7305",
+      "Endpoint.Port"
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/SecurityGroup/from MedplumBuildBackEndServiceSecurityGroup68E47C5F:{IndirectPort}"
+   }
+  },
+  "MedplumBuildBackEndDatabaseClusterSecretBA0BEF2E3fdaad7efa858a3daf9490cf0a702aeb": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Generated by the CDK for stack: ",
+       {
+        "Ref": "AWS::StackName"
+       }
+      ]
+     ]
+    },
+    "GenerateSecretString": {
+     "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+     "GenerateStringKey": "password",
+     "PasswordLength": 30,
+     "SecretStringTemplate": "{\"username\":\"clusteradmin\"}"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/Secret/Resource"
+   }
+  },
+  "BackEndDatabaseClusterSecretAttachment39D8D762": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "MedplumBuildBackEndDatabaseClusterSecretBA0BEF2E3fdaad7efa858a3daf9490cf0a702aeb"
+    },
+    "TargetId": {
+     "Ref": "BackEndDatabaseCluster8B2F7305"
+    },
+    "TargetType": "AWS::RDS::DBCluster"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/Secret/Attachment/Resource"
+   }
+  },
+  "BackEndDatabaseCluster8B2F7305": {
+   "Type": "AWS::RDS::DBCluster",
+   "Properties": {
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBClusterParameterGroupName": {
+     "Ref": "BackEndMedplumDatabaseClusterParamsF04B446D"
+    },
+    "DBSubnetGroupName": {
+     "Ref": "BackEndDatabaseClusterSubnetsEE06EF7A"
+    },
+    "DatabaseName": "medplum",
+    "DeletionProtection": true,
+    "EnableCloudwatchLogsExports": [
+     "postgresql"
+    ],
+    "Engine": "aurora-postgresql",
+    "EngineVersion": "16.9",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "MedplumBuildBackEndDatabaseClusterSecretBA0BEF2E3fdaad7efa858a3daf9490cf0a702aeb"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": "clusteradmin",
+    "Port": 5432,
+    "StorageEncrypted": true,
+    "StorageType": "aurora",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VpcSecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "BackEndDatabaseClusterSecurityGroup1EAC9C2D",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/Resource"
+   }
+  },
+  "BackEndDatabaseClusterInstance160DF7384": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "CACertificateIdentifier": "rds-ca-rsa2048-g1",
+    "DBClusterIdentifier": {
+     "Ref": "BackEndDatabaseCluster8B2F7305"
+    },
+    "DBInstanceClass": "db.t3.medium",
+    "DBSubnetGroupName": {
+     "Ref": "BackEndDatabaseClusterSubnetsEE06EF7A"
+    },
+    "EnablePerformanceInsights": true,
+    "Engine": "aurora-postgresql",
+    "PerformanceInsightsRetentionPeriod": 7,
+    "PubliclyAccessible": false,
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "DependsOn": [
+    "BackEndVPCPrivateSubnet1DefaultRoute3102191D",
+    "BackEndVPCPrivateSubnet1RouteTableAssociation016A73CD",
+    "BackEndVPCPrivateSubnet2DefaultRoute2FCE066C",
+    "BackEndVPCPrivateSubnet2RouteTableAssociationF41FDF7E"
+   ],
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseCluster/Instance1"
+   }
+  },
+  "BackEndRedisSubnetGroupE46D902C": {
+   "Type": "AWS::ElastiCache::SubnetGroup",
+   "Properties": {
+    "Description": "Redis Subnet Group",
+    "SubnetIds": [
+     {
+      "Ref": "BackEndVPCPrivateSubnet1SubnetD50C9513"
+     },
+     {
+      "Ref": "BackEndVPCPrivateSubnet2SubnetFF24486C"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisSubnetGroup"
+   }
+  },
+  "BackEndRedisSecurityGroupB2340867": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Redis Security Group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisSecurityGroup/Resource"
+   }
+  },
+  "BackEndRedisSecurityGroupfromMedplumBuildBackEndServiceSecurityGroup68E47C5F63791E3AA720": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "from MedplumBuildBackEndServiceSecurityGroup68E47C5F:6379",
+    "FromPort": 6379,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "BackEndRedisSecurityGroupB2340867",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "BackEndServiceSecurityGroupAB991791",
+      "GroupId"
+     ]
+    },
+    "ToPort": 6379
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisSecurityGroup/from MedplumBuildBackEndServiceSecurityGroup68E47C5F:6379"
+   }
+  },
+  "BackEndRedisPassword046FF1F3": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludeCharacters": "@%*()_+=`~{}|[]\\:\";'?,./",
+     "GenerateStringKey": "password",
+     "SecretStringTemplate": "{}"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisPassword/Resource"
+   }
+  },
+  "BackEndRedisCluster52D28A6F": {
+   "Type": "AWS::ElastiCache::ReplicationGroup",
+   "Properties": {
+    "AtRestEncryptionEnabled": true,
+    "AuthToken": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "BackEndRedisPassword046FF1F3"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "CacheNodeType": "cache.t3.small",
+    "CacheSubnetGroupName": {
+     "Ref": "BackEndRedisSubnetGroupE46D902C"
+    },
+    "Engine": "Redis",
+    "EngineVersion": "6.x",
+    "MultiAZEnabled": true,
+    "NumNodeGroups": 1,
+    "ReplicasPerNodeGroup": 1,
+    "ReplicationGroupDescription": "RedisReplicationGroup",
+    "SecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "BackEndRedisSecurityGroupB2340867",
+       "GroupId"
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "TransitEncryptionEnabled": true
+   },
+   "DependsOn": [
+    "BackEndRedisPassword046FF1F3"
+   ],
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisCluster"
+   }
+  },
+  "BackEndRedisSecrets67BDEA91": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "GenerateStringKey": "unused",
+     "SecretStringTemplate": {
+      "Fn::Join": [
+       "",
+       [
+        "{\"host\":\"",
+        {
+         "Fn::GetAtt": [
+          "BackEndRedisCluster52D28A6F",
+          "PrimaryEndPoint.Address"
+         ]
+        },
+        "\",\"port\":\"",
+        {
+         "Fn::GetAtt": [
+          "BackEndRedisCluster52D28A6F",
+          "PrimaryEndPoint.Port"
+         ]
+        },
+        "\",\"password\":\"{{resolve:secretsmanager:",
+        {
+         "Ref": "BackEndRedisPassword046FF1F3"
+        },
+        ":SecretString:password::}}\",\"tls\":{}}"
+       ]
+      ]
+     }
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "DependsOn": [
+    "BackEndRedisCluster52D28A6F",
+    "BackEndRedisPassword046FF1F3"
+   ],
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisSecrets/Resource"
+   }
+  },
+  "BackEndCluster6B6DC4A8": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/Cluster/Resource"
+   }
+  },
+  "BackEndTaskExecutionRole763C973A": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "Medplum Server Task Execution Role",
+    "Policies": [
+     {
+      "PolicyDocument": {
+       "Statement": [
+        {
+         "Action": [
+          "logs:PutLogEvents",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:DescribeLogStreams",
+          "logs:DescribeLogGroups",
+          "logs:PutRetentionPolicy"
+         ],
+         "Effect": "Allow",
+         "Resource": "arn:aws:logs:us-east-1:476905305808:log-group:*"
+        },
+        {
+         "Action": [
+          "secretsmanager:GetResourcePolicy",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecrets",
+          "secretsmanager:ListSecretVersionIds"
+         ],
+         "Effect": "Allow",
+         "Resource": "arn:aws:secretsmanager:us-east-1:476905305808:secret:*"
+        },
+        {
+         "Action": [
+          "ssm:GetParametersByPath",
+          "ssm:GetParameters",
+          "ssm:GetParameter",
+          "ssm:DescribeParameters"
+         ],
+         "Effect": "Allow",
+         "Resource": "arn:aws:ssm:us-east-1:476905305808:parameter/medplum/build/*"
+        },
+        {
+         "Action": [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+         ],
+         "Effect": "Allow",
+         "Resource": "arn:aws:ses:us-east-1:476905305808:identity/*"
+        },
+        {
+         "Action": "s3:ListBucket",
+         "Effect": "Allow",
+         "Resource": "arn:aws:s3:::storage.ehr.hiivehealth.net"
+        },
+        {
+         "Action": [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+         ],
+         "Effect": "Allow",
+         "Resource": "arn:aws:s3:::storage.ehr.hiivehealth.net/*"
+        },
+        {
+         "Action": [
+          "iam:ListRoles",
+          "iam:GetRole",
+          "iam:PassRole"
+         ],
+         "Effect": "Allow",
+         "Resource": {
+          "Fn::GetAtt": [
+           "BackEndBotLambdaRoleBBE7DB26",
+           "Arn"
+          ]
+         }
+        },
+        {
+         "Action": [
+          "lambda:CreateFunction",
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:InvokeFunction"
+         ],
+         "Effect": "Allow",
+         "Resource": "arn:aws:lambda:us-east-1:476905305808:function:medplum-bot-lambda-*"
+        },
+        {
+         "Action": "lambda:ListLayerVersions",
+         "Effect": "Allow",
+         "Resource": "arn:aws:lambda:us-east-1:476905305808:layer:medplum-bot-layer"
+        },
+        {
+         "Action": "lambda:GetLayerVersion",
+         "Effect": "Allow",
+         "Resource": "arn:aws:lambda:us-east-1:476905305808:layer:medplum-bot-layer:*"
+        },
+        {
+         "Action": [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+          "xray:GetSamplingRules",
+          "xray:GetSamplingTargets",
+          "xray:GetSamplingStatisticSummaries"
+         ],
+         "Effect": "Allow",
+         "Resource": "*"
+        },
+        {
+         "Action": [
+          "comprehend:DetectEntities",
+          "comprehend:DetectKeyPhrases",
+          "comprehend:DetectDominantLanguage",
+          "comprehend:DetectSentiment",
+          "comprehend:DetectTargetedSentiment",
+          "comprehend:DetectSyntax",
+          "comprehendmedical:DetectEntitiesV2",
+          "textract:DetectDocumentText",
+          "textract:AnalyzeDocument",
+          "textract:StartDocumentTextDetection",
+          "textract:GetDocumentTextDetection"
+         ],
+         "Effect": "Allow",
+         "Resource": "*"
+        }
+       ],
+       "Version": "2012-10-17"
+      },
+      "PolicyName": "TaskExecutionPolicies"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/TaskExecutionRole/Resource"
+   }
+  },
+  "BackEndTaskDefinitionAE6A5DEC": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Command": [
+       "aws:/medplum/build/"
+      ],
+      "Essential": true,
+      "Image": "medplum/medplum-server:5.1.10",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "BackEndLogGroup2DF5FDDA"
+        },
+        "awslogs-stream-prefix": "Medplum",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "MedplumTaskDefinition",
+      "PortMappings": [
+       {
+        "ContainerPort": 8103,
+        "HostPort": 8103,
+        "Protocol": "tcp"
+       }
+      ]
+     }
+    ],
+    "Cpu": "256",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "BackEndTaskDefinitionExecutionRole1C08853D",
+      "Arn"
+     ]
+    },
+    "Family": "MedplumBuildBackEndTaskDefinition25DAB390",
+    "Memory": "512",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "BackEndTaskExecutionRole763C973A",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/TaskDefinition/Resource"
+   }
+  },
+  "BackEndTaskDefinitionExecutionRole1C08853D": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/TaskDefinition/ExecutionRole/Resource"
+   }
+  },
+  "BackEndTaskDefinitionExecutionRoleDefaultPolicy52E17CF7": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "BackEndLogGroup2DF5FDDA",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "BackEndTaskDefinitionExecutionRoleDefaultPolicy52E17CF7",
+    "Roles": [
+     {
+      "Ref": "BackEndTaskDefinitionExecutionRole1C08853D"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/TaskDefinition/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "BackEndLogGroup2DF5FDDA": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/ecs/medplum/build",
+    "RetentionInDays": 731,
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LogGroup/Resource"
+   }
+  },
+  "BackEndServiceSecurityGroupAB991791": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "MedplumBuild/BackEnd/ServiceSecurityGroup",
+    "GroupName": "MedplumSecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/ServiceSecurityGroup/Resource"
+   }
+  },
+  "BackEndServiceSecurityGroupfromMedplumBuildBackEndLoadBalancerSecurityGroupFE9A5F6281032EA934D6": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 8103,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "BackEndServiceSecurityGroupAB991791",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "BackEndLoadBalancerSecurityGroup261A40A6",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8103
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/ServiceSecurityGroup/from MedplumBuildBackEndLoadBalancerSecurityGroupFE9A5F62:8103"
+   }
+  },
+  "BackEndFargateServiceD3B260C0": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "BackEndCluster6B6DC4A8"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 100
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 300,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "MedplumTaskDefinition",
+      "ContainerPort": 8103,
+      "TargetGroupArn": {
+       "Ref": "BackEndTargetGroupA9B89A7D"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "BackEndServiceSecurityGroupAB991791",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "BackEndVPCPrivateSubnet1SubnetD50C9513"
+       },
+       {
+        "Ref": "BackEndVPCPrivateSubnet2SubnetFF24486C"
+       }
+      ]
+     }
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "TaskDefinition": {
+     "Ref": "BackEndTaskDefinitionAE6A5DEC"
+    }
+   },
+   "DependsOn": [
+    "BackEndDatabaseClusterInstance160DF7384",
+    "BackEndDatabaseCluster8B2F7305",
+    "BackEndDatabaseClusterSecretAttachment39D8D762",
+    "MedplumBuildBackEndDatabaseClusterSecretBA0BEF2E3fdaad7efa858a3daf9490cf0a702aeb",
+    "BackEndDatabaseClusterSecurityGroupfromMedplumBuildBackEndServiceSecurityGroup68E47C5FIndirectPort80FEAF59",
+    "BackEndDatabaseClusterSecurityGroup1EAC9C2D",
+    "BackEndDatabaseClusterSubnetsEE06EF7A",
+    "BackEndLoadBalancerHttpsListener54B76346",
+    "BackEndRedisCluster52D28A6F",
+    "BackEndTaskExecutionRole763C973A"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/FargateService/Service"
+   }
+  },
+  "BackEndTargetGroupA9B89A7D": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 30,
+    "HealthCheckPath": "/healthcheck",
+    "HealthCheckTimeoutSeconds": 3,
+    "HealthyThresholdCount": 2,
+    "Port": 8103,
+    "Protocol": "HTTP",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "UnhealthyThresholdCount": 5,
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/TargetGroup/Resource"
+   }
+  },
+  "BackEndLoadBalancerF312BC81": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     },
+     {
+      "Key": "routing.http2.enabled",
+      "Value": "true"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "BackEndLoadBalancerSecurityGroup261A40A6",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "BackEndVPCPublicSubnet1Subnet4C7F70D8"
+     },
+     {
+      "Ref": "BackEndVPCPublicSubnet2SubnetB2482B61"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "BackEndVPCPublicSubnet1DefaultRoute370C926C",
+    "BackEndVPCPublicSubnet1RouteTableAssociation8ED2AF8E",
+    "BackEndVPCPublicSubnet2DefaultRoute6941FB68",
+    "BackEndVPCPublicSubnet2RouteTableAssociation699E0957"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LoadBalancer/Resource"
+   }
+  },
+  "BackEndLoadBalancerSecurityGroup261A40A6": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB MedplumBuildBackEndLoadBalancer57A3EFC7",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 443",
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VpcId": {
+     "Ref": "BackEndVPCF5C5F769"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LoadBalancer/SecurityGroup/Resource"
+   }
+  },
+  "BackEndLoadBalancerSecurityGrouptoMedplumBuildBackEndServiceSecurityGroup68E47C5F8103841E35B8": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "BackEndServiceSecurityGroupAB991791",
+      "GroupId"
+     ]
+    },
+    "FromPort": 8103,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "BackEndLoadBalancerSecurityGroup261A40A6",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 8103
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LoadBalancer/SecurityGroup/to MedplumBuildBackEndServiceSecurityGroup68E47C5F:8103"
+   }
+  },
+  "BackEndLoadBalancerHttpsListener54B76346": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "Certificates": [
+     {
+      "CertificateArn": "arn:aws:acm:us-east-1:476905305808:certificate/40a36aac-d4bb-4318-ae79-244965b224df"
+     }
+    ],
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "BackEndTargetGroupA9B89A7D"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "BackEndLoadBalancerF312BC81"
+    },
+    "Port": 443,
+    "Protocol": "HTTPS",
+    "SslPolicy": "ELBSecurityPolicy-TLS13-1-2-2021-06"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LoadBalancer/HttpsListener/Resource"
+   }
+  },
+  "BackEndBackEndWAFDE8C8425": {
+   "Type": "AWS::WAFv2::WebACL",
+   "Properties": {
+    "DefaultAction": {
+     "Allow": {}
+    },
+    "Name": "MedplumBuild-BackEndWAF",
+    "Rules": [
+     {
+      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 10,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "NoUserAgent_HEADER"
+         },
+         {
+          "Name": "UserAgent_BadBots_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_QUERYSTRING"
+         },
+         {
+          "Name": "SizeRestrictions_Cookie_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_BODY"
+         },
+         {
+          "Name": "SizeRestrictions_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_BODY"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_COOKIE"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_URIPATH"
+         },
+         {
+          "Name": "GenericLFI_BODY"
+         },
+         {
+          "Name": "RestrictedExtensions_URIPATH"
+         },
+         {
+          "Name": "RestrictedExtensions_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_BODY"
+         },
+         {
+          "Name": "GenericRFI_URIPATH"
+         },
+         {
+          "Name": "CrossSiteScripting_COOKIE"
+         },
+         {
+          "Name": "CrossSiteScripting_QUERYARGUMENTS"
+         },
+         {
+          "Name": "CrossSiteScripting_BODY"
+         },
+         {
+          "Name": "CrossSiteScripting_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesCommonRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWS-AWSManagedRulesCommonRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWS-AWSManagedRulesAmazonIpReputationList",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 20,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "AWSManagedIPReputationList"
+         },
+         {
+          "Name": "AWSManagedReconnaissanceList"
+         }
+        ],
+        "Name": "AWSManagedRulesAmazonIpReputationList",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesAmazonIpReputationList",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRulesSQLiRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 30,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "SQLi_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLi_BODY"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_BODY"
+         },
+         {
+          "Name": "SQLi_COOKIE"
+         },
+         {
+          "Name": "SQLi_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesSQLiRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesSQLiRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRuleLinux",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 40,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "LFI_URIPATH"
+         },
+         {
+          "Name": "LFI_QUERYSTRING"
+         },
+         {
+          "Name": "LFI_COOKIE"
+         }
+        ],
+        "Name": "AWSManagedRulesLinuxRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRuleLinux",
+       "SampledRequestsEnabled": true
+      }
+     }
+    ],
+    "Scope": "REGIONAL",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VisibilityConfig": {
+     "CloudWatchMetricsEnabled": true,
+     "MetricName": "MedplumBuild-BackEndWAF-Metric",
+     "SampledRequestsEnabled": false
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/BackEndWAF"
+   }
+  },
+  "BackEndLoadBalancerAssociation8B79ED3F": {
+   "Type": "AWS::WAFv2::WebACLAssociation",
+   "Properties": {
+    "ResourceArn": {
+     "Ref": "BackEndLoadBalancerF312BC81"
+    },
+    "WebACLArn": {
+     "Fn::GetAtt": [
+      "BackEndBackEndWAFDE8C8425",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LoadBalancerAssociation"
+   }
+  },
+  "BackEndLoadBalancerAliasRecordFCF2BBEC": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::Join": [
+       "",
+       [
+        "dualstack.",
+        {
+         "Fn::GetAtt": [
+          "BackEndLoadBalancerF312BC81",
+          "DNSName"
+         ]
+        }
+       ]
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::GetAtt": [
+       "BackEndLoadBalancerF312BC81",
+       "CanonicalHostedZoneID"
+      ]
+     }
+    },
+    "HostedZoneId": "Z10230423D7NKJNVQRX7O",
+    "Name": "api.ehr.hiivehealth.net.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/LoadBalancerAliasRecord/Resource"
+   }
+  },
+  "BackEndRegionParameter979C390C": {
+   "Type": "AWS::SSM::Parameter",
+   "Properties": {
+    "Description": "AWS region",
+    "Name": "/medplum/build/awsRegion",
+    "Tags": {
+     "medplum:environment": "build"
+    },
+    "Tier": "Standard",
+    "Type": "String",
+    "Value": "us-east-1"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RegionParameter/Resource"
+   }
+  },
+  "BackEndDatabaseSecretsParameter043793F3": {
+   "Type": "AWS::SSM::Parameter",
+   "Properties": {
+    "Description": "Database secrets ARN",
+    "Name": "/medplum/build/DatabaseSecrets",
+    "Tags": {
+     "medplum:environment": "build"
+    },
+    "Tier": "Standard",
+    "Type": "String",
+    "Value": {
+     "Ref": "BackEndDatabaseClusterSecretAttachment39D8D762"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/DatabaseSecretsParameter/Resource"
+   }
+  },
+  "BackEndRedisSecretsParameterA4CFBD05": {
+   "Type": "AWS::SSM::Parameter",
+   "Properties": {
+    "Description": "Redis secrets ARN",
+    "Name": "/medplum/build/RedisSecrets",
+    "Tags": {
+     "medplum:environment": "build"
+    },
+    "Tier": "Standard",
+    "Type": "String",
+    "Value": {
+     "Ref": "BackEndRedisSecrets67BDEA91"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/RedisSecretsParameter/Resource"
+   }
+  },
+  "BackEndBotLambdaRoleParameter9B70D961": {
+   "Type": "AWS::SSM::Parameter",
+   "Properties": {
+    "Description": "Bot lambda execution role ARN",
+    "Name": "/medplum/build/botLambdaRoleArn",
+    "Tags": {
+     "medplum:environment": "build"
+    },
+    "Tier": "Standard",
+    "Type": "String",
+    "Value": {
+     "Fn::GetAtt": [
+      "BackEndBotLambdaRoleBBE7DB26",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/BackEnd/BotLambdaRoleParameter/Resource"
+   }
+  },
+  "FrontEndAppBucket92214AC8": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "app.ehr.hiivehealth.net",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/AppBucket/Resource"
+   }
+  },
+  "FrontEndAppBucketPolicyBAED1B9B": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "FrontEndAppBucket92214AC8"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "FrontEndAppBucket92214AC8",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "FrontEndAppBucket92214AC8",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "FrontEndOriginAccessIdentity6D7F5EB8",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "FrontEndAppBucket92214AC8",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "FrontEndAppBucket92214AC8",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "FrontEndOriginAccessIdentity6D7F5EB8",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "FrontEndAppBucket92214AC8",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/AppBucket/Policy/Resource"
+   }
+  },
+  "FrontEndResponseHeadersPolicyA0E80FF4": {
+   "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+   "Properties": {
+    "ResponseHeadersPolicyConfig": {
+     "CustomHeadersConfig": {
+      "Items": [
+       {
+        "Header": "Permissions-Policy",
+        "Override": true,
+        "Value": "accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+       }
+      ]
+     },
+     "Name": "MedplumBuildFrontEndResponseHeadersPolicyCD9BE2B9",
+     "SecurityHeadersConfig": {
+      "ContentSecurityPolicy": {
+       "ContentSecurityPolicy": "default-src 'none'; base-uri 'self'; child-src 'self'; connect-src 'self' api.ehr.hiivehealth.net *.medplum.com *.google.com; font-src 'self' fonts.gstatic.com; form-action 'self' *.gstatic.com *.google.com; frame-ancestors 'none'; frame-src 'self' storage.ehr.hiivehealth.net *.medplum.com *.gstatic.com *.google.com; img-src 'self' data: storage.ehr.hiivehealth.net *.gstatic.com *.google.com *.googleapis.com; manifest-src 'self'; media-src 'self' storage.ehr.hiivehealth.net; script-src 'self' *.medplum.com *.gstatic.com *.google.com; style-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com; worker-src 'self' blob: *.gstatic.com *.google.com; upgrade-insecure-requests",
+       "Override": true
+      },
+      "ContentTypeOptions": {
+       "Override": true
+      },
+      "FrameOptions": {
+       "FrameOption": "DENY",
+       "Override": true
+      },
+      "ReferrerPolicy": {
+       "Override": true,
+       "ReferrerPolicy": "strict-origin-when-cross-origin"
+      },
+      "StrictTransportSecurity": {
+       "AccessControlMaxAgeSec": 63072000,
+       "IncludeSubdomains": true,
+       "Override": true,
+       "Preload": true
+      },
+      "XSSProtection": {
+       "ModeBlock": true,
+       "Override": true,
+       "Protection": true
+      }
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/ResponseHeadersPolicy/Resource"
+   }
+  },
+  "FrontEndFrontEndWAFDBDCA924": {
+   "Type": "AWS::WAFv2::WebACL",
+   "Properties": {
+    "DefaultAction": {
+     "Allow": {}
+    },
+    "Name": "MedplumBuild-FrontEndWAF",
+    "Rules": [
+     {
+      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 10,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "NoUserAgent_HEADER"
+         },
+         {
+          "Name": "UserAgent_BadBots_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_QUERYSTRING"
+         },
+         {
+          "Name": "SizeRestrictions_Cookie_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_BODY"
+         },
+         {
+          "Name": "SizeRestrictions_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_BODY"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_COOKIE"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_URIPATH"
+         },
+         {
+          "Name": "GenericLFI_BODY"
+         },
+         {
+          "Name": "RestrictedExtensions_URIPATH"
+         },
+         {
+          "Name": "RestrictedExtensions_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_BODY"
+         },
+         {
+          "Name": "GenericRFI_URIPATH"
+         },
+         {
+          "Name": "CrossSiteScripting_COOKIE"
+         },
+         {
+          "Name": "CrossSiteScripting_QUERYARGUMENTS"
+         },
+         {
+          "Name": "CrossSiteScripting_BODY"
+         },
+         {
+          "Name": "CrossSiteScripting_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesCommonRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWS-AWSManagedRulesCommonRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWS-AWSManagedRulesAmazonIpReputationList",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 20,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "AWSManagedIPReputationList"
+         },
+         {
+          "Name": "AWSManagedReconnaissanceList"
+         }
+        ],
+        "Name": "AWSManagedRulesAmazonIpReputationList",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesAmazonIpReputationList",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRulesSQLiRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 30,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "SQLi_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLi_BODY"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_BODY"
+         },
+         {
+          "Name": "SQLi_COOKIE"
+         },
+         {
+          "Name": "SQLi_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesSQLiRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesSQLiRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRuleLinux",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 40,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "LFI_URIPATH"
+         },
+         {
+          "Name": "LFI_QUERYSTRING"
+         },
+         {
+          "Name": "LFI_COOKIE"
+         }
+        ],
+        "Name": "AWSManagedRulesLinuxRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRuleLinux",
+       "SampledRequestsEnabled": true
+      }
+     }
+    ],
+    "Scope": "CLOUDFRONT",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VisibilityConfig": {
+     "CloudWatchMetricsEnabled": true,
+     "MetricName": "MedplumBuild-FrontEndWAF-Metric",
+     "SampledRequestsEnabled": false
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/FrontEndWAF"
+   }
+  },
+  "FrontEndApiOriginCachePolicyCC373C7A": {
+   "Type": "AWS::CloudFront::CachePolicy",
+   "Properties": {
+    "CachePolicyConfig": {
+     "DefaultTTL": 86400,
+     "MaxTTL": 31536000,
+     "MinTTL": 0,
+     "Name": "MedplumBuild-ApiOriginCachePolicy",
+     "ParametersInCacheKeyAndForwardedToOrigin": {
+      "CookiesConfig": {
+       "CookieBehavior": "all"
+      },
+      "EnableAcceptEncodingBrotli": false,
+      "EnableAcceptEncodingGzip": false,
+      "HeadersConfig": {
+       "HeaderBehavior": "whitelist",
+       "Headers": [
+        "Authorization",
+        "Content-Encoding",
+        "Content-Type",
+        "If-None-Match",
+        "Origin",
+        "Referer",
+        "User-Agent",
+        "X-Medplum"
+       ]
+      },
+      "QueryStringsConfig": {
+       "QueryStringBehavior": "all"
+      }
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/ApiOriginCachePolicy/Resource"
+   }
+  },
+  "FrontEndOriginAccessIdentity6D7F5EB8": {
+   "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+   "Properties": {
+    "CloudFrontOriginAccessIdentityConfig": {
+     "Comment": "Allows CloudFront to reach the bucket"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/OriginAccessIdentity/Resource"
+   }
+  },
+  "FrontEndAppDistributionA2F700A1": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "app.ehr.hiivehealth.net"
+     ],
+     "CustomErrorResponses": [
+      {
+       "ErrorCode": 403,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      },
+      {
+       "ErrorCode": 404,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      }
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "ResponseHeadersPolicyId": {
+       "Ref": "FrontEndResponseHeadersPolicyA0E80FF4"
+      },
+      "TargetOriginId": "MedplumBuildFrontEndAppDistributionOrigin11E6340B0",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "FrontEndAppBucket92214AC8",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "MedplumBuildFrontEndAppDistributionOrigin11E6340B0",
+       "S3OriginConfig": {
+        "OriginAccessIdentity": {
+         "Fn::Join": [
+          "",
+          [
+           "origin-access-identity/cloudfront/",
+           {
+            "Ref": "FrontEndOriginAccessIdentity6D7F5EB8"
+           }
+          ]
+         ]
+        }
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": "arn:aws:acm:us-east-1:476905305808:certificate/f9dbc656-75a0-43c4-9fbd-2d3f7aeb5e7b",
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     },
+     "WebACLId": {
+      "Fn::GetAtt": [
+       "FrontEndFrontEndWAFDBDCA924",
+       "Arn"
+      ]
+     }
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/AppDistribution/Resource"
+   }
+  },
+  "FrontEndAppAliasRecord7997AB24": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "FrontEndAppDistributionA2F700A1",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z10230423D7NKJNVQRX7O",
+    "Name": "app.ehr.hiivehealth.net.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/FrontEnd/AppAliasRecord/Resource"
+   }
+  },
+  "StorageStorageBucketDC877B11": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "storage.ehr.hiivehealth.net",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/StorageBucket/Resource"
+   }
+  },
+  "StorageStorageBucketPolicy77CC849A": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "StorageStorageBucketDC877B11"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageStorageBucketDC877B11",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageStorageBucketDC877B11",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "StorageOriginAccessIdentity7CB6436A",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageStorageBucketDC877B11",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageStorageBucketDC877B11",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "StorageOriginAccessIdentity7CB6436A",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "StorageStorageBucketDC877B11",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/StorageBucket/Policy/Resource"
+   }
+  },
+  "StorageStorageKeyGroupE5E2A8D0": {
+   "Type": "AWS::CloudFront::KeyGroup",
+   "Properties": {
+    "KeyGroupConfig": {
+     "Items": [
+      "K1Y1YQ5ZH4N0OG"
+     ],
+     "Name": "MedplumBuildStorageStorageKeyGroup006C139E"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/StorageKeyGroup/Resource"
+   }
+  },
+  "StorageResponseHeadersPolicyBE9A863A": {
+   "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+   "Properties": {
+    "ResponseHeadersPolicyConfig": {
+     "CorsConfig": {
+      "AccessControlAllowCredentials": false,
+      "AccessControlAllowHeaders": {
+       "Items": [
+        "*"
+       ]
+      },
+      "AccessControlAllowMethods": {
+       "Items": [
+        "GET",
+        "HEAD",
+        "OPTIONS"
+       ]
+      },
+      "AccessControlAllowOrigins": {
+       "Items": [
+        "app.ehr.hiivehealth.net",
+        "https://ccda.medplum.com"
+       ]
+      },
+      "AccessControlMaxAgeSec": 600,
+      "OriginOverride": false
+     },
+     "CustomHeadersConfig": {
+      "Items": [
+       {
+        "Header": "Permissions-Policy",
+        "Override": true,
+        "Value": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+       }
+      ]
+     },
+     "Name": "MedplumBuildStorageResponseHeadersPolicy75924E67",
+     "SecurityHeadersConfig": {
+      "ContentSecurityPolicy": {
+       "ContentSecurityPolicy": "default-src 'none'; connect-src https://ccda.medplum.com; base-uri 'none'; form-action 'none'; frame-ancestors *;",
+       "Override": true
+      },
+      "ContentTypeOptions": {
+       "Override": true
+      },
+      "FrameOptions": {
+       "FrameOption": "DENY",
+       "Override": true
+      },
+      "ReferrerPolicy": {
+       "Override": true,
+       "ReferrerPolicy": "no-referrer"
+      },
+      "StrictTransportSecurity": {
+       "AccessControlMaxAgeSec": 63072000,
+       "IncludeSubdomains": true,
+       "Override": true,
+       "Preload": true
+      },
+      "XSSProtection": {
+       "ModeBlock": true,
+       "Override": true,
+       "Protection": true
+      }
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/ResponseHeadersPolicy/Resource"
+   }
+  },
+  "StorageStorageWAFEC7FCAE6": {
+   "Type": "AWS::WAFv2::WebACL",
+   "Properties": {
+    "DefaultAction": {
+     "Allow": {}
+    },
+    "Name": "MedplumBuild-StorageWAF",
+    "Rules": [
+     {
+      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 10,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "NoUserAgent_HEADER"
+         },
+         {
+          "Name": "UserAgent_BadBots_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_QUERYSTRING"
+         },
+         {
+          "Name": "SizeRestrictions_Cookie_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_BODY"
+         },
+         {
+          "Name": "SizeRestrictions_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_BODY"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_COOKIE"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_URIPATH"
+         },
+         {
+          "Name": "GenericLFI_BODY"
+         },
+         {
+          "Name": "RestrictedExtensions_URIPATH"
+         },
+         {
+          "Name": "RestrictedExtensions_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_BODY"
+         },
+         {
+          "Name": "GenericRFI_URIPATH"
+         },
+         {
+          "Name": "CrossSiteScripting_COOKIE"
+         },
+         {
+          "Name": "CrossSiteScripting_QUERYARGUMENTS"
+         },
+         {
+          "Name": "CrossSiteScripting_BODY"
+         },
+         {
+          "Name": "CrossSiteScripting_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesCommonRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWS-AWSManagedRulesCommonRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWS-AWSManagedRulesAmazonIpReputationList",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 20,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "AWSManagedIPReputationList"
+         },
+         {
+          "Name": "AWSManagedReconnaissanceList"
+         }
+        ],
+        "Name": "AWSManagedRulesAmazonIpReputationList",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesAmazonIpReputationList",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRulesSQLiRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 30,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "SQLi_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLi_BODY"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_BODY"
+         },
+         {
+          "Name": "SQLi_COOKIE"
+         },
+         {
+          "Name": "SQLi_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesSQLiRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesSQLiRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRuleLinux",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 40,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "LFI_URIPATH"
+         },
+         {
+          "Name": "LFI_QUERYSTRING"
+         },
+         {
+          "Name": "LFI_COOKIE"
+         }
+        ],
+        "Name": "AWSManagedRulesLinuxRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRuleLinux",
+       "SampledRequestsEnabled": true
+      }
+     }
+    ],
+    "Scope": "CLOUDFRONT",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VisibilityConfig": {
+     "CloudWatchMetricsEnabled": true,
+     "MetricName": "MedplumBuild-StorageWAF-Metric",
+     "SampledRequestsEnabled": false
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/StorageWAF"
+   }
+  },
+  "StorageOriginAccessIdentity7CB6436A": {
+   "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+   "Properties": {
+    "CloudFrontOriginAccessIdentityConfig": {
+     "Comment": "Allows CloudFront to reach the bucket"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/OriginAccessIdentity/Resource"
+   }
+  },
+  "StorageStorageDistributionAF8103AC": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "storage.ehr.hiivehealth.net"
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "ResponseHeadersPolicyId": {
+       "Ref": "StorageResponseHeadersPolicyBE9A863A"
+      },
+      "TargetOriginId": "MedplumBuildStorageStorageDistributionOrigin1543F0481",
+      "TrustedKeyGroups": [
+       {
+        "Ref": "StorageStorageKeyGroupE5E2A8D0"
+       }
+      ],
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "StorageStorageBucketDC877B11",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "MedplumBuildStorageStorageDistributionOrigin1543F0481",
+       "S3OriginConfig": {
+        "OriginAccessIdentity": {
+         "Fn::Join": [
+          "",
+          [
+           "origin-access-identity/cloudfront/",
+           {
+            "Ref": "StorageOriginAccessIdentity7CB6436A"
+           }
+          ]
+         ]
+        }
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": "arn:aws:acm:us-east-1:476905305808:certificate/e7a868ea-d885-41c3-8fa6-3c6e2cfd354c",
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     },
+     "WebACLId": {
+      "Fn::GetAtt": [
+       "StorageStorageWAFEC7FCAE6",
+       "Arn"
+      ]
+     }
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/StorageDistribution/Resource"
+   }
+  },
+  "StorageStorageAliasRecord6CE51914": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "StorageStorageDistributionAF8103AC",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z10230423D7NKJNVQRX7O",
+    "Name": "storage.ehr.hiivehealth.net.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/Storage/StorageAliasRecord/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U23LbIBD9lr5jNXEmH+BLnHritho7kz52VmitEEug4WJPRqN/7yJ0wUnbJ84eFji7HJgn8/ub5OYLXMyM56dZKbKkOVjgJ0bU76ZUhUmanSoetXI1Wx3lgFuGfJ40LzX37Eu6YqnLSsEPLpNoPTehvXIWnyErceInbmGM4gKsUHJM9uBhm/rhB9hHsHiBd5ZqcSY4bbyVFjXhISEo6aOFpTpeK5SWbUp1IeF+foAH5E4L+z4W9n9iKwuNxnziHzq6ZQKqpNmrUGE3poq60UkKqGU6p16moKFCkj2es16uSmeI+TC1BgsZGOxnWSg7WhYTQzKJ06E347Yh2EpjQXJsmelSTAUSCtRJE0ryq8LwDLpAG3VvTPg0E2iyQgnGCk40hv2upe6xpg50Nzx6h1oR6Rvghk4A7wtzWuNRSDG44iOjpAUhUUdcv/aA+ix4cFqAo75SQZ5BSW0QsjiTexf1KCzUNkqOwyhrRzssux2C7qs4zhNUjuxzetyyCxz9qcT9wmyx2rERRW+AfOJfwP0dydsjVzoPLfTo4JttTOXfqKYaRsd0NhsCSqHFS8dPwQk9CsNkyzhuGTXH5UdNfSUfo6mVNPgNIUdtpiX/mPD3PiXF4U8tCiEXnNMj2eZkGXo34b7ptI0/7a8Za2qZFpkbbv8qfsLpjQ64bRlpU06Hi/8OdU3taZlUOSZv5ut5fpfc3tJH92aEmGlHx1SY7MP4B3n2MksFBQAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/CDKMetadata/Default"
+   }
+  }
+ },
+ "Mappings": {
+  "AWSCloudFrontPartitionHostedZoneIdMap": {
+   "aws": {
+    "zoneId": "Z2FDTNDATAQYW2"
+   },
+   "aws-cn": {
+    "zoneId": "Z3RFFRIM2A3IF5"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
