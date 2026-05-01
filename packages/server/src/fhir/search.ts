@@ -244,12 +244,15 @@ function applyCountAndOffsetLimits<T extends Resource>(
  * @param searchRequest - The incoming search request.
  */
 function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequest): void {
-  if (searchRequest.types) {
-    for (const resourceType of searchRequest.types) {
-      validateSearchResourceType(repo, resourceType);
-    }
-  } else {
-    validateSearchResourceType(repo, searchRequest.resourceType);
+  validateSearchResourceType(repo, searchRequest.resourceType);
+  for (const resourceType of searchRequest.types ?? EMPTY) {
+    validateSearchResourceType(repo, resourceType);
+  }
+  for (const include of searchRequest.include ?? EMPTY) {
+    validateSearchResourceType(repo, include.resourceType as ResourceType);
+  }
+  for (const include of searchRequest.revInclude ?? EMPTY) {
+    validateSearchResourceType(repo, include.resourceType as ResourceType);
   }
 }
 
@@ -260,11 +263,9 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
  */
 function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
   validateResourceType(resourceType);
-
   if (resourceType === 'Binary') {
     throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
   }
-
   if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)) {
     throw new OperationOutcomeError(forbidden);
   }
@@ -1658,6 +1659,7 @@ function buildChainedSearchUsingReferenceTable(
   param: ChainedSearchParameter
 ): Expression {
   let link = param.chain[0];
+  validateSearchResourceType(repo, link.targetType as ResourceType);
   let currentTable = nextChainedTable(link);
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
@@ -1676,6 +1678,7 @@ function buildChainedSearchUsingReferenceTable(
   // Add joins to inner query for all subsequent chain links
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
+    validateSearchResourceType(repo, link.targetType as ResourceType);
     if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
