@@ -1,77 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { EventApi, EventInput } from '@fullcalendar/react';
+import FullCalendar, { useCalendarController } from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/react/daygrid';
+import interactionPlugin from '@fullcalendar/react/interaction';
+import '@fullcalendar/react/skeleton.css';
+import themePlugin from '@fullcalendar/react/themes/classic';
+import '@fullcalendar/react/themes/classic/palette.css';
+import '@fullcalendar/react/themes/classic/theme.css';
+import timeGridPlugin from '@fullcalendar/react/timegrid';
 import { Button, Group, SegmentedControl, Title } from '@mantine/core';
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
-import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useCallback, useMemo } from 'react';
 import type { Range } from '../types/scheduling';
+import classes from './Calendar.module.css';
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.tz.setDefault(dayjs.tz.guess());
+type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
 
-type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
-type SlotEvent = Event & { type: 'slot'; slot: Slot; status: string; start: Date; end: Date };
-type ScheduleEvent = AppointmentEvent | SlotEvent;
-
-const localizer = dayjsLocalizer(dayjs);
-
-export const CalendarToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element => {
-  const [firstRender, setFirstRender] = useState(true);
-  useEffect(() => {
-    // The calendar does not provide any way to receive the range of dates that
-    // are visible except when they change. This is the cleanest way I could find
-    // to extend it to provide the _initial_ range (`onView` calls `onRangeChange`).
-    // https://github.com/jquense/react-big-calendar/issues/1752#issuecomment-761051235
-    if (firstRender) {
-      props.onView(props.view);
-      setFirstRender(false);
-    }
-  }, [props, firstRender, setFirstRender]);
-  return (
-    <Group justify="space-between" pb="sm">
-      <Group>
-        <Title order={4} mr="md">
-          {props.view !== 'day' && dayjs(props.date).format('MMMM YYYY')}
-          {props.view === 'day' && dayjs(props.date).format('MMMM D YYYY')}
-        </Title>
-        <Button.Group>
-          <Button variant="default" size="xs" aria-label="Previous" onClick={() => props.onNavigate('PREV')}>
-            <IconChevronLeft size={12} />
-          </Button>
-          <Button variant="default" size="xs" onClick={() => props.onNavigate('TODAY')}>
-            Today
-          </Button>
-          <Button variant="default" size="xs" aria-label="Next" onClick={() => props.onNavigate('NEXT')}>
-            <IconChevronRight size={12} />
-          </Button>
-        </Button.Group>
-      </Group>
-      <SegmentedControl
-        size="xs"
-        value={props.view}
-        onChange={(newView) => props.onView(newView as View)}
-        data={[
-          { label: 'Month', value: 'month' },
-          { label: 'Week', value: 'week' },
-          { label: 'Day', value: 'day' },
-        ]}
-      />
-    </Group>
-  );
-};
-
-const COMPONENTS = { toolbar: CalendarToolbar };
-
-function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
+function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
   return appointments
     .filter((appointment) => appointment.status !== 'cancelled' && appointment.start && appointment.end)
     .map((appointment) => {
@@ -82,117 +31,58 @@ function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
       const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
 
       return {
-        type: 'appointment',
-        appointment,
+        id: appointment.id,
         title: `${name} ${status}`,
-        start: new Date(appointment.start as string),
-        end: new Date(appointment.end as string),
-        resource: appointment,
+        start: appointment.start,
+        end: appointment.end,
+        extendedProps: { type: 'appointment' as const, appointment },
+        interactive: true,
+        color: '#228be6', // blue.6
       };
     });
 }
 
-// This function collapses contiguous or overlapping slots of the same status into single events
-function slotsToEvents(slots: Slot[]): SlotEvent[] {
+function slotsToEvents(slots: Slot[]): EventInput[] {
   return slots.map((slot) => ({
-    type: 'slot',
-    slot,
-    status: slot.status,
-    resource: slot,
-    start: new Date(slot.start),
-    end: new Date(slot.end),
+    id: slot.id,
+    start: slot.start,
+    end: slot.end,
     title: slot.status === 'free' ? 'Available' : 'Blocked',
+    extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
+    interactive: false,
+    color:
+      slot.status === 'free'
+        ? '#d3f9d8' // green.1
+        : '#ced4da', // gray.4
+    contrastColor: '#424242', // dark.4
   }));
-}
-
-function eventPropGetter(
-  event: ScheduleEvent,
-  _start: Date,
-  _end: Date,
-  _isSelected: boolean
-): { className?: string | undefined; style?: React.CSSProperties } {
-  const result = {
-    style: {
-      backgroundColor: '#228be6',
-      border: '1px solid rgba(255, 255, 255, 0)',
-      borderRadius: '4px',
-      color: 'white',
-      display: 'block',
-      opacity: 1.0,
-    },
-  };
-
-  if (event.type === 'slot') {
-    result.style.backgroundColor = event.status === 'free' ? '#d3f9d8' : '#ced4da';
-    result.style.color = 'black';
-    result.style.opacity = 0.6;
-  }
-
-  // style "pending" appointments with an outlined event
-  if (event.type === 'appointment' && event.appointment.status === 'pending') {
-    result.style.border = '1px solid #228be6'; // blue.6
-    result.style.color = '#228be6'; // blue.6
-    result.style.backgroundColor = 'white';
-  }
-
-  return result;
 }
 
 export function Calendar(props: {
   slots: Slot[];
   appointments: Appointment[];
   style?: React.CSSProperties;
-  onSelectInterval?: (slotInfo: SlotInfo) => void;
+  onSelectInterval?: (slotInfo: Range) => void;
   onSelectSlot?: (slot: Slot) => void;
   onSelectAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: Range) => void;
 }): JSX.Element {
-  const [view, setView] = useState<View>('week');
-  const [date, setDate] = useState(new Date());
-  const [range, setRange] = useState<Range | undefined>();
-
-  const { onRangeChange } = props;
-  const handleRangeChange = useCallback(
-    (newRange: Date[] | { start: Date; end: Date }) => {
-      let newStart: Date;
-      let newEnd: Date;
-      if (Array.isArray(newRange)) {
-        // Week view passes the range as an array of dates
-        newStart = newRange[0];
-        newEnd = dayjs(newRange[newRange.length - 1])
-          .add(1, 'day')
-          .toDate();
-      } else {
-        // Other views pass the range as an object
-        newStart = newRange.start;
-        newEnd = newRange.end;
-      }
-
-      // Only update state if the range has changed
-      if (newStart.getTime() !== range?.start.getTime() || newEnd.getTime() !== range.end.getTime()) {
-        setRange({ start: newStart, end: newEnd });
-        onRangeChange?.({ start: newStart, end: newEnd });
-      }
-    },
-    [range, onRangeChange]
-  );
-
+  const controller = useCalendarController();
   const { onSelectAppointment, onSelectSlot } = props;
 
   const handleSelectEvent = useCallback(
-    (event: ScheduleEvent) => {
-      if (event.type === 'appointment') {
-        onSelectAppointment?.(event.appointment);
-      } else if (event.type === 'slot') {
-        onSelectSlot?.(event.slot);
+    (event: EventApi) => {
+      const ext = event.extendedProps as ExtendedEvent;
+      if (ext.type === 'appointment') {
+        onSelectAppointment?.(ext.appointment);
+      } else if (ext.type === 'slot') {
+        onSelectSlot?.(ext.slot);
       }
     },
     [onSelectAppointment, onSelectSlot]
   );
 
-  const events = useMemo(() => appointmentsToEvents(props.appointments), [props.appointments]);
-
-  const backgroundEvents = useMemo(() => {
+  const events = useMemo(() => {
     const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
       (appointment.slot ?? EMPTY).forEach((slotRef) => {
         const key = getReferenceString(slotRef);
@@ -217,35 +107,57 @@ export function Calendar(props: {
       }
       return true;
     });
-    return slotsToEvents(filteredSlots);
-  }, [props.slots, props.appointments]);
 
-  const onNavigate = useCallback((newDate: Date, newView: View) => {
-    setDate(newDate);
-    setView(newView);
-  }, []);
+    return [...appointmentsToEvents(props.appointments), ...slotsToEvents(filteredSlots)];
+  }, [props.appointments, props.slots]);
 
   return (
-    <div data-testid="calendar" style={{ height: '100%' }}>
-      <ReactBigCalendar
-        components={COMPONENTS}
-        view={view}
-        date={date}
-        localizer={localizer}
+    <div data-testid="calendar" style={props.style} className={classes.wrapper}>
+      <Group justify="space-between" pb="sm">
+        <Group gap="md">
+          <Title order={4}>{controller.view?.title}</Title>
+          <Button.Group>
+            <Button variant="default" size="xs" aria-label="Previous" onClick={() => controller.prev()}>
+              <IconChevronLeft size={12} />
+            </Button>
+            <Button variant="default" size="xs" onClick={() => controller.today()}>
+              Today
+            </Button>
+            <Button variant="default" size="xs" aria-label="Next" onClick={() => controller.next()}>
+              <IconChevronRight size={12} />
+            </Button>
+          </Button.Group>
+        </Group>
+        <SegmentedControl
+          size="xs"
+          value={controller.view?.type}
+          onChange={(newView) => controller.changeView(newView)}
+          data={[
+            { label: 'Month', value: 'dayGridMonth' },
+            { label: 'Week', value: 'timeGridWeek' },
+            { label: 'Day', value: 'timeGridDay' },
+          ]}
+        />
+      </Group>
+      <FullCalendar
+        height="100%"
+        plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
+        controller={controller}
+        initialView="timeGridWeek"
+        headerToolbar={false}
         events={events}
-        // Background events don't show in the month view
-        backgroundEvents={backgroundEvents}
-        onNavigate={onNavigate}
-        onRangeChange={handleRangeChange}
-        onSelectSlot={props.onSelectInterval}
-        onSelectEvent={handleSelectEvent}
-        onView={setView}
-        // Default scroll to current time
-        scrollToTime={date}
+        datesSet={(info) => props.onRangeChange?.({ start: info.start, end: info.end })}
+        eventClick={(eventInfo) => handleSelectEvent(eventInfo.event)}
         selectable
-        eventPropGetter={eventPropGetter}
-        style={props.style}
-        dayLayoutAlgorithm="no-overlap"
+        select={(eventInfo) =>
+          props.onSelectInterval?.({
+            start: eventInfo.start,
+            end: eventInfo.end,
+          })
+        }
+        slotMinHeight={35}
+        eventClass={(evt) => (evt.isInteractive ? classes.interactiveEvent : undefined)}
+        nowIndicator
       />
     </div>
   );

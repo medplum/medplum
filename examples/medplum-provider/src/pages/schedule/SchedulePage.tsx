@@ -9,7 +9,6 @@ import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
@@ -127,7 +126,7 @@ export function SchedulePage(): JSX.Element | null {
   // When a date/time interval is selected, set the event object and open the
   // create appointment modal
   const handleSelectInterval = useCallback(
-    (slot: SlotInfo) => {
+    (slot: Range) => {
       if (!practitioner) {
         showErrorNotification("Can't create visit without associated Practitioner");
         return;

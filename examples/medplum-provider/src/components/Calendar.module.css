@@ -1,0 +1,19 @@
+.wrapper {
+  height: 100%;
+
+  /* Very narrow calendars in the provider UI are ending up in a weird resize
+   * loop that flickers and is very ugly. Set a min-width that protects
+   * against that behavior.
+   * */
+  min-width: 200px;
+}
+
+.interactiveEvent {
+  /* Make it clearer that events are clickable */
+  cursor: pointer;
+}
+
+:root {
+  /* Keep "today" column highlighting similar to react-big-calendar default style */
+  --fc-classic-today: #b8e0ff4d;
+}
