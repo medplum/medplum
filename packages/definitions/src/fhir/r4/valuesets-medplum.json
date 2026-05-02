@@ -384,6 +384,11 @@
             "code": "password",
             "display": "Password",
             "definition": "Password"
+          },
+          {
+            "code": "pre-authorized",
+            "display": "Pre-authorized",
+            "definition": "Pre-authorized"
           }
         ]
       }

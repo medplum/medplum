@@ -11,6 +11,7 @@ import {
   createReference,
   getStatus,
   isJwt,
+  isString,
   normalizeErrorString,
   normalizeOperationOutcome,
   parseJWTPayload,
@@ -20,7 +21,7 @@ import type { ClientApplication, Login, ProjectMembership, Reference, User } fro
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -82,6 +83,9 @@ export const tokenHandler: RequestHandler = async (req: Request, res: Response):
       break;
     case OAuthGrantType.TokenExchange:
       await handleTokenExchange(req, res);
+      break;
+    case OAuthGrantType.PreAuthorizedCode:
+      await handlePreAuthorizedCode(req, res);
       break;
     default:
       sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
@@ -435,6 +439,74 @@ export async function exchangeExternalAuthToken(
     forceUseFirstMembership: true,
     membershipId,
   });
+
+  await sendTokenResponse(res, login, client);
+}
+
+/**
+ * Handles the "Pre-Authorized Code Grant" flow.
+ * See: https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-urnietfparamsoauthgrant-typ
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ */
+async function handlePreAuthorizedCode(req: Request, res: Response): Promise<void> {
+  const clientId = req.body.client_id;
+  if (!isString(clientId)) {
+    sendTokenError(res, 'invalid_request', 'Missing client_id');
+    return;
+  }
+
+  const preAuthorizedCode = req.body['pre-authorized_code'];
+  if (!isString(preAuthorizedCode)) {
+    sendTokenError(res, 'invalid_request', 'Missing pre-authorized_code');
+    return;
+  }
+
+  const client = await getClientApplication(clientId);
+  if (client.status && client.status !== 'active') {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
+  const systemRepo = getGlobalSystemRepo();
+  const searchResult = await systemRepo.search({
+    resourceType: 'Login',
+    filters: [
+      {
+        code: 'pre-authorized-code-hash',
+        operator: Operator.EQUALS,
+        value: createHash('sha256').update(preAuthorizedCode).digest('hex'),
+      },
+    ],
+  });
+
+  if (!searchResult.entry || searchResult.entry.length === 0) {
+    sendTokenError(res, 'invalid_request', 'Invalid code');
+    return;
+  }
+
+  const login = searchResult.entry[0].resource as WithId<Login>;
+
+  if (login.client?.reference !== `ClientApplication/${clientId}`) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
+  if (!login.membership) {
+    sendTokenError(res, 'invalid_request', 'Invalid profile');
+    return;
+  }
+
+  if (login.granted) {
+    await revokeLogin(systemRepo, login);
+    sendTokenError(res, 'invalid_grant', 'Token already granted');
+    return;
+  }
+
+  if (login.revoked) {
+    sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
 
   await sendTokenResponse(res, login, client);
 }

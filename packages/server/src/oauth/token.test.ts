@@ -6,6 +6,7 @@ import {
   createReference,
   encodeBase64,
   encodeBase64Url,
+  getReferenceString,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
@@ -33,7 +34,7 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
@@ -80,6 +81,7 @@ describe('OAuth2 Token', () => {
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let accessToken: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
@@ -90,7 +92,11 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({ withClient: true }));
+    ({ project, client, accessToken } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    }));
     systemRepo = await getProjectSystemRepo(project);
 
     // Add secondary secret for testing
@@ -2176,6 +2182,33 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Pre-authorized code success', async () => {
+    const testAccount = await addTestUser(project);
+
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+      .type('json')
+      .send({ clientId: client.id });
+    expect(res.status).toBe(200);
+    expect(res.body.preAuthorizedCode).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
   });
 });
 

@@ -368,6 +368,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-pre-authorized-code-hash",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Login-pre-authorized-code-hash",
+        "url": "https://medplum.com/fhir/SearchParameter/Login-pre-authorized-code-hash",
+        "version": "4.0.1",
+        "name": "pre-authorized-code-hash",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The pre-authorized code hash of the login",
+        "code": "pre-authorized-code-hash",
+        "base": ["Login"],
+        "type": "token",
+        "expression": "Login.preAuthorizedCodeHash"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-code",
       "resource": {
         "resourceType": "SearchParameter",
