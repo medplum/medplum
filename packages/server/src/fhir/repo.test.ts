@@ -1150,6 +1150,21 @@ describe('FHIR Repo', () => {
     });
   });
 
+  test('Expunge too many IDs', async () => {
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10000 }, () => randomUUID())
+      )
+    ).resolves.toBeUndefined();
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10001 }, () => randomUUID())
+      )
+    ).rejects.toThrow('Expunge request contains too many IDs');
+  });
+
   test('Purge forbidden', async () => {
     // Try to purge as a regular user
     await expect(testProjectRepo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');

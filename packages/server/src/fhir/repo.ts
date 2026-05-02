@@ -1519,6 +1519,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (ids.length === 0) {
       return;
     }
+    if (ids.length > 10000) {
+      throw new OperationOutcomeError(badRequest('Expunge request contains too many IDs'));
+    }
 
     const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
     const deletedIds = await this.withTransaction<string[]>(
