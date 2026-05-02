@@ -796,11 +796,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * generated from `new Date().toISOString()` (millisecond precision) and may
    * also be set directly by ClientApplications with elevated permissions. As
    * a result, multiple history rows can share the same `lastUpdated` value.
-   * When that happens, the row immediately preceding the given resource is
-   * not deterministically defined and this method may return any one of the
-   * tied rows. The query uses `<=` and filters out the supplied resource's
-   * own `versionId` so siblings at the exact same timestamp are still
-   * considered as candidates for the prior version.
+   * When that happens, the prior version is not deterministically defined —
+   * either because multiple candidates tie with each other, or because the
+   * supplied resource ties with the chosen prior (so even current-vs-prior
+   * ordering is ambiguous). In those cases this method may return any one of
+   * the tied rows. The query uses `<=` and filters out the supplied
+   * resource's own `versionId` so siblings at the exact same timestamp are
+   * still considered as candidates for the prior version.
    * @param resource - A version of the resource (current or historical) to look back from.
    * @returns The prior version, or `undefined` if none exists.
    */
@@ -836,16 +838,32 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // compare with `===`. An invalid value would produce `NaN`, which would
     // simply not match — we'd skip the warn but still return the first row,
     // so this can't break the correctness of the prior-version lookup.
-    if (rows.length > 1 && new Date(rows[0].lastUpdated).getTime() === new Date(rows[1].lastUpdated).getTime()) {
-      // Two or more candidate prior versions share the same `lastUpdated`
-      // timestamp, so the chosen prior is nondeterministic. This is rare
-      // (high-throughput writes within the same millisecond, or callers
+    // Ambiguity arises in two cases:
+    //   1. The incoming resource and the chosen prior share `lastUpdated`,
+    //      so current-vs-prior ordering itself is nondeterministic.
+    //   2. Two or more candidate priors share `lastUpdated`, so which one is
+    //      "immediately prior" is nondeterministic.
+    const incomingMs = new Date(lastUpdated).getTime();
+    const firstMs = new Date(rows[0].lastUpdated).getTime();
+    const secondMs = rows.length > 1 ? new Date(rows[1].lastUpdated).getTime() : undefined;
+    const tiedWithIncoming = incomingMs === firstMs;
+    const tiedAmongPriors = secondMs !== undefined && firstMs === secondMs;
+    if (tiedWithIncoming || tiedAmongPriors) {
+      // Rare (high-throughput writes within the same millisecond, or callers
       // setting protected meta directly) but worth surfacing.
+      // Include all versionIds sharing the tied timestamp so the log reflects
+      // the actual ambiguity set, regardless of which case triggered it.
+      const tiedVersionIds = [
+        ...(tiedWithIncoming && resource.meta?.versionId ? [resource.meta.versionId] : []),
+        ...rows.filter((r) => new Date(r.lastUpdated).getTime() === firstMs).map((r) => r.versionId),
+      ];
       getLogger().warn('readPreviousVersion: ambiguous prior version (lastUpdated tie)', {
         resource: { reference: getReferenceString(resource) },
         versionId: resource.meta?.versionId,
         lastUpdated,
-        candidateVersionIds: rows.map((r) => r.versionId),
+        tiedWithIncoming,
+        tiedAmongPriors,
+        tiedVersionIds,
       });
     }
     return this.removeHiddenFields(JSON.parse(rows[0].content as string)) as T;
