@@ -247,7 +247,7 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
   subscription?: string;
   /**
    * Resend subscriptions for a specific historical version of the resource
-   * instead of the current version. When set, `previousVersion` passed to
+   * instead of the current version. When set, `previous` passed to
    * subscription evaluation is the version immediately prior to this one
    * in history (if any).
    */
