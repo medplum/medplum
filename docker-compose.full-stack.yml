@@ -110,5 +110,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # Medplum Provider app (provider-facing EHR UI)
+  medplum-provider:
+    build:
+      context: ./examples/medplum-provider
+      dockerfile: Dockerfile
+      args:
+        VITE_MEDPLUM_BASE_URL: 'http://g1476tfguqwfa90fhgbfbrgg.88.208.213.58.sslip.io'
+    restart: unless-stopped
+    depends_on:
+      medplum-server:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3001']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   medplum-postgres-data:

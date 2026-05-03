@@ -8,10 +8,7 @@ export interface LogoProps {
 }
 
 export function Logo(props: LogoProps): JSX.Element {
-  const overrideUrl = import.meta.env.MEDPLUM_LOGO_URL;
-  if (overrideUrl) {
-    return <img src={overrideUrl} alt="Logo" style={{ maxHeight: props.size }} />;
-  }
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
