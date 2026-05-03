@@ -4059,6 +4059,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Tries to refresh the auth tokens.
+   *
+   * When `navigator.locks` is available, the network call is wrapped in a Web Lock
+   * scoped to this client's storage namespace. This serializes refresh attempts across
+   * browser tabs/windows on the same origin so a single-use refresh token is not
+   * consumed by more than one tab. Tabs that wait on the lock re-read the latest
+   * tokens from storage when they acquire it and skip the network call if another tab
+   * has already refreshed.
+   *
    * @returns The refresh promise if available; otherwise undefined.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
@@ -4067,21 +4075,54 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return this.refreshPromise;
     }
 
-    if (this.refreshToken) {
-      this.refreshPromise = this.fetchTokens({
-        grant_type: OAuthGrantType.RefreshToken,
-        client_id: this.clientId ?? '',
-        refresh_token: this.refreshToken,
-      });
-      return this.refreshPromise;
+    if (!this.refreshToken && !(this.clientId && this.clientSecret)) {
+      return undefined;
     }
 
-    if (this.clientId && this.clientSecret) {
-      this.refreshPromise = this.startClientLogin(this.clientId, this.clientSecret);
-      return this.refreshPromise;
+    this.refreshPromise = this.runRefreshWithLock();
+    return this.refreshPromise;
+  }
+
+  /**
+   * Acquires a cross-tab Web Lock (when available) and performs the token refresh.
+   * Tabs that wait on the lock check storage on acquisition and skip the network call
+   * if a peer tab has already produced a fresh access token.
+   * @returns Promise that resolves when the refresh (or short-circuit) is complete.
+   */
+  private async runRefreshWithLock(): Promise<ProfileResource | void> {
+    const run = (): Promise<ProfileResource | void> => {
+      // Re-read latest tokens from storage before hitting the network.
+      // A peer tab may have completed a refresh while we were queued on the lock.
+      const latest = this.getActiveLogin();
+      if (latest && latest.accessToken && latest.accessToken !== this.accessToken) {
+        this.setAccessToken(latest.accessToken, latest.refreshToken);
+      }
+      if (this.isAuthenticated(0)) {
+        return Promise.resolve();
+      }
+
+      if (this.refreshToken) {
+        return this.fetchTokens({
+          grant_type: OAuthGrantType.RefreshToken,
+          client_id: this.clientId ?? '',
+          refresh_token: this.refreshToken,
+        });
+      }
+
+      if (this.clientId && this.clientSecret) {
+        return this.startClientLogin(this.clientId, this.clientSecret);
+      }
+
+      return Promise.resolve();
+    };
+
+    const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+    if (!locks?.request) {
+      return run();
     }
 
-    return undefined;
+    const lockName = `medplum-refresh:${this.storage.makeKey('activeLogin')}`;
+    return locks.request(lockName, run);
   }
 
   /**
