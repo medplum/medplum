@@ -17,9 +17,9 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
  * it is a thin pass-through so callers can use the raw NPPES output directly,
  * or wrap this bot in another bot that maps the result into a FHIR
  * Practitioner/Organization.
- * 
+ *
  * For more information on how to model provider credentials, see the [Provider Credentials Bot](/docs/bots/provider-credentials-bot).
- * 
+ *
  * @example
  * ```ts
  * const result = await handler(medplum, {

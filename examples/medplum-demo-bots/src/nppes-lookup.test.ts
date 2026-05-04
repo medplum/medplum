@@ -100,7 +100,7 @@ test('NPPES lookup throws when the API returns a non-OK response', async () => {
   const medplum = new MockClient();
   mockNppesResponse('rate limited', { ok: false, status: 429, statusText: 'Too Many Requests' });
 
-  await expect(
-    handler(medplum, { bot, input: { number: '1234567893' }, contentType, secrets })
-  ).rejects.toThrow(/NPPES API request failed: 429 Too Many Requests/);
+  await expect(handler(medplum, { bot, input: { number: '1234567893' }, contentType, secrets })).rejects.toThrow(
+    /NPPES API request failed: 429 Too Many Requests/
+  );
 });
