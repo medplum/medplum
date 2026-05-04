@@ -4067,6 +4067,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * tokens from storage when they acquire it and skip the network call if another tab
    * has already refreshed.
    *
+   * @param gracePeriod - Optional grace period in milliseconds threaded through to the post-lock authentication check.
    * @returns The refresh promise if available; otherwise undefined.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
@@ -4087,18 +4088,19 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Acquires a cross-tab Web Lock (when available) and performs the token refresh.
    * Tabs that wait on the lock check storage on acquisition and skip the network call
    * if a peer tab has already produced a fresh access token.
+   * @param gracePeriod - Optional grace period in milliseconds used by the post-lock authentication check to decide whether the current token still has enough life left to skip the network refresh.
    * @returns Promise that resolves when the refresh (or short-circuit) is complete.
    */
-  private async runRefreshWithLock(gracePeriod?: number): Promise<ProfileResource | void> {
-    const run = (): Promise<ProfileResource | void> => {
+  private async runRefreshWithLock(gracePeriod?: number): Promise<ProfileResource | undefined> {
+    const run = (): Promise<ProfileResource | undefined> => {
       // Re-read latest tokens from storage before hitting the network.
       // A peer tab may have completed a refresh while we were queued on the lock.
       const latest = this.getActiveLogin();
-      if (latest && latest.accessToken && latest.accessToken !== this.accessToken) {
+      if (latest?.accessToken && latest.accessToken !== this.accessToken) {
         this.setAccessToken(latest.accessToken, latest.refreshToken);
       }
       if (this.isAuthenticated(gracePeriod)) {
-        return Promise.resolve();
+        return Promise.resolve(this.getProfile());
       }
 
       if (this.refreshToken) {
@@ -4113,7 +4115,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         return this.startClientLogin(this.clientId, this.clientSecret);
       }
 
-      return Promise.resolve();
+      return Promise.resolve(undefined);
     };
 
     const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
