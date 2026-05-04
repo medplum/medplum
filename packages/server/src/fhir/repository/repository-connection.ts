@@ -22,18 +22,6 @@ type CallbackFrame = {
   post: number;
 };
 
-type RepositoryConnectionOptions =
-  | {
-      client?: undefined;
-      ownsClient?: true;
-      mode?: never;
-    }
-  | {
-      client: PoolClient;
-      ownsClient?: boolean;
-      mode: DatabaseMode;
-    };
-
 export type StatementTimeoutOptions = {
   timeoutMs: number;
   mode?: DatabaseMode;
@@ -49,7 +37,7 @@ export type StatementTimeoutOptions = {
 export class RepositoryConnection implements Disposable {
   private conn?: PoolClient;
   private connMode?: DatabaseMode;
-  private readonly ownsClient: boolean;
+  private ownsClient = true;
   private transactionDepth = 0;
   private transactionIsolationLevel?: TransactionIsolationLevel;
   private pinDepth = 0;
@@ -61,22 +49,27 @@ export class RepositoryConnection implements Disposable {
   private postCommitCallbacks: (() => Promise<void>)[] = [];
   private callbackStack: CallbackFrame[] = [];
 
-  constructor(options?: RepositoryConnectionOptions) {
-    this.ownsClient = options?.ownsClient ?? true;
-    this.conn = options?.client;
-    if (!this.ownsClient && !this.conn) {
-      throw new Error('Borrowed repository connections require a database client');
-    }
-    this.mode = options?.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER;
-    this.connMode = options?.client ? options.mode : undefined;
+  /**
+   * Creates a connection that owns any PoolClient it acquires.
+   */
+  constructor() {
+    this.mode = RepositoryMode.WRITER;
   }
 
-  static fromClient(client: PoolClient, options: { mode: DatabaseMode; ownsClient?: boolean }): RepositoryConnection {
-    return new RepositoryConnection({
-      client,
-      ownsClient: options?.ownsClient ?? false,
-      mode: options.mode,
-    });
+  /**
+   * Creates a connection around a caller-owned PoolClient.
+   * @param client - Caller-owned database client.
+   * @param options - Borrowed client options.
+   * @param options.mode - Database mode for the borrowed client.
+   * @returns Repository connection wrapping the borrowed client.
+   */
+  static borrowClient(client: PoolClient, options: { mode: DatabaseMode }): RepositoryConnection {
+    const connection = new RepositoryConnection();
+    connection.conn = client;
+    connection.connMode = options.mode;
+    connection.ownsClient = false;
+    connection.mode = options.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER;
+    return connection;
   }
 
   isInTransaction(): boolean {

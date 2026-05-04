@@ -1994,7 +1994,7 @@ describe('FHIR Repo', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
     const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
@@ -2017,14 +2017,6 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('borrowed RepositoryConnection requires an initial client', () => {
-    // Borrowed connections cannot ask the pool for a replacement later because
-    // they are not allowed to release PoolClients they did not receive.
-    expect(() => new (RepositoryConnection as any)({ ownsClient: false })).toThrow(
-      'Borrowed repository connections require a database client'
-    );
-  });
-
   test('withTransaction does not publish transaction state when BEGIN fails', async () => {
     const beginError = new Error('begin failed');
     const client = {
@@ -2033,7 +2025,7 @@ describe('FHIR Repo', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER, ownsClient: true })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
@@ -2044,7 +2036,8 @@ describe('FHIR Repo', () => {
       // transaction or hold callback frames for one.
       expect((repo as any).connection.transactionDepth).toBe(0);
       expect((repo as any).connection.callbackStack).toHaveLength(0);
-      expect(client.release).toHaveBeenCalledWith(beginError);
+      expect((repo as any).connection.hasConnection()).toBe(false);
+      expect(client.release).not.toHaveBeenCalled();
     } finally {
       errorSpy.mockRestore();
     }
@@ -2058,7 +2051,7 @@ describe('FHIR Repo', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER, ownsClient: true })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
 
     await repo.withTransaction(async () => {
@@ -2078,7 +2071,7 @@ describe('FHIR Repo', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER, ownsClient: true })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
 
     await repo.withTransaction(

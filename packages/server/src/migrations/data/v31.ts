@@ -20,7 +20,7 @@ export const migration: CustomPostDeployMigration = {
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   const repo = getShardSystemRepo(
     PLACEHOLDER_SHARD_ID,
-    RepositoryConnection.fromClient(client, { mode: DatabaseMode.WRITER })
+    RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
   ); // client will eventually know its shard ID
   const start = Date.now();
   await rebuildR4ValueSets(repo);

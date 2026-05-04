@@ -164,7 +164,7 @@ import {
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
-export type { StatementTimeoutOptions };
+export type { StatementTimeoutOptions } from './repository/repository-connection';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
