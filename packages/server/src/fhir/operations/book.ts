@@ -25,12 +25,12 @@ import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { getServiceTypeReferences } from '../../util/servicetype';
-import type { WithPath } from '../../util/withpath';
-import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
+import { copyPaths, withPath, withPaths } from '../../util/withpath';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   applyExistingSlots,
   assertAllLoaded,
+  assertAllMatch,
   getSchedulingParametersGroup,
   resolveAvailability,
   slotsOverlappingInterval,
@@ -57,28 +57,6 @@ type BookParameters = {
   slot: Slot[];
   'patient-reference'?: Reference<Patient>;
 };
-
-// Finds keys that can be used to index into `T` and yield a primitive type
-// that can be compared with strict equality.
-type PrimitiveKey<T> = {
-  [K in keyof T]-?: T[K] extends string | number | boolean | undefined ? K : never;
-}[keyof T];
-
-function assertAllMatch<T extends object>(
-  objects: WithPath<T>[],
-  attribute: PrimitiveKey<T> & string,
-  msg: string
-): void {
-  if (objects.length <= 1) {
-    return;
-  }
-  const mismatched = objects.find((value) => value[attribute] !== objects[0][attribute]);
-  if (mismatched) {
-    throw new OperationOutcomeError(
-      badRequest(msg, [`${getPath(objects[0])}.${attribute}`, `${getPath(mismatched)}.${attribute}`])
-    );
-  }
-}
 
 function serviceTypeTokens(slots: Slot[]): string[] {
   const tokenSet = new Set<string>();
