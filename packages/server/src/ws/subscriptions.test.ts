@@ -7,9 +7,11 @@ import type {
   Bundle,
   BundleEntry,
   DocumentReference,
+  Login,
   Parameters,
   Patient,
   Project,
+  ProjectMembership,
   Subscription,
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
@@ -22,6 +24,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
+import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import * as rewriteModule from '../fhir/rewrite';
 import { RewriteMode } from '../fhir/rewrite';
@@ -1393,6 +1396,119 @@ describe('WebSocket Subscription', () => {
       getLoginForAccessTokenSpy.mockRestore();
       globalLoggerInfoSpy.mockRestore();
     }));
+
+  test.each<[string, (systemRepo: SystemRepository, pm: ProjectMembership, login: Login) => Promise<unknown>]>([
+    ['ProjectMembership set inactive', (systemRepo, pm) => systemRepo.updateResource({ ...pm, active: false })],
+    ['Login revoked', (systemRepo, _pm, login) => systemRepo.updateResource({ ...login, revoked: true })],
+  ])('No notification delivered after %s', (_reason, updateFn) =>
+    withTestContext(async () => {
+      // Fresh project so flipping membership state cannot leak into other tests.
+      const {
+        project: testProject,
+        repo: testRepo,
+        accessToken: testAccessToken,
+        membership: testMembership,
+        login: testLogin,
+      } = await createTestProject({
+        project: { features: ['websocket-subscriptions'] },
+        withAccessToken: true,
+        withRepo: true,
+        withClient: true,
+      });
+
+      const subscription = await testRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const tokenRes = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + testAccessToken);
+      const token = (tokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+      let firstPatientId: string;
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        // Sanity check: while the membership is still active, a matching event produces a notification.
+        .exec(async () => {
+          const patient = await testRepo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Alice'], family: 'Active' }],
+          });
+          firstPatientId = patient.id;
+          await findAndExecDispatchJob(patient, 'create');
+        })
+        .expectJson((msg: Bundle): boolean => {
+          const entry = msg.entry?.[0] as BundleEntry<SubscriptionStatus> | undefined;
+          if (entry?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          return entry.resource.subscription.reference === `Subscription/${subscription.id}`;
+        })
+        // Now flip the membership to inactive. `getLoginForAccessToken` returns undefined when
+        // `membership.active === false`, so the WS handler should treat the next event as a
+        // dead subscription and deliver no message.
+        .exec(async (ws) => {
+          const systemRepo = testRepo.getSystemRepo();
+          await updateFn(systemRepo, testMembership, testLogin);
+
+          // Fail fast if the ws receives any further message after revocation.
+          const messageGuard = new Promise<void>((_, reject) => {
+            ws.addEventListener('message', (event) => {
+              reject(new Error(`Expected no notification after revocation, got: ${event.data as string}`));
+            });
+          });
+
+          const patient = await testRepo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Bob'], family: 'Inactive' }],
+          });
+          expect(patient.id).not.toStrictEqual(firstPatientId);
+          await findAndExecDispatchJob(patient, 'create');
+
+          // The dead-subscription handler removes the entry from the project active hash
+          // once the auth check fails. Race the cleanup poll against the unexpected-message guard.
+          await Promise.race([
+            (async () => {
+              let subActive = true;
+              while (subActive) {
+                await sleep(0);
+                subActive =
+                  (await isSubscriptionActive(testProject.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
+              }
+            })(),
+            messageGuard,
+          ]);
+
+          // Wait a moment to give any (incorrect) notification a chance to land before close.
+          await Promise.race([sleep(150), messageGuard]);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+    })
+  );
 
   test('User active set decremented when WebSocket closes', () =>
     withTestContext(async () => {

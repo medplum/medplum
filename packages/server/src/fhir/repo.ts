@@ -87,6 +87,7 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
@@ -121,7 +122,6 @@ import {
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
-import { invariant } from '../util/invariant';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -894,7 +894,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
       }
       const project = await this.getProjectById(projectId);
-      invariant(project);
+      assert(project);
       try {
         await checkWebSocketSubscriptionLimit(project, author);
       } catch {
@@ -1672,7 +1672,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectIds = [this.context.projects[0].id]; // Always include the first project
 
-    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType as ResourceType)) {
+    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
       // If the resource type is a project admin resource, only include the current project (the first project)
       return projectIds;
     }
@@ -1726,7 +1726,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const expressions: Expression[] = [];
 
-    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType as ResourceType);
+    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType);
 
     for (const policy of accessPolicy.resource) {
       if (

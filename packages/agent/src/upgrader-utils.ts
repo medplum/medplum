@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReleaseManifest } from '@medplum/core';
 import { fetchVersionManifest } from '@medplum/core';
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, unlinkSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type streamWeb from 'node:stream/web';
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
@@ -22,17 +23,22 @@ export async function downloadRelease(version: string, path: string): Promise<vo
   const downloadUrl = parseDownloadUrl(release, platform());
 
   // Write file to RELEASE_INSTALLER_FOLDER
-  const { body } = await fetch(downloadUrl);
-  if (!body) {
+  const result = await fetch(downloadUrl);
+  if (!result.ok) {
+    throw new Error(`Failed to download installer with status code: ${result.status}`);
+  }
+  if (!result.body) {
     throw new Error('Body not present on Response');
   }
 
-  const readable = Readable.fromWeb(body as streamWeb.ReadableStream);
-  const writeStream = readable.pipe(createWriteStream(path));
+  const readable = Readable.fromWeb(result.body as streamWeb.ReadableStream);
 
-  return new Promise<void>((resolve) => {
-    writeStream.once('close', resolve);
-  });
+  try {
+    await pipeline(readable, createWriteStream(path));
+  } catch (err) {
+    unlinkSync(path);
+    throw new Error(`Error while downloading release version ${version} to ${path}`, { cause: err });
+  }
 }
 
 export function parseDownloadUrl(release: ReleaseManifest, os: ReturnType<typeof platform>): string {

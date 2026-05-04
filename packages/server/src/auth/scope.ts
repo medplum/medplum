@@ -6,6 +6,7 @@ import { body } from 'express-validator';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginScope } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendLoginResult } from './utils';
 
 /*
  * The scope handler is used during login to allow a user to select the scope of the login.
@@ -20,13 +21,6 @@ export const scopeValidator = makeValidationMiddleware([
 export async function scopeHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
-
-  // Update the login
   const updated = await setLoginScope(systemRepo, login, req.body.scope);
-
-  // Send code
-  res.status(200).json({
-    login: updated.id,
-    code: updated.code,
-  });
+  await sendLoginResult(res, updated);
 }

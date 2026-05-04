@@ -220,7 +220,7 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
                       placeholder="Select performer type (optional)"
                       binding="http://hl7.org/fhir/ValueSet/performer-role"
                       maxValues={1}
-                      onChange={(value) => setPerformerType(value as CodeableConcept)}
+                      onChange={(value) => setPerformerType(value)}
                       path={'Task.performerType'}
                     />
                   </Stack>

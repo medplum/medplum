@@ -6,7 +6,6 @@ import type {
   Bot,
   Bundle,
   Condition,
-  Observation,
   OperationOutcome,
   Patient,
   Specimen,
@@ -117,7 +116,7 @@ describe('ResourceForm', () => {
     await setup({
       defaultValue: {
         resourceType: 'Observation',
-      } as Observation,
+      },
       onSubmit,
     });
 
@@ -153,7 +152,7 @@ describe('ResourceForm', () => {
           value: 1,
           unit: 'kg',
         },
-      } as Observation,
+      },
       onSubmit,
     });
 

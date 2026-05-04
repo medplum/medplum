@@ -32,7 +32,7 @@ describe('FHIR Mapper transform - dependent', () => {
       toTypedValue({
         PID_5: { _0: 'DOE', _1: 'JANE', _2: 'Q' },
       }),
-      { type: 'Patient', value: {} } as TypedValue,
+      { type: 'Patient', value: {} },
     ];
 
     const structureMap = parseMappingLanguage(map);

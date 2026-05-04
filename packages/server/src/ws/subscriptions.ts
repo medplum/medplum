@@ -5,6 +5,7 @@ import { badRequest, createReference, EMPTY, normalizeErrorString, OperationOutc
 import type { Bundle, Project, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
+import assert from 'node:assert';
 import crypto, { randomUUID } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
@@ -29,7 +30,6 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
-import { invariant } from '../util/invariant';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -351,7 +351,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
     const subRef = `Subscription/${verifiedToken.subscription_id}`;
     // We know exp is always defined for these tokens
     const expiration = verifiedToken.exp;
-    invariant(typeof expiration === 'number');
+    assert(typeof expiration === 'number');
     await addUserActiveWebSocketSubscription(verifiedToken.profile, subRef);
     await setActiveSubscription(cacheEntry.projectId, criteriaResourceType, subRef, {
       criteria: cacheEntry.resource.criteria,
@@ -528,11 +528,12 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   subscriptionId: string,
   options?: SubEventsOptions
 ): Bundle {
-  const { status, includeResource } = {
+  const merged: { status: SubStatus; includeResource: boolean } = {
     status: 'active',
     includeResource: false,
     ...options,
-  } as { status: SubStatus; includeResource: boolean };
+  };
+  const { status, includeResource } = merged;
   const timestamp = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
@@ -658,7 +659,7 @@ export async function markInMemorySubscriptionsInactive(
 }
 
 export async function checkWebSocketSubscriptionLimit(project: WithId<Project>, authorRef: string): Promise<void> {
-  const maxUserWsSubs =
+  const maxUserWsSubs: number =
     project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
     // We know this is defined in defaults so this is safe to cast
     (getConfig().defaultMaxUserWebSocketSubscriptions as number);

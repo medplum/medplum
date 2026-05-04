@@ -1921,6 +1921,58 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('Disabled enableWhen items excluded from submitted response', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'enable-when-submit',
+        title: 'Enable When',
+        item: [
+          {
+            linkId: 'q1',
+            text: "Enabled when the answer is 'Yes'",
+            type: 'choice',
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+          {
+            linkId: 'q2',
+            type: 'choice',
+            text: "Displayed because the answer is 'Yes'!",
+            enableWhen: [{ question: 'q1', operator: '=', answerString: 'Yes' }],
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Pick "Yes" on Q1 to enable Q2
+    await act(async () => {
+      fireEvent.click(screen.getAllByLabelText('Yes')[0]);
+    });
+
+    // Pick "Yes" on Q2
+    await act(async () => {
+      fireEvent.click(screen.getAllByLabelText('Yes')[1]);
+    });
+
+    // Switch Q1 back to "No" to disable Q2
+    await act(async () => {
+      fireEvent.click(screen.getAllByLabelText('No')[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    const submittedLinkIds = (response.item ?? []).map((i: { linkId: string }) => i.linkId);
+    expect(submittedLinkIds).toEqual(['q1']);
+  });
+
   test('Questionnaire hidden extension', async () => {
     await setup({
       questionnaire: {

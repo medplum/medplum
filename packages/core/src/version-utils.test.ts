@@ -132,7 +132,7 @@ describe('fetchVersionManifest', () => {
           browser_download_url: 'https://example.com',
         },
       ],
-    } as ReleaseManifest;
+    };
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
       vi.fn(async () => {
         return Promise.resolve({
@@ -162,7 +162,7 @@ describe('fetchVersionManifest', () => {
           browser_download_url: 'https://example.com',
         },
       ],
-    } as ReleaseManifest;
+    };
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
       vi.fn(async () => {
         return Promise.resolve({
@@ -225,7 +225,7 @@ describe('fetchLatestVersionString', () => {
           browser_download_url: 'https://example.com',
         },
       ],
-    } as ReleaseManifest;
+    };
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
       vi.fn(async () => {
         return Promise.resolve({
@@ -249,7 +249,7 @@ describe('fetchLatestVersionString', () => {
           browser_download_url: 'https://example.com',
         },
       ],
-    } as ReleaseManifest;
+    };
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
       vi.fn(async () => {
         return Promise.resolve({
@@ -307,7 +307,7 @@ describe('warnIfNewerVersionAvailable', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
       vi.fn(async () => {
         throw new Error('Network error');
-      }) as unknown as typeof globalThis.fetch
+      })
     );
 
     console.warn = vi.fn();
