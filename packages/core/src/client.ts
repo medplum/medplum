@@ -4052,7 +4052,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.refresh();
+      this.refresh(gracePeriod);
     }
     return this.refreshPromise ?? Promise.resolve();
   }
@@ -4070,7 +4070,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The refresh promise if available; otherwise undefined.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  private refresh(): Promise<void> | undefined {
+  private refresh(gracePeriod?: number): Promise<void> | undefined {
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
@@ -4079,7 +4079,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return undefined;
     }
 
-    this.refreshPromise = this.runRefreshWithLock();
+    this.refreshPromise = this.runRefreshWithLock(gracePeriod);
     return this.refreshPromise;
   }
 
@@ -4089,7 +4089,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * if a peer tab has already produced a fresh access token.
    * @returns Promise that resolves when the refresh (or short-circuit) is complete.
    */
-  private async runRefreshWithLock(): Promise<ProfileResource | void> {
+  private async runRefreshWithLock(gracePeriod?: number): Promise<ProfileResource | void> {
     const run = (): Promise<ProfileResource | void> => {
       // Re-read latest tokens from storage before hitting the network.
       // A peer tab may have completed a refresh while we were queued on the lock.
@@ -4097,7 +4097,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       if (latest && latest.accessToken && latest.accessToken !== this.accessToken) {
         this.setAccessToken(latest.accessToken, latest.refreshToken);
       }
-      if (this.isAuthenticated(0)) {
+      if (this.isAuthenticated(gracePeriod)) {
         return Promise.resolve();
       }
 
