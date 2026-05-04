@@ -30,7 +30,7 @@
     "eslint": "9.39.4",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.2",
-    "postcss": "8.5.10",
+    "postcss": "8.5.13",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",

@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@babel/core": "7.29.0",
-    "@babel/preset-env": "7.29.2",
+    "@babel/preset-env": "7.29.3",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
     "@mantine/core": "8.3.18",
@@ -44,7 +44,7 @@
     "jest": "30.3.0",
     "jest-environment-jsdom": "30.3.0",
     "jest-transform-stub": "2.0.0",
-    "postcss": "8.5.10",
+    "postcss": "8.5.13",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.5",
     "react-chartjs-2": "5.3.1",
