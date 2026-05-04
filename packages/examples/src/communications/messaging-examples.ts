@@ -7,7 +7,7 @@
 // start-block imports
 import type { BotEvent } from '@medplum/core';
 import { ContentType, formatHumanName, getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
-import type { Bundle, Communication, Parameters, Patient, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Communication, Patient } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -738,7 +738,7 @@ await medplum.patchResource('Task', task.id, [
 
 // start-block oooRerouteTs
 // Bot: reroute Tasks to the pool when the assigned provider is out of office.
-// Uses Schedule $find to check availability at message receive time.
+// Uses Appointment $find to check availability at message receive time.
 export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
   const message = event.input;
   const threadRef = message.partOf?.[0]?.reference;
@@ -779,18 +779,14 @@ export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<
 
   const now = new Date();
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-  const result: Parameters = await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'start', valueDateTime: now.toISOString() },
-      { name: 'end', valueDateTime: oneHourLater.toISOString() },
-    ],
+  const params = new URLSearchParams({
+    start: now.toISOString(),
+    end: oneHourLater.toISOString(),
+    schedule: `Schedule/${schedule.id}`,
   });
+  const bundle: Bundle<Appointment> = await medplum.get(medplum.fhirUrl('Appointment', `$find?${params}`));
 
-  const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
-  const freeSlots = bundle?.entry?.filter((e) => e.resource?.status === 'free') ?? [];
-
-  if (freeSlots.length > 0) {
+  if (bundle.entry && bundle.entry.length > 0) {
     return;
   }
 
