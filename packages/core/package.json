@@ -60,7 +60,7 @@
     "@medplum/definitions": "5.1.10",
     "@medplum/fhirtypes": "5.1.10",
     "fast-check": "4.7.0",
-    "@fast-check/vitest": "0.4.0"
+    "@fast-check/vitest": "0.4.1"
   },
   "peerDependencies": {
     "pdfmake": "^0.2.5"
