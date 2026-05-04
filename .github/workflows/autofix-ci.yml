@@ -39,7 +39,7 @@ jobs:
             ${{ runner.os }}-
 
       - run: npm ci
-      - run: npm run prettier
       - run: npm run lint:fix
+      - run: npm run prettier
 
       - uses: autofix-ci/action@2891949f3779a1cafafae1523058501de3d4e944
