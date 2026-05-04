@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Extension } from '@medplum/fhirtypes';
-import { getExtensions } from './extension';
+import {
+  assertExtensionBoolean,
+  assertExtensionCode,
+  assertExtensionDuration,
+  assertExtensionReference,
+  assertExtensionTime,
+  getExtensions,
+} from './extension';
 import { getPath, withPath } from './withpath';
 
 const URL_A = 'http://example.com/ext-a';
@@ -130,5 +137,100 @@ describe('getExtensions', () => {
       expect(result[0].valueString).toBe('deep');
       expect(getPath(result[0])).toBe('root.extension[0].extension[0].extension[0]');
     });
+  });
+});
+
+describe('assertExtensionBoolean', () => {
+  test('passes when valueBoolean is true', () => {
+    const ext = withPath({ url: 'http://example.com', valueBoolean: true }, 'root');
+    expect(() => assertExtensionBoolean(ext)).not.toThrow();
+  });
+
+  test('passes when valueBoolean is false', () => {
+    const ext = withPath({ url: 'http://example.com', valueBoolean: false }, 'root');
+    expect(() => assertExtensionBoolean(ext)).not.toThrow();
+  });
+
+  test('throws when valueBoolean is missing', () => {
+    const ext = withPath({ url: 'http://example.com' }, 'root');
+    expect(() => assertExtensionBoolean(ext)).toThrow('Extension valueBoolean missing');
+  });
+
+  test('throws when valueBoolean has wrong type', () => {
+    const ext = withPath({ url: 'http://example.com', valueBoolean: 'true' as unknown as boolean }, 'root');
+    expect(() => assertExtensionBoolean(ext)).toThrow('Extension valueBoolean has wrong type');
+  });
+});
+
+describe('assertExtensionCode', () => {
+  test('passes when valueCode is a string', () => {
+    const ext = withPath({ url: 'http://example.com', valueCode: 'active' }, 'root');
+    expect(() => assertExtensionCode(ext)).not.toThrow();
+  });
+
+  test('throws when valueCode is missing', () => {
+    const ext = withPath({ url: 'http://example.com' }, 'root');
+    expect(() => assertExtensionCode(ext)).toThrow('Extension valueCode missing');
+  });
+
+  test('throws when valueCode has wrong type', () => {
+    const ext = withPath({ url: 'http://example.com', valueCode: 42 as unknown as string }, 'root');
+    expect(() => assertExtensionCode(ext)).toThrow('Extension valueCode has wrong type');
+  });
+});
+
+describe('assertExtensionDuration', () => {
+  test('passes when valueDuration is present', () => {
+    const ext = withPath({ url: 'http://example.com', valueDuration: { value: 30, unit: 'min' } }, 'root');
+    expect(() => assertExtensionDuration(ext)).not.toThrow();
+  });
+
+  test('throws when valueDuration is missing', () => {
+    const ext = withPath({ url: 'http://example.com' }, 'root');
+    expect(() => assertExtensionDuration(ext)).toThrow('Extension valueDuration missing');
+  });
+});
+
+describe('assertExtensionReference', () => {
+  test('passes for a valid reference without resourceType constraint', () => {
+    const ext = withPath({ url: 'http://example.com', valueReference: { reference: 'Patient/123' } }, 'root');
+    expect(() => assertExtensionReference(ext)).not.toThrow();
+  });
+
+  test('passes for a valid reference matching the expected resourceType', () => {
+    const ext = withPath({ url: 'http://example.com', valueReference: { reference: 'Patient/123' } }, 'root');
+    expect(() => assertExtensionReference(ext, 'Patient')).not.toThrow();
+  });
+
+  test('throws when valueReference is missing', () => {
+    const ext = withPath({ url: 'http://example.com' }, 'root');
+    expect(() => assertExtensionReference(ext)).toThrow('Extension valueReference missing');
+  });
+
+  test('throws when valueReference has no reference string', () => {
+    const ext = withPath({ url: 'http://example.com', valueReference: {} }, 'root');
+    expect(() => assertExtensionReference(ext)).toThrow('Extension valueReference invalid');
+  });
+
+  test('throws when valueReference is wrong resourceType', () => {
+    const ext = withPath({ url: 'http://example.com', valueReference: { reference: 'Practitioner/456' } }, 'root');
+    expect(() => assertExtensionReference(ext, 'Patient')).toThrow('Extension valueReference invalid');
+  });
+});
+
+describe('assertExtensionTime', () => {
+  test('passes when valueTime is a string', () => {
+    const ext = withPath({ url: 'http://example.com', valueTime: '09:00:00' }, 'root');
+    expect(() => assertExtensionTime(ext)).not.toThrow();
+  });
+
+  test('throws when valueTime is missing', () => {
+    const ext = withPath({ url: 'http://example.com' }, 'root');
+    expect(() => assertExtensionTime(ext)).toThrow('Extension valueTime missing');
+  });
+
+  test('throws when valueTime has wrong type', () => {
+    const ext = withPath({ url: 'http://example.com', valueTime: 900 as unknown as string }, 'root');
+    expect(() => assertExtensionTime(ext)).toThrow('Extension valueTime has wrong type');
   });
 });

@@ -48,7 +48,7 @@ export function assertExtensionCode(
 export function assertExtensionDuration(
   extension: WithPath<Extension>
 ): asserts extension is WithPath<Extension> & { valueDuration: Duration } {
-  if (!extension.valueDuration) {
+  if (!('valueDuration' in extension)) {
     throw new OperationOutcomeError(badRequest('Extension valueDuration missing', getPath(extension)));
   }
 }
@@ -57,6 +57,9 @@ export function assertExtensionReference<T extends Resource = Resource>(
   extension: WithPath<Extension>,
   resourceType?: T['resourceType']
 ): asserts extension is WithPath<Extension> & { valueReference: Reference<T> & { reference: string } } {
+  if (!('valueReference' in extension)) {
+    throw new OperationOutcomeError(badRequest('Extension valueReference missing', getPath(extension)));
+  }
   if (!isReference(extension.valueReference, resourceType)) {
     throw new OperationOutcomeError(badRequest('Extension valueReference invalid', getPath(extension)));
   }
@@ -65,7 +68,10 @@ export function assertExtensionReference<T extends Resource = Resource>(
 export function assertExtensionTime(
   extension: WithPath<Extension>
 ): asserts extension is WithPath<Extension> & { valueTime: string } {
-  if (!extension.valueTime) {
+  if (!('valueTime' in extension)) {
     throw new OperationOutcomeError(badRequest('Extension valueTime missing', getPath(extension)));
+  }
+  if (typeof extension.valueTime !== 'string') {
+    throw new OperationOutcomeError(badRequest('Extension valueTime has wrong type', getPath(extension)));
   }
 }
