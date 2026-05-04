@@ -25,10 +25,10 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { addMinutes } from '../../util/date';
-import { invariant } from '../../util/invariant';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -202,7 +202,7 @@ async function handler(params: {
 
   const allAvailability = schedules.map((schedule, idx) => {
     const schedulingParameters = parameterGroup.get(schedule);
-    invariant(schedulingParameters);
+    assert(schedulingParameters);
     const actor = actors[idx];
     const activeTimeZone = schedulingParameters.timezone ?? getTimeZone(actor);
     if (!activeTimeZone) {
@@ -258,7 +258,7 @@ async function handler(params: {
 
     const slots = schedules.flatMap((schedule) => {
       const parameters = parameterGroup.get(schedule);
-      invariant(parameters);
+      assert(parameters);
 
       const resultSlots: Slot[] = [
         {
@@ -339,7 +339,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     // a single "busy" slot.
     const slots = appointment.contained?.filter((s) => isResource<Slot>(s, 'Slot'));
     const slot = slots?.find((s) => s.status === 'busy');
-    invariant(slot);
+    assert(slot);
     // In the single schedule $find, we show the potential slots as "free", as they represent
     // bookable time rather than a proposed set of resources to create during booking.
     return { resource: { ...slot, status: 'free' as const } };
