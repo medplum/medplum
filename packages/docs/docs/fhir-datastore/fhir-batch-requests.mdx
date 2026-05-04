@@ -103,7 +103,7 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 
 ### Asynchronous Batch Requests
 
-Synchronous batch requests are subject to an 8 MB request size limit (Medplum-hosted) and a ~1 minute timeout. If you need to exceed these constraints, Medplum offers asynchronous batch requests. There are two main reasons you may want to process a batch asynchronously:
+Synchronous batch requests are subject to an 8 MB request size limit (Medplum-hosted) and a 60 second timeout. If your use case exceeds these constraints, Medplum offers asynchronous batch requests. There are two main reasons you may want to process a batch asynchronously:
 
 1. **Large or slow bundles** — Bundles that exceed the 8 MB size limit or take longer than ~1 minute to process will fail mid-request. Async raises the size limit to 50 MB and removes the timeout by enqueuing the bundle for background processing.
 2. **FHIR quota avoidance** — Asynchronous batch requests do not count against a user's [FHIR interaction quota](/docs/rate-limits#fhir-interaction-load-rate-limit). This makes async the preferred approach for large data seeding or import jobs where quota limits would otherwise be a concern.
