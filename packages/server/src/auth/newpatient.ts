@@ -9,7 +9,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { createProfile, createProjectMembership } from './utils';
+import { createProfile, createProjectMembership, sendLoginResult } from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
@@ -45,10 +45,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   // Update the login
   const updated = await setLoginMembership(login, membership);
 
-  res.status(200).json({
-    login: updated.id,
-    code: updated.code,
-  });
+  await sendLoginResult(res, updated);
 }
 
 /**

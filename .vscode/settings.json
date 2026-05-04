@@ -21,5 +21,12 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "never"
   },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    // This "yaml.format.enable" is for the RedHat YAML plugin which has great IDE hints
+    // But also turns on conflicting formatting by default
+    // Which prettier cannot even correct after it's been applied
+    "yaml.format.enable": false
+  },
   "cSpell.words": ["auditevent", "bullmq", "FHIR", "Fhircast", "Medplum"]
 }
