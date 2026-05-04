@@ -238,7 +238,10 @@ async function handler(params: {
     return availability;
   });
 
-  const intersectingAvailability = allAvailability.reduce((acc, val) => overlappingIntervals(acc, val));
+  const intersectingAvailability = allAvailability
+    .slice(1)
+    .reduce((acc, val) => overlappingIntervals(acc, val), allAvailability[0]);
+  assert(intersectingAvailability);
 
   const intervals = flatMapMax(
     intersectingAvailability,
