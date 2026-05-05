@@ -13,6 +13,22 @@ This feature requires super admin privileges to configure `externalAuthProviders
 
 :::
 
+## Keycloak Client Configuration
+
+In the Keycloak admin console, your client must be configured as follows:
+
+**Access Settings**
+| Setting | Value |
+| :--- | :--- |
+| Client authentication | On (confidential client) |
+| Direct access grants | Enabled |
+
+**Direct access grants** (also called the Resource Owner Password Credentials grant) is what allows token requests using a username and password directly. Without it, the token endpoint will reject requests with `Grant type 'password' not allowed`.
+
+**Scopes**
+
+Ensure the `openid` scope is available on the client. It is included by default in Keycloak but must be explicitly requested in the token call (see [Getting a Token](#getting-a-token-from-keycloak)).
+
 ## Server Configuration
 
 Add your Keycloak realm as an external auth provider. The `issuer` must match the `iss` claim in Keycloak's JWTs, which includes the realm path.
@@ -43,6 +59,38 @@ echo "<access_token>" | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.to
 ```
 
 :::
+
+## Medplum ClientApplication Configuration
+
+A `ClientApplication` in Medplum must be configured with an `identityProvider` pointing to your Keycloak realm. This tells Medplum how to communicate with Keycloak for token validation and user resolution.
+
+```json
+{
+  "resourceType": "ClientApplication",
+  "name": "Keycloak",
+  "identityProvider": {
+    "authorizeUrl": "https://your-keycloak-host/realms/your-realm/protocol/openid-connect/auth",
+    "tokenUrl": "https://your-keycloak-host/realms/your-realm/protocol/openid-connect/token",
+    "userInfoUrl": "https://your-keycloak-host/realms/your-realm/protocol/openid-connect/userinfo",
+    "clientId": "YOUR_KEYCLOAK_CLIENT_ID",
+    "clientSecret": "YOUR_KEYCLOAK_CLIENT_SECRET",
+    "useSubject": true
+  }
+}
+```
+
+| Field | Description |
+| :--- | :--- |
+| `authorizeUrl` | Keycloak's authorization endpoint (used for redirect-based flows) |
+| `tokenUrl` | Keycloak's token endpoint |
+| `userInfoUrl` | Keycloak's userinfo endpoint, used to validate tokens |
+| `clientId` | The client ID from your Keycloak client configuration |
+| `clientSecret` | The client secret from your Keycloak client configuration |
+| `useSubject` | Set to `true` to match users by `sub` claim instead of email |
+
+Setting `useSubject: true` is recommended for Keycloak. When `false` (the default), Medplum matches users by email address, which requires the email in the Keycloak token to exactly match the email on the Medplum `User` resource.
+
+You can create the `ClientApplication` via the Medplum app (**Project → Client Applications → New**) or via the API.
 
 ## Setting Up Users
 
