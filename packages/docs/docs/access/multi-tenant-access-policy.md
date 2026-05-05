@@ -555,6 +555,12 @@ Once configured, Practitioners should only be able to read or write resources me
 
 4. **Multiple tenants per user**: A single ProjectMembership can reference multiple tenants by including multiple entries in the `access` array, each with different tenant parameters. See the [blog post on tenant isolation approaches](/blog/tenant-isolation-approaches-in-medplum) for strategies on handling users who belong to multiple tenants.
 
+## Next Step: Building a Tenant Selector
+
+After you’ve granted a user access to multiple tenants, most MSO apps also need a way to decide **which tenant context the user is working in right now** (e.g., “Clinic A” vs “Clinic B”), while still supporting “cross-tenant” workflows like consolidated scheduling.
+
+See [Building a Tenant Selector](/docs/access/building-a-tenant-selector).
+
 ## Postman Example
 
 To see a full example of this setup using cURL, you can visit this Postman collection - [Multi-Tenancy Project](https://documenter.getpostman.com/view/38540571/2sAYBa99dR#intro).
