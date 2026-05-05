@@ -44,6 +44,7 @@ import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import assert from 'node:assert';
 import { resolve } from 'path';
+import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
@@ -65,6 +66,7 @@ import {
   Repository,
   setTypedPropertyValue,
 } from './repo';
+import { RepositoryConnection } from './repository/repository-connection';
 import { PostgresError, SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -987,14 +989,182 @@ describe('FHIR Repo', () => {
       expect(patient2.id).toStrictEqual(patient1.id);
     }));
 
-  test('expungeResource forbidden', async () => {
-    // Try to expunge as a regular user
-    await expect(testProjectRepo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+  describe('expungeResource and expungeResources', () => {
+    async function createPatient(repo: Repository): Promise<WithId<Patient>> {
+      return repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Expunge'], family: randomUUID() }],
+      });
+    }
+
+    async function createPatients(repo: Repository, count: number): Promise<WithId<Patient>[]> {
+      const patients: WithId<Patient>[] = [];
+      for (let i = 0; i < count; i++) {
+        patients.push(await createPatient(repo));
+      }
+      return patients;
+    }
+
+    async function countRows(tableName: string, id: string): Promise<number> {
+      const query = new SelectQuery(tableName).column('id').where('id', '=', id);
+      return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
+    }
+
+    async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
+      await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
+      expect(await countRows('Patient', patient.id)).toStrictEqual(0);
+      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+    }
+
+    async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
+      expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
+      expect(await countRows('Patient', patient.id)).toStrictEqual(1);
+      expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
+    }
+
+    async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
+      for (const patient of patients) {
+        await expectPatientExpunged(patient);
+      }
+    }
+
+    async function expectPatientsPresent(...patients: WithId<Patient>[]): Promise<void> {
+      for (const patient of patients) {
+        await expectPatientPresent(patient);
+      }
+    }
+
+    async function expectExpungeResult(
+      expunge: () => Promise<void>,
+      forbidden: boolean,
+      expunged: WithId<Patient>[],
+      present: WithId<Patient>[] = []
+    ): Promise<void> {
+      if (forbidden) {
+        await expect(expunge()).rejects.toThrow();
+        await expectPatientsPresent(...expunged, ...present);
+      } else {
+        await expunge();
+        await expectPatientsExpunged(...expunged);
+        await expectPatientsPresent(...present);
+      }
+    }
+
+    type ExpungeAccessCase = {
+      name: string;
+      createRepo: () => Promise<Repository>;
+      forbidden?: boolean;
+      canExpungeOtherProject?: boolean;
+    };
+
+    const expungeAccessCases: ExpungeAccessCase[] = [
+      {
+        name: 'Super Admin',
+        createRepo: async () => (await createTestProject({ withRepo: true, superAdmin: true })).repo,
+        canExpungeOtherProject: true,
+      },
+      {
+        name: 'Project Admin',
+        createRepo: async () => (await createTestProject({ withRepo: true, membership: { admin: true } })).repo,
+        canExpungeOtherProject: false,
+      },
+      {
+        name: 'Non-admin user',
+        createRepo: async () => (await createTestProject({ withRepo: true })).repo,
+        forbidden: true,
+      },
+    ];
+
+    describe.each(expungeAccessCases)('$name', ({ createRepo, forbidden, canExpungeOtherProject }) => {
+      test('expungeResource in own project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const [patient, untouchedPatient] = await createPatients(repo, 2);
+
+          await expectExpungeResult(
+            () => repo.expungeResource('Patient', patient.id),
+            Boolean(forbidden),
+            [patient],
+            [untouchedPatient]
+          );
+        }));
+
+      test('expungeResources in own project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const [patient1, patient2, untouchedPatient] = await createPatients(repo, 3);
+
+          await expectExpungeResult(
+            () => repo.expungeResources('Patient', [patient1.id, patient2.id]),
+            Boolean(forbidden),
+            [patient1, patient2],
+            [untouchedPatient]
+          );
+        }));
+
+      test('expungeResource in another project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const { repo: otherProjectRepo } = await createTestProject({ withRepo: true });
+          const [ownPatient] = await createPatients(repo, 1);
+          const [otherProjectPatient] = await createPatients(otherProjectRepo, 1);
+
+          let expungedPatients: WithId<Patient>[];
+          let presentPatients: WithId<Patient>[];
+          if (canExpungeOtherProject) {
+            expungedPatients = [otherProjectPatient];
+            presentPatients = [ownPatient];
+          } else {
+            expungedPatients = [];
+            presentPatients = [ownPatient, otherProjectPatient];
+          }
+          await expectExpungeResult(
+            () => repo.expungeResource('Patient', otherProjectPatient.id),
+            Boolean(forbidden),
+            expungedPatients,
+            presentPatients
+          );
+        }));
+
+      test('expungeResources with own-project and other-project IDs', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const { repo: otherProjectRepo } = await createTestProject({ withRepo: true });
+          const [ownPatient, untouchedPatient] = await createPatients(repo, 2);
+          const [otherProjectPatient] = await createPatients(otherProjectRepo, 1);
+
+          let expungedPatients: WithId<Patient>[];
+          let presentPatients: WithId<Patient>[];
+          if (canExpungeOtherProject) {
+            expungedPatients = [ownPatient, otherProjectPatient];
+            presentPatients = [untouchedPatient];
+          } else {
+            expungedPatients = [ownPatient];
+            presentPatients = [untouchedPatient, otherProjectPatient];
+          }
+          await expectExpungeResult(
+            () => repo.expungeResources('Patient', [ownPatient.id, otherProjectPatient.id]),
+            Boolean(forbidden),
+            expungedPatients,
+            presentPatients
+          );
+        }));
+    });
   });
 
-  test('expungeResources forbidden', async () => {
-    // Try to expunge as a regular user
-    await expect(testProjectRepo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
+  test('Expunge too many IDs', async () => {
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10000 }, () => randomUUID())
+      )
+    ).resolves.toBeUndefined();
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10001 }, () => randomUUID())
+      )
+    ).rejects.toThrow('Expunge request contains too many IDs');
   });
 
   test('Purge forbidden', async () => {
@@ -1903,8 +2073,8 @@ describe('FHIR Repo', () => {
     }
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).transactionDepth).toBe(0);
-    expect((repo as any).conn).toBeUndefined();
+    expect((repo as any).connection.transactionDepth).toBe(0);
+    expect((repo as any).connection.conn).toBeUndefined();
 
     // Dead client must be released with a truthy err so pg-pool discards it
     expect(releaseSpy).toHaveBeenCalledTimes(1);
@@ -1922,6 +2092,169 @@ describe('FHIR Repo', () => {
     releaseSpy.mockRestore();
     warnSpy.mockRestore();
     errorSpy.mockRestore();
+  });
+
+  test('withStatementTimeout pins connection and discards it after callback', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    let releaseSpy: jest.SpyInstance | undefined;
+
+    await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
+      releaseSpy = jest.spyOn(client, 'release');
+
+      await repo.withTransaction(async (txClient) => {
+        expect(txClient).toBe(client);
+      });
+
+      expect(releaseSpy).not.toHaveBeenCalled();
+    });
+
+    expect(releaseSpy).toHaveBeenCalledWith(true);
+    releaseSpy?.mockRestore();
+  });
+
+  test('withStatementTimeout rejects borrowed repository connections', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    await repo.withTransaction(async () => {
+      await expect(repo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
+        'borrowed repository connection'
+      );
+    });
+  });
+
+  test('withStatementTimeout rejects active transactions', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    await repo.withTransaction(async () => {
+      await expect(repo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
+        'active transaction'
+      );
+    });
+  });
+
+  test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(
+        repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
+          // The timeout wrapper pins one physical reader client. A nested transaction
+          // must not silently reuse that reader client for writer work.
+          await repo.withTransaction(async () => undefined);
+        })
+      ).rejects.toThrow('reader database connection');
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('borrowed repository connections do not reacquire clients after forced release', async () => {
+    const rollbackError = new Error('rollback failed');
+    const client = {
+      query: jest.fn(async (query: string) => {
+        if (query === 'ROLLBACK') {
+          throw rollbackError;
+        }
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => Promise.reject(new Error('work failed')))).rejects.toThrow(
+        'work failed'
+      );
+
+      // The repository only borrowed this PoolClient, so it drops its local reference
+      // after the fatal rollback path but never releases a client it does not own.
+      expect(client.release).not.toHaveBeenCalled();
+
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow(
+        'Borrowed repository connection is no longer available'
+      );
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction does not publish transaction state when BEGIN fails', async () => {
+    const beginError = new Error('begin failed');
+    const client = {
+      query: jest.fn(async () => Promise.reject(beginError)),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('begin failed');
+
+      // BEGIN never succeeded, so the in-memory state must not claim an active
+      // transaction or hold callback frames for one.
+      expect((repo as any).connection.transactionDepth).toBe(0);
+      expect((repo as any).connection.callbackStack).toHaveLength(0);
+      expect((repo as any).connection.hasConnection()).toBe(false);
+      expect(client.release).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction rejects nested isolation upgrades', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    await repo.withTransaction(async () => {
+      await expect(repo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
+        'Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction'
+      );
+    });
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
+  });
+
+  test('withTransaction allows nested calls at a weaker isolation level', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    await repo.withTransaction(
+      async () => {
+        await repo.withTransaction(async () => undefined);
+      },
+      { serializable: true }
+    );
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
+      'BEGIN ISOLATION LEVEL SERIALIZABLE',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
   });
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
@@ -2234,26 +2567,42 @@ describe('FHIR Repo', () => {
       buildResourceRowSpy.mockRestore();
     }));
 
-  test('clone() uses provided connection', async () =>
+  test('constructor and clone add the synthetic R4 project only once to shared context', () => {
+    const project: WithId<Project> = {
+      resourceType: 'Project',
+      id: randomUUID(),
+    };
+    const context = {
+      projects: [project],
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    };
+
+    const repo = new Repository(context);
+    const clonedRepo = repo.clone();
+
+    // Repository construction mutates the shared context in place, but repeated
+    // construction from that context must not append duplicate synthetic projects.
+    expect(context.projects.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
+    expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+    expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+  });
+
+  test('clone does not share the same connection as the original repository', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      // Clone without connection argument - should use original connection
-      const clonedRepo1 = repo.clone();
-      expect(clonedRepo1).toBeInstanceOf(Repository);
-      expect(clonedRepo1.getDatabaseClient(DatabaseMode.READER)).toBe(repo.getDatabaseClient(DatabaseMode.READER));
-
-      // Clone with explicit connection argument
-      const pool = getDatabasePool(DatabaseMode.READER);
-      const client = await pool.connect();
-      try {
-        const clonedRepo2 = repo.clone(client);
-        expect(clonedRepo2).toBeInstanceOf(Repository);
-        expect(clonedRepo2.getDatabaseClient(DatabaseMode.READER)).toBe(client);
-        expect(clonedRepo2.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
-      } finally {
-        client.release();
-      }
+      let checked = false;
+      await repo.withTransaction(async (client) => {
+        // starting a transaction will have pinned a connection to `repo`.
+        // so ensure that cloning after that pinning does not propagate the pinned connection
+        // to the cloned repository.
+        const clonedRepo1 = repo.clone();
+        expect(clonedRepo1.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(client);
+        checked = true;
+      });
+      expect(checked).toBe(true);
     }));
 });
 
