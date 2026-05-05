@@ -17,7 +17,6 @@ export const SearchStrategies = {
   COLUMN: 'column',
   LOOKUP_TABLE: 'lookup-table',
   TOKEN_COLUMN: 'token-column',
-  RANGE_COLUMN: 'range-column',
 } as const;
 
 export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
@@ -41,18 +40,10 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly textSearch: boolean;
 }
 
-export interface RangeColumnSearchParameterImplementation extends SearchParameterDetails {
-  readonly searchStrategy: typeof SearchStrategies.RANGE_COLUMN;
-  readonly rangeColumnName: string;
-  readonly sortColumnName: string;
-  readonly columnName: string; // Original column name for migration; to be removed
-}
-
 export type SearchParameterImplementation =
   | ColumnSearchParameterImplementation
   | LookupTableSearchParameterImplementation
-  | TokenColumnSearchParameterImplementation
-  | RangeColumnSearchParameterImplementation;
+  | TokenColumnSearchParameterImplementation;
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
@@ -109,17 +100,6 @@ function buildSearchParameterImplementation(
 
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
-  }
-
-  if (searchParam.type === 'date' || searchParam.type === 'number' || searchParam.type === 'quantity') {
-    const writeable = impl as Writeable<RangeColumnSearchParameterImplementation>;
-    writeable.searchStrategy = 'range-column';
-
-    const baseName = convertCodeToColumnName(code);
-    writeable.rangeColumnName = '__' + baseName;
-    writeable.sortColumnName = '__' + baseName + 'Sort';
-    writeable.columnName = baseName;
-    return impl;
   }
 
   const tokenIndexType = getTokenIndexType(searchParam, resourceType);
