@@ -37,8 +37,6 @@ export function PatientPage(): JSX.Element {
     [patient?.id, tabs]
   );
 
-  console.log(resolvedTabs);
-
   const handleCloseLabsModal = useCallback(() => {
     setIsLabsModalOpen(false);
   }, []);
@@ -84,18 +82,16 @@ export function PatientPage(): JSX.Element {
         </div>
 
         <div className={classes.content}>
-          <Paper
-            w="100%"
-            p="sm"
-            radius={0}
-            style={{ borderBottom: '1px solid var(--app-shell-border-color)' }}
-          >
-            <LinkTabs
-              baseUrl={patientPathPrefix(patientId)}
-              tabs={resolvedTabs.map((t) => ({ label: t.label, value: t.url || t.id }))}
-              variant="unstyled"
-              className="pill-tabs"
-            />
+          <Paper w="100%" radius={0} style={{ borderBottom: '1px solid var(--app-shell-border-color)' }}>
+            <ScrollArea>
+              <LinkTabs
+                baseUrl={patientPathPrefix(patientId)}
+                tabs={resolvedTabs.map((t) => ({ label: t.label, value: t.url || t.id }))}
+                variant="unstyled"
+                className="pill-tabs"
+                p="sm"
+              />
+            </ScrollArea>
           </Paper>
           <div className={classes.contentBody}>
             <Outlet />
