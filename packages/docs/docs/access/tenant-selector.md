@@ -5,7 +5,7 @@ tags: [auth]
 
 # Building a Tenant Selector
 
-import ExampleCode from '!!raw-loader!@site/..//packages/examples/src/access/tenant-selector.ts';
+import ExampleCode from '!!raw-loader!../../../examples/src/access/tenant-selector.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 This document is a follow-up to [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy).
