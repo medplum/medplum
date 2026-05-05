@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Code, List, Table, Text, Title } from '@mantine/core';
 import type { JSX } from 'react';
-import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
+import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 interface MarkdownProps {
