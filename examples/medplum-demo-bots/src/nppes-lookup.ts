@@ -70,8 +70,70 @@ export interface NppesLookupResult {
   Errors?: { description: string; field?: string; number?: string }[];
 }
 
+const allowedInputKeys = new Set<string>([
+  'number',
+  'enumeration_type',
+  'taxonomy_description',
+  'name_purpose',
+  'first_name',
+  'use_first_name_alias',
+  'last_name',
+  'organization_name',
+  'address_purpose',
+  'city',
+  'state',
+  'postal_code',
+  'country_code',
+  'limit',
+  'skip',
+  'pretty',
+]);
+
+function validateInput(input: unknown): NppesLookupInput {
+  if (input === undefined || input === null) {
+    throw new Error('NPPES lookup input is required.');
+  }
+
+  if (typeof input !== 'object' || Array.isArray(input)) {
+    throw new Error('NPPES lookup input must be an object.');
+  }
+
+  const typedInput = input as Record<string, unknown>;
+  let hasSearchCriterion = false;
+
+  for (const [key, value] of Object.entries(typedInput)) {
+    if (!allowedInputKeys.has(key)) {
+      throw new Error(`NPPES lookup input includes unsupported field: ${key}`);
+    }
+
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+
+    hasSearchCriterion = true;
+
+    if (key === 'number' && (typeof value !== 'string' || !/^\d{10}$/.test(value))) {
+      throw new Error('NPPES lookup "number" must be a 10-digit string.');
+    }
+
+    if (key === 'limit' && (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 200)) {
+      throw new Error('NPPES lookup "limit" must be an integer between 1 and 200.');
+    }
+
+    if (key === 'skip' && (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 1000)) {
+      throw new Error('NPPES lookup "skip" must be an integer between 0 and 1000.');
+    }
+  }
+
+  if (!hasSearchCriterion) {
+    throw new Error('NPPES lookup requires at least one search criterion.');
+  }
+
+  return typedInput as NppesLookupInput;
+}
+
 export async function handler(_medplum: MedplumClient, event: BotEvent<NppesLookupInput>): Promise<NppesLookupResult> {
-  const input = event.input ?? {};
+  const input = validateInput(event.input);
 
   const params = new URLSearchParams();
   params.set('version', NPPES_API_VERSION);

@@ -104,3 +104,29 @@ test('NPPES lookup throws when the API returns a non-OK response', async () => {
     /NPPES API request failed: 429 Too Many Requests/
   );
 });
+
+test('NPPES lookup throws for empty input', async () => {
+  const medplum = new MockClient();
+
+  await expect(handler(medplum, { bot, input: {}, contentType, secrets })).rejects.toThrow(
+    /requires at least one search criterion/
+  );
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('NPPES lookup throws for invalid NPI number', async () => {
+  const medplum = new MockClient();
+
+  await expect(handler(medplum, { bot, input: { number: '123' }, contentType, secrets })).rejects.toThrow(
+    /must be a 10-digit string/
+  );
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('NPPES lookup throws for unsupported input field', async () => {
+  const medplum = new MockClient();
+  const input = { number: '1234567893', foo: 'bar' } as unknown as NppesLookupInput;
+
+  await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(/unsupported field: foo/);
+  expect(fetch).not.toHaveBeenCalled();
+});
