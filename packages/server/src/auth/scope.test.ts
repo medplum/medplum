@@ -116,6 +116,32 @@ describe('Scope', () => {
     expect(res2.body.issue[0].details.text).toBe('Login granted');
   });
 
+  test('Missing membership', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid profile',
+      email,
+      password,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        membership: undefined,
+      })
+    );
+
+    const res2 = await request(app).post('/auth/scope').type('json').send({
+      login: res1.body.login,
+      scope: 'openid profile',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue).toBeDefined();
+    expect(res2.body.issue[0].details.text).toBe('Login profile not set');
+  });
+
   test('Success', async () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       scope: 'openid profile',

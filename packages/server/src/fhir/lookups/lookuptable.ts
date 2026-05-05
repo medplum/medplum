@@ -274,10 +274,9 @@ export abstract class LookupTable {
    * @param client - The database client.
    * @param resource - The resource to delete.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  async deleteValuesForResource(client: Pool | PoolClient, resource: WithId<Resource>): Promise<void> {
     const tableName = this.getTableName(resource.resourceType);
-    const resourceId = resource.id;
-    await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+    await new DeleteQuery(tableName).where('resourceId', '=', resource.id).execute(client);
   }
 
   async batchDeleteValuesForResources<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<void> {

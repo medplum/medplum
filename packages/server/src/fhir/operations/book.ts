@@ -22,9 +22,9 @@ import type {
   Reference,
   Slot,
 } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
-import { invariant } from '../../util/invariant';
 import { extractReferencesFromCodeableReferenceLike } from '../../util/servicetype';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
@@ -181,10 +181,10 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
         proposedSlots.map(async (proposedSlot, index) => {
           const scheduleRefString = getReferenceString(proposedSlot.schedule);
           const schedule = schedules.find((s) => `Schedule/${s.id}` === scheduleRefString);
-          invariant(schedule, 'Slot.schedule not loaded');
+          assert(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
-          invariant(actor, 'Slot.schedule.actor not loaded');
+          assert(actor, 'Slot.schedule.actor not loaded');
           const actorTimeZone = getTimeZone(actor);
           if (!actorTimeZone) {
             throw new OperationOutcomeError(

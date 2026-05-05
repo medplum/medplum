@@ -40,7 +40,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
     "chart.js": "4.5.1",
-    "postcss": "8.5.10",
+    "postcss": "8.5.13",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.5",
     "react-chartjs-2": "5.3.1",
