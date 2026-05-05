@@ -33,7 +33,11 @@ export function PatientPage(): JSX.Element {
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
   const tabs = getPatientPageTabs(membership, { hasDoseSpotAccess });
   const resolvedTabs = useMemo(
-    () => (patient?.id ? tabs.map((t) => ({ ...t, url: t.url.replace('%patient.id', patient.id ?? '') })) : tabs),
+    () =>
+      tabs.map((t) => ({
+        label: t.label,
+        value: (t.url ? t.url.replace('%patient.id', patient?.id ?? '') : t.id) || t.id,
+      })),
     [patient?.id, tabs]
   );
 
@@ -86,7 +90,7 @@ export function PatientPage(): JSX.Element {
             <ScrollArea>
               <LinkTabs
                 baseUrl={patientPathPrefix(patientId)}
-                tabs={resolvedTabs.map((t) => ({ label: t.label, value: t.url || t.id }))}
+                tabs={resolvedTabs}
                 variant="unstyled"
                 className="pill-tabs"
                 p="sm"

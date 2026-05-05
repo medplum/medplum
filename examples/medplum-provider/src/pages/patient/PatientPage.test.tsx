@@ -22,6 +22,7 @@ describe('PatientPage', () => {
   });
 
   const setup = (initialPath = '/Patient/patient-123'): ReturnType<typeof render> => {
+    window.history.pushState({}, '', initialPath);
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
