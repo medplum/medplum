@@ -129,7 +129,7 @@ function validateInput(input: unknown): NppesLookupInput {
     throw new Error('NPPES lookup requires at least one search criterion.');
   }
 
-  return typedInput as NppesLookupInput;
+  return typedInput;
 }
 
 export async function handler(_medplum: MedplumClient, event: BotEvent<NppesLookupInput>): Promise<NppesLookupResult> {
