@@ -25,6 +25,10 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   const { everything } = req.query;
   if (resourceType === 'Project' || everything === 'true') {
+    // Only super admins can expunge a projects other than the current project
+    if (!ctx.project.superAdmin && id !== ctx.project.id) {
+      return [forbidden];
+    }
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
