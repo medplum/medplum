@@ -6,6 +6,7 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
+import type { AccessPolicyInteraction } from '@medplum/core';
 import {
   ContentType,
   deepClone,
@@ -192,7 +193,7 @@ export function applySmartScopes(accessPolicy: PopulatedAccessPolicy, authState:
     // No SMART scopes, so no changes to the access policy
     return accessPolicy;
   }
-  if (!accessPolicy.resource) {
+  if (!accessPolicy.resource.length) {
     // If none specified, generate an AccessPolicy from scratch
     return generateSmartScopesPolicy(smartScopes);
   }
@@ -278,8 +279,30 @@ function generateSmartScopesPolicy(smartScopes: SmartScope[]): PopulatedAccessPo
   for (const scope of smartScopes) {
     result.resource.push({
       resourceType: scope.resourceType,
-      criteria: `${scope.resourceType}?${scope.criteria}`,
+      criteria: scope.criteria ? `${scope.resourceType}?${scope.criteria}` : undefined,
+      interaction: scope.scope !== 'cruds' ? expandAllowedInteractions(scope.scope) : undefined,
     });
+  }
+
+  return result;
+}
+
+function expandAllowedInteractions(scope: string): AccessPolicyInteraction[] {
+  const result: AccessPolicyInteraction[] = [];
+  for (const c of scope) {
+    if (c === 'c') {
+      result.push('create');
+    } else if (c === 'r') {
+      result.push('read');
+      result.push('vread');
+      result.push('history');
+    } else if (c === 'u') {
+      result.push('update');
+    } else if (c === 'd') {
+      result.push('delete');
+    } else if (c === 's') {
+      result.push('search');
+    }
   }
 
   return result;

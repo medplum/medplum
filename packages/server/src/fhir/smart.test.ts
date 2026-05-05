@@ -138,6 +138,22 @@ describe('SMART on FHIR', () => {
       });
     });
 
+    test('Construct new access policy from SMART scopes', () => {
+      const authState: AuthState = {
+        login: { ...login, scope: 'patient/Observation.cruds patient/Patient.d' },
+        membership,
+        project,
+        userConfig: { resourceType: 'UserConfiguration' },
+      };
+      expect(applySmartScopes({ resourceType: 'AccessPolicy', resource: [] }, authState)).toStrictEqual({
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Observation', criteria: undefined, interaction: undefined },
+          { resourceType: 'Patient', criteria: undefined, interaction: ['delete'] },
+        ],
+      });
+    });
+
     test('Intersect access policy', () => {
       const startAccessPolicy: PopulatedAccessPolicy = {
         resourceType: 'AccessPolicy',
