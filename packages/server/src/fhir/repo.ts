@@ -141,6 +141,7 @@ import { findTerminologyResource } from './operations/utils/terminology';
 import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
+import { buildRangeColumns } from './range-column';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import type { StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
@@ -149,8 +150,7 @@ import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import type { ColumnSearchParameterImplementation } from './searchparameter';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { getSearchParameterImplementation, lookupTables, SearchStrategies } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression } from './sql';
 import {
@@ -1978,21 +1978,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
-    // Handle special case for "MeasureReport-period"
-    // This is a trial for using "tstzrange" columns for date/time ranges.
-    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
-    if (searchParam.id === 'MeasureReport-period') {
-      columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
-    }
-
     if (impl.searchStrategy === 'token-column') {
       buildTokenColumns(searchParam, impl, columns, resource, {
         paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
       });
       return;
     }
+    if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+      buildRangeColumns(searchParam, impl, columns, resource);
 
-    impl satisfies ColumnSearchParameterImplementation;
+      // Handle special case for "MeasureReport-period"
+      // This is a trial for using "tstzrange" columns for date/time ranges.
+      // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+      if (searchParam.id === 'MeasureReport-period') {
+        columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+      }
+      // TODO: return here once migration is complete
+    }
+
+    // TODO: Re-enable after migration
+    // impl satisfies ColumnSearchParameterImplementation;
     const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
     if (impl.array) {
       columnValues.sort(compareColumnValues);
@@ -2000,6 +2005,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     } else {
       columns[impl.columnName] = columnValues[0];
     }
+  }
+
+  supportsRangeSearch(): boolean {
+    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
   }
 
   /**
