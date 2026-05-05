@@ -3682,6 +3682,58 @@ describe('Subscription Worker', () => {
         expect(updated.error).toContain('after 2 consecutive failed events');
       }));
 
+    test('Logs projectId and subscriptionId when auto-disable fails', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 1, timeWindowSeconds: 600 }];
+
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/auto-disable-log-failure-test',
+          },
+         extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 1,
+          },
+        ],
+      });
+
+      await clearSubscriptionFailures(subscription.id);
+
+      const autoDisableError = new Error('Auto-disable transaction failed');
+      const withTransactionSpy = jest.spyOn(systemRepo, 'withTransaction').mockRejectedValueOnce(autoDisableError);
+      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+
+      try {
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Test'], family: 'AutoDisableLogFailure' }],
+        });
+
+        await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
+
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Automatically disabled after 1 consecutive failed events in the last 600 seconds',
+          expect.objectContaining({
+            projectId: subscription.meta?.project,
+            subscriptionId: subscription.id,
+            failureCount: 1,
+            error: autoDisableError,
+          })
+        );
+      } finally {
+        withTransactionSpy.mockRestore();
+        warnSpy.mockRestore();
+      }
+    }));
+
     test('Patch test op prevents auto-disable when subscription is concurrently disabled', () =>
       withTestContext(async () => {
         getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];

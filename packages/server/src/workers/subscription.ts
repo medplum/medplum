@@ -970,7 +970,9 @@ async function autoDisableSubscription(
     });
   } catch (err) {
     globalLogger.warn('Failed to auto-disable subscription', {
-      subscription: subscription.id,
+      projectId: subscription.meta?.project,
+      subscriptionId: subscription.id,
+      failureCount,
       error: err,
     });
   }
