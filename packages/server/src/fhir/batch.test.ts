@@ -1514,6 +1514,7 @@ describe('Batch and Transaction processing', () => {
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
       .set('Prefer', 'respond-async')
       .send(batch);
     expect(res.status).toBe(202);

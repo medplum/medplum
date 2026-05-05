@@ -278,6 +278,7 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
   for (let i = 0; i < 100; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
       await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
