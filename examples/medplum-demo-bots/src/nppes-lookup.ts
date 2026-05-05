@@ -18,7 +18,7 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
  * or wrap this bot in another bot that maps the result into a FHIR
  * Practitioner/Organization.
  *
- * For more information on how to model provider credentials, see the [Provider Credentials Bot](/docs/bots/provider-credentials-bot).
+ * For more information on how to model provider credentials, see the [Provider Credentials documentation](/docs/administration/provider-directory/provider-credentials).
  *
  * @example
  * ```ts
