@@ -15,7 +15,7 @@ The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointm
 
 ## Use Cases
 
-- **Single-provider booking**: Book a patient into an open slot returned by [`$find`](/docs/scheduling/schedule-find)
+- **Single-provider booking**: Book a patient into an open slot returned by [`$find`](/docs/scheduling/appointment-find)
 - **Multi-resource booking**: Simultaneously book multiple Schedules (e.g., surgeon + OR room + anesthesiologist) for the same appointment time
 - **Programmatic scheduling**: Automate appointment creation from external systems while respecting provider availability rules
 
@@ -222,7 +222,7 @@ Pass multiple `slot` parameters (one per Schedule) to book all resources atomica
 - No existing busy Slots may overlap the requested time window (including buffer windows)
 - The `serviceType` attribute must reference the HealthcareService you are trying to schedule
 
-The easiest way to meet these requirements is to use a result from a [`$find` operation](/docs/scheduling/schedule-find).
+The easiest way to meet these requirements is to use a result from a [`$find` operation](/docs/scheduling/appointment-find).
 
 ## Output
 
@@ -336,7 +336,7 @@ The transaction uses serializable isolation to prevent double-booking under conc
 
 ## Related
 
-- [Schedule `$find`](/docs/scheduling/schedule-find) - Find available Slots before booking
+- [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots before booking
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)

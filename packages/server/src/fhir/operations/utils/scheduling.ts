@@ -177,7 +177,7 @@ export function normalizeIntervals(intervals: Interval[]): Interval[] {
  * @param listB - Second normalized (sorted, non-overlapping) list of intervals
  * @returns An array of pairs, each containing an interval from listA and its overlapping intervals from listB
  */
-function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
+export function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
   const result: [Interval, Interval[]][] = [];
   let indexB = 0;
 
