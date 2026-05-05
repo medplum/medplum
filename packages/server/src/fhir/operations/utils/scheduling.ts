@@ -12,14 +12,16 @@ import {
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
-import type { CodeableConcept, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import type { CodeableConcept, HealthcareService, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp } from '../../../util/date';
 import type { WithPath } from '../../../util/withpath';
-import { getPath } from '../../../util/withpath';
+import { copyPaths, getPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import type { SchedulingParameters } from './scheduling-parameters';
+import { chooseSchedulingParameterGroup } from './scheduling-parameters';
 
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
 // (Date#getDay() uses zero-based indexing and Temporal#dayOfWeek uses one-based indexing)
@@ -293,6 +295,39 @@ export function assertAllLoaded<T extends Resource>(
   if (invalid) {
     throw new OperationOutcomeError(badRequest(message, getPath(invalid)));
   }
+}
+
+export async function getSchedulingParametersGroup(
+  repo: Repository,
+  schedules: WithPath<WithId<Schedule>>[],
+  healthcareService: WithPath<WithId<HealthcareService>>
+): Promise<Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>> {
+  schedules.forEach((schedule) => {
+    if (schedule.actor.length !== 1) {
+      throw new OperationOutcomeError(
+        badRequest('Scheduling only supported on schedules with exactly one actor', getPath(schedule))
+      );
+    }
+  });
+
+  const actors = await repo
+    .readReferences(schedules.map((schedule) => schedule.actor[0]))
+    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+  assertAllLoaded(actors, 'Loading schedule.actor failed');
+
+  const group = chooseSchedulingParameterGroup(schedules, healthcareService);
+
+  return new Map(
+    group.entries().map(([schedule, parameters], idx) => {
+      const actor = actors[idx];
+      assert(actor);
+      const timezone = parameters.timezone ?? getTimeZone(actor);
+      if (!timezone) {
+        throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
+      }
+      return [schedule, { ...parameters, timezone }];
+    })
+  );
 }
 
 export async function slotsOverlappingInterval(

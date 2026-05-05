@@ -31,11 +31,10 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 import {
   applyExistingSlots,
   assertAllLoaded,
-  getTimeZone,
+  getSchedulingParametersGroup,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
-import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const bookOperation = {
   resourceType: 'OperationDefinition',
@@ -131,17 +130,6 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     .then((schedules) => copyPaths(proposedSlots, schedules, { suffix: '.schedule' }));
   assertAllLoaded(schedules, 'Schedule load failed');
 
-  schedules.forEach((schedule) => {
-    if (schedule.actor.length !== 1) {
-      throw new OperationOutcomeError(badRequest('$book only supported on schedules with exactly one actor'));
-    }
-  });
-
-  const actors = await ctx.repo
-    .readReferences(schedules.flatMap((schedule) => schedule.actor))
-    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-  assertAllLoaded(actors, 'Schedule.actor load failed');
-
   let healthcareService: WithId<HealthcareService>;
   // We expect that at most one unique serviceType reference will be found
   const serviceRefs = proposedSlots.flatMap((slot) => getServiceTypeReferences(slot));
@@ -182,6 +170,12 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     healthcareService = healthcareServices[0];
   }
 
+  const parameterGroup = await getSchedulingParametersGroup(
+    ctx.repo,
+    schedules,
+    withPath(healthcareService, 'Parameters.service-type-reference')
+  );
+
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       const bufferSlots: Slot[] = [];
@@ -191,21 +185,13 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           const scheduleRefString = getReferenceString(proposedSlot.schedule);
           const schedule = schedules.find((s) => `Schedule/${s.id}` === scheduleRefString);
           assert(schedule, 'Slot.schedule not loaded');
-
-          const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
-          assert(actor, 'Slot.schedule.actor not loaded');
-          const actorTimeZone = getTimeZone(actor);
-          if (!actorTimeZone) {
-            throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
-          }
           const durationMinutes = (Date.parse(proposedSlot.end) - Date.parse(proposedSlot.start)) / 60000;
-          const parameters = chooseSchedulingParameters(schedule, withPath(healthcareService, 'HealthcareService'));
+          const parameters = parameterGroup.get(schedule);
+          assert(parameters);
 
-          if (parameters?.duration !== durationMinutes) {
+          if (parameters.duration !== durationMinutes) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
           }
-
-          const timeZone = parameters.timezone ?? actorTimeZone;
 
           const range = {
             start: addMinutes(startDate, -1 * parameters.bufferBefore),
@@ -232,7 +218,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const availability = applyExistingSlots({
-            availability: resolveAvailability(parameters, range, timeZone),
+            availability: resolveAvailability(parameters, range, parameters.timezone),
             slots: existingSlots,
             range,
             serviceType: healthcareService.type,

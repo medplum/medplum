@@ -204,11 +204,11 @@ function assertAllMatch(
 }
 
 export function chooseSchedulingParameterGroup(
-  schedules: WithPath<Schedule>[],
+  schedules: WithPath<WithId<Schedule>>[],
   healthcareService: WithPath<WithId<HealthcareService>>
-): Map<Schedule, WithPath<SchedulingParameters>> {
+): Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters>> {
   const serviceParams = parseSchedulingParametersExtensions(healthcareService).at(0);
-  const result = new Map<Schedule, WithPath<SchedulingParameters>>();
+  const result = new Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters>>();
 
   for (const schedule of schedules) {
     const params = parseSchedulingParametersExtensions(schedule).find((parameters) =>
