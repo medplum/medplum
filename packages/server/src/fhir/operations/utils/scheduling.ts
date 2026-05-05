@@ -1,12 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, EMPTY, getExtensionValue, isDefined, isResource, OperationOutcomeError } from '@medplum/core';
-import type { CodeableConcept, Resource, Slot } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import {
+  badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
+  EMPTY,
+  getExtensionValue,
+  getReferenceString,
+  isDefined,
+  isResource,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
+import type { CodeableConcept, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp } from '../../../util/date';
 import type { WithPath } from '../../../util/withpath';
 import { getPath } from '../../../util/withpath';
+import type { Repository } from '../../repo';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
@@ -281,4 +293,41 @@ export function assertAllLoaded<T extends Resource>(
   if (invalid) {
     throw new OperationOutcomeError(badRequest(message, getPath(invalid)));
   }
+}
+
+export async function slotsOverlappingInterval(
+  repo: Repository,
+  schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
+  interval: Interval
+): Promise<Slot[]> {
+  const searchStart = interval.start.toISOString();
+  const searchEnd = interval.end.toISOString();
+  const results = await repo.searchResources<Slot>({
+    resourceType: 'Slot',
+    count: DEFAULT_MAX_SEARCH_COUNT,
+    filters: [
+      {
+        code: 'schedule',
+        operator: Operator.EQUALS,
+        value: schedules.map((schedule) => getReferenceString(schedule)).join(','),
+      },
+      {
+        code: 'status',
+        operator: Operator.EQUALS,
+        value: 'busy,busy-tentative,busy-unavailable,free',
+      },
+      {
+        code: '_filter',
+        operator: Operator.EQUALS,
+        value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
+      },
+    ],
+  });
+
+  // If we filled a full search page of slots, then there may be slots we
+  // didn't fetch that would impact availability. Fail loudly here.
+  if (results.length === DEFAULT_MAX_SEARCH_COUNT) {
+    throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
+  }
+  return results;
 }

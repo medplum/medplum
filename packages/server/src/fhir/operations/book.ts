@@ -5,7 +5,6 @@ import {
   badRequest,
   conflict,
   created,
-  DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   getReferenceString,
   isNotFound,
@@ -29,7 +28,13 @@ import { getServiceTypeReferences } from '../../util/servicetype';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, assertAllLoaded, getTimeZone, resolveAvailability } from './utils/scheduling';
+import {
+  applyExistingSlots,
+  assertAllLoaded,
+  getTimeZone,
+  resolveAvailability,
+  slotsOverlappingInterval,
+} from './utils/scheduling';
 import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const bookOperation = {
@@ -209,33 +214,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           const searchStart = range.start.toISOString();
           const searchEnd = range.end.toISOString();
 
-          const existingSlots = await ctx.repo.searchResources<Slot>({
-            resourceType: 'Slot',
-            count: DEFAULT_MAX_SEARCH_COUNT,
-            filters: [
-              {
-                code: 'schedule',
-                operator: Operator.EQUALS,
-                value: getReferenceString(schedule),
-              },
-              {
-                code: 'status',
-                operator: Operator.EQUALS,
-                value: 'busy,busy-tentative,busy-unavailable,free',
-              },
-              {
-                code: '_filter',
-                operator: Operator.EQUALS,
-                value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
-              },
-            ],
-          });
-
-          // If we filled a full search page of slots, then there may be slots we
-          // didn't fetch that would impact availability. Fail loudly here.
-          if (existingSlots.length === DEFAULT_MAX_SEARCH_COUNT) {
-            throw new OperationOutcomeError(badRequest('Too many existing slots found in range. Try another time.'));
-          }
+          const existingSlots = await slotsOverlappingInterval(ctx.repo, [schedule], range);
 
           // If there exists busy slots overlapping with the requested booking time,
           // we can bail out now with an informative error message.

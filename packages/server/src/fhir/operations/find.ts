@@ -11,7 +11,6 @@ import {
   isReference,
   isResource,
   OperationOutcomeError,
-  Operator,
   resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
@@ -38,6 +37,7 @@ import {
   assertAllLoaded,
   getTimeZone,
   resolveAvailability,
+  slotsOverlappingInterval,
   TimezoneExtensionURI,
 } from './utils/scheduling';
 import { chooseSchedulingParameterGroup, extractCommonParameters } from './utils/scheduling-parameters';
@@ -128,34 +128,7 @@ async function handler(params: {
 
   const [schedules, existingSlots, healthcareService] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
-    ctx.repo.searchResources<Slot>({
-      resourceType: 'Slot',
-
-      count: DEFAULT_MAX_SEARCH_COUNT,
-
-      filters: [
-        {
-          code: 'schedule',
-          operator: Operator.EQUALS,
-          value: params.schedules.map((ref) => ref.reference).join(','),
-        },
-
-        {
-          code: '_filter',
-          operator: Operator.EQUALS,
-          // Slot starts sometime in range, OR
-          // Slot ends sometime in range, OR
-          // Slot time fully contains range
-          value: `((start ge "${params.start}" and start le "${params.end}") or (end ge "${params.start}" and end le "${params.end}") or (start lt "${params.start}" and end gt "${params.end}"))`,
-        },
-
-        {
-          code: 'status',
-          operator: Operator.EQUALS,
-          value: 'busy,busy-tentative,busy-unavailable,free',
-        },
-      ],
-    }),
+    slotsOverlappingInterval(ctx.repo, params.schedules, range),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));
