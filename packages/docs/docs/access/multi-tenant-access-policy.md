@@ -684,6 +684,12 @@ To do this, do not include the `_compartment` check in resource type criteria fo
   {ExampleCode}
 </MedplumCodeBlock>
 
+## Optional: Building a Tenant Selector
+
+After you’ve granted a user access to multiple tenants, most MSO apps also need a way to decide **which tenant context the user is working in right now** (e.g., “Clinic A” vs “Clinic B”), while still supporting “cross-tenant” workflows like consolidated scheduling.
+
+See [Building a Tenant Selector](/docs/access/tenant-selector).
+
 ## Conclusion
 
 Multi-tenant access control in Medplum enables you to securely partition healthcare data within a single project by leveraging FHIR compartments and parameterized access policies. The implementation follows three key steps:
