@@ -11,7 +11,7 @@ import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth, streamToString } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -89,6 +89,47 @@ describe('Binary', () => {
     } finally {
       loggerErrorSpy.mockRestore();
     }
+  });
+
+  test('Requires securityContext read access to download bytes', async () => {
+    const testProject = await createTestProject({ withAccessToken: true });
+
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .send({ resourceType: 'Patient' });
+    expect(patientRes).toHaveStatus(201);
+
+    const binaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .set('X-Security-Context', `Patient/${patientRes.body.id}`)
+      .send('protected bytes');
+    expect(binaryRes).toHaveStatus(201);
+
+    const restrictedUser = await addTestUser(testProject.project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary', interaction: ['read'] }],
+      },
+    });
+
+    const patientReadRes = await request(app)
+      .get('/fhir/R4/Patient/' + patientRes.body.id)
+      .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+    expect(patientReadRes).toHaveStatus(403);
+
+    const binaryReadRes = await request(app)
+      .get('/fhir/R4/Binary/' + binaryRes.body.id)
+      .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+    expect(binaryReadRes).toHaveStatus(403);
+
+    const adminReadRes = await request(app)
+      .get('/fhir/R4/Binary/' + binaryRes.body.id)
+      .set('Authorization', 'Bearer ' + testProject.accessToken);
+    expect(adminReadRes).toHaveStatus(200);
+    expect(adminReadRes.text).toStrictEqual('protected bytes');
   });
 
   test('Update and read binary', async () => {

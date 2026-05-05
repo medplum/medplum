@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AccessPolicyInteraction, allOk, forbidden, OperationOutcomeError, satisfiedAccessPolicy } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Binary } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPresignedUrl } from '../../storage/loader';
+import { readAuthorizedBinary } from '../binary-utils';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -29,7 +29,7 @@ export async function binaryPresignedUrlHandler(req: FhirRequest): Promise<FhirR
   const id = req.params.id;
   const params = parseInputParameters<PresignedUrlParams>(operation, req);
 
-  const resource = await repo.readResource<Binary>('Binary', id);
+  const resource = await readAuthorizedBinary(repo, id);
   if (params.upload && !satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, repo.effectiveAccessPolicy())) {
     throw new OperationOutcomeError(forbidden);
   }

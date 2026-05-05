@@ -4,6 +4,7 @@ import type { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { getPresignedUrl } from '../storage/loader';
+import { readAuthorizedBinary } from './binary-utils';
 import type { Repository } from './repo';
 
 /**
@@ -199,11 +200,7 @@ class Rewriter {
   async getAttachmentPresignedUrl(id: string, versionId?: string): Promise<string> {
     let binary: Binary;
     try {
-      if (versionId) {
-        binary = await this.repo.readVersion<Binary>('Binary', id, versionId);
-      } else {
-        binary = await this.repo.readResource<Binary>('Binary', id);
-      }
+      binary = await readAuthorizedBinary(this.repo, id, versionId);
     } catch (err: any) {
       getLogger().debug('Error reading binary to generate presigned URL', err);
       return `Binary/${id}`;
