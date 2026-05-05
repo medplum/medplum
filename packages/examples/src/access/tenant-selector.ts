@@ -46,4 +46,3 @@ await medplum.post(`admin/projects/${projectId}/invite`, {
   },
 });
 // end-block invite-practitioner-second-membership
-
