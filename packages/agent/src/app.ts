@@ -23,6 +23,7 @@ import {
   TypedEventTarget,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
+  fetchVersionManifest,
   isValidHostname,
   normalizeErrorString,
   sleep,
@@ -57,7 +58,7 @@ import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
-import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
+import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
 
 async function execAsync(
   command: string,
@@ -895,6 +896,22 @@ export class App {
       }
       // Clean up upgrade.json
       unlinkSync(UPGRADE_MANIFEST_PATH);
+    }
+
+    // Pre-check: verify artifact exists for this OS before spawning upgrader
+    try {
+      const release = await fetchVersionManifest('agent-upgrader', targetVersion);
+      parseDownloadUrl(release, platform());
+    } catch (err) {
+      const versionTag = message.version ? `v${message.version}` : 'latest';
+      const errMsg = `Error during upgrading to version '${versionTag}': ${normalizeErrorString(err)}`;
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
     }
 
     try {
