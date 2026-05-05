@@ -1186,11 +1186,18 @@ export class InsertQuery extends BaseQuery {
 
 export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
+  private returningColumns?: Column[];
 
   using(...tableNames: string[]): this {
     for (const table of tableNames) {
       this.usingTables = append(this.usingTables, table);
     }
+    return this;
+  }
+
+  returning(column: Column | string): this {
+    this.returningColumns ??= [];
+    this.returningColumns.push(getColumn(column, this.actualTableName));
     return this;
   }
 
@@ -1211,6 +1218,17 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
+    if (this.returningColumns?.length) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returningColumns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
   }
 }
 
