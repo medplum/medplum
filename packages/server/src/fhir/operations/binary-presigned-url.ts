@@ -4,8 +4,8 @@ import { AccessPolicyInteraction, allOk, forbidden, OperationOutcomeError, satis
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { readAuthorizedBinary } from '../binary-utils';
 import { getPresignedUrl } from '../../storage/loader';
+import { readAuthorizedBinary } from '../binary-utils';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {

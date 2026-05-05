@@ -121,7 +121,9 @@ describe('Export', () => {
     await waitForAsyncJob(initRes.headers['content-location'], app, testProject.accessToken);
 
     const statusPath = new URL(initRes.headers['content-location']).pathname;
-    const statusRes = await request(app).get(statusPath).set('Authorization', 'Bearer ' + testProject.accessToken);
+    const statusRes = await request(app)
+      .get(statusPath)
+      .set('Authorization', 'Bearer ' + testProject.accessToken);
     expect(statusRes.status).toBe(200);
     expect(statusRes.body.requiresAccessToken).toBe(false);
 

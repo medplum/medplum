@@ -11,11 +11,7 @@ import type { Repository } from './repo';
  * @param versionId - Optional Binary version ID.
  * @returns The authorized Binary resource.
  */
-export async function readAuthorizedBinary(
-  repo: Repository,
-  id: string,
-  versionId?: string
-): Promise<WithId<Binary>> {
+export async function readAuthorizedBinary(repo: Repository, id: string, versionId?: string): Promise<WithId<Binary>> {
   const binary = versionId
     ? await repo.readVersion<Binary>('Binary', id, versionId)
     : await repo.readResource<Binary>('Binary', id);
