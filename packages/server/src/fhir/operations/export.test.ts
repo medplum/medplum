@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
+import type { Binary, BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import { exportResourceType, exportResources } from './export';
 import { BulkExporter } from './utils/bulkexporter';
@@ -77,6 +77,7 @@ describe('Export', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(statusRes.status).toBe(200);
     const resBody = statusRes.body;
+    expect(resBody.requiresAccessToken).toBe(false);
 
     const output = resBody?.output as BulkDataExportOutput[];
     expect(
@@ -94,6 +95,65 @@ describe('Export', () => {
     const resourceJSON = outputContent.trim().split('\n');
     expect(resourceJSON).toHaveLength(1);
     expect(JSON.parse(resourceJSON[0])?.subject?.reference).toStrictEqual(`Patient/${res1.body.id}`);
+  });
+
+  test('Export output Binary is bound to async job security context', async () => {
+    const testProject = await createTestProject({ withAccessToken: true });
+
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Bound'], family: 'Context' }],
+      });
+    expect(patientRes.status).toBe(201);
+
+    const initRes = await request(app)
+      .post('/fhir/R4/$export')
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({});
+    expect(initRes.status).toBe(202);
+
+    await waitForAsyncJob(initRes.headers['content-location'], app, testProject.accessToken);
+
+    const statusPath = new URL(initRes.headers['content-location']).pathname;
+    const statusRes = await request(app).get(statusPath).set('Authorization', 'Bearer ' + testProject.accessToken);
+    expect(statusRes.status).toBe(200);
+    expect(statusRes.body.requiresAccessToken).toBe(false);
+
+    const output = statusRes.body.output as BulkDataExportOutput[];
+    const patientOutput = output.find((entry) => entry.type === 'Patient');
+    expect(patientOutput?.url).toBeDefined();
+    const binaryId = new URL(patientOutput?.url as string).pathname.split('/').filter(Boolean)[1];
+    expect(binaryId).toBeDefined();
+
+    const binaryRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(binaryRes.status).toBe(200);
+    expect((binaryRes.body as Binary).securityContext?.reference).toStrictEqual(
+      `AsyncJob/${new URL(initRes.headers['content-location']).pathname.split('/').filter(Boolean).at(-1)}`
+    );
+
+    const restrictedUser = await addTestUser(testProject.project, {
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: 'Binary', interaction: ['read'] }],
+    });
+
+    const restrictedBinaryReadRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+    expect(restrictedBinaryReadRes.status).toBe(403);
+
+    const restrictedPresignRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}/$presigned-url`)
+      .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+    expect(restrictedPresignRes.status).toBe(403);
   });
 
   test('System Export Accepted with GET', async () => {

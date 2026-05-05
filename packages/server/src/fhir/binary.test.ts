@@ -10,7 +10,7 @@ import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth, streamToString } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -55,6 +55,45 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333737')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(404);
+  });
+
+  test('Requires securityContext read access to download bytes', async () => {
+    const testProject = await createTestProject({ withAccessToken: true });
+
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .send({ resourceType: 'Patient' });
+    expect(patientRes.status).toBe(201);
+
+    const binaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + testProject.accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .set('X-Security-Context', `Patient/${patientRes.body.id}`)
+      .send('protected bytes');
+    expect(binaryRes.status).toBe(201);
+
+    const restrictedUser = await addTestUser(testProject.project, {
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: 'Binary', interaction: ['read'] }],
+    });
+
+    const patientReadRes = await request(app)
+      .get('/fhir/R4/Patient/' + patientRes.body.id)
+      .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+    expect(patientReadRes.status).toBe(403);
+
+    const binaryReadRes = await request(app)
+      .get('/fhir/R4/Binary/' + binaryRes.body.id)
+      .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+    expect(binaryReadRes.status).toBe(403);
+
+    const adminReadRes = await request(app)
+      .get('/fhir/R4/Binary/' + binaryRes.body.id)
+      .set('Authorization', 'Bearer ' + testProject.accessToken);
+    expect(adminReadRes.status).toBe(200);
+    expect(adminReadRes.text).toStrictEqual('protected bytes');
   });
 
   test('Update and read binary', async () => {
@@ -206,6 +245,13 @@ describe('Binary', () => {
   });
 
   test('Update JSON', async () => {
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(patientRes.status).toBe(201);
+
     const res = await request(app)
       .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -218,7 +264,7 @@ describe('Binary', () => {
       .put('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ ...binary, securityContext: { reference: 'Patient/123' } });
+      .send({ ...binary, securityContext: { reference: 'Patient/' + patientRes.body.id } });
     expect(res2.status).toBe(200);
 
     const res3 = await request(app)
@@ -226,7 +272,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.securityContext.reference).toStrictEqual('Patient/123');
+    expect(res3.body.securityContext.reference).toStrictEqual('Patient/' + patientRes.body.id);
   });
 
   test('Invalid Binary JSON', async () => {

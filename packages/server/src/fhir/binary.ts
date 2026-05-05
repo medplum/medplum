@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import type { Readable } from 'node:stream';
 import zlib from 'node:zlib';
+import { readAuthorizedBinary } from './binary-utils';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
@@ -29,7 +30,7 @@ binaryRouter.put('/:id', handleBinaryWriteRequest);
 binaryRouter.get('/:id', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
   const id = singularize(req.params.id) ?? '';
-  const binary = await ctx.repo.readResource<Binary>('Binary', id);
+  const binary = await readAuthorizedBinary(ctx.repo, id);
   await sendFhirResponse(req, res, allOk, binary);
 });
 
