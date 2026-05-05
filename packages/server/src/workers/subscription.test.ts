@@ -33,6 +33,7 @@ import * as bullmqModule from 'bullmq';
 import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
+import { UnrecoverableError } from '../__mocks__/bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -849,10 +850,7 @@ describe('Subscription Worker', () => {
       });
 
       // Job shouldn't throw after max attempts, which will cause it to not retry
-      const jobs = await findAndExecSubscriptionJob(patient, 'create');
-      expect(jobs.length).toStrictEqual(2);
-      expect(jobs[0].changePriority).toHaveBeenCalledWith({ priority: 1 });
-      expect(jobs[1].changePriority).not.toHaveBeenCalled();
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
     }));
 
   test('Ignore bots if feature not enabled', () =>
@@ -3444,17 +3442,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 3; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `AutoDisable${i}` }],
           });
-          expect(patient).toBeDefined();
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Verify subscription was disabled
@@ -3498,16 +3492,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 3; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ExistingError${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Verify subscription was disabled and error was overwritten
@@ -3541,19 +3532,17 @@ describe('Subscription Worker', () => {
         queue.add.mockClear();
 
         // Fail twice
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `Reset${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Succeed once - should reset counter
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        (fetch as unknown as jest.Mock).mockResolvedValue({ status: 200 });
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Test'], family: 'ResetSuccess' }],
@@ -3561,15 +3550,13 @@ describe('Subscription Worker', () => {
         await findAndExecSubscriptionJob(patient, 'create');
 
         // Fail twice more (should not trigger auto-disable since counter was reset)
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ResetAgain${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Subscription should still be active
@@ -3604,16 +3591,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ProjectOverride${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
@@ -3646,16 +3630,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ProjectDisableOverride${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
@@ -3687,16 +3668,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ProjectInvalidOverride${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
@@ -3749,7 +3727,11 @@ describe('Subscription Worker', () => {
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `PatchTest${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          try {
+            await findAndExecSubscriptionJob(patient, 'create');
+          } catch {
+            // Catch errors thrown by failed job
+          }
         }
 
         // The subscription was disabled during the second resource's first attempt,

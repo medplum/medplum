@@ -564,6 +564,9 @@ export async function setLoginScope(systemRepo: SystemRepository, login: Login, 
   if (login.granted) {
     throw new OperationOutcomeError(badRequest('Login granted'));
   }
+  if (!login.membership) {
+    throw new OperationOutcomeError(badRequest('Login profile not set'));
+  }
 
   const existingScopes = parseSmartScopes(login.scope);
   const submittedScopes = parseSmartScopes(scope);
