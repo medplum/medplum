@@ -989,14 +989,182 @@ describe('FHIR Repo', () => {
       expect(patient2.id).toStrictEqual(patient1.id);
     }));
 
-  test('expungeResource forbidden', async () => {
-    // Try to expunge as a regular user
-    await expect(testProjectRepo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+  describe('expungeResource and expungeResources', () => {
+    async function createPatient(repo: Repository): Promise<WithId<Patient>> {
+      return repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Expunge'], family: randomUUID() }],
+      });
+    }
+
+    async function createPatients(repo: Repository, count: number): Promise<WithId<Patient>[]> {
+      const patients: WithId<Patient>[] = [];
+      for (let i = 0; i < count; i++) {
+        patients.push(await createPatient(repo));
+      }
+      return patients;
+    }
+
+    async function countRows(tableName: string, id: string): Promise<number> {
+      const query = new SelectQuery(tableName).column('id').where('id', '=', id);
+      return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
+    }
+
+    async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
+      await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
+      expect(await countRows('Patient', patient.id)).toStrictEqual(0);
+      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+    }
+
+    async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
+      expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
+      expect(await countRows('Patient', patient.id)).toStrictEqual(1);
+      expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
+    }
+
+    async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
+      for (const patient of patients) {
+        await expectPatientExpunged(patient);
+      }
+    }
+
+    async function expectPatientsPresent(...patients: WithId<Patient>[]): Promise<void> {
+      for (const patient of patients) {
+        await expectPatientPresent(patient);
+      }
+    }
+
+    async function expectExpungeResult(
+      expunge: () => Promise<void>,
+      forbidden: boolean,
+      expunged: WithId<Patient>[],
+      present: WithId<Patient>[] = []
+    ): Promise<void> {
+      if (forbidden) {
+        await expect(expunge()).rejects.toThrow();
+        await expectPatientsPresent(...expunged, ...present);
+      } else {
+        await expunge();
+        await expectPatientsExpunged(...expunged);
+        await expectPatientsPresent(...present);
+      }
+    }
+
+    type ExpungeAccessCase = {
+      name: string;
+      createRepo: () => Promise<Repository>;
+      forbidden?: boolean;
+      canExpungeOtherProject?: boolean;
+    };
+
+    const expungeAccessCases: ExpungeAccessCase[] = [
+      {
+        name: 'Super Admin',
+        createRepo: async () => (await createTestProject({ withRepo: true, superAdmin: true })).repo,
+        canExpungeOtherProject: true,
+      },
+      {
+        name: 'Project Admin',
+        createRepo: async () => (await createTestProject({ withRepo: true, membership: { admin: true } })).repo,
+        canExpungeOtherProject: false,
+      },
+      {
+        name: 'Non-admin user',
+        createRepo: async () => (await createTestProject({ withRepo: true })).repo,
+        forbidden: true,
+      },
+    ];
+
+    describe.each(expungeAccessCases)('$name', ({ createRepo, forbidden, canExpungeOtherProject }) => {
+      test('expungeResource in own project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const [patient, untouchedPatient] = await createPatients(repo, 2);
+
+          await expectExpungeResult(
+            () => repo.expungeResource('Patient', patient.id),
+            Boolean(forbidden),
+            [patient],
+            [untouchedPatient]
+          );
+        }));
+
+      test('expungeResources in own project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const [patient1, patient2, untouchedPatient] = await createPatients(repo, 3);
+
+          await expectExpungeResult(
+            () => repo.expungeResources('Patient', [patient1.id, patient2.id]),
+            Boolean(forbidden),
+            [patient1, patient2],
+            [untouchedPatient]
+          );
+        }));
+
+      test('expungeResource in another project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const { repo: otherProjectRepo } = await createTestProject({ withRepo: true });
+          const [ownPatient] = await createPatients(repo, 1);
+          const [otherProjectPatient] = await createPatients(otherProjectRepo, 1);
+
+          let expungedPatients: WithId<Patient>[];
+          let presentPatients: WithId<Patient>[];
+          if (canExpungeOtherProject) {
+            expungedPatients = [otherProjectPatient];
+            presentPatients = [ownPatient];
+          } else {
+            expungedPatients = [];
+            presentPatients = [ownPatient, otherProjectPatient];
+          }
+          await expectExpungeResult(
+            () => repo.expungeResource('Patient', otherProjectPatient.id),
+            Boolean(forbidden),
+            expungedPatients,
+            presentPatients
+          );
+        }));
+
+      test('expungeResources with own-project and other-project IDs', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const { repo: otherProjectRepo } = await createTestProject({ withRepo: true });
+          const [ownPatient, untouchedPatient] = await createPatients(repo, 2);
+          const [otherProjectPatient] = await createPatients(otherProjectRepo, 1);
+
+          let expungedPatients: WithId<Patient>[];
+          let presentPatients: WithId<Patient>[];
+          if (canExpungeOtherProject) {
+            expungedPatients = [ownPatient, otherProjectPatient];
+            presentPatients = [untouchedPatient];
+          } else {
+            expungedPatients = [ownPatient];
+            presentPatients = [untouchedPatient, otherProjectPatient];
+          }
+          await expectExpungeResult(
+            () => repo.expungeResources('Patient', [ownPatient.id, otherProjectPatient.id]),
+            Boolean(forbidden),
+            expungedPatients,
+            presentPatients
+          );
+        }));
+    });
   });
 
-  test('expungeResources forbidden', async () => {
-    // Try to expunge as a regular user
-    await expect(testProjectRepo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
+  test('Expunge too many IDs', async () => {
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10000 }, () => randomUUID())
+      )
+    ).resolves.toBeUndefined();
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10001 }, () => randomUUID())
+      )
+    ).rejects.toThrow('Expunge request contains too many IDs');
   });
 
   test('Purge forbidden', async () => {
