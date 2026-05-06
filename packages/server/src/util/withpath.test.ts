@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import { stringify } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { copyPaths, filterWithPaths, getPath, withPath, withPaths } from './withpath';
 
 describe('withPath', () => {
@@ -35,6 +36,37 @@ describe('withPath', () => {
     const first = withPath(obj, 'first');
     const second = withPath(first, 'second');
     expect(getPath(second)).toBe('second');
+  });
+
+  test('@medplum/core stringify is unchanged with path annotation', () => {
+    const obj = {
+      resourceType: 'Patient',
+      id: 'abc123',
+      name: [{ given: ['Lisa'], family: 'Simpson' }],
+      contact: [
+        {
+          address: {
+            use: 'home',
+            line: ['742 Evergreen Terrace'],
+            city: 'Springfield',
+            state: 'IL',
+            postalCode: '12345',
+          },
+        },
+      ],
+      extension: [
+        {
+          url: 'http://example.com/fhir/complex',
+          extension: [
+            { url: 'subextension-a', valueBoolean: true },
+            { url: 'subextension-b', valueDuration: { value: 12, unit: 'h' } },
+          ],
+        },
+      ],
+    } satisfies Patient;
+
+    const pathed = withPath(obj, 'Parameters.patient');
+    expect(stringify(pathed)).toBe(stringify(obj));
   });
 });
 

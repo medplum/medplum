@@ -189,6 +189,11 @@ describe('assertExtensionDuration', () => {
     const ext = withPath({ url: 'http://example.com' }, 'root');
     expect(() => assertExtensionDuration(ext)).toThrow('Extension valueDuration missing');
   });
+
+  test('throws when valueDuration has wrong type', () => {
+    const ext = withPath({ url: 'http://example.com', valueDuration: 'invalid' as any }, 'root');
+    expect(() => assertExtensionDuration(ext)).toThrow('Extension valueDuration has wrong type');
+  });
 });
 
 describe('assertExtensionReference', () => {
