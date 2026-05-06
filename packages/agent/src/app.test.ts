@@ -3129,6 +3129,102 @@ describe('App', () => {
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
+
+    test('Upgrade -- Missing artifact for platform', async () => {
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+
+      // Manifest only has a Linux asset, no Windows asset
+      const manifest = {
+        tag_name: 'v4.2.5',
+        assets: [
+          {
+            name: 'medplum-agent-4.2.5-linux',
+            browser_download_url: 'https://example.com/linux',
+          },
+        ],
+      };
+
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+        jest.fn(async () => {
+          return new Response(JSON.stringify(manifest), {
+            headers: { 'content-type': 'application/json' },
+            status: 200,
+          });
+        })
+      );
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          version: '4.2.5',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(state.agentError.body).toContain("No download URL found for release 'v4.2.5' for win32");
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      platformSpy.mockRestore();
+      fetchSpy.mockRestore();
+    });
   });
 
   test('Upgrading -- Upgrade in progress, should error', async () => {
