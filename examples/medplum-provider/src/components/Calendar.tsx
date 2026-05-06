@@ -12,7 +12,6 @@ import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { Range } from '../types/scheduling';
-import { SchedulingTransientIdentifier } from '../utils/scheduling';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -183,18 +182,9 @@ export function Calendar(props: {
     [onSelectAppointment, onSelectSlot]
   );
 
-  const events = useMemo(
-    () => [
-      ...appointmentsToEvents(props.appointments),
-      ...slotsToEvents(props.slots.filter((slot) => SchedulingTransientIdentifier.get(slot))),
-    ],
-    [props.appointments, props.slots]
-  );
+  const events = useMemo(() => appointmentsToEvents(props.appointments), [props.appointments]);
 
-  const backgroundEvents = useMemo(
-    () => slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot))),
-    [props.slots]
-  );
+  const backgroundEvents = useMemo(() => slotsToEvents(props.slots), [props.slots]);
 
   const onNavigate = useCallback((newDate: Date, newView: View) => {
     setDate(newDate);
