@@ -3678,8 +3678,8 @@ describe('Subscription Worker', () => {
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
-        expect(updated.status).toBe('off');
-        expect(updated.error).toContain('after 2 consecutive failed events');
+          expect(updated.status).toBe('off');
+          expect(updated.error).toContain('after 2 consecutive failed events');
       }));
 
     test('Logs projectId and subscriptionId when auto-disable fails', () =>
