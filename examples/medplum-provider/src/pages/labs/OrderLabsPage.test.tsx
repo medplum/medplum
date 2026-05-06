@@ -157,7 +157,7 @@ describe('OrderLabsPage', () => {
   });
 
   test('Disables patient input when default patient prop is provided', async () => {
-    setup({ patient: HomerSimpson as Patient });
+    setup({ patient: HomerSimpson });
 
     // Default patient is shown as a pill in the input.
     const pillText = await screen.findByText('Homer Simpson');
