@@ -66,8 +66,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
   const { coverages, onClickResource } = props;
 
   const activeCoverages = coverages.filter(
-    (coverage) =>
-      coverage.status === 'active' && !coverage.type?.coding?.some((coding) => coding.code === 'SELFPAY')
+    (coverage) => coverage.status === 'active' && !coverage.type?.coding?.some((coding) => coding.code === 'SELFPAY')
   );
 
   return (
