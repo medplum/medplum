@@ -265,11 +265,12 @@ export class App {
     });
 
     this.webSocket.addEventListener('message', async (e) => {
+      let command: AgentMessage | undefined;
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
         this.log.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
-        const command = JSON.parse(str) as AgentMessage;
+        command = JSON.parse(str) as AgentMessage;
         switch (command.type) {
           // @ts-expect-error - Deprecated message type
           case 'connected':
@@ -340,11 +341,28 @@ export class App {
           case 'agent:error':
             this.log.error(command.body);
             break;
-          default:
-            this.log.error(`Unknown message type: ${command.type}`);
+          default: {
+            const errMsg = `Unknown message type: ${command.type}`;
+            this.log.error(errMsg);
+            await this.sendToWebSocket({
+              type: 'agent:error',
+              body: errMsg,
+              callback: (command as { callback?: string }).callback,
+            } satisfies AgentError);
+          }
         }
       } catch (err) {
-        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
+        const errMsg = `WebSocket error on incoming message: ${normalizeErrorString(err)}`;
+        this.log.error(errMsg);
+        try {
+          await this.sendToWebSocket({
+            type: 'agent:error',
+            body: errMsg,
+            callback: command?.callback,
+          } satisfies AgentError);
+        } catch (sendErr) {
+          this.log.error(`Failed to send agent:error response: ${normalizeErrorString(sendErr)}`);
+        }
       }
     });
 
@@ -1039,7 +1057,13 @@ export class App {
 
   private pushMessage(message: AgentTransmitRequest): void {
     if (!message.remote) {
-      this.log.error('Missing remote address');
+      const errMsg = 'Missing remote address';
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
       return;
     }
 
@@ -1106,7 +1130,17 @@ export class App {
     const requestMsg = Hl7Message.parse(message.body);
     const msh10 = requestMsg.getSegment('MSH')?.getField(10);
     if (!msh10) {
-      this.log.error('MSH.10 is missing but required');
+      const errMsg = 'MSH.10 is missing but required';
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        remote: message.remote,
+        callback: message.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: errMsg,
+      } satisfies AgentTransmitResponse);
       return;
     }
 

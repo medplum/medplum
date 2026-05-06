@@ -5050,6 +5050,247 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
   });
+
+  describe('Error responses for unhandled or silently-failing messages', () => {
+    test('Unknown message type returns agent:error to server', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(Buffer.from(JSON.stringify({ type: 'totally:unknown:type', callback })));
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: expect.stringContaining('Unknown message type: totally:unknown:type'),
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Invalid JSON payload returns agent:error to server', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const str = (data as Buffer).toString('utf8');
+          let command: AgentMessage;
+          try {
+            command = JSON.parse(str) as AgentMessage;
+          } catch {
+            return;
+          }
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Send malformed JSON
+      state.mySocket.send(Buffer.from('this is not valid json {'));
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: expect.stringContaining('WebSocket error on incoming message'),
+      });
+      // No callback could be parsed from malformed JSON
+      expect(state.agentError?.callback).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Transmit request with missing remote returns agent:error', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            // remote intentionally missing
+            remote: '',
+            contentType: ContentType.HL7_V2,
+            body: 'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2',
+            callback,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: 'Missing remote address',
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Transmit request with HL7 body missing MSH.10 returns 400 transmit response', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponse: undefined as AgentTransmitResponse | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponse = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const port = await getFreePort();
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      // MSH segment without field 10 (only 9 fields after MSH)
+      const hl7BodyMissingMsh10 = 'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01';
+
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:${port}`,
+            contentType: ContentType.HL7_V2,
+            body: hl7BodyMissingMsh10,
+            callback,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      while (!state.transmitResponse) {
+        await sleep(50);
+      }
+
+      expect(state.transmitResponse).toMatchObject<AgentTransmitResponse>({
+        type: 'agent:transmit:response',
+        remote: `mllp://localhost:${port}`,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: 'MSH.10 is missing but required',
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+  });
 });
 
 class MockChildProcess extends EventEmitter implements ChildProcess {
