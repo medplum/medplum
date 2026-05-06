@@ -211,7 +211,11 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   }
 
   if (memberships.length === 0 && !request.allowNoMembership) {
-    throw new OperationOutcomeError(badRequest('User not found'));
+    // The user authenticated successfully, but has no active ProjectMembership
+    // matching the request. Surface this distinctly from "user does not exist"
+    // so operators can tell the two failure modes apart — same status (400)
+    // and same OperationOutcome shape, just a more actionable message.
+    throw new OperationOutcomeError(badRequest('User has no active project memberships'));
   }
 
   if (memberships.length === 1 || request.forceUseFirstMembership) {

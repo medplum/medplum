@@ -508,7 +508,7 @@ describe('Login', () => {
     expect(res.body.login).toBeUndefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
-    expect(res.body.issue[0].details.text).toBe('User not found');
+    expect(res.body.issue[0].details.text).toBe('User has no active project memberships');
   });
 
   test('Inactive membership', async () => {
@@ -543,7 +543,7 @@ describe('Login', () => {
     expect(res.body.login).toBeUndefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
-    expect(res.body.issue[0].details.text).toBe('User not found');
+    expect(res.body.issue[0].details.text).toBe('User has no active project memberships');
   });
 
   test('Success with no origin', async () => {
