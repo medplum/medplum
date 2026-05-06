@@ -77,7 +77,6 @@ import {
   removeActiveSubscriptions,
   removeUserActiveWebSocketSubscriptions,
 } from '../pubsub';
-import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -105,6 +104,14 @@ import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
+import type { CacheEntry } from './repository/resource-cache';
+import {
+  deleteResourceCacheEntries,
+  deleteResourceCacheEntry,
+  getResourceCacheEntries,
+  getResourceCacheEntry,
+  setResourceCacheEntry,
+} from './repository/resource-cache';
 import type { StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
@@ -213,11 +220,6 @@ export interface RepositoryContext {
    * Optional flag to skip scheduling background jobs for writes.
    */
   skipBackgroundJobs?: boolean;
-}
-
-export interface CacheEntry<T extends Resource = Resource> {
-  resource: T;
-  projectId: string;
 }
 
 export interface InteractionOptions {
@@ -2131,8 +2133,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.connection.isInTransaction()) {
       return undefined;
     }
-    const cachedValue = await getCacheRedis().get(getCacheKey(resourceType, id));
-    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
+    return getResourceCacheEntry<T>(resourceType, id);
   }
 
   /**
@@ -2146,37 +2147,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return new Array(references.length);
     }
 
-    const referenceKeys: string[] = [];
-
-    // Build referenceKeys only for valid input references and track
-    // their indices in the original array so that the result array
-    // is constructed in the correct order.
-    const referenceKeyIndices: number[] = new Array(references.length);
-    for (let i = 0; i < references.length; i++) {
-      const r = references[i];
-      if (r.reference) {
-        referenceKeys.push(r.reference);
-        referenceKeyIndices[i] = referenceKeys.length - 1;
-      }
-    }
-
-    if (referenceKeys.length === 0) {
-      // Return early to avoid calling mget() with no args, which is an error
-      return new Array(references.length);
-    }
-
-    const cachedValues = await getCacheRedis().mget(referenceKeys);
-
-    const result = new Array<CacheEntry | undefined>(references.length);
-    for (let i = 0; i < references.length; i++) {
-      if (referenceKeyIndices[i] === undefined) {
-        result[i] = undefined;
-      } else {
-        const cachedValue = cachedValues[referenceKeyIndices[i]];
-        result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
-      }
-    }
-    return result;
+    return getResourceCacheEntries(references);
   }
 
   /**
@@ -2193,13 +2164,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const projectId = resource.meta?.project;
-    await getCacheRedis().set(
-      getCacheKey(resource.resourceType, resource.id),
-      stringify({ resource, projectId }),
-      'EX',
-      REDIS_CACHE_EX_SECONDS
-    );
+    await setResourceCacheEntry(resource);
   }
 
   /**
@@ -2214,7 +2179,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    await getCacheRedis().del(getCacheKey(resourceType, id));
+    await deleteResourceCacheEntry(resourceType, id);
   }
 
   /**
@@ -2229,11 +2194,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const cacheKeys = ids.map((id) => {
-      return getCacheKey(resourceType, id);
-    });
-
-    await getCacheRedis().del(cacheKeys);
+    await deleteResourceCacheEntries(resourceType, ids);
   }
 
   async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
@@ -2258,18 +2219,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Already closed');
     }
   }
-}
-
-const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
-
-/**
- * Returns the redis cache key for the given resource type and resource ID.
- * @param resourceType - The resource type.
- * @param id - The resource ID.
- * @returns The Redis cache key.
- */
-function getCacheKey(resourceType: string, id: string): string {
-  return `${resourceType}/${id}`;
 }
 
 export class SystemRepository extends Repository {}

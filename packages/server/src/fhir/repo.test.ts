@@ -35,8 +35,6 @@ import type {
 import { randomBytes, randomUUID } from 'crypto';
 import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../app';
-import type { RegisterRequest } from '../auth/register';
-import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
@@ -692,23 +690,7 @@ describe('FHIR Repo', () => {
 
   test('Compartment permissions', () =>
     withTestContext(async () => {
-      const registration1: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const result1 = await registerNew(registration1);
-      expect(result1.profile).toBeDefined();
-
-      const repo1 = await getRepoForLogin({
-        project: result1.project,
-        membership: result1.membership,
-        login: result1.login,
-        userConfig: {} as UserConfiguration,
-      });
+      const { repo: repo1 } = await createTestProject({ withRepo: true });
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -720,23 +702,7 @@ describe('FHIR Repo', () => {
       expect(patient2).toBeDefined();
       expect(patient2.id).toStrictEqual(patient1.id);
 
-      const registration2: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const result2 = await registerNew(registration2);
-      expect(result2.profile).toBeDefined();
-
-      const repo2 = await getRepoForLogin({
-        project: result2.project,
-        membership: result2.membership,
-        login: result2.login,
-        userConfig: {} as UserConfiguration,
-      });
+      const { repo: repo2 } = await createTestProject({ withRepo: true });
       try {
         await repo2.readResource('Patient', patient1.id);
         fail('Should have thrown');
@@ -1881,30 +1847,13 @@ describe('FHIR Repo', () => {
         withRepo: true,
       });
 
-      const regRequest: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const regResult = await registerNew(regRequest);
-      let project = regResult.project;
-
-      // add linkedProject to `Project.link`
-      project = await globalSystemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(linkedProject) }],
+      const { project, repo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        membership: { admin: true },
+        withRepo: true,
       });
 
-      const repo = await getRepoForLogin({
-        project,
-        membership: regResult.membership,
-        login: regResult.login,
-        userConfig: {} as UserConfiguration,
-      });
-
+      // Creating via linkedRepo warms the Redis cache for this resource.
       const linkedOrg = await linkedRepo.createResource<Organization>({
         resourceType: 'Organization',
         name: 'Linked Organization',
@@ -1941,52 +1890,12 @@ describe('FHIR Repo', () => {
       expect(orgs.length).toStrictEqual(2);
       expect(orgs.map((p) => p.id)).toContain(org.id);
       expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
-    }));
 
-  test('Project.exportedResourceType enforced on cached reads', () =>
-    withTestContext(async () => {
       // Regression: a non-exported resource in a linked project should not be
       // readable even when it is present in the Redis cache. Previously,
       // canPerformInteraction only checked project-compartment membership and
       // ignored the linked project's `exportedResourceType`, so the cache path
       // bypassed the filter enforced by addProjectFilters in SQL.
-      const { project: linkedProject, repo: linkedRepo } = await createTestProject({
-        project: { exportedResourceType: ['Organization'] },
-        withRepo: true,
-      });
-
-      const regRequest: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const regResult = await registerNew(regRequest);
-      let project = regResult.project;
-      project = await globalSystemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(linkedProject) }],
-      });
-
-      const repo = await getRepoForLogin({
-        project,
-        membership: regResult.membership,
-        login: regResult.login,
-        userConfig: {} as UserConfiguration,
-      });
-
-      // Creating via linkedRepo warms the Redis cache for this resource.
-      const linkedOrg = await linkedRepo.createResource<Organization>({
-        resourceType: 'Organization',
-        name: 'Linked Organization',
-      });
-      const linkedPatient = await linkedRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Linked'], family: 'Patient' }],
-        managingOrganization: createReference(linkedOrg),
-      });
 
       // Exported type: should still be readable from the linked project.
       const readOrg = await repo.readResource<Organization>('Organization', linkedOrg.id);
