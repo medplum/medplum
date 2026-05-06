@@ -104,6 +104,8 @@ import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
+import type { StatementTimeoutOptions } from './repository/repository-connection';
+import { RepositoryConnection } from './repository/repository-connection';
 import type { CacheEntry } from './repository/resource-cache';
 import {
   deleteResourceCacheEntries,
@@ -112,8 +114,6 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
-import type { StatementTimeoutOptions } from './repository/repository-connection';
-import { RepositoryConnection } from './repository/repository-connection';
 import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
