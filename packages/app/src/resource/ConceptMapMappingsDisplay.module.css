@@ -1,0 +1,32 @@
+.mappingTable {
+  margin: 0;
+}
+
+.mappingTable th,
+.mappingTable td {
+  padding: var(--mantine-spacing-sm);
+  border-top: 0.1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  vertical-align: top;
+}
+
+.mappingTable thead th {
+  border-top: 0;
+  padding-top: 0;
+  font-weight: 600;
+}
+
+.sourceCell {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+}
+
+.systemUri {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+  word-break: break-all;
+}
+
+.unmappedNote {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
+}
