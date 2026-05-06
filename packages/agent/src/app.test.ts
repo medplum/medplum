@@ -3904,7 +3904,6 @@ describe('App', () => {
       expect(app.hl7Clients.size).toBe(1);
       const pool = app.hl7Clients.get(`mllp://localhost:${port}`);
       expect(pool).toBeDefined();
-      expect(pool?.isTrackingStats()).toBe(true);
       const client = pool?.getClients()[0];
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
@@ -4024,12 +4023,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Should have 2 pools with stats tracking enabled
+      // Should have 2 pools
       expect(app.hl7Clients.size).toBe(2);
-      const pool1 = app.hl7Clients.get(`mllp://localhost:${port1}`);
-      const pool2 = app.hl7Clients.get(`mllp://localhost:${port2}`);
-      expect(pool1?.isTrackingStats()).toBe(true);
-      expect(pool2?.isTrackingStats()).toBe(true);
 
       // Update agent to disable keepAlive
       await medplum.updateResource<Agent>({
@@ -4067,7 +4062,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test('When logStatsFreqSecs goes from on to off, cleanup all stats', async () => {
+    test('When logStatsFreqSecs goes from on to off, pool keeps tracking stats (default-on)', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -4144,10 +4139,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should have stats tracking enabled
+      // Pool should exist
       expect(app.hl7Clients.size).toBe(1);
-      const pool = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(pool?.isTrackingStats()).toBe(true);
 
       // Update agent to disable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4169,10 +4162,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should still exist but stats tracking should be disabled
+      // Pool should still exist (stats are collected by default)
       expect(app.hl7Clients.size).toBe(1);
-      const poolAfterReload = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(poolAfterReload?.isTrackingStats()).toBe(false);
 
       await app.stop();
       await hl7Server.stop({ forceDrainTimeoutMs: 100 });
@@ -4183,7 +4174,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test('When logStatsFreqSecs goes from off to on, start tracking stats', async () => {
+    test('Pool tracks stats by default when keepAlive is on, regardless of logStatsFreqSecs', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -4257,10 +4248,9 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should exist but not have stats tracking enabled
+      // Pool should exist and have stats tracking enabled by default
       expect(app.hl7Clients.size).toBe(1);
       let pool = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(pool?.isTrackingStats()).toBe(false);
 
       // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4288,7 +4278,6 @@ describe('App', () => {
       // Pool should now have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
       pool = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(pool?.isTrackingStats()).toBe(true);
 
       // Send another message to verify stats tracking works
       state.transmitResponses = [];
@@ -4313,9 +4302,9 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Stats should have recorded the new message
+      // Stats should have recorded both messages (tracking is on from the start)
       const client = pool?.getClients()[0];
-      expect(client?.stats?.getSampleCount()).toBe(1);
+      expect(client?.stats?.getSampleCount()).toBe(2);
 
       await app.stop();
       await hl7Server.stop({ forceDrainTimeoutMs: 100 });
