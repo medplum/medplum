@@ -41,6 +41,41 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
     expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
   });
 
+  test('parseDownloadUrl -- missing artifact for platform', () => {
+    const manifestOnlyWindows = {
+      tag_name: 'v4.2.5',
+      assets: [
+        {
+          name: 'medplum-agent-installer-4.2.5-windows.exe',
+          browser_download_url: 'https://example.com/win32',
+        },
+      ],
+    } satisfies ReleaseManifest;
+    const manifestOnlyLinux = {
+      tag_name: 'v4.2.5',
+      assets: [
+        {
+          name: 'medplum-agent-4.2.5-linux',
+          browser_download_url: 'https://example.com/linux',
+        },
+      ],
+    } satisfies ReleaseManifest;
+    const emptyManifest = {
+      tag_name: 'v4.2.5',
+      assets: [],
+    } satisfies ReleaseManifest;
+
+    expect(() => parseDownloadUrl(manifestOnlyWindows, 'linux')).toThrow(
+      "No download URL found for release 'v4.2.5' for linux"
+    );
+    expect(() => parseDownloadUrl(manifestOnlyLinux, 'win32')).toThrow(
+      "No download URL found for release 'v4.2.5' for win32"
+    );
+    expect(() => parseDownloadUrl(emptyManifest, 'win32')).toThrow(
+      "No download URL found for release 'v4.2.5' for win32"
+    );
+  });
+
   test('getReleaseBinPath', () => {
     switch (_platform) {
       case 'win32':
