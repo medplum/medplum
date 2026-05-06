@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, SegmentedControl, Title } from '@mantine/core';
+import { getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
@@ -184,7 +185,34 @@ export function Calendar(props: {
 
   const events = useMemo(() => appointmentsToEvents(props.appointments), [props.appointments]);
 
-  const backgroundEvents = useMemo(() => slotsToEvents(props.slots), [props.slots]);
+  const backgroundEvents = useMemo(() => {
+    const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
+      (appointment.slot ?? []).forEach((slotRef) => {
+        const key = getReferenceString(slotRef);
+        if (key) {
+          acc[key] = appointment;
+        }
+        return acc;
+      });
+      return acc;
+    }, {});
+
+    const filteredSlots = props.slots.filter((slot) => {
+      // never show "entered-in-error" slots on the calendar
+      if (slot.status === 'entered-in-error') {
+        return false;
+      }
+      const key = getReferenceString(slot);
+      if (key && appointmentIndex[key]) {
+        const appointment = appointmentIndex[key];
+        if (slot.start === appointment.start && slot.end === appointment.end) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return slotsToEvents(filteredSlots);
+  }, [props.slots, props.appointments]);
 
   const onNavigate = useCallback((newDate: Date, newView: View) => {
     setDate(newDate);
