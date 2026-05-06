@@ -21,7 +21,7 @@
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
 
 # Stage 1: Build the application and install production dependencies
-FROM dhi.io/node:24-alpine3.22-sfw-dev AS build-stage
+FROM dhi.io/node:24-alpine3.23-sfw-dev AS build-stage
 ENV NODE_ENV=production
 WORKDIR /usr/src/medplum
 ADD ./medplum-server-metadata.tar.gz ./
