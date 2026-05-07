@@ -3,15 +3,16 @@
 import { allOk, arrayify, forbidden, getReferenceString, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ProjectMembership } from '@medplum/fhirtypes';
-import { RateLimiterRedis } from 'rate-limiter-flexible';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
-import {
-  FHIR_RATE_LIMIT_DURATION,
-  FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
-  FHIR_RATE_LIMIT_PROJECT_PREFIX,
-  getFhirQuotaConfig,
-} from '../fhirquota';
+import { FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX, FHIR_RATE_LIMIT_PROJECT_PREFIX, getFhirQuotaConfig } from '../fhirquota';
+
+interface QuotaStatus {
+  limit: number;
+  consumedPoints: number;
+  remainingPoints: number;
+  msBeforeReset: number;
+}
 
 export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -21,6 +22,8 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
   const project = ctx.project;
   const idsArray = arrayify(req.query.membershipId);
+
+  await ctx.fhirRateLimiter?.recordSearch();
 
   let memberships: ProjectMembership[];
   if (idsArray) {
@@ -44,39 +47,35 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   const { userLimit, projectLimit } = getFhirQuotaConfig(project);
 
   const redis = getRateLimitRedis();
-  const membershipLimiter = new RateLimiterRedis({
-    keyPrefix: FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
-    storeClient: redis,
-    points: userLimit,
-    duration: FHIR_RATE_LIMIT_DURATION,
+  const pipeline = redis.pipeline();
+  for (const membership of memberships) {
+    const key = `${FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX}:${membership.id}`;
+    pipeline.get(key);
+    pipeline.pttl(key);
+  }
+  const projectKey = `${FHIR_RATE_LIMIT_PROJECT_PREFIX}:${project.id}`;
+  pipeline.get(projectKey);
+  pipeline.pttl(projectKey);
+
+  const results = await pipeline.exec();
+  if (!results) {
+    return [allOk, { resourceType: 'Parameters', parameter: [] } as any];
+  }
+
+  const membershipResults = memberships.map((membership, i) => {
+    const consumed = results[i * 2][1] as string | null;
+    const pttl = results[i * 2 + 1][1] as number;
+    const quota = parseQuotaResult(consumed, pttl, userLimit);
+    return {
+      membershipId: membership.id as string,
+      profileReference: membership.profile?.reference,
+      quota,
+    };
   });
 
-  const projectLimiter = new RateLimiterRedis({
-    keyPrefix: FHIR_RATE_LIMIT_PROJECT_PREFIX,
-    storeClient: redis,
-    points: projectLimit,
-    duration: FHIR_RATE_LIMIT_DURATION,
-  });
-
-  const membershipResults = await Promise.all(
-    memberships.map(async (membership) => {
-      const result = await membershipLimiter.get(membership.id as string);
-      return {
-        membershipId: membership.id as string,
-        profileReference: membership.profile?.reference,
-        fhirQuota: result
-          ? {
-              limit: userLimit,
-              consumedPoints: result.consumedPoints,
-              remainingPoints: result.remainingPoints,
-              msBeforeReset: result.msBeforeNext,
-            }
-          : null,
-      };
-    })
-  );
-
-  const projectResult = await projectLimiter.get(project.id);
+  const projectConsumed = results[results.length - 2][1] as string | null;
+  const projectPttl = results[results.length - 1][1] as number;
+  const projectQuota = parseQuotaResult(projectConsumed, projectPttl, projectLimit);
 
   return [
     allOk,
@@ -85,34 +84,45 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
       parameter: [
         {
           name: 'project',
-          part: [
-            { name: 'id', valueString: project.id },
-            ...(projectResult
-              ? [
-                  { name: 'limit', valueInteger: projectLimit },
-                  { name: 'consumedPoints', valueInteger: projectResult.consumedPoints },
-                  { name: 'remainingPoints', valueInteger: projectResult.remainingPoints },
-                  { name: 'msBeforeReset', valueInteger: projectResult.msBeforeNext },
-                ]
-              : []),
-          ],
+          part: [{ name: 'id', valueString: project.id }, ...quotaParts(projectQuota, projectLimit)],
         },
         ...membershipResults.map((m) => ({
           name: 'membership',
           part: [
             { name: 'membershipId', valueString: m.membershipId },
             ...(m.profileReference ? [{ name: 'profileReference', valueString: m.profileReference }] : []),
-            ...(m.fhirQuota
-              ? [
-                  { name: 'limit', valueInteger: m.fhirQuota.limit },
-                  { name: 'consumedPoints', valueInteger: m.fhirQuota.consumedPoints },
-                  { name: 'remainingPoints', valueInteger: m.fhirQuota.remainingPoints },
-                  { name: 'msBeforeReset', valueInteger: m.fhirQuota.msBeforeReset },
-                ]
-              : []),
+            ...quotaParts(m.quota, userLimit),
           ],
         })),
       ],
     } as any,
+  ];
+}
+
+function parseQuotaResult(consumed: string | null, pttl: number, limit: number): QuotaStatus | undefined {
+  if (consumed === null) {
+    return undefined;
+  }
+  const consumedPoints = parseInt(consumed, 10);
+  return {
+    limit,
+    consumedPoints,
+    remainingPoints: Math.max(limit - consumedPoints, 0),
+    msBeforeReset: Math.max(pttl, 0),
+  };
+}
+
+function quotaParts(
+  quota: QuotaStatus | undefined,
+  limit: number
+): { name: string; valueInteger: number }[] {
+  if (!quota) {
+    return [];
+  }
+  return [
+    { name: 'limit', valueInteger: limit },
+    { name: 'consumedPoints', valueInteger: quota.consumedPoints },
+    { name: 'remainingPoints', valueInteger: quota.remainingPoints },
+    { name: 'msBeforeReset', valueInteger: quota.msBeforeReset },
   ];
 }
