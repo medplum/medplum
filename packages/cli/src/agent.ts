@@ -13,7 +13,7 @@ import { ContentType, EMPTY, isOk, isUUID, normalizeErrorString } from '@medplum
 import type { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
-import { MedplumCommand, addSubcommand } from './utils';
+import { addSubcommand, MedplumCommand } from './utils';
 
 export type ValidIdsOrCriteria = { type: 'ids'; ids: string[] } | { type: 'criteria'; criteria: string };
 
@@ -312,7 +312,7 @@ function formatStatValue(value: AgentStatValue | undefined): string {
 
 function buildChannelStatsRows(
   entries: Record<string, AgentChannelStats> | undefined
-): Array<Record<string, number | string>> {
+): Record<string, number | string>[] {
   if (!entries) {
     return [];
   }
