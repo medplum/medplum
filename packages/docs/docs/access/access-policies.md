@@ -274,6 +274,10 @@ The AccessPolicy below grants access to all `Observation` resources that belong 
 
 The FHIR `Binary` resource is a special case. It is used to store arbitrary binary data, such as images or documents. Unlike other resources, `Binary` resources are not searchable, and therefore do not have search parameters, and therefore cannot use the `criteria` field in an `AccessPolicy`.
 
+:::caution[`criteria` is silently ignored on Binary]
+Because `Binary` has no search parameters, Medplum's policy matcher short-circuits any `criteria` you put on a `Binary` rule and treats it as an unconditional match. A rule like `{ "resourceType": "Binary", "criteria": "Binary?_compartment=Organization/abc" }` therefore grants project-wide access to Binaries — not the scoped access you might expect. Use `securityContext` for scoping instead.
+:::
+
 To control access to `Binary` resources, you must use the `securityContext` field. This field is a reference to another resource, such as a `Patient`, `Practitioner`, or `Organization`, that defines the context in which the binary data is relevant.
 
 See [Binary Security Context](/docs/access/binary-security-context) for more information on how to use the `securityContext` field to control access to `Binary` resources.
@@ -650,6 +654,64 @@ This update allows for more granular control and visibility in RBAC implementati
 - **Client-Side**
   - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.
   - This is especially useful for Role-Based Access Control (RBAC) implementations where different users may have varying access levels.
+
+## Gotchas
+
+A few subtle behaviors that aren't obvious from a first read of the policy resource, but that
+will bite you if you don't know them.
+
+### `Binary` rules ignore criteria
+
+Already noted above — `{ "resourceType": "Binary", "criteria": "..." }` matches every Binary in
+the project regardless of the criteria, because `Binary` has no search parameters for the matcher
+to evaluate. Use [`securityContext`](/docs/access/binary-security-context) for scoping instead.
+
+### `ProjectMembership` rules don't apply to non-admins
+
+The Medplum server applies an additional filter (`applyProjectAdminAccessPolicy`) that strips any
+`ProjectMembership` rules from policies attached to non-admin users. As a result, you cannot grant
+a non-admin user read or write access to `ProjectMembership` resources via an `AccessPolicy` —
+managing memberships always requires `admin: true` on the user's own `ProjectMembership`.
+
+### Resource rules with no `compartment` and no `criteria` skip filtering entirely
+
+A resource rule like `{ "resourceType": "Organization", "readonly": true }` (no `compartment`,
+no `criteria`) grants project-wide access to that resource type. The query builder takes an
+early-return path and adds no filter to search queries. This is fine for shared, non-PHI resource
+types (`CodeSystem`, `ValueSet`, etc.) but is rarely what you want for clinical data — always
+scope with `compartment` or `criteria` for those.
+
+### `%organization` substitutes a `Reference`; use `%organization.id` for ids
+
+If you parameterize a policy with `valueReference: { reference: "Organization/abc-123" }` named
+`organization`, the substitution rules are:
+
+- `%organization` → `Organization/abc-123` (the full reference string)
+- `%organization.id` → `abc-123` (just the id portion)
+
+When writing reference-based search criteria, prefix the resource type explicitly. For example,
+to scope to organizations whose `partOf` points at the user's organization:
+
+```json
+{ "resourceType": "Organization", "criteria": "Organization?partof=Organization/%organization.id" }
+```
+
+The naive form `partof=%organization` does not bind reliably for reference matching across all
+search-parameter types — spelling the resource type explicitly avoids the issue.
+
+### A resource is not in its own compartment
+
+`Organization?_compartment=%organization` will _not_ match the practitioner's own organization,
+because Medplum doesn't add an organization to its own `meta.compartment`. To grant a user read
+access to their own organization, match by id:
+
+```json
+{ "resourceType": "Organization", "readonly": true, "criteria": "Organization?_id=%organization.id" }
+```
+
+Combine with a `partof=` rule to also pick up sub-orgs (e.g. lab contracts) under the
+organization. See the [Health Gorilla access policy guide](/docs/integration/health-gorilla/access-policy)
+for a worked example.
 
 ## Related Resources
 
