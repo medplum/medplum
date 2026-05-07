@@ -16,6 +16,7 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo } from 'react';
 import type { Range } from '../types/scheduling';
+import { assertNever } from '../utils/assert';
 import classes from './Calendar.module.css';
 
 type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
@@ -77,6 +78,8 @@ export function Calendar(props: {
         onSelectAppointment?.(ext.appointment);
       } else if (ext.type === 'slot') {
         onSelectSlot?.(ext.slot);
+      } else {
+        assertNever(ext);
       }
     },
     [onSelectAppointment, onSelectSlot]
