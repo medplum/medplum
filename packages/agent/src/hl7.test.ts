@@ -2409,7 +2409,7 @@ describe('HL7', () => {
       await app.stop();
     });
 
-    test('When logStatsFreqSecs is not set, channel should not track stats', async () => {
+    test('Channel should track stats by default, even when logStatsFreqSecs is not set', async () => {
       mockServer.on('connection', (socket) => {
         socket.on('message', (data) => {
           const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -2475,13 +2475,13 @@ describe('HL7', () => {
       const channel = app.channels.get('test');
       expect(channel).toBeDefined();
 
-      // Channel should NOT have stats tracker
-      expect((channel as AgentHl7Channel).stats).toBeUndefined();
+      // Channel should have stats tracker by default
+      expect((channel as AgentHl7Channel).stats).toBeDefined();
 
       await app.stop();
     });
 
-    test('When logStatsFreqSecs is set via reload, channel should start tracking', async () => {
+    test('When logStatsFreqSecs is set via reload, channel still has stats tracker', async () => {
       const state = {
         mySocket: undefined as Client | undefined,
         reloadConfigResponse: null as AgentReloadConfigRequest | null,
@@ -2534,8 +2534,8 @@ describe('HL7', () => {
       let channel = app.channels.get('test');
       expect(channel).toBeDefined();
 
-      // Channel should NOT have stats tracker initially
-      expect((channel as AgentHl7Channel).stats).toBeUndefined();
+      // Channel should have stats tracker by default
+      expect((channel as AgentHl7Channel).stats).toBeDefined();
 
       // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -2568,7 +2568,7 @@ describe('HL7', () => {
       await app.stop();
     });
 
-    test('When logStatsFreqSecs is removed via reload, channel should stop tracking', async () => {
+    test('When logStatsFreqSecs is removed via reload, channel should keep tracking stats', async () => {
       const state = {
         mySocket: undefined as Client | undefined,
         reloadConfigResponse: null as AgentReloadConfigRequest | null,
@@ -2650,8 +2650,8 @@ describe('HL7', () => {
       channel = app.channels.get('test');
       expect(channel).toBeDefined();
 
-      // Channel should NO LONGER have stats tracker
-      expect((channel as AgentHl7Channel).stats).toBeUndefined();
+      // Channel should still have stats tracker (stats are collected by default)
+      expect((channel as AgentHl7Channel).stats).toBeDefined();
 
       await app.stop();
     });
