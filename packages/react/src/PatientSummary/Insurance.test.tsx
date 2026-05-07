@@ -291,7 +291,7 @@ describe('PatientSummary - Insurance', () => {
 
     // Should not throw error when clicking
     await act(async () => {
-      fireEvent.click(summaryItems[0] as HTMLElement);
+      fireEvent.click(summaryItems[0]);
     });
   });
 
@@ -359,5 +359,25 @@ describe('PatientSummary - Insurance', () => {
     await setup(<CoverageItem coverage={coverages} organization={mockInsuranceOrg} />);
 
     expect(screen.getByText('Blue Cross Blue Shield')).toBeInTheDocument();
+  });
+
+  test('Filters out self-pay coverages', async () => {
+    const coverages: Coverage[] = [
+      {
+        resourceType: 'Coverage',
+        id: 'coverage-1',
+        status: 'active',
+        beneficiary: createReference(HomerSimpson),
+        payor: [createReference(mockInsuranceOrg)],
+        subscriberId: '123456789',
+        type: {
+          coding: [{ code: 'SELFPAY' }],
+        },
+      },
+    ];
+
+    await setup(<Insurance coverages={coverages} />);
+
+    expect(screen.queryByText('Coverage-1')).not.toBeInTheDocument();
   });
 });

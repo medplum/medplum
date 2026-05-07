@@ -235,7 +235,7 @@ superAdminRouter.post(
     body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   ],
   async (req: Request, res: Response) => {
-    requireSuperAdmin();
+    const { repo } = requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -249,7 +249,7 @@ superAdminRouter.post(
       return;
     }
 
-    await setPassword(user, req.body.password as string);
+    await setPassword(repo, user, req.body.password as string);
     sendOutcome(res, allOk);
   }
 );

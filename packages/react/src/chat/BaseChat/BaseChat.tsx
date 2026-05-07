@@ -30,7 +30,7 @@ import {
   IconPaperclip,
   IconX,
 } from '@tabler/icons-react';
-import type { JSX, LegacyRef } from 'react';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
@@ -321,7 +321,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           {title}
         </Title>
       )}
-      <div className={classes.chatBody} ref={parentRef as LegacyRef<HTMLDivElement>}>
+      <div className={classes.chatBody} ref={parentRef}>
         {initialLoadRef.current ? (
           <Stack key="skeleton-chat-messages" align="stretch" mt="lg">
             <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">

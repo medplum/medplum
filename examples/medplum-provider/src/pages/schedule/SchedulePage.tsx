@@ -16,7 +16,6 @@ import { AppointmentDetails } from '../../components/schedule/AppointmentDetails
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-import { hasSchedulingParameters } from '../../utils/scheduling';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
@@ -31,6 +30,7 @@ export function SchedulePage(): JSX.Element | null {
   const { id } = useParams<{ id: string }>();
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
+  const project = medplum.getProject();
 
   // Redirect to the current user's schedule if no id in the URL
   useEffect(() => {
@@ -226,6 +226,8 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, navigate]
   );
 
+  const schedulingEnabled = project?.features?.includes('scheduling');
+
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
       <div className={classes.wrapper}>
@@ -240,7 +242,7 @@ export function SchedulePage(): JSX.Element | null {
               onChange={handleActorChange}
             />
           </Box>
-          {schedule && hasSchedulingParameters(schedule) && (
+          {schedule && schedulingEnabled && (
             <ActionIcon
               variant="subtle"
               aria-label="Schedule settings"

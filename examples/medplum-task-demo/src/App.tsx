@@ -174,9 +174,9 @@ async function getTasksByRoleLinks(medplum: MedplumClient, profileReference: str
 
       const searchQuery = formatSearchQuery(search);
       const roleDisplay = formatCodeableConcept(roleCode);
-      return { icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task${searchQuery}` } as NavbarLink;
+      return { icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task${searchQuery}` };
     })
-    .filter((link): link is NavbarLink => !!link);
+    .filter((link): link is NonNullable<typeof link> => !!link);
 }
 
 /**
@@ -213,6 +213,6 @@ function getTasksByState(profile: Practitioner): NavbarLink[] {
       ],
     };
     const searchQuery = formatSearchQuery(search);
-    return { icon: <IconUser />, label: `${capitalize(state)} Tasks`, href: `/Task${searchQuery}` } as NavbarLink;
+    return { icon: <IconUser />, label: `${capitalize(state)} Tasks`, href: `/Task${searchQuery}` };
   });
 }

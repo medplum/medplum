@@ -128,7 +128,7 @@ function lazyInitEvents(): void {
       this.message = error.message;
       this.error = error;
     }
-  } as unknown as typeof globalThis.ErrorEvent;
+  };
 
   Events.CloseEvent = class CloseEvent extends Event implements CloseEvent {
     public code: number;
@@ -140,7 +140,7 @@ function lazyInitEvents(): void {
       this.code = code;
       this.reason = reason;
     }
-  } as unknown as typeof globalThis.CloseEvent;
+  };
 }
 
 export function assert(condition: unknown, msg?: string): asserts condition {

@@ -77,9 +77,7 @@ function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
     .map((appointment) => {
       // Find the patient among the participants to use as title
       const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
-        ? ` (${appointment.status})`
-        : '';
+      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status) ? ` (${appointment.status})` : '';
 
       const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
 

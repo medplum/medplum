@@ -60,6 +60,19 @@ jobs:
         with:
           role-to-assume: ${{ secrets.STAGING_AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.STAGING_AWS_REGION }}
+      - name: Build GraphiQL
+        run: npm run build -- --force --filter=@medplum/graphiql
+        env:
+          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          MEDPLUM_INTROSPECTION_URL: https://graphiql.staging.medplum.dev/schema/schema-latest.json
+          GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+
+      - name: Deploy GraphiQL
+        run: ./scripts/deploy-graphiql.sh
+        env:
+          GRAPHIQL_BUCKET: graphiql.staging.medplum.dev
+          GRAPHIQL_AWS_REGION: us-west-2
+
       - name: Login to Docker Hub
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:

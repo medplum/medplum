@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY, getExtensionValue, isDefined } from '@medplum/core';
+import { badRequest, EMPTY, getExtensionValue, isDefined, isResource, OperationOutcomeError } from '@medplum/core';
 import type { CodeableConcept, Resource, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp } from '../../../util/date';
+import type { WithPath } from '../../../util/withpath';
+import { getPath } from '../../../util/withpath';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
@@ -177,7 +179,7 @@ export function normalizeIntervals(intervals: Interval[]): Interval[] {
  * @param listB - Second normalized (sorted, non-overlapping) list of intervals
  * @returns An array of pairs, each containing an interval from listA and its overlapping intervals from listB
  */
-function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
+export function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
   const result: [Interval, Interval[]][] = [];
   let indexB = 0;
 
@@ -269,4 +271,14 @@ export function applyExistingSlots(params: {
   );
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
   return removeAvailability(allAvailability, busySlotIntervals);
+}
+
+export function assertAllLoaded<T extends Resource>(
+  objects: WithPath<T | Error>[],
+  message: string
+): asserts objects is WithPath<T>[] {
+  const invalid = objects.find((obj) => !isResource(obj));
+  if (invalid) {
+    throw new OperationOutcomeError(badRequest(message, getPath(invalid)));
+  }
 }

@@ -49,7 +49,7 @@ projectAdminRouter.post(
       return;
     }
 
-    await setPassword(user, req.body.password as string);
+    await setPassword(ctx.systemRepo, user, req.body.password as string);
     sendOutcome(res, allOk);
   }
 );

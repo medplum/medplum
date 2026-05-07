@@ -87,7 +87,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
     } catch (error) {
       showErrorNotification({
         title: 'Error adding medication to favorites',
-        message: normalizeErrorString(error as Error),
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {

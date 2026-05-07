@@ -280,34 +280,36 @@ function applyProjectAdminAccessPolicy(
     // If the user is a project admin,
     // then grant limited access to the project admin resource types
     accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
-    accessPolicy.resource.push({
-      resourceType: 'Project',
-      criteria: `Project?_id=${resolveId(membership.project)}`,
-      readonlyFields: ['features', 'link', 'systemSetting'],
-      hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
-      interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
-    });
 
-    if (project.link) {
-      accessPolicy.resource.push({
-        resourceType: 'Project',
-        criteria: `Project?_id=${project.link.map((link) => resolveId(link.project)).join(',')}`,
-        readonly: true,
-        hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode'],
-      });
-    }
-
+    // Project admins can edit their own project
     accessPolicy.resource.push(
       {
+        // Project admins have full access to their own project, except for a few sensitive fields
+        resourceType: 'Project',
+        criteria: `Project?_id=${resolveId(membership.project)}`,
+        readonlyFields: ['features', 'link', 'systemSetting'],
+        hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
+        interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
+      },
+      {
+        // Project admins have read-only access to linked projects, and cannot see sensitive fields
+        resourceType: 'Project',
+        hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode'],
+        interaction: ['read', 'vread', 'history', 'search'], // Read-only access to linked projects
+      },
+      {
         resourceType: 'ProjectMembership',
+        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
         readonlyFields: ['project', 'user'],
       },
       {
         resourceType: 'UserSecurityRequest',
+        criteria: `UserSecurityRequest?_project=${resolveId(membership.project)}`,
         readonly: true,
       },
       {
         resourceType: 'User',
+        criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
       },

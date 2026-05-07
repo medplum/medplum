@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference } from '@medplum/core';
-import type { UserSecurityRequest } from '@medplum/fhirtypes';
+import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -11,8 +11,9 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
+import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -57,6 +58,14 @@ describe('Set Password', () => {
     );
     expect(res).toBeDefined();
 
+    const login = await tryLogin({
+      authMethod: 'password',
+      scope: 'openid email',
+      email,
+      password: 'password!@#',
+      nonce: 'hqp9aew8yrpwiubejrg',
+    });
+
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
       recaptchaToken: 'xyz',
@@ -94,6 +103,7 @@ describe('Set Password', () => {
       scope: 'openid',
     });
     expect(res4.status).toBe(200);
+    const newAccessToken = res4.body.access_token as string;
 
     // Make sure that the PCR cannot be used again
     const res5 = await request(app).post('/auth/setpassword').type('json').send({
@@ -103,12 +113,17 @@ describe('Set Password', () => {
     });
     expect(res5.status).toBe(400);
 
-    const userInfoRes2 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
-    expect(userInfoRes2.status).toBe(200);
-    expect(userInfoRes2.body).toMatchObject({
-      email,
-      email_verified: true,
-    });
+    // User must log in again
+    const userInfoRes2 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${newAccessToken}`);
+    expect(userInfoRes2.status).toBe(401);
+
+    // Make sure that previous active login was revoked
+    const userInfoRes3 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
+    expect(userInfoRes3.status).toBe(401);
+
+    // Ensure other Logins are also revoked
+    const otherLogin = await getGlobalSystemRepo().readResource<Login>('Login', login.id);
+    expect(otherLogin.revoked).toBe(true);
   });
 
   test('UserSecurityRequest', async () => {
@@ -261,7 +276,7 @@ describe('Set Password', () => {
       password: 'breached',
     });
     expect(res3.status).toBe(400);
-    expect(res3.body).toMatchObject(badRequest('Password found in breach database', 'password'));
+    expect(res3.body).toMatchObject(badRequest('Password found in breach database'));
   });
 
   test('Missing id', async () => {

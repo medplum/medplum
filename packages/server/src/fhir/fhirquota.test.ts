@@ -82,7 +82,7 @@ describe('FHIR Rate Limits', () => {
         resourceType: 'Bundle',
         type: 'batch',
         entry: [{ request: { method: 'GET', url: 'Patient' } }],
-      } as Bundle);
+      });
     expect(res.status).toBe(200);
   });
 
@@ -144,6 +144,7 @@ describe('FHIR Rate Limits', () => {
     await initApp(app, config);
 
     const { accessToken, repo, membership } = await createTestProject({
+      membership: { admin: true },
       withAccessToken: true,
       withRepo: true,
       withClient: true,

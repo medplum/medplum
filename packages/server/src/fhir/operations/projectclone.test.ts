@@ -381,7 +381,7 @@ describe('Project clone', () => {
       expect(newBot?.sourceCode?.url).not.toStrictEqual(bot.sourceCode?.url);
 
       // Get the binary content
-      const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url as string });
+      const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url });
       const newBinaryContent = await getBinaryStorage().readBinary(newBinary);
       const newBinaryStr = (await streamToBuffer(newBinaryContent)).toString('utf8');
       expect(newBinaryStr).toStrictEqual('console.log("Hello world");');
