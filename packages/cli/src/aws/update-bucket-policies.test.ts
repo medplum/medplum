@@ -255,10 +255,7 @@ describe('update-bucket-policies command', () => {
                   AWS: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity oai-123',
                 },
                 Action: ['s3:GetObject*', 's3:GetBucket*', 's3:List*'],
-                Resource: [
-                  'arn:aws:s3:::storage.test.medplum.com',
-                  'arn:aws:s3:::storage.test.medplum.com/*',
-                ],
+                Resource: ['arn:aws:s3:::storage.test.medplum.com', 'arn:aws:s3:::storage.test.medplum.com/*'],
               },
               {
                 Sid: 'GuardDutyMalwareProtectionReadGate',
