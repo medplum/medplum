@@ -15,7 +15,6 @@ import { getUserByEmailInProject } from '../oauth/utils';
 import { createBotHandler, createBotValidator } from './bot';
 import { createClientHandler, createClientValidator } from './client';
 import { inviteHandler, inviteValidator } from './invite';
-import { getRateLimitStatusHandler } from './ratelimit';
 import { verifyProjectAdmin } from './utils';
 
 export const projectAdminRouter = Router();
@@ -55,7 +54,6 @@ projectAdminRouter.post(
   }
 );
 
-projectAdminRouter.get('/:projectId/rate-limits', getRateLimitStatusHandler);
 projectAdminRouter.post('/:projectId/bot', createBotValidator, createBotHandler);
 projectAdminRouter.post('/:projectId/client', createClientValidator, createClientHandler);
 projectAdminRouter.post('/:projectId/invite', inviteValidator, inviteHandler);

@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import type { ProjectMembership } from '@medplum/fhirtypes';
+import type { Parameters, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp, shutdownApp } from '../app';
-import type { RegisterResponse } from '../auth/register';
-import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config/loader';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { initApp, shutdownApp } from '../../app';
+import type { RegisterResponse } from '../../auth/register';
+import { registerNew } from '../../auth/register';
+import { loadTestConfig } from '../../config/loader';
+import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -20,7 +20,19 @@ const app = express();
 
 let admin: RegisterResponse;
 
-describe('Rate limit status endpoint', () => {
+function getParametersByName(params: Parameters, name: string): NonNullable<Parameters['parameter']> {
+  return params.parameter?.filter((p) => p.name === name) ?? [];
+}
+
+function getPartValue(
+  parts: NonNullable<Parameters['parameter']>[number] | undefined,
+  name: string
+): string | number | undefined {
+  const part = parts?.part?.find((p) => p.name === name);
+  return part?.valueString ?? part?.valueInteger;
+}
+
+describe('Project $rate-limits operation', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await withTestContext(() => initApp(app, config));
@@ -49,19 +61,22 @@ describe('Rate limit status endpoint', () => {
 
   test('Returns rate limit status for all project members', async () => {
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits`)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
-    expect(res.body.project.id).toBe(admin.project.id);
-    expect(res.body.memberships).toBeDefined();
-    expect(Array.isArray(res.body.memberships)).toBe(true);
-    expect(res.body.memberships.length).toBeGreaterThan(0);
+    const body = res.body as Parameters;
+    expect(body.resourceType).toBe('Parameters');
 
-    for (const membership of res.body.memberships) {
-      expect(membership.membershipId).toBeDefined();
-      expect(typeof membership.membershipId).toBe('string');
+    const projectParams = getParametersByName(body, 'project');
+    expect(projectParams).toHaveLength(1);
+    expect(getPartValue(projectParams[0], 'id')).toBe(admin.project.id);
+
+    const membershipParams = getParametersByName(body, 'membership');
+    expect(membershipParams.length).toBeGreaterThan(0);
+
+    for (const membership of membershipParams) {
+      expect(getPartValue(membership, 'membershipId')).toBeDefined();
     }
   });
 
@@ -76,12 +91,14 @@ describe('Rate limit status endpoint', () => {
     const targetId = memberships[0].id;
 
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits?membershipId=${targetId}`)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${targetId}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.memberships).toHaveLength(1);
-    expect(res.body.memberships[0].membershipId).toBe(targetId);
+    const body = res.body as Parameters;
+    const membershipParams = getParametersByName(body, 'membership');
+    expect(membershipParams).toHaveLength(1);
+    expect(getPartValue(membershipParams[0], 'membershipId')).toBe(targetId);
   });
 
   test('Accepts multiple membership IDs', async () => {
@@ -97,37 +114,42 @@ describe('Rate limit status endpoint', () => {
     const ids = memberships.slice(0, 2).map((m: ProjectMembership) => m.id);
 
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`)
+      .get(
+        `/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`
+      )
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.memberships).toHaveLength(2);
+    const body = res.body as Parameters;
+    const membershipParams = getParametersByName(body, 'membership');
+    expect(membershipParams).toHaveLength(2);
 
-    const returnedIds = res.body.memberships.map((m: any) => m.membershipId);
+    const returnedIds = membershipParams.map((p) => getPartValue(p, 'membershipId'));
     expect(returnedIds).toContain(ids[0]);
     expect(returnedIds).toContain(ids[1]);
 
-    // Suppress unused variable warning
     expect(member).toBeDefined();
   });
 
   test('Shows consumed points after FHIR activity', async () => {
-    // Make some FHIR requests to consume rate limit points
-    await request(app).get('/fhir/R4/Patient').set('Authorization', `Bearer ${admin.accessToken}`);
+    await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', `Bearer ${admin.accessToken}`);
 
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits`)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const body = res.body as Parameters;
+    expect(getParametersByName(body, 'project')).toHaveLength(1);
   });
 
   test('Rejects non-admin access', async () => {
     const nonAdmin = await withTestContext(() => addTestUser(admin.project));
 
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits`)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${nonAdmin.accessToken}`);
 
     expect(res.status).toBe(403);
@@ -144,23 +166,22 @@ describe('Rate limit status endpoint', () => {
       })
     );
 
-    // Get the other project's membership ID
     const membershipsRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', `Bearer ${other.accessToken}`)
       .set('X-Medplum', 'extended');
     const otherMembership = membershipsRes.body.entry[0].resource as ProjectMembership;
 
-    // Try to query it from the first project
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits?membershipId=${otherMembership.id}`)
+      .get(
+        `/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${otherMembership.id}`
+      )
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    // Should fail because the membership doesn't belong to this project
     expect(res.status).not.toBe(200);
   });
 
-  test('Returns null fhirQuota for members with no recent activity', async () => {
+  test('Returns no quota parts for members with no recent activity', async () => {
     const member = await withTestContext(() => addTestUser(admin.project));
 
     const membershipsRes = await request(app)
@@ -169,7 +190,6 @@ describe('Rate limit status endpoint', () => {
       .set('X-Medplum', 'extended');
     const memberships = membershipsRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
 
-    // Find the membership for the newly added user (no activity yet from their membership specifically)
     const memberMembership = memberships.find(
       (m: ProjectMembership) => m.profile?.reference === getReferenceString(member.profile)
     );
@@ -179,12 +199,15 @@ describe('Rate limit status endpoint', () => {
     }
 
     const res = await request(app)
-      .get(`/admin/projects/${admin.project.id}/rate-limits?membershipId=${memberMembership.id}`)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${memberMembership.id}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.memberships).toHaveLength(1);
-    // New member with no activity should have null fhirQuota (no Redis key yet)
-    expect(res.body.memberships[0].fhirQuota).toBeNull();
+    const body = res.body as Parameters;
+    const membershipParams = getParametersByName(body, 'membership');
+    expect(membershipParams).toHaveLength(1);
+    expect(getPartValue(membershipParams[0], 'membershipId')).toBe(memberMembership.id);
+    // No consumedPoints part for members with no activity
+    expect(getPartValue(membershipParams[0], 'consumedPoints')).toBeUndefined();
   });
 });
