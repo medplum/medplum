@@ -512,11 +512,12 @@ export interface NewUserRequest {
   readonly lastName: string;
   readonly email: string;
   readonly password: string;
-  readonly recaptchaToken: string;
+  readonly recaptchaToken?: string;
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
   readonly projectId?: string;
   readonly clientId?: string;
+  readonly redirectUri?: string;
 }
 
 export interface NewProjectRequest {
@@ -1204,9 +1205,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   clear(): void {
     this.storage.clear();
-    if (isBrowserEnvironment()) {
-      sessionStorage.clear();
-    }
     this.clearActiveLogin();
   }
 
@@ -3977,10 +3975,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   async startPkce(): Promise<{ codeChallengeMethod: CodeChallengeMethod; codeChallenge: string }> {
     const pkceState = getRandomString();
-    sessionStorage.setItem('pkceState', pkceState);
+    this.storage.setString('pkceState', pkceState);
 
     const codeVerifier = getRandomString().slice(0, 128);
-    sessionStorage.setItem('codeVerifier', codeVerifier);
+    this.storage.setString('codeVerifier', codeVerifier);
+
+    console.log('CODY startPkce', { pkceState, codeVerifier });
 
     try {
       const arrayHash = await encryptSHA256(codeVerifier);
@@ -4005,7 +4005,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const loginRequest = await this.ensureCodeChallenge(loginParams ?? {});
     const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
+    url.searchParams.set('state', this.storage.getString('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
     url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? locationUtils.getOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
@@ -4030,11 +4030,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       redirect_uri: loginParams?.redirectUri ?? locationUtils.getOrigin(),
     };
 
-    if (typeof sessionStorage !== 'undefined') {
-      const codeVerifier = sessionStorage.getItem('codeVerifier');
-      if (codeVerifier) {
-        tokenParams.code_verifier = codeVerifier;
-      }
+    const codeVerifier = this.storage.getString('codeVerifier');
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
     }
 
     return this.fetchTokens(tokenParams);
