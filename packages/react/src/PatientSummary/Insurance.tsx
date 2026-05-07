@@ -65,8 +65,9 @@ export interface InsuranceProps {
 export function Insurance(props: InsuranceProps): JSX.Element {
   const { coverages, onClickResource } = props;
 
-  // Filter to only show active coverages
-  const activeCoverages = coverages.filter((coverage) => coverage.status === 'active');
+  const activeCoverages = coverages.filter(
+    (coverage) => coverage.status === 'active' && !coverage.type?.coding?.some((coding) => coding.code === 'SELFPAY')
+  );
 
   return (
     <CollapsibleSection title="Insurance">

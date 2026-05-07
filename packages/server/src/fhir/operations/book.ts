@@ -22,12 +22,14 @@ import type {
   Reference,
   Slot,
 } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
-import { invariant } from '../../util/invariant';
-import { extractReferencesFromCodeableReferenceLike } from '../../util/servicetype';
+import { getServiceTypeReferences } from '../../util/servicetype';
+import type { WithPath } from '../../util/withpath';
+import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
+import { applyExistingSlots, assertAllLoaded, getTimeZone, resolveAvailability } from './utils/scheduling';
 import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const bookOperation = {
@@ -52,20 +54,26 @@ type BookParameters = {
   'patient-reference'?: Reference<Patient>;
 };
 
-function assertAllOk<T>(objects: (Error | T)[], msg: string, path?: string): asserts objects is T[] {
-  objects.forEach((obj, idx) => {
-    if (obj instanceof Error) {
-      throw new OperationOutcomeError(badRequest(msg, path?.replace('%i', idx.toString())));
-    }
-  });
-}
+// Finds keys that can be used to index into `T` and yield a primitive type
+// that can be compared with strict equality.
+type PrimitiveKey<T> = {
+  [K in keyof T]-?: T[K] extends string | number | boolean | undefined ? K : never;
+}[keyof T];
 
-function assertAllMatch<T>(objects: T[], msg: string): T {
-  const first = objects[0];
-  if (objects.some((obj) => obj !== first)) {
-    throw new OperationOutcomeError(badRequest(msg));
+function assertAllMatch<T extends object>(
+  objects: WithPath<T>[],
+  attribute: PrimitiveKey<T> & string,
+  msg: string
+): void {
+  if (objects.length <= 1) {
+    return;
   }
-  return first;
+  const mismatched = objects.find((value) => value[attribute] !== objects[0][attribute]);
+  if (mismatched) {
+    throw new OperationOutcomeError(
+      badRequest(msg, [`${getPath(objects[0])}.${attribute}`, `${getPath(mismatched)}.${attribute}`])
+    );
+  }
 }
 
 function serviceTypeTokens(slots: Slot[]): string[] {
@@ -92,17 +100,11 @@ function serviceTypeTokens(slots: Slot[]): string[] {
 export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<BookParameters>(bookOperation, req);
-  const proposedSlots = params.slot;
+  const proposedSlots = withPaths(params.slot, 'Parameters.slot');
 
-  const start = assertAllMatch(
-    proposedSlots.map((slot) => slot.start),
-    'Mismatched slot start times'
-  );
-  const end = assertAllMatch(
-    proposedSlots.map((slot) => slot.end),
-    'Mismatched slot end times'
-  );
-
+  assertAllMatch(proposedSlots, 'start', 'Mismatched slot start times');
+  assertAllMatch(proposedSlots, 'end', 'Mismatched slot end times');
+  const { start, end } = proposedSlots[0];
   const startDate = new Date(start);
   const endDate = new Date(end);
 
@@ -119,8 +121,10 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     }
   }
 
-  const schedules = await ctx.repo.readReferences(proposedSlots.map((slot) => slot.schedule));
-  assertAllOk(schedules, 'Schedule load failed', 'Parameters.parameter[%i].schedule');
+  const schedules = await ctx.repo
+    .readReferences(proposedSlots.map((slot) => slot.schedule))
+    .then((schedules) => copyPaths(proposedSlots, schedules, { suffix: '.schedule' }));
+  assertAllLoaded(schedules, 'Schedule load failed');
 
   schedules.forEach((schedule) => {
     if (schedule.actor.length !== 1) {
@@ -128,17 +132,17 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     }
   });
 
-  const actors = await ctx.repo.readReferences(schedules.flatMap((schedule) => schedule.actor));
-  assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
+  const actors = await ctx.repo
+    .readReferences(schedules.flatMap((schedule) => schedule.actor))
+    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+  assertAllLoaded(actors, 'Schedule.actor load failed');
 
   let healthcareService: WithId<HealthcareService>;
   // We expect that at most one unique serviceType reference will be found
-  const serviceRefs = proposedSlots.flatMap((slot) => extractReferencesFromCodeableReferenceLike(slot.serviceType));
-  const serviceRefString = assertAllMatch(
-    serviceRefs.map((ref) => ref.reference),
-    'Mismatched service types'
-  );
+  const serviceRefs = proposedSlots.flatMap((slot) => getServiceTypeReferences(slot));
+  assertAllMatch(serviceRefs, 'reference', 'Mismatched service types');
 
+  const serviceRefString = serviceRefs[0]?.reference;
   if (serviceRefString) {
     try {
       healthcareService = await ctx.repo.readReference({ reference: serviceRefString });
@@ -178,21 +182,19 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await Promise.all(
-        proposedSlots.map(async (proposedSlot, index) => {
+        proposedSlots.map(async (proposedSlot) => {
           const scheduleRefString = getReferenceString(proposedSlot.schedule);
           const schedule = schedules.find((s) => `Schedule/${s.id}` === scheduleRefString);
-          invariant(schedule, 'Slot.schedule not loaded');
+          assert(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
-          invariant(actor, 'Slot.schedule.actor not loaded');
+          assert(actor, 'Slot.schedule.actor not loaded');
           const actorTimeZone = getTimeZone(actor);
           if (!actorTimeZone) {
-            throw new OperationOutcomeError(
-              badRequest('No timezone specified', `Parameters.parameter[${index}].schedule.actor`)
-            );
+            throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
           }
           const durationMinutes = (Date.parse(proposedSlot.end) - Date.parse(proposedSlot.start)) / 60000;
-          const parameters = chooseSchedulingParameters(schedule, healthcareService);
+          const parameters = chooseSchedulingParameters(schedule, withPath(healthcareService, 'HealthcareService'));
 
           if (parameters?.duration !== durationMinutes) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));

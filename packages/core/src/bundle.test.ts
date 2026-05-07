@@ -9,6 +9,9 @@ import type {
   Resource,
   Specimen,
 } from '@medplum/fhirtypes';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { vi } from 'vitest';
 import {
   convertContainedResourcesToBundle,
@@ -17,7 +20,7 @@ import {
   reorderBundle,
 } from './bundle';
 import { getDataType } from './typeschema/types';
-import { deepClone, isUUID } from './utils';
+import { deepClone, EMPTY, isUUID } from './utils';
 
 let jsonFile: any;
 
@@ -374,6 +377,26 @@ describe('Bundle tests', () => {
       const attachmentUrl = (docRefEntry?.resource as any)?.content?.[0]?.attachment?.url;
       expect(attachmentUrl).toBe(binaryEntry?.fullUrl);
       expect(attachmentUrl).toMatch(/^urn:uuid:/);
+    });
+
+    test('Synthea collection bundle (Abbott509) should not fail topological sort', () => {
+      // given
+      const syntheaPath = join(
+        dirname(fileURLToPath(import.meta.url)),
+        '__fixtures__',
+        'Abbott509_Aaron203_44-subset.json'
+      );
+      let bundle = JSON.parse(readFileSync(syntheaPath, 'utf8')) as Bundle;
+      expect(bundle.type).toStrictEqual('collection');
+      // when
+      bundle = convertToTransactionBundle(bundle);
+      // then
+      expect(bundle.resourceType).toBe('Bundle');
+      expect(bundle.type).toBe('transaction');
+      expect(bundle.entry?.length).toBeGreaterThan(0);
+      for (const entry of bundle.entry ?? EMPTY) {
+        expect(entry.request?.method).toBe('POST');
+      }
     });
   });
 

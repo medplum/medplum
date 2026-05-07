@@ -6,7 +6,7 @@ import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
-import type { CacheEntry } from '../repo';
+import type { CacheEntry } from '../repository/resource-cache';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {

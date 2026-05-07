@@ -310,35 +310,31 @@ describe('SchedulePage', () => {
   });
 
   describe('Settings gear icon', () => {
-    test('gear icon is hidden when the schedule lacks SchedulingParameters', async () => {
+    test('when the scheduling feature is disabled the gear icon is hidden', async () => {
       await act(async () => setup());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
       expect(screen.queryByRole('button', { name: 'Schedule settings' })).not.toBeInTheDocument();
     });
 
-    test('gear icon is visible when the schedule has SchedulingParameters', async () => {
-      const scheduleWithParams = {
-        ...mockSchedule,
-        extension: [{ url: SchedulingParametersURI }],
-      };
-      await medplum.updateResource(scheduleWithParams);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
-
+    test('when the scheduling feature is enabled the gear icon is visible', async () => {
+      medplum.getProject = vi.fn().mockReturnValue({
+        resourceType: 'Project',
+        id: 'project-123',
+        features: ['scheduling'],
+      });
       await act(async () => setup());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
-
       expect(screen.getByRole('button', { name: 'Schedule settings' })).toBeInTheDocument();
     });
 
     test('clicking the gear icon navigates to the schedule settings page', async () => {
       const user = userEvent.setup();
-      const scheduleWithParams = {
-        ...mockSchedule,
-        extension: [{ url: SchedulingParametersURI }],
-      };
-      await medplum.updateResource(scheduleWithParams);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
 
+      medplum.getProject = vi.fn().mockReturnValue({
+        resourceType: 'Project',
+        id: 'project-123',
+        features: ['scheduling'],
+      });
       await act(async () => setup());
       await user.click(screen.getByRole('button', { name: 'Schedule settings' }));
       await waitFor(() => expect(screen.getByText('Settings Page')).toBeInTheDocument());

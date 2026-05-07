@@ -5,6 +5,7 @@ import type { WithId } from '@medplum/core';
 import { createReference, generateId } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule } from '@medplum/fhirtypes';
 import { toCodeableReferenceLike } from '../../../util/servicetype';
+import { withPath } from '../../../util/withpath';
 import { chooseSchedulingParameters, parseSchedulingParametersExtensions } from './scheduling-parameters';
 
 describe('parseSchedulingParametersExtensions', () => {
@@ -57,7 +58,7 @@ describe('parseSchedulingParametersExtensions', () => {
       ],
     };
 
-    expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
+    expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
       {
         availability: [
           {
@@ -131,7 +132,7 @@ describe('parseSchedulingParametersExtensions', () => {
       ],
     };
 
-    expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
+    expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
       {
         availability: [
           {
@@ -193,7 +194,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
+      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
         {
           availability: [{ dayOfWeek: ['mon', 'wed'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
           duration: 60,
@@ -241,7 +242,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
+      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
         {
           availability: [
             {
@@ -297,8 +298,8 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(() => parseSchedulingParametersExtensions(schedule)).not.toThrow();
-      expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
+      expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).not.toThrow();
+      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
         { availability: [{ dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }] },
       ]);
     });
@@ -336,8 +337,8 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       // Filtered out, so availability is empty — but does not throw
-      expect(() => parseSchedulingParametersExtensions(schedule)).not.toThrow();
-      expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([{ availability: [] }]);
+      expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).not.toThrow();
+      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([{ availability: [] }]);
     });
 
     test('"availability" is not allowed in HealthcareService extension', () => {
@@ -366,7 +367,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
+      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toThrow(
         "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
       );
     });
@@ -385,7 +386,7 @@ describe('parseSchedulingParametersExtensions', () => {
       ],
     };
 
-    expect(() => parseSchedulingParametersExtensions(schedule)).toThrow(
+    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
       "Required scheduling parameter attribute 'availability' is missing"
     );
   });
@@ -418,7 +419,7 @@ describe('parseSchedulingParametersExtensions', () => {
       ],
     };
 
-    expect(() => parseSchedulingParametersExtensions(schedule)).toThrow(
+    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
       "Required scheduling parameter attribute 'duration' is missing"
     );
   });
@@ -456,7 +457,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(() => parseSchedulingParametersExtensions(schedule)).toThrow(
+      expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
         `Scheduling parameter attribute '${attribute}' has too many values`
       );
     }
@@ -500,7 +501,9 @@ describe('parseSchedulingParametersExtensions', () => {
       ],
     };
 
-    expect(() => parseSchedulingParametersExtensions(schedule)).toThrow(`Got unhandled unit "m"`);
+    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
+      `Got unhandled duration unit "m"`
+    );
   });
 
   describe('for a HealthcareService', () => {
@@ -520,7 +523,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
         {
           service: { reference: `HealthcareService/${hs.id}` },
           availability: [{ dayOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
@@ -542,7 +545,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
         {
           availability: [
             {
@@ -564,7 +567,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
         { availability: [{ dayOfWeek: [], availableStartTime: '00:00:00', availableEndTime: '00:00:00' }] },
       ]);
     });
@@ -578,7 +581,9 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([{ availability: [] }]);
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
+        { availability: [] },
+      ]);
     });
 
     test('availableTime with neither allDay nor start+end is filtered out', () => {
@@ -590,7 +595,9 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([{ availability: [] }]);
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
+        { availability: [] },
+      ]);
     });
 
     test('availability is not required on HealthcareService', () => {
@@ -603,8 +610,8 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(() => parseSchedulingParametersExtensions(hs)).not.toThrow();
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
+      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).not.toThrow();
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
         {
           availability: [],
           service: { reference: 'HealthcareService/hs-123' },
@@ -625,7 +632,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
+      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
         {
           availability: [
             { dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
@@ -661,7 +668,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
+      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toThrow(
         "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
       );
     });
@@ -677,7 +684,7 @@ describe('parseSchedulingParametersExtensions', () => {
         ],
       };
 
-      expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
+      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toThrow(
         "Scheduling parameter attribute 'service' is not allowed on HealthcareService"
       );
     });
@@ -717,7 +724,9 @@ describe('chooseSchedulingParameters', () => {
       actor: [{ reference: 'Practitioner/test' }],
     };
 
-    expect(chooseSchedulingParameters(schedule, service)).toEqual(undefined);
+    expect(chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service, 'HealthcareService'))).toEqual(
+      undefined
+    );
   });
 
   test('returns undefined when the Schedule has no SchedulingParameters matching HealthcareService.type', () => {
@@ -750,7 +759,9 @@ describe('chooseSchedulingParameters', () => {
       ],
     };
 
-    expect(chooseSchedulingParameters(schedule, service1)).toEqual(undefined);
+    expect(chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service1, 'HealthcareService'))).toEqual(
+      undefined
+    );
   });
 
   test('falls back to HealthcareService when Schedule has no SchedulingParameters extension', () => {
@@ -773,7 +784,7 @@ describe('chooseSchedulingParameters', () => {
       actor: [{ reference: 'Practitioner/test' }],
     };
 
-    const result = chooseSchedulingParameters(schedule, service);
+    const result = chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service, 'HealthcareService'));
     expect(result?.duration).toBe(30);
   });
 
@@ -818,7 +829,10 @@ describe('chooseSchedulingParameters', () => {
       ],
     };
 
-    const result = chooseSchedulingParameters(schedule, targetService);
+    const result = chooseSchedulingParameters(
+      withPath(schedule, 'Schedule'),
+      withPath(targetService, 'HealthcareService')
+    );
     expect(result?.duration).toBe(45);
   });
 
@@ -853,7 +867,7 @@ describe('chooseSchedulingParameters', () => {
     };
 
     // HealthcareService says 30 min — Schedule's 60 min should win
-    const result = chooseSchedulingParameters(schedule, service);
+    const result = chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service, 'HealthcareService'));
     expect(result?.duration).toBe(60);
   });
 
@@ -894,7 +908,7 @@ describe('chooseSchedulingParameters', () => {
       ],
     };
 
-    const result = chooseSchedulingParameters(schedule, service1);
+    const result = chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service1, 'HealthcareService'));
     expect(result?.duration).toBe(60);
   });
 });
