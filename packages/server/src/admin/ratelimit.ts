@@ -27,9 +27,7 @@ export async function getRateLimitStatusHandler(req: Request, res: Response): Pr
   const membershipIds = req.query.membershipId;
   let idsArray: string[] | undefined;
   if (membershipIds !== undefined) {
-    idsArray = Array.isArray(membershipIds)
-      ? (membershipIds as string[])
-      : [membershipIds as string];
+    idsArray = Array.isArray(membershipIds) ? (membershipIds as string[]) : [membershipIds as string];
   }
 
   let memberships: ProjectMembership[];

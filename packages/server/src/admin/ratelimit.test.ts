@@ -97,9 +97,7 @@ describe('Rate limit status endpoint', () => {
     const ids = memberships.slice(0, 2).map((m: ProjectMembership) => m.id);
 
     const res = await request(app)
-      .get(
-        `/admin/projects/${admin.project.id}/rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`
-      )
+      .get(`/admin/projects/${admin.project.id}/rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
@@ -115,9 +113,7 @@ describe('Rate limit status endpoint', () => {
 
   test('Shows consumed points after FHIR activity', async () => {
     // Make some FHIR requests to consume rate limit points
-    await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', `Bearer ${admin.accessToken}`);
+    await request(app).get('/fhir/R4/Patient').set('Authorization', `Bearer ${admin.accessToken}`);
 
     const res = await request(app)
       .get(`/admin/projects/${admin.project.id}/rate-limits`)
@@ -157,9 +153,7 @@ describe('Rate limit status endpoint', () => {
 
     // Try to query it from the first project
     const res = await request(app)
-      .get(
-        `/admin/projects/${admin.project.id}/rate-limits?membershipId=${otherMembership.id}`
-      )
+      .get(`/admin/projects/${admin.project.id}/rate-limits?membershipId=${otherMembership.id}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     // Should fail because the membership doesn't belong to this project
