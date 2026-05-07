@@ -6,14 +6,12 @@ import type { Construct } from 'constructs';
 
 const malwareScanStatusTagKey = 'GuardDutyMalwareScanStatus';
 const noThreatsFoundStatus = 'NO_THREATS_FOUND';
-const maxScanPrefixes = 5;
 const servicePrincipal = 'malware-protection-plan.guardduty.amazonaws.com';
 const sessionName = 'GuardDutyMalwareProtection';
 
 export interface GuardDutyMalwareProtectionProps {
   bucket: s3.IBucket;
   consumerPrincipals?: iam.IPrincipal[];
-  scanPrefixes?: string[];
 }
 
 export interface GuardDutyMalwareProtection {
@@ -26,10 +24,6 @@ export function buildGuardDutyMalwareProtection(
   id: string,
   props: GuardDutyMalwareProtectionProps
 ): GuardDutyMalwareProtection {
-  if (props.scanPrefixes && props.scanPrefixes.length > maxScanPrefixes) {
-    throw new Error(`scanPrefixes supports at most ${maxScanPrefixes} prefixes`);
-  }
-
   const scanRole = new iam.Role(construct, `${id}Role`, {
     assumedBy: new iam.ServicePrincipal(servicePrincipal),
   });
@@ -45,7 +39,6 @@ export function buildGuardDutyMalwareProtection(
     protectedResource: {
       s3Bucket: {
         bucketName: props.bucket.bucketName,
-        objectPrefixes: props.scanPrefixes,
       },
     },
     role: scanRole.roleArn,
