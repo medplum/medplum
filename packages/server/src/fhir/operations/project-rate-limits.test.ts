@@ -114,9 +114,7 @@ describe('Project $rate-limits operation', () => {
     const ids = memberships.slice(0, 2).map((m: ProjectMembership) => m.id);
 
     const res = await request(app)
-      .get(
-        `/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`
-      )
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).toBe(200);
@@ -132,9 +130,7 @@ describe('Project $rate-limits operation', () => {
   });
 
   test('Shows consumed points after FHIR activity', async () => {
-    await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', `Bearer ${admin.accessToken}`);
+    await request(app).get('/fhir/R4/Patient').set('Authorization', `Bearer ${admin.accessToken}`);
 
     const res = await request(app)
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
@@ -173,9 +169,7 @@ describe('Project $rate-limits operation', () => {
     const otherMembership = membershipsRes.body.entry[0].resource as ProjectMembership;
 
     const res = await request(app)
-      .get(
-        `/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${otherMembership.id}`
-      )
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${otherMembership.id}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
     expect(res.status).not.toBe(200);
