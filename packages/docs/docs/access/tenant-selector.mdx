@@ -23,18 +23,12 @@ This guide describes three common approaches and how to implement a tenant selec
 Use the decision tree to pick the option that fits your product, then jump to that section for implementation details.
 
 ```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    Q1{"Need hard PHI isolation\nat the API level?"}
-    Q2{"Need any\ntenant-scoped views?"}
-    O1["Option 1<br/>Strict Isolation<br/>(separate logins)"]
-    O2["Option 2<br/>Single Account +<br/>Tenant Selector"]
-    O3["Option 3<br/>Unified View<br/>(no selector)"]
-
-    Q1 -->|Yes| O1
-    Q1 -->|No| Q2
-    Q2 -->|Yes| O2
-    Q2 -->|No| O3
+%%{init: {'theme': 'neutral', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    Q1{"Hard PHI isolation?"} -->|Yes| O1[Option 1: Strict Isolation]
+    Q1 -->|No| Q2{"Tenant-scoped views?"}
+    Q2 -->|Yes| O2[Option 2: Tenant Selector]
+    Q2 -->|No| O3[Option 3: Unified View]
 
     style O1 fill:#fce4ec
     style O2 fill:#e8f5e9
@@ -42,7 +36,7 @@ flowchart TB
 ```
 
 | | Option 1: Strict Isolation | Option 2: Single Account + Selector | Option 3: Unified View |
-|---|---|---|---|
+| :--- | :--- | :--- | :--- |
 | API-level tenant isolation | Strongest (one tenant per token) | Allowed tenants enforced; UI scopes within them | None beyond the project |
 | Consolidated cross-tenant views | Difficult | Supported (when UI omits the filter) | Default |
 | Tenant-scoped PHI screens | Yes (always) | Yes (when UI applies the filter) | No |
@@ -58,29 +52,16 @@ flowchart TB
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
 flowchart TB
-    U([Practitioner])
-    PM[ProjectMembership]
-    AT["UI sets Active Tenant = Org B"]
-
-    U --> PM
-    U --> AT
-
-    OA[Org A]
-    OB[Org B]
-    OC[Org C]
-
-    PM -->|allowed| OA
-    PM -->|allowed| OB
-    PM -->|allowed| OC
-
-    AT -.->|"filter applied to queries"| OB
+    U([Practitioner]) --> PM[ProjectMembership]
+    PM --> OA[Org A]
+    PM --> OB["Org B<br/>★ Active Tenant"]
+    PM --> OC[Org C]
 
     style PM fill:#e1f5ff
-    style AT fill:#e8f5e9
-    style OB fill:#fff4e1
+    style OB fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
 ```
 
-_`ProjectMembership` controls which tenants a user may access (allowed tenants). The application separately tracks which tenant is currently selected (active tenant) and applies it as a filter on PHI queries._
+_`ProjectMembership` defines the allowed tenants (Org A, B, C). The application picks one as the active tenant (Org B above) and uses it as the default filter on PHI queries._
 
 When you build a "tenant selector", you're choosing and persisting the active tenant.
 
@@ -181,27 +162,18 @@ Goal: One login (`ProjectMembership`) can access one or multiple defined tenants
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
 flowchart TB
-    U([Practitioner])
-    PM["Single ProjectMembership<br/>(Org A + Org B allowed)"]
-    AT["Active Tenant<br/>(stored in UserConfiguration)"]
+    U([Practitioner]) --> PM["Single ProjectMembership<br/>(Org A + Org B allowed)"]
+    PM --> OA[Org A patients]
+    PM --> OB["Org B patients<br/>★ Active Tenant"]
 
-    OA[Org A patients]
-    OB[Org B patients]
-
-    U --> PM
-    U --> AT
-
-    PM -->|allowed| OA
-    PM -->|allowed| OB
-
-    AT -.->|"Org A selected"| OA
-    AT -.->|"Org B selected"| OB
+    Sel[/"UI Selector<br/>(stored in UserConfiguration)"/] --> OB
 
     style PM fill:#e1f5ff
-    style AT fill:#e8f5e9
+    style OB fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style Sel fill:#fff4e1
 ```
 
-_One membership grants access to multiple tenants. The application UI chooses the active tenant and applies it as a query filter._
+_One membership grants access to multiple tenants. The UI selector designates one as the active tenant; the user can switch it without re-authenticating._
 
 ### How to Grant Access to Multiple Tenants
 
@@ -262,6 +234,18 @@ Examples (MSO model using `Organization` as tenant):
 ## Option 3: Unified View (No Tenant Context)
 
 Goal: Treat the project as the only boundary; the user always sees everything they're allowed to see.
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+flowchart TB
+    U([Practitioner]) --> PM["Single ProjectMembership"]
+    PM --> All["Patients across<br/>Org A + Org B + Org C<br/>(no tenant filter)"]
+
+    style PM fill:#e1f5ff
+    style All fill:#e8f5e9
+```
+
+_The user sees a single consolidated view of all allowed tenants. There is no active-tenant concept and no UI selector._
 
 ### When to Choose It
 
