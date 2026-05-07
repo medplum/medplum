@@ -57,9 +57,9 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
   const { patient: defaultPatient, encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
-  const [patient, setPatient] = useState<Patient | undefined>();
   const [requester, setRequester] = useState<Practitioner | undefined>(medplum.getProfile() as Practitioner);
   const defaultPatientResource = useResource(defaultPatient);
+  const [patient, setPatient] = useState<Patient | undefined>(defaultPatientResource);
   const encounterResource = useResource(encounter);
   const taskResource = useResource(task);
   const labOrderReturn = useHealthGorillaLabOrder({
@@ -95,12 +95,6 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       prevTestsRef.current = tests;
     }
   }, [tests, setTests]);
-
-  useEffect(() => {
-    if (defaultPatientResource) {
-      setPatient(defaultPatientResource);
-    }
-  }, [defaultPatientResource]);
 
   useEffect(() => {
     if (patientId) {

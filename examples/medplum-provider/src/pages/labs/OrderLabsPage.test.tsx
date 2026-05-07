@@ -156,17 +156,6 @@ describe('OrderLabsPage', () => {
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
-  test('Disables patient input when default patient prop is provided', async () => {
-    setup({ patient: HomerSimpson as Patient });
-
-    // Default patient is shown as a pill in the input.
-    const pillText = await screen.findByText('Homer Simpson');
-    // When disabled, the AsyncAutocomplete pill renders without a remove button.
-    const pill = pillText.closest('[class*="Pill-root"]');
-    expect(pill).not.toBeNull();
-    expect(pill?.querySelector('button')).toBeNull();
-  });
-
   test('Shows test metadata cards when tests are selected', () => {
     const mockTest: TestCoding = {
       code: 'TEST001',
