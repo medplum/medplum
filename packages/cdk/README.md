@@ -83,3 +83,26 @@ Open the `public.pem` file and ensure that it starts with `-----BEGIN PUBLIC KEY
 Add the public key to the CDK infrastructure configuration.
 
 Add the private key to the server configuration settings (JSON, AWS Parameter Store, etc).
+
+### GuardDuty Malware Protection for S3
+
+`buildGuardDutyMalwareProtection` attaches GuardDuty Malware Protection for S3 to an existing bucket, creates the required IAM scan role, and adds a tag-based bucket policy that can deny reads until GuardDuty tags an object with `GuardDutyMalwareScanStatus=NO_THREATS_FOUND`.
+
+Example:
+
+```ts
+import { aws_iam as iam, aws_s3 as s3 } from 'aws-cdk-lib';
+import { buildGuardDutyMalwareProtection } from '@medplum/cdk';
+
+const bucket = new s3.Bucket(this, 'Uploads', {
+  encryption: s3.BucketEncryption.S3_MANAGED,
+});
+
+buildGuardDutyMalwareProtection(this, 'UploadsGuardDuty', {
+  bucket,
+  consumerPrincipals: [new iam.AccountRootPrincipal()],
+  scanPrefixes: ['uploads/', 'bulk-import/'],
+});
+```
+
+GuardDuty can scan all objects or up to 5 prefixes. Prefix scoping reduces cost when only part of a bucket receives untrusted uploads. Tagging must be enabled when the protection plan is created; objects uploaded before the plan exists are not retroactively tagged.

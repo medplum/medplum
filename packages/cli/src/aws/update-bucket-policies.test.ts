@@ -232,5 +232,54 @@ describe('update-bucket-policies command', () => {
       );
       expect(console.log).toHaveBeenCalledWith('Dry run - skipping updates');
     });
+
+    test('Storage GuardDuty malware protection', async () => {
+      console.log = jest.fn();
+      await updateBucketPolicy(
+        'Storage',
+        { PhysicalResourceId: 'storage.test.medplum.com' } as StackResource,
+        { PhysicalResourceId: 'dist-123' } as StackResource,
+        { PhysicalResourceId: 'oai-123' } as StackResource,
+        { dryrun: true, guarddutyMalwareProtection: true }
+      );
+
+      expect(console.log).toHaveBeenCalledWith('Storage bucket policy:');
+      expect(console.log).toHaveBeenCalledWith(
+        JSON.stringify(
+          {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: {
+                  AWS: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity oai-123',
+                },
+                Action: ['s3:GetObject*', 's3:GetBucket*', 's3:List*'],
+                Resource: [
+                  'arn:aws:s3:::storage.test.medplum.com',
+                  'arn:aws:s3:::storage.test.medplum.com/*',
+                ],
+              },
+              {
+                Sid: 'GuardDutyMalwareProtectionReadGate',
+                Effect: 'Deny',
+                Principal: {
+                  AWS: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity oai-123',
+                },
+                Action: ['s3:GetObject', 's3:GetObjectVersion'],
+                Resource: 'arn:aws:s3:::storage.test.medplum.com/*',
+                Condition: {
+                  StringNotEquals: {
+                    's3:ExistingObjectTag/GuardDutyMalwareScanStatus': 'NO_THREATS_FOUND',
+                  },
+                },
+              },
+            ],
+          },
+          undefined,
+          2
+        )
+      );
+    });
   });
 });

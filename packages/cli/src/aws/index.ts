@@ -84,6 +84,10 @@ export function buildAwsCommand(): MedplumCommand {
     .argument('<tag>', 'The Medplum stack tag')
     .option('--file [file]', 'Specifies the config file to use. If not specified, the file is based on the tag.')
     .option(
+      '--guardduty-malware-protection',
+      'Adds the GuardDuty Malware Protection for S3 read-gating deny to the storage bucket policy.'
+    )
+    .option(
       '--dryrun',
       'Displays the operations that would be performed using the specified command without actually running them.'
     )
