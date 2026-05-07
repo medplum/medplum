@@ -112,7 +112,6 @@ describe('Hl7MessageTracker', () => {
         port,
         log: mockLogger,
         messageTracker: tracker,
-        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const message = Hl7Message.parse(
@@ -144,7 +143,6 @@ describe('Hl7MessageTracker', () => {
         port,
         log: mockLogger,
         messageTracker: tracker,
-        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Establish the connection first to avoid timing issues
@@ -214,7 +212,6 @@ describe('Hl7MessageTracker', () => {
         port,
         log: mockLogger,
         messageTracker: tracker,
-        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Manually register the message in the tracker with a promise we control
@@ -242,7 +239,6 @@ describe('Hl7MessageTracker', () => {
         port,
         log: mockLogger,
         messageTracker: tracker,
-        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Send the same message on client2 — the server ACKs it
@@ -363,7 +359,6 @@ describe('Hl7MessageTracker', () => {
         port,
         log: mockLogger,
         messageTracker: tracker,
-        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Establish connection first
@@ -417,8 +412,9 @@ describe('Hl7MessageTracker', () => {
         port,
         log: mockLogger,
         messageTracker: tracker,
-        heartbeatEmitter: mockHeartbeatEmitter,
       });
+
+      client.startTrackingStats({ heartbeatEmitter: mockHeartbeatEmitter });
 
       const message = Hl7Message.parse(
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -428,8 +424,8 @@ describe('Hl7MessageTracker', () => {
       const response = await client.sendAndWait(message);
       expect(response).toBeDefined();
 
-      expect(client.stats.getSampleCount()).toBe(1);
-      expect(client.stats.getPendingCount()).toBe(0);
+      expect(client.stats?.getSampleCount()).toBe(1);
+      expect(client.stats?.getPendingCount()).toBe(0);
       expect(tracker.getPendingMessageCount()).toBe(0);
 
       await client.close();

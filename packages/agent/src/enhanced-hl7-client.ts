@@ -14,22 +14,24 @@ import { ChannelStatsTracker } from './channel-stats-tracker';
 import { Hl7MessageTracker, TrackedHl7Connection } from './hl7-message-tracker';
 import type { HeartbeatEmitter } from './types';
 
+export interface ClientStatsTrackingOptions {
+  heartbeatEmitter: HeartbeatEmitter;
+}
+
 export interface ExtendedHl7ClientOptions extends Hl7ClientOptions {
   messageTracker?: Hl7MessageTracker;
   log?: ILogger;
-  heartbeatEmitter: HeartbeatEmitter;
 }
 
 export class EnhancedHl7Client extends Hl7Client {
   readonly messageTracker: Hl7MessageTracker;
-  readonly stats: ChannelStatsTracker;
+  stats?: ChannelStatsTracker;
   log?: ILogger;
 
   constructor(options: ExtendedHl7ClientOptions) {
     super(options);
     this.messageTracker = options.messageTracker ?? new Hl7MessageTracker();
     this.log = options.log;
-    this.stats = new ChannelStatsTracker({ log: this.log, heartbeatEmitter: options.heartbeatEmitter });
   }
 
   protected override createConnection(
@@ -43,7 +45,7 @@ export class EnhancedHl7Client extends Hl7Client {
 
   send(msg: Hl7Message): Promise<void> {
     const msgControlId = msg.getSegment('MSH')?.getField(10)?.toString();
-    if (msgControlId) {
+    if (this.stats && msgControlId) {
       this.stats.recordMessageSent(msgControlId);
     }
     return super.send(msg);
@@ -51,18 +53,25 @@ export class EnhancedHl7Client extends Hl7Client {
 
   async sendAndWait(msg: Hl7Message, options?: SendAndWaitOptions): Promise<Hl7Message> {
     const msgControlId = msg.getSegment('MSH')?.getField(10)?.toString();
-    if (msgControlId) {
+    if (this.stats && msgControlId) {
       this.stats.recordMessageSent(msgControlId);
     }
     const response = await super.sendAndWait(msg, options);
-    if (msgControlId) {
+    if (this.stats && msgControlId) {
       this.stats.recordAckReceived(msgControlId);
     }
     return response;
   }
 
-  override async close(): Promise<void> {
-    this.stats.cleanup();
-    return super.close();
+  startTrackingStats(options: ClientStatsTrackingOptions): void {
+    if (this.stats) {
+      return;
+    }
+    this.stats = new ChannelStatsTracker({ log: this.log, ...options });
+  }
+
+  stopTrackingStats(): void {
+    this.stats?.cleanup();
+    this.stats = undefined;
   }
 }

@@ -40,6 +40,7 @@ export class Hl7ClientPool {
   private nextClientIdx: number = 0;
   private readonly heartbeatEmitter: HeartbeatEmitter;
   readonly messageTracker: Hl7MessageTracker;
+  private trackingStats = false;
   private gcListener: (() => void) | undefined;
 
   constructor(options: Hl7ClientPoolOptions) {
@@ -246,12 +247,15 @@ export class Hl7ClientPool {
       keepAlive: this.keepAlive,
       log: this.log,
       messageTracker: this.messageTracker,
-      heartbeatEmitter: this.heartbeatEmitter,
     });
 
     // If GC is running, we should add the current timestamp as last used for this client
     if (this.gcListener) {
       this.lastUsedTimestamps.set(client, Date.now());
+    }
+
+    if (this.trackingStats) {
+      client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
     }
 
     this.clients.push(client);
@@ -290,11 +294,32 @@ export class Hl7ClientPool {
     return this.maxClients;
   }
 
-  getPoolStats(): ChannelStats {
-    const allRttSamples = this.clients.flatMap((client) => client.stats.getRttSamples());
+  startTrackingStats(): void {
+    this.trackingStats = true;
+    for (const client of this.clients) {
+      client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
+    }
+  }
+
+  stopTrackingStats(): void {
+    this.trackingStats = false;
+    for (const client of this.clients) {
+      client.stopTrackingStats();
+    }
+  }
+
+  isTrackingStats(): boolean {
+    return this.trackingStats;
+  }
+
+  getPoolStats(): ChannelStats | undefined {
+    if (!this.trackingStats) {
+      return undefined;
+    }
+    const allRttSamples = this.clients.flatMap((client) => client.stats?.getRttSamples() ?? []);
     let totalPendingCount = 0;
     for (const client of this.clients) {
-      totalPendingCount += client.stats.getPendingCount();
+      totalPendingCount += client.stats?.getPendingCount() ?? 0;
     }
     return { rtt: calculateRttStats(allRttSamples, totalPendingCount) };
   }

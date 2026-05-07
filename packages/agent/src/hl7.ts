@@ -41,7 +41,7 @@ export class AgentHl7Channel extends BaseChannel {
   readonly log: ILogger;
   readonly channelLog: ILogger;
   private prefix: string;
-  stats: ChannelStatsTracker;
+  stats?: ChannelStatsTracker;
   private appLevelAckMode: AppLevelAckMode = 'AL'; // Default app level ack mode is AL (Always)
   private assignSeqNo: boolean = false;
   private lastSeqNo = -1;
@@ -56,7 +56,6 @@ export class AgentHl7Channel extends BaseChannel {
     this.prefix = `[HL7:${definition.name}] `;
     this.log = app.log.clone({ options: { prefix: this.prefix } });
     this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
-    this.stats = new ChannelStatsTracker({ heartbeatEmitter: app.heartbeatEmitter, log: this.log });
   }
 
   async start(): Promise<void> {
@@ -67,7 +66,7 @@ export class AgentHl7Channel extends BaseChannel {
 
     const address = new URL(this.getEndpoint().address);
     this.log.info(`Channel starting on ${address}...`);
-    this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
+    this.configureStatsTracker();
     this.configureHl7ServerAndConnections();
     await this.server.start(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
@@ -80,7 +79,7 @@ export class AgentHl7Channel extends BaseChannel {
     this.log.info('Channel stopping...');
     await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
-    this.stats.cleanup();
+    this.stats?.cleanup();
     this.started = false;
     this.log.info('Channel stopped successfully');
   }
@@ -121,7 +120,7 @@ export class AgentHl7Channel extends BaseChannel {
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
 
       if (msgControlId) {
-        this.stats.recordAckReceived(msgControlId);
+        this.stats?.recordAckReceived(msgControlId);
       }
     } else {
       this.log.warn(`Attempted to send message to disconnected remote: ${msg.remote}`);
@@ -135,6 +134,8 @@ export class AgentHl7Channel extends BaseChannel {
     this.prefix = `[HL7:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    this.configureStatsTracker();
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
@@ -158,6 +159,18 @@ export class AgentHl7Channel extends BaseChannel {
       return false;
     }
     return true;
+  }
+
+  private configureStatsTracker(): void {
+    const logStatsFreqSecs =
+      this.app.getAgentConfig()?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger ?? -1;
+
+    if (logStatsFreqSecs > 0 && !this.stats) {
+      this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
+    } else if (logStatsFreqSecs <= 0 && this.stats) {
+      this.stats.cleanup();
+      this.stats = undefined;
+    }
   }
 
   private configureHl7ServerAndConnections(): void {
@@ -251,7 +264,7 @@ export class AgentHl7ChannelConnection {
 
       // Log stats
       if (msgControlId) {
-        this.channel.stats.recordMessageSent(msgControlId);
+        this.channel.stats?.recordMessageSent(msgControlId);
       }
     } catch (err) {
       this.channel.log.error(`HL7 error occurred - check channel logs`);

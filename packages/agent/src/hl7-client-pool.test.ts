@@ -59,7 +59,15 @@ function createFakeClient({
           getPendingMessageCount: jest.fn().mockReturnValue(pendingMessages ?? 0),
         }
       : undefined,
-    stats: (stats ?? { getRttSamples: () => [], getPendingCount: () => 0 }) as any,
+    startTrackingStats: jest.fn(() => {
+      if (stats) {
+        client.stats = stats as any;
+      }
+    }),
+    stopTrackingStats: jest.fn(() => {
+      client.stats = undefined;
+    }),
+    stats: stats as any,
   } as unknown as EnhancedHl7Client;
 
   return client;
@@ -844,12 +852,15 @@ describe('Hl7ClientPool', () => {
 
       const clientA = createFakeClient({ stats: clientAStats });
       const clientB = createFakeClient({ stats: clientBStats });
+      const clientWithoutStats = createFakeClient();
 
-      pool.getClients().push(clientA, clientB);
+      pool.getClients().push(clientA, clientB, clientWithoutStats);
+
+      pool.startTrackingStats();
 
       const poolStats = pool.getPoolStats();
       expect(poolStats).toBeDefined();
-      expect(poolStats.rtt).toStrictEqual({
+      expect(poolStats?.rtt).toStrictEqual({
         count: 3,
         min: 100,
         max: 200,
