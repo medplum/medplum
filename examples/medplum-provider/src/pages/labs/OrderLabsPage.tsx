@@ -45,6 +45,7 @@ async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: Ser
 }
 
 export interface OrderLabsPageProps {
+  patient?: Patient | Reference<Patient> | undefined;
   encounter?: Encounter | Reference<Encounter> | undefined;
   task?: Task | Reference<Task> | undefined;
   tests?: TestCoding[] | undefined;
@@ -53,11 +54,12 @@ export interface OrderLabsPageProps {
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
-  const { encounter, task, tests, performingLab, onSubmitLabOrder } = props;
+  const { patient: defaultPatient, encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
-  const [patient, setPatient] = useState<Patient | undefined>();
   const [requester, setRequester] = useState<Practitioner | undefined>(medplum.getProfile() as Practitioner);
+  const defaultPatientResource = useResource(defaultPatient);
+  const [patient, setPatient] = useState<Patient | undefined>(defaultPatientResource);
   const encounterResource = useResource(encounter);
   const taskResource = useResource(task);
   const labOrderReturn = useHealthGorillaLabOrder({
@@ -163,6 +165,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             </Input.Wrapper>
             <Input.Wrapper label="Patient" required error={createError?.validation?.patient?.message}>
               <ResourceInput<Patient>
+                key={patient?.id ?? 'patient'}
                 resourceType="Patient"
                 name="patient"
                 defaultValue={patient}
@@ -202,7 +205,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
+                binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {
