@@ -18,6 +18,38 @@ In an MSO Access Control model, a single practitioner often has access to multip
 
 This guide describes three common approaches and how to implement a tenant selector when you need one.
 
+## At a Glance
+
+Use the decision tree to pick the option that fits your product, then jump to that section for implementation details.
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+flowchart TB
+    Q1{"Need hard PHI isolation\nat the API level?"}
+    Q2{"Need any\ntenant-scoped views?"}
+    O1["Option 1<br/>Strict Isolation<br/>(separate logins)"]
+    O2["Option 2<br/>Single Account +<br/>Tenant Selector"]
+    O3["Option 3<br/>Unified View<br/>(no selector)"]
+
+    Q1 -->|Yes| O1
+    Q1 -->|No| Q2
+    Q2 -->|Yes| O2
+    Q2 -->|No| O3
+
+    style O1 fill:#fce4ec
+    style O2 fill:#e8f5e9
+    style O3 fill:#e1f5ff
+```
+
+| | Option 1: Strict Isolation | Option 2: Single Account + Selector | Option 3: Unified View |
+|---|---|---|---|
+| API-level tenant isolation | Strongest (one tenant per token) | Allowed tenants enforced; UI scopes within them | None beyond the project |
+| Consolidated cross-tenant views | Difficult | Supported (when UI omits the filter) | Default |
+| Tenant-scoped PHI screens | Yes (always) | Yes (when UI applies the filter) | No |
+| Login / membership model | One membership per tenant per user | One membership covering multiple tenants | One membership covering all tenants |
+| Tenant switching | Re-auth or saved-login swap | UI control (no re-auth) | N/A |
+| Implementation complexity | Highest | Medium | Lowest |
+
 ## Key Concept: Allowed Tenants vs Active Tenant
 
 - Allowed tenants: The set of tenant references the user is permitted to access (enforced by `ProjectMembership` + `AccessPolicy`).
@@ -26,32 +58,29 @@ This guide describes three common approaches and how to implement a tenant selec
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
 flowchart TB
-    User([Practitioner])
+    U([Practitioner])
+    PM[ProjectMembership]
+    AT["UI sets Active Tenant = Org B"]
 
-    subgraph API["API Layer (ProjectMembership + AccessPolicy)"]
-        PM[ProjectMembership]
-        OA[Org A]
-        OB[Org B]
-        OC[Org C]
-        PM --> OA
-        PM --> OB
-        PM --> OC
-    end
+    U --> PM
+    U --> AT
 
-    subgraph App["Application Layer"]
-        AT["Active Tenant = Org B"]
-        Q["Patient?_compartment=Organization/org-b"]
-        AT --> Q
-    end
+    OA[Org A]
+    OB[Org B]
+    OC[Org C]
 
-    User --> PM
-    User --> AT
+    PM -->|allowed| OA
+    PM -->|allowed| OB
+    PM -->|allowed| OC
 
-    style API fill:#e1f5ff
-    style App fill:#e8f5e9
+    AT -.->|"filter applied to queries"| OB
+
+    style PM fill:#e1f5ff
+    style AT fill:#e8f5e9
+    style OB fill:#fff4e1
 ```
 
-_`ProjectMembership` controls which tenants a user may access (allowed tenants). The application separately tracks which tenant is currently selected (active tenant)._
+_`ProjectMembership` controls which tenants a user may access (allowed tenants). The application separately tracks which tenant is currently selected (active tenant) and applies it as a filter on PHI queries._
 
 When you build a "tenant selector", you're choosing and persisting the active tenant.
 
@@ -67,20 +96,18 @@ Goal: Hard isolation of PHI at the API level. At any given time, the "active ten
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
 flowchart TB
-    User([Practitioner])
+    U([Practitioner])
 
-    subgraph L1["Login 1 — Org A"]
-        PM1["ProjectMembership\nOrg A only"]
-    end
+    L1["Login 1<br/>ProjectMembership: Org A only"]
+    L2["Login 2<br/>ProjectMembership: Org B only"]
 
-    subgraph L2["Login 2 — Org B"]
-        PM2["ProjectMembership\nOrg B only"]
-    end
+    OA[Org A patients]
+    OB[Org B patients]
 
-    User --> L1
-    User --> L2
-    PM1 --> OA[Org A Patients]
-    PM2 --> OB[Org B Patients]
+    U --> L1
+    U --> L2
+    L1 --> OA
+    L2 --> OB
 
     style L1 fill:#e8f5e9
     style L2 fill:#e1f5ff
@@ -137,18 +164,6 @@ Example: invite a practitioner with one organization-scoped policy and a single 
   {ExampleCode}
 </MedplumCodeBlock>
 
-
-
-### Pros / Cons
-
-- Pros:
-  - Strongest isolation
-  - Reduced risk of accidental cross-tenant PHI exposure.
-- Cons:
-  - More complicated implementation
-  - Consolidated cross-tenant workflows (e.g., "schedule for a User that might have appointments across Clinic A + Clinic B") become more challenging
-  - Requires reauthentication to switch tenants (if login is not cached)
-
 ### Selector UX
 
 Often resembles the Medplum App profile selector: users switch "logins" to switch tenant context.
@@ -166,34 +181,27 @@ Goal: One login (`ProjectMembership`) can access one or multiple defined tenants
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
 flowchart TB
-    User([Practitioner])
-    PM["Single ProjectMembership\n(Org A + Org B allowed)"]
-    User --> PM
-    PM --> OA[Org A Patients]
-    PM --> OB[Org B Patients]
+    U([Practitioner])
+    PM["Single ProjectMembership<br/>(Org A + Org B allowed)"]
+    AT["Active Tenant<br/>(stored in UserConfiguration)"]
 
-    subgraph App["Application UI"]
-        AT["Active Tenant\n(stored in UserConfiguration)"]
-        QA["?_compartment=Organization/org-a"]
-        QB["?_compartment=Organization/org-b"]
-        AT -->|"Org A selected"| QA
-        AT -->|"Org B selected"| QB
-    end
+    OA[Org A patients]
+    OB[Org B patients]
 
-    User --> AT
+    U --> PM
+    U --> AT
 
-    style App fill:#e8f5e9
+    PM -->|allowed| OA
+    PM -->|allowed| OB
+
+    AT -.->|"Org A selected"| OA
+    AT -.->|"Org B selected"| OB
+
+    style PM fill:#e1f5ff
+    style AT fill:#e8f5e9
 ```
 
 _One membership grants access to multiple tenants. The application UI chooses the active tenant and applies it as a query filter._
-
-### Pros / Cons
-
-- Pros:
-  - Enables consolidated experiences (cross-tenant scheduling, reporting dashboards)
-  - Simpler login/user management
-- Cons:
-  - Isolation is no longer absolute—your app must be careful about query construction, caching, and UI state to avoid accidental cross-tenant disclosure.
 
 ### How to Grant Access to Multiple Tenants
 
@@ -255,44 +263,10 @@ Examples (MSO model using `Organization` as tenant):
 
 Goal: Treat the project as the only boundary; the user always sees everything they're allowed to see.
 
-### Pros / Cons
-
-- Pros:
-  - Simplest UX and implementation
-  - Consolidated views "just work". No need to switch between logins/tenants.
-- Cons:
-  - No API level tenant isolation between a User's "allowed tenants"
-
-
 ### When to Choose It
 
 - Your product model is truly unified (e.g., one clinical ops team across all clinics).
 - Your contracts and workflows do not require tenant-scoped PHI screens.
-
-## Choosing an Option
-
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    Q1{"Need hard PHI isolation\nat the API level?"}
-    Q2{"Need any\ntenant-scoped views?"}
-    O1["Option 1\nStrict Isolation\n(separate logins)"]
-    O2["Option 2\nSingle Account +\nTenant Selector"]
-    O3["Option 3\nUnified View\n(no selector)"]
-
-    Q1 -->|Yes| O1
-    Q1 -->|No| Q2
-    Q2 -->|Yes| O2
-    Q2 -->|No| O3
-
-    style O1 fill:#fce4ec
-    style O2 fill:#e8f5e9
-    style O3 fill:#e1f5ff
-```
-
-- Choose Option 1 when you need hard isolation between even a User's "allowed tenants" and can live without consolidated views.
-- Choose Option 2 when you need both tenant-scoped PHI and some consolidated views (e.g., cross-tenant scheduling, reporting dashboards).
-- Choose Option 3 when your experience is intentionally cross-tenant by default (e.g., a care coordinator who needs to see all patients across multiple clinics they manage).
 
 ## See Also
 
