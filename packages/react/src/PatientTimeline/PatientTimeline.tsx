@@ -20,6 +20,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
     const _count = 100;
     return Promise.allSettled([
       medplum.readHistory('Patient', id),
+      medplum.search('ClinicalImpression', { subject: ref, _count }),
       medplum.search('Communication', { subject: ref, _count }),
       medplum.search('Device', { patient: ref, _count }),
       medplum.search('DeviceRequest', { patient: ref, _count }),

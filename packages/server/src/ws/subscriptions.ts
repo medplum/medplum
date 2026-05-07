@@ -13,7 +13,7 @@ import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
-import type { CacheEntry } from '../fhir/repo';
+import type { CacheEntry } from '../fhir/repository/resource-cache';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
