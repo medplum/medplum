@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export * from './access';
 export * from './agent';
+export * from './array';
 export * from './base-schema-utils';
 export * from './base64';
 export * from './bundle';

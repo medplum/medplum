@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import { arrayify } from './array';
 import type { Constraint } from './typeschema/types';
 
 const OK_ID = 'ok';
@@ -219,7 +220,7 @@ export function accepted(location: string): OperationOutcome {
   };
 }
 
-export function badRequest(details: string, expression?: string): OperationOutcome {
+export function badRequest(details: string, expression?: string | string[]): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     issue: [
@@ -229,7 +230,7 @@ export function badRequest(details: string, expression?: string): OperationOutco
         details: {
           text: details,
         },
-        ...(expression ? { expression: [expression] } : undefined),
+        ...(expression ? { expression: arrayify(expression) } : undefined),
       },
     ],
   };
