@@ -112,10 +112,7 @@ function parseQuotaResult(consumed: string | null, pttl: number, limit: number):
   };
 }
 
-function quotaParts(
-  quota: QuotaStatus | undefined,
-  limit: number
-): { name: string; valueInteger: number }[] {
+function quotaParts(quota: QuotaStatus | undefined, limit: number): { name: string; valueInteger: number }[] {
   if (!quota) {
     return [];
   }
