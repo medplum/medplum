@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { IssueSeverity, MedplumClient, MedplumClientOptions, WithId } from '@medplum/core';
-import { ContentType, EMPTY, isOk, isUUID } from '@medplum/core';
+import type {
+  AgentChannelStats,
+  AgentStats,
+  AgentStatValue,
+  IssueSeverity,
+  MedplumClient,
+  MedplumClientOptions,
+  WithId,
+} from '@medplum/core';
+import { ContentType, EMPTY, isOk, isUUID, normalizeErrorString } from '@medplum/core';
 import type { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
@@ -22,12 +30,13 @@ export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parame
   result: T;
 };
 
-export type CallAgentBulkOperationArgs<T extends Record<string, string>, R extends Parameters | OperationOutcome> = {
+export type CallAgentBulkOperationArgs<T extends Record<string, unknown>, R extends Parameters | OperationOutcome> = {
   operation: string;
   agentIds: string[];
   options: MedplumClientOptions & { criteria: string; output?: 'json' };
   params?: Record<string, string | boolean | number>;
   parseSuccessfulResponse: (response: AgentBulkOpResponse<R>) => T;
+  renderSuccessfulRows?: (rows: T[]) => void;
 };
 
 export type FailedRow = {
@@ -258,17 +267,105 @@ agentStatsCommand
       options,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<Parameters>) => {
         const { stats } = parseParameterValues(response.result, { required: ['stats'] });
+        let parsed: AgentStats | undefined;
+        try {
+          parsed = JSON.parse(stats) as AgentStats;
+        } catch (err) {
+          console.error(`Failed to parse stats for agent ${response.agent.id}: ${normalizeErrorString(err)}`);
+        }
         return {
           id: response.agent.id,
           name: response.agent.name,
-          stats,
+          stats: parsed,
         };
+      },
+      renderSuccessfulRows: (rows) => {
+        for (let i = 0; i < rows.length; i++) {
+          if (i > 0) {
+            console.info();
+          }
+          renderAgentStats(rows[i]);
+        }
       },
     });
   });
 
+const SUMMARY_STAT_KEYS = [
+  'live',
+  'ping',
+  'hl7ConnectionsOpen',
+  'hl7ClientCount',
+  'hl7QueueDepth',
+  'webSocketQueueDepth',
+  'outstandingHeartbeats',
+] as const satisfies readonly (keyof AgentStats)[];
+
+function formatStatValue(value: AgentStatValue | undefined): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return value.toString();
+}
+
+function buildChannelStatsRows(
+  entries: Record<string, AgentChannelStats> | undefined
+): Array<Record<string, number | string>> {
+  if (!entries) {
+    return [];
+  }
+  return Object.entries(entries)
+    .filter(([, value]) => value?.rtt)
+    .map(([name, value]) => ({
+      name,
+      count: value.rtt.count,
+      pending: value.rtt.pendingCount,
+      'min (ms)': value.rtt.min,
+      'avg (ms)': value.rtt.average,
+      'max (ms)': value.rtt.max,
+      'p50 (ms)': value.rtt.p50,
+      'p95 (ms)': value.rtt.p95,
+      'p99 (ms)': value.rtt.p99,
+    }));
+}
+
+function renderAgentStats(row: { id: string; name?: string; stats: AgentStats | undefined }): void {
+  const heading = row.name ? `${row.name} (${row.id})` : row.id;
+  console.info(`Agent: ${heading}`);
+  if (!row.stats) {
+    console.info('  (stats unavailable)');
+    return;
+  }
+
+  const summary: Record<string, string> = {};
+  for (const key of SUMMARY_STAT_KEYS) {
+    summary[key] = formatStatValue(row.stats[key]);
+  }
+  const knownKeys = new Set<string>([...SUMMARY_STAT_KEYS, 'channelStats', 'clientStats']);
+  for (const [key, value] of Object.entries(row.stats)) {
+    if (!knownKeys.has(key)) {
+      summary[key] = formatStatValue(value);
+    }
+  }
+  console.table(summary);
+
+  const channelRows = buildChannelStatsRows(row.stats.channelStats);
+  if (channelRows.length) {
+    console.info('Channel Stats:');
+    console.table(channelRows);
+  }
+
+  const clientRows = buildChannelStatsRows(row.stats.clientStats);
+  if (clientRows.length) {
+    console.info('Client Stats:');
+    console.table(clientRows);
+  }
+}
+
 export async function callAgentBulkOperation<
-  T extends Record<string, string>,
+  T extends Record<string, unknown>,
   R extends Parameters | OperationOutcome,
 >({
   operation,
@@ -276,6 +373,7 @@ export async function callAgentBulkOperation<
   options,
   params = {},
   parseSuccessfulResponse,
+  renderSuccessfulRows,
 }: CallAgentBulkOperationArgs<T, R>): Promise<void> {
   const normalized = parseEitherIdsOrCriteria(agentIds, options);
   const medplum = await createMedplumClient(options);
@@ -354,7 +452,15 @@ export async function callAgentBulkOperation<
   }
 
   console.info(`\n${successfulRows.length} successful response(s):\n`);
-  console.table(successfulRows.length ? successfulRows : 'No successful responses received');
+  if (renderSuccessfulRows) {
+    if (successfulRows.length) {
+      renderSuccessfulRows(successfulRows);
+    } else {
+      console.info('No successful responses received');
+    }
+  } else {
+    console.table(successfulRows.length ? successfulRows : 'No successful responses received');
+  }
   console.info();
 
   if (failedRows.length) {
