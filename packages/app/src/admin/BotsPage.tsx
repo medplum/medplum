@@ -16,9 +16,18 @@ export function BotsPage(): JSX.Element {
           <>
             <Paper withBorder p="sm" radius="sm" maw={520}>
               <Text size="sm" c="dimmed">
-                Please note that this list is limited to Bots that have a ProjectMembership. Bots that are run as user commonly do not have a ProjectMembership, and are not included, 
-                such as most Bots in Medplum-managed integrations. For a complete list of Bots, see <MedplumLink to="/Bot">Bots</MedplumLink>.
-                For more information, see <Anchor href="https://www.medplum.com/docs/bots/bot-run-as-user" target="_blank" rel="noopener noreferrer">running Bots as user</Anchor>.
+                Please note that this list is limited to Bots that have a ProjectMembership. Bots that are run as user
+                commonly do not have a ProjectMembership, and are not included, such as most Bots in Medplum-managed
+                integrations. For a complete list of Bots, see <MedplumLink to="/Bot">Bots</MedplumLink>. For more
+                information, see{' '}
+                <Anchor
+                  href="https://www.medplum.com/docs/bots/bot-run-as-user"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  running Bots as user
+                </Anchor>
+                .
               </Text>
             </Paper>
           </>

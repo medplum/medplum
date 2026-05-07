@@ -49,8 +49,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   }
 
   const showSegmentedControl = props.profileTypeOptions.length > 1;
-  const showToolbar =
-    showSegmentedControl || props.toolbarLeft !== undefined || props.toolbarRight !== undefined;
+  const showToolbar = showSegmentedControl || props.toolbarLeft !== undefined || props.toolbarRight !== undefined;
 
   return (
     <>
@@ -58,7 +57,11 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
         <Group justify="space-between" align="center" mb="md" wrap="nowrap">
           <Group gap="md" wrap="nowrap">
             {showSegmentedControl && (
-              <SegmentedControl value={profileType} onChange={handleProfileTypeChange} data={props.profileTypeOptions} />
+              <SegmentedControl
+                value={profileType}
+                onChange={handleProfileTypeChange}
+                data={props.profileTypeOptions}
+              />
             )}
             {props.toolbarLeft}
           </Group>
