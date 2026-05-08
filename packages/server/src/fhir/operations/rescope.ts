@@ -121,10 +121,13 @@ async function withRescopeTxn(
 ): Promise<WithId<User>> {
   await ctx.repo.readResource('User', userId);
   const systemRepo = getGlobalSystemRepo();
-  return systemRepo.withTransaction(async () => {
-    const user = await systemRepo.readResource<User>('User', userId);
-    return mutate(user, systemRepo);
-  });
+  return systemRepo.withTransaction(
+    async () => {
+      const user = await systemRepo.readResource<User>('User', userId);
+      return mutate(user, systemRepo);
+    },
+    { serializable: true }
+  );
 }
 
 /**
