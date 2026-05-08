@@ -117,10 +117,7 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
 async function withRescopeTxn(
   ctx: AuthenticatedRequestContext,
   userId: string,
-  mutate: (
-    user: WithId<User>,
-    systemRepo: ReturnType<typeof getGlobalSystemRepo>
-  ) => Promise<WithId<User>>
+  mutate: (user: WithId<User>, systemRepo: ReturnType<typeof getGlobalSystemRepo>) => Promise<WithId<User>>
 ): Promise<WithId<User>> {
   await ctx.repo.readResource('User', userId);
   const systemRepo = getGlobalSystemRepo();
