@@ -3981,8 +3981,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const codeVerifier = getRandomString().slice(0, 128);
     this.storage.setString('codeVerifier', codeVerifier);
 
-    console.log('CODY startPkce', { pkceState, codeVerifier });
-
     try {
       const arrayHash = await encryptSHA256(codeVerifier);
       const codeChallenge = arrayBufferToBase64(arrayHash)
