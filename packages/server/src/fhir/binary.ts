@@ -11,6 +11,7 @@ import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getBinaryStorage, getPresignedUrl } from '../storage/loader';
 import type { BinarySource } from '../storage/types';
+import { readAuthorizedBinary } from './binary-utils';
 import { sendOutcome } from './outcomes';
 import type { Repository } from './repo';
 import { sendFhirResponse } from './response';
@@ -29,7 +30,7 @@ binaryRouter.put('/:id', handleBinaryWriteRequest);
 binaryRouter.get('/:id', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
   const id = singularize(req.params.id) ?? '';
-  const binary = await ctx.repo.readResource<Binary>('Binary', id);
+  const binary = await readAuthorizedBinary(ctx.repo, id);
   await sendFhirResponse(req, res, allOk, binary);
 });
 

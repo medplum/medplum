@@ -62,9 +62,17 @@ export class BulkExporter {
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
     let writer = this.writers[resourceType];
     if (!writer) {
+      if (!this.resource) {
+        throw new Error('Export must be started before writing output');
+      }
       const binary = await this.repo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: NDJSON_CONTENT_TYPE,
+        // Bind export output Binary authorization to the export job context.
+        // Binary read/presign paths must be able to read this reference.
+        securityContext: {
+          reference: getReferenceString(this.resource),
+        },
       });
       writer = new BulkFileWriter(binary);
       this.writers[resourceType] = writer;
