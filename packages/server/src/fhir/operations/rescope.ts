@@ -18,7 +18,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getGlobalSystemRepo } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
-const op: OperationDefinition = {
+export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'user-rescope',
   status: 'active',
@@ -64,7 +64,7 @@ type RescopeParams = {
 
 export async function userRescopeOperation(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const params = parseInputParameters<RescopeParams>(op, req);
+  const params = parseInputParameters<RescopeParams>(operation, req);
   const userId = req.params.id;
 
   if (!userId) {
