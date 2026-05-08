@@ -102,6 +102,9 @@ function formatStatValue(value: Record<string, unknown> | boolean | number | str
   if (typeof value === 'object') {
     return JSON.stringify(value);
   }
+  if (typeof value === 'number') {
+    return value.toLocaleString();
+  }
   return value.toString();
 }
 
