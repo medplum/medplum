@@ -22,6 +22,7 @@ import type {
   RelatedPerson,
   Resource,
 } from '@medplum/fhirtypes';
+import { arrayify } from './array';
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
@@ -1284,18 +1285,6 @@ export function findResourceByCode(
       ? getCodeBySystem(r.code || {}, system) === code
       : getCodeBySystem(r.code || {}, system) === getCodeBySystem(code, system)
   );
-}
-
-export function arrayify<T>(value: NonNullable<T> | NonNullable<T>[]): T[];
-export function arrayify<T>(value: T | T[] | undefined): T[] | undefined;
-export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
-  if (value === undefined) {
-    return undefined;
-  } else if (Array.isArray(value)) {
-    return value;
-  } else {
-    return [value];
-  }
 }
 
 export function singularize<T>(value: T | T[] | undefined): T | undefined {

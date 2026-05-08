@@ -42,7 +42,6 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
-import type { ChannelStats } from './channel-stats-tracker';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
   DEFAULT_PING_TIMEOUT,
@@ -265,11 +264,12 @@ export class App {
     });
 
     this.webSocket.addEventListener('message', async (e) => {
+      let command: AgentMessage | undefined;
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
         this.log.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
-        const command = JSON.parse(str) as AgentMessage;
+        command = JSON.parse(str) as AgentMessage;
         switch (command.type) {
           // @ts-expect-error - Deprecated message type
           case 'connected':
@@ -340,11 +340,28 @@ export class App {
           case 'agent:error':
             this.log.error(command.body);
             break;
-          default:
-            this.log.error(`Unknown message type: ${command.type}`);
+          default: {
+            const errMsg = `Unknown message type: ${command.type}`;
+            this.log.error(errMsg);
+            await this.sendToWebSocket({
+              type: 'agent:error',
+              body: errMsg,
+              callback: (command as { callback?: string }).callback,
+            } satisfies AgentError);
+          }
         }
       } catch (err) {
-        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
+        const errMsg = `WebSocket error on incoming message: ${normalizeErrorString(err)}`;
+        this.log.error(errMsg);
+        try {
+          await this.sendToWebSocket({
+            type: 'agent:error',
+            body: errMsg,
+            callback: command?.callback,
+          } satisfies AgentError);
+        } catch (sendErr) {
+          this.log.error(`Failed to send agent:error response: ${normalizeErrorString(sendErr)}`);
+        }
       }
     });
 
@@ -370,11 +387,6 @@ export class App {
         if (result.status === 'rejected') {
           this.log.error(normalizeErrorString(result.reason));
         }
-      }
-      // We need to stop tracking stats for each client so that the heartbeat listener is removed
-      // Before clearing the clients
-      for (const pool of this.hl7Clients.values()) {
-        pool.stopTrackingStats();
       }
       this.hl7Clients.clear();
     }
@@ -406,16 +418,7 @@ export class App {
 
     if (this.logStatsFreqSecs > 0) {
       this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
-      if (this.keepAlive) {
-        for (const pool of this.hl7Clients.values()) {
-          pool.startTrackingStats();
-        }
-      }
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
-    } else {
-      for (const pool of this.hl7Clients.values()) {
-        pool.stopTrackingStats();
-      }
     }
 
     await this.hydrateListeners();
@@ -432,14 +435,14 @@ export class App {
 
     const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
     const channelStats = Object.fromEntries(
-      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats.getStats()])
     );
 
     const pools = Array.from(this.hl7Clients.values());
     const clientStats = Object.fromEntries(
       pools.map((pool) => [
         `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
-        pool.getPoolStats() as ChannelStats,
+        pool.getPoolStats(),
       ])
     );
 
@@ -1039,7 +1042,13 @@ export class App {
 
   private pushMessage(message: AgentTransmitRequest): void {
     if (!message.remote) {
-      this.log.error('Missing remote address');
+      const errMsg = 'Missing remote address';
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
       return;
     }
 
@@ -1081,7 +1090,6 @@ export class App {
     if (this.hl7Clients.has(message.remote)) {
       pool = this.hl7Clients.get(message.remote) as Hl7ClientPool;
     } else {
-      const keepAlive = this.keepAlive;
       pool = new Hl7ClientPool({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
@@ -1092,21 +1100,27 @@ export class App {
         heartbeatEmitter: this.heartbeatEmitter,
       });
       this.hl7Clients.set(message.remote, pool);
-      if (keepAlive && this.logStatsFreqSecs > 0) {
-        pool.startTrackingStats();
-      }
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         encoding,
-        trackingStats: this.logStatsFreqSecs > 0,
       });
     }
 
     const requestMsg = Hl7Message.parse(message.body);
     const msh10 = requestMsg.getSegment('MSH')?.getField(10);
     if (!msh10) {
-      this.log.error('MSH.10 is missing but required');
+      const errMsg = 'MSH.10 is missing but required';
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        remote: message.remote,
+        callback: message.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: errMsg,
+      } satisfies AgentTransmitResponse);
       return;
     }
 

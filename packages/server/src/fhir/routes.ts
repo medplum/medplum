@@ -75,6 +75,7 @@ import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import type { ResendSubscriptionsOptions } from './repo';
+import { validateRepositoryResourceStrictly } from './repository/validation';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -390,7 +391,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResourceStrictly(req.body);
+    await validateRepositoryResourceStrictly(ctx.repo, req.body);
     return [allOk];
   });
 
