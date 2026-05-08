@@ -517,7 +517,6 @@ export interface NewUserRequest {
   readonly remember?: boolean;
   readonly projectId?: string;
   readonly clientId?: string;
-  readonly redirectUri?: string;
 }
 
 export interface NewProjectRequest {
