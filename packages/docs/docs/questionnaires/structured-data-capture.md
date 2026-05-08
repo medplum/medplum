@@ -1,3 +1,14 @@
+---
+title: Structured Data Capture
+keywords:
+  - questionnaires
+  - SDC
+  - extract
+  - bots
+tags:
+  - questionnaires
+---
+
 import ExampleCode from '!!raw-loader!@site/..//examples/src/questionnaires/structured-data-capture.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -16,7 +27,7 @@ Medplum supports two parsing styles:
 | SDC annotations plus [`$extract`][extract] | Mapping is mostly declarative (FHIRPath templates per question), changes track the Questionnaire | Logic lives beside the form; complex branching or external calls are awkward |
 | Subscription plus [Bot](/docs/bots/bot-for-questionnaire-response) | You need code for scoring, conditional multi-resource writes, or integrations | Parser changes require Bot deployment; keep Questionnaire and Bot versions aligned |
 
-This guide focuses on the draft [Structured Data Capture IG v4][sdc-ig] template extraction path. For visit-level orchestration that launches forms and orders together, see [Visit Templates](/docs/charting/visit-templates).
+This guide focuses on the draft [Structured Data Capture IG v4][sdc-ig] template extraction path. For visit-level orchestration that launches forms and orders together, see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates).
 
 After adding template resources and special extensions with rules for populating them to the `Questionnaire`, associated
 `QuestionnaireResponse` resources can be sent to the [`$extract` API][extract]. The API returns a [transaction Bundle][batch]

@@ -15,7 +15,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Chart Data Model
 
-A charting UI reads patient-level data that persists across visits and encounter-level data created during each visit. This page consolidates the FHIR resources and patterns used to populate patient summaries, sidebar lists, and encounter documentation. For visit orchestration and SOAP-style workflow, see [Visit Templates](/docs/charting/visit-templates).
+A charting UI reads patient-level data that persists across visits and encounter-level data created during each visit. This page is a reference: the first half covers longitudinal patient context (summary, demographics, devices), the second covers encounter-time resources (Observations, Conditions, Allergies, external documents). Each major resource has its own section. For visit orchestration and the SOAP-aligned template pattern, see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates).
 
 ## Patient Summary and Queries
 
@@ -69,7 +69,7 @@ risk -->|subject| homer
 
 During a visit, resources typically link to an [`Encounter`](/docs/api/fhir/resources/encounter). Notes often use [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression); measurements use [`Observation`](/docs/api/fhir/resources/observation); orders use [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) and [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest).
 
-Note capture varies by product: some apps use a simple free-text area and persist narrative on [`Encounter`](/docs/api/fhir/resources/encounter) and/or [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression). Others drive charting from a library of [Questionnaires](/docs/questionnaires/) and use [Bots](/docs/bots/) or [`$extract`](/docs/api/fhir/operations/extract) to create the right resources. Medplum is headless, so either pattern (or a mix) is valid — see [Visit Templates](/docs/charting/visit-templates) for template-driven visits.
+Note capture varies by product: some apps use a simple free-text area and persist narrative on [`Encounter`](/docs/api/fhir/resources/encounter) and/or [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression). Others drive charting from a library of [Questionnaires](/docs/questionnaires/) and use [Bots](/docs/bots/) or [`$extract`](/docs/api/fhir/operations/extract) to create the right resources. Medplum is headless, so either pattern (or a mix) is valid — see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) for template-driven visits.
 
 ```mermaid
 flowchart BT
@@ -109,11 +109,7 @@ Capturing patient demographics is a core EHR capability. ONC references this und
 
 The [USCDI](/docs/fhir-datastore/understanding-uscdi-dataclasses) V2 standard defines technical expectations; see the [US Core Patient profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html).
 
-### Advanced Requirements
-
-Some demographic fields need careful handling. Summarized below.
-
-### User Interface
+### React Components
 
 Medplum provides React components for [Patient demographics](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) aligned with common collection requirements.
 
@@ -122,42 +118,34 @@ Medplum provides React components for [Patient demographics](https://storybook.m
 Use `Patient.name` with `period` and `use` to represent legal history — for example maiden names:
 
 ```json
-"name": [
+{
+  "name": [
     {
-      "given": [
-        "Marge",
-        "Jacqueline"
-      ],
+      "given": ["Marge", "Jacqueline"],
       "family": "Simpson",
-      "period": {
-        "start": "1980-01-01T00:00:00Z"
-      },
+      "period": { "start": "1980-01-01T00:00:00Z" },
       "use": "official"
     },
     {
-      "given": [
-        "Marge",
-        "Jacqueline"
-      ],
+      "given": ["Marge", "Jacqueline"],
       "family": "née Bouvier",
-      "period": {
-        "end": "1980-01-01T00:00:00Z"
-      },
+      "period": { "end": "1980-01-01T00:00:00Z" },
       "use": "old"
     }
   ]
+}
 ```
 
 ### Demographic Value Sets
 
 Use standard value sets rather than ad hoc codes. Correct coding supports reporting and interoperability.
 
-| Category  | Name                            | URL                                                               |
-| --------- | ------------------------------- | ----------------------------------------------------------------- |
-| Gender    | Administrative Gender Value Set | https://hl7.org/fhir/R4/valueset-administrative-gender.html       |
-| Race      | US Core Race Extension          | http://hl7.org/fhir/us/core/StructureDefinition/us-core-race      |
-| Ethnicity | US Core ethnicity Extension     | http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity |
-| Birth Sex | Birth sex Extension             | http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex  |
+| Category  | Name                                                                                                                                |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Gender    | [Administrative Gender Value Set](https://hl7.org/fhir/R4/valueset-administrative-gender.html)                                       |
+| Race      | [US Core Race Extension](http://hl7.org/fhir/us/core/StructureDefinition/us-core-race)                                               |
+| Ethnicity | [US Core Ethnicity Extension](http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity)                                     |
+| Birth Sex | [Birth Sex Extension](http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex)                                              |
 
 ### Lifecycle
 
@@ -178,7 +166,7 @@ Capture identifiers such as driver license or national identifiers as namespaced
 - [ONC Certification for Medplum](/docs/compliance/onc)
 - [(a)(5) User Testing Video](https://youtu.be/NcxFl-GJ9Mc)
 
-:::caution[]
+:::caution[Pre-release]
 
 ONC (a)(5) certification is under development.
 
@@ -207,7 +195,7 @@ Also support collecting when applicable:
 - Parsed production identifiers (manufacture date, expiration, lot, serial, distinct identifier)
 - MRI safety and latex presence where relevant
 
-### User Interface
+### React Components
 
 Medplum provides [implantable device React components](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-implantable-device). List devices with a [search control](https://storybook.medplum.com/?path=/story/medplum-searchcontrol--checkboxes) over `Device`; see [search by reference](/docs/search/basic-search#searching-by-reference).
 
@@ -447,55 +435,57 @@ Medplum is not optimized for massive wearable ingestion at second-level granular
 
 #### Helper Functions
 
+`@medplum/core` exposes three helpers for working with `valueSampledData`. Use whichever fits the call site—they are independent.
+
+`expandSampledData` turns the packed string into an array of numeric values:
+
 ```typescript
 import { expandSampledData } from '@medplum/core';
 
-const sampledData = {
+const values = expandSampledData({
   origin: { value: 60, unit: 'beats/min' },
   period: 60000,
   dimensions: 1,
   factor: 1,
-  data: '5 3 2 4 1'
-};
-
-const values = expandSampledData(sampledData);
+  data: '5 3 2 4 1',
+});
 ```
+
+`expandSampledObservation` lifts the same expansion to the Observation level, returning one Observation per sample:
 
 ```typescript
 import { expandSampledObservation } from '@medplum/core';
 
-const observation = {
+const expandedObservations = expandSampledObservation({
   resourceType: 'Observation',
   code: { /* ... */ },
   valueSampledData: { /* ... */ },
-  effectiveDateTime: '2024-01-15T08:00:00Z'
-};
-
-const expandedObservations = expandSampledObservation(observation);
+  effectiveDateTime: '2024-01-15T08:00:00Z',
+});
 ```
+
+`summarizeObservations` and `DataSampler` aggregate many observations into a single summary—useful for dashboards built off wearable data:
 
 ```typescript
 import { summarizeObservations, DataSampler } from '@medplum/core';
 
-const observations = [/* Observation[] */];
 const summary = summarizeObservations(
   observations,
   { text: 'Average Heart Rate' },
-  (data) => data.reduce((a, b) => a + b, 0) / data.length
+  (data) => data.reduce((a, b) => a + b, 0) / data.length,
 );
 
 const sampler = new DataSampler({
   code: { text: 'Heart Rate' },
-  unit: { unit: 'beats/min', code: '{Beats}/min' }
+  unit: { unit: 'beats/min', code: '{Beats}/min' },
 });
-/* Add observations with sampler.addObservation(...) then call sampler.summarize(...) */
 ```
 
 ### Multi-component Observations
 
 Use `Observation.component` when multiple values share method, performer, device, and time — classic case is blood pressure.
 
-:::caution[]
+:::caution[Use Sparingly]
 
 `component` adds complexity. Prefer it only when necessary.
 
@@ -604,7 +594,7 @@ Set `category` to `encounter-diagnosis` and link `encounter` to the visit. Follo
 
 Use `category` `problem-list-item` for longitudinal active problems. Best practice: keep separate `Condition` instances for encounter diagnoses versus promoted problem-list rows so history stays auditable. Usually require an explicit action to promote an encounter diagnosis to the problem list.
 
-### Symptoms Versus Conditions
+### Symptoms vs Conditions
 
 [`Observation`](/docs/api/fhir/resources/observation) is point-in-time; [`Condition`](/docs/api/fhir/resources/condition) is ongoing. Use Observation for transient symptoms; Condition when tracking over time. Example: single fever spike as Observation; prolonged fever course as Condition. More detail appears under [Observations and vital signs](#observations-and-vital-signs).
 
@@ -713,7 +703,7 @@ External PDFs and images are indexed with [`DocumentReference`](/docs/api/fhir/r
 
 ## See Also
 
-- [Visit Templates](/docs/charting/visit-templates)
+- [Visit Templates and the SOAP Approach](/docs/charting/visit-templates)
 - [Intake](/docs/intake/)
 - [Patient](/docs/api/fhir/resources/patient) FHIR resource API
 - [Observation](/docs/api/fhir/resources/observation) FHIR resource API

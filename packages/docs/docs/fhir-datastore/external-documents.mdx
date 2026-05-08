@@ -17,13 +17,9 @@ import TabItem from '@theme/TabItem';
 
 # External Files and Document References
 
-## Introduction
-
 While the most valuable way of storing healthcare information is in a structured FHIR representation, healthcare apps often need to store and index documents from external systems. For example, patients may submit medical records from other providers in the form of PDF documents.
 
-The [`DocumentReference`](/docs/api/fhir/resources/documentreference) resource serves as a pointer to these external documents so that they can be indexed and searched. Specifically, `DocumentReference.content.attachment` can refer to a [`Binary`](/docs/api/fhir/resources/binary) resource (PDFs, images, videos, etc.), a URL, or anything else supported by the [`Attachment`](/docs/api/fhir/datatypes/attachment) datatype.
-
-See the [`DocumentReference` API guide](/docs/api/fhir/resources/documentreference) for more info.
+The [`DocumentReference`](/docs/api/fhir/resources/documentreference) resource serves as a pointer to these external documents so that they can be indexed and searched. Specifically, `DocumentReference.content.attachment` can refer to a [`Binary`](/docs/api/fhir/resources/binary) resource (PDFs, images, videos, etc.), a URL, or anything else supported by the [`Attachment`](/docs/api/fhir/datatypes/attachment) datatype. See the [`Binary` Data guide](/docs/fhir-datastore/binary-data) for how Medplum stores file payloads, and the [`DocumentReference` API guide](/docs/api/fhir/resources/documentreference) for the resource itself.
 
 ## Example: Creating a Document Reference for a Binary File
 
@@ -58,4 +54,5 @@ First, upload the binary file as a [`Binary`](/docs/api/fhir/resources/binary) r
 ## See Also
 
 - [Binary Data](/docs/fhir-datastore/binary-data)
-- [Chart data model](/docs/charting/chart-data-model) — where external documents appear in patient context
+- [Creating a PDF File from a Bot](/docs/bots/creating-a-pdf)
+- [Chart Data Model](/docs/charting/chart-data-model) — where external documents appear in patient context
