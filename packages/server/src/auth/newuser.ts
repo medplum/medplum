@@ -14,7 +14,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword, sendLoginResult } from './utils';
+import { bcryptHashPassword } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -91,8 +91,12 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       allowNoMembership: true,
     });
 
-    await sendVerificationEmail(user, login);
-    await sendLoginResult(res, login);
+    if (config.requireVerifiedEmailForProjectCreation && projectId === 'new') {
+      await sendVerificationEmail(user, login);
+      res.status(200).json({ login: login.id, emailVerificationRequired: true });
+    } else {
+      res.status(200).json({ login: login.id });
+    }
   } catch (err) {
     sendOutcome(res, normalizeOperationOutcome(err));
   }
@@ -125,7 +129,7 @@ export async function createUser(request: NewUserRequest): Promise<WithId<User>>
 }
 
 async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
-  if (!getConfig().requireVerifiedEmail) {
+  if (!getConfig().requireVerifiedEmailForProjectCreation) {
     return;
   }
 

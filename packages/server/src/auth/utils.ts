@@ -86,14 +86,8 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  const config = getConfig();
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-
-  if (config.requireVerifiedEmail && !user.emailVerified) {
-    res.status(200).json({ login: login.id, emailVerificationRequired: true });
-    return;
-  }
 
   if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     const accountName = `Medplum - ${user.email}`;

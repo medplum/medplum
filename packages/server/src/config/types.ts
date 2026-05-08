@@ -190,12 +190,9 @@ export interface MedplumServerConfig {
   aiRealtimeTranscriptionUrl?: string;
 
   /**
-   * Optional flag to require email verification before allowing users to log in or register.
-   * Default is `false` to avoid accidentally locking users out of their accounts, but setting this to `true` is recommended for production deployments.
-   * If enabled, users must verify their email address before they can log in or register. This is done by sending a verification email with a link that the user must click to verify their email address.
-   * The link contains a secret that is validated by the server when the user clicks the link. If the secret is valid, the user's email is marked as verified and they can log in or register successfully.
+   * Optional flag to require email verification before allowing users to create projects.
    */
-  requireVerifiedEmail?: boolean;
+  requireVerifiedEmailForProjectCreation?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
