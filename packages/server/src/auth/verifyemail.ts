@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, createReference, redirect, resolveId } from '@medplum/core';
+import { allOk, badRequest, createReference, redirectOk, resolveId } from '@medplum/core';
 import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -44,7 +44,7 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 
   if (securityRequest.redirectUri) {
     // Send a "redirect", but don't actually follow it, because the client may want to handle the redirect themselves (e.g. in a React app).
-    sendOutcome(res, { ...redirect(new URL(securityRequest.redirectUri)), id: 'ok' });
+    sendOutcome(res, redirectOk(new URL(securityRequest.redirectUri)));
   } else {
     sendOutcome(res, allOk);
   }

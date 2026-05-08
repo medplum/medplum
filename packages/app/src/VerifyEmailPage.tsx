@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Flex, Group, Stack, Title } from '@mantine/core';
-import { locationUtils, normalizeOperationOutcome } from '@medplum/core';
+import { getOutcomeRedirectUrl, locationUtils, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
@@ -32,7 +32,7 @@ export function VerifyEmailPage(): JSX.Element {
           setOutcome(undefined);
           try {
             const result = await medplum.post<OperationOutcome | undefined>('auth/verifyemail', { id, secret });
-            const uri = result?.issue?.[0]?.details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+            const uri = getOutcomeRedirectUrl(result);
             if (uri) {
               locationUtils.assign(uri);
             } else {
