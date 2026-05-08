@@ -3,10 +3,20 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Structured Data Capture
 
-After receiving a questionnaire response, many use cases require the response to be transformed into structured data,
-i.e. other FHIR resources such as `Patient` or `Observation`. Medplum provides an implementation of the draft
-[Structured Data Capture IG v4][sdc-ig], which can automatically parse responses to a specially-annotated Questionnaire
-into any FHIR resource(s) necessary.
+After receiving a questionnaire response, many workflows need that submission turned into durable structured FHIR data —
+not only charting, but also intake, registration, assessments, prior authorization packets, and operational pipelines.
+The capture artifact is a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse); downstream analytics,
+search, CDS, and exchange usually expect concrete resources such as [`Patient`](/docs/api/fhir/resources/patient),
+[`Observation`](/docs/api/fhir/resources/observation), [`Condition`](/docs/api/fhir/resources/condition), or orders.
+
+Medplum supports two parsing styles:
+
+| Approach | Best when | Tradeoffs |
+| -------- | --------- | --------- |
+| SDC annotations plus [`$extract`][extract] | Mapping is mostly declarative (FHIRPath templates per question), changes track the Questionnaire | Logic lives beside the form; complex branching or external calls are awkward |
+| Subscription plus [Bot](/docs/bots/bot-for-questionnaire-response) | You need code for scoring, conditional multi-resource writes, or integrations | Parser changes require Bot deployment; keep Questionnaire and Bot versions aligned |
+
+This guide focuses on the draft [Structured Data Capture IG v4][sdc-ig] template extraction path. For visit-level orchestration that launches forms and orders together, see [Visit Templates](/docs/charting/visit-templates).
 
 After adding template resources and special extensions with rules for populating them to the `Questionnaire`, associated
 `QuestionnaireResponse` resources can be sent to the [`$extract` API][extract]. The API returns a [transaction Bundle][batch]
