@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconRefresh, IconArrowUp, IconArrowDown } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowUp, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -163,9 +163,7 @@ export function RateLimitsPage(): JSX.Element {
         </Button>
       </Group>
 
-      {!data && !loading && (
-        <Text c="dimmed">Click Refresh to load current rate limit data.</Text>
-      )}
+      {!data && !loading && <Text c="dimmed">Click Refresh to load current rate limit data.</Text>}
 
       {data && (
         <>
@@ -175,11 +173,7 @@ export function RateLimitsPage(): JSX.Element {
               No membership rate limit data found.
             </Text>
           ) : (
-            <MembershipTable
-              memberships={sortedMemberships}
-              sortDirection={sortDirection}
-              onToggleSort={toggleSort}
-            />
+            <MembershipTable memberships={sortedMemberships} sortDirection={sortDirection} onToggleSort={toggleSort} />
           )}
         </>
       )}
@@ -244,7 +238,10 @@ function MembershipTable({ memberships, sortDirection, onToggleSort }: Membershi
             <Table.Th>Consumed</Table.Th>
             <Table.Th>Remaining</Table.Th>
             <Table.Th>
-              <UnstyledButton onClick={onToggleSort} style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <UnstyledButton
+                onClick={onToggleSort}
+                style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+              >
                 Utilization
                 {sortDirection === 'desc' ? <IconArrowDown size={14} /> : <IconArrowUp size={14} />}
               </UnstyledButton>
@@ -275,7 +272,12 @@ function MembershipRow({ membership }: { readonly membership: MembershipQuota })
       <Table.Td>
         {utilization !== undefined ? (
           <Group gap="xs">
-            <Progress value={utilization} color={getUtilizationColor(utilization)} size="sm" style={{ flex: 1, minWidth: 60 }} />
+            <Progress
+              value={utilization}
+              color={getUtilizationColor(utilization)}
+              size="sm"
+              style={{ flex: 1, minWidth: 60 }}
+            />
             <Text size="sm" w={50} ta="right">
               {utilization.toFixed(1)}%
             </Text>

@@ -185,13 +185,14 @@ describe('RateLimitsPage', () => {
   });
 
   test('Handles fetch error', async () => {
-    rateLimitsHandler = () => [
-      {
-        resourceType: 'OperationOutcome',
-        id: 'not-found',
-        issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Rate limit error' }],
-      },
-    ] as [OperationOutcome];
+    rateLimitsHandler = () =>
+      [
+        {
+          resourceType: 'OperationOutcome',
+          id: 'not-found',
+          issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Rate limit error' }],
+        },
+      ] as [OperationOutcome];
 
     await setup();
     expect(await screen.findByText('Refresh')).toBeInTheDocument();

@@ -77,9 +77,7 @@ describe('Project $rate-limits operation', () => {
 
     expect(membershipParams.map((p) => getPartValue(p, 'membershipId')).every((id) => id !== undefined)).toBe(true);
 
-    const profiles = membershipParams.map(
-      (p) => p.part?.find((part) => part.name === 'profile')?.valueReference
-    );
+    const profiles = membershipParams.map((p) => p.part?.find((part) => part.name === 'profile')?.valueReference);
     expect(profiles.every((profile) => profile?.reference && profile?.display)).toBe(true);
   });
 
