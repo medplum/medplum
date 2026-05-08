@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, TypedValue } from '@medplum/core';
 import {
+  badRequest,
   evalFhirPathTyped,
   flatMapFilter,
   getSearchParameterDetails,
+  OperationOutcomeError,
   Operator,
   SearchParameterType,
   toTypedValue,
@@ -129,6 +131,9 @@ function buildRangeFromPeriod({ start, end }: Period): Interval<Date> {
     range.right = new Date(end);
     range.rInc = true;
   }
+  if (range.left && range.right && range.left > range.right) {
+    throw new OperationOutcomeError(badRequest('Period start must be less than or equal to end'));
+  }
   return range;
 }
 
@@ -228,6 +233,11 @@ function buildNumericRange(typed: TypedValue): Interval<number> | undefined {
     case 'positiveInt':
       return parseNumberToRange(typed.value);
     case 'Money': // Not technically a Quantity, but referenced by ChargeItem.priceOverride
+    case 'Distance': // Specialized subtypes of Quantity are included
+    case 'Age':
+    case 'Count':
+    case 'Duration':
+    case 'SimpleQuantity':
     case 'Quantity': {
       const q = typed.value as Quantity | Money;
       if (q.value === undefined) {

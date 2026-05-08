@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Filter } from '@medplum/core';
-import { getSearchParameter, Operator } from '@medplum/core';
+import { getSearchParameter, Operator, UCUM } from '@medplum/core';
 import type {
   AllergyIntolerance,
   CarePlan,
+  Condition,
   Observation,
   Period,
   Quantity,
@@ -14,7 +15,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { buildRangeColumns, buildRangeColumnsSearchFilter } from './range-column';
-import type { RangeColumnSearchParameterImplementation } from './searchparameter';
+import type { ColumnSearchParameterImplementation, RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SqlBuilder } from './sql';
 import { loadStructureDefinitions } from './structure';
@@ -86,7 +87,7 @@ describe('buildRangeColumns', () => {
     expect(columns.__valueDateSort).toStrictEqual('2026-04-01T12:34:56.000Z');
   });
 
-  test.each<[Period, string, string]>([
+  test.each<[Period, string | undefined, string | undefined]>([
     [
       { start: '2026-04-04T12:34:56Z', end: '2026-04-18T11:22:33.456Z' },
       `[2026-04-04T12:34:56.000Z,2026-04-18T11:22:33.456Z]`,
@@ -117,6 +118,26 @@ describe('buildRangeColumns', () => {
 
     expect(columns.__valueDate).toStrictEqual(expectedRange);
     expect(columns.__valueDateSort).toStrictEqual(expectedSort);
+  });
+
+  test('improper Period with reversed endpoints', () => {
+    const valueDate = getSearchParameter('Observation', 'value-date');
+    if (!valueDate) {
+      throw new Error('Missing search parameter');
+    }
+    const impl = getSearchParameterImplementation('Observation', valueDate) as RangeColumnSearchParameterImplementation;
+
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: `Patient/${randomUUID()}` },
+      valuePeriod: { start: '2026', end: '1996' }, // Time travel not permitted
+    };
+
+    expect(() => buildRangeColumns(valueDate, impl, {}, resource)).toThrow(
+      'Period start must be less than or equal to end'
+    );
   });
 
   test('multi number range', () => {
@@ -276,6 +297,64 @@ describe('buildRangeColumns', () => {
 
     expect(columns.__activityDate).toStrictEqual(expectedRange);
     expect(columns.__activityDateSort).toStrictEqual(expectedSort);
+  });
+
+  test.each<[Partial<Condition>, string, string, string, string | number]>([
+    [{ onsetAge: { value: 22, code: 'a', system: UCUM } }, 'onset-age', '__onsetAge', '[22,22]', 22],
+    [
+      { onsetRange: { low: { value: 22, code: 'a', system: UCUM }, high: { value: 25, code: 'a', system: UCUM } } },
+      'onset-age',
+      '__onsetAge',
+      '[22,25]',
+      22,
+    ],
+    [
+      { onsetDateTime: '2026' },
+      'onset-date',
+      '__onsetDate',
+      '[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z)',
+      '2026-01-01T00:00:00.000Z',
+    ],
+    [
+      { onsetPeriod: { start: '2026-01-01', end: '2026-02-15' } },
+      'onset-date',
+      '__onsetDate',
+      '[2026-01-01T00:00:00.000Z,2026-02-15T00:00:00.000Z]',
+      '2026-01-01T00:00:00.000Z',
+    ],
+  ])('Search parameter over choice of type: %j', (resourceData, paramName, column, expectedRange, expectedSort) => {
+    const param = getSearchParameter('Condition', paramName);
+    if (!param) {
+      throw new Error('Missing search parameter');
+    }
+    const impl = getSearchParameterImplementation('Condition', param) as RangeColumnSearchParameterImplementation;
+    expect(impl.searchStrategy).toStrictEqual('range-column');
+    expect(impl.rangeColumnName).toStrictEqual(column);
+    expect(impl.sortColumnName).toStrictEqual(column + 'Sort');
+
+    const resource: Condition = {
+      resourceType: 'Condition',
+      subject: { reference: `Patient/${randomUUID()}` },
+      ...resourceData,
+    };
+
+    const columns: Record<string, any> = {};
+    buildRangeColumns(param, impl, columns, resource);
+
+    expect(columns[column]).toStrictEqual(expectedRange);
+    expect(columns[column + 'Sort']).toStrictEqual(expectedSort);
+  });
+
+  test('Search parameter over choice of type: {"onsetString":"yesterday"}', () => {
+    const param = getSearchParameter('Condition', 'onset-info');
+    if (!param) {
+      throw new Error('Missing search parameter');
+    }
+
+    // Third variant is not a range column type
+    const impl = getSearchParameterImplementation('Condition', param) as ColumnSearchParameterImplementation;
+    expect(impl.searchStrategy).toStrictEqual('column');
+    expect(impl.columnName).toStrictEqual('onsetInfo');
   });
 });
 
