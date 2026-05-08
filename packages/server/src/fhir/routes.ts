@@ -26,6 +26,7 @@ import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
+import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -395,6 +396,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Appointment/$find', appointmentFindHandler);
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
   router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
+  router.add('POST', '/Appointment/$cancel', appointmentCancelHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);
