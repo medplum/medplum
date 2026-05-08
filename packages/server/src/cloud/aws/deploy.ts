@@ -21,7 +21,7 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
-import { getLogger } from '../../logger';
+import { getLogger, globalLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
@@ -175,11 +175,12 @@ export async function deployLambdaInternal(
 
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
+    cleanupOldLambdaVersions(client, name).catch((err) => {
+      globalLogger.error(`Error while cleaning up old versions for Lambda`, { name, err });
+    });
   } else {
     await createLambda(bot, client, name, zipFile);
   }
-
-  await cleanupOldLambdaVersions(client, name);
 }
 
 /**
@@ -203,7 +204,7 @@ export async function cleanupOldLambdaVersions(client: LambdaClient, name: strin
     marker = response.NextMarker;
   } while (marker);
 
-  const toDelete = versions.sort((a, b) => b - a).slice(LAMBDA_VERSIONS_TO_KEEP);
+  const toDelete = versions.toSorted((a, b) => b - a).slice(LAMBDA_VERSIONS_TO_KEEP);
   if (toDelete.length === 0) {
     return;
   }
