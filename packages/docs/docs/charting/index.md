@@ -9,19 +9,19 @@ tags:
 
 # Charting
 
-Charting is where clinicians produce the durable record of care—the patient summary read at every visit, the encounter notes captured during one, and the orders and follow-up that come out of it. Medplum is headless: your app owns the screens, while the underlying FHIR data model keeps the record interoperable, queryable, and reusable.
+Charting is where clinicians produce the durable record of care – the patient summary read at every visit, the encounter notes captured during one, and the orders and follow-up that come out of it. Medplum is headless: your app owns the screens, while the underlying FHIR data model keeps the record interoperable, queryable, and reusable.
 
-## Where To Start
+## Where to Start
 
-1. [Designing Charting](/docs/charting/designing-charting) — discovery questions (visit types, parsing, signing, template ownership).
-2. [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) — [`PlanDefinition`](/docs/api/fhir/resources/plandefinition), SOAP mapped to structured S/O/P plus narrative assessment, [`$apply`](/docs/api/fhir/operations/plandefinition-apply), signing.
-3. [Chart Data Model](/docs/charting/chart-data-model) — Patient, Observation, Condition, allergies, devices, vitals, and queries for the chart UI.
+1. [Designing Charting](/docs/charting/designing-charting) – discovery questions (visit types, parsing, signing, template ownership).
+2. [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) – [`PlanDefinition`](/docs/api/fhir/resources/plandefinition), SOAP mapped to structured S/O/P plus narrative assessment, [`$apply`](/docs/api/fhir/operations/plandefinition-apply), signing.
+3. [Chart Data Model](/docs/charting/chart-data-model) – Patient, Observation, Condition, allergies, devices, vitals, and queries for the chart UI.
 
 Supporting guides:
 
-- [Structured Data Capture and parsing](/docs/questionnaires/structured-data-capture) — `$extract` versus Bots for questionnaire responses.
-- [Provider Visits](/docs/provider/visits) — Care Templates and Provider app setup (UI-specific).
-- [Authoring Clinical Protocols](/docs/careplans/protocols) — advanced PlanDefinition composition.
+- [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture) – `$extract` versus Bots for questionnaire responses.
+- [Provider Visits](/docs/provider/visits) – Care Templates and Provider app setup (UI-specific).
+- [Authoring Clinical Protocols](/docs/careplans/protocols) – advanced PlanDefinition composition.
 
 ## Sample Application
 

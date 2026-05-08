@@ -69,7 +69,7 @@ risk -->|subject| homer
 
 During a visit, resources typically link to an [`Encounter`](/docs/api/fhir/resources/encounter). Notes often use [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression); measurements use [`Observation`](/docs/api/fhir/resources/observation); orders use [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) and [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest).
 
-Note capture varies by product: some apps use a simple free-text area and persist narrative on [`Encounter`](/docs/api/fhir/resources/encounter) and/or [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression). Others drive charting from a library of [Questionnaires](/docs/questionnaires/) and use [Bots](/docs/bots/) or [`$extract`](/docs/api/fhir/operations/extract) to create the right resources. Medplum is headless, so either pattern (or a mix) is valid — see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) for template-driven visits.
+Note capture varies by product: some apps use a simple free-text area and persist narrative on [`Encounter`](/docs/api/fhir/resources/encounter) and/or [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression). Others drive charting from a library of [Questionnaires](/docs/questionnaires/) and use [Bots](/docs/bots/) or [`$extract`](/docs/api/fhir/operations/extract) to create the right resources. Medplum is headless, so either pattern (or a mix) is valid – see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) for template-driven visits.
 
 ```mermaid
 flowchart BT
@@ -115,7 +115,7 @@ Medplum provides React components for [Patient demographics](https://storybook.m
 
 ### Capturing Aliases
 
-Use `Patient.name` with `period` and `use` to represent legal history — for example maiden names:
+Use `Patient.name` with `period` and `use` to represent legal history – for example maiden names:
 
 ```json
 {
@@ -149,7 +149,7 @@ Use standard value sets rather than ad hoc codes. Correct coding supports report
 
 ### Lifecycle
 
-Managing duplicates belongs in every implementation — see [Patient deduplication](/docs/fhir-datastore/patient-deduplication).
+Managing duplicates belongs in every implementation – see [Patient deduplication](/docs/fhir-datastore/patient-deduplication).
 
 When a patient dies, record time of death on `Patient.deceased`. Represent cause of death as an [`Observation`](/docs/api/fhir/resources/observation) with ICD-10 or another appropriate ontology.
 
@@ -218,7 +218,7 @@ Medplum can query the [FDA Device Lookup API](https://accessgudid.nlm.nih.gov/re
 
 ## Observations and Vital Signs
 
-Vital signs measure core physiological functions — blood pressure, pulse, respiration, temperature, and related values. Store them as [`Observation`](/docs/api/fhir/resources/observation) resources with coded `Observation.code` (typically [LOINC](/docs/careplans/loinc) per US Core expectations).
+Vital signs measure core physiological functions – blood pressure, pulse, respiration, temperature, and related values. Store them as [`Observation`](/docs/api/fhir/resources/observation) resources with coded `Observation.code` (typically [LOINC](/docs/careplans/loinc) per US Core expectations).
 
 ### Observation Elements
 
@@ -229,8 +229,8 @@ Vital signs measure core physiological functions — blood pressure, pulse, resp
 | `subject`      | Who or what the observation is about.                                                                                                                                                                                                                                                                                                                                                     |                                                                                                     | Patient/homer-simpson     |
 | `encounter`    | Visit when observation was taken.                                                                                                                                                                                                                                                                                                                                                         |                                                                                                     | Encounter/example         |
 | `basedOn`      | Plan or order that prompted the observation.                                                                                                                                                                                                                                                                                                                                              |                                                                                                     | CarePlan/example          |
-| `performer`    | Responsible party — patient for home readings, clinician or device in clinic.                                                                                                                                                                                                                                                                                                              |                                                                                                     | Practitioner/example      |
-| `value[x]`     | Result — see [Observation datatypes](#observation-datatypes).                                                                                                                                                                                                                                                                                                                               |                                                                                                     |                           |
+| `performer`    | Responsible party – patient for home readings, clinician or device in clinic.                                                                                                                                                                                                                                                                                                              |                                                                                                     | Practitioner/example      |
+| `value[x]`     | Result – see [Observation datatypes](#observation-datatypes).                                                                                                                                                                                                                                                                                                                               |                                                                                                     |                           |
 | `dataAbsentReason` | Why a value is missing.                                                                                                                                                                                                                                                                                                                                                               | [Data absent reason](http://hl7.org/fhir/R4/valueset-data-absent-reason.html)                       | asked-but-unknown         |
 | `interpretation` | High / low / normal categories.                                                                                                                                                                                                                                                                                                                                                         | [Interpretation](http://hl7.org/fhir/R4/valueset-observation-interpretation.html)                     | N                         |
 | `device`       | Device used to produce the measurement.                                                                                                                                                                                                                                                                                                                                                   |                                                                                                     | Device/apple-watch        |
@@ -435,7 +435,7 @@ Medplum is not optimized for massive wearable ingestion at second-level granular
 
 #### Helper Functions
 
-`@medplum/core` exposes three helpers for working with `valueSampledData`. Use whichever fits the call site—they are independent.
+`@medplum/core` exposes three helpers for working with `valueSampledData`. Use whichever fits the call site–they are independent.
 
 `expandSampledData` turns the packed string into an array of numeric values:
 
@@ -464,7 +464,7 @@ const expandedObservations = expandSampledObservation({
 });
 ```
 
-`summarizeObservations` and `DataSampler` aggregate many observations into a single summary—useful for dashboards built off wearable data:
+`summarizeObservations` and `DataSampler` aggregate many observations into a single summary–useful for dashboards built off wearable data:
 
 ```typescript
 import { summarizeObservations, DataSampler } from '@medplum/core';
@@ -483,7 +483,7 @@ const sampler = new DataSampler({
 
 ### Multi-component Observations
 
-Use `Observation.component` when multiple values share method, performer, device, and time — classic case is blood pressure.
+Use `Observation.component` when multiple values share method, performer, device, and time – classic case is blood pressure.
 
 :::caution[Use Sparingly]
 
@@ -538,7 +538,7 @@ Use `Observation.component` when multiple values share method, performer, device
 
 ### Reference Ranges
 
-Use `Observation.referenceRange` for patient-specific normals. Definitions often live in `ObservationDefinition` resources — see [Observation reference ranges](/docs/careplans/reference-ranges).
+Use `Observation.referenceRange` for patient-specific normals. Definitions often live in `ObservationDefinition` resources – see [Observation reference ranges](/docs/careplans/reference-ranges).
 
 ## Diagnoses and Problem List
 
@@ -568,7 +568,7 @@ Applications include:
 | `evidence`           | Supporting resources such as Observation                                                                                                                                                                |                                                                                                   |                   |
 | `note`               | Additional narrative                                                                                                                                                                                    |                                                                                                   |                   |
 
-Each `Condition` is an instance of a problem — recurrence is a new resource; link clinically via narrative or extensions as your workflow requires.
+Each `Condition` is an instance of a problem – recurrence is a new resource; link clinically via narrative or extensions as your workflow requires.
 
 <details>
   <summary>Example Condition</summary>
@@ -584,7 +584,7 @@ Each `Condition` is an instance of a problem — recurrence is a new resource; l
   </MedplumCodeBlock>
 </details>
 
-Do not use `Condition` for allergies — use [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance); see [Allergies and intolerances](#allergies-and-intolerances). Social factors may still be recorded as `Condition` when that matches your IG.
+Do not use `Condition` for allergies – use [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance); see [Allergies and intolerances](#allergies-and-intolerances). Social factors may still be recorded as `Condition` when that matches your IG.
 
 ### Encounter Diagnosis
 
@@ -617,9 +617,9 @@ Allergies use [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance
 
 Cover:
 
-1. Known allergies — document specifics.
-2. No known allergies — document explicit negatives when clinically asserted (for example NKDA concepts).
-3. Unknown status — document when workup is required.
+1. Known allergies – document specifics.
+2. No known allergies – document explicit negatives when clinically asserted (for example NKDA concepts).
+3. Unknown status – document when workup is required.
 
 Only record NKDA or unknown when clinically relevant. Documenting NKDA “by default” when allergies were never assessed can mislead future care.
 
@@ -699,7 +699,7 @@ When allergy documentation is not clinically relevant (for example isolated orth
 
 ## External Documents in the Chart
 
-External PDFs and images are indexed with [`DocumentReference`](/docs/api/fhir/resources/documentreference) pointing at [`Binary`](/docs/api/fhir/resources/binary) or URLs — see [External files and Document references](/docs/fhir-datastore/external-documents).
+External PDFs and images are indexed with [`DocumentReference`](/docs/api/fhir/resources/documentreference) pointing at [`Binary`](/docs/api/fhir/resources/binary) or URLs – see [External files and Document references](/docs/fhir-datastore/external-documents).
 
 ## See Also
 
@@ -709,6 +709,6 @@ External PDFs and images are indexed with [`DocumentReference`](/docs/api/fhir/r
 - [Observation](/docs/api/fhir/resources/observation) FHIR resource API
 - [Condition](/docs/api/fhir/resources/condition) FHIR resource API
 - [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) FHIR resource API
-- [Structured Data Capture](/docs/questionnaires/structured-data-capture)
+- [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture)
 - [Ordering Labs And Imaging](/docs/labs-imaging/ordering-labs-imaging)
 - [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders)

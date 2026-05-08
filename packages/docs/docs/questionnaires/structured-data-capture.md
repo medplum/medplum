@@ -1,5 +1,6 @@
 ---
-title: Structured Data Capture
+id: structured-data-capture
+title: Parsing Questionnaire Responses
 keywords:
   - questionnaires
   - SDC
@@ -12,32 +13,39 @@ tags:
 import ExampleCode from '!!raw-loader!@site/..//examples/src/questionnaires/structured-data-capture.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# Structured Data Capture
+# Parsing Questionnaire Responses
 
-After receiving a questionnaire response, many workflows need that submission turned into durable structured FHIR data —
-not only charting, but also intake, registration, assessments, prior authorization packets, and operational pipelines.
-The capture artifact is a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse); downstream analytics,
-search, CDS, and exchange usually expect concrete resources such as [`Patient`](/docs/api/fhir/resources/patient),
-[`Observation`](/docs/api/fhir/resources/observation), [`Condition`](/docs/api/fhir/resources/condition), or orders.
+A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) captures what a patient or clinician submitted. Downstream systems – analytics, search, CDS, exchange – usually need that turned into concrete FHIR resources: [`Observation`](/docs/api/fhir/resources/observation), [`Condition`](/docs/api/fhir/resources/condition), orders, and similar. This applies across charting, intake, registration, prior authorization, and other workflows.
 
-Medplum supports two parsing styles:
+Medplum supports two parsing approaches. **You can use both in the same application** – different Questionnaires can use different methods depending on their complexity.
 
-| Approach | Best when | Tradeoffs |
-| -------- | --------- | --------- |
-| SDC annotations plus [`$extract`][extract] | Mapping is mostly declarative (FHIRPath templates per question), changes track the Questionnaire | Logic lives beside the form; complex branching or external calls are awkward |
-| Subscription plus [Bot](/docs/bots/bot-for-questionnaire-response) | You need code for scoring, conditional multi-resource writes, or integrations | Parser changes require Bot deployment; keep Questionnaire and Bot versions aligned |
+## Choosing an Approach
 
-This guide focuses on the draft [Structured Data Capture IG v4][sdc-ig] template extraction path. For visit-level orchestration that launches forms and orders together, see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates).
+| | SDC annotations + [`$extract`][extract] | Subscription + [Bot][bot-guide] |
+|---|---|---|
+| **How it works** | Extraction rules live in the Questionnaire itself as FHIR extensions; `$extract` reads them and returns a Bundle | A Bot subscribes to `QuestionnaireResponse` creation; runs arbitrary TypeScript to write resources |
+| **Best for** | Straightforward field-to-resource mappings; forms that change often | Scoring algorithms, conditional logic, multi-step workflows, external API calls |
+| **Change management** | Edit the Questionnaire; no deployment needed | Redeploy Bot on logic changes; keep Bot and Questionnaire versions in sync |
+| **Limitations** | Complex branching or external lookups get unwieldy | Requires Bot infrastructure; harder to inspect logic from the Questionnaire alone |
 
-After adding template resources and special extensions with rules for populating them to the `Questionnaire`, associated
-`QuestionnaireResponse` resources can be sent to the [`$extract` API][extract]. The API returns a [transaction Bundle][batch]
-containing the parsed resources, which can then be uploaded to the server.
+**Pick `$extract` when** the mapping is mostly one field → one resource field, and you want the logic to live beside the form definition.
+
+**Pick a Bot when** you need to score a PHQ-9, write resources conditionally, call an external service, or otherwise do something that does not fit a declarative template.
+
+You can also combine them: use `$extract` for simple demographic or intake data, and a Bot for the clinical scoring logic on the same submission.
+
+For visit-level orchestration that launches forms and orders together, see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates).
 
 [sdc-ig]: https://build.fhir.org/ig/HL7/sdc/
 [extract]: /docs/api/fhir/operations/extract
 [batch]: /docs/fhir-datastore/fhir-batch-requests
+[bot-guide]: /docs/bots/bot-for-questionnaire-response
 
-## Annotating the Questionnaire
+## Approach 1: SDC Annotations + $extract
+
+Annotate the `Questionnaire` with template resources and FHIRPath extraction rules. When a `QuestionnaireResponse` is submitted, call [`$extract`][extract]; Medplum reads the annotations and returns a [transaction Bundle][batch] of populated resources ready to upload.
+
+### Annotating the Questionnaire
 
 Medplum implements [template-based extraction][extract-template], which requires the Questionnaire resource to contain
 template resources and the rules for populating the templates from a QuestionnaireResponse. The template resources
@@ -145,7 +153,7 @@ of values are returned and ensure the resulting resource is well-formed.
 
 [fhir-primitive-ext]: https://hl7.org/fhir/R4/json.html#primitive
 
-### Extraction Context
+#### Extraction Context
 
 When the FHIRPath expression to extract a value is evaluated, the context on which
 it evaluates will initially be either the entire `QuestionnaireResponse` resource or a specific
@@ -231,7 +239,7 @@ This resolves the problems with the `Questionnaire` above by linking the `name` 
 objects themselves, and extracting nested values from each one. A corrected example that handles optional and
 repeating items is shown below.
 
-### Example
+#### Example
 
 ```json
 {
@@ -365,7 +373,7 @@ The response to this questionnaire shown below yields the following `Patient` re
 [context-ext]: https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-templateExtractContext.html
 [fhirpath]: https://hl7.org/fhir/fhirpath.html
 
-### Gathering Additional Data
+#### Gathering Additional Data
 
 If data from additional resources is required to populate the templates, search queries can be executed as part of the
 extraction process and their results stored in context to be operated on by later expressions. Queries are attached in
@@ -453,7 +461,7 @@ the option to embed FHIRPath expressions as needed to construct the query string
 
 [x-fhir-query]: https://hl7.org/fhir/fhir-xquery.html
 
-## Extraction API
+### Extraction API
 
 When responses to the annotated Questionnaire are received, they can be passed to the [`$extract` API][extract] to be
 parsed into resources.
@@ -471,7 +479,7 @@ server:
 
 [extract]: /docs/api/fhir/operations/extract
 
-## Results Bundle
+### Results Bundle
 
 The resources populated with values parsed from the `QuestionnaireResponse` are returned from the `$extract` operation
 in a transaction [`Bundle`][bundle]:
@@ -498,7 +506,7 @@ This can be uploaded via the [Batch API][batch] to save the generated resources 
 
 [bundle]: /docs/api/fhir/resources/bundle
 
-## Parsing Multiple Resources
+### Parsing Multiple Resources
 
 Many questionnaires gather information that must be processed into multiple separate FHIR resources, generally by
 grouping together questions that pertain to a particular resource. To simplify the process of extracting related items,
@@ -578,7 +586,7 @@ the `templateExtract` extension can be placed on the question or group correspon
 }
 ```
 
-### Linking Extracted Resources
+#### Linking Extracted Resources
 
 When the resources being extracted from the questionnaire response are related, such as the above `Patient` and
 `Observation`, you may want to link the extracted resources together with a reference like `Observation.subject`.
@@ -748,3 +756,61 @@ A single response to the questionnaire will extract a Bundle containing two reso
 
 [bundle-intern-refs]: /docs/fhir-datastore/fhir-batch-requests#internal-references
 [allocate-id]: https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-extractAllocateId.html
+
+## Approach 2: Subscription + Bot
+
+A [Medplum Bot](/docs/bots/) is a TypeScript function that runs server-side in response to a FHIR event. For questionnaire parsing, the typical wiring is:
+
+1. Create a `Subscription` that fires on `QuestionnaireResponse` creation (or status change to `completed`).
+2. The Bot receives the `QuestionnaireResponse` as its input.
+3. The Bot reads answers by `linkId`, computes whatever it needs (scores, lookups, conditionals), and writes the resulting FHIR resources.
+
+### When to use a Bot
+
+- **Scoring instruments** – PHQ-9, GAD-7, AUDIT-C, or any form where answers combine into a computed result.
+- **Conditional multi-resource writes** – write different resources depending on which answers are present, or skip resources entirely based on logic.
+- **External integrations** – call a lab system, EHR API, or notification service as part of processing.
+- **Complex cross-referencing** – look up existing resources, merge data, or apply business rules that FHIRPath templates cannot express cleanly.
+
+### Pattern
+
+```typescript
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { QuestionnaireResponse } from '@medplum/fhirtypes';
+
+export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
+  const response = event.input;
+
+  // Helper to pull an answer by linkId
+  const getAnswer = (linkId: string) =>
+    response.item?.find((i) => i.linkId === linkId)?.answer?.[0];
+
+  const score = computeScore(response); // your scoring logic
+
+  await medplum.createResource({
+    resourceType: 'Observation',
+    status: 'final',
+    code: { text: 'PHQ-9 score' },
+    subject: response.subject,
+    valueInteger: score,
+  });
+}
+```
+
+For a complete walkthrough – including Questionnaire authoring, Bot deployment, and Subscription wiring – see [Bot for QuestionnaireResponse][bot-guide].
+
+### Mixing approaches in one application
+
+Different Questionnaires in the same app can use different methods. A common split:
+
+- **Intake / registration forms** – use `$extract`; mappings are simple and clinicians edit forms frequently.
+- **Clinical scoring instruments** – use a Bot; the scoring algorithm is code, not a declarative template.
+- **Complex multi-step workflows** – Bot, because you need conditional logic and possibly external calls.
+
+## See Also
+
+- [Bot for QuestionnaireResponse][bot-guide] – step-by-step tutorial for the Subscription + Bot pattern
+- [`$extract` API reference][extract]
+- [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) – orchestrating forms and orders together
+- [Intake Questionnaires](/docs/intake/intake-questionnaires) – SDC patterns in the intake workflow
+- [FHIR Batch Requests][batch] – uploading the Bundle returned by `$extract`

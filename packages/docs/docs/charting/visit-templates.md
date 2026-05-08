@@ -12,9 +12,9 @@ tags:
 
 # Visit Templates and the SOAP Approach
 
-Most clinical products still organize encounter documentation around some variant of SOAP—Subjective, Objective, Assessment, Plan—even when the screen does not label the sections that way. Visit templates are how Medplum ties that workflow to FHIR: instead of a single undifferentiated note, you instantiate a [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) per visit type so clinicians get the right questionnaires and order tasks when the encounter opens (Care Templates in Medplum Provider are this concept in the UI).
+Most clinical products still organize encounter documentation around some variant of SOAP – Subjective, Objective, Assessment, Plan – even when the screen does not label the sections that way. Visit templates are how Medplum ties that workflow to FHIR: instead of a single undifferentiated note, you instantiate a [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) per visit type so clinicians get the right questionnaires and order tasks when the encounter opens (Care Templates in Medplum Provider are this concept in the UI).
 
-The pattern this guide recommends maps SOAP to FHIR with one deliberate split: Subjective, Objective, and Plan are primarily structured resources (Observations from forms or devices; ServiceRequest / MedicationRequest / CarePlan for orders), while Assessment is where narrative free text belongs—on [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression), with coded diagnoses on [`Condition`](/docs/api/fhir/resources/condition) when you need them. That keeps the record interoperable and searchable without asking clinicians to avoid prose where judgment is the point.
+The pattern this guide recommends maps SOAP to FHIR with one deliberate split: Subjective, Objective, and Plan are primarily structured resources (Observations from forms or devices; ServiceRequest / MedicationRequest / CarePlan for orders), while Assessment is where narrative free text belongs – on [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression), with coded diagnoses on [`Condition`](/docs/api/fhir/resources/condition) when you need them. That keeps the record interoperable and searchable without asking clinicians to avoid prose where judgment is the point.
 
 See [Designing Charting](/docs/charting/designing-charting) for product framing. For authoring `PlanDefinition` graphs, nested actions, and ActivityDefinitions, see [Authoring Clinical Protocols](/docs/careplans/protocols). For configuring Care Templates in the hosted app, see [Provider Visits](/docs/provider/visits).
 
@@ -23,22 +23,22 @@ See [Designing Charting](/docs/charting/designing-charting) for product framing.
 1. Author a `PlanDefinition` whose `action` entries reference Questionnaires and ActivityDefinitions. Authoring detail lives in [Authoring Clinical Protocols](/docs/careplans/protocols).
 2. Invoke [`$apply`](/docs/api/fhir/operations/plandefinition-apply) with `subject` (Patient) and optionally `encounter`, `practitioner`, and `organization`.
 3. Medplum creates Tasks (and ServiceRequests when `ActivityDefinition.kind` is ServiceRequest).
-4. Clinicians complete Questionnaires and orders; parse responses into FHIR resources using [Structured Data Capture](/docs/questionnaires/structured-data-capture) or Bots.
+4. Clinicians complete Questionnaires and orders; parse responses into FHIR resources using [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture) or Bots.
 5. Sign the visit using `ClinicalImpression.status` and a `Provenance` on the Encounter (see [Signing and Locking Notes](#signing-and-locking-notes)).
 
 ## Common Visit-Template Patterns
 
 A few shapes recur in real implementations.
 
-- _Questionnaire-driven capture (primary care)_ — a standard form per visit type (vitals, intake screen) submits a `QuestionnaireResponse` whose answers are parsed into `Observation` resources via `$extract` or a Bot.
-- _Template-driven plan (specialty protocols)_ — a `PlanDefinition` for the protocol instantiates `ServiceRequest`, `MedicationRequest`, or `CarePlan` from `ActivityDefinition` actions on `$apply` rather than free-text plan sections. See [Authoring Clinical Protocols](/docs/careplans/protocols).
-- _Pre-filled context from intake_ — when intake narrows the problem list (e.g. dermatology lesions), prepopulate Questionnaire or Observation drafts before the clinician opens the chart.
+- _Questionnaire-driven capture (primary care)_ – a standard form per visit type (vitals, intake screen) submits a `QuestionnaireResponse` whose answers are parsed into `Observation` resources via `$extract` or a Bot.
+- _Template-driven plan (specialty protocols)_ – a `PlanDefinition` for the protocol instantiates `ServiceRequest`, `MedicationRequest`, or `CarePlan` from `ActivityDefinition` actions on `$apply` rather than free-text plan sections. See [Authoring Clinical Protocols](/docs/careplans/protocols).
+- _Pre-filled context from intake_ – when intake narrows the problem list (e.g. dermatology lesions), prepopulate Questionnaire or Observation drafts before the clinician opens the chart.
 
-Avoid storing everything as raw `QuestionnaireResponse` only—answers there are not first-class searchable fields the way Observations and Conditions are. Parse into the proper resources (see [Structured Data Capture](/docs/questionnaires/structured-data-capture)).
+Avoid storing everything as raw `QuestionnaireResponse` only – answers there are not first-class searchable fields the way Observations and Conditions are. Parse into the proper resources (see [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture)).
 
 ## How Visits, FHIR, and SOAP Line Up
 
-The diagram below is intentionally simplified—real encounters interleave steps—but shows how common visit steps map to FHIR resources and SOAP letters. Template mechanics (what `$apply` creates first) are separate from documentation; everything eventually references the same Encounter.
+The diagram below is intentionally simplified – real encounters interleave steps – but shows how common visit steps map to FHIR resources and SOAP letters. Template mechanics (what `$apply` creates first) are separate from documentation; everything eventually references the same Encounter.
 
 ```mermaid
 flowchart LR
@@ -290,7 +290,7 @@ flowchart BT
 
 </details>
 
-## Subjective and Objective — Observation
+## Subjective and Objective – Observation
 
 Both Subjective and Objective are [`Observation`](/docs/api/fhir/resources/observation) resources. The distinction is usually `performer`:
 
@@ -355,9 +355,9 @@ Use appropriate coding (typically [LOINC](/docs/careplans/loinc)) and `value[x]`
 
 </details>
 
-## Assessment — Clinical Impression
+## Assessment – Clinical Impression
 
-[`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) is the FHIR-native assessment resource — the “A” in SOAP.
+[`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) is the FHIR-native assessment resource – the “A” in SOAP.
 
 :::tip[Why ClinicalImpression instead of DocumentReference or raw QuestionnaireResponse?]
 
@@ -399,13 +399,13 @@ Usually create `ClinicalImpression` early with `status` `in-progress`, then tran
 
 Formal diagnoses are often modeled as [`Condition`](/docs/api/fhir/resources/condition) while `ClinicalImpression` carries reasoning. See [Diagnoses and problem list](/docs/charting/chart-data-model#diagnoses-and-problem-list).
 
-## Plan — Orders and Care
+## Plan – Orders and Care
 
 Plan items are concrete FHIR requests: [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) for labs, imaging, and referrals (use `category` to distinguish), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) for prescriptions, and [`CarePlan`](/docs/api/fhir/resources/careplan) for ongoing care strategy. Generate them inline from `ActivityDefinition` actions on the visit template rather than free text. See [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders) for detail.
 
 ## Signing and Locking Notes
 
-When the note is complete, set `ClinicalImpression.status` to `completed` and create [`Provenance`](/docs/api/fhir/resources/provenance) targeting the Encounter to record signer and time. "Signed" and "locked" are separate product decisions—co-signing, post-sign editable windows, and amendment workflows belong in your own discovery; see [Designing Charting](/docs/charting/designing-charting) for the structure-vs-narrative framing.
+When the note is complete, set `ClinicalImpression.status` to `completed` and create [`Provenance`](/docs/api/fhir/resources/provenance) targeting the Encounter to record signer and time. "Signed" and "locked" are separate product decisions – co-signing, post-sign editable windows, and amendment workflows belong in your own discovery; see [Designing Charting](/docs/charting/designing-charting) for the structure-vs-narrative framing.
 
 <details>
   <summary>Example: Provenance for clinician sign-off</summary>
