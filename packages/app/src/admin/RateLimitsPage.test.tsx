@@ -167,7 +167,7 @@ describe('RateLimitsPage', () => {
             part: [{ name: 'id', valueString: '123' }],
           },
         ],
-      } as Parameters,
+      },
     ];
 
     await setup();
@@ -218,7 +218,8 @@ describe('RateLimitsPage', () => {
       expect(screen.getByText('Membership Utilization')).toBeInTheDocument();
     });
 
-    const row = screen.getByText('mem-1').closest('tr')!;
+    const row = screen.getByText('mem-1').closest('tr');
+    expect(row).not.toBeNull();
     expect(row).toHaveStyle('cursor: pointer');
   });
 
