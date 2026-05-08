@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import type { Parameters, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { Parameters, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -30,13 +30,6 @@ function getPartValue(
 ): string | number | undefined {
   const part = parts?.part?.find((p) => p.name === name);
   return part?.valueString ?? part?.valueInteger;
-}
-
-function getPartReference(
-  parts: NonNullable<Parameters['parameter']>[number] | undefined,
-  name: string
-): Reference | undefined {
-  return parts?.part?.find((p) => p.name === name)?.valueReference;
 }
 
 describe('Project $rate-limits operation', () => {
@@ -82,13 +75,12 @@ describe('Project $rate-limits operation', () => {
     const membershipParams = getParametersByName(body, 'membership');
     expect(membershipParams.length).toBeGreaterThan(0);
 
-    for (const membership of membershipParams) {
-      expect(getPartValue(membership, 'membershipId')).toBeDefined();
-      const profile = getPartReference(membership, 'profile');
-      expect(profile).toBeDefined();
-      expect(profile?.reference).toBeDefined();
-      expect(profile?.display).toBeDefined();
-    }
+    expect(membershipParams.map((p) => getPartValue(p, 'membershipId')).every((id) => id !== undefined)).toBe(true);
+
+    const profiles = membershipParams.map(
+      (p) => p.part?.find((part) => part.name === 'profile')?.valueReference
+    );
+    expect(profiles.every((profile) => profile?.reference && profile?.display)).toBe(true);
   });
 
   test('Returns rate limit status for specific membership IDs', async () => {
