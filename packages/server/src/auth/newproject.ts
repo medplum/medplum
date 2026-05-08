@@ -4,6 +4,7 @@ import { badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
+import { getConfig } from '../config/loader';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -37,8 +38,14 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const projectName = req.body.projectName;
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+  if (getConfig().requireVerifiedEmailForProjectCreation && !user.emailVerified) {
+    sendOutcome(res, badRequest('Email verification is required to create a project'));
+    return;
+  }
+
+  const projectName = req.body.projectName;
   const { membership } = await createProject(projectName, user);
   const updatedLogin = await setLoginMembership(login, membership);
   await sendLoginResult(res, updatedLogin);

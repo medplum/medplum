@@ -325,6 +325,14 @@ export function redirect(url: URL): OperationOutcome {
   };
 }
 
+export function redirectOk(url: URL): OperationOutcome {
+  return { ...redirect(url), id: OK_ID };
+}
+
+export function getOutcomeRedirectUrl(outcome: OperationOutcome | undefined): string | undefined {
+  return outcome?.issue?.[0]?.details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+}
+
 export function businessRule(key: string, message: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
