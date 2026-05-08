@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentError, AgentResponseMessage } from '@medplum/core';
-import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
+import assert from 'node:assert';
 import os from 'node:os';
 import { globalLogger } from '../../../logger';
 import { getPubSubRedisSubscriber } from '../../../redis';
@@ -63,12 +64,24 @@ export function getCallbackChannelFromId(callback: string): string {
   return callback.slice(0, idx);
 }
 
-async function ensureSubscribed(): Promise<void> {
+/**
+ * Throws if callback subscriber has not yet been initialized.
+ */
+export function assertCallbackSubscriber(): void {
+  assert(sharedSubscriber, 'Callback subscriber not yet initialized');
+}
+
+/**
+ * Ensures that a callback subscriber has been initialized and is listening for agent command callbacks.
+ * @returns A Promise that resolves once the callback subscriber has initialized, or immediately if it was already initialized.
+ */
+export async function ensureCallbackSubscriber(): Promise<void> {
   if (sharedSubscriber) {
     return;
   }
   if (subscribePromise) {
-    return subscribePromise;
+    await subscribePromise;
+    return;
   }
   subscribePromise = (async () => {
     const subscriber = getPubSubRedisSubscriber();
@@ -77,7 +90,7 @@ async function ensureSubscribed(): Promise<void> {
       try {
         parsed = JSON.parse(message) as AgentResponseMessage | AgentError;
       } catch (err) {
-        globalLogger.warn('[AgentCallback]: Failed to parse callback message', { error: (err as Error).message });
+        globalLogger.warn('[AgentCallback]: Failed to parse callback message', { error: normalizeErrorString(err) });
         return;
       }
       const callbackId = parsed.callback;
@@ -119,8 +132,7 @@ export async function registerAgentCallback<T extends AgentResponseMessage = Age
   callbackId: string,
   timeoutMs: number
 ): Promise<[OperationOutcome, T | AgentError]> {
-  await ensureSubscribed();
-
+  assertCallbackSubscriber();
   return new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
     const timer = setTimeout(() => {
       pendingCallbacks.delete(callbackId);

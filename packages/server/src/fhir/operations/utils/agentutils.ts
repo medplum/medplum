@@ -23,7 +23,7 @@ import { getAuthenticatedContext } from '../../../context';
 import { publish } from '../../../pubsub';
 import type { Repository } from '../../repo';
 import type { AgentPushParameters } from '../agentpush';
-import { buildAgentCallbackId, registerAgentCallback } from './agentcallback';
+import { buildAgentCallbackId, ensureCallbackSubscriber, registerAgentCallback } from './agentcallback';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -179,6 +179,7 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
     // avoiding a new Redis subscriber connection per in-flight request.
     message.callback = buildAgentCallbackId(randomUUID());
 
+    await ensureCallbackSubscriber();
     const resultPromise = registerAgentCallback<T>(message.callback, options?.timeout ?? 5000);
     await publishRequestMessage(agent, message);
     return resultPromise;
