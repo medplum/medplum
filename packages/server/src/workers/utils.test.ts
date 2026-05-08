@@ -1,18 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Subscription } from '@medplum/fhirtypes';
+import { createReference, OperationOutcomeError } from '@medplum/core';
+import type { ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import type { Job, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { withTestContext } from '../test.setup';
-import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
+import { createTestProject, withTestContext } from '../test.setup';
+import {
+  addVerboseQueueLogging,
+  DefaultQueueRegistry,
+  findProjectMembership,
+  getWorkerBullmqConfig,
+  isJobSuccessful,
+} from './utils';
 
 describe('worker utils', () => {
   beforeAll(async () => {
-    await loadTestConfig();
+    const config = await loadTestConfig();
+    await initAppServices(config);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
   });
 
   describe('isJobSuccessful', () => {
@@ -392,5 +406,28 @@ describe('worker utils', () => {
       const result = getWorkerBullmqConfig(config, 'download');
       expect(result).toStrictEqual(config.bullmq);
     });
+  });
+
+  describe('findProjectMembership', () => {
+    test('throws when more than one membership exists for the profile in the project', async () =>
+      withTestContext(async () => {
+        const { project, client } = await createTestProject({ withClient: true });
+        const systemRepo = getGlobalSystemRepo();
+
+        // Create a second ProjectMembership for the same client in the same project
+        await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(client),
+          project: createReference(project),
+        });
+
+        await expect(findProjectMembership(project.id, createReference(client))).rejects.toThrow(
+          OperationOutcomeError
+        );
+        await expect(findProjectMembership(project.id, createReference(client))).rejects.toThrow(
+          'Multiple resources found matching condition'
+        );
+      }));
   });
 });
