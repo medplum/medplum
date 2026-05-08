@@ -108,6 +108,11 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
  *
  * This helper deliberately does NOT encode any rescoping logic — both paths supply
  * their own distinct validation and mutation in the callback.
+ * @param ctx - The authenticated request context for the caller.
+ * @param userId - The id of the User being rescoped.
+ * @param mutate - Callback invoked inside the system-repo transaction with the
+ *   re-read User and the system repo; returns the updated User.
+ * @returns The updated User as returned by the mutate callback.
  */
 async function withRescopeTxn(
   ctx: AuthenticatedRequestContext,
@@ -129,6 +134,10 @@ async function withRescopeTxn(
  * Promote a User into a Project (or move between Projects). Super-admin only.
  * Validates the target Project, rejects no-op moves, and forbids the move if the
  * User holds ProjectMemberships in any other Project.
+ * @param ctx - The authenticated request context for the caller.
+ * @param userId - The id of the User being rescoped.
+ * @param params - The rescope parameters, including the target project reference.
+ * @returns The updated User scoped to the target project.
  */
 async function rescopeUserToProject(
   ctx: AuthenticatedRequestContext,
@@ -178,6 +187,9 @@ async function rescopeUserToProject(
  * Demote a User to global scope. Allowed for super admins, or for project admins
  * who administer the project the User currently belongs to. Rejects if the User
  * is already global-scoped.
+ * @param ctx - The authenticated request context for the caller.
+ * @param userId - The id of the User being rescoped.
+ * @returns The updated User with project scope removed.
  */
 async function rescopeUserToGlobal(ctx: AuthenticatedRequestContext, userId: string): Promise<WithId<User>> {
   const callerIsSuperAdmin = ctx.project.superAdmin;
