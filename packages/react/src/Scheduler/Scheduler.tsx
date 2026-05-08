@@ -8,8 +8,8 @@ import type { Period, Practitioner, Reference, Schedule, Slot } from '@medplum/f
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { getStartMonth } from '../CalendarDateInput/CalendarDateInput.utils';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
-import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
