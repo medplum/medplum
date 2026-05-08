@@ -1682,9 +1682,7 @@ describe('Agent CLI', () => {
           extraField: 'extra-value',
         });
 
-        const channelTable = tableCalls.find(
-          (arg) => Array.isArray(arg) && arg[0]?.name === 'channel-a'
-        );
+        const channelTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'channel-a');
         expect(channelTable).toEqual([
           expect.objectContaining({
             name: 'channel-a',
@@ -1778,7 +1776,9 @@ describe('Agent CLI', () => {
         });
 
         await expect(main(['node', 'index.js', 'agent', 'stats', agentId])).resolves.toBeUndefined();
-        expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining(`Failed to parse stats for agent ${agentId}`));
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining(`Failed to parse stats for agent ${agentId}`)
+        );
         expect(consoleInfoSpy).toHaveBeenCalledWith('  (stats unavailable)');
         expect(consoleTableSpy).not.toHaveBeenCalled();
       });
