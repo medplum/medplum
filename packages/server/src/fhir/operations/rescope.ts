@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -10,7 +11,6 @@ import {
   Operator,
   parseReference,
 } from '@medplum/core';
-import type { WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';

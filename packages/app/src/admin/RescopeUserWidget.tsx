@@ -59,9 +59,7 @@ export function RescopeUserWidget(): JSX.Element {
 
   const projectLabel = projectRef?.display ?? projectRef?.reference ?? '(no project selected)';
   const projectReference = projectRef?.reference;
-  const userSearchCriteria = projectReference
-    ? { '_has:ProjectMembership:user:project': projectReference }
-    : undefined;
+  const userSearchCriteria = projectReference ? { '_has:ProjectMembership:user:project': projectReference } : undefined;
 
   return (
     <>
@@ -132,9 +130,7 @@ export function RescopeUserWidget(): JSX.Element {
               become a project-scoped resource belonging to that Project.
             </Text>
           )}
-          <Text c="red">
-            This is a privileged operation. Double-check the User and target before continuing.
-          </Text>
+          <Text c="red">This is a privileged operation. Double-check the User and target before continuing.</Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={close} disabled={submitting}>
               Cancel

@@ -17,10 +17,7 @@ export type UserScope = 'loading' | 'project' | 'global';
  * @param projectId - The id of the Project to compare against `User.meta.project`.
  * @returns A tuple of `[scope, refresh]` where `refresh` re-fetches the User after invalidating cache.
  */
-export function useUserScope(
-  userId: string | undefined,
-  projectId: string | undefined
-): [UserScope, () => void] {
+export function useUserScope(userId: string | undefined, projectId: string | undefined): [UserScope, () => void] {
   const medplum = useMedplum();
   const [scope, setScope] = useState<UserScope>('loading');
   const [refreshCount, setRefreshCount] = useState(0);
