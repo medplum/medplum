@@ -114,7 +114,9 @@ describe('Deploy Streaming', () => {
       throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
-    mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
     mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 

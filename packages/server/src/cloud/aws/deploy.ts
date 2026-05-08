@@ -193,9 +193,7 @@ export async function cleanupOldLambdaVersions(client: LambdaClient, name: strin
   const versions: number[] = [];
   let marker: string | undefined;
   do {
-    const response = await client.send(
-      new ListVersionsByFunctionCommand({ FunctionName: name, Marker: marker })
-    );
+    const response = await client.send(new ListVersionsByFunctionCommand({ FunctionName: name, Marker: marker }));
     for (const v of response.Versions ?? []) {
       const parsed = Number(v.Version);
       if (Number.isInteger(parsed)) {

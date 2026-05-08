@@ -124,7 +124,9 @@ describe('Deploy', () => {
       throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
-    mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
     mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 
@@ -583,9 +585,9 @@ describe('Deploy', () => {
     mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({
       Versions: [{ Version: '$LATEST' }, { Version: '1' }, { Version: '2' }, { Version: '3' }],
     });
-    mockLambdaClient.on(DeleteFunctionCommand).rejects(
-      new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' })
-    );
+    mockLambdaClient
+      .on(DeleteFunctionCommand)
+      .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
 
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
