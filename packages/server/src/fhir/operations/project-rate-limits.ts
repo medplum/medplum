@@ -106,7 +106,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     return {
       membershipId: membership.id as string,
       profileReference: membership.profile?.reference,
-      ...parseQuotaResult(consumed, pttl, userLimit),
+      ...buildQuotaStatus(consumed, pttl, userLimit),
     };
   });
 
@@ -116,13 +116,13 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   return [
     allOk,
     buildOutputParameters(operation, {
-      project: { id: project.id, ...parseQuotaResult(projectConsumed, projectPttl, projectLimit) },
+      project: { id: project.id, ...buildQuotaStatus(projectConsumed, projectPttl, projectLimit) },
       membership: membershipResults,
     }),
   ];
 }
 
-function parseQuotaResult(
+function buildQuotaStatus(
   consumed: string | null,
   pttl: number,
   limit: number
