@@ -422,9 +422,7 @@ describe('worker utils', () => {
           project: createReference(project),
         });
 
-        await expect(findProjectMembership(project.id, createReference(client))).rejects.toThrow(
-          OperationOutcomeError
-        );
+        await expect(findProjectMembership(project.id, createReference(client))).rejects.toThrow(OperationOutcomeError);
         await expect(findProjectMembership(project.id, createReference(client))).rejects.toThrow(
           'Multiple resources found matching condition'
         );
