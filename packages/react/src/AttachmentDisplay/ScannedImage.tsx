@@ -3,7 +3,7 @@
 
 import { Loader } from '@mantine/core';
 import type { DetailedHTMLProps, ImgHTMLAttributes, JSX } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface ScannedImageProps extends DetailedHTMLProps<ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement> {
   readonly maxRetries?: number;
@@ -12,7 +12,16 @@ export interface ScannedImageProps extends DetailedHTMLProps<ImgHTMLAttributes<H
 export function ScannedImage(props: ScannedImageProps): JSX.Element {
   const { maxRetries = 5, ...rest } = props;
   const [attempt, setAttempt] = useState(0);
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'waiting' | 'failed'>('loading');
+  const [status, setStatus] = useState<'fetching' | 'backoff' | 'loaded' | 'failed'>('fetching');
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== undefined) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleError = (): void => {
     if (attempt >= maxRetries) {
@@ -20,13 +29,14 @@ export function ScannedImage(props: ScannedImageProps): JSX.Element {
       return;
     }
 
-    setStatus('waiting');
+    setStatus('backoff');
 
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s
     const delay = Math.min(1000 * 2 ** attempt, 16000);
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       setAttempt((a) => a + 1);
-      setStatus('loading');
+      setStatus('fetching');
+      timeoutRef.current = undefined;
     }, delay);
   };
 
@@ -34,7 +44,7 @@ export function ScannedImage(props: ScannedImageProps): JSX.Element {
     return <div className="image-placeholder">Image unavailable</div>;
   }
 
-  if (status === 'waiting') {
+  if (status === 'backoff') {
     return <Loader />;
   }
 
