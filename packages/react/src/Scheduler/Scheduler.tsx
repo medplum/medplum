@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Loader, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
-import { getReferenceString, isReference, isResource, normalizeErrorString } from '@medplum/core';
+import { arrayify, getReferenceString, isDefined, isReference, isResource, normalizeErrorString } from '@medplum/core';
 import type { Period, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -59,26 +58,12 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     const fetchSlots: SlotSearchFunction =
       props.fetchSlots ??
       (async (period) => {
-        const scheduleArray: string[] = [];
-        if (!Array.isArray(props.schedule)) {
-          scheduleArray.push(
-            isReference<Schedule>(props.schedule, 'Schedule')
-              ? props.schedule.reference
-              : getReferenceString(props.schedule as WithId<Schedule>)
-          );
-        } else {
-          for (const schedule of props.schedule) {
-            if (isReference(schedule)) {
-              scheduleArray.push(schedule.reference);
-            } else {
-              const scheduleRef = getReferenceString(schedule as WithId<Schedule>);
-              scheduleArray.push(scheduleRef);
-            }
-          }
-        }
+        const schedules = arrayify(props.schedule ?? [])
+          .map(getReferenceString)
+          .filter(isDefined);
         const slotSearchParams = new URLSearchParams([
           ['_count', (30 * 24).toString()],
-          ['schedule', scheduleArray.join(',')],
+          ['schedule', schedules.join(',')],
           ['start', 'gt' + period.start],
           ['start', 'lt' + period.end],
         ]);
