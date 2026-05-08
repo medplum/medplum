@@ -128,6 +128,13 @@ let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 const mockAsyncJobWaitOptions = { completionDelayMs: 0, maxAttempts: 200, pollIntervalMs: 10 };
+const mockRebuildR4ValueSets = rebuildR4ValueSets as jest.MockedFunction<typeof rebuildR4ValueSets>;
+const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as jest.MockedFunction<
+  typeof rebuildR4StructureDefinitions
+>;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as jest.MockedFunction<
+  typeof rebuildR4SearchParameters
+>;
 
 jest.mock('../migrations/data/index', () => {
   return {
@@ -225,8 +232,14 @@ describe('Super Admin routes', () => {
     processStdoutWriteSpy.mockRestore();
   });
 
-  afterEach(() => {
+  beforeEach(() => {
     mockPgMaintenanceQueries.length = 0;
+    mockRebuildR4ValueSets.mockReset();
+    mockRebuildR4StructureDefinitions.mockReset();
+    mockRebuildR4SearchParameters.mockReset();
+    mockRebuildR4ValueSets.mockResolvedValue(undefined);
+    mockRebuildR4StructureDefinitions.mockResolvedValue(undefined);
+    mockRebuildR4SearchParameters.mockResolvedValue(undefined);
   });
 
   test('Rebuild ValueSetElements require respond-async', async () => {
@@ -238,13 +251,10 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(400);
     expect(res.body?.issue?.[0]?.details?.text).toBe('Operation requires "Prefer: respond-async"');
+    expect(mockRebuildR4ValueSets).not.toHaveBeenCalled();
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async', async () => {
-    (rebuildR4ValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.resolve(true);
-    });
-
     const res = await request(app)
       .post('/admin/super/valuesets')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -254,7 +264,9 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
+    expect(mockRebuildR4ValueSets).toHaveBeenCalledTimes(1);
+    expect(mockRebuildR4ValueSets).toHaveBeenCalledWith(expect.any(Repository));
   });
 
   test('Rebuild ValueSetElements access denied', async () => {
@@ -265,6 +277,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toBe(403);
+    expect(mockRebuildR4ValueSets).not.toHaveBeenCalled();
   });
 
   test('Rebuild StructureDefinitions require respond-async', async () => {
@@ -276,13 +289,10 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
+    expect(mockRebuildR4StructureDefinitions).not.toHaveBeenCalled();
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async', async () => {
-    (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.resolve(true);
-    });
-
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -292,14 +302,14 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
+    expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
+    expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledWith(expect.any(Repository));
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
     const err = new Error('structuredefinitions test error');
-    (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(err);
-    });
+    mockRebuildR4StructureDefinitions.mockRejectedValueOnce(err);
 
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
@@ -309,8 +319,10 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toStrictEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
+    expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
+    expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledWith(expect.any(Repository));
   });
 
   test('Rebuild StructureDefinitions access denied', async () => {
@@ -321,6 +333,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toBe(403);
+    expect(mockRebuildR4StructureDefinitions).not.toHaveBeenCalled();
   });
 
   test('Rebuild SearchParameters require async', async () => {
@@ -332,13 +345,10 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
+    expect(mockRebuildR4SearchParameters).not.toHaveBeenCalled();
   });
 
   test('Rebuild searchparameters as super admin with respond-async', async () => {
-    (rebuildR4SearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.resolve(true);
-    });
-
     const res = await request(app)
       .post('/admin/super/searchparameters')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -348,14 +358,14 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
+    expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
+    expect(mockRebuildR4SearchParameters).toHaveBeenCalledWith(expect.any(Repository));
   });
 
   test('Rebuild searchparameters as super admin with respond-async error', async () => {
     const err = new Error('rebuild searchparameters test error');
-    (rebuildR4SearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(err);
-    });
+    mockRebuildR4SearchParameters.mockRejectedValueOnce(err);
 
     const res = await request(app)
       .post('/admin/super/searchparameters')
@@ -365,8 +375,10 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toStrictEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
+    expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
+    expect(mockRebuildR4SearchParameters).toHaveBeenCalledWith(expect.any(Repository));
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -377,6 +389,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toBe(403);
+    expect(mockRebuildR4SearchParameters).not.toHaveBeenCalled();
   });
 
   test('Reindex access denied', async () => {
