@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ListVersionsByFunctionCommand,
   ResourceConflictException,
   ResourceNotFoundException,
   TooManyRequestsException,
@@ -121,6 +123,9 @@ describe('Deploy', () => {
 
       throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
+
+    mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
+    mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 
   afterEach(() => {
@@ -518,6 +523,78 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(400);
     expect(res2.body).toMatchObject(badRequest('Bot timeout exceeds allowed maximum of 900 seconds'));
+  });
+
+  test('Cleans up old lambda versions, keeping the two newest', async () => {
+    // Step 1: Create a bot
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler() { return null; }`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+    const name = `medplum-bot-lambda-${bot.id}`;
+
+    // Simulate paginated list with 5 published versions (plus $LATEST).
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .resolvesOnce({
+        Versions: [{ Version: '$LATEST' }, { Version: '1' }, { Version: '2' }],
+        NextMarker: 'page-2',
+      })
+      .resolves({
+        Versions: [{ Version: '3' }, { Version: '5' }, { Version: '4' }],
+      });
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    // Versions 5 and 4 should be kept; 3, 2, 1 deleted.
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 3);
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' });
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' });
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' });
+  });
+
+  test('Cleanup tolerates DeleteFunction errors', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler() { return null; }`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({
+      Versions: [{ Version: '$LATEST' }, { Version: '1' }, { Version: '2' }, { Version: '3' }],
+    });
+    mockLambdaClient.on(DeleteFunctionCommand).rejects(
+      new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' })
+    );
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    // Deploy should still succeed even though cleanup deletion failed.
+    expect(res2.status).toBe(200);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
   });
 
   test('Exists check throws error', async () => {

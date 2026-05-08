@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ListVersionsByFunctionCommand,
   ResourceNotFoundException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
@@ -111,6 +113,9 @@ describe('Deploy Streaming', () => {
 
       throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
+
+    mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
+    mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 
   afterEach(() => {

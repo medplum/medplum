@@ -3,10 +3,12 @@
 import type { GetFunctionConfigurationCommandOutput } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ListVersionsByFunctionCommand,
   PackageType,
   ResourceConflictException,
   ResourceNotFoundException,
@@ -26,6 +28,7 @@ export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
+export const LAMBDA_VERSIONS_TO_KEEP = 2;
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
@@ -174,6 +177,46 @@ export async function deployLambdaInternal(
     await updateLambda(bot, client, name, zipFile);
   } else {
     await createLambda(bot, client, name, zipFile);
+  }
+
+  await cleanupOldLambdaVersions(client, name);
+}
+
+/**
+ * Deletes published lambda versions older than the most recent `LAMBDA_VERSIONS_TO_KEEP` versions.
+ * Always preserves the unpublished `$LATEST` qualifier.
+ * @param client - The AWS Lambda client.
+ * @param name - The lambda name.
+ */
+export async function cleanupOldLambdaVersions(client: LambdaClient, name: string): Promise<void> {
+  const log = getLogger();
+  const versions: number[] = [];
+  let marker: string | undefined;
+  do {
+    const response = await client.send(
+      new ListVersionsByFunctionCommand({ FunctionName: name, Marker: marker })
+    );
+    for (const v of response.Versions ?? []) {
+      const parsed = Number(v.Version);
+      if (Number.isInteger(parsed)) {
+        versions.push(parsed);
+      }
+    }
+    marker = response.NextMarker;
+  } while (marker);
+
+  const toDelete = versions.sort((a, b) => b - a).slice(LAMBDA_VERSIONS_TO_KEEP);
+  if (toDelete.length === 0) {
+    return;
+  }
+
+  log.info('Cleaning up old lambda versions', { name, versions: toDelete });
+  for (const version of toDelete) {
+    try {
+      await client.send(new DeleteFunctionCommand({ FunctionName: name, Qualifier: String(version) }));
+    } catch (err) {
+      log.warn('Failed to delete old lambda version', { name, version, err });
+    }
   }
 }
 
