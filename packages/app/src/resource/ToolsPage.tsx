@@ -198,18 +198,11 @@ export function ToolsPage(): JSX.Element | null {
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
-  const [working, setWorking] = useState(false);
   const [logs, setLogs] = useState<string | undefined>();
   const [stats, setStats] = useState<AgentStats | undefined>();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
-  useEffect(() => {
-    if (loadingStatus || reloadingConfig || upgrading || pinging || fetchingStats) {
-      setWorking(true);
-      return;
-    }
-    setWorking(false);
-  }, [loadingStatus, reloadingConfig, upgrading, pinging, fetchingStats]);
+  const working = loadingStatus || reloadingConfig || upgrading || pinging || fetchingLogs || fetchingStats;
 
   const handleStatus = useCallback(() => {
     setLoadingStatus(true);
