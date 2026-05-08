@@ -303,7 +303,9 @@ describe('update-bucket-policies command', () => {
 
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'dev']);
 
-    expect(console.error).toHaveBeenCalledWith('Error updating App bucket policy: App bucket already has policy statement');
+    expect(console.error).toHaveBeenCalledWith(
+      'Error updating App bucket policy: App bucket already has policy statement'
+    );
     expect(console.log).toHaveBeenCalledWith('Storage bucket policy updated');
     expect(console.log).toHaveBeenCalledWith('Done');
   });
