@@ -21,9 +21,9 @@ import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { publish } from '../../../pubsub';
-import { getPubSubRedisSubscriber } from '../../../redis';
 import type { Repository } from '../../repo';
 import type { AgentPushParameters } from '../agentpush';
+import { buildAgentCallbackId, registerAgentCallback } from './agentcallback';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -174,35 +174,14 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
   options?: AgentMessageOptions
 ): Promise<[OperationOutcome] | [OperationOutcome, T | AgentError]> {
   if (options?.waitForResponse) {
-    // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
-    message.callback = getReferenceString(agent) + '-' + randomUUID();
+    // Tag the message with a hostname-keyed callback id so the response is routed
+    // back to this server process via the shared per-hostname callback channel,
+    // avoiding a new Redis subscriber connection per in-flight request.
+    message.callback = buildAgentCallbackId(randomUUID());
 
-    const redisSubscriber = getPubSubRedisSubscriber();
-    await redisSubscriber.subscribe(message.callback);
-
-    const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
-      redisSubscriber.on('message', (_channel: string, message: string) => {
-        const response = JSON.parse(message) as T | AgentError;
-        resolve([allOk, response]);
-        cleanup();
-      });
-
-      // Create a timer for 5 seconds for timeout
-      const timer = setTimeout(() => {
-        cleanup();
-
-        reject(new OperationOutcomeError(badRequest('Timeout')));
-      }, options?.timeout ?? 5000);
-
-      const cleanup = (): void => {
-        redisSubscriber.disconnect();
-        clearTimeout(timer);
-      };
-    });
-
+    const resultPromise = registerAgentCallback<T>(message.callback, options?.timeout ?? 5000);
     await publishRequestMessage(agent, message);
-    const result = await resultPromise;
-    return result;
+    return resultPromise;
   }
 
   await publishRequestMessage(agent, message);

@@ -51,6 +51,7 @@ import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
+import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
@@ -277,6 +278,7 @@ export async function shutdownApp(): Promise<void> {
 
   await closeWorkers();
   await closeDatabase();
+  closeAgentCallbackSubscriber();
   await closeRedis();
   closeRateLimiter();
 

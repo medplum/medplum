@@ -15,6 +15,7 @@ import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
+import { getCallbackChannelFromId } from '../fhir/operations/utils/agentcallback';
 import { publish } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
@@ -94,13 +95,13 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
           case 'agent:upgrade:response':
           case 'agent:logs:response':
             if (command.callback) {
-              await publish(command.callback, JSON.stringify(command));
+              await publish(getCallbackChannelFromId(command.callback), JSON.stringify(command));
             }
             break;
 
           case 'agent:error':
             if (command.callback) {
-              await publish(command.callback, JSON.stringify(command));
+              await publish(getCallbackChannelFromId(command.callback), JSON.stringify(command));
             }
             globalLogger.error('[Agent]: Error received from agent', { error: command.body });
             break;
