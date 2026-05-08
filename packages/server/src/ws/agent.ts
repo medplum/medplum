@@ -11,11 +11,11 @@ import type { RawData, WebSocket } from 'ws';
 import type { AgentInfo } from '../agent/utils';
 import { AgentConnectionState } from '../agent/utils';
 import { executeBot } from '../bots/execute';
+import { getCallbackChannelFromId } from '../fhir/operations/utils/agentcallback';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getCallbackChannelFromId } from '../fhir/operations/utils/agentcallback';
 import { publish } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
