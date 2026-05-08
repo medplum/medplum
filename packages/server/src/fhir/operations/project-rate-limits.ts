@@ -122,11 +122,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   ];
 }
 
-function buildQuotaStatus(
-  consumed: string | null,
-  pttl: number,
-  limit: number
-): Record<string, number> | undefined {
+function buildQuotaStatus(consumed: string | null, pttl: number, limit: number): Record<string, number> | undefined {
   if (consumed === null) {
     return undefined;
   }
