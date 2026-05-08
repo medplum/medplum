@@ -13,6 +13,9 @@ export type UserScope = 'loading' | 'project' | 'global';
  *
  * Returns the current scope and a `refresh` function that re-fetches the User after
  * invalidating the client cache, so callers can update the page after a rescope op.
+ * @param userId - The id of the User to resolve, or `undefined` to remain in `'loading'`.
+ * @param projectId - The id of the Project to compare against `User.meta.project`.
+ * @returns A tuple of `[scope, refresh]` where `refresh` re-fetches the User after invalidating cache.
  */
 export function useUserScope(
   userId: string | undefined,
@@ -24,7 +27,7 @@ export function useUserScope(
 
   useEffect(() => {
     if (!userId) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     setScope('loading');

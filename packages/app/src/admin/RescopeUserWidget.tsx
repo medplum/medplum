@@ -79,7 +79,7 @@ export function RescopeUserWidget(): JSX.Element {
               placeholder="Select a Project"
               targetTypes={['Project']}
               onChange={(ref) => {
-                setProjectRef(ref as Reference<Project> | undefined);
+                setProjectRef(ref);
                 setUserRef(undefined);
               }}
             />

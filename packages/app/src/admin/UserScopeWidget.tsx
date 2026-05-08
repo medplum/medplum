@@ -9,23 +9,29 @@ export interface UserScopeWidgetProps {
   readonly scope: UserScope;
 }
 
+function renderScopeBadge(scope: UserScope): JSX.Element {
+  if (scope === 'loading') {
+    return <Skeleton height={22} width={70} radius="xl" />;
+  }
+  if (scope === 'project') {
+    return (
+      <Badge color="blue" variant="light">
+        Project
+      </Badge>
+    );
+  }
+  return (
+    <Badge color="gray" variant="light">
+      Global
+    </Badge>
+  );
+}
+
 export function UserScopeWidget(props: UserScopeWidgetProps): JSX.Element {
   const { scope } = props;
   return (
     <DescriptionList>
-      <DescriptionListEntry term="Scope">
-        {scope === 'loading' ? (
-          <Skeleton height={22} width={70} radius="xl" />
-        ) : scope === 'project' ? (
-          <Badge color="blue" variant="light">
-            Project
-          </Badge>
-        ) : (
-          <Badge color="gray" variant="light">
-            Global
-          </Badge>
-        )}
-      </DescriptionListEntry>
+      <DescriptionListEntry term="Scope">{renderScopeBadge(scope)}</DescriptionListEntry>
     </DescriptionList>
   );
 }

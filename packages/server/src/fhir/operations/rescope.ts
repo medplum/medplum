@@ -9,11 +9,12 @@ import {
   OperationOutcomeError,
   Operator,
   parseReference,
-  WithId,
 } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../../context';
+import type { AuthenticatedRequestContext } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { getGlobalSystemRepo } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
@@ -131,7 +132,7 @@ async function rescopeUserToProject(
       count: 2,
       filters: [
         { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
-        { code: 'project', operator: Operator.NOT_EQUALS, value: targetRef.reference as string },
+        { code: 'project', operator: Operator.NOT_EQUALS, value: targetRef.reference },
       ],
     });
     if (memberships.length > 0) {
