@@ -12,7 +12,17 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import type { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  Encounter,
+  Observation,
+  Patient,
+  Questionnaire,
+  QuestionnaireResponse,
+  Resource,
+  ResourceType,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
@@ -290,6 +300,401 @@ describe('MemoryRepository', () => {
       expectResultsContents(patients, patientObservations, { count, offset }, resultAsc);
       expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
       expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
+    });
+  });
+
+  describe('_include and _revinclude', () => {
+    test('forward _include resolves Reference and tags entry', async () => {
+      const localRepo = new MemoryRepository();
+      const patient = await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const observation = await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+
+      const bundle = await localRepo.search(parseSearchRequest(`Observation?_id=${observation.id}&_include=Observation:subject`));
+
+      expect(bundle.total).toBe(1);
+      expect(bundle.entry).toHaveLength(2);
+      const matchEntry = bundle.entry?.find((e) => e.search?.mode === 'match');
+      const includeEntry = bundle.entry?.find((e) => e.search?.mode === 'include');
+      expect(matchEntry?.resource?.id).toBe(observation.id);
+      expect(includeEntry?.resource?.resourceType).toBe('Patient');
+      expect(includeEntry?.resource?.id).toBe(patient.id);
+    });
+
+    test('reverse _revinclude finds resources referencing the base', async () => {
+      const localRepo = new MemoryRepository();
+      const patient = await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const obs1 = await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'a' },
+        subject: createReference(patient),
+      });
+      const obs2 = await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'b' },
+        subject: createReference(patient),
+      });
+
+      const bundle = await localRepo.search(
+        parseSearchRequest(`Patient?_id=${patient.id}&_revinclude=Observation:subject`)
+      );
+
+      expect(bundle.total).toBe(1);
+      expect(bundle.entry).toHaveLength(3);
+      const matchEntry = bundle.entry?.find((e) => e.search?.mode === 'match');
+      expect(matchEntry?.resource?.id).toBe(patient.id);
+      const includedIds = bundle.entry
+        ?.filter((e) => e.search?.mode === 'include')
+        .map((e) => e.resource?.id)
+        .sort();
+      expect(includedIds).toStrictEqual([obs1.id, obs2.id].sort());
+    });
+
+    test('unknown include parameter throws badRequest', async () => {
+      const localRepo = new MemoryRepository();
+      await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await expect(
+        localRepo.search(parseSearchRequest('Patient?_include=Patient:not-a-real-param'))
+      ).rejects.toThrow(OperationOutcomeError);
+    });
+
+    test('does not include base resources twice when referenced by multiple results', async () => {
+      const localRepo = new MemoryRepository();
+      const patient = await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'a' },
+        subject: createReference(patient),
+      });
+      await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'b' },
+        subject: createReference(patient),
+      });
+
+      const bundle = await localRepo.search(
+        parseSearchRequest('Observation?_include=Observation:subject')
+      );
+
+      expect(bundle.total).toBe(2);
+      const includes = bundle.entry?.filter((e) => e.search?.mode === 'include') ?? [];
+      expect(includes).toHaveLength(1);
+      expect(includes[0].resource?.id).toBe(patient.id);
+    });
+
+    test('search without includes leaves entries un-tagged', async () => {
+      const localRepo = new MemoryRepository();
+      await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const bundle = await localRepo.search(parseSearchRequest('Patient'));
+      expect(bundle.entry?.[0].search).toBeUndefined();
+    });
+
+    test(':iterate chains forward includes', async () => {
+      const localRepo = new MemoryRepository();
+      const patient = await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const encounter = await localRepo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'finished',
+        class: { code: 'AMB' },
+        subject: createReference(patient),
+      });
+      const observation = await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 't' },
+        encounter: createReference(encounter),
+      });
+
+      const bundle = await localRepo.search(
+        parseSearchRequest(
+          `Observation?_id=${observation.id}&_include=Observation:encounter&_include:iterate=Encounter:subject`
+        )
+      );
+
+      const ids = (bundle.entry ?? []).map((e) => e.resource?.id).sort();
+      expect(ids).toStrictEqual([encounter.id, observation.id, patient.id].sort());
+    });
+
+    test('plain (non-iterate) include is single-hop', async () => {
+      const localRepo = new MemoryRepository();
+      const patient = await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const encounter = await localRepo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'finished',
+        class: { code: 'AMB' },
+        subject: createReference(patient),
+      });
+      const observation = await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 't' },
+        encounter: createReference(encounter),
+      });
+
+      // Without :iterate the second hop should not be applied.
+      const bundle = await localRepo.search(
+        parseSearchRequest(
+          `Observation?_id=${observation.id}&_include=Observation:encounter&_include=Encounter:subject`
+        )
+      );
+
+      const includedIds = (bundle.entry ?? [])
+        .filter((e) => e.search?.mode === 'include')
+        .map((e) => e.resource?.id)
+        .sort();
+      // Encounter pulled by Observation:encounter (single hop). Patient is NOT included
+      // because Encounter:subject was applied against the base (Observation) which has no `subject`.
+      expect(includedIds).toStrictEqual([encounter.id]);
+    });
+
+    test('canonical _include resolves by url', async () => {
+      const localRepo = new MemoryRepository();
+      const questionnaireUrl = `https://example.com/Questionnaire/${randomUUID()}`;
+      const questionnaire = await localRepo.createResource<Questionnaire>({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: questionnaireUrl,
+      });
+      const response = await localRepo.createResource<QuestionnaireResponse>({
+        resourceType: 'QuestionnaireResponse',
+        status: 'completed',
+        questionnaire: questionnaireUrl,
+      });
+
+      const bundle = await localRepo.search(
+        parseSearchRequest(
+          `QuestionnaireResponse?_id=${response.id}&_include=QuestionnaireResponse:questionnaire`
+        )
+      );
+
+      const includes = (bundle.entry ?? []).filter((e) => e.search?.mode === 'include');
+      expect(includes).toHaveLength(1);
+      expect(includes[0].resource?.id).toBe(questionnaire.id);
+    });
+
+    test('chained search resolves dotted code', async () => {
+      const localRepo = new MemoryRepository();
+      const family = randomUUID();
+      const patient = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+      const otherPatient = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Other' }],
+      });
+      const matchingObs = await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 't' },
+        subject: createReference(patient),
+      });
+      await localRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 't' },
+        subject: createReference(otherPatient),
+      });
+
+      const bundle = await localRepo.search(parseSearchRequest(`Observation?subject:Patient.family=${family}`));
+
+      expect(bundle.total).toBe(1);
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0].resource?.id).toBe(matchingObs.id);
+    });
+
+    test('chained search returns empty when chain has no matches', async () => {
+      const localRepo = new MemoryRepository();
+      await localRepo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'Real' }] });
+      const bundle = await localRepo.search(
+        parseSearchRequest(`Observation?subject:Patient.family=NonexistentFamily${randomUUID()}`)
+      );
+      expect(bundle.total).toBe(0);
+      expect(bundle.entry).toBeUndefined();
+    });
+
+    test('canonical _revinclude resolves by url', async () => {
+      const localRepo = new MemoryRepository();
+      const questionnaireUrl = `https://example.com/Questionnaire/${randomUUID()}`;
+      await localRepo.createResource<Questionnaire>({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: questionnaireUrl,
+      });
+      const response = await localRepo.createResource<QuestionnaireResponse>({
+        resourceType: 'QuestionnaireResponse',
+        status: 'completed',
+        questionnaire: questionnaireUrl,
+      });
+
+      const bundle = await localRepo.search(
+        parseSearchRequest(
+          `Questionnaire?url=${encodeURIComponent(questionnaireUrl)}&_revinclude=QuestionnaireResponse:questionnaire`
+        )
+      );
+
+      const includes = (bundle.entry ?? []).filter((e) => e.search?.mode === 'include');
+      expect(includes).toHaveLength(1);
+      expect(includes[0].resource?.id).toBe(response.id);
+    });
+  });
+
+  describe('token search', () => {
+    test(':not negation', async () => {
+      const localRepo = new MemoryRepository();
+      const family = randomUUID();
+      const m = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'male',
+      });
+      const f = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'female',
+      });
+      const bundle = await localRepo.search(parseSearchRequest(`Patient?family=${family}&gender:not=male`));
+      const ids = (bundle.entry ?? []).map((e) => e.resource?.id).sort();
+      expect(ids).toStrictEqual([f.id].sort());
+      expect(ids).not.toContain(m.id);
+    });
+
+    test('system|code matching', async () => {
+      const localRepo = new MemoryRepository();
+      const patient = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://hospital.example/mrn', value: 'ABC' }],
+      });
+      const matched = await localRepo.search(
+        parseSearchRequest(`Patient?identifier=${encodeURIComponent('http://hospital.example/mrn|ABC')}`)
+      );
+      expect(matched.entry?.[0].resource?.id).toBe(patient.id);
+      const notMatched = await localRepo.search(
+        parseSearchRequest(`Patient?identifier=${encodeURIComponent('http://other.example|ABC')}`)
+      );
+      expect(notMatched.entry).toBeUndefined();
+    });
+
+    test(':in expands ValueSet to token codes', async () => {
+      const localRepo = new MemoryRepository();
+      const url = `https://example.com/ValueSet/${randomUUID()}`;
+      await localRepo.createResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url,
+        compose: {
+          include: [
+            {
+              system: 'http://hl7.org/fhir/administrative-gender',
+              concept: [{ code: 'male' }, { code: 'female' }],
+            },
+          ],
+        },
+      });
+      const family = randomUUID();
+      const m = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'male',
+      });
+      const u = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'unknown',
+      });
+      const bundle = await localRepo.search(
+        parseSearchRequest(`Patient?family=${family}&gender:in=${encodeURIComponent(url)}`)
+      );
+      const ids = (bundle.entry ?? []).map((e) => e.resource?.id).sort();
+      expect(ids).toContain(m.id);
+      expect(ids).not.toContain(u.id);
+    });
+
+    test(':not-in inverts ValueSet membership', async () => {
+      const localRepo = new MemoryRepository();
+      const url = `https://example.com/ValueSet/${randomUUID()}`;
+      await localRepo.createResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url,
+        compose: {
+          include: [
+            {
+              system: 'http://hl7.org/fhir/administrative-gender',
+              concept: [{ code: 'male' }],
+            },
+          ],
+        },
+      });
+      const family = randomUUID();
+      const m = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'male',
+      });
+      const f = await localRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'female',
+      });
+      const bundle = await localRepo.search(
+        parseSearchRequest(`Patient?family=${family}&gender:not-in=${encodeURIComponent(url)}`)
+      );
+      const ids = (bundle.entry ?? []).map((e) => e.resource?.id).sort();
+      expect(ids).toContain(f.id);
+      expect(ids).not.toContain(m.id);
+    });
+
+    test(':in with missing ValueSet throws badRequest', async () => {
+      const localRepo = new MemoryRepository();
+      await localRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await expect(
+        localRepo.search(
+          parseSearchRequest(`Patient?gender:in=${encodeURIComponent('https://example.com/missing')}`)
+        )
+      ).rejects.toThrow(OperationOutcomeError);
+    });
+  });
+
+  describe('schema validation', () => {
+    test('opt-in flag rejects resources missing required fields', async () => {
+      const strict = new MemoryRepository({ validateResources: true });
+      // Observation requires status and code; missing both should fail validation.
+      await expect(
+        strict.createResource<Observation>({ resourceType: 'Observation' } as Observation)
+      ).rejects.toThrow(OperationOutcomeError);
+    });
+
+    test('opt-in flag allows valid resources', async () => {
+      const strict = new MemoryRepository({ validateResources: true });
+      const obs = await strict.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'temp' },
+      });
+      expect(obs.id).toBeDefined();
+    });
+
+    test('opt-in flag does not validate during seeding', async () => {
+      const strict = new MemoryRepository({ validateResources: true });
+      await strict.withSeeding(() =>
+        strict.createResource<Observation>({ resourceType: 'Observation' } as Observation)
+      );
+    });
+
+    test('default flag is off and accepts loose fixtures', async () => {
+      const lax = new MemoryRepository();
+      await expect(
+        lax.createResource<Observation>({ resourceType: 'Observation' } as Observation)
+      ).resolves.toBeDefined();
     });
   });
 });

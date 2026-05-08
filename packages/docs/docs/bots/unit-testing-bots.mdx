@@ -61,10 +61,9 @@ We recommend creating a `MockClient` at the beginning of each test, to avoid any
 
 The MockClient does not yet perfectly replicate all functionality of the `MedplumClient` class. Here are the known differences:
 
-- Chained search
-- Search `_include` and `_revinclude` parameters
-- Full compliance for token search parameters
-- More accurate schema validation
+- Token search modifiers `:above` and `:below` (require a real terminology service)
+- Reverse-chain `_has` search
+- Schema validation is **opt-in** via `new MemoryRepository({ validateResources: true })` to preserve backwards compatibility with existing test fixtures.
 - **Authentication**
 - **Most FHIR $ operations**
 - **`$validate`**
