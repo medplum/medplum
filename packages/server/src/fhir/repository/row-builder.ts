@@ -11,6 +11,7 @@ import {
   convertToSearchableUris,
   evalFhirPathTyped,
   flatMapFilter,
+  getReferenceString,
   resolveId,
   SearchParameterType,
   stringify,
@@ -142,7 +143,15 @@ function buildColumn(resource: Resource, columns: Record<string, any>, searchPar
     return;
   }
   if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
-    buildRangeColumns(searchParam, impl, columns, resource);
+    try {
+      buildRangeColumns(searchParam, impl, columns, resource);
+    } catch (err) {
+      getLogger().warn('Error building range column', {
+        error: err,
+        resource: getReferenceString(resource),
+        expr: impl.parsedExpression,
+      });
+    }
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
