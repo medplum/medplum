@@ -31,8 +31,8 @@ export function VerifyEmailPage(): JSX.Element {
         onSubmit={async () => {
           setOutcome(undefined);
           try {
-            const outcome = await medplum.post<OperationOutcome | undefined>('auth/verifyemail', { id, secret });
-            const uri = outcome?.issue?.[0]?.details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+            const result = await medplum.post<OperationOutcome | undefined>('auth/verifyemail', { id, secret });
+            const uri = result?.issue?.[0]?.details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
             if (uri) {
               locationUtils.assign(uri);
             } else {

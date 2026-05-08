@@ -71,7 +71,9 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
           {props.children}
         </NewUserForm>
       )}
-      {emailVerificationRequired && <div>Please verify your email address to continue.</div>}
+      {emailVerificationRequired && (
+        <div>Please check your email for a verification link. Click the link to continue setting up your account.</div>
+      )}
       {login && !emailVerificationRequired && type === 'project' && (
         <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />
       )}

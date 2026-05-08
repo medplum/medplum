@@ -91,12 +91,12 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       allowNoMembership: true,
     });
 
+    let emailVerificationRequired = false;
     if (config.requireVerifiedEmailForProjectCreation && projectId === 'new') {
       await sendVerificationEmail(user, login);
-      res.status(200).json({ login: login.id, emailVerificationRequired: true });
-    } else {
-      res.status(200).json({ login: login.id });
+      emailVerificationRequired = true;
     }
+    res.status(200).json({ login: login.id, emailVerificationRequired });
   } catch (err) {
     sendOutcome(res, normalizeOperationOutcome(err));
   }
@@ -129,10 +129,6 @@ export async function createUser(request: NewUserRequest): Promise<WithId<User>>
 }
 
 async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
-  if (!getConfig().requireVerifiedEmailForProjectCreation) {
-    return;
-  }
-
   const redirectUri = concatUrls(getConfig().appBaseUrl, `register?login=${login.id}`);
   const { id, secret } = await verifyEmail(user, redirectUri);
   const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
