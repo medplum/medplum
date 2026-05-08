@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, forbidden, getReferenceString, Operator } from '@medplum/core';
+import { allOk, arrayify, forbidden, getReferenceString, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -49,7 +49,7 @@ const operation: OperationDefinition = {
 };
 
 type RateLimitsInput = {
-  membershipId?: string[];
+  membershipId?: string | string[];
 };
 
 export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -59,12 +59,13 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   }
 
   const project = ctx.project;
-  const { membershipId: membershipIds } = parseInputParameters<RateLimitsInput>(operation, req);
+  const input = parseInputParameters<RateLimitsInput>(operation, req);
+  const membershipIds = arrayify(input.membershipId);
 
   await ctx.fhirRateLimiter?.recordSearch();
 
   let memberships: ProjectMembership[];
-  if (membershipIds?.length) {
+  if (membershipIds) {
     const reads = await Promise.all(
       membershipIds.map((id) => ctx.repo.readResource<ProjectMembership>('ProjectMembership', id))
     );
