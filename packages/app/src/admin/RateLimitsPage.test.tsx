@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk } from '@medplum/core';
-import type { FhirResponse } from '@medplum/fhir-router';
-import type { Parameters } from '@medplum/fhirtypes';
+import type { OperationOutcome, Parameters, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
 
 const medplum = new MockClient();
 
-let rateLimitsHandler: () => FhirResponse;
+let rateLimitsHandler: () => [OperationOutcome] | [OperationOutcome, Resource];
 
 medplum.router.add('GET', 'Project/:id/$rate-limits', async () => {
   return rateLimitsHandler();
@@ -98,6 +97,8 @@ describe('RateLimitsPage', () => {
     expect(screen.getByText('Membership Utilization')).toBeInTheDocument();
     expect(screen.getByText('Practitioner/practitioner-1')).toBeInTheDocument();
     expect(screen.getByText('Practitioner/practitioner-2')).toBeInTheDocument();
+    expect(screen.getByText('mem-1')).toBeInTheDocument();
+    expect(screen.getByText('mem-2')).toBeInTheDocument();
   });
 
   test('Displays project utilization data', async () => {
@@ -190,7 +191,7 @@ describe('RateLimitsPage', () => {
         id: 'not-found',
         issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Rate limit error' }],
       },
-    ] as unknown as FhirResponse;
+    ] as [OperationOutcome];
 
     await setup();
     expect(await screen.findByText('Refresh')).toBeInTheDocument();
@@ -203,6 +204,22 @@ describe('RateLimitsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Click Refresh to load current rate limit data.')).toBeInTheDocument();
     });
+  });
+
+  test('Rows are clickable and link to membership detail page', async () => {
+    await setup();
+    expect(await screen.findByText('Refresh')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Refresh'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Membership Utilization')).toBeInTheDocument();
+    });
+
+    const row = screen.getByText('mem-1').closest('tr')!;
+    expect(row).toHaveStyle('cursor: pointer');
   });
 
   test('Shows Rate Limits tab in navigation', async () => {

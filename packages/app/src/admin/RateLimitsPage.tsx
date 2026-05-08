@@ -8,6 +8,7 @@ import { useMedplum } from '@medplum/react';
 import { IconRefresh, IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 
 interface QuotaInfo {
@@ -233,6 +234,7 @@ function MembershipTable({ memberships, sortDirection, onToggleSort }: Membershi
       <Table striped highlightOnHover>
         <Table.Thead>
           <Table.Tr>
+            <Table.Th>Membership ID</Table.Th>
             <Table.Th>Profile</Table.Th>
             <Table.Th>Limit</Table.Th>
             <Table.Th>Consumed</Table.Th>
@@ -257,9 +259,11 @@ function MembershipTable({ memberships, sortDirection, onToggleSort }: Membershi
 }
 
 function MembershipRow({ membership }: { readonly membership: MembershipQuota }): JSX.Element {
+  const navigate = useNavigate();
   const utilization = getUtilization(membership);
   return (
-    <Table.Tr>
+    <Table.Tr onClick={() => navigate(`/admin/users/${membership.membershipId}`)} style={{ cursor: 'pointer' }}>
+      <Table.Td>{membership.membershipId}</Table.Td>
       <Table.Td>{membership.profileReference ?? membership.membershipId}</Table.Td>
       <Table.Td>{formatNumber(membership.limit)}</Table.Td>
       <Table.Td>{formatNumber(membership.consumedPoints)}</Table.Td>
