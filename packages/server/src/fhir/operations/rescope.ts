@@ -89,28 +89,53 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
     return [badRequest('Missing required "project" reference for scope "project"')];
   }
 
-  // Basic sanity check validation completed at this point, attempt to rescope the user
-  let updated: WithId<User>;
-  if (params.scope === 'project') {
-    updated = await rescopeUserToProject(ctx, userId, params);
-  } else {
-    updated = await rescopeUserToGlobal(ctx, userId);
-  }
+  // Basic sanity check validation completed at this point, attempt to rescope the user.
+  // The two paths below are intentionally kept separate: promoting a User into a Project
+  // and demoting one to global scope have different invariants, different authorization,
+  // and different failure modes. Only the shared scaffolding (caller access check +
+  // system-repo transaction + re-read of the User) is factored out via withRescopeTxn.
+  const updated =
+    params.scope === 'project'
+      ? await rescopeUserToProject(ctx, userId, params)
+      : await rescopeUserToGlobal(ctx, userId);
   return [allOk, updated];
 }
 
+/**
+ * Shared scaffolding for both rescope paths. Performs the caller's access-policy check
+ * against the User, then opens a system-repo transaction and re-reads the User so the
+ * path-specific `mutate` callback operates on a consistent view.
+ *
+ * This helper deliberately does NOT encode any rescoping logic — both paths supply
+ * their own distinct validation and mutation in the callback.
+ */
+async function withRescopeTxn(
+  ctx: AuthenticatedRequestContext,
+  userId: string,
+  mutate: (
+    user: WithId<User>,
+    systemRepo: ReturnType<typeof getGlobalSystemRepo>
+  ) => Promise<WithId<User>>
+): Promise<WithId<User>> {
+  await ctx.repo.readResource('User', userId);
+  const systemRepo = getGlobalSystemRepo();
+  return systemRepo.withTransaction(async () => {
+    const user = await systemRepo.readResource<User>('User', userId);
+    return mutate(user, systemRepo);
+  });
+}
+
+/**
+ * Promote a User into a Project (or move between Projects). Super-admin only.
+ * Validates the target Project, rejects no-op moves, and forbids the move if the
+ * User holds ProjectMemberships in any other Project.
+ */
 async function rescopeUserToProject(
   ctx: AuthenticatedRequestContext,
   userId: string,
   params: RescopeParams
 ): Promise<WithId<User>> {
-  // First check that the caller has access to the given user via their access policy
-  await ctx.repo.readResource('User', userId);
-
-  const systemRepo = getGlobalSystemRepo();
-  return systemRepo.withTransaction(async () => {
-    const user = await systemRepo.readResource<User>('User', userId);
-
+  return withRescopeTxn(ctx, userId, async (user, systemRepo) => {
     const [resourceType, projectId] = parseReference(params.project);
     if (!projectId || resourceType !== 'Project') {
       throw new OperationOutcomeError(badRequest('Invalid project reference'));
@@ -149,15 +174,15 @@ async function rescopeUserToProject(
   });
 }
 
+/**
+ * Demote a User to global scope. Allowed for super admins, or for project admins
+ * who administer the project the User currently belongs to. Rejects if the User
+ * is already global-scoped.
+ */
 async function rescopeUserToGlobal(ctx: AuthenticatedRequestContext, userId: string): Promise<WithId<User>> {
   const callerIsSuperAdmin = ctx.project.superAdmin;
 
-  // First check that the caller has access to the given user via their access policy
-  await ctx.repo.readResource('User', userId);
-
-  const systemRepo = getGlobalSystemRepo();
-  return systemRepo.withTransaction(async () => {
-    const user = await systemRepo.readResource<User>('User', userId);
+  return withRescopeTxn(ctx, userId, async (user, systemRepo) => {
     if (!user.project) {
       throw new OperationOutcomeError(badRequest('User is already global-scoped'));
     }
