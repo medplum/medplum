@@ -52,7 +52,7 @@ Clinical operations teams often maintain a fuller discovery checklist (specialti
 
 - [Visit Templates and the SOAP Approach](/docs/charting/visit-templates)
 - [Chart Data Model](/docs/charting/chart-data-model)
-- [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture)
+- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses)
 - [Authoring Clinical Protocols](/docs/careplans/protocols)
 - [Provider Visits](/docs/provider/visits)
 - [Scheduling](/docs/scheduling/)

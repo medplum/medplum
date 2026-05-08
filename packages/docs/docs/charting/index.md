@@ -19,7 +19,7 @@ Charting is where clinicians produce the durable record of care – the patient 
 
 Supporting guides:
 
-- [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture) – `$extract` versus Bots for questionnaire responses.
+- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) – `$extract` versus Bots for questionnaire responses.
 - [Provider Visits](/docs/provider/visits) – Care Templates and Provider app setup (UI-specific).
 - [Authoring Clinical Protocols](/docs/careplans/protocols) – advanced PlanDefinition composition.
 

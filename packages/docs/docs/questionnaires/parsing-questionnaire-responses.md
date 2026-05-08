@@ -1,5 +1,4 @@
 ---
-id: structured-data-capture
 title: Parsing Questionnaire Responses
 keywords:
   - questionnaires
@@ -17,20 +16,20 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) captures what a patient or clinician submitted. Downstream systems – analytics, search, CDS, exchange – usually need that turned into concrete FHIR resources: [`Observation`](/docs/api/fhir/resources/observation), [`Condition`](/docs/api/fhir/resources/condition), orders, and similar. This applies across charting, intake, registration, prior authorization, and other workflows.
 
-Medplum supports two parsing approaches. **You can use both in the same application** – different Questionnaires can use different methods depending on their complexity.
+Medplum supports two parsing approaches. You can use both in the same application – different Questionnaires can use different methods depending on their complexity.
 
 ## Choosing an Approach
 
 | | SDC annotations + [`$extract`][extract] | Subscription + [Bot][bot-guide] |
 |---|---|---|
-| **How it works** | Extraction rules live in the Questionnaire itself as FHIR extensions; `$extract` reads them and returns a Bundle | A Bot subscribes to `QuestionnaireResponse` creation; runs arbitrary TypeScript to write resources |
-| **Best for** | Straightforward field-to-resource mappings; forms that change often | Scoring algorithms, conditional logic, multi-step workflows, external API calls |
-| **Change management** | Edit the Questionnaire; no deployment needed | Redeploy Bot on logic changes; keep Bot and Questionnaire versions in sync |
-| **Limitations** | Complex branching or external lookups get unwieldy | Requires Bot infrastructure; harder to inspect logic from the Questionnaire alone |
+| How it works | Extraction rules live in the Questionnaire itself as FHIR extensions; `$extract` reads them and returns a Bundle | A Bot subscribes to `QuestionnaireResponse` creation; runs arbitrary TypeScript to write resources |
+| Best for | Straightforward field-to-resource mappings; forms that change often | Scoring algorithms, conditional logic, multi-step workflows, external API calls |
+| Change management | Edit the Questionnaire; no deployment needed | Redeploy Bot on logic changes; keep Bot and Questionnaire versions in sync |
+| Limitations | Complex branching or external lookups get unwieldy | Requires Bot infrastructure; harder to inspect logic from the Questionnaire alone |
 
-**Pick `$extract` when** the mapping is mostly one field → one resource field, and you want the logic to live beside the form definition.
+Pick `$extract` when the mapping is mostly one field → one resource field, and you want the logic to live beside the form definition.
 
-**Pick a Bot when** you need to score a PHQ-9, write resources conditionally, call an external service, or otherwise do something that does not fit a declarative template.
+Pick a Bot when you need to score a PHQ-9, write resources conditionally, call an external service, or otherwise do something that does not fit a declarative template.
 
 You can also combine them: use `$extract` for simple demographic or intake data, and a Bot for the clinical scoring logic on the same submission.
 
@@ -161,7 +160,12 @@ it evaluates will initially be either the entire `QuestionnaireResponse` resourc
 top level of the `Questionnaire` or on a specific `Questionnaire.item`.
 
 Combined with the value extraction logic described above for empty or multiple results, this can potentially produce
-resource JSON that is structurally invalid. For example, consider the following erroneous questionnaire:
+resource JSON that is structurally invalid.
+
+<details>
+  <summary>Example: erroneous Questionnaire and invalid outputs</summary>
+
+Consider the following erroneous questionnaire:
 
 ```json
 // NOTE: This Questionnaire does not work as expected; it is intended to show incorrect usage
@@ -205,8 +209,7 @@ resource JSON that is structurally invalid. For example, consider the following 
 }
 ```
 
-If a response to this questionnaire does not contain a `name` item, then the resulting Patient resource would contain
-an extraneous empty `name`:
+If a response to this questionnaire does not contain a `name` item, the resulting Patient would contain an extraneous empty `name`:
 
 ```json
 {
@@ -216,8 +219,7 @@ an extraneous empty `name`:
 }
 ```
 
-Moreover, if multiple names are specified in the response, the resource would be generated with an invalid array for
-`Patient.name.text` instead of creating multiple `Patient.name` items with their own `text` values:
+If multiple names are specified, the resource would have an invalid array for `Patient.name.text`:
 
 ```json
 {
@@ -226,6 +228,8 @@ Moreover, if multiple names are specified in the response, the resource would be
   "name": [{ "use": "usual", "text": ["John Doe", "John Q. Public"] }]
 }
 ```
+
+</details>
 
 With optional or repeating response items, it is critical to use `templateExtractContext` extensions to ensure that
 the resulting resource is well-formed. The context extension specifies a FHIRPath expression that is evaluated
@@ -240,6 +244,9 @@ objects themselves, and extracting nested values from each one. A corrected exam
 repeating items is shown below.
 
 #### Example
+
+<details>
+  <summary>Corrected Questionnaire using templateExtractContext</summary>
 
 ```json
 {
@@ -325,6 +332,8 @@ repeating items is shown below.
 }
 ```
 
+</details>
+
 The response to this questionnaire shown below yields the following `Patient` resource:
 
 ```json
@@ -378,7 +387,10 @@ The response to this questionnaire shown below yields the following `Patient` re
 If data from additional resources is required to populate the templates, search queries can be executed as part of the
 extraction process and their results stored in context to be operated on by later expressions. Queries are attached in
 context extensions using the [`application/x-fhir-query` language][x-fhir-query] to describe the search request, with
-the option to embed FHIRPath expressions as needed to construct the query string:
+the option to embed FHIRPath expressions as needed to construct the query string.
+
+<details>
+  <summary>Example: Questionnaire using x-fhir-query to look up a Medication</summary>
 
 ```json
 {
@@ -459,6 +471,8 @@ the option to embed FHIRPath expressions as needed to construct the query string
 }
 ```
 
+</details>
+
 [x-fhir-query]: https://hl7.org/fhir/fhir-xquery.html
 
 ### Extraction API
@@ -510,7 +524,10 @@ This can be uploaded via the [Batch API][batch] to save the generated resources 
 
 Many questionnaires gather information that must be processed into multiple separate FHIR resources, generally by
 grouping together questions that pertain to a particular resource. To simplify the process of extracting related items,
-the `templateExtract` extension can be placed on the question or group corresponding to that template resource:
+the `templateExtract` extension can be placed on the question or group corresponding to that template resource.
+
+<details>
+  <summary>Example: Questionnaire extracting Patient and Observation</summary>
 
 ```json
 {
@@ -586,6 +603,8 @@ the `templateExtract` extension can be placed on the question or group correspon
 }
 ```
 
+</details>
+
 #### Linking Extracted Resources
 
 When the resources being extracted from the questionnaire response are related, such as the above `Patient` and
@@ -601,6 +620,9 @@ and then referenced in other resource templates.
 2. Specify the FHIRPath variable in the `fullUrl` field of the relevant `templateExtract` extension to assign the ID
    to an extracted resource
 3. Reference the variable in any `templateExtractValue` extensions where the link should be inserted
+
+<details>
+  <summary>Example: full Questionnaire, response, and extracted Bundle with cross-references</summary>
 
 ```json
 {
@@ -754,6 +776,8 @@ A single response to the questionnaire will extract a Bundle containing two reso
 }
 ```
 
+</details>
+
 [bundle-intern-refs]: /docs/fhir-datastore/fhir-batch-requests#internal-references
 [allocate-id]: https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-extractAllocateId.html
 
@@ -765,12 +789,12 @@ A [Medplum Bot](/docs/bots/) is a TypeScript function that runs server-side in r
 2. The Bot receives the `QuestionnaireResponse` as its input.
 3. The Bot reads answers by `linkId`, computes whatever it needs (scores, lookups, conditionals), and writes the resulting FHIR resources.
 
-### When to use a Bot
+### When to Use a Bot
 
-- **Scoring instruments** – PHQ-9, GAD-7, AUDIT-C, or any form where answers combine into a computed result.
-- **Conditional multi-resource writes** – write different resources depending on which answers are present, or skip resources entirely based on logic.
-- **External integrations** – call a lab system, EHR API, or notification service as part of processing.
-- **Complex cross-referencing** – look up existing resources, merge data, or apply business rules that FHIRPath templates cannot express cleanly.
+- Scoring instruments – PHQ-9, GAD-7, AUDIT-C, or any form where answers combine into a computed result.
+- Conditional multi-resource writes – write different resources depending on which answers are present, or skip resources entirely based on logic.
+- External integrations – call a lab system, EHR API, or notification service as part of processing.
+- Complex cross-referencing – look up existing resources, merge data, or apply business rules that FHIRPath templates cannot express cleanly.
 
 ### Pattern
 
@@ -799,13 +823,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
 For a complete walkthrough – including Questionnaire authoring, Bot deployment, and Subscription wiring – see [Bot for QuestionnaireResponse][bot-guide].
 
-### Mixing approaches in one application
+### Mixing Approaches in One Application
 
 Different Questionnaires in the same app can use different methods. A common split:
 
-- **Intake / registration forms** – use `$extract`; mappings are simple and clinicians edit forms frequently.
-- **Clinical scoring instruments** – use a Bot; the scoring algorithm is code, not a declarative template.
-- **Complex multi-step workflows** – Bot, because you need conditional logic and possibly external calls.
+- Intake / registration forms – use `$extract`; mappings are simple and clinicians edit forms frequently.
+- Clinical scoring instruments – use a Bot; the scoring algorithm is code, not a declarative template.
+- Complex multi-step workflows – Bot, because you need conditional logic and possibly external calls.
 
 ## See Also
 

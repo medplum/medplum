@@ -148,7 +148,7 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'doc', id: 'questionnaires/basic-tutorial' },
         { type: 'doc', id: 'questionnaires/questionnaires-and-responses' },
-        { type: 'doc', id: 'questionnaires/structured-data-capture' },
+        { type: 'doc', id: 'questionnaires/parsing-questionnaire-responses' },
       ],
     },
     {

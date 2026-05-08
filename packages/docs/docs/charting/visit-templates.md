@@ -23,7 +23,7 @@ See [Designing Charting](/docs/charting/designing-charting) for product framing.
 1. Author a `PlanDefinition` whose `action` entries reference Questionnaires and ActivityDefinitions. Authoring detail lives in [Authoring Clinical Protocols](/docs/careplans/protocols).
 2. Invoke [`$apply`](/docs/api/fhir/operations/plandefinition-apply) with `subject` (Patient) and optionally `encounter`, `practitioner`, and `organization`.
 3. Medplum creates Tasks (and ServiceRequests when `ActivityDefinition.kind` is ServiceRequest).
-4. Clinicians complete Questionnaires and orders; parse responses into FHIR resources using [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture) or Bots.
+4. Clinicians complete Questionnaires and orders; parse responses into FHIR resources using [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) or Bots.
 5. Sign the visit using `ClinicalImpression.status` and a `Provenance` on the Encounter (see [Signing and Locking Notes](#signing-and-locking-notes)).
 
 ## Common Visit-Template Patterns
@@ -34,7 +34,7 @@ A few shapes recur in real implementations.
 - _Template-driven plan (specialty protocols)_ – a `PlanDefinition` for the protocol instantiates `ServiceRequest`, `MedicationRequest`, or `CarePlan` from `ActivityDefinition` actions on `$apply` rather than free-text plan sections. See [Authoring Clinical Protocols](/docs/careplans/protocols).
 - _Pre-filled context from intake_ – when intake narrows the problem list (e.g. dermatology lesions), prepopulate Questionnaire or Observation drafts before the clinician opens the chart.
 
-Avoid storing everything as raw `QuestionnaireResponse` only – answers there are not first-class searchable fields the way Observations and Conditions are. Parse into the proper resources (see [Parsing Questionnaire Responses](/docs/questionnaires/structured-data-capture)).
+Avoid storing everything as raw `QuestionnaireResponse` only – answers there are not first-class searchable fields the way Observations and Conditions are. Parse into the proper resources (see [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses)).
 
 ## How Visits, FHIR, and SOAP Line Up
 

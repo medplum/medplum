@@ -77,6 +77,10 @@ const config: Config = {
             from: '/docs/charting/external-documents',
             to: '/docs/fhir-datastore/external-documents',
           },
+          {
+            from: '/docs/questionnaires/structured-data-capture',
+            to: '/docs/questionnaires/parsing-questionnaire-responses',
+          },
         ],
       },
     ],
