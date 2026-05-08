@@ -3,7 +3,7 @@
 import { Button, Group, Progress, Table, Text, Title, UnstyledButton } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconRefresh, IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -24,7 +24,7 @@ interface ProjectQuota extends QuotaInfo {
 
 interface MembershipQuota extends QuotaInfo {
   membershipId: string;
-  profileReference?: string;
+  profile?: Reference;
 }
 
 interface RateLimitsData {
@@ -40,6 +40,10 @@ function getPartInteger(parts: ParametersParameter[] | undefined, name: string):
   return parts?.find((p) => p.name === name)?.valueInteger;
 }
 
+function getPartReference(parts: ParametersParameter[] | undefined, name: string): Reference | undefined {
+  return parts?.find((p) => p.name === name)?.valueReference;
+}
+
 function parseRateLimitsResponse(params: Parameters): RateLimitsData {
   const projectParam = params.parameter?.find((p) => p.name === 'project');
   const project: ProjectQuota = {
@@ -53,7 +57,7 @@ function parseRateLimitsResponse(params: Parameters): RateLimitsData {
   const membershipParams = params.parameter?.filter((p) => p.name === 'membership') ?? [];
   const memberships: MembershipQuota[] = membershipParams.map((m) => ({
     membershipId: getPartValue(m.part, 'membershipId') ?? '',
-    profileReference: getPartValue(m.part, 'profileReference'),
+    profile: getPartReference(m.part, 'profile'),
     limit: getPartInteger(m.part, 'limit'),
     consumedPoints: getPartInteger(m.part, 'consumedPoints'),
     remainingPoints: getPartInteger(m.part, 'remainingPoints'),
@@ -264,7 +268,7 @@ function MembershipRow({ membership }: { readonly membership: MembershipQuota })
   return (
     <Table.Tr onClick={() => navigate(`/admin/users/${membership.membershipId}`)} style={{ cursor: 'pointer' }}>
       <Table.Td>{membership.membershipId}</Table.Td>
-      <Table.Td>{membership.profileReference ?? membership.membershipId}</Table.Td>
+      <Table.Td>{membership.profile?.display ?? membership.profile?.reference ?? '--'}</Table.Td>
       <Table.Td>{formatNumber(membership.limit)}</Table.Td>
       <Table.Td>{formatNumber(membership.consumedPoints)}</Table.Td>
       <Table.Td>{formatNumber(membership.remainingPoints)}</Table.Td>

@@ -1,8 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, arrayify, forbidden, getReferenceString, Operator } from '@medplum/core';
+import { allOk, arrayify, forbidden, getDisplayString, getReferenceString, Operator, parseReference } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
+import type {
+  OperationDefinition,
+  OperationDefinitionParameter,
+  ProjectMembership,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import { FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX, FHIR_RATE_LIMIT_PROJECT_PREFIX, getFhirQuotaConfig } from '../fhirquota';
@@ -41,7 +47,7 @@ const operation: OperationDefinition = {
       max: '*',
       part: [
         { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'profileReference', type: 'string', min: 0, max: '1' },
+        { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
         ...quotaParts,
       ],
     },
@@ -85,6 +91,8 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
   const { userLimit, projectLimit } = getFhirQuotaConfig(project);
 
+  const profileDisplayNames = await resolveProfileDisplayNames(ctx.repo, memberships);
+
   const redis = getRateLimitRedis();
   const pipeline = redis.pipeline();
   for (const membership of memberships) {
@@ -104,9 +112,13 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   const membershipResults = memberships.map((membership, i) => {
     const consumed = results[i * 2][1] as string | null;
     const pttl = results[i * 2 + 1][1] as number;
+    const profileRef = membership.profile?.reference;
+    const profile: Reference | undefined = profileRef
+      ? { reference: profileRef, display: profileDisplayNames.get(membership.id as string) }
+      : undefined;
     return {
       membershipId: membership.id as string,
-      profileReference: membership.profile?.reference,
+      profile,
       ...buildQuotaStatus(consumed, pttl, userLimit),
     };
   });
@@ -121,6 +133,24 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
       membership: membershipResults,
     }),
   ];
+}
+
+async function resolveProfileDisplayNames(
+  repo: { readResource: <T extends Resource>(resourceType: T['resourceType'], id: string) => Promise<T> },
+  memberships: ProjectMembership[]
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  await Promise.allSettled(
+    memberships.map(async (membership) => {
+      if (!membership.profile?.reference) {
+        return;
+      }
+      const [resourceType, id] = parseReference(membership.profile);
+      const resource = await repo.readResource(resourceType, id);
+      names.set(membership.id as string, getDisplayString(resource));
+    })
+  );
+  return names;
 }
 
 function buildQuotaStatus(consumed: string | null, pttl: number, limit: number): Record<string, number> | undefined {

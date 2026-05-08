@@ -31,7 +31,7 @@ function fullResponse(): Parameters {
         name: 'membership',
         part: [
           { name: 'membershipId', valueString: 'mem-1' },
-          { name: 'profileReference', valueString: 'Practitioner/practitioner-1' },
+          { name: 'profile', valueReference: { reference: 'Practitioner/practitioner-1', display: 'Dr. Alice Smith' } },
           { name: 'limit', valueInteger: 50000 },
           { name: 'consumedPoints', valueInteger: 45000 },
           { name: 'remainingPoints', valueInteger: 5000 },
@@ -42,7 +42,7 @@ function fullResponse(): Parameters {
         name: 'membership',
         part: [
           { name: 'membershipId', valueString: 'mem-2' },
-          { name: 'profileReference', valueString: 'Practitioner/practitioner-2' },
+          { name: 'profile', valueReference: { reference: 'Practitioner/practitioner-2', display: 'Dr. Bob Jones' } },
           { name: 'limit', valueInteger: 50000 },
           { name: 'consumedPoints', valueInteger: 10000 },
           { name: 'remainingPoints', valueInteger: 40000 },
@@ -95,8 +95,8 @@ describe('RateLimitsPage', () => {
     });
 
     expect(screen.getByText('Membership Utilization')).toBeInTheDocument();
-    expect(screen.getByText('Practitioner/practitioner-1')).toBeInTheDocument();
-    expect(screen.getByText('Practitioner/practitioner-2')).toBeInTheDocument();
+    expect(screen.getByText('Dr. Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Dr. Bob Jones')).toBeInTheDocument();
     expect(screen.getByText('mem-1')).toBeInTheDocument();
     expect(screen.getByText('mem-2')).toBeInTheDocument();
   });
@@ -131,8 +131,8 @@ describe('RateLimitsPage', () => {
     });
 
     const rows = screen.getAllByRole('row');
-    expect(rows[1]).toHaveTextContent('Practitioner/practitioner-1');
-    expect(rows[2]).toHaveTextContent('Practitioner/practitioner-2');
+    expect(rows[1]).toHaveTextContent('Dr. Alice Smith');
+    expect(rows[2]).toHaveTextContent('Dr. Bob Jones');
   });
 
   test('Toggles sort direction on utilization header click', async () => {
@@ -152,8 +152,8 @@ describe('RateLimitsPage', () => {
     });
 
     const rows = screen.getAllByRole('row');
-    expect(rows[1]).toHaveTextContent('Practitioner/practitioner-2');
-    expect(rows[2]).toHaveTextContent('Practitioner/practitioner-1');
+    expect(rows[1]).toHaveTextContent('Dr. Bob Jones');
+    expect(rows[2]).toHaveTextContent('Dr. Alice Smith');
   });
 
   test('Handles empty rate limit data', async () => {
