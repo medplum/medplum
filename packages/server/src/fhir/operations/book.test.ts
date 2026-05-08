@@ -336,6 +336,7 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot start times',
         },
+        expression: ['Parameters.slot[0].start', 'Parameters.slot[1].start'],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -382,6 +383,7 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot end times',
         },
+        expression: ['Parameters.slot[0].end', 'Parameters.slot[1].end'],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -428,6 +430,10 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched service types',
         },
+        expression: [
+          'Parameters.slot[0].serviceType[0].extension[0].valueReference.reference',
+          'Parameters.slot[1].serviceType[0].extension[0].valueReference.reference',
+        ],
       },
     ]);
     expect(response.status).toEqual(400);

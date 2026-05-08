@@ -165,6 +165,11 @@
             "definition": "GraphQL Introspection"
           },
           {
+            "code": "scheduling",
+            "display": "Scheduling",
+            "definition": "Enable Medplum Scheduling features"
+          },
+          {
             "code": "websocket-subscriptions",
             "display": "WebSocket Subscriptions",
             "definition": "WebSocket Subscriptions"

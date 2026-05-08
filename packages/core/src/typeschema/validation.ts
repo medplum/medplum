@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { arrayify } from '../array';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
 import type { FhirPathAtom } from '../fhirpath/atoms';
@@ -16,7 +17,7 @@ import {
 } from '../outcomes';
 import type { TypedValue } from '../types';
 import { PropertyType, isReference, isResource } from '../types';
-import { EMPTY, append, arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import { EMPTY, append, deepEquals, deepIncludes, isEmpty } from '../utils';
 import type { CrawlerVisitor, TypedValueWithPath } from './crawler';
 import { crawlTypedValue, getNestedProperty } from './crawler';
 import type {

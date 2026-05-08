@@ -461,16 +461,12 @@ export async function setLoginMembership(
     }
   }
 
+  // Check IP Access Rules
   // TODO: Do we really need to check IP access rules inside this method?
   // Or could this be done closer to call site?
   // This method is used internally in a bunch of places that do not need to check IP access rules
-
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
-
-  // Get the access policy
   const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
-
-  // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
 
   const auditEvent = createAuditEvent(
@@ -1019,8 +1015,13 @@ async function makeAuthResult(
 ): Promise<AuthenticationResult> {
   const extendedMode = req ? isExtendedMode(req) : true;
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  let smartAppLaunch: WithId<SmartAppLaunch> | undefined;
+  if (login.launch) {
+    smartAppLaunch = await systemRepo.readReference(login.launch);
+  }
   const authState: AuthState = {
     login,
+    smartAppLaunch,
     project,
     membership,
     userConfig,

@@ -1541,6 +1541,7 @@ describe('Appointment/$find', () => {
     });
     expect(response.status).toBe(400);
     expect(response.body.issue[0].details.text).toBe('Loading schedule failed');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[0]']);
   });
 
   test('errors on a schedule with multiple actors', async () => {
@@ -1621,6 +1622,14 @@ describe('Appointment/$find', () => {
 
     const scheduleB = await makeSchedule(
       [
+        // This first scheduling parameters extension does not match the requested type and is ignored
+        {
+          service: officeVisit,
+          duration: 60,
+          availability: monTueAvailability,
+        },
+
+        // This extension matches the service-type, but the duration is mismatched and should be flagged
         {
           service: genericVisit,
           duration: 60,
@@ -1637,7 +1646,11 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
     expect(response.status).toBe(400);
-    expect(response.body.issue[0].details.text).toBe('Scheduling parameters `duration` does not match');
+    expect(response.body.issue[0].details.text).toBe("Scheduling parameters attribute 'duration' does not match");
+    expect(response.body.issue[0].expression).toEqual([
+      "Parameters.schedule[0].extension[0].extension('duration')",
+      "Parameters.schedule[1].extension[1].extension('duration')",
+    ]);
   });
 
   test('each schedule applies its own bufferBefore/bufferAfter independently', async () => {

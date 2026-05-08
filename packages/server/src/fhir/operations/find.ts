@@ -7,7 +7,6 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  isDefined,
   isNotFound,
   isReference,
   isResource,
@@ -30,9 +29,17 @@ import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { addMinutes } from '../../util/date';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
+import type { WithPath } from '../../util/withpath';
+import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
+import {
+  applyExistingSlots,
+  assertAllLoaded,
+  getTimeZone,
+  resolveAvailability,
+  TimezoneExtensionURI,
+} from './utils/scheduling';
 import { chooseSchedulingParameterGroup, extractCommonParameters } from './utils/scheduling-parameters';
 
 const scheduleFindOperation = {
@@ -91,7 +98,7 @@ type AppointmentFindParameters = {
 
 // Internal implementation of $find logic
 async function handler(params: {
-  schedules: (Reference<Schedule> & { reference: string })[];
+  schedules: WithPath<Reference<Schedule> & { reference: string }>[];
   healthcareService: Reference<HealthcareService> & { reference: string };
   start: string;
   end: string;
@@ -120,7 +127,7 @@ async function handler(params: {
   }
 
   const [schedules, existingSlots, healthcareService] = await Promise.all([
-    ctx.repo.readReferences(params.schedules),
+    ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
 
@@ -157,34 +164,34 @@ async function handler(params: {
     }),
   ]);
 
-  if (!schedules.every((schedule) => isResource(schedule))) {
-    const idx = schedules.findIndex((schedule) => !isResource(schedule));
-    throw new OperationOutcomeError(badRequest('Loading schedule failed', `schedule[${idx}]`));
-  }
+  assertAllLoaded(schedules, 'Loading schedule failed');
 
-  const parameterGroup = chooseSchedulingParameterGroup(schedules, healthcareService);
+  const parameterGroup = chooseSchedulingParameterGroup(
+    schedules,
+    withPath(healthcareService, 'Parameters.service-type-reference')
+  );
 
-  schedules.forEach((schedule, idx) => {
+  schedules.forEach((schedule) => {
     if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
-        badRequest('Schedule is not schedulable for requested service type', `Parameters.schedule[${idx}]`)
+        badRequest('Schedule is not schedulable for requested service type', getPath(schedule))
       );
     }
 
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(
-        badRequest('$find only supported on schedules with exactly one actor', `Parameters.schedule[${idx}]`)
+        badRequest('$find only supported on schedules with exactly one actor', getPath(schedule))
       );
     }
 
     if (!parameterGroup.get(schedule)) {
       throw new OperationOutcomeError(
-        badRequest('No SchedulingParameters found on Schedule or HealthcareService', `Parameters.schedule[${idx}]`)
+        badRequest('No SchedulingParameters found on Schedule or HealthcareService', getPath(schedule))
       );
     }
   });
 
-  const commonParameters = extractCommonParameters([...parameterGroup.values()].filter(isDefined));
+  const commonParameters = extractCommonParameters([...parameterGroup.values()]);
 
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.
@@ -192,11 +199,10 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
   }
 
-  const actors = await ctx.repo.readReferences(schedules.map((schedule) => schedule.actor[0]));
-  if (!actors.every((actor) => isResource(actor))) {
-    const idx = actors.findIndex((actor) => !isResource(actor));
-    throw new OperationOutcomeError(badRequest('Loading schedule.actor failed', `Parameters.schedule[${idx}]`));
-  }
+  const actors = await ctx.repo
+    .readReferences(schedules.map((schedule) => schedule.actor[0]))
+    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+  assertAllLoaded(actors, 'Loading schedule.actor failed');
 
   const serviceType = toCodeableReferenceLike(healthcareService);
 
@@ -207,7 +213,7 @@ async function handler(params: {
     const activeTimeZone = schedulingParameters.timezone ?? getTimeZone(actor);
     if (!activeTimeZone) {
       throw new OperationOutcomeError(
-        badRequest('No timezone specified', `Parameters.schedule[${idx}].actor[0].extension(${TimezoneExtensionURI})`)
+        badRequest('No timezone specified', `${getPath(actor)}.extension(${TimezoneExtensionURI})`)
       );
     }
 
@@ -333,7 +339,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     start: params.start,
     end: params.end,
     _count: params._count,
-    schedules: [{ reference: `Schedule/${req.params.id}` }],
+    schedules: [withPath({ reference: `Schedule/${req.params.id}` }, 'Schedule')],
     healthcareService: { reference: params['service-type-reference'] },
   });
 
@@ -382,7 +388,7 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     end,
     _count,
     healthcareService: { reference: params['service-type-reference'] },
-    schedules: scheduleRefs,
+    schedules: withPaths(scheduleRefs, 'Parameters.schedule'),
   });
 
   const bundle: Bundle<Appointment> = {

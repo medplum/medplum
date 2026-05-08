@@ -3129,6 +3129,102 @@ describe('App', () => {
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
+
+    test('Upgrade -- Missing artifact for platform', async () => {
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+
+      // Manifest only has a Linux asset, no Windows asset
+      const manifest = {
+        tag_name: 'v4.2.5',
+        assets: [
+          {
+            name: 'medplum-agent-4.2.5-linux',
+            browser_download_url: 'https://example.com/linux',
+          },
+        ],
+      };
+
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+        jest.fn(async () => {
+          return new Response(JSON.stringify(manifest), {
+            headers: { 'content-type': 'application/json' },
+            status: 200,
+          });
+        })
+      );
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          version: '4.2.5',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(state.agentError.body).toContain("No download URL found for release 'v4.2.5' for win32");
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      platformSpy.mockRestore();
+      fetchSpy.mockRestore();
+    });
   });
 
   test('Upgrading -- Upgrade in progress, should error', async () => {
@@ -3808,7 +3904,6 @@ describe('App', () => {
       expect(app.hl7Clients.size).toBe(1);
       const pool = app.hl7Clients.get(`mllp://localhost:${port}`);
       expect(pool).toBeDefined();
-      expect(pool?.isTrackingStats()).toBe(true);
       const client = pool?.getClients()[0];
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
@@ -3928,12 +4023,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Should have 2 pools with stats tracking enabled
+      // Should have 2 pools
       expect(app.hl7Clients.size).toBe(2);
-      const pool1 = app.hl7Clients.get(`mllp://localhost:${port1}`);
-      const pool2 = app.hl7Clients.get(`mllp://localhost:${port2}`);
-      expect(pool1?.isTrackingStats()).toBe(true);
-      expect(pool2?.isTrackingStats()).toBe(true);
 
       // Update agent to disable keepAlive
       await medplum.updateResource<Agent>({
@@ -3971,7 +4062,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test('When logStatsFreqSecs goes from on to off, cleanup all stats', async () => {
+    test('When logStatsFreqSecs goes from on to off, pool keeps tracking stats (default-on)', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -4048,10 +4139,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should have stats tracking enabled
+      // Pool should exist
       expect(app.hl7Clients.size).toBe(1);
-      const pool = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(pool?.isTrackingStats()).toBe(true);
 
       // Update agent to disable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4073,10 +4162,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should still exist but stats tracking should be disabled
+      // Pool should still exist (stats are collected by default)
       expect(app.hl7Clients.size).toBe(1);
-      const poolAfterReload = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(poolAfterReload?.isTrackingStats()).toBe(false);
 
       await app.stop();
       await hl7Server.stop({ forceDrainTimeoutMs: 100 });
@@ -4087,7 +4174,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test('When logStatsFreqSecs goes from off to on, start tracking stats', async () => {
+    test('Pool tracks stats by default when keepAlive is on, regardless of logStatsFreqSecs', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -4161,10 +4248,9 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should exist but not have stats tracking enabled
+      // Pool should exist and have stats tracking enabled by default
       expect(app.hl7Clients.size).toBe(1);
       let pool = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(pool?.isTrackingStats()).toBe(false);
 
       // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4192,7 +4278,6 @@ describe('App', () => {
       // Pool should now have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
       pool = app.hl7Clients.get(`mllp://localhost:${port}`);
-      expect(pool?.isTrackingStats()).toBe(true);
 
       // Send another message to verify stats tracking works
       state.transmitResponses = [];
@@ -4217,9 +4302,9 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Stats should have recorded the new message
+      // Stats should have recorded both messages (tracking is on from the start)
       const client = pool?.getClients()[0];
-      expect(client?.stats?.getSampleCount()).toBe(1);
+      expect(client?.stats?.getSampleCount()).toBe(2);
 
       await app.stop();
       await hl7Server.stop({ forceDrainTimeoutMs: 100 });
@@ -4952,6 +5037,247 @@ describe('App', () => {
       });
 
       console.log = originalConsoleLog;
+    });
+  });
+
+  describe('Error responses for unhandled or silently-failing messages', () => {
+    test('Unknown message type returns agent:error to server', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(Buffer.from(JSON.stringify({ type: 'totally:unknown:type', callback })));
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: expect.stringContaining('Unknown message type: totally:unknown:type'),
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Invalid JSON payload returns agent:error to server', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const str = (data as Buffer).toString('utf8');
+          let command: AgentMessage;
+          try {
+            command = JSON.parse(str) as AgentMessage;
+          } catch {
+            return;
+          }
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Send malformed JSON
+      state.mySocket.send(Buffer.from('this is not valid json {'));
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: expect.stringContaining('WebSocket error on incoming message'),
+      });
+      // No callback could be parsed from malformed JSON
+      expect(state.agentError?.callback).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Transmit request with missing remote returns agent:error', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            // remote intentionally missing
+            remote: '',
+            contentType: ContentType.HL7_V2,
+            body: 'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2',
+            callback,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: 'Missing remote address',
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Transmit request with HL7 body missing MSH.10 returns 400 transmit response', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponse: undefined as AgentTransmitResponse | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponse = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const port = await getFreePort();
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      // MSH segment without field 10 (only 9 fields after MSH)
+      const hl7BodyMissingMsh10 = 'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01';
+
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:${port}`,
+            contentType: ContentType.HL7_V2,
+            body: hl7BodyMissingMsh10,
+            callback,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      while (!state.transmitResponse) {
+        await sleep(50);
+      }
+
+      expect(state.transmitResponse).toMatchObject<AgentTransmitResponse>({
+        type: 'agent:transmit:response',
+        remote: `mllp://localhost:${port}`,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: 'MSH.10 is missing but required',
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
     });
   });
 });
