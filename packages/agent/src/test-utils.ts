@@ -86,11 +86,15 @@ export function generateTestLogs(
 }
 
 export function createTestEnhancedHl7Client(
-  options: Omit<ExtendedHl7ClientOptions, 'messageTracker'> & { messageTracker?: Hl7MessageTracker }
-): { client: EnhancedHl7Client; messageTracker: Hl7MessageTracker } {
+  options: Omit<ExtendedHl7ClientOptions, 'messageTracker' | 'heartbeatEmitter'> & {
+    messageTracker?: Hl7MessageTracker;
+    heartbeatEmitter?: HeartbeatEmitter;
+  }
+): { client: EnhancedHl7Client; messageTracker: Hl7MessageTracker; heartbeatEmitter: HeartbeatEmitter } {
   const messageTracker = options.messageTracker ?? new Hl7MessageTracker();
-  const client = new EnhancedHl7Client({ ...options, messageTracker });
-  return { client, messageTracker };
+  const heartbeatEmitter = options.heartbeatEmitter ?? new TypedEventTarget();
+  const client = new EnhancedHl7Client({ ...options, messageTracker, heartbeatEmitter });
+  return { client, messageTracker, heartbeatEmitter };
 }
 
 export function createTestHl7ClientPool(
