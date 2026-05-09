@@ -39,7 +39,7 @@ describe('VerifyEmailPage', () => {
       fireEvent.click(screen.getByRole('button'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(await screen.findByTestId('success')).toBeInTheDocument();
     expect(postSpy).toHaveBeenCalledWith('auth/verifyemail', { id, secret });
   });
 });
