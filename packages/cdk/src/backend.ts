@@ -384,6 +384,7 @@ export class BackEnd extends Construct {
             'lambda:UpdateFunctionConfiguration',
             'lambda:InvokeFunction',
             'lambda:ListVersionsByFunction',
+            'lambda:DeleteFunction',
           ],
           resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
         }),
