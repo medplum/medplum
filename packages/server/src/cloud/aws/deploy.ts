@@ -15,7 +15,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { sleep } from '@medplum/core';
+import { normalizeErrorString, sleep } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
@@ -176,7 +176,7 @@ export async function deployLambdaInternal(
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
     cleanupOldLambdaVersions(client, name).catch((err) => {
-      globalLogger.error(`Error while cleaning up old versions for Lambda`, { name, err });
+      globalLogger.error(`Error while cleaning up old versions for Lambda`, { name, err: normalizeErrorString(err) });
     });
   } else {
     await createLambda(bot, client, name, zipFile);
@@ -214,7 +214,7 @@ export async function cleanupOldLambdaVersions(client: LambdaClient, name: strin
     try {
       await client.send(new DeleteFunctionCommand({ FunctionName: name, Qualifier: String(version) }));
     } catch (err) {
-      log.warn('Failed to delete old lambda version', { name, version, err });
+      log.warn('Failed to delete old lambda version', { name, version, err: normalizeErrorString(err) });
     }
   }
 }
