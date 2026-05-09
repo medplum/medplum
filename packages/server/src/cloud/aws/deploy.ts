@@ -21,7 +21,7 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
-import { getLogger, globalLogger } from '../../logger';
+import { getLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
@@ -175,9 +175,7 @@ export async function deployLambdaInternal(
 
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
-    cleanupOldLambdaVersions(client, name).catch((err) => {
-      globalLogger.error(`Error while cleaning up old versions for Lambda`, { name, err: normalizeErrorString(err) });
-    });
+    await cleanupOldLambdaVersions(client, name);
   } else {
     await createLambda(bot, client, name, zipFile);
   }
