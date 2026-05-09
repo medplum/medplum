@@ -543,6 +543,16 @@ describe('Deploy', () => {
     const bot = res1.body as Bot;
     const name = `medplum-bot-lambda-${bot.id}`;
 
+    // Step 2: Initial deploy creates the lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    mockLambdaClient.resetHistory();
+
     // Simulate paginated list with 5 published versions (plus $LATEST).
     mockLambdaClient
       .on(ListVersionsByFunctionCommand)
@@ -554,12 +564,13 @@ describe('Deploy', () => {
         Versions: [{ Version: '3' }, { Version: '5' }, { Version: '4' }],
       });
 
-    const res2 = await request(app)
+    // Step 3: Redeploy triggers cleanup
+    const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
-    expect(res2.status).toBe(200);
+    expect(res3.status).toBe(200);
 
     // Versions 5 and 4 should be kept; 3, 2, 1 deleted.
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 3);
@@ -582,6 +593,16 @@ describe('Deploy', () => {
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
 
+    // Initial deploy creates the lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    mockLambdaClient.resetHistory();
+
     mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({
       Versions: [{ Version: '$LATEST' }, { Version: '1' }, { Version: '2' }, { Version: '3' }],
     });
@@ -589,13 +610,13 @@ describe('Deploy', () => {
       .on(DeleteFunctionCommand)
       .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
 
-    const res2 = await request(app)
+    const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
     // Deploy should still succeed even though cleanup deletion failed.
-    expect(res2.status).toBe(200);
+    expect(res3.status).toBe(200);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
   });
 
