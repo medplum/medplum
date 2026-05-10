@@ -188,6 +188,11 @@ export interface MedplumServerConfig {
    * Default is `wss://api.openai.com/v1/realtime?intent=transcription`.
    */
   aiRealtimeTranscriptionUrl?: string;
+
+  /**
+   * Optional flag to require email verification before allowing users to create projects.
+   */
+  requireVerifiedEmailForProjectCreation?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {

@@ -580,4 +580,17 @@ describe('Infra', () => {
     await expect(main({ config: filename })).resolves.not.toThrow();
     await unlink(filename);
   });
+
+  test('GuardDuty', async () => {
+    const filename = await writeConfig('./medplum.guardduty.config.json', {
+      ...baseConfig,
+      name: 'guardduty',
+      stackName: 'MedplumGuardDutyStack',
+      guardDutyMalwareProtectionEnabled: true,
+      clamScanEnabled: false,
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
 });

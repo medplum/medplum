@@ -59,12 +59,10 @@ interface SearchParameterDetailsBuilder {
  * @returns The search parameter type details.
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
-  let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code];
-  if (!result) {
-    result = buildSearchParameterDetails(resourceType, searchParam);
-  }
-  return result;
+  return (
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code] ??
+    buildSearchParameterDetails(resourceType, searchParam)
+  );
 }
 
 function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
@@ -191,12 +189,19 @@ function crawlSearchParameterDetails(
     details.array = true;
   }
 
-  if (nextIndex === atoms.length - 1 && nextAtom instanceof AsAtom) {
-    // This is the 2nd to last atom in the expression
-    // And the last atom is an "as" expression
-    details.elementDefinitions.push(elementDefinition);
-    details.propertyTypes.add(nextAtom.right.toString());
-    return;
+  if (nextIndex === atoms.length - 1) {
+    // This is the penultimate atom in the expression
+    // If the last atom is a type guard (i.e. an "as" expression or ofType() function), use that type
+    if (nextAtom instanceof AsAtom) {
+      details.elementDefinitions.push(elementDefinition);
+      details.propertyTypes.add(nextAtom.right.toString());
+      return;
+    }
+    if (nextAtom instanceof FunctionAtom && nextAtom.name === 'ofType') {
+      details.elementDefinitions.push(elementDefinition);
+      details.propertyTypes.add(nextAtom.args[0].toString());
+      return;
+    }
   }
 
   if (nextIndex >= atoms.length) {

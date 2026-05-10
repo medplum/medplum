@@ -89,6 +89,25 @@ describe('LinkTabs', () => {
     expect(navigateMock).toHaveBeenCalledWith('/patient/123/timeline');
   });
 
+  test('matches tab whose value contains a query string against the pathname segment', async () => {
+    mockLocationUtils.getPathname.mockReturnValue('/Patient/abc/Encounter');
+    const tabs = [
+      { label: 'Timeline', value: 'timeline' },
+      { label: 'Visits', value: 'Encounter?_count=20&patient=abc' },
+      { label: 'Tasks', value: 'Task' },
+    ];
+    setup({ baseUrl: '/Patient/abc', tabs });
+
+    const visitsTab = screen.getByRole('tab', { name: 'Visits' });
+    expect(visitsTab).toHaveAttribute('aria-selected', 'true');
+
+    await act(async () => {
+      fireEvent.click(visitsTab);
+    });
+    // Navigation must preserve the original case and full query string
+    expect(navigateMock).toHaveBeenCalledWith('/Patient/abc/Encounter?_count=20&patient=abc');
+  });
+
   test('allows middle click', async () => {
     console.error = jest.fn(); // Suppress warning for "navigation not implemented" warning
 

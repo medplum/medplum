@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import type { ServiceRequest } from '@medplum/fhirtypes';
+import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -109,7 +109,7 @@ describe('OrderLabsPage', () => {
     vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
   });
 
-  function setup(props: { patientId?: string } = {}): void {
+  function setup(props: { patientId?: string; patient?: Patient } = {}): void {
     vi.mocked(useParams).mockReturnValue({ patientId: props.patientId });
 
     if (props.patientId) {
@@ -119,7 +119,7 @@ describe('OrderLabsPage', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <OrderLabsPage onSubmitLabOrder={mockOnSubmitLabOrder} />
+          <OrderLabsPage patient={props.patient} onSubmitLabOrder={mockOnSubmitLabOrder} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -144,6 +144,16 @@ describe('OrderLabsPage', () => {
     await waitFor(() => {
       expect(medplum.readResource).toHaveBeenCalledWith('Patient', 'patient-123');
     });
+  });
+
+  test('Displays loaded patient in patient input after async fetch', async () => {
+    // ResourceInput captures defaultValue at mount only. The patient is loaded
+    // asynchronously, so the input must remount once `patient` resolves —
+    // `key={patient?.id ?? 'patient'}` forces that remount so the loaded
+    // patient is reflected in the input.
+    setup({ patientId: 'patient-123' });
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Shows test metadata cards when tests are selected', () => {

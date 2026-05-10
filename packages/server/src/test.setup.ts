@@ -274,16 +274,34 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
   });
 }
 
-export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<AsyncJob> {
-  for (let i = 0; i < 100; i++) {
+export type WaitForAsyncJobOptions = {
+  maxAttempts?: number;
+  pollIntervalMs?: number;
+  completionDelayMs?: number;
+};
+
+export async function waitForAsyncJob(
+  contentLocation: string,
+  app: Express,
+  accessToken: string,
+  options?: WaitForAsyncJobOptions
+): Promise<AsyncJob> {
+  const maxAttempts = options?.maxAttempts ?? 100;
+  const pollIntervalMs = options?.pollIntervalMs ?? 450;
+  const completionDelayMs = options?.completionDelayMs ?? 500;
+
+  for (let i = 0; i < maxAttempts; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
-      await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
+      if (completionDelayMs > 0) {
+        await sleep(completionDelayMs); // Buffer time to ensure that any remaining async processing has fully completed
+      }
       return res.body as AsyncJob;
     }
-    await sleep(450);
+    await sleep(pollIntervalMs);
   }
   throw new Error('Async Job did not complete');
 }

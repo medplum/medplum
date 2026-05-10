@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Flex, Group, Stack, Title } from '@mantine/core';
-import { normalizeOperationOutcome } from '@medplum/core';
+import { Flex, Group, Stack, Title } from '@mantine/core';
+import { getOutcomeRedirectUrl, locationUtils, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
@@ -9,6 +9,7 @@ import {
   Logo,
   MedplumLink,
   OperationOutcomeAlert,
+  SubmitButton,
   getIssuesForExpression,
   useMedplum,
 } from '@medplum/react';
@@ -27,16 +28,19 @@ export function VerifyEmailPage(): JSX.Element {
     <Document width={450}>
       <OperationOutcomeAlert issues={issues} />
       <Form
-        onSubmit={() => {
+        onSubmit={async () => {
           setOutcome(undefined);
-          const body = {
-            id,
-            secret,
-          };
-          medplum
-            .post('auth/verifyemail', body)
-            .then(() => setSuccess(true))
-            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
+          try {
+            const result = await medplum.post<OperationOutcome | undefined>('auth/verifyemail', { id, secret });
+            const uri = getOutcomeRedirectUrl(result);
+            if (uri) {
+              locationUtils.assign(uri);
+            } else {
+              setSuccess(true);
+            }
+          } catch (err) {
+            setOutcome(normalizeOperationOutcome(err));
+          }
         }}
       >
         <Flex direction="column" align="center" justify="center">
@@ -49,8 +53,8 @@ export function VerifyEmailPage(): JSX.Element {
               In order to sign in, click the button below to verify your ability to receive email at the address this
               link was sent to.
             </p>
-            <Group justify="flex-end" mt="xl">
-              <Button type="submit">Verify email</Button>
+            <Group justify="center" mt="xl">
+              <SubmitButton>Verify email</SubmitButton>
             </Group>
           </Stack>
         )}

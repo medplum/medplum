@@ -2,11 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
 import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
+import type { Project } from '@medplum/fhirtypes';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { getConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
+
+export const FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX = 'medplum:rl:fhir:membership:';
+export const FHIR_RATE_LIMIT_PROJECT_PREFIX = 'medplum:rl:fhir:project:';
+export const FHIR_RATE_LIMIT_DURATION = 60;
+
+export interface FhirQuotaConfig {
+  userLimit: number;
+  projectLimit: number;
+}
+
+export function getFhirQuotaConfig(project: Project): FhirQuotaConfig {
+  const defaultUserLimit = project.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userLimit = defaultUserLimit ?? getConfig().defaultFhirQuota ?? 50_000;
+
+  const defaultProjectLimit = project.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  const projectLimit = defaultProjectLimit ?? userLimit * 10;
+
+  return { userLimit, projectLimit };
+}
 
 type InMemoryBlock = {
   result: RateLimiterRes;
@@ -37,18 +57,18 @@ export class FhirRateLimiter {
     async?: boolean
   ) {
     this.limiter = new RateLimiterRedis({
-      keyPrefix: 'medplum:rl:fhir:membership:',
+      keyPrefix: FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
       storeClient: redis,
       points: userLimit,
-      duration: 60, // Per minute
+      duration: FHIR_RATE_LIMIT_DURATION,
     });
     this.userKey = authState.membership.id;
 
     this.projectLimiter = new RateLimiterRedis({
-      keyPrefix: 'medplum:rl:fhir:project:',
+      keyPrefix: FHIR_RATE_LIMIT_PROJECT_PREFIX,
       storeClient: redis,
       points: projectLimit,
-      duration: 60, // Per minute
+      duration: FHIR_RATE_LIMIT_DURATION,
     });
     this.projectKey = authState.project.id;
 

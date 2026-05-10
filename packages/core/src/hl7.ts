@@ -87,15 +87,15 @@ export class Hl7Message {
   readonly context: Hl7Context;
   /**
    * Internal lazy-parsed segment storage. Entries are `string` until they
-   * are accessed (via {@link getSegment}, {@link getAllSegments}, {@link header},
-   * or the public {@link segments} getter), at which point they are parsed in
+   * are accessed (via {@link Hl7Message.getSegment}, {@link Hl7Message.getAllSegments}, {@link Hl7Message.header},
+   * or the public {@link Hl7Message.segments} getter), at which point they are parsed in
    * place and replaced with their {@link Hl7Segment} form.
    */
   private readonly _segments: (Hl7Segment | string)[];
   /**
-   * Maps segment name → indices into {@link _segments}. Storing indices (rather
+   * Maps segment name → indices into {@link Hl7Message#_segments}. Storing indices (rather
    * than references to the segments themselves) keeps this map in sync with
-   * {@link _segments} without needing a per-parse update step, and is immune to
+   * {@link Hl7Message#_segments} without needing a per-parse update step, and is immune to
    * collisions when two segments have identical raw text.
    */
   private segmentsByName: Map<string, number[]>;
@@ -106,8 +106,8 @@ export class Hl7Message {
   /**
    * Creates a new HL7 message.
    *
-   * Segment strings are not parsed until they are accessed via {@link getSegment},
-   * {@link getAllSegments}, {@link header}, or the {@link segments} getter.
+   * Segment strings are not parsed until they are accessed via {@link Hl7Message.getSegment},
+   * {@link Hl7Message.getAllSegments}, {@link Hl7Message.header}, or the {@link Hl7Message.segments} getter.
    *
    * @param segments - The HL7 segments.
    * @param context - Optional HL7 parsing context.
@@ -123,7 +123,7 @@ export class Hl7Message {
   /**
    * Returns all HL7 segments, parsing any unparsed segment strings on first access.
    *
-   * Prefer {@link getSegment} or {@link getAllSegments} when you only need a subset
+   * Prefer {@link Hl7Message.getSegment} or {@link Hl7Message.getAllSegments} when you only need a subset
    * of segments; those methods avoid parsing unrelated segments.
    *
    * @returns The HL7 segments array.
@@ -429,7 +429,7 @@ export class Hl7Segment {
   readonly name: string;
   /**
    * Internal lazy-parsed field storage. Entries are `string` until they are
-   * accessed (via {@link getField} or the public {@link fields} getter), at
+   * accessed (via {@link Hl7Segment.getField} or the public {@link Hl7Segment.fields} getter), at
    * which point they are parsed in place and replaced with their
    * {@link Hl7Field} form.
    */
@@ -443,8 +443,8 @@ export class Hl7Segment {
   /**
    * Creates a new HL7 segment.
    *
-   * Field strings are not parsed until they are accessed via {@link getField}
-   * or via the {@link fields} getter.
+   * Field strings are not parsed until they are accessed via {@link Hl7Segment.getField}
+   * or via the {@link Hl7Segment.fields} getter.
    *
    * @param fields - The HL7 fields. The first field is the segment name.
    * @param context - Optional HL7 parsing context.
@@ -461,7 +461,7 @@ export class Hl7Segment {
   /**
    * Returns all HL7 fields, parsing any unparsed field strings on first access.
    *
-   * Prefer {@link getField} when you only need a subset of fields; that method
+   * Prefer {@link Hl7Segment.getField} when you only need a subset of fields; that method
    * avoids parsing unrelated fields.
    *
    * @returns The HL7 fields array.
