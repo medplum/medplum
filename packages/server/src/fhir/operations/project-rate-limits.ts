@@ -41,7 +41,7 @@ const operation: OperationDefinition = {
       max: '*',
       part: [
         { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'profileReference', type: 'string', min: 0, max: '1' },
+        { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
         ...quotaParts,
       ],
     },
@@ -106,7 +106,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     const pttl = results[i * 2 + 1][1] as number;
     return {
       membershipId: membership.id as string,
-      profileReference: membership.profile?.reference,
+      profile: membership.profile,
       ...buildQuotaStatus(consumed, pttl, userLimit),
     };
   });
