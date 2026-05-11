@@ -38,6 +38,7 @@ export interface RegisterResponse {
 
 /**
  * Registers a new user and/or new project.
+ * This method is now only used in tests! Do not use this method in production code!
  * @param request - The register request.
  * @returns The registration response.
  */

@@ -223,10 +223,6 @@ describe('Client', () => {
     mockEnvironment.getBuffer.mockReturnValue(undefined);
   });
 
-  afterAll(() => {
-    Object.defineProperty(globalThis.window, 'sessionStorage', { value: undefined });
-  });
-
   test('Constructor', () => {
     expect(
       () =>
@@ -465,7 +461,6 @@ describe('Client', () => {
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();
-    expect(sessionStorage.length).toStrictEqual(0);
   });
 
   test('SignOut', async () => {
@@ -735,7 +730,7 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
-      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      const codeVerifier = localStorage.getItem('codeVerifier');
       expect(codeVerifier).toHaveLength(128);
 
       const { searchParams } = new URL(result);

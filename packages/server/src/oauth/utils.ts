@@ -482,6 +482,7 @@ export async function setLoginMembership(
   // Everything checks out, update the login
   const updatedLogin: Login = {
     ...login,
+    project: createReference(project),
     membership: createReference(membership),
   };
 

@@ -112,7 +112,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         to: params.email,
         subject: 'Medplum Email Address Updated',
         text: [
-          'A request to update the email address associated with your Medplum account.',
+          'We received a request to update the email address associated with your Medplum account.',
           '',
           'Please click on the following link to verify your ability to receive emails:',
           '',
