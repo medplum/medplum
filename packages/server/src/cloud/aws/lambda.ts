@@ -3,8 +3,8 @@
 import {
   DeleteFunctionCommand,
   LambdaClient,
-  ListAliasesCommand,
   ListVersionsByFunctionCommand,
+  ResourceConflictException,
   ResourceNotFoundException,
 } from '@aws-sdk/client-lambda';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
@@ -34,10 +34,10 @@ export interface DeleteLambdaVersionOptions {
 export interface DeleteOldLambdaVersionStats {
   functionsWithDeleteCandidates: number;
   publishedVersionsScanned: number;
-  aliasProtectedVersions: number;
   versionsPlanned: number;
   versionsDeleted: number;
   versionsNotFound: number;
+  versionsHasAlias: number;
 }
 
 /**
@@ -60,9 +60,7 @@ export async function deleteOldLambdaVersions(
     throw new Error('keepLatest must be at least 1');
   }
 
-  const aliasVersions = await listAliasVersions(client, functionName);
-  const keepVersions = new Set<string>(aliasVersions);
-
+  const keepVersions = new Set<string>();
   const versions = await listPublishedVersions(client, functionName);
   for (let i = 0; i < keepLatest; i++) {
     keepVersions.add(versions[i]);
@@ -71,7 +69,6 @@ export async function deleteOldLambdaVersions(
   const deleteCandidates = versions.filter((v) => !keepVersions.has(v));
   if (stats) {
     stats.publishedVersionsScanned += versions.length;
-    stats.aliasProtectedVersions += aliasVersions.size;
     stats.versionsPlanned += deleteCandidates.length;
   }
 
@@ -92,12 +89,22 @@ export async function deleteOldLambdaVersions(
 
   await runWithConcurrency(deleteCandidates, deleteConcurrency, async (version) => {
     const result = await deleteLambdaVersion(client, functionName, version);
-    if (stats) {
-      if (result === 'deleted') {
+    if (!stats) {
+      return;
+    }
+    switch (result) {
+      case 'deleted':
         stats.versionsDeleted++;
-      } else {
+        break;
+      case 'not-found':
         stats.versionsNotFound++;
-      }
+        break;
+      case 'has-alias':
+        stats.versionsHasAlias++;
+        break;
+      default:
+        result satisfies never;
+        throw new Error('Unknown deleteLambdaVersion result', { cause: result });
     }
   });
 }
@@ -128,38 +135,11 @@ async function listPublishedVersions(client: LambdaClient, functionName: string)
   return versions.sort((a, b) => Number(b) - Number(a));
 }
 
-const SKIP_ALIAS_VERSIONS = true;
-const EMPTY_SET = new Set<string>();
-async function listAliasVersions(client: LambdaClient, functionName: string): Promise<Set<string>> {
-  if (SKIP_ALIAS_VERSIONS) {
-    return EMPTY_SET;
-  }
-
-  const versions = new Set<string>();
-  let marker: string | undefined;
-
-  do {
-    const response = await client.send(new ListAliasesCommand({ FunctionName: functionName, Marker: marker }));
-    marker = response.NextMarker;
-
-    for (const alias of response.Aliases ?? []) {
-      if (alias.FunctionVersion) {
-        versions.add(alias.FunctionVersion);
-      }
-      for (const version of Object.keys(alias.RoutingConfig?.AdditionalVersionWeights ?? {})) {
-        versions.add(version);
-      }
-    }
-  } while (marker);
-
-  return versions;
-}
-
 async function deleteLambdaVersion(
   client: LambdaClient,
   functionName: string,
   version: string
-): Promise<'deleted' | 'not-found'> {
+): Promise<'deleted' | 'not-found' | 'has-alias'> {
   try {
     await client.send(new DeleteFunctionCommand({ FunctionName: functionName, Qualifier: version }));
     getLogger().info('Deleted Lambda function version', { functionName, version });
@@ -168,6 +148,10 @@ async function deleteLambdaVersion(
     if (err instanceof ResourceNotFoundException) {
       getLogger().info('Lambda function version already deleted', { functionName, version });
       return 'not-found';
+    } else if (err instanceof ResourceConflictException) {
+      // Unable to delete version because the following aliases reference it: [<alias>]
+      getLogger().info('Lambda function version already in use', { functionName, version });
+      return 'has-alias';
     }
 
     throw err;

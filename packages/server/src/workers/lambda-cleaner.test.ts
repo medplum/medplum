@@ -6,6 +6,8 @@ import {
   ListAliasesCommand,
   ListFunctionsCommand,
   ListVersionsByFunctionCommand,
+  ResourceConflictException,
+  ResourceNotFoundException,
 } from '@aws-sdk/client-lambda';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -63,7 +65,16 @@ describe('Lambda version cleanup worker', () => {
       }
       return { Aliases: [] };
     });
-    mockLambdaClient.on(DeleteFunctionCommand).resolves({});
+    // mockLambdaClient.on(DeleteFunctionCommand).resolves({});
+    mockLambdaClient.on(DeleteFunctionCommand).callsFake(({ FunctionName, Qualifier }) => {
+      if (FunctionName === 'medplum-bot-lambda-a' && Qualifier === '2') {
+        throw new ResourceConflictException({ $metadata: {}, message: 'Version has an alias' });
+      }
+      if (FunctionName === 'medplum-bot-lambda-b' && Qualifier === '1') {
+        throw new ResourceNotFoundException({ $metadata: {}, message: 'Version not found' });
+      }
+      return {};
+    });
 
     const summary = await execLambdaCleanerJob(
       {
@@ -86,10 +97,10 @@ describe('Lambda version cleanup worker', () => {
       functionsMatched: 2,
       functionsWithDeleteCandidates: 2,
       publishedVersionsScanned: 6,
-      aliasProtectedVersions: 0,
       versionsPlanned: 4,
-      versionsDeleted: 4,
-      versionsNotFound: 0,
+      versionsDeleted: 2,
+      versionsNotFound: 1,
+      versionsHasAlias: 1,
       durationMs: expect.any(Number),
     });
 

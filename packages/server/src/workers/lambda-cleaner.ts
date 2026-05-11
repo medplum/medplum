@@ -113,10 +113,10 @@ export async function execLambdaCleanerJob(
     functionsMatched: 0,
     functionsWithDeleteCandidates: 0,
     publishedVersionsScanned: 0,
-    aliasProtectedVersions: 0,
     versionsPlanned: 0,
     versionsDeleted: 0,
     versionsNotFound: 0,
+    versionsHasAlias: 0,
     durationMs: 0,
   };
 
@@ -158,10 +158,10 @@ function formatSummary(summary: LambdaCleanerSummary): Parameters {
     { name: 'functionsMatched', valueInteger: stats.functionsMatched },
     { name: 'functionsWithDeleteCandidates', valueInteger: stats.functionsWithDeleteCandidates },
     { name: 'publishedVersionsScanned', valueInteger: stats.publishedVersionsScanned },
-    { name: 'aliasProtectedVersions', valueInteger: stats.aliasProtectedVersions },
     { name: 'versionsPlanned', valueInteger: stats.versionsPlanned },
     { name: 'versionsDeleted', valueInteger: stats.versionsDeleted },
     { name: 'versionsNotFound', valueInteger: stats.versionsNotFound },
+    { name: 'versionsHasAlias', valueInteger: stats.versionsHasAlias },
     { name: 'duration', valueQuantity: { value: stats.durationMs, code: 'ms' } },
   ];
 
