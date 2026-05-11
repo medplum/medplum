@@ -1,97 +1,124 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Modal, NativeSelect, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
-import type { Parameters, Project, Reference, User } from '@medplum/fhirtypes';
+import { formatHumanName, normalizeErrorString } from '@medplum/core';
+import type { HumanName, Parameters, Project, Reference, User } from '@medplum/fhirtypes';
 import { Form, FormSection, ReferenceInput, ResourceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useState } from 'react';
-
-type TargetScope = 'project' | 'global';
+import { useEffect, useState } from 'react';
+import { getProjectId } from '../utils';
+import type { UserScope } from './UserScopeWidget';
+import { UserScopeWidget } from './UserScopeWidget';
 
 export function RescopeUserWidget(): JSX.Element {
   const medplum = useMedplum();
+  const isSuperAdmin = medplum.isSuperAdmin();
+  const currentProjectId = getProjectId(medplum);
   const [opened, { open, close }] = useDisclosure(false);
-  const [projectRef, setProjectRef] = useState<Reference<Project> | undefined>();
-  const [scope, setScope] = useState<TargetScope>('global');
-  const [userRef, setUserRef] = useState<Reference<User> | undefined>();
-  const [pendingUserId, setPendingUserId] = useState('');
+  const [projectRef, setProjectRef] = useState<Reference<Project> | undefined>(
+    !isSuperAdmin && currentProjectId ? { reference: `Project/${currentProjectId}` } : undefined
+  );
+  const [user, setUser] = useState<User | undefined>();
+  const [scope, setScope] = useState<UserScope>('loading');
   const [submitting, setSubmitting] = useState(false);
 
+  const projectReference = projectRef?.reference;
+  const projectIdForScope = projectReference?.split('/')[1];
+
+  useEffect(() => {
+    if (!user?.id) {
+      setScope('loading');
+      return undefined;
+    }
+    let cancelled = false;
+    setScope('loading');
+    medplum
+      .readResource('User', user.id)
+      .then((u) => {
+        if (cancelled) {
+          return;
+        }
+        setScope(u.meta?.project && u.meta.project === projectIdForScope ? 'project' : 'global');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScope('global');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [medplum, user, projectIdForScope]);
+
+  let targetScope: 'project' | 'global' | undefined;
+  if (scope === 'project') {
+    targetScope = 'global';
+  } else if (scope === 'global' && isSuperAdmin) {
+    targetScope = 'project';
+  }
+  const canSubmit = Boolean(projectReference && user?.id && targetScope);
+
   function handleSubmit(): void {
-    if (!projectRef?.reference) {
-      showNotification({ color: 'red', message: 'Project is required', autoClose: false });
+    if (!canSubmit) {
       return;
     }
-    if (!userRef?.reference) {
-      showNotification({ color: 'red', message: 'User is required', autoClose: false });
-      return;
-    }
-    const id = userRef.reference.split('/')[1];
-    if (!id) {
-      showNotification({ color: 'red', message: 'Invalid user reference', autoClose: false });
-      return;
-    }
-    setPendingUserId(id);
     open();
   }
 
   function executeRescope(): void {
+    if (!user?.id || !targetScope) {
+      return;
+    }
     setSubmitting(true);
     const params: Parameters = {
       resourceType: 'Parameters',
-      parameter: [{ name: 'scope', valueCode: scope }],
+      parameter: [{ name: 'scope', valueCode: targetScope }],
     };
-    if (scope === 'project' && projectRef) {
+    if (targetScope === 'project' && projectRef) {
       params.parameter?.push({ name: 'project', valueReference: projectRef });
     }
     medplum
-      .post(medplum.fhirUrl('User', pendingUserId, '$rescope'), params)
+      .post(medplum.fhirUrl('User', user.id, '$rescope'), params)
       .then(() => {
         showNotification({ color: 'green', message: 'User rescoped successfully' });
+        medplum.invalidateSearches('User');
+        setUser(undefined);
         close();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
       .finally(() => setSubmitting(false));
   }
 
-  const projectLabel = projectRef?.display ?? projectRef?.reference ?? '(no project selected)';
-  const projectReference = projectRef?.reference;
+  const projectLabel = projectRef?.display ?? projectReference ?? '(no project selected)';
   const userSearchCriteria = projectReference ? { '_has:ProjectMembership:user:project': projectReference } : undefined;
+  const userDisplay = user ? formatUser(user) : undefined;
 
   return (
     <>
       <Title order={2}>Rescope User</Title>
       <p>
         Move a User between <strong>global</strong> scope (not tied to any Project) and <strong>project</strong> scope
-        (owned by a specific Project). Super admin privileges are required for any scope change that assigns a User to a
-        Project.
+        (owned by a specific Project). {isSuperAdmin
+          ? 'Selecting a project-scoped User releases them to global; selecting a global User assigns them to the chosen Project.'
+          : 'Project admins may release a project-scoped User in this Project to global scope. Re-assigning a User to a Project requires a super admin.'}
       </p>
       <Form onSubmit={handleSubmit}>
         <Stack>
-          <FormSection title="Project (required)" htmlFor="rescopeTargetProject">
-            <ReferenceInput<Project>
-              name="rescopeTargetProject"
-              placeholder="Select a Project"
-              targetTypes={['Project']}
-              onChange={(ref) => {
-                setProjectRef(ref);
-                setUserRef(undefined);
-              }}
-            />
-          </FormSection>
-          <NativeSelect
-            name="scope"
-            label="Target scope"
-            data={[
-              { value: 'global', label: 'global — release User from the Project' },
-              { value: 'project', label: 'project — assign User to the Project' },
-            ]}
-            value={scope}
-            onChange={(e) => setScope(e.currentTarget.value as TargetScope)}
-          />
+          {isSuperAdmin && (
+            <FormSection title="Project (required)" htmlFor="rescopeTargetProject">
+              <ReferenceInput<Project>
+                name="rescopeTargetProject"
+                placeholder="Select a Project"
+                targetTypes={['Project']}
+                onChange={(ref) => {
+                  setProjectRef(ref);
+                  setUser(undefined);
+                }}
+              />
+            </FormSection>
+          )}
           <FormSection
             title="User (search by email; filtered to members of the selected Project)"
             htmlFor="rescopeTargetUser"
@@ -103,12 +130,23 @@ export function RescopeUserWidget(): JSX.Element {
               placeholder={projectReference ? 'Search by email' : 'Select a Project first'}
               disabled={!projectReference}
               searchCriteria={userSearchCriteria}
-              onChange={(user) => setUserRef(user ? createReference(user) : undefined)}
+              onChange={(u) => setUser(u ?? undefined)}
             />
           </FormSection>
+          {user && (
+            <Group gap="sm">
+              <Text>{userDisplay}</Text>
+              <UserScopeWidget scope={scope} />
+            </Group>
+          )}
+          {user && scope === 'global' && !isSuperAdmin && (
+            <Alert color="yellow">
+              This User is in <strong>global</strong> scope. Only a super admin can assign a global User to a Project.
+            </Alert>
+          )}
           <div>
-            <Button type="submit" disabled={!projectReference || !userRef?.reference}>
-              Rescope User
+            <Button type="submit" disabled={!canSubmit}>
+              {targetScope === 'project' ? 'Assign User to Project' : 'Release User to Global'}
             </Button>
           </div>
         </Stack>
@@ -116,9 +154,9 @@ export function RescopeUserWidget(): JSX.Element {
       <Modal opened={opened} onClose={close} title="Confirm User Rescope" centered size="auto">
         <Stack>
           <Text>
-            You are about to change the scope of <strong>User/{pendingUserId}</strong>.
+            You are about to change the scope of <strong>User/{user?.id}</strong>.
           </Text>
-          {scope === 'global' ? (
+          {targetScope === 'global' ? (
             <Text>
               This will <strong>release</strong> the User from project <strong>{projectLabel}</strong> to{' '}
               <strong>global</strong> scope. Any existing ProjectMemberships will be left in place and may be left
@@ -129,6 +167,12 @@ export function RescopeUserWidget(): JSX.Element {
               This will <strong>assign</strong> the User to project <strong>{projectLabel}</strong>. The User will
               become a project-scoped resource belonging to that Project.
             </Text>
+          )}
+          {targetScope === 'global' && !isSuperAdmin && (
+            <Alert color="red" title="This change cannot be reversed by a project admin">
+              <strong>You will need the help of a super admin to reverse this change.</strong> Once the User is released
+              to global scope, only a super admin can re-assign the User back to this (or any) Project.
+            </Alert>
           )}
           <Text c="red">This is a privileged operation. Double-check the User and target before continuing.</Text>
           <Group justify="flex-end">
@@ -143,4 +187,19 @@ export function RescopeUserWidget(): JSX.Element {
       </Modal>
     </>
   );
+}
+
+function formatUser(user: User): string {
+  let name: string | undefined;
+  if (user.firstName || user.lastName) {
+    const humanName: HumanName = { family: user.lastName };
+    if (user.firstName) {
+      humanName.given = [user.firstName];
+    }
+    name = formatHumanName(humanName);
+  }
+  if (name && user.email) {
+    return `${name} (${user.email})`;
+  }
+  return name ?? user.email ?? `User/${user.id}`;
 }

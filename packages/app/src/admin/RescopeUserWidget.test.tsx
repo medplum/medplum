@@ -15,15 +15,32 @@ describe('RescopeUserWidget', () => {
   let postSpy: jest.SpyInstance;
 
   const project: Project = { resourceType: 'Project', id: 'project-1', name: 'Test Project' };
-  const user: User = {
+  const projectScopedUser: User = {
     resourceType: 'User',
     id: 'user-1',
     email: 'alice@example.com',
     firstName: 'Alice',
     lastName: 'Example',
+    meta: { project: 'project-1' },
+  };
+  const globalUser: User = {
+    resourceType: 'User',
+    id: 'user-2',
+    email: 'bob@example.com',
+    firstName: 'Bob',
+    lastName: 'Example',
   };
 
-  function setup(): void {
+  function setup(opts: { superAdmin?: boolean } = {}): void {
+    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => opts.superAdmin ?? true);
+    if (!opts.superAdmin) {
+      medplum.setActiveLoginOverride({
+        accessToken: 't',
+        refreshToken: 'r',
+        profile: { reference: 'Practitioner/1' },
+        project: { reference: 'Project/project-1' },
+      });
+    }
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter>
@@ -68,16 +85,25 @@ describe('RescopeUserWidget', () => {
     });
   }
 
+  function mockUser(user: User): void {
+    medplum.router.add('GET', 'User', async () => [
+      allOk,
+      { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: user }] } as any,
+    ]);
+    jest.spyOn(medplum, 'readResource').mockImplementation(((resourceType: string, id: string) => {
+      if (resourceType === 'User' && id === user.id) {
+        return Promise.resolve(user);
+      }
+      return MockClient.prototype.readResource.call(medplum, resourceType as any, id);
+    }) as any);
+  }
+
   beforeEach(() => {
     medplum = new MockClient();
     jest.useFakeTimers();
     medplum.router.add('GET', 'Project', async () => [
       allOk,
       { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: project }] } as any,
-    ]);
-    medplum.router.add('GET', 'User', async () => [
-      allOk,
-      { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: user }] } as any,
     ]);
     postSpy = jest.spyOn(medplum, 'post');
   });
@@ -91,30 +117,53 @@ describe('RescopeUserWidget', () => {
     jest.useRealTimers();
   });
 
-  test('renders title and form', () => {
-    setup();
+  test('renders title and form (super admin)', () => {
+    mockUser(projectScopedUser);
+    setup({ superAdmin: true });
     expect(screen.getByRole('heading', { name: 'Rescope User' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Select a Project')).toBeInTheDocument();
-    expect(screen.getByLabelText('Target scope')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Target scope')).not.toBeInTheDocument();
   });
 
-  test('Submit button is disabled before project and user selected', () => {
-    setup();
-    expect(screen.getByRole('button', { name: 'Rescope User' })).toBeDisabled();
+  test('hides Project selector for non-super-admin', () => {
+    mockUser(projectScopedUser);
+    setup({ superAdmin: false });
+    expect(screen.queryByPlaceholderText('Select a Project')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search by email')).toBeInTheDocument();
   });
 
-  test('Confirms and posts $rescope with global scope (no project param)', async () => {
+  test('shows User Details with name + scope chip when user selected (project scope)', async () => {
+    mockUser(projectScopedUser);
+    setup({ superAdmin: true });
+
+    await selectProject();
+    await selectUser();
+    // Wait for scope resolution
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText('Alice Example (alice@example.com)')).toBeInTheDocument();
+    expect(screen.getByText('Project', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Release User to Global' })).toBeEnabled();
+  });
+
+  test('Releases project-scoped user to global with no project param', async () => {
+    mockUser(projectScopedUser);
     medplum.router.add('POST', 'User/user-1/$rescope', async () => [
       allOk,
       { resourceType: 'Parameters', parameter: [] },
     ]);
-    setup();
+    setup({ superAdmin: true });
 
     await selectProject();
     await selectUser();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Rescope User' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Release User to Global' }));
     });
     expect(screen.getByText('Confirm User Rescope')).toBeInTheDocument();
     expect(screen.getByText('release', { selector: 'strong' })).toBeInTheDocument();
@@ -133,21 +182,24 @@ describe('RescopeUserWidget', () => {
     expect(await screen.findByText('User rescoped successfully')).toBeInTheDocument();
   });
 
-  test('Posts $rescope with project scope and project param when scope=project', async () => {
-    medplum.router.add('POST', 'User/user-1/$rescope', async () => [
+  test('Assigns global user to project for super admin', async () => {
+    mockUser(globalUser);
+    medplum.router.add('POST', 'User/user-2/$rescope', async () => [
       allOk,
       { resourceType: 'Parameters', parameter: [] },
     ]);
-    setup();
+    setup({ superAdmin: true });
 
     await selectProject();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Target scope'), { target: { value: 'project' } });
-    });
     await selectUser();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Global', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Rescope User' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Assign User to Project' }));
     });
     expect(screen.getByText('assign', { selector: 'strong' })).toBeInTheDocument();
 
@@ -165,13 +217,30 @@ describe('RescopeUserWidget', () => {
     });
   });
 
+  test('Non-super-admin sees a warning and disabled submit when user is global', async () => {
+    mockUser(globalUser);
+    setup({ superAdmin: false });
+
+    await selectUser();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText(/Only a super admin can assign/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Release User to Global' })).toBeDisabled();
+  });
+
   test('Cancel closes the confirmation modal without posting', async () => {
-    setup();
+    mockUser(projectScopedUser);
+    setup({ superAdmin: true });
     await selectProject();
     await selectUser();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Rescope User' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Release User to Global' }));
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -180,13 +249,17 @@ describe('RescopeUserWidget', () => {
   });
 
   test('Shows error notification when $rescope fails', async () => {
+    mockUser(projectScopedUser);
     medplum.router.add('POST', 'User/user-1/$rescope', async () => [badRequest('Something went wrong')]);
-    setup();
+    setup({ superAdmin: true });
     await selectProject();
     await selectUser();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Rescope User' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Release User to Global' }));
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Confirm Rescope' }));
