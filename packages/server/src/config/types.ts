@@ -183,6 +183,8 @@ export interface MedplumServerConfig {
    */
   mtlsCertHeader?: string;
 
+  rangeSearch?: boolean;
+
   /**
    * Optional URL for AI real-time transcription service.
    * Default is `wss://api.openai.com/v1/realtime?intent=transcription`.
