@@ -61406,6 +61406,7 @@
           "items": {
             "enum": [
               "ai",
+              "ai-realtime",
               "aws-comprehend",
               "aws-textract",
               "bots",

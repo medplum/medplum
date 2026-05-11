@@ -130,6 +130,11 @@
             "definition": "AI"
           },
           {
+            "code": "ai-realtime",
+            "display": "AI Realtime",
+            "definition": "Enable the OpenAI realtime transcription proxy at /ws/ai-realtime"
+          },
+          {
             "code": "aws-comprehend",
             "display": "AWS Comprehend",
             "definition": "AWS Comprehend"
