@@ -3,29 +3,33 @@
 import type { GetFunctionConfigurationCommandOutput } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ListVersionsByFunctionCommand,
   PackageType,
   ResourceConflictException,
   ResourceNotFoundException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { sleep } from '@medplum/core';
+import { normalizeErrorString, sleep } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
-import { getLogger } from '../../logger';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger, globalLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
+export const LAMBDA_VERSIONS_TO_KEEP = 2;
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
@@ -172,8 +176,53 @@ export async function deployLambdaInternal(
 
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
+    const { project } = getAuthenticatedContext();
+    // Don't block on delete since this could take a while
+    deleteOldLambdaVersions(client, name).catch((err) => {
+      globalLogger.error('Error occurred while deleting old Lambdas', {
+        projectId: project.id,
+        name,
+        err: normalizeErrorString(err),
+      });
+    });
   } else {
     await createLambda(bot, client, name, zipFile);
+  }
+}
+
+/**
+ * Deletes published lambda versions older than the most recent `LAMBDA_VERSIONS_TO_KEEP` versions.
+ * Always preserves the unpublished `$LATEST` qualifier.
+ * @param client - The AWS Lambda client.
+ * @param name - The lambda name.
+ */
+export async function deleteOldLambdaVersions(client: LambdaClient, name: string): Promise<void> {
+  const log = getLogger();
+  const versions: number[] = [];
+  let marker: string | undefined;
+  do {
+    const response = await client.send(new ListVersionsByFunctionCommand({ FunctionName: name, Marker: marker }));
+    for (const v of response.Versions ?? []) {
+      const parsed = Number(v.Version);
+      if (Number.isInteger(parsed)) {
+        versions.push(parsed);
+      }
+    }
+    marker = response.NextMarker;
+  } while (marker);
+
+  const toDelete = versions.toSorted((a, b) => b - a).slice(LAMBDA_VERSIONS_TO_KEEP);
+  if (toDelete.length === 0) {
+    return;
+  }
+
+  log.info('Cleaning up old lambda versions', { name, versions: toDelete });
+  for (const version of toDelete) {
+    try {
+      await client.send(new DeleteFunctionCommand({ FunctionName: name, Qualifier: String(version) }));
+    } catch (err) {
+      log.warn('Failed to delete old lambda version', { name, version, err: normalizeErrorString(err) });
+    }
   }
 }
 
