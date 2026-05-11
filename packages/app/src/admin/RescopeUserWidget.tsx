@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
+import { Alert, Badge, Button, Group, Modal, Skeleton, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { formatHumanName, normalizeErrorString } from '@medplum/core';
@@ -9,8 +9,8 @@ import { Form, FormSection, ReferenceInput, ResourceInput, useMedplum } from '@m
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
-import type { UserScope } from './UserScopeWidget';
-import { UserScopeWidget } from './UserScopeWidget';
+
+type UserScope = 'loading' | 'project' | 'global';
 
 export function RescopeUserWidget(): JSX.Element {
   const medplum = useMedplum();
@@ -136,7 +136,7 @@ export function RescopeUserWidget(): JSX.Element {
           {user && (
             <Group gap="sm">
               <Text>{userDisplay}</Text>
-              <UserScopeWidget scope={scope} />
+              {renderScopeBadge(scope)}
             </Group>
           )}
           {user && scope === 'global' && !isSuperAdmin && (
@@ -186,6 +186,24 @@ export function RescopeUserWidget(): JSX.Element {
         </Stack>
       </Modal>
     </>
+  );
+}
+
+function renderScopeBadge(scope: UserScope): JSX.Element {
+  if (scope === 'loading') {
+    return <Skeleton height={22} width={70} radius="xl" />;
+  }
+  if (scope === 'project') {
+    return (
+      <Badge color="blue" variant="light">
+        Project
+      </Badge>
+    );
+  }
+  return (
+    <Badge color="gray" variant="light">
+      Global
+    </Badge>
   );
 }
 
