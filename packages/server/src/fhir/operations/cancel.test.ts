@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, parseSearchRequest } from '@medplum/core';
-import type { Appointment, Bundle, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -74,12 +74,8 @@ describe('Appointment/$cancel', () => {
     const appointment = await makeAppointment('booked', [slot]);
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(200);
@@ -90,38 +86,25 @@ describe('Appointment/$cancel', () => {
     const appointment = await makeAppointment('pending', [slot]);
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(200);
   });
 
-  test('Returns Bundle with cancelled appointment', async () => {
+  test('Returns cancelled appointment', async () => {
     const slot = await makeSlot();
     const appointment = await makeAppointment('booked', [slot]);
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(200);
 
-    const bundle = response.body as Bundle;
-    expect(bundle).toHaveProperty('resourceType', 'Bundle');
-    expect(bundle).toHaveProperty('type', 'transaction-response');
-    expect(bundle.entry).toHaveLength(1);
-
-    const updated = bundle.entry?.[0]?.resource as Appointment;
+    const updated = response.body as Appointment;
     expect(updated).toMatchObject({ resourceType: 'Appointment', id: appointment.id, status: 'cancelled' });
   });
 
@@ -130,12 +113,8 @@ describe('Appointment/$cancel', () => {
     const appointment = await makeAppointment('booked', [slot]);
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(200);
@@ -150,12 +129,8 @@ describe('Appointment/$cancel', () => {
     const appointment = await makeAppointment('booked', [slot1, slot2]);
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(200);
@@ -168,12 +143,8 @@ describe('Appointment/$cancel', () => {
     const appointment = await makeAppointment('booked');
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(200);
@@ -185,12 +156,8 @@ describe('Appointment/$cancel', () => {
       const appointment = await makeAppointment(status);
 
       const response = await request
-        .post('/fhir/R4/Appointment/$cancel')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-        });
+        .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+        .set('Authorization', `Bearer ${project.accessToken}`);
 
       expect(response.body).toMatchObject({
         resourceType: 'OperationOutcome',
@@ -208,28 +175,10 @@ describe('Appointment/$cancel', () => {
 
   test('Returns 404 when appointment does not exist', async () => {
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'appointment-reference',
-            valueReference: { reference: 'Appointment/00000000-0000-0000-0000-000000000000' },
-          },
-        ],
-      });
+      .post('/fhir/R4/Appointment/00000000-0000-0000-0000-000000000000/$cancel')
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.status).toEqual(404);
-  });
-
-  test('Returns 400 when appointment-reference parameter is missing', async () => {
-    const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({ resourceType: 'Parameters', parameter: [] });
-
-    expect(response.status).toEqual(400);
   });
 
   test('Returns 400 when a referenced slot does not exist', async () => {
@@ -244,12 +193,8 @@ describe('Appointment/$cancel', () => {
     });
 
     const response = await request
-      .post('/fhir/R4/Appointment/$cancel')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'appointment-reference', valueReference: createReference(appointment) }],
-      });
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.status).toEqual(400);
     expect(response.body).toMatchObject({
