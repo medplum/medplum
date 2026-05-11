@@ -140,7 +140,7 @@ export interface Project {
    */
   features?: ('ai' | 'aws-comprehend' | 'aws-textract' | 'bots' | 'cron' | 'email' | 'google-auth-required' |
       'graphql-introspection' | 'scheduling' | 'websocket-subscriptions' | 'transaction-bundles' |
-      'validate-terminology')[];
+      'validate-terminology' | 'range-search')[];
 
   /**
    * The default access policy for patients using open registration.
