@@ -100,7 +100,8 @@ export function RescopeUserWidget(): JSX.Element {
       <Title order={2}>Rescope User</Title>
       <p>
         Move a User between <strong>global</strong> scope (not tied to any Project) and <strong>project</strong> scope
-        (owned by a specific Project). {isSuperAdmin
+        (owned by a specific Project).{' '}
+        {isSuperAdmin
           ? 'Selecting a project-scoped User releases them to global; selecting a global User assigns them to the chosen Project.'
           : 'Project admins may release a project-scoped User in this Project to global scope. Re-assigning a User to a Project requires a super admin.'}
       </p>
