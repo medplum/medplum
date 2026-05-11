@@ -21,7 +21,8 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
-import { getLogger } from '../../logger';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger, globalLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
@@ -175,7 +176,15 @@ export async function deployLambdaInternal(
 
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
-    await cleanupOldLambdaVersions(client, name);
+    const { project } = getAuthenticatedContext();
+    // Don't block on delete since this could take a while
+    deleteOldLambdaVersions(client, name).catch((err) => {
+      globalLogger.error('Error occurred while deleting old Lambdas', {
+        projectId: project.id,
+        name,
+        err: normalizeErrorString(err),
+      });
+    });
   } else {
     await createLambda(bot, client, name, zipFile);
   }
@@ -187,7 +196,7 @@ export async function deployLambdaInternal(
  * @param client - The AWS Lambda client.
  * @param name - The lambda name.
  */
-export async function cleanupOldLambdaVersions(client: LambdaClient, name: string): Promise<void> {
+export async function deleteOldLambdaVersions(client: LambdaClient, name: string): Promise<void> {
   const log = getLogger();
   const versions: number[] = [];
   let marker: string | undefined;

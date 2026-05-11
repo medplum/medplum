@@ -25,7 +25,8 @@ import JSZip from 'jszip';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { globalLogger } from '../../logger';
+import { initTestAuth, waitFor } from '../../test.setup';
 import {
   DEFAULT_LAMBDA_TIMEOUT,
   getLambdaNameForBot,
@@ -572,8 +573,11 @@ describe('Deploy', () => {
       .send({ code: `export async function handler() { return null; }` });
     expect(res3.status).toBe(200);
 
+    // Cleanup runs async after the response, so poll until all expected deletes have occurred.
     // Versions 5 and 4 should be kept; 3, 2, 1 deleted.
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 3);
+    await waitFor(async () => {
+      expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 3);
+    });
     expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' });
     expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' });
     expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' });
@@ -617,7 +621,59 @@ describe('Deploy', () => {
       .send({ code: `export async function handler() { return null; }` });
     // Deploy should still succeed even though cleanup deletion failed.
     expect(res3.status).toBe(200);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
+    await waitFor(async () => {
+      expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
+    });
+  });
+
+  test('Cleanup logs uncaught errors without failing deploy', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler() { return null; }`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+    const name = `medplum-bot-lambda-${bot.id}`;
+
+    // Initial deploy creates the lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    mockLambdaClient.resetHistory();
+
+    // Cause cleanup itself to throw (ListVersions failure is not caught inside the loop).
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .rejects(new TooManyRequestsException({ $metadata: {}, message: 'Too many requests' }));
+
+    const errorSpy = jest.spyOn(globalLogger, 'error').mockReturnValue();
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    // Deploy should still succeed even though the async cleanup throws.
+    expect(res3.status).toBe(200);
+
+    await waitFor(async () => {
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error occurred while deleting old Lambdas',
+        expect.objectContaining({ name, err: expect.stringContaining('Too many requests') })
+      );
+    });
+
+    errorSpy.mockRestore();
   });
 
   test('Exists check throws error', async () => {
