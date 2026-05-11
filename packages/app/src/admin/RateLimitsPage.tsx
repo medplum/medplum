@@ -265,7 +265,9 @@ function MembershipRow({ membership }: { readonly membership: MembershipQuota })
   return (
     <Table.Tr onClick={() => navigate(`/admin/users/${membership.membershipId}`)} style={{ cursor: 'pointer' }}>
       <Table.Td>{membership.membershipId}</Table.Td>
-      <Table.Td><ResourceName value={membership.profile} /></Table.Td>
+      <Table.Td>
+        <ResourceName value={membership.profile} />
+      </Table.Td>
       <Table.Td>{formatNumber(membership.limit)}</Table.Td>
       <Table.Td>{formatNumber(membership.consumedPoints)}</Table.Td>
       <Table.Td>{formatNumber(membership.remainingPoints)}</Table.Td>
