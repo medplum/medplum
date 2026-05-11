@@ -4,7 +4,7 @@ import { Button, Group, Progress, Table, Text, Title, UnstyledButton } from '@ma
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { ResourceName, useMedplum } from '@medplum/react';
 import { IconArrowDown, IconArrowUp, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
@@ -265,7 +265,7 @@ function MembershipRow({ membership }: { readonly membership: MembershipQuota })
   return (
     <Table.Tr onClick={() => navigate(`/admin/users/${membership.membershipId}`)} style={{ cursor: 'pointer' }}>
       <Table.Td>{membership.membershipId}</Table.Td>
-      <Table.Td>{membership.profile?.display ?? membership.profile?.reference ?? '--'}</Table.Td>
+      <Table.Td><ResourceName value={membership.profile} /></Table.Td>
       <Table.Td>{formatNumber(membership.limit)}</Table.Td>
       <Table.Td>{formatNumber(membership.consumedPoints)}</Table.Td>
       <Table.Td>{formatNumber(membership.remainingPoints)}</Table.Td>
