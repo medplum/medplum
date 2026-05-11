@@ -14,6 +14,7 @@ const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
 const PRECONDITION_FAILED_ID = 'precondition-failed';
+const CONTENT_TOO_LARGE_ID = 'content-too-large';
 const UNSUPPORTED_MEDIA_TYPE_ID = 'unsupported-media-type';
 const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
@@ -160,6 +161,20 @@ export const preconditionFailed: OperationOutcome = {
     },
   ],
 };
+
+export function contentTooLarge(text: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: CONTENT_TOO_LARGE_ID,
+    issue: [
+      {
+        severity: 'error',
+        code: 'too-long',
+        details: { text },
+      },
+    ],
+  };
+}
 
 export const unsupportedMediaType: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -437,6 +452,8 @@ export function getStatus(outcome: OperationOutcome): number {
     case PRECONDITION_FAILED_ID:
     case MULTIPLE_MATCHES_ID:
       return 412;
+    case CONTENT_TOO_LARGE_ID:
+      return 413;
     case UNSUPPORTED_MEDIA_TYPE_ID:
       return 415;
     case BUSINESS_RULE:
