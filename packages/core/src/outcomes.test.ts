@@ -8,8 +8,10 @@ import {
   badRequest,
   businessRule,
   conflict,
+  contentTooLarge,
   created,
   forbidden,
+  getOutcomeRedirectUrl,
   getStatus,
   gone,
   isAccepted,
@@ -19,6 +21,7 @@ import {
   isNotFound,
   isOk,
   isOperationOutcome,
+  isRedirect,
   multipleMatches,
   normalizeErrorString,
   notFound,
@@ -26,6 +29,7 @@ import {
   operationOutcomeToString,
   preconditionFailed,
   redirect,
+  redirectOk,
   serverError,
   serverTimeout,
   tooManyRequests,
@@ -97,6 +101,7 @@ describe('Outcomes', () => {
     [created, 201],
     [accepted('https://example.com'), 202],
     [redirect(new URL('http://example.com')), 302],
+    [redirectOk(new URL('http://example.com')), 200],
     [notModified, 304],
     [badRequest('bad'), 400],
     [unauthorized, 401],
@@ -105,6 +110,7 @@ describe('Outcomes', () => {
     [conflict('bad'), 409],
     [gone, 410],
     [preconditionFailed, 412],
+    [contentTooLarge('Big file'), 413],
     [multipleMatches, 412],
     [unsupportedMediaType, 415],
     [businessRule('rule-id', 'Message'), 422],
@@ -186,5 +192,17 @@ describe('Outcomes', () => {
         ],
       })
     ).toStrictEqual('Supplied Patient is unknown.');
+  });
+
+  test('Redirect', () => {
+    const r1 = redirect(new URL('http://example.com/'));
+    expect(isOk(r1)).toBe(false);
+    expect(isRedirect(r1)).toBe(true);
+    expect(getOutcomeRedirectUrl(r1)).toBe('http://example.com/');
+
+    const r2 = redirectOk(new URL('http://example.com/'));
+    expect(isOk(r2)).toBe(true);
+    expect(isRedirect(r2)).toBe(false);
+    expect(getOutcomeRedirectUrl(r2)).toBe('http://example.com/');
   });
 });
