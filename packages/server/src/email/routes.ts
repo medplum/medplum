@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, badRequest } from '@medplum/core';
+import { allOk, badRequest, ContentType } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -32,7 +32,9 @@ emailRouter.post('/send', sendEmailValidator, async (req: Request, res: Response
     const outcome: OperationOutcome = {
       resourceType: 'OperationOutcome',
       id: 'forbidden',
-      issue: [{ severity: 'error', code: 'forbidden', details: { text: 'Only project administrators can send emails' } }],
+      issue: [
+        { severity: 'error', code: 'forbidden', details: { text: 'Only project administrators can send emails' } },
+      ],
     };
     sendOutcome(res, outcome);
     return;

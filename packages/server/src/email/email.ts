@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY, badRequest, OperationOutcomeError } from '@medplum/core';
+import { badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
