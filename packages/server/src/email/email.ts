@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY } from '@medplum/core';
+import { EMPTY, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
@@ -40,6 +40,8 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
     await sendEmailViaSmtp(config.smtp, options);
   } else if (config.emailProvider === 'awsses') {
     await sendEmailViaSes(options);
+  } else {
+    throw new OperationOutcomeError(badRequest('Email is not configured on this server'));
   }
 }
 

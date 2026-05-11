@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, forbidden } from '@medplum/core';
+import { allOk, ContentType, badRequest } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, check } from 'express-validator';
@@ -22,9 +23,18 @@ const sendEmailValidator = makeValidationMiddleware([
 emailRouter.post('/send', sendEmailValidator, async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
 
-  // Make sure the user project has the email feature enabled
-  if (!ctx.project.features?.includes('email') || !ctx.membership.admin) {
-    sendOutcome(res, forbidden);
+  if (!ctx.project.features?.includes('email')) {
+    sendOutcome(res, badRequest('Email feature is not enabled for this project'));
+    return;
+  }
+
+  if (!ctx.membership.admin) {
+    const outcome: OperationOutcome = {
+      resourceType: 'OperationOutcome',
+      id: 'forbidden',
+      issue: [{ severity: 'error', code: 'forbidden', details: { text: 'Only project administrators can send emails' } }],
+    };
+    sendOutcome(res, outcome);
     return;
   }
 
