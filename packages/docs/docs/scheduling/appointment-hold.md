@@ -18,7 +18,7 @@ The `$hold` operation places a hold on one or more schedules by atomically creat
 `$hold` is the second step in a three-step booking flow:
 
 1. **[`$find`](/docs/scheduling/appointment-find)** — Query available time slots. Returns virtual `Appointment` resources with `contained` Slot resources.
-2. **`$hold`** — Submit one of those virtual Appointments to reserve the time. Creates a real `Appointment` (status: `proposed`) and `Slot` (status: `busy-tentative`).
+2. **`$hold`** — Submit one of those virtual Appointments to reserve the time. Creates a real `Appointment` (status: `pending`) and `Slot` (status: `busy-tentative`).
 3. **[`$book`](/docs/scheduling/appointment-book)** — Confirm the hold, attach a patient, and transition the `Appointment` to `booked`.
 
 ## Use Cases
@@ -221,7 +221,7 @@ Pass multiple virtual Slot resources in `Appointment.contained` to hold time acr
 
 Returns `201 Created` with a response body containing a `Bundle` of all persisted resources:
 
-- One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: "proposed"`
+- One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: "pending"`
 - One `Slot` per contained slot parameter. Slots with status `"busy"` will be saved with status `"busy-tentative"`.
 
 ### Example Response
@@ -234,7 +234,7 @@ Returns `201 Created` with a response body containing a `Bundle` of all persiste
     {
       "resource": {
         "resourceType": "Appointment",
-        "status": "proposed",
+        "status": "pending",
         "start": "2026-03-14T16:00:00.000Z",
         "end": "2026-03-14T16:45:00.000Z",
         "participant": [
@@ -347,7 +347,7 @@ Returned when the requested time overlaps an existing busy Slot or falls outside
 ## Related
 
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots
-- [Appointment `$book`](/docs/scheduling/appointment-book) - Transition Appointment.status from "proposed" to "booked" with `$book`
+- [Appointment `$book`](/docs/scheduling/appointment-book) - Transition Appointment.status from "pending" to "booked" with `$book`
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)

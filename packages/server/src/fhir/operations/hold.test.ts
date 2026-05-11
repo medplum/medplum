@@ -201,7 +201,7 @@ describe('Appointment/$hold', () => {
     expect(response.status).toEqual(201);
   });
 
-  test('creates an Appointment and busy-tentative Slot', async () => {
+  test('creates a "pending" Appointment and "busy-tentative" Slot', async () => {
     const schedule = await makeSchedule({ actor: practitioner1 });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
@@ -220,6 +220,7 @@ describe('Appointment/$hold', () => {
     expect(appointments[0]).toHaveProperty('id');
     expect(appointments[0]).toHaveProperty('start', start);
     expect(appointments[0]).toHaveProperty('end', end);
+    expect(appointments[0]).toHaveProperty('status', 'pending');
     // Hold strips contained resources from the appointment — they should not be persisted
     expect(appointments[0]).not.toHaveProperty('contained');
 

@@ -65,6 +65,7 @@ export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResp
       const createdSlots = await Promise.all(slots.map((slot) => ctx.repo.createResource<Slot>(slot)));
       const createdAppointment = await ctx.repo.createResource<Appointment>({
         ...appointment,
+        status: 'pending',
         slot: createdSlots.map((slot) => createReference(slot)),
       });
       return [createdAppointment, ...createdSlots];
