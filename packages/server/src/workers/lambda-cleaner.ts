@@ -3,6 +3,7 @@
 import type { LambdaClient } from '@aws-sdk/client-lambda';
 import { ListFunctionsCommand } from '@aws-sdk/client-lambda';
 import type { WithId } from '@medplum/core';
+import { EMPTY } from '@medplum/core';
 import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
@@ -59,7 +60,7 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
   let worker: Worker<LambdaCleanerJobData> | undefined;
   if (options?.workerEnabled !== false) {
     const workerConfig = getWorkerBullmqConfig(config, 'lambda-cleaner');
-    worker = new Worker<LambdaCleanerJobData>(LambdaCleanerQueueName, (job) => jobProcessor(job), {
+    worker = new Worker<LambdaCleanerJobData>(LambdaCleanerQueueName, (job) => lambdaCleanerJobProcessor(job), {
       ...defaultOptions,
       concurrency: 1,
       ...workerConfig,
@@ -86,10 +87,10 @@ export async function addLambdaCleanerJobData(jobData: LambdaCleanerJobData): Pr
   return queue.add('LambdaCleanerJob', jobData);
 }
 
-async function jobProcessor(job: Job<LambdaCleanerJobData>): Promise<void> {
+export async function lambdaCleanerJobProcessor(job: Job<LambdaCleanerJobData>): Promise<WithId<AsyncJob>> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-  await exec.startAsync(async () => {
+  return exec.startAsync(async () => {
     const summary = await execLambdaCleanerJob(job.data.options);
     return formatSummary(summary);
   });
@@ -126,19 +127,15 @@ export async function execLambdaCleanerJob(
     const response = await lambdaClient.send(new ListFunctionsCommand({ Marker: marker }));
     marker = response.NextMarker;
 
-    for (const lambdaFunction of response.Functions ?? []) {
+    for (const lambdaFunction of response.Functions ?? EMPTY) {
       const functionName = lambdaFunction.FunctionName;
-      if (!functionName) {
-        continue;
+      if (functionName) {
+        summary.functionsScanned++;
+        if (nameRegex.test(functionName)) {
+          summary.functionsMatched++;
+          await deleteOldLambdaVersions(lambdaClient, functionName, options, summary);
+        }
       }
-      summary.functionsScanned++;
-
-      if (!nameRegex.test(functionName)) {
-        continue;
-      }
-
-      summary.functionsMatched++;
-      await deleteOldLambdaVersions(lambdaClient, functionName, options, summary);
     }
   } while (marker);
 
@@ -162,7 +159,7 @@ function formatSummary(summary: LambdaCleanerSummary): Parameters {
     { name: 'versionsDeleted', valueInteger: stats.versionsDeleted },
     { name: 'versionsNotFound', valueInteger: stats.versionsNotFound },
     { name: 'versionsHasAlias', valueInteger: stats.versionsHasAlias },
-    { name: 'duration', valueQuantity: { value: stats.durationMs, code: 'ms' } },
+    { name: 'durationMs', valueQuantity: { value: stats.durationMs, code: 'ms' } },
   ];
 
   return {

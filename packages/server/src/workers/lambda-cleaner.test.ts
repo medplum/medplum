@@ -12,14 +12,25 @@ import {
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
+import type { Job } from 'bullmq';
+import assert from 'node:assert';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { execLambdaCleanerJob } from './lambda-cleaner';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import type { LambdaCleanerJobData } from './lambda-cleaner';
+import { execLambdaCleanerJob, lambdaCleanerJobProcessor } from './lambda-cleaner';
 
 describe('Lambda version cleanup worker', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
 
   beforeAll(async () => {
-    await loadTestConfig();
+    const config = await loadTestConfig();
+    await initAppServices(config);
+  });
+  afterAll(async () => {
+    await shutdownApp();
   });
 
   beforeEach(() => {
@@ -76,33 +87,22 @@ describe('Lambda version cleanup worker', () => {
       return {};
     });
 
-    const summary = await execLambdaCleanerJob(
-      {
-        nameRegex: '^medplum-bot-lambda-*',
-        keepLatest: 1,
-        deleteConcurrency: 2,
-        dryRun: false,
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+    const exec = new AsyncJobExecutor(systemRepo);
+    const asyncJob = await exec.init('/some-url');
+    const job = {
+      data: {
+        asyncJob,
+        options: { nameRegex: '^medplum-bot-lambda-*', keepLatest: 1, deleteConcurrency: 2, dryRun: false },
       },
-      new LambdaClient({ region: 'us-east-1' })
-    );
+    } as unknown as Job<LambdaCleanerJobData>;
+    const updatedAsyncJob = await lambdaCleanerJobProcessor(job);
 
-    expect(summary).toMatchObject({
-      options: {
-        nameRegex: '^medplum-bot-lambda-*',
-        keepLatest: 1,
-        deleteConcurrency: 2,
-        dryRun: false,
-      },
-      functionsScanned: 3,
-      functionsMatched: 2,
-      functionsWithDeleteCandidates: 2,
-      publishedVersionsScanned: 6,
-      versionsPlanned: 4,
-      versionsDeleted: 2,
-      versionsNotFound: 1,
-      versionsHasAlias: 1,
-      durationMs: expect.any(Number),
-    });
+    const output = updatedAsyncJob.output;
+    assert(output);
+    expect(output.parameter?.find((p) => p.name === 'versionsDeleted')?.valueInteger).toBe(2);
+    expect(output.parameter?.find((p) => p.name === 'versionsNotFound')?.valueInteger).toBe(1);
+    expect(output.parameter?.find((p) => p.name === 'versionsHasAlias')?.valueInteger).toBe(1);
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListAliasesCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 4);
@@ -135,8 +135,26 @@ describe('Lambda version cleanup worker', () => {
       new LambdaClient({ region: 'us-east-1' })
     );
 
-    expect(summary.versionsPlanned).toBe(1);
-    expect(summary.versionsDeleted).toBe(0);
+    expect(summary).toStrictEqual({
+      options: {
+        nameRegex: '^medplum-bot-lambda-[a-z]$',
+        keepLatest: 1,
+        dryRun: true,
+        deleteConcurrency: 5,
+      },
+      publishedVersionsScanned: 2,
+      functionsScanned: 1,
+      functionsWithDeleteCandidates: 1,
+      functionsMatched: 1,
+      versionsPlanned: 1,
+      versionsDeleted: 0,
+      versionsNotFound: 0,
+      versionsHasAlias: 0,
+      durationMs: expect.any(Number),
+    });
+
+    // expect(summary.versionsPlanned).toBe(1);
+    // expect(summary.versionsDeleted).toBe(0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
   });
 });
