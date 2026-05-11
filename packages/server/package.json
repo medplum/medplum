@@ -61,7 +61,7 @@
     "@opentelemetry/instrumentation-pg": "0.68.0",
     "@opentelemetry/instrumentation-runtime-node": "0.29.0",
     "@opentelemetry/sdk-metrics": "2.7.1",
-    "@opentelemetry/sdk-node": "0.216.0",
+    "@opentelemetry/sdk-node": "0.217.0",
     "@smithy/util-retry": "4.3.5",
     "@smithy/util-stream": "4.5.25",
     "bcrypt": "6.0.0",
