@@ -155,7 +155,7 @@ export class AsAtom extends InfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    return functions.ofType(context, this.left.eval(context, input), this.right);
+    return functions.as(context, this.left.eval(context, input), this.right);
   }
 }
 

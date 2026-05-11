@@ -35,8 +35,10 @@ describe('Atoms', () => {
   });
 
   test('SymbolAtom', () => {
-    const symbol = new SymbolAtom('symbol');
-    expect(symbol.toString()).toStrictEqual('symbol');
+    const name = 'symbol';
+    const symbol = new SymbolAtom(name);
+    expect(symbol.name).toStrictEqual(name);
+    expect(symbol.toString()).toStrictEqual(name);
   });
 
   test('EmptySetAtom', () => {
@@ -124,11 +126,22 @@ describe('Atoms', () => {
       status: 'final',
       code: { text: 'abc' },
       valueCodeableConcept: { coding: [{ code: 'xyz' }] },
+      component: [
+        { code: { text: 'def' }, valueQuantity: { value: 12, unit: 'Hz' } },
+        { code: { text: 'ghi' }, valueQuantity: { value: 29, unit: 'Bq' } },
+      ],
     };
 
+    // Filters exclusively on type
     expect(evalFhirPath('value as Quantity', obs1)).toStrictEqual([obs1.valueQuantity]);
-    expect(evalFhirPath('value as Quantity', obs2)).toStrictEqual([]);
-    expect(evalFhirPath('value as CodeableConcept', obs1)).toStrictEqual([]);
+    expect(() => evalFhirPath('value as Quantity', obs2)).toThrow('Expected singleton of type Quantity');
+    expect(() => evalFhirPath('value as CodeableConcept', obs1)).toThrow('Expected singleton of type CodeableConcept');
     expect(evalFhirPath('value as CodeableConcept', obs2)).toStrictEqual([obs2.valueCodeableConcept]);
+
+    // Empty results
+    expect(evalFhirPath('component.value as Quantity', obs1)).toStrictEqual([]);
+
+    // Multiple results
+    expect(() => evalFhirPath('component.value as Quantity', obs2)).toThrow('Expected singleton of type Quantity');
   });
 });

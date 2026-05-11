@@ -646,12 +646,12 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('(Observation.value as Quantity).unit', observation)).toStrictEqual(['lbs']);
     });
 
-    test.skip('testPolymorphismAsB', () => {
+    test('testPolymorphismAsB', () => {
       expect(() => evalFhirPath('(Observation.value as Period).unit', observation)).toThrow();
     });
 
     test('testPolymorphismAsBFunction', () => {
-      expect(() => evalFhirPath('Observation.value.as(Period).start', observation)).not.toThrow();
+      expect(() => evalFhirPath('Observation.value.as(Period).start', observation)).toThrow();
     });
   });
 
@@ -1611,7 +1611,7 @@ describe('FHIRPath Test Suite', () => {
     });
     test('testResolvePolymorphism', () => {
       expect(
-        evalFhirPath('DiagnosticReport.result.resolve().value.as(Quantity).value', diagnosticReport)
+        evalFhirPath('DiagnosticReport.result.resolve().value.ofType(Quantity).value', diagnosticReport)
       ).toStrictEqual([216, 1]);
     });
   });
