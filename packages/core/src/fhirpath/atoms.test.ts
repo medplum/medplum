@@ -48,8 +48,8 @@ describe('Atoms', () => {
   });
 
   test('ConcatAtom', () => {
-    expect(evalFhirPath('{} & {}', [])).toStrictEqual([]);
-    expect(evalFhirPath('x & y', [])).toStrictEqual([]);
+    expect(evalFhirPath('{} & {}', [])).toStrictEqual(['']);
+    expect(evalFhirPath('x & y', [])).toStrictEqual(['']);
   });
 
   test('UnionAtom', () => {

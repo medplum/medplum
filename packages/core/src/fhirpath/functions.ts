@@ -455,9 +455,6 @@ export const functions: Record<string, FhirPathFunction> = {
     if (typeof numValue !== 'number') {
       throw new TypeError('Expected a number for take(num)');
     }
-    if (numValue >= input.length) {
-      return input;
-    }
     if (numValue <= 0) {
       return [];
     }
