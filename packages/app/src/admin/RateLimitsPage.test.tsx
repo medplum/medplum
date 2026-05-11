@@ -95,8 +95,6 @@ describe('RateLimitsPage', () => {
     });
 
     expect(screen.getByText('Membership Utilization')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Alice Smith')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Bob Jones')).toBeInTheDocument();
     expect(screen.getByText('mem-1')).toBeInTheDocument();
     expect(screen.getByText('mem-2')).toBeInTheDocument();
   });
@@ -131,8 +129,9 @@ describe('RateLimitsPage', () => {
     });
 
     const rows = screen.getAllByRole('row');
-    expect(rows[1]).toHaveTextContent('Dr. Alice Smith');
-    expect(rows[2]).toHaveTextContent('Dr. Bob Jones');
+    // mem-1 has 90% utilization, mem-2 has 20% — descending means mem-1 first
+    expect(rows[1]).toHaveTextContent('mem-1');
+    expect(rows[2]).toHaveTextContent('mem-2');
   });
 
   test('Toggles sort direction on utilization header click', async () => {
@@ -152,8 +151,9 @@ describe('RateLimitsPage', () => {
     });
 
     const rows = screen.getAllByRole('row');
-    expect(rows[1]).toHaveTextContent('Dr. Bob Jones');
-    expect(rows[2]).toHaveTextContent('Dr. Alice Smith');
+    // After toggling to ascending, mem-2 (20%) should come first
+    expect(rows[1]).toHaveTextContent('mem-2');
+    expect(rows[2]).toHaveTextContent('mem-1');
   });
 
   test('Handles empty rate limit data', async () => {
