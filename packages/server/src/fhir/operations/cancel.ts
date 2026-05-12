@@ -47,7 +47,7 @@ export async function appointmentCancelHandler(req: FhirRequest): Promise<FhirRe
       assertAllLoaded(slots, 'Loading slots failed');
 
       if (appointment.status !== 'pending' && appointment.status !== 'booked') {
-        throw new OperationOutcomeError(badRequest('Appointment is not in cancelable state due to status'));
+        throw new OperationOutcomeError(badRequest(`Appointment cannot be canceled in '${appointment.status}' status`));
       }
 
       appointment.status = 'cancelled';

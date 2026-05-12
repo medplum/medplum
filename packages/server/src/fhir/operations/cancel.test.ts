@@ -165,7 +165,7 @@ describe('Appointment/$cancel', () => {
           {
             severity: 'error',
             code: 'invalid',
-            details: { text: 'Appointment is not in cancelable state due to status' },
+            details: { text: `Appointment cannot be canceled in '${status}' status` },
           },
         ],
       });

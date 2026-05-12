@@ -152,7 +152,7 @@ The transaction uses serializable isolation for safety when there are concurrent
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Appointment is not in cancelable state due to status" } }]
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Appointment cannot be canceled in 'arrived' status" } }]
 }
 ```
 
