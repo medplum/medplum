@@ -192,7 +192,6 @@ export function Calendar(props: {
         if (key) {
           acc[key] = appointment;
         }
-        return acc;
       });
       return acc;
     }, {});
