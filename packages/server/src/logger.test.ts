@@ -4,59 +4,91 @@ import { LogLevel } from '@medplum/core';
 import { globalLogger } from './logger';
 
 describe('Global Logger', () => {
-  test('Debug', () => {
-    console.log = jest.fn();
+  let writeSpy: jest.SpyInstance;
 
+  beforeEach(() => {
+    writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    writeSpy.mockRestore();
+  });
+
+  test('Debug', () => {
     globalLogger.level = LogLevel.NONE;
     globalLogger.debug('test');
-    expect(console.log).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
 
     globalLogger.level = LogLevel.DEBUG;
     globalLogger.debug('test');
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringMatching(/^\{"level":"DEBUG","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\{"level":"DEBUG","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}\n$/)
     );
   });
 
   test('Info', () => {
-    console.log = jest.fn();
-
     globalLogger.level = LogLevel.NONE;
     globalLogger.info('test');
-    expect(console.log).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
 
     globalLogger.level = LogLevel.INFO;
     globalLogger.info('test');
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringMatching(/^\{"level":"INFO","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\{"level":"INFO","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}\n$/)
     );
   });
 
   test('Warn', () => {
-    console.log = jest.fn();
-
     globalLogger.level = LogLevel.NONE;
     globalLogger.warn('test');
-    expect(console.log).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
 
     globalLogger.level = LogLevel.WARN;
     globalLogger.warn('test');
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringMatching(/^\{"level":"WARN","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\{"level":"WARN","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}\n$/)
     );
   });
 
   test('Error', () => {
-    console.log = jest.fn();
-
     globalLogger.level = LogLevel.NONE;
     globalLogger.error('test');
-    expect(console.log).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
 
     globalLogger.level = LogLevel.ERROR;
     globalLogger.error('test');
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringMatching(/^\{"level":"ERROR","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\{"level":"ERROR","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}\n$/)
     );
+  });
+
+  test('Awaits drain when stdout buffer is backed up', async () => {
+    const drainHandlers: (() => void)[] = [];
+    writeSpy.mockImplementation((() => false) as any);
+    const onceSpy = jest.spyOn(process.stdout, 'once').mockImplementation((event: any, handler: any) => {
+      if (event === 'drain') {
+        drainHandlers.push(handler);
+      }
+      return process.stdout;
+    });
+
+    globalLogger.level = LogLevel.ERROR;
+    globalLogger.error('first');
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+
+    // Second write should be queued behind the pending drain promise.
+    globalLogger.error('second');
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+
+    // Simulate drain — queued write fires.
+    drainHandlers.forEach((h) => h());
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(writeSpy).toHaveBeenCalledTimes(2);
+
+    // Drain any pending state created by the second write.
+    drainHandlers.forEach((h) => h());
+    await new Promise((resolve) => setImmediate(resolve));
+
+    onceSpy.mockRestore();
   });
 });
