@@ -5,6 +5,7 @@ import {
   allOk,
   badRequest,
   ContentType,
+  createReference,
   getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
@@ -20,6 +21,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import type { Repository } from '../repo';
+import { findProjectMembership } from '../../workers/utils';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -58,6 +60,14 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
 
   if (!(await isBotEnabled(bot))) {
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
+  }
+
+  if (!bot.runAsUser) {
+    const project = bot.meta?.project as string;
+    const membership = await findProjectMembership(project, createReference(bot));
+    if (!membership) {
+      throw new OperationOutcomeError(badRequest('Could not find ProjectMembership for Bot'));
+    }
   }
 
   let updatedBot: WithId<Bot> | undefined;
