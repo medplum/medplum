@@ -5,7 +5,7 @@ import { requestContextStore } from './request-context-store';
 
 let drainPromise: Promise<void> | undefined;
 
-function write(msg: string): void {
+export function writeLineToStdout(msg: string): void {
   if (drainPromise) {
     drainPromise = drainPromise.then(() => doWrite(msg));
     return;
@@ -25,7 +25,7 @@ function doWrite(msg: string): void {
 }
 
 export const globalLogger = new Logger(
-  write,
+  writeLineToStdout,
   undefined,
   process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO
 );
