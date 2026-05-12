@@ -23,7 +23,7 @@ describe('RescopeUserWidget', () => {
     lastName: 'Example',
     meta: { project: 'project-1' },
   };
-  const globalUser: User = {
+  const serverUser: User = {
     resourceType: 'User',
     id: 'user-2',
     email: 'bob@example.com',
@@ -145,10 +145,10 @@ describe('RescopeUserWidget', () => {
 
     expect(await screen.findByText('Alice Example (alice@example.com)')).toBeInTheDocument();
     expect(screen.getByText('Project', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Release User to Global' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Release User to Server' })).toBeEnabled();
   });
 
-  test('Releases project-scoped user to global with no project param', async () => {
+  test('Releases project-scoped user to server with no project param', async () => {
     mockUser(projectScopedUser);
     medplum.router.add('POST', 'User/user-1/$rescope', async () => [
       allOk,
@@ -163,7 +163,7 @@ describe('RescopeUserWidget', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Release User to Global' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Release User to Server' }));
     });
     expect(screen.getByText('Confirm User Rescope')).toBeInTheDocument();
     expect(screen.getByText('release', { selector: 'strong' })).toBeInTheDocument();
@@ -177,13 +177,13 @@ describe('RescopeUserWidget', () => {
     expect(String(args[0])).toContain('User/user-1/$rescope');
     expect(args[1]).toEqual({
       resourceType: 'Parameters',
-      parameter: [{ name: 'scope', valueCode: 'global' }],
+      parameter: [{ name: 'scope', valueCode: 'server' }],
     });
     expect(await screen.findByText('User rescoped successfully')).toBeInTheDocument();
   });
 
-  test('Assigns global user to project for super admin', async () => {
-    mockUser(globalUser);
+  test('Assigns server-scoped user to project for super admin', async () => {
+    mockUser(serverUser);
     medplum.router.add('POST', 'User/user-2/$rescope', async () => [
       allOk,
       { resourceType: 'Parameters', parameter: [] },
@@ -196,7 +196,7 @@ describe('RescopeUserWidget', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText('Global', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
+    expect(screen.getByText('Server', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Assign User to Project' }));
@@ -217,8 +217,8 @@ describe('RescopeUserWidget', () => {
     });
   });
 
-  test('Non-super-admin sees a warning and disabled submit when user is global', async () => {
-    mockUser(globalUser);
+  test('Non-super-admin sees a warning and disabled submit when user is server-scoped', async () => {
+    mockUser(serverUser);
     setup({ superAdmin: false });
 
     await selectUser();
@@ -227,7 +227,7 @@ describe('RescopeUserWidget', () => {
     });
 
     expect(screen.getByText(/Only a super admin can assign/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Release User to Global' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Release User to Server' })).toBeDisabled();
   });
 
   test('Cancel closes the confirmation modal without posting', async () => {
@@ -240,7 +240,7 @@ describe('RescopeUserWidget', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Release User to Global' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Release User to Server' }));
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -259,7 +259,7 @@ describe('RescopeUserWidget', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Release User to Global' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Release User to Server' }));
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Confirm Rescope' }));

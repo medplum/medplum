@@ -37,7 +37,7 @@ export const operation: OperationDefinition = {
       type: 'code',
       min: 1,
       max: '1',
-      documentation: 'Target scope for the User: "project" or "global"',
+      documentation: 'Target scope for the User: "project" or "server"',
     },
     {
       use: 'in',
@@ -59,7 +59,7 @@ export const operation: OperationDefinition = {
 };
 
 type RescopeParams = {
-  scope: 'project' | 'global';
+  scope: 'project' | 'server';
   project?: Reference<Project>;
 };
 
@@ -72,8 +72,8 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
     return [badRequest('Operation must be called on a specific User')];
   }
 
-  if (!['project', 'global'].includes(params.scope)) {
-    return [badRequest('Invalid scope: must be "project" or "global"')];
+  if (!['project', 'server'].includes(params.scope)) {
+    return [badRequest('Invalid scope: must be "project" or "server"')];
   }
 
   let projectId: string | undefined = undefined;
@@ -99,7 +99,7 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
 
   // Basic sanity check validation completed at this point, attempt to rescope the user.
   // The two paths below are intentionally kept separate: promoting a User into a Project
-  // and demoting one to global scope have different invariants, different authorization,
+  // and demoting one to server scope have different invariants, different authorization,
   // and different failure modes.
   let updated: WithId<User>;
   if (params.scope === 'project') {
@@ -107,7 +107,7 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
     assert(projectId);
     updated = await rescopeUserToProject(ctx, user, projectId);
   } else {
-    updated = await rescopeUserToGlobal(ctx, user);
+    updated = await rescopeUserToServer(ctx, user);
   }
 
   return [allOk, updated];
@@ -119,11 +119,11 @@ async function isCallerAllowedToRescopeUser(
   params: RescopeParams
 ): Promise<boolean> {
   const sufficientRoleForProjectRescope = ctx.project.superAdmin;
-  const sufficientRoleForGlobalRescope = ctx.project.superAdmin || ctx.membership.admin;
+  const sufficientRoleForServerRescope = ctx.project.superAdmin || ctx.membership.admin;
 
   if (
     (params.scope === 'project' && !sufficientRoleForProjectRescope) ||
-    (params.scope === 'global' && !sufficientRoleForGlobalRescope)
+    (params.scope === 'server' && !sufficientRoleForServerRescope)
   ) {
     return false;
   }
@@ -133,9 +133,9 @@ async function isCallerAllowedToRescopeUser(
     return false;
   }
 
-  // Project -> global when caller is project admin requires a check to make sure the project admin's project matches the user's project
+  // Project -> server when caller is project admin requires a check to make sure the project admin's project matches the user's project
   if (
-    params.scope === 'global' &&
+    params.scope === 'server' &&
     !ctx.project.superAdmin &&
     user.project?.reference !== getReferenceString(ctx.project)
   ) {
@@ -202,20 +202,20 @@ async function rescopeUserToProject(
 }
 
 /**
- * Demote a User to global scope. Allowed for super admins, or for project admins
+ * Demote a User to server scope. Allowed for super admins, or for project admins
  * who administer the project the User currently belongs to. Rejects if the User
- * is already global-scoped.
+ * is already server-scoped.
  * @param ctx - The authenticated request context for the caller.
  * @param user - The User being rescoped.
  * @returns The updated User with project scope removed.
  */
-async function rescopeUserToGlobal(ctx: AuthenticatedRequestContext, user: WithId<User>): Promise<WithId<User>> {
+async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithId<User>): Promise<WithId<User>> {
   const systemRepo = ctx.systemRepo;
 
   return systemRepo.withTransaction(async () => {
     const rereadUser = await systemRepo.readResource<User>('User', user.id);
     if (!rereadUser.project) {
-      throw new OperationOutcomeError(badRequest('User is already global-scoped'));
+      throw new OperationOutcomeError(badRequest('User is already server-scoped'));
     }
 
     delete rereadUser.project;

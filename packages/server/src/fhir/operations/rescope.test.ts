@@ -56,7 +56,7 @@ describe('User/$rescope', () => {
     return user;
   }
 
-  test('Super admin rescopes global User to project', async () => {
+  test('Super admin rescopes server-scoped User to project', async () => {
     const user = await invitedUser('server');
     expect(user.project).toBeUndefined();
 
@@ -79,7 +79,7 @@ describe('User/$rescope', () => {
     expect(updated.meta?.project).toStrictEqual(project.id);
   });
 
-  test('Super admin rescopes project User to global', async () => {
+  test('Super admin rescopes project User to server', async () => {
     const user = await invitedUser('project');
     expect(user.project?.reference).toStrictEqual(`Project/${project.id}`);
 
@@ -91,7 +91,7 @@ describe('User/$rescope', () => {
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'scope', valueCode: 'global' }],
+        parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res.status).toBe(200);
     const updated = res.body as User;
@@ -99,7 +99,7 @@ describe('User/$rescope', () => {
     expect(updated.meta?.project).toBeUndefined();
   });
 
-  test('Project admin rescopes User in their project to global', async () => {
+  test('Project admin rescopes User in their project to server', async () => {
     const user = await invitedUser('project');
 
     const res = await request(app)
@@ -109,7 +109,7 @@ describe('User/$rescope', () => {
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'scope', valueCode: 'global' }],
+        parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res.status).toBe(200);
     const updated = res.body as User;
@@ -151,7 +151,7 @@ describe('User/$rescope', () => {
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'scope', valueCode: 'global' }],
+        parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res.status).toBe(404);
 
@@ -181,7 +181,7 @@ describe('User/$rescope', () => {
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'scope', valueCode: 'global' }],
+        parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res.status).toBe(403);
   });
@@ -237,7 +237,7 @@ describe('User/$rescope', () => {
       ({ accessToken: nonAdminToken } = await getAuthTokens(user, login, createReference(profile)));
     });
 
-    test('cannot rescope to global', async () => {
+    test('cannot rescope to server', async () => {
       const res = await request(app)
         .post(`/fhir/R4/User/${nonAdminUserId}/$rescope`)
         .set('Authorization', 'Bearer ' + nonAdminToken)
@@ -245,7 +245,7 @@ describe('User/$rescope', () => {
         .set('X-Medplum', 'extended')
         .send({
           resourceType: 'Parameters',
-          parameter: [{ name: 'scope', valueCode: 'global' }],
+          parameter: [{ name: 'scope', valueCode: 'server' }],
         } satisfies Parameters);
       expect(res.status).toBe(403);
     });
@@ -299,7 +299,7 @@ describe('User/$rescope', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Already global returns 400 when rescoping to global', async () => {
+  test('Already server-scoped returns 400 when rescoping to server', async () => {
     const user = await invitedUser('server');
     const superToken = await superAdminToken();
 
@@ -310,7 +310,7 @@ describe('User/$rescope', () => {
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'scope', valueCode: 'global' }],
+        parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res.status).toBe(400);
   });
@@ -390,7 +390,7 @@ describe('User/$rescope', () => {
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'scope', valueCode: 'global' }],
+        parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res.status).toBe(404);
 

@@ -10,7 +10,7 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
-type UserScope = 'loading' | 'project' | 'global';
+type UserScope = 'loading' | 'project' | 'server';
 
 export function RescopeUserWidget(): JSX.Element {
   const medplum = useMedplum();
@@ -40,11 +40,11 @@ export function RescopeUserWidget(): JSX.Element {
         if (cancelled) {
           return;
         }
-        setCurrentScope(u.meta?.project && u.meta.project === projectIdForScope ? 'project' : 'global');
+        setCurrentScope(u.meta?.project && u.meta.project === projectIdForScope ? 'project' : 'server');
       })
       .catch(() => {
         if (!cancelled) {
-          setCurrentScope('global');
+          setCurrentScope('server');
         }
       });
     return () => {
@@ -52,10 +52,10 @@ export function RescopeUserWidget(): JSX.Element {
     };
   }, [medplum, user, projectIdForScope]);
 
-  let targetScope: 'project' | 'global' | undefined;
+  let targetScope: 'project' | 'server' | undefined;
   if (currentScope === 'project') {
-    targetScope = 'global';
-  } else if (currentScope === 'global' && isSuperAdmin) {
+    targetScope = 'server';
+  } else if (currentScope === 'server' && isSuperAdmin) {
     targetScope = 'project';
   }
   const canSubmit = Boolean(projectReference && user?.id && targetScope);
@@ -99,11 +99,11 @@ export function RescopeUserWidget(): JSX.Element {
     <>
       <Title order={2}>Rescope User</Title>
       <p>
-        Move a User between <strong>global</strong> scope (not tied to any Project) and <strong>project</strong> scope
+        Move a User between <strong>server</strong> scope (not tied to any Project) and <strong>project</strong> scope
         (owned by a specific Project).{' '}
         {isSuperAdmin
-          ? 'Selecting a project-scoped User releases them to global; selecting a global User assigns them to the chosen Project.'
-          : 'Project admins may release a project-scoped User in this Project to global scope. Re-assigning a User to a Project requires a super admin.'}
+          ? 'Selecting a project-scoped User releases them to the server; selecting a server-scoped User assigns them to the chosen Project.'
+          : 'Project admins may release a project-scoped User in this Project to server scope. Re-assigning a User to a Project requires a super admin.'}
       </p>
       <Form onSubmit={handleSubmit}>
         <Stack>
@@ -140,14 +140,15 @@ export function RescopeUserWidget(): JSX.Element {
               {renderScopeBadge(currentScope)}
             </Group>
           )}
-          {user && currentScope === 'global' && !isSuperAdmin && (
+          {user && currentScope === 'server' && !isSuperAdmin && (
             <Alert color="yellow">
-              This User is in <strong>global</strong> scope. Only a super admin can assign a global User to a Project.
+              This User is in <strong>server</strong> scope. Only a super admin can assign a server-scoped User to a
+              Project.
             </Alert>
           )}
           <div>
             <Button type="submit" disabled={!canSubmit}>
-              {targetScope === 'project' ? 'Assign User to Project' : 'Release User to Global'}
+              {targetScope === 'project' ? 'Assign User to Project' : 'Release User to Server'}
             </Button>
           </div>
         </Stack>
@@ -157,10 +158,10 @@ export function RescopeUserWidget(): JSX.Element {
           <Text>
             You are about to change the scope of <strong>User/{user?.id}</strong>.
           </Text>
-          {targetScope === 'global' ? (
+          {targetScope === 'server' ? (
             <Text>
               This will <strong>release</strong> the User from project <strong>{projectLabel}</strong> to{' '}
-              <strong>global</strong> scope. Any existing ProjectMemberships will be left in place and may be left
+              <strong>server</strong> scope. Any existing ProjectMemberships will be left in place and may be left
               orphaned.
             </Text>
           ) : (
@@ -169,10 +170,10 @@ export function RescopeUserWidget(): JSX.Element {
               become a project-scoped resource belonging to that Project.
             </Text>
           )}
-          {targetScope === 'global' && !isSuperAdmin && (
+          {targetScope === 'server' && !isSuperAdmin && (
             <Alert color="red" title="This change cannot be reversed by a project admin">
               <strong>You will need the help of a super admin to reverse this change.</strong> Once the User is released
-              to global scope, only a super admin can re-assign the User back to this (or any) Project.
+              to server scope, only a super admin can re-assign the User back to this (or any) Project.
             </Alert>
           )}
           <Text c="red">This is a privileged operation. Double-check the User and target before continuing.</Text>
@@ -203,7 +204,7 @@ function renderScopeBadge(scope: UserScope): JSX.Element {
   }
   return (
     <Badge color="gray" variant="light">
-      Global
+      Server
     </Badge>
   );
 }

@@ -238,7 +238,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Update User email
   router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
 
-  // Rescope User between global and project scope
+  // Rescope User between server and project scope
   router.add('POST', '/User/:id/$rescope', userRescopeOperation);
 
   // ConceptMap $translate
