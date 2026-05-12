@@ -236,13 +236,13 @@ superAdminRouter.post(
     body('keepLatest').optional().isInt({ min: 1, max: 10 }).withMessage('keepLatest must be an integer from 1 to 10'),
     body('deleteConcurrency')
       .optional()
-      .isInt({ min: 1, max: 50 })
-      .withMessage('deleteConcurrency must be an integer from 1 to 10'),
+      .isInt({ min: 1, max: 5 })
+      .withMessage('deleteConcurrency must be an integer from 1 to 5'),
     body('dryRun').optional().isBoolean().withMessage('dryRun must be a boolean').toBoolean(),
     checkExact(),
   ],
   async (req: Request, res: Response) => {
-    requireSuperAdmin();
+    const ctx = requireSuperAdmin();
     requireAsync(req);
 
     const errors = validationResult(req);
@@ -272,7 +272,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addLambdaCleanerJobData({ asyncJob, options });
+      await addLambdaCleanerJobData({ asyncJob, options, requestId: ctx.requestId, traceId: ctx.traceId });
     });
 
     const { baseUrl } = getConfig();
