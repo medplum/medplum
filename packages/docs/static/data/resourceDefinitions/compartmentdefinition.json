@@ -492,13 +492,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the compartment definition\r",
-      "expression": "CompartmentDefinition.useContext.value as CodeableConcept"
+      "expression": "CompartmentDefinition.useContext.value.ofType(CodeableConcept)"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the compartment definition\r",
-      "expression": "CompartmentDefinition.useContext.value as Quantity | CompartmentDefinition.useContext.value as Range"
+      "expression": "CompartmentDefinition.useContext.value.ofType(Quantity) | CompartmentDefinition.useContext.value.ofType(Range)"
     },
     {
       "name": "context-type",
