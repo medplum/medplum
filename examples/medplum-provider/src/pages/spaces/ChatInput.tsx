@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Group, Paper, Select, Stack, Textarea, Tooltip } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { useMedplum, useWhisper } from '@medplum/react';
 import { IconMicrophone, IconPlayerStopFilled, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -69,19 +70,21 @@ export function ChatInput({
     },
   });
 
-  useEffect(() => {
-    if (status !== 'speech_stopped') {
-      return undefined;
+  const autoSend = useDebouncedCallback(() => {
+    const pending = inputRef.current.trim();
+    stop();
+    if (pending) {
+      onSendRef.current(pending);
     }
-    const timer = setTimeout(() => {
-      const pending = inputRef.current.trim();
-      stop();
-      if (pending) {
-        onSendRef.current(pending);
-      }
-    }, SILENCE_AUTO_SEND_MS);
-    return () => clearTimeout(timer);
-  }, [status, stop]);
+  }, SILENCE_AUTO_SEND_MS);
+
+  useEffect(() => {
+    if (status === 'speech_stopped') {
+      autoSend();
+    } else {
+      autoSend.cancel();
+    }
+  }, [status, autoSend]);
 
   const isConnecting = status === 'requesting_microphone' || status === 'connecting' || status === 'connected';
   const isRecording = status === 'listening' || status === 'speech_started' || status === 'speech_stopped';
@@ -89,9 +92,14 @@ export function ChatInput({
 
   const handleVoiceToggle = (): void => {
     if (isActive) {
+      autoSend.cancel();
+      const pending = inputRef.current.trim();
       stop();
+      if (pending) {
+        onSend(pending);
+      }
     } else {
-      start().catch((err) => showErrorNotification(err));
+      start().catch(showErrorNotification);
     }
   };
 
@@ -100,13 +108,6 @@ export function ChatInput({
     voiceTooltip = 'Voice input is not enabled in this project. Add the "ai-realtime" feature to enable it.';
   } else if (isActive) {
     voiceTooltip = `Stop voice input (${status})`;
-  }
-
-  let voiceBackground: string | undefined;
-  if (!isVoiceEnabled) {
-    voiceBackground = 'gray';
-  } else if (!isRecording && !isConnecting) {
-    voiceBackground = '#7c3aed';
   }
 
   return (
@@ -140,11 +141,11 @@ export function ChatInput({
               size="lg"
               variant="filled"
               color={isRecording ? 'red' : undefined}
-              bg={voiceBackground}
               onClick={handleVoiceToggle}
               disabled={loading || isConnecting || !isVoiceEnabled}
               loading={isConnecting}
               data-disabled={!isVoiceEnabled || undefined}
+              bg="#7c3aed"
               style={!isVoiceEnabled ? { pointerEvents: 'auto' } : undefined}
             >
               {isRecording ? <IconPlayerStopFilled size={18} /> : <IconMicrophone size={18} />}
