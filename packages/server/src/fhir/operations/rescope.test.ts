@@ -137,7 +137,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(project) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   test('Project admin cannot rescope User from a different project', async () => {
