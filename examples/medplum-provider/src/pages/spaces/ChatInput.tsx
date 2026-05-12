@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Group, Paper, Select, Stack, Textarea, Tooltip } from '@mantine/core';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useWhisper } from '@medplum/react';
 import { IconMicrophone, IconPlayerStopFilled, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useRef } from 'react';
-import { useWhisper } from '../../hooks/useWhisper';
 import { showErrorNotification } from '../../utils/notifications';
 
 const MODEL_GPT_5_MINI = 'gpt-5-mini';
@@ -96,6 +95,20 @@ export function ChatInput({
     }
   };
 
+  let voiceTooltip = 'Start voice input';
+  if (!isVoiceEnabled) {
+    voiceTooltip = 'Voice input is not enabled in this project. Add the "ai-realtime" feature to enable it.';
+  } else if (isActive) {
+    voiceTooltip = `Stop voice input (${status})`;
+  }
+
+  let voiceBackground: string | undefined;
+  if (!isVoiceEnabled) {
+    voiceBackground = 'gray';
+  } else if (!isRecording && !isConnecting) {
+    voiceBackground = '#7c3aed';
+  }
+
   return (
     <Paper p="md" radius="lg" withBorder style={{ backgroundColor }}>
       <Stack gap="sm">
@@ -120,23 +133,23 @@ export function ChatInput({
               },
             }}
           />
-          {isVoiceEnabled && (
-            <Tooltip label={isActive ? `Stop voice input (${status})` : 'Start voice input'}>
-              <ActionIcon
-                aria-label={isActive ? 'Stop voice input' : 'Start voice input'}
-                radius="xl"
-                size="lg"
-                variant="filled"
-                color={isRecording ? 'red' : undefined}
-                bg={isRecording || isConnecting ? undefined : '#7c3aed'}
-                onClick={handleVoiceToggle}
-                disabled={loading || isConnecting}
-                loading={isConnecting}
-              >
-                {isRecording ? <IconPlayerStopFilled size={18} /> : <IconMicrophone size={18} />}
-              </ActionIcon>
-            </Tooltip>
-          )}
+          <Tooltip label={voiceTooltip}>
+            <ActionIcon
+              aria-label={isActive ? 'Stop voice input' : 'Start voice input'}
+              radius="xl"
+              size="lg"
+              variant="filled"
+              color={isRecording ? 'red' : undefined}
+              bg={voiceBackground}
+              onClick={handleVoiceToggle}
+              disabled={loading || isConnecting || !isVoiceEnabled}
+              loading={isConnecting}
+              data-disabled={!isVoiceEnabled || undefined}
+              style={!isVoiceEnabled ? { pointerEvents: 'auto' } : undefined}
+            >
+              {isRecording ? <IconPlayerStopFilled size={18} /> : <IconMicrophone size={18} />}
+            </ActionIcon>
+          </Tooltip>
           <Button
             aria-label="Send message"
             radius="xl"

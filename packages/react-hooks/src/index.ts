@@ -14,3 +14,4 @@ export * from './useResource/useResource';
 export * from './useSearch/useSearch';
 export * from './useSubscription/useSubscription';
 export * from './useThreadInbox/useThreadInbox';
+export * from './useWhisper/useWhisper';

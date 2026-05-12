@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Adapted from https://github.com/codyebberson/medplum-ai-realtime/blob/main/src/hooks/useWhisper.ts
 import { ReconnectingWebSocket } from '@medplum/core';
-import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export type WhisperStatus =
   | 'idle'
@@ -254,7 +254,7 @@ export function useWhisper({
   };
 }
 
-function convertToPCM16(float32Array: Float32Array): Uint8Array {
+export function convertToPCM16(float32Array: Float32Array): Uint8Array {
   const pcm16Array = new Int16Array(float32Array.length);
 
   for (let i = 0; i < float32Array.length; i++) {
