@@ -10,7 +10,13 @@
       "Bash(git stash:*)",
       "Bash(npm test:*)",
       "Bash(gh api:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)",
+      "Bash(npm:*)",
+      "Bash(node --version:*)",
+      "Bash(npx jest:*)",
+      "Bash(find /Users/kevinshaw/Documents/medplum-4 -name \"package.json\" -type f -exec grep -l \"dnd-kit\\\\|react-beautiful-dnd\\\\|react-dnd\\\\|@dnd-kit\" {} ;)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }

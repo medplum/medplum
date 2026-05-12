@@ -6,7 +6,7 @@ import type { ProfileResource } from '@medplum/core';
 import { getReferenceString, locationUtils } from '@medplum/core';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -15,6 +15,7 @@ import { getAppName } from '../utils/app';
 export interface HeaderDropdownProps {
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  readonly extraMenuItems?: ReactNode;
 }
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
@@ -94,6 +95,12 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
           />
         )}
       </Group>
+      {props.extraMenuItems && (
+        <>
+          <Menu.Divider />
+          {props.extraMenuItems}
+        </>
+      )}
       <Menu.Divider />
       <Menu.Item
         leftSection={<IconSettings size={14} stroke={1.5} />}

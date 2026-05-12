@@ -1,0 +1,62 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 12px;
+  background-color: #1a1b1e;
+  color: white;
+  gap: 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #2c2e33;
+  z-index: 100;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #c1c2c5;
+}
+
+.deviceButton {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #909296;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.deviceButton:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.deviceButton[data-active] {
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
+}

@@ -1,0 +1,162 @@
+.panel {
+  width: 360px;
+  min-width: 300px;
+  background: white;
+  border-left: 1px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.header {
+  padding: 12px 16px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Theme Settings */
+.themeSection {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.themeSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+  transition: background 100ms ease;
+}
+
+.themeSectionHeader:hover {
+  background: #f8f9fa;
+}
+
+.themeSectionBody {
+  padding: 0 16px 16px;
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.colorLabel {
+  font-size: 13px;
+  color: #495057;
+}
+
+.colorSwatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.colorInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.fontSelect {
+  font-size: 13px;
+}
+
+/* Properties Panel */
+.propertyGroup {
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.propertyGroupTitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #868e96;
+  margin-bottom: 12px;
+}
+
+.propertyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.propertyLabel {
+  font-size: 13px;
+  color: #495057;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.propertyInput {
+  flex: 1;
+  max-width: 180px;
+}
+
+/* Chat Panel */
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chatMessages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.chatEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #868e96;
+  text-align: center;
+  padding: 24px;
+}
+
+.chatEmptyIcon {
+  font-size: 32px;
+  opacity: 0.5;
+}
+
+.chatInputArea {
+  padding: 12px 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+.noSelection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 8px;
+  color: #868e96;
+  text-align: center;
+  padding: 24px;
+  font-size: 13px;
+}

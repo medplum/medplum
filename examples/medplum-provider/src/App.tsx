@@ -9,6 +9,7 @@ import {
   IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
+  IconPencilPlus,
   IconPill,
   IconPrinter,
   IconSettingsAutomation,
@@ -16,8 +17,9 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Suspense, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { lazy, Suspense, useState } from 'react';
+import { Menu } from '@mantine/core';
+import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
@@ -59,11 +61,35 @@ import { SignInPage } from './pages/SignInPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 
+const EditorApp = lazy(() => import('./editor/EditorApp').then((m) => ({ default: m.EditorApp })));
+
 export function App(): JSX.Element | null {
+  const medplum = useMedplum();
+  const profile = useMedplumProfile();
+  const location = useLocation();
+
+  if (medplum.isLoading()) {
+    return null;
+  }
+
+  // Render the editor outside of AppShell — it has its own full-screen layout
+  if (location.pathname === '/editor' && profile) {
+    return (
+      <Suspense fallback={<Loading />}>
+        <EditorApp />
+      </Suspense>
+    );
+  }
+
+  return <AppShellWrapper />;
+}
+
+function AppShellWrapper(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const doseSpotCount = useDoseSpotNotifications();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
   const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
@@ -76,8 +102,17 @@ export function App(): JSX.Element | null {
   };
 
   if (medplum.isLoading()) {
-    return null;
+    return <Loading />;
   }
+
+  const editorMenuItem = (
+    <Menu.Item
+      leftSection={<IconPencilPlus size={14} stroke={1.5} />}
+      onClick={() => navigate('/editor')}
+    >
+      Open Editor
+    </Menu.Item>
+  );
 
   return (
     <AppShell
@@ -86,6 +121,7 @@ export function App(): JSX.Element | null {
       searchParams={searchParams}
       layoutVersion="v2"
       showLayoutVersionToggle={false}
+      extraMenuItems={profile ? editorMenuItem : undefined}
       menus={
         profile
           ? [

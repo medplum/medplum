@@ -29,6 +29,7 @@ export interface AppShellProps {
   readonly layoutVersion?: 'v1' | 'v2';
   readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
+  readonly extraMenuItems?: ReactNode;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -91,6 +92,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         userMenuEnabled={true}
         version={props.version}
         showLayoutVersionToggle={props.showLayoutVersionToggle}
+        extraMenuItems={props.extraMenuItems}
       />
     ) : undefined;
   } else {
@@ -114,6 +116,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         navbarOpen={navbarOpen}
         navbarToggle={toggleNavbar}
         notifications={props.notifications}
+        extraMenuItems={props.extraMenuItems}
       />
     );
     navbarComponent =

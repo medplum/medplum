@@ -1,0 +1,136 @@
+.panel {
+  width: 300px;
+  min-width: 260px;
+  background: white;
+  border-right: 1px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.header {
+  padding: 12px 16px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pageItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #495057;
+  border-left: 3px solid transparent;
+  transition: all 120ms ease;
+}
+
+.pageItem:hover {
+  background: #f8f9fa;
+}
+
+.pageItem[data-active] {
+  background: #e7f5ff;
+  border-left-color: #228be6;
+  color: #1971c2;
+  font-weight: 500;
+}
+
+.sectionHeader {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #868e96;
+  padding: 16px 16px 6px;
+}
+
+.layerItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #495057;
+  transition: background 100ms ease;
+}
+
+.layerItem:hover {
+  background: #f8f9fa;
+}
+
+.layerItem[data-active] {
+  background: #e7f5ff;
+  color: #1971c2;
+}
+
+.layerItem[data-hovered] {
+  background: #f1f3f5;
+}
+
+.layerIndent {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.layerIcon {
+  color: #adb5bd;
+  flex-shrink: 0;
+}
+
+.layerName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visibilityToggle {
+  opacity: 0;
+  cursor: pointer;
+  color: #adb5bd;
+  flex-shrink: 0;
+  transition: opacity 100ms ease;
+}
+
+.layerItem:hover .visibilityToggle {
+  opacity: 1;
+}
+
+.componentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+}
+
+.componentCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #495057;
+  text-align: center;
+  transition: all 120ms ease;
+}
+
+.componentCard:hover {
+  border-color: #228be6;
+  background: #e7f5ff;
+}
+
+.componentCardIcon {
+  font-size: 20px;
+}

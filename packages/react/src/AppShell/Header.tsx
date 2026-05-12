@@ -20,6 +20,7 @@ export interface HeaderProps {
   readonly navbarOpen?: boolean;
   readonly navbarToggle: () => void;
   readonly notifications?: ReactNode;
+  readonly extraMenuItems?: ReactNode;
 }
 
 export function Header(props: HeaderProps): JSX.Element {
@@ -69,7 +70,7 @@ export function Header(props: HeaderProps): JSX.Element {
               </UnstyledButton>
             </Menu.Target>
             <Menu.Dropdown>
-              <HeaderDropdown version={props.version} />
+              <HeaderDropdown version={props.version} extraMenuItems={props.extraMenuItems} />
             </Menu.Dropdown>
           </Menu>
         </Group>
