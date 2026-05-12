@@ -23,6 +23,7 @@ export function RescopeUserWidget(): JSX.Element {
   const [user, setUser] = useState<User | undefined>();
   const [currentScope, setCurrentScope] = useState<UserScope>('loading');
   const [submitting, setSubmitting] = useState(false);
+  const [userInputKey, setUserInputKey] = useState(0);
 
   const projectReference = projectRef?.reference;
   const projectIdForScope = projectReference?.split('/')[1];
@@ -85,6 +86,7 @@ export function RescopeUserWidget(): JSX.Element {
         showNotification({ color: 'green', message: 'User rescoped successfully' });
         medplum.invalidateSearches('User');
         setUser(undefined);
+        setUserInputKey((k) => k + 1);
         close();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
@@ -116,6 +118,7 @@ export function RescopeUserWidget(): JSX.Element {
                 onChange={(ref) => {
                   setProjectRef(ref);
                   setUser(undefined);
+                  setUserInputKey((k) => k + 1);
                 }}
               />
             </FormSection>
@@ -125,7 +128,7 @@ export function RescopeUserWidget(): JSX.Element {
             htmlFor="rescopeTargetUser"
           >
             <ResourceInput<User>
-              key={projectReference ?? 'no-project'}
+              key={userInputKey}
               name="rescopeTargetUser"
               resourceType="User"
               placeholder={projectReference ? 'Search by email' : 'Select a Project first'}
