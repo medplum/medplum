@@ -8,7 +8,7 @@ import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtyp
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import type { DeleteOldLambdaVersionStats } from '../cloud/aws/lambda';
-import { createLambdaClient, deleteOldLambdaVersions } from '../cloud/aws/lambda';
+import { deleteOldLambdaVersions, getBotManagementLambdaClient } from '../cloud/aws/lambda';
 import { tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
@@ -109,7 +109,7 @@ export async function execLambdaCleanerJob(
     deleteConcurrency: inputOptions.deleteConcurrency ?? DEFAULT_DELETE_CONCURRENCY,
     dryRun: inputOptions.dryRun ?? DEFAULT_DRY_RUN,
   };
-  const lambdaClient = client ?? createLambdaClient();
+  const lambdaClient = client ?? getBotManagementLambdaClient();
   const startTime = Date.now();
   const summary: LambdaCleanerSummary = {
     options,

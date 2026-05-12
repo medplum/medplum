@@ -19,7 +19,7 @@ import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger, globalLogger } from '../../logger';
-import { createLambdaClient, deleteOldLambdaVersions } from './lambda';
+import { deleteOldLambdaVersions, getBotManagementLambdaClient } from './lambda';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
@@ -120,7 +120,7 @@ export const LAMBDA_NAME_REGEX_PATTERN =
   '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
-  const client = createLambdaClient();
+  const client = getBotManagementLambdaClient();
   const name = getLambdaNameForBot(bot);
   let timeout: number;
   try {
@@ -154,7 +154,7 @@ export async function deployLambdaInternal(
     throw new Error('Bot timeout exceeds allowed maximum of 900 seconds');
   }
 
-  const client = createLambdaClient();
+  const client = getBotManagementLambdaClient();
   const name = getLambdaNameForBot(bot);
   log.info(`Deploying lambda${label} function for bot`, { name });
   const zipFile = await createZipFileFn(bot, code);

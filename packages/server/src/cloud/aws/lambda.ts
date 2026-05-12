@@ -7,22 +7,19 @@ import {
   ResourceConflictException,
   ResourceNotFoundException,
 } from '@aws-sdk/client-lambda';
-import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 
+let managementClient: LambdaClient;
 /**
  * Creates a new AWS Lambda client with a custom retry strategy.
  * @returns A configured LambdaClient.
  */
-export function createLambdaClient(): LambdaClient {
-  return new LambdaClient({
-    region: getConfig().awsRegion,
-    retryStrategy: new ConfiguredRetryStrategy(
-      5, // max attempts
-      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
-    ),
-  });
+export function getBotManagementLambdaClient(): LambdaClient {
+  if (!managementClient) {
+    managementClient = new LambdaClient({ region: getConfig().awsRegion });
+  }
+  return managementClient;
 }
 
 export interface DeleteLambdaVersionOptions {
