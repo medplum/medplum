@@ -7,7 +7,7 @@ import { Document, BaseScheduler, useMedplum } from '@medplum/react';
 import type { FetchOptionsFunction } from '@medplum/react';
 import { useSearchOne } from '@medplum/react-hooks';
 import { IconInfoCircle } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 
 const SERVICE_TYPE_REFERENCE_URI = 'https://medplum.com/fhir/service-type-reference';
@@ -17,35 +17,43 @@ export function GetCare(): JSX.Element {
   const patient = medplum.getProfile() as Patient;
   const [schedule, loading] = useSearchOne('Schedule');
 
-  const healthcareServiceRef = schedule?.serviceType
-    ?.map(
-      (concept) => getExtensionValue(concept, SERVICE_TYPE_REFERENCE_URI) as Reference<HealthcareService> | undefined
-    )
-    .find(isDefined);
+  const healthcareServiceRef = useMemo(
+    () =>
+      schedule?.serviceType
+        ?.map(
+          (concept) =>
+            getExtensionValue(concept, SERVICE_TYPE_REFERENCE_URI) as Reference<HealthcareService> | undefined
+        )
+        .find(isDefined),
+    [schedule]
+  );
 
-  const fetchAppointments: FetchOptionsFunction<Appointment> = async (period) => {
-    if (!schedule || !healthcareServiceRef?.reference) {
-      return [];
-    }
+  const fetchAppointments: FetchOptionsFunction<Appointment> = useCallback(
+    async (period) => {
+      if (!schedule || !healthcareServiceRef?.reference) {
+        return [];
+      }
 
-    // $find op requires `start` and `end` times are defined
-    if (!period.start || !period.end) {
-      return [];
-    }
+      // $find op requires `start` and `end` times are defined
+      if (!period.start || !period.end) {
+        return [];
+      }
 
-    const findUrl = medplum.fhirUrl('Appointment', '$find');
-    findUrl.searchParams.append('start', period.start);
-    findUrl.searchParams.append('end', period.end);
-    findUrl.searchParams.append('service-type-reference', healthcareServiceRef.reference);
-    findUrl.searchParams.append('schedule', getReferenceString(schedule));
-    const bundle = await medplum.get<Bundle<Appointment>>(findUrl);
-    return (bundle.entry ?? [])
-      .map((entry) => entry.resource)
-      .map((appointment) =>
-        appointment?.start ? ([appointment, new Date(appointment.start)] as [Appointment, Date]) : undefined
-      )
-      .filter(isDefined);
-  };
+      const findUrl = medplum.fhirUrl('Appointment', '$find');
+      findUrl.searchParams.append('start', period.start);
+      findUrl.searchParams.append('end', period.end);
+      findUrl.searchParams.append('service-type-reference', healthcareServiceRef.reference);
+      findUrl.searchParams.append('schedule', getReferenceString(schedule));
+      const bundle = await medplum.get<Bundle<Appointment>>(findUrl);
+      return (bundle.entry ?? [])
+        .map((entry) => entry.resource)
+        .map((appointment) =>
+          appointment?.start ? ([appointment, new Date(appointment.start)] as [Appointment, Date]) : undefined
+        )
+        .filter(isDefined);
+    },
+    [medplum, schedule, healthcareServiceRef]
+  );
 
   const [holdSuccess, setHoldSuccess] = useState(false);
   const [holdLoading, setHoldLoading] = useState(false);
@@ -53,11 +61,16 @@ export function GetCare(): JSX.Element {
 
   const holdAppointment = async (appointment: Appointment): Promise<void> => {
     // Add the viewer to the appointment as a participant
-    const booking = { ...appointment };
-    booking.participant.push({
-      actor: createReference(patient),
-      status: 'accepted',
-    });
+    const booking = {
+      ...appointment,
+      participant: [
+        ...appointment.participant,
+        {
+          actor: createReference(patient),
+          status: 'accepted',
+        },
+      ],
+    };
 
     setHoldLoading(true);
     await medplum

@@ -23,8 +23,19 @@ export interface BaseSchedulerProps<T> {
   onSelectOption?: (el: T, date: Date) => void;
 }
 
+/**
+ * A generic widget to choose an option by date/time. Renders a monthly
+ * calendar UI and lets the viewer drill down into options on a given day.
+ *
+ * @param props - The React props
+ * @param props.actor - A Reference or Resource to the actor being scheduled against (typically a Practitioner)
+ * @param props.fetchOptions - A function that fetches SchedulingOption pairs. If this is not a stable function it can cause duplicate queries.
+ * @param props.onSelectOption - A callback invoked when a specific option is selected
+ * @param props.children - React nodes to render inside the scheduler container
+ * @returns the JSX Element
+ */
 export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | null {
-  const [month, setMonth] = useState(getStartMonth());
+  const [month, setMonth] = useState(getStartMonth);
   const [date, setDate] = useState<Date>();
   const [options, setOptions] = useState<SchedulingOption<T>[]>();
   const [selectedOption, setSelectedOption] = useState<SchedulingOption<T>>();
@@ -58,15 +69,21 @@ export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | nu
     [onSelectOption]
   );
 
-  // Restrict to options inside the selected day
+  // Restrict to options with unique start times inside the selected day
   const filteredOptions = useMemo(() => {
     if (!date || !options) {
       return [];
     }
     const start = date.getTime();
     const end = start + 24 * 60 * 60 * 1000;
+    const seen = new Set<number>();
     return options.filter(([_, optionDate]) => {
-      return start <= optionDate.getTime() && optionDate.getTime() < end;
+      const optionTime = optionDate.getTime();
+      if (seen.has(optionTime)) {
+        return false;
+      }
+      seen.add(optionTime);
+      return start <= optionTime && optionTime < end;
     });
   }, [date, options]);
 
@@ -106,8 +123,8 @@ export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | nu
           <div>
             <h3>Select time</h3>
             <Stack>
-              {filteredOptions.map((option, idx) => (
-                <div key={idx}>
+              {filteredOptions.map((option) => (
+                <div key={option[1].toISOString()}>
                   <Button variant="outline" style={{ width: 150 }} onClick={() => handleSelectOption(option)}>
                     {formatTime(option[1])}
                   </Button>
@@ -157,7 +174,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         return slots.map((slot) => [slot, new Date(slot.start)]);
       }
 
-      // default search: find any free slots on the schedules passed in
+      // default search: find slots on the schedules passed in
       const scheduleRefs = arrayify(schedule ?? [])
         .map(getReferenceString)
         .filter(isDefined);
