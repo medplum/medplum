@@ -1,11 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, arrayify, forbidden, getReferenceString, Operator } from '@medplum/core';
+import { allOk, arrayify, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
-import { FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX, FHIR_RATE_LIMIT_PROJECT_PREFIX, getFhirQuotaConfig } from '../fhirquota';
+import {
+  FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
+  FHIR_RATE_LIMIT_PROJECT_PREFIX,
+  getActiveRateLimitKey,
+  getFhirQuotaConfig,
+} from '../fhirquota';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const quotaParts: OperationDefinitionParameter[] = [
@@ -64,6 +69,8 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
   await ctx.fhirRateLimiter?.recordSearch();
 
+  const redis = getRateLimitRedis();
+
   let memberships: ProjectMembership[];
   if (membershipIds) {
     const reads = await Promise.all(
@@ -76,16 +83,20 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     }
     memberships = reads;
   } else {
-    memberships = await ctx.repo.searchResources<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      filters: [{ code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) }],
-      count: 1000,
-    });
+    const activeKey = getActiveRateLimitKey(project.id);
+    const activeMembershipIds = await redis.zrevrange(activeKey, 0, 999);
+    if (activeMembershipIds.length > 0) {
+      const reads = await Promise.allSettled(
+        activeMembershipIds.map((id) => ctx.repo.readResource<ProjectMembership>('ProjectMembership', id))
+      );
+      memberships = reads.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    } else {
+      memberships = [];
+    }
   }
 
   const { userLimit, projectLimit } = getFhirQuotaConfig(project);
 
-  const redis = getRateLimitRedis();
   const pipeline = redis.pipeline();
   for (const membership of memberships) {
     const key = `${FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX}:${membership.id}`;
