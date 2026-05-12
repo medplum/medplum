@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LogLevel } from '@medplum/core';
+import { LogLevel, sleep } from '@medplum/core';
 import { globalLogger } from './logger';
 
 describe('Global Logger', () => {
@@ -82,12 +82,13 @@ describe('Global Logger', () => {
 
     // Simulate drain — queued write fires.
     drainHandlers.forEach((h) => h());
-    await new Promise((resolve) => setImmediate(resolve));
+    // Need to wait one tick for event handlers
+    await sleep(0);
     expect(writeSpy).toHaveBeenCalledTimes(2);
 
     // Drain any pending state created by the second write.
     drainHandlers.forEach((h) => h());
-    await new Promise((resolve) => setImmediate(resolve));
+    await sleep(0);
 
     onceSpy.mockRestore();
   });
