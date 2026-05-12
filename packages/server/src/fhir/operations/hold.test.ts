@@ -405,6 +405,50 @@ describe('Appointment/$hold', () => {
     expect(response.status).toEqual(400);
   });
 
+  test('rejects when appointment already has references in `slot`', async () => {
+    const schedule = await makeSchedule({ actor: practitioner1 });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+    const response = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              slot: [{ reference: 'Slot/abc' }],
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  serviceType: toCodeableReferenceLike(officeVisitService),
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response.body).toHaveProperty('issue', [
+      expect.objectContaining({
+        severity: 'error',
+        details: { text: 'Proposed appointment may not have Slot references' },
+      }),
+    ]);
+    expect(response.status).toEqual(400);
+  });
+
   test('rejects when contained has no Slot resources', async () => {
     const response = await request
       .post('/fhir/R4/Appointment/$hold')
