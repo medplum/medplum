@@ -190,18 +190,24 @@ export class ArithmeticOperatorAtom extends InfixOperatorAtom {
   }
 }
 
+const EMPTY_STRING: TypedValue = Object.freeze({ type: 'string', value: '' });
+
 export class ConcatAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('&', left, right);
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context, input);
-    const rightValue = this.right.eval(context, input);
+    const left = singleton(this.left.eval(context, input)) ?? EMPTY_STRING;
+    const right = singleton(this.right.eval(context, input)) ?? EMPTY_STRING;
 
-    const left = leftValue.length ? (singleton(leftValue, 'string')?.value as string) : '';
-    const right = rightValue.length ? (singleton(rightValue, 'string')?.value as string) : '';
-    return [{ type: PropertyType.string, value: left + right }];
+    if (typeof left.value !== 'string') {
+      throw new Error(`Expected string operand for &, but got ${left.type}`);
+    } else if (typeof right.value !== 'string') {
+      throw new Error(`Expected string operand for &, but got ${right.type}`);
+    }
+
+    return [{ type: PropertyType.string, value: left.value + right.value }];
   }
 }
 
