@@ -7,8 +7,12 @@ import { EMPTY } from '@medplum/core';
 import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import type { DeleteOldLambdaVersionStats } from '../cloud/aws/lambda';
-import { deleteOldLambdaVersions, getBotManagementLambdaClient } from '../cloud/aws/lambda';
+import type { DeleteLambdaVersionOptions, DeleteOldLambdaVersionStats } from '../cloud/aws/lambda';
+import {
+  DeleteLambdaVersionOptionsDefaults,
+  deleteOldLambdaVersions,
+  getBotManagementLambdaClient,
+} from '../cloud/aws/lambda';
 import { tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
@@ -24,15 +28,9 @@ export interface LambdaCleanerOptions {
   readonly dryRun?: boolean;
 }
 
-interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions {
-  readonly keepLatest: number;
-  readonly deleteConcurrency: number;
+interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions, DeleteLambdaVersionOptions {
   readonly dryRun: boolean;
 }
-
-const DEFAULT_KEEP_LATEST = 1;
-const DEFAULT_DELETE_CONCURRENCY = 1;
-const DEFAULT_DRY_RUN = true;
 
 export interface LambdaCleanerJobData {
   readonly asyncJob: WithId<AsyncJob>;
@@ -42,7 +40,7 @@ export interface LambdaCleanerJobData {
 }
 
 export interface LambdaCleanerSummary extends DeleteOldLambdaVersionStats {
-  readonly options: LambdaCleanerOptions;
+  readonly options: ResolvedLambdaCleanerOptions;
   functionsScanned: number;
   functionsMatched: number;
   durationMs: number;
@@ -104,10 +102,10 @@ export async function execLambdaCleanerJob(
   client?: LambdaClient
 ): Promise<LambdaCleanerSummary> {
   const options: ResolvedLambdaCleanerOptions = {
-    nameRegex: inputOptions.nameRegex,
-    keepLatest: inputOptions.keepLatest ?? DEFAULT_KEEP_LATEST,
-    deleteConcurrency: inputOptions.deleteConcurrency ?? DEFAULT_DELETE_CONCURRENCY,
-    dryRun: inputOptions.dryRun ?? DEFAULT_DRY_RUN,
+    ...inputOptions,
+    keepLatest: inputOptions.keepLatest ?? DeleteLambdaVersionOptionsDefaults.keepLatest,
+    deleteConcurrency: inputOptions.deleteConcurrency ?? DeleteLambdaVersionOptionsDefaults.deleteConcurrency,
+    dryRun: inputOptions.dryRun ?? true,
   };
   const lambdaClient = client ?? getBotManagementLambdaClient();
   const startTime = Date.now();

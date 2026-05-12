@@ -28,6 +28,11 @@ export interface DeleteLambdaVersionOptions {
   readonly deleteConcurrency?: number;
 }
 
+export const DeleteLambdaVersionOptionsDefaults = {
+  keepLatest: 2,
+  deleteConcurrency: 1,
+} as const;
+
 export interface DeleteOldLambdaVersionStats {
   functionsWithDeleteCandidates: number;
   publishedVersionsScanned: number;
@@ -50,8 +55,8 @@ export async function deleteOldLambdaVersions(
   options: DeleteLambdaVersionOptions,
   stats?: DeleteOldLambdaVersionStats
 ): Promise<void> {
-  const keepLatest = options.keepLatest ?? 1;
-  const deleteConcurrency = options.deleteConcurrency ?? 1;
+  const keepLatest = options.keepLatest ?? DeleteLambdaVersionOptionsDefaults.keepLatest;
+  const deleteConcurrency = options.deleteConcurrency ?? DeleteLambdaVersionOptionsDefaults.deleteConcurrency;
 
   if (keepLatest < 1) {
     throw new Error('keepLatest must be at least 1');

@@ -26,7 +26,6 @@ export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
-const LAMBDA_VERSIONS_TO_KEEP = 2;
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
@@ -164,7 +163,7 @@ export async function deployLambdaInternal(
     await updateLambda(bot, client, name, zipFile);
     const { project } = getAuthenticatedContext();
     // Don't block on delete since this could take a while
-    deleteOldLambdaVersions(client, name, { dryRun: false, keepLatest: LAMBDA_VERSIONS_TO_KEEP }).catch((err) => {
+    deleteOldLambdaVersions(client, name, { dryRun: false }).catch((err) => {
       globalLogger.error('Error occurred while deleting old Lambdas', {
         projectId: project.id,
         name,
