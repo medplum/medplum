@@ -54,7 +54,7 @@ export async function deleteOldLambdaVersions(
   stats?: DeleteOldLambdaVersionStats
 ): Promise<void> {
   const keepLatest = options.keepLatest ?? 1;
-  const deleteConcurrency = options.deleteConcurrency ?? 2;
+  const deleteConcurrency = options.deleteConcurrency ?? 1;
 
   if (keepLatest < 1) {
     throw new Error('keepLatest must be at least 1');
