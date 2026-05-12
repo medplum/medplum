@@ -17,7 +17,7 @@ The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appo
 ## Invoke the `$cancel` operation
 
 ```
-[base]/R4/Appointment/$cancel
+[base]/R4/Appointment/:id/$cancel
 ```
 
 import Tabs from '@theme/Tabs';
@@ -28,45 +28,21 @@ import TabItem from '@theme/TabItem';
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
-import type { Appointment, Bundle, Parameters } from '@medplum/fhirtypes';
+import type { Appointment } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-const result = await medplum.post(
-  medplum.fhirUrl('Appointment', '$cancel'),
-  {
-    resourceType: 'Parameters',
-    parameter: [
-      {
-        name: 'appointment-reference',
-        valueReference: { reference: 'Appointment/my-appointment-id' },
-      },
-    ],
-  }
-) as Parameters;
-
-const bundle = result.parameter?.[0]?.resource as Bundle;
-const appointment = bundle.entry
-  ?.find((e) => e.resource?.resourceType === 'Appointment')
-  ?.resource as Appointment;
+const appointment = await medplum.post<Appointment>(
+  medplum.fhirUrl('Appointment', 'my-appointment-id', '$cancel')
+);
 ```
 
 </TabItem>
 <TabItem value="curl" label="cURL">
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$cancel' \
-  -H "Content-Type: application/fhir+json" \
-  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "appointment-reference",
-        "valueReference": { "reference": "Appointment/my-appointment-id" }
-      }
-    ]
-  }'
+curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$cancel' \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
 
 </TabItem>
@@ -74,9 +50,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$cancel' \
 
 ## Parameters
 
-| Name                     | Type        | Description                                                                                    | Required |
-| ------------------------ | ----------- | ---------------------------------------------------------------------------------------------- | -------- |
-| `appointment-reference`  | `Reference` | Reference to the [`Appointment`](/docs/api/fhir/resources/appointment) to cancel               | Yes      |
+This operation takes no input parameters. The appointment to cancel is identified by the `id` in the URL.
 
 ### Constraints
 
@@ -85,7 +59,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$cancel' \
 
 ## Output
 
-Returns `200 OK` with a [`Parameters`](/docs/api/fhir/resources/parameters) resource wrapping a `Bundle` containing the updated Appointment:
+Returns `200 OK` with the updated [`Appointment`](/docs/api/fhir/resources/appointment) resource directly:
 
 - One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: cancelled`
 
@@ -95,30 +69,14 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
 
 ```json
 {
-  "resourceType": "Parameters",
-  "parameter": [
-    {
-      "name": "return",
-      "resource": {
-        "resourceType": "Bundle",
-        "type": "transaction-response",
-        "entry": [
-          {
-            "resource": {
-              "resourceType": "Appointment",
-              "id": "my-appointment-id",
-              "status": "cancelled",
-              "start": "2026-03-10T09:00:00.000Z",
-              "end": "2026-03-10T10:00:00.000Z",
-              "participant": [
-                { "actor": { "reference": "Practitioner/dr-smith" }, "status": "tentative" },
-                { "actor": { "reference": "Patient/my-patient-id" }, "status": "accepted" }
-              ]
-            }
-          }
-        ]
-      }
-    }
+  "resourceType": "Appointment",
+  "id": "my-appointment-id",
+  "status": "cancelled",
+  "start": "2026-03-10T09:00:00.000Z",
+  "end": "2026-03-10T10:00:00.000Z",
+  "participant": [
+    { "actor": { "reference": "Practitioner/dr-smith" }, "status": "tentative" },
+    { "actor": { "reference": "Patient/my-patient-id" }, "status": "accepted" }
   ]
 }
 ```
@@ -127,12 +85,12 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
 
 `$cancel` performs the following steps inside a serializable transaction:
 
-1. Reads the referenced Appointment
+1. Reads the Appointment identified by the URL `id`
 2. Loads all `Slot` resources listed in `Appointment.slot`
 3. Validates that the Appointment's `status` is `booked` or `pending`
 4. Sets the Appointment's `status` to `cancelled` and saves it
 5. Deletes all referenced Slots
-6. Returns the updated Appointment in the response Bundle
+6. Returns the updated Appointment
 
 The transaction uses serializable isolation for safety when there are concurrent scheduling operations affecting the same appointment.
 
@@ -162,15 +120,6 @@ The transaction uses serializable isolation for safety when there are concurrent
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Loading slots failed" } }]
-}
-```
-
-### Missing Required Parameter
-
-```json
-{
-  "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Expected at least 1 value(s) for required input parameter 'appointment-reference'" } }]
 }
 ```
 
