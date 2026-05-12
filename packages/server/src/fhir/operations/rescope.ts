@@ -14,6 +14,7 @@ import {
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
@@ -75,8 +76,17 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
     return [badRequest('Invalid scope: must be "project" or "global"')];
   }
 
-  if (params.scope === 'project' && !params.project?.reference) {
-    return [badRequest('Missing required "project" reference for scope "project"')];
+  let projectId: string | undefined = undefined;
+
+  if (params.scope === 'project') {
+    if (!params.project) {
+      return [badRequest('Missing required "project" reference for scope "project"')];
+    }
+    const [resourceType, parsedProjectId] = parseReference(params.project);
+    if (!parsedProjectId || resourceType !== 'Project') {
+      return [badRequest('Invalid project reference')];
+    }
+    projectId = parsedProjectId;
   }
 
   // Test if this caller can actually read the user resource
@@ -93,7 +103,9 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
   // and different failure modes.
   let updated: WithId<User>;
   if (params.scope === 'project') {
-    updated = await rescopeUserToProject(ctx, user, params);
+    // We know this is defined because we would return bad request earlier if not
+    assert(projectId);
+    updated = await rescopeUserToProject(ctx, user, projectId);
   } else {
     updated = await rescopeUserToGlobal(ctx, user);
   }
@@ -139,28 +151,23 @@ async function isCallerAllowedToRescopeUser(
  * User holds ProjectMemberships in any other Project.
  * @param ctx - The authenticated request context for the caller.
  * @param user - The User being rescoped.
- * @param params - The rescope parameters, including the target project reference.
+ * @param projectId - The target project ID to scope the user to.
  * @returns The updated User scoped to the target project.
  */
 async function rescopeUserToProject(
   ctx: AuthenticatedRequestContext,
   user: WithId<User>,
-  params: RescopeParams
+  projectId: string
 ): Promise<WithId<User>> {
-  const [resourceType, projectId] = parseReference(params.project);
-  if (!projectId || resourceType !== 'Project') {
-    throw new OperationOutcomeError(badRequest('Invalid project reference'));
-  }
-
   const systemRepo = ctx.systemRepo;
+
+  if (user.project?.reference === `Project/${projectId}`) {
+    throw new OperationOutcomeError(badRequest('User is already scoped to this project'));
+  }
 
   // Verify the target project exists.
   const targetProject = await systemRepo.readResource<Project>('Project', projectId);
   const targetRef = createReference(targetProject);
-
-  if (user.project?.reference === targetRef.reference) {
-    throw new OperationOutcomeError(badRequest('User is already scoped to this project'));
-  }
 
   return systemRepo.withTransaction(
     async () => {
