@@ -7,6 +7,15 @@ import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 
 /**
+ * Returns true if email sending is configured on this server (SMTP or AWS SES).
+ * @returns True if email is configured.
+ */
+export function isEmailConfigured(): boolean {
+  const config = getConfig();
+  return !!(config.smtp || config.emailProvider === 'awsses');
+}
+
+/**
  * Returns the from address to use.
  * If the user specified a from address, it must be an approved sender.
  * Otherwise uses the support email address.

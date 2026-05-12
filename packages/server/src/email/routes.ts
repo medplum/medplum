@@ -10,6 +10,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { makeValidationMiddleware } from '../util/validator';
 import { sendEmail } from './email';
+import { isEmailConfigured } from './utils';
 
 export const emailRouter = Router();
 emailRouter.use(authenticateRequest);
@@ -37,6 +38,11 @@ emailRouter.post('/send', sendEmailValidator, async (req: Request, res: Response
       ],
     };
     sendOutcome(res, outcome);
+    return;
+  }
+
+  if (!isEmailConfigured()) {
+    sendOutcome(res, badRequest('Email is not configured on this server. Set up SMTP or AWS SES.'));
     return;
   }
 
