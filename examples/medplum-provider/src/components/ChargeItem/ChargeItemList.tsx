@@ -22,7 +22,7 @@ export interface ChargeItemListProps {
 
 export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
   const { chargeItems, updateChargeItems, patient, encounter } = props;
-  const [chargeItemsState, setChargeItemsState] = useState<WithId<ChargeItem>[]>(chargeItems);
+  const [chargeItemsState, setChargeItemsState] = useState(chargeItems);
   const [opened, { open, close }] = useDisclosure(false);
   const medplum = useMedplum();
 

@@ -21,7 +21,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
 
   const patientSynced = patient.identifier?.find((id) => id.system === NEUTRON_HEALTH_PATIENTS);
   const patientPhotonId = patientSynced?.value;
-  const [syncDisabled, setSyncDisabled] = useState<boolean>(!!patientSynced);
+  const [syncDisabled, setSyncDisabled] = useState(!!patientSynced);
 
   async function testConnection(): Promise<void> {
     open();

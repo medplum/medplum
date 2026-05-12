@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { badRequest, isString, isUUID, OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { Project, ResourceType, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -143,7 +144,10 @@ function validateProjectId(inputProjectId: unknown): string | undefined {
   return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
-function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
+function getProjectsByGoogleClientId(
+  googleClientId: string,
+  projectId: string | undefined
+): Promise<WithId<Project>[]> {
   const filters = [
     {
       code: 'google-client-id',

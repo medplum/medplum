@@ -100,7 +100,7 @@ export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observ
     '@_moodCode': 'EVN',
     templateId: mapOrganizerTemplateId(observation),
     id: mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
-    code: mapCodeableConceptToCcdaCode(observation.code) as CcdaCode,
+    code: mapCodeableConceptToCcdaCode(observation.code),
     statusCode: { '@_code': 'completed' },
     effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
     component: components,
@@ -142,7 +142,7 @@ export function createCcdaObservation(
     '@_classCode': 'OBS',
     '@_moodCode': 'EVN',
     templateId: mapObservationTemplateId(observation, component),
-    id: mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
+    id: mapIdentifiers(observation.id, observation.identifier),
     code,
     statusCode: { '@_code': 'completed' },
     effectiveTime: [mapFhirPeriodOrDateTimeToCcda(observation.effectivePeriod, observation.effectiveDateTime)],
@@ -306,6 +306,22 @@ export function mapReferenceRange(
       observationRange: {
         text: { reference: narrativeReference },
         value: { '@_xsi:type': 'ED', reference: narrativeReference },
+      },
+    };
+  }
+
+  if (referenceRange.low || referenceRange.high) {
+    return {
+      observationRange: {
+        value: {
+          '@_xsi:type': 'IVL_PQ',
+          low: referenceRange.low
+            ? { '@_value': referenceRange.low.value?.toString(), '@_unit': referenceRange.low.unit }
+            : undefined,
+          high: referenceRange.high
+            ? { '@_value': referenceRange.high.value?.toString(), '@_unit': referenceRange.high.unit }
+            : undefined,
+        },
       },
     };
   }

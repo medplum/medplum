@@ -28,6 +28,7 @@ const testData = [
   'ProcedureSectionObservationEntry',
   'ProcedureSectionProcedureEntry',
   // 'EncounterHospitalDischarge',
+  'MedicationRouteCodeSingleTranslation',
 ];
 
 describe('convertCcdaToFhir', () => {

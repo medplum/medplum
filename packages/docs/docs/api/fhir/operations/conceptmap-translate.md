@@ -37,7 +37,7 @@ The `$translate` operation converts codes from one code system to another using 
 | `codeableConcept` | `CodeableConcept` | Concept with one or more codes to translate using the ConceptMap | No       |
 | `targetsystem`    | `uri`             | Target code system, used to filter results                       | No       |
 
-:::note Required Parameters
+:::note[Required Parameters]
 
 Although no individual parameter for the operation is required, both of the following must be satisfied for the
 operation to proceed:

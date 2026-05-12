@@ -10,7 +10,7 @@ If you are new to Medplum Bots, we encourage you to read the intro material in t
 
 The following tutorials will walk through some of the use cases for Bots, to give you a sense of how they can work for you.
 
-:::warning Enabling Bots
+:::warning[Enabling Bots]
 
 Bots are a [project level setting](/docs/access/projects#settings) that must be enabled by a Super Admin user.
 
@@ -46,6 +46,7 @@ Implement frequently-needed functionality like file handling, document generatio
 ## Deployment & Infrastructure
 Deploy your bots to Medplum's cloud infrastructure or integrate with your existing AWS environment.
 - [Bots in Production](/docs/bots/bots-in-production)
+- [Bot Code Organization and Build Setup](/docs/bots/bot-code-organization)
 - [Running Bots on Fission](/docs/bots/running-bots-on-fission)
 - [External Lambda Functions](/docs/bots/external-function)
 - [Medplum Bot Layers](/docs/bots/bot-lambda-layer)

@@ -5,7 +5,7 @@ import type { AsyncJob, Reference, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
-import { runInAsyncContext } from '../context';
+import { runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -50,7 +50,7 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
       queueName,
       (job) => {
         const { authState, requestId, traceId } = job.data;
-        return runInAsyncContext(authState, requestId, traceId, () => execSetAccountsJob(job));
+        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
       },
       {
         ...defaultOptions,

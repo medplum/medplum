@@ -3,12 +3,12 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
-import {} from './repo';
 import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {
@@ -76,7 +76,7 @@ describe('FHIR Repo Transactions', () => {
 
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
-          await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+          await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
         })
       ).rejects.toMatchObject(
         new OperationOutcomeError({
@@ -199,7 +199,7 @@ describe('FHIR Repo Transactions', () => {
 
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
-            await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+            await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
           })
         ).rejects.toMatchObject(
           new OperationOutcomeError({
@@ -396,6 +396,83 @@ describe('FHIR Repo Transactions', () => {
       });
       expect(cb1).toHaveBeenCalledTimes(1);
       expect(cb2).toHaveBeenCalledTimes(1);
+    }));
+
+  test('getSystemRepo() shares parent post-commit state', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      let calledBeforeCommit = false;
+
+      await repo.withTransaction(async () => {
+        await repo.getSystemRepo().postCommit(callback);
+        calledBeforeCommit = callback.mock.calls.length > 0;
+      });
+
+      expect(calledBeforeCommit).toBe(false);
+      expect(callback).toHaveBeenCalledTimes(1);
+    }));
+
+  test('getSystemRepo() withTransaction() nests in the parent transaction', () =>
+    withTestContext(async () => {
+      let queries: string[] = [];
+
+      await repo.withTransaction(async (client) => {
+        const querySpy = jest.spyOn(client, 'query');
+        try {
+          await repo.getSystemRepo().withTransaction(async () => undefined);
+        } finally {
+          queries = querySpy.mock.calls.map(([query]) =>
+            typeof query === 'string' ? query : (query as { text: string }).text
+          );
+          querySpy.mockRestore();
+        }
+      });
+
+      expect(queries).toContain('SAVEPOINT sp2');
+      expect(queries).toContain('RELEASE SAVEPOINT sp2');
+      expect(queries).not.toContain('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      expect(queries).not.toContain('COMMIT');
+    }));
+
+  test('getSystemRepo() defers cache writes while parent transaction is active', () =>
+    withTestContext(async () => {
+      let patient: WithId<Patient> | undefined;
+      let cacheReadDuringTransaction = false;
+
+      await repo.withTransaction(async () => {
+        patient = await repo.getSystemRepo().createResource<Patient>({ resourceType: 'Patient' });
+        try {
+          await systemRepo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
+          cacheReadDuringTransaction = true;
+        } catch {
+          cacheReadDuringTransaction = false;
+        }
+      });
+
+      expect(cacheReadDuringTransaction).toBe(false);
+      assert(patient);
+      await expect(
+        systemRepo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true })
+      ).resolves.toBeDefined();
+    }));
+
+  test('clone() does NOT share parent transaction state', () =>
+    withTestContext(async () => {
+      const callbackFn = jest.fn();
+      let patient: WithId<Patient> | undefined;
+      await expect(
+        repo.withTransaction(async () => {
+          const clonedRepo = repo.clone();
+          patient = await clonedRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await clonedRepo.postCommit(callbackFn);
+          expect(callbackFn).toHaveBeenCalledTimes(1);
+          throw new Error('rollback clone transaction');
+        })
+      ).rejects.toThrow('rollback clone transaction');
+
+      expect(callbackFn).toHaveBeenCalledTimes(1);
+      assert(patient);
+      await expect(repo.readResource('Patient', patient.id)).resolves.toStrictEqual(patient);
     }));
 
   test('Conflicting concurrent writes', () =>

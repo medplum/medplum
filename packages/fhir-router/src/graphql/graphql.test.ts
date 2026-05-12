@@ -44,7 +44,7 @@ describe('GraphQL', () => {
     getRootSchema();
 
     // Create a profile picture
-    binary = await repo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
+    binary = await repo.createResource({ resourceType: 'Binary' } as Binary);
 
     // Creat a simple patient
     patient = await repo.createResource<Patient>({
@@ -1278,7 +1278,7 @@ describe('GraphQL', () => {
   });
 
   test('Reference missing reference property', async () => {
-    const eob = await repo.createResource<ExplanationOfBenefit>({
+    const eob = await repo.createResource({
       resourceType: 'ExplanationOfBenefit',
       facility: {
         display: 'test',

@@ -66,7 +66,7 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
 }
 
 function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if (key === 'reference' && typeof value === 'string') {
+  if ((key === 'reference' || key === 'url') && typeof value === 'string') {
     let id;
     if (value.includes('/')) {
       id = value.split('/')[1];
@@ -175,7 +175,7 @@ function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cy
 
     // Visit all neighbors
     let hasCycle = false;
-    for (const neighbor of graph[vertex]) {
+    for (const neighbor of graph[vertex] ?? EMPTY) {
       if (!visit(neighbor, path)) {
         hasCycle = true;
       }
@@ -229,11 +229,11 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
   for (const entry of bundle.entry ?? EMPTY) {
     const fullUrl = entry.fullUrl;
 
-    if (entry.resource) {
+    if (fullUrl && entry.resource) {
       findReferences(entry.resource, (reference: string) => {
         // Add an incoming reference to the adjacency list
         if (adjacencyList[reference]) {
-          adjacencyList[reference].push(fullUrl as string);
+          adjacencyList[reference].push(fullUrl);
         }
       });
     }

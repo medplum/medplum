@@ -15,7 +15,7 @@ export function SearchPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
-  const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
+  const [isNewOpen, setIsNewOpen] = useState(false);
 
   const tabs = ['Active', 'Completed'];
   const currentSearch = parseSearchRequest(window.location.toString());

@@ -82,6 +82,12 @@ export const DOSESPOT_NOTIFICATION_COUNTS_BOT: Identifier = {
   value: 'dosespot-notification-counts-bot',
 };
 
+// Bot identifiers - Enrollment
+export const DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-self-enroll-prescriber-bot',
+};
+
 // DoseSpot notification response type
 export interface DoseSpotNotificationCountsResponse {
   PendingPrescriptionsCount: number;

@@ -191,6 +191,22 @@
       "definition": "Optional external Identity Provider (IdP) for the domain name.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "allowedPostLoginRedirectUrls",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "DomainConfiguration.allowedPostLoginRedirectUrls",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "List of allowed post-login redirect URLs for this domain configuration.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

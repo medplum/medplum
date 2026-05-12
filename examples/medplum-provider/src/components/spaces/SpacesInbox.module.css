@@ -181,6 +181,32 @@
   background-color: var(--mantine-color-gray-0);
 }
 
+/* Tool calls */
+.toolCallGroup {
+  min-width: 0;
+}
+
+.toolCallBadge {
+  flex-shrink: 0;
+}
+
+.toolCallPath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Tool response */
+.toolResponseCode {
+  max-height: 300px;
+  overflow: auto;
+  margin-top: 6px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* Utilities */
 .fadeOut {
   animation: fadeOut 0.3s ease-out forwards;

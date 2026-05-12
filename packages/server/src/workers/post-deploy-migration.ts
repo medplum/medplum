@@ -8,6 +8,7 @@ import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
@@ -25,6 +26,7 @@ import {
   enforceStrictMigrationVersionChecks,
   getPostDeployManifestEntry,
   getPostDeployMigration,
+  isFirstBootMode,
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
@@ -200,6 +202,19 @@ export async function runCustomMigration(
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const exec = new AsyncJobExecutor(systemRepo, asyncJob);
+
+  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+    globalLogger.info('Skipping custom post-deploy migration since server is in firstBoot mode', {
+      asyncJob: getReferenceString(asyncJob),
+      version: `v${asyncJob.dataVersion}`,
+    });
+    await exec.completeJob({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
+    });
+    return 'finished';
+  }
+
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {

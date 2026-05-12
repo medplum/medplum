@@ -27,9 +27,9 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
   const medplum = useMedplum();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [searchFilter, setSearchFilter] = useState<string>('');
-  const [enrollModalOpen, setEnrollModalOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('');
+  const [enrollModalOpen, setEnrollModalOpen] = useState(false);
   const [selectedPatients, setSelectedPatients] = useState<Patient[]>([]);
   const [availablePatients, setAvailablePatients] = useState<{ value: string; label: string }[]>([]);
   const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);

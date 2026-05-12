@@ -1,0 +1,117 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "4db70aff-83f5-4caf-91dc-d23fcc5e03cc",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-05:00",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "MEDICATIONS",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "10160-0",
+                  "display": "History of Medication use Narrative"
+                }
+              ],
+              "text": "History of Medication use Narrative"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Medications</div>"
+            },
+            "entry": [
+              {
+                "reference": "MedicationRequest/f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+                "display": "Acetaminophen 325 MG Oral Tablet"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "de962cfe-6559-411e-92e9-e8d005b1c337",
+        "name": [
+          {
+            "use": "official",
+            "family": "Patient",
+            "given": [
+              "Test"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+          ]
+        },
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1049502",
+              "display": "Acetaminophen 325 MG Oral Tablet"
+            }
+          ],
+          "text": "Acetaminophen 325 MG Oral Tablet"
+        },
+        "subject": {
+          "reference": "Patient/de962cfe-6559-411e-92e9-e8d005b1c337",
+          "display": "Test Patient"
+        },
+        "dosageInstruction": [
+          {
+            "route": {
+              "coding": [
+                {
+                  "system": "http://ncithesaurus-stage.nci.nih.gov",
+                  "code": "C38288",
+                  "display": "ORAL"
+                },
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "PO",
+                  "display": "Per Oral"
+                }
+              ],
+              "text": "ORAL"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

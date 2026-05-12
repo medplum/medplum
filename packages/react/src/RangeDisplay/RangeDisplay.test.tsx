@@ -26,4 +26,14 @@ describe('RangeDisplay', () => {
   test('Renders empty range', () => {
     render(<RangeDisplay value={{}} />);
   });
+
+  test('Renders with precision', () => {
+    render(<RangeDisplay value={{ low: { value: 5, unit: 'mg' }, high: { value: 10, unit: 'mg' } }} precision={1} />);
+    expect(screen.getByText('5.0 - 10.0 mg')).toBeInTheDocument();
+  });
+
+  test('Renders exclusive low-only range', () => {
+    render(<RangeDisplay value={{ low: { value: 5, unit: 'mg' } }} precision={0} exclusive />);
+    expect(screen.getByText('> 4 mg')).toBeInTheDocument();
+  });
 });

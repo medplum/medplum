@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { GetFunctionConfigurationCommandOutput } from '@aws-sdk/client-lambda';
+import type { GetFunctionConfigurationCommandOutput, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
-  LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
   ResourceConflictException,
@@ -13,19 +12,21 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { sleep } from '@medplum/core';
+import { normalizeErrorString, sleep } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
-import { getLogger } from '../../logger';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger, globalLogger } from '../../logger';
+import { createLambdaClient, deleteOldLambdaVersions } from './lambda';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
+const LAMBDA_VERSIONS_TO_KEEP = 2;
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
@@ -115,19 +116,8 @@ export function getLambdaNameForBot(bot: Bot): string {
   return `medplum-bot-lambda-${bot.id}`;
 }
 
-/**
- * Creates a new AWS Lambda client with a custom retry strategy.
- * @returns A configured LambdaClient.
- */
-export function createLambdaClient(): LambdaClient {
-  return new LambdaClient({
-    region: getConfig().awsRegion,
-    retryStrategy: new ConfiguredRetryStrategy(
-      5, // max attempts
-      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
-    ),
-  });
-}
+export const LAMBDA_NAME_REGEX_PATTERN =
+  '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
   const client = createLambdaClient();
@@ -172,6 +162,15 @@ export async function deployLambdaInternal(
 
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
+    const { project } = getAuthenticatedContext();
+    // Don't block on delete since this could take a while
+    deleteOldLambdaVersions(client, name, { dryRun: false, keepLatest: LAMBDA_VERSIONS_TO_KEEP }).catch((err) => {
+      globalLogger.error('Error occurred while deleting old Lambdas', {
+        projectId: project.id,
+        name,
+        err: normalizeErrorString(err),
+      });
+    });
   } else {
     await createLambda(bot, client, name, zipFile);
   }

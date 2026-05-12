@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, forbidden, getReferenceString } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import { ContentType, getReferenceString } from '@medplum/core';
+import type { OperationOutcome, OperationOutcomeIssue, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -270,8 +270,18 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(403);
-      expect(res1.body).toMatchObject(forbidden);
+      expect(res1.status).toBe(400);
+      expect(res1.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          expect.objectContaining<OperationOutcomeIssue>({
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Authentication error' },
+            diagnostics: expect.stringContaining('Forbidden'),
+          }),
+        ],
+      });
     }));
 
   test('Forbidden for cross project', () =>
@@ -300,8 +310,18 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(adminAccount2.client))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(403);
-      expect(res1.body).toMatchObject(forbidden);
+      expect(res1.status).toBe(400);
+      expect(res1.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          expect.objectContaining<OperationOutcomeIssue>({
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Authentication error' },
+            diagnostics: expect.stringContaining('Forbidden'),
+          }),
+        ],
+      });
     }));
 
   test('Consistent meta.account behavior', () =>

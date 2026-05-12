@@ -89,7 +89,7 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
 }
 
 async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
-  const systemRepo = getProjectSystemRepo(project);
+  const systemRepo = await getProjectSystemRepo(project);
   return systemRepo.withTransaction(async () => {
     let user = await systemRepo.readResource<User>('User', userId);
     if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
@@ -112,7 +112,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         to: params.email,
         subject: 'Medplum Email Address Updated',
         text: [
-          'A request to update the email address associated with your Medplum account.',
+          'We received a request to update the email address associated with your Medplum account.',
           '',
           'Please click on the following link to verify your ability to receive emails:',
           '',

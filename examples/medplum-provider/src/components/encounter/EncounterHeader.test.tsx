@@ -197,7 +197,7 @@ describe('EncounterHeader', () => {
     setup({ encounter: finishedEncounter, chartNoteStatus: ChartNoteStatus.Unsigned });
 
     const signButtons = screen.getAllByRole('button');
-    const signButton = signButtons.find((btn) => btn.querySelector('svg'));
+    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
     if (signButton) {
       await user.click(signButton);
     }
@@ -217,7 +217,7 @@ describe('EncounterHeader', () => {
     setup({ encounter: finishedEncounter, chartNoteStatus: ChartNoteStatus.Unsigned, onSign });
 
     const signButtons = screen.getAllByRole('button');
-    const signButton = signButtons.find((btn) => btn.querySelector('svg'));
+    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
     if (signButton) {
       await user.click(signButton);
     }

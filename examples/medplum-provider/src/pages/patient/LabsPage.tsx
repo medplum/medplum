@@ -40,8 +40,8 @@ export function LabsPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<LabTab>('completed');
   const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
   const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [newOrderModalOpened, setNewOrderModalOpened] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);

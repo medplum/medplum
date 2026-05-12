@@ -27,6 +27,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
+import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
 import {
@@ -460,6 +461,14 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
     return parseAuthorizationHeader(authHeader);
   }
 
+  const mtlsHeaderName = getConfig().mtlsCertHeader;
+  if (mtlsHeaderName) {
+    const mtlsHeader = req.headers[mtlsHeaderName];
+    if (mtlsHeader) {
+      return parseMtlsClientCertificate(req, mtlsHeader);
+    }
+  }
+
   return {
     clientId: req.body.client_id,
     clientSecret: req.body.client_secret,
@@ -540,7 +549,7 @@ async function parseClientAssertion(
     await jwtVerify(clientAssertion, JWKS, verifyOptions);
   } catch (error: any) {
     // There are some edge cases where there are multiple matching JWKS
-    // and we need to iterate throught the JWKSMultipleMatchingKeys error
+    // and we need to iterate through the JWKSMultipleMatchingKeys error
     // and return the first verified match
     if (error?.code === 'ERR_JWKS_MULTIPLE_MATCHING_KEYS') {
       return verifyMultipleMatchingException(error, clientId, clientAssertion, verifyOptions, client);
@@ -565,6 +574,43 @@ async function parseAuthorizationHeader(authHeader: string): Promise<ClientIdAnd
   const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
   const [clientId, clientSecret] = credentials.split(':');
   return { clientId, clientSecret };
+}
+
+/**
+ * Tries to parse the client ID and secret from the mTLS client certificate header.
+ * @param req - The HTTP request with the mTLS client certificate header.
+ * @param encodedHeader - The URL encoded mTLS client certificate header.
+ * @returns Client ID and secret on success, or an error message on failure.
+ */
+async function parseMtlsClientCertificate(req: Request, encodedHeader: string | string[]): Promise<ClientIdAndSecret> {
+  if (Array.isArray(encodedHeader)) {
+    return { error: 'Invalid mTLS client certificate header' };
+  }
+
+  const systemRepo = getGlobalSystemRepo();
+  const clientId = req.body.client_id;
+  let client: ClientApplication;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch (err) {
+    return { error: `Error reading client: ${normalizeErrorString(err)}` };
+  }
+
+  if (!client.certificateTrustStore) {
+    return { error: 'Client does not have a configured certificate trust store' };
+  }
+
+  try {
+    const decodedCert = decodeURIComponent(encodedHeader);
+    validateClientCert(decodedCert, client.certificateTrustStore);
+  } catch (err) {
+    return { error: `Invalid client certificate: ${normalizeErrorString(err)}` };
+  }
+
+  return {
+    clientId,
+    clientSecret: client.secret,
+  };
 }
 
 async function validateClientIdAndSecret(
@@ -620,6 +666,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
   });
   let patient = undefined;
   let encounter = undefined;
+  let fhirContext = undefined;
 
   if (login.launch) {
     const launch = await systemRepo.readReference(login.launch);
@@ -627,6 +674,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     // otherwise fall back to the FHIR resource ID
     patient = launch.patient?.identifier?.value ?? resolveId(launch.patient);
     encounter = launch.encounter?.identifier?.value ?? resolveId(launch.encounter);
+    fhirContext = launch.fhirContext;
   }
 
   if (membership.profile?.reference?.startsWith('Patient/')) {
@@ -660,6 +708,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     profile: membership.profile,
     patient,
     encounter,
+    fhirContext,
     smart_style_url: config.baseUrl + 'fhir/R4/.well-known/smart-styles.json',
     need_patient_banner: !!patient,
     ...fhircastProps, // Spreads no props when FHIRcast scopes not present

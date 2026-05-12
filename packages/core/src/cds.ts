@@ -83,7 +83,7 @@ export interface CdsCard {
   readonly uuid?: string;
   readonly summary: string;
   readonly detail?: string;
-  readonly indicator: 'info' | 'warning' | 'hard-stop';
+  readonly indicator: 'info' | 'warning' | 'critical';
   readonly source?: CdsSource;
   readonly suggestions?: CdsSuggestion[];
   readonly links?: CdsLink[];

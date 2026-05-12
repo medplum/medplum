@@ -22,7 +22,7 @@ To fill out the Questionnaire, navigate to the Patient on your Medplum app and c
 
 Click on the link and fill out the Questionnaire.
 
-:::tip Other resource types
+:::tip[Other resource types]
 Questionnaires are general purpose and can have a subjectType that is any resource. Common workflows include adding `Encounter` or `DiagnosticReport` as a `subjectType` for a [Questionnaire](/docs/api/fhir/resources/questionnaire).
 :::
 

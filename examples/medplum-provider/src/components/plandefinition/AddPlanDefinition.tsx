@@ -34,7 +34,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
   const [opened, setOpened] = useState(false);
   const [planDefinitions, setPlanDefinitions] = useState<PlanDefinition[]>([]);
   const [selectedPlanDefinition, setSelectedPlanDefinition] = useState<PlanDefinition | undefined>();
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
 

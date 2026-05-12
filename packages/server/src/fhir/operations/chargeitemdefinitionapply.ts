@@ -123,6 +123,6 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
     updatedChargeItem.priceOverride = finalPrice;
   }
 
-  const result = await ctx.repo.updateResource<ChargeItem>(updatedChargeItem);
+  const result = await ctx.repo.updateResource(updatedChargeItem);
   return [allOk, result];
 }

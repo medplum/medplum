@@ -110,11 +110,9 @@ export function Spotlight({ patientsOnly }: SpotlightProps): JSX.Element {
           autoCorrect: 'off',
           spellCheck: false,
           name: patientsOnly ? 'provider-spotlight-search' : 'spotlight-search',
-          inputProps: {
-            // Tell common password managers to ignore this field
-            'data-1p-ignore': 'true',
-            'data-lpignore': 'true',
-          },
+          // Tell common password managers to ignore this field
+          'data-1p-ignore': 'true',
+          'data-lpignore': 'true',
           leftSectionProps: {
             style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
           },

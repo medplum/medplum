@@ -153,7 +153,7 @@ describe('ChargeItemPanel', () => {
     const onDelete = vi.fn();
     const user = userEvent.setup();
 
-    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({ resourceType: 'ChargeItem' } as ChargeItem);
+    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({ resourceType: 'ChargeItem' });
 
     setup({ onDelete });
 
@@ -241,7 +241,7 @@ describe('ChargeItemPanel', () => {
       ],
     };
 
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedChargeItem as any);
+    vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedChargeItem);
 
     setup({ onChange });
 

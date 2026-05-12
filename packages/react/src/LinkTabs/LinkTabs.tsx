@@ -26,9 +26,16 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
   const tabs = normalizeTabDefinitions(tabDefinitions);
   const navigate = useMedplumNavigate();
 
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = locationUtils.getPathname().split('/').pop();
-    return tab && tabs.some((t) => t.value === tab) ? tab : tabs[0].value;
+  const [currentTab, setCurrentTab] = useState(() => {
+    const segment = locationUtils.getPathname().split('/').pop();
+    if (segment) {
+      const segmentLower = segment.toLowerCase();
+      const matched = tabs.find((t) => t.value.split(/[?#]/)[0].toLowerCase() === segmentLower);
+      if (matched) {
+        return matched.value;
+      }
+    }
+    return tabs[0].value;
   });
 
   function onTabChange(newTabName: string | null): void {
@@ -38,7 +45,7 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
   }
 
   return (
-    <Tabs value={currentTab.toLowerCase()} onChange={onTabChange} {...rest}>
+    <Tabs value={currentTab} onChange={onTabChange} {...rest}>
       <Tabs.List className={styles.list}>
         {tabs.map((t) => (
           <Tabs.Tab key={t.value} value={t.value}>

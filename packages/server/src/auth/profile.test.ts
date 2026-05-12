@@ -104,13 +104,10 @@ describe('Profile', () => {
       })
     );
 
-    const res2 = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: res1.body.login,
-        profile: getReferenceString(profile1),
-      });
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership1.id,
+    });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login revoked');
@@ -133,13 +130,10 @@ describe('Profile', () => {
       })
     );
 
-    const res2 = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: res1.body.login,
-        profile: getReferenceString(profile1),
-      });
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership1.id,
+    });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login granted');
@@ -164,13 +158,10 @@ describe('Profile', () => {
       })
     );
 
-    const res2 = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: res1.body.login,
-        profile: getReferenceString(profile1),
-      });
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership1.id,
+    });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login profile already set');

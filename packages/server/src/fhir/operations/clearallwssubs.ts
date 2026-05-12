@@ -4,8 +4,9 @@ import { allOk, badRequest, isUUID } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
+import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
-import type { CacheEntry } from '../repo';
+import type { CacheEntry } from '../repository/resource-cache';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -91,9 +92,7 @@ const USER_ACTIVE_SUBS_PATTERN = 'medplum:subscriptions:r4:user:*:active';
 export async function clearAllWsSubs(projectId?: string): Promise<ClearAllWsSubsResult> {
   const pubSubRedis = getPubSubRedis();
   const cacheRedis = getCacheRedis();
-  const pattern = projectId
-    ? `medplum:subscriptions:r4:project:${projectId}:active:*`
-    : 'medplum:subscriptions:r4:project:*:active:*';
+  const pattern = projectId ? getActiveSubsKey(projectId, '*') : getActiveSubsKey('*', '*');
 
   let pubSubKeysDeleted = 0;
   let cacheKeysDeleted = 0;

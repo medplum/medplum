@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # CLIA/CAP Certification
 
-:::caution Note
+:::caution[Note]
 
 This section is under construction.
 

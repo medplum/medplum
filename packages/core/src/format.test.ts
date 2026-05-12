@@ -23,7 +23,7 @@ import {
   typedValueToString,
 } from './format';
 
-describe('typedValueToString', () => {
+test('typedValueToString', () => {
   expect(typedValueToString(undefined)).toStrictEqual('');
   expect(typedValueToString({ type: 'Address', value: { city: 'x' } })).toStrictEqual('x');
   expect(typedValueToString({ type: 'CodeableConcept', value: { text: 'x' } })).toStrictEqual('x');
@@ -497,6 +497,6 @@ test('Format Observation value', () => {
           },
         },
       ],
-    } as Observation)
+    })
   ).toBe('36.7 C / Oral');
 });

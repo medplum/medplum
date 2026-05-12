@@ -4,6 +4,7 @@ import {
   OperationOutcomeError,
   SearchParameterType,
   append,
+  badRequest,
   conflict,
   normalizeOperationOutcome,
   serverTimeout,
@@ -29,12 +30,14 @@ export const ColumnType = {
   TIMESTAMP: 'timestamp',
   TEXT: 'text',
   TSTZRANGE: 'tstzrange',
+  NUMRANGE: 'numrange',
+  DATERANGE: 'daterange',
 } as const;
 export type ColumnType = (typeof ColumnType)[keyof typeof ColumnType];
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
 
-export type TransactionIsolationLevel = 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE';
+export type TransactionIsolationLevel = 'REPEATABLE READ' | 'SERIALIZABLE';
 
 export const Operator = {
   '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
@@ -619,7 +622,27 @@ export const PostgresError = {
   SerializationFailure: '40001',
   QueryCanceled: '57014',
   InFailedSqlTransaction: '25P02',
+  DatetimeFieldOverflow: '22008',
 } as const;
+
+/**
+ * Checks whether an error represents a serialization conflict that can safely be retried.
+ * NOTE: Retrying a transaction must be done in full: the entire transaction block
+ * should be re-executed, in a new transaction. Nested transactions (savepoints) are
+ * NOT retryable per the Postgres docs; the caller must check transactionDepth separately.
+ * @param err - The error to check.
+ * @returns True if the error indicates a retryable transaction failure.
+ * @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
+ */
+export function isRetryableTransactionError(err: OperationOutcomeError): boolean {
+  if (err.outcome.issue.length !== 1) {
+    return false;
+  }
+  const issue = err.outcome.issue[0];
+  return Boolean(
+    issue.code === 'conflict' && issue.details?.coding?.some((c) => c.code === PostgresError.SerializationFailure)
+  );
+}
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
   if (err instanceof OperationOutcomeError) {
@@ -644,6 +667,9 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     case PostgresError.InFailedSqlTransaction:
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
       return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    case PostgresError.DatetimeFieldOverflow:
+      // Date/time value out of range (e.g. Feb 29 on a non-leap year) -> 400 Bad Request
+      return new OperationOutcomeError(badRequest(err.message), err);
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
@@ -1162,11 +1188,18 @@ export class InsertQuery extends BaseQuery {
 
 export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
+  private returningColumns?: Column[];
 
   using(...tableNames: string[]): this {
     for (const table of tableNames) {
       this.usingTables = append(this.usingTables, table);
     }
+    return this;
+  }
+
+  returning(column: Column | string): this {
+    this.returningColumns ??= [];
+    this.returningColumns.push(getColumn(column, this.actualTableName));
     return this;
   }
 
@@ -1187,6 +1220,17 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
+    if (this.returningColumns?.length) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returningColumns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
   }
 }
 

@@ -99,7 +99,7 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     });
     ownerRef = createReference(user);
   } else if (login.user.reference?.startsWith('User/')) {
-    ownerRef = login.user as Reference;
+    ownerRef = login.user;
   }
 
   const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
@@ -120,6 +120,24 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  * @param admin - The Project admin user.
  * @returns The new project, and associated data.  Profile and membership are returned if and only if an admin user is specified.
  */
+export async function createProject(
+  projectName: string,
+  admin: User
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile: WithId<ProfileResource>;
+  membership: WithId<ProjectMembership>;
+}>;
+export async function createProject(
+  projectName: string,
+  admin?: User
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
+}>;
 export async function createProject(
   projectName: string,
   admin?: User
@@ -160,7 +178,7 @@ export async function createProject(
       'Practitioner',
       admin.firstName,
       admin.lastName,
-      admin.email as string
+      admin.email
     );
     const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };

@@ -24,7 +24,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './ParticipantFilter.module.css';
 
-interface ParticipantFilterProps {
+export interface ParticipantFilterProps {
   readonly selectedParticipants: Reference<Patient | Practitioner>[];
   readonly onFilterChange: (participants: Reference<Patient | Practitioner>[]) => void;
 }
@@ -92,6 +92,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
 
   useEffect(() => {
     debouncedSearch(searchQuery);
+    return debouncedSearch.cancel;
   }, [searchQuery, debouncedSearch]);
 
   const isSelected = (participant: Reference<Patient | Practitioner>): boolean => {

@@ -491,20 +491,6 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
  * @param versionId - The current `versionId` of the anchor context. For example, in `DiagnosticReport-update`, it's the `versionId` of the `DiagnosticReport`.
  * @returns A serializable `FhircastMessagePayload`.
  */
-export function createFhircastMessagePayload<EventName extends FhircastEventVersionOptional>(
-  topic: string,
-  event: EventName,
-  context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
-  versionId?: never
-): FhircastMessagePayload<EventName>;
-
-export function createFhircastMessagePayload<EventName extends FhircastEventVersionRequired>(
-  topic: string,
-  event: EventName,
-  context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
-  versionId: string
-): FhircastMessagePayload<EventName>;
-
 export function createFhircastMessagePayload<
   EventName extends FhircastEventVersionOptional | FhircastEventVersionRequired,
 >(

@@ -17,7 +17,7 @@ describe('AuditEventPage', () => {
       resourceType: 'Bot',
     });
 
-    const auditEvent = await medplum.createResource<AuditEvent>({
+    const auditEvent = await medplum.createResource({
       resourceType: 'AuditEvent',
       entity: [
         {
@@ -55,7 +55,7 @@ describe('AuditEventPage', () => {
       resourceType: 'Bot',
     });
 
-    const auditEvent = await medplum.createResource<AuditEvent>({
+    const auditEvent = await medplum.createResource({
       resourceType: 'AuditEvent',
       entity: [
         {

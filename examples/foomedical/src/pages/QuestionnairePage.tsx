@@ -24,7 +24,7 @@ export function QuestionnairePage(): JSX.Element {
       }
 
       medplum
-        .createResource<QuestionnaireResponse>(response)
+        .createResource(response)
         .then(() => {
           showNotification({
             icon: <IconCircleCheck />,

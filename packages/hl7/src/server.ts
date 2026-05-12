@@ -37,16 +37,16 @@ export class Hl7Server {
     port: number,
     encoding?: string,
     enhancedMode?: EnhancedMode,
-    options?: Hl7ConnectionOptions
-  ): Promise<void> {
+    connectionOptions?: Hl7ConnectionOptions
+  ): Promise<number> {
     if (encoding) {
       this.setEncoding(encoding);
     }
     if (enhancedMode !== undefined) {
       this.setEnhancedMode(enhancedMode);
     }
-    if (options?.messagesPerMin !== undefined) {
-      this.setMessagesPerMin(options.messagesPerMin);
+    if (connectionOptions?.messagesPerMin !== undefined) {
+      this.setMessagesPerMin(connectionOptions.messagesPerMin);
     }
 
     const server = net.createServer((socket) => {
@@ -60,17 +60,19 @@ export class Hl7Server {
       });
     });
 
-    await new Promise<void>((resolve) => {
+    return new Promise<number>((resolve, reject) => {
       const listenOnPort = (port: number): void => {
-        server.listen(port, resolve);
+        server.listen(port, () => {
+          const boundPort = (server.address() as { port: number }).port;
+          resolve(boundPort);
+        });
       };
 
-      // Node errors have a code
-      const errorListener = async (e: Error & { code?: string }): Promise<void> => {
+      const errorListener = (e: Error & { code?: string }): void => {
         if (e?.code === 'EADDRINUSE') {
-          await sleep(50);
-          server.close();
-          listenOnPort(port);
+          server.close(() => sleep(50).then(() => listenOnPort(port)));
+        } else {
+          reject(e);
         }
       };
 

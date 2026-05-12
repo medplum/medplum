@@ -12,17 +12,13 @@ The eRx feature at Medplum is available to professionals authorized to prescribe
 
 ### Is it possible to prescribe controlled substances through Medplum?
 
-No. Currently, Medplum's eRx integration does not allow prescription of controlled substances. If controlled substances are important for your care model, please contact our support team at [support@medplum.com](mailto:support@medplum.com).
-
-### Are there other limits on which medications can be prescribed?
-
-No. Beyond restrictions on controlled substances, prescriber has free choice of medication when prescribing.
+Yes, Medplum supports Electronic Prescriptions for Controlled Substances (EPCS) through DoseSpot's platform. Read more about Dosespot [here](/docs/integration/dosespot)
 
 ### What guidelines exist for prescribing to minors through Medplum?
 
 It is up to the prescriber to ensure dosages are within standard guidelines for for patient's height and weight.
 
-:::danger
+:::danger[]
 
 E-prescription providers often impose additional validation requirements when prescribing medication for minors. Please check the requirements of your eRx vendor.
 

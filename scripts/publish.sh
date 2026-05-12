@@ -24,6 +24,7 @@ PACKAGES=(
   "mock"
   "react"
   "react-hooks"
+  "scriptsure-react"
 )
 
 for package in ${PACKAGES[@]}; do

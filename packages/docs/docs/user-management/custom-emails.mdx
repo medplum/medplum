@@ -19,7 +19,7 @@ Medplum fully supports creating a white-label experience where users do not see 
 
 This document describes the steps to send custom email messages.
 
-:::info
+:::info[]
 
 By default, this will work for Patient Users. If you want to process custom emails for Practitioner Users, the Practitioners must be [invited](/docs/api/project-admin/invite) as project scoped users. See [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users) for more information.
 
@@ -35,7 +35,7 @@ In short, here are the key steps:
 
 ## Setup reCAPTCHA
 
-:::info
+:::info[]
 
 **Optional** reCAPTCHA is only required for Password Reset emails. reCAPTCHA is optional for Welcome emails.
 
@@ -49,7 +49,7 @@ Once you have your "Site Key" and "Secret Key", you will need to configure your 
 
 ## Reset Password Page
 
-:::info
+:::info[]
 
 **Optional** Reset Password Page is only required for Password Reset emails. Reset Password Page is optional for Welcome emails.
 
@@ -82,7 +82,7 @@ Key functions of the page:
 
 Create a Medplum Bot to handle new `UserSecurityRequest` resources. The bot will send a custom email message to the user.
 
-:::tip
+:::tip[]
 
 If you are new to Medplum Bots, you may want to read the [Bots](/docs/bots) documentation first.
 
@@ -90,7 +90,7 @@ If you are new to Medplum Bots, you may want to read the [Bots](/docs/bots) docu
 
 This Bot will use `ProjectMembership` and `UserSecurityRequest` resources, so the Bot must be a "Project Admin" to access these resources.
 
-:::note
+:::note[]
 
 You will also need the `email` project feature flag turned on to allow Bots to send emails. See [project feature flags](/docs/self-hosting/project-settings#project-feature-flags).
 

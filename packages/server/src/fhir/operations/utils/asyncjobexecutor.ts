@@ -23,8 +23,9 @@ export class AsyncJobExecutor {
     this.resource = resource;
   }
 
-  async init(url: string): Promise<WithId<AsyncJob>> {
+  async init(url: string, params?: Partial<AsyncJob>): Promise<WithId<AsyncJob>> {
     this.resource ??= await this.repo.createResource<AsyncJob>({
+      ...params,
       resourceType: 'AsyncJob',
       status: 'accepted',
       request: url,
@@ -46,7 +47,7 @@ export class AsyncJobExecutor {
    * @param callback - The callback to execute.
    * @returns A promise that resolves when the job is completed or fails.
    */
-  async startAsync(callback: (job: AsyncJob) => Promise<any>): Promise<AsyncJob | undefined> {
+  async startAsync(callback: (job: AsyncJob) => Promise<any>): Promise<WithId<AsyncJob>> {
     const log = getLogger();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
@@ -101,11 +102,11 @@ export class AsyncJobExecutor {
     return output ?? undefined;
   }
 
-  async completeJob(output?: Parameters): Promise<AsyncJob> {
+  async completeJob(output?: Parameters): Promise<WithId<AsyncJob>> {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    let updatedJob: AsyncJob = {
+    let updatedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
@@ -118,15 +119,15 @@ export class AsyncJobExecutor {
         version: `v${completedDataVersion}`,
       });
       await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      updatedJob = await this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
+      updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;
     } else {
-      return this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
+      return this.repo.getSystemRepo().updateResource(updatedJob);
     }
   }
 
-  async failJob(err?: Error, output?: Parameters): Promise<AsyncJob> {
+  async failJob(err?: Error, output?: Parameters): Promise<WithId<AsyncJob>> {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
@@ -138,7 +139,7 @@ export class AsyncJobExecutor {
       throw err;
     }
 
-    const failedJob: AsyncJob = {
+    const failedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),
@@ -159,7 +160,7 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return this.repo.getSystemRepo().updateResource<AsyncJob>(failedJob);
+    return this.repo.getSystemRepo().updateResource(failedJob);
   }
 
   getContentLocation(baseUrl: string): string {

@@ -2,12 +2,37 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
+import type { OperationDefinition, ResourceType } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
+import type { ActiveSubscriptionEntry } from '../../pubsub';
+import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
-import type { WsSubCriteriaStats, WsSubProjectDetailStats, WsSubResourceTypeDetailStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+
+export interface WsSubEntryDetail {
+  subscriptionId: string;
+  criteria: string;
+  expiration: number;
+  author: string;
+}
+
+export interface WsSubCriteriaDetailStats {
+  criteria: string;
+  count: number;
+  entries: WsSubEntryDetail[];
+}
+
+export interface WsSubResourceTypeDetailStats {
+  resourceType: string;
+  count: number;
+  criteria: WsSubCriteriaDetailStats[];
+}
+
+export interface WsSubProjectDetailStats {
+  projectId: string;
+  resourceTypes: WsSubResourceTypeDetailStats[];
+}
 
 const projectStatsOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -46,8 +71,8 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
   }
 
   const redis = getPubSubRedis();
-  const pattern = `medplum:subscriptions:r4:project:${projectId}:active:*`;
-  const resourceTypeMap = new Map<string, Map<string, number>>();
+  const pattern = getActiveSubsKey(projectId, '*');
+  const resourceTypeMap = new Map<ResourceType, Map<string, WsSubEntryDetail[]>>();
 
   let cursor = '0';
   do {
@@ -60,14 +85,14 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
 
       const pipeline = redis.pipeline();
       for (const { key } of parsedKeys) {
-        pipeline.hvals(key);
+        pipeline.hgetall(key);
       }
       const results = await pipeline.exec();
 
       if (results) {
         for (let i = 0; i < parsedKeys.length; i++) {
           const { parsed } = parsedKeys[i];
-          const [err, hvals] = results[i] as [Error | null, string[]];
+          const [err, hashData] = results[i] as [Error | null, Record<string, string>];
           if (err || !parsed) {
             continue;
           }
@@ -77,8 +102,20 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
             criteriaMap = new Map();
             resourceTypeMap.set(resourceType, criteriaMap);
           }
-          for (const criteria of hvals) {
-            criteriaMap.set(criteria, (criteriaMap.get(criteria) ?? 0) + 1);
+          for (const [ref, rawEntry] of Object.entries(hashData)) {
+            const parsed = JSON.parse(rawEntry) as ActiveSubscriptionEntry;
+            const entry: WsSubEntryDetail = {
+              subscriptionId: ref.replace('Subscription/', ''),
+              criteria: parsed.criteria,
+              expiration: parsed.expiration,
+              author: parsed.author,
+            };
+            let entries = criteriaMap.get(entry.criteria);
+            if (!entries) {
+              entries = [];
+              criteriaMap.set(entry.criteria, entries);
+            }
+            entries.push(entry);
           }
         }
       }
@@ -87,11 +124,11 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
 
   const resourceTypes: WsSubResourceTypeDetailStats[] = [];
   for (const [resourceType, criteriaMap] of resourceTypeMap) {
-    const criteria: WsSubCriteriaStats[] = [];
+    const criteria: WsSubCriteriaDetailStats[] = [];
     let count = 0;
-    for (const [criteriaStr, criteriaCount] of criteriaMap) {
-      criteria.push({ criteria: criteriaStr, count: criteriaCount });
-      count += criteriaCount;
+    for (const [criteriaStr, entries] of criteriaMap) {
+      criteria.push({ criteria: criteriaStr, count: entries.length, entries });
+      count += entries.length;
     }
     criteria.sort((a, b) => b.count - a.count);
     resourceTypes.push({ resourceType, count, criteria });

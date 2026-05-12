@@ -37,7 +37,7 @@ describe('BuilderPage', () => {
   });
 
   test('PlanDefinition builder', async () => {
-    const planDefinition = await medplum.createResource<PlanDefinition>({
+    const planDefinition = await medplum.createResource({
       resourceType: 'PlanDefinition',
     } as PlanDefinition);
 
@@ -52,7 +52,7 @@ describe('BuilderPage', () => {
   });
 
   test('Questionnaire builder', async () => {
-    const questionnaire = await medplum.createResource<Questionnaire>({
+    const questionnaire = await medplum.createResource({
       resourceType: 'Questionnaire',
     } as Questionnaire);
 

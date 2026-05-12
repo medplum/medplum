@@ -14,6 +14,7 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
     '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
     '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
+    '@medplum/scriptsure-react': path.resolve(__dirname, '../../packages/scriptsure-react/src'),
     '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
     '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/esm/index.css'),
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),

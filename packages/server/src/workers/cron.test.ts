@@ -11,6 +11,7 @@ import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
 import { convertTimingToCron, execBot, getCronQueue } from './cron';
+import { findAndExecDispatchJob } from './test-utils';
 
 jest.mock('node-fetch');
 
@@ -55,6 +56,7 @@ describe('Cron Worker', () => {
       })
     );
     expect(bot).toBeDefined();
+    await findAndExecDispatchJob(bot, 'create');
     expect(queue.upsertJobScheduler).toHaveBeenCalled();
   });
 
@@ -70,6 +72,7 @@ describe('Cron Worker', () => {
       })
     );
     expect(bot).toBeDefined();
+    await findAndExecDispatchJob(bot, 'create');
     expect(queue.upsertJobScheduler).toHaveBeenCalled();
   });
 
@@ -85,6 +88,7 @@ describe('Cron Worker', () => {
       })
     );
     expect(bot).toBeDefined();
+    await findAndExecDispatchJob(bot, 'create');
     expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
   });
 
@@ -100,6 +104,7 @@ describe('Cron Worker', () => {
     );
     // Bot should have still been created
     expect(bot).toBeDefined();
+    await findAndExecDispatchJob(bot, 'create');
     expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
   });
 
@@ -118,6 +123,7 @@ describe('Cron Worker', () => {
           },
         },
       });
+      await findAndExecDispatchJob(bot, 'create');
 
       await botRepo.updateResource({
         resourceType: 'Bot',
@@ -131,6 +137,7 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
+      await findAndExecDispatchJob(bot, 'create');
       expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
     }));
 
@@ -144,6 +151,7 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
+      await findAndExecDispatchJob(bot, 'create');
       expect(queue.upsertJobScheduler).toHaveBeenCalled();
 
       await botRepo.updateResource({
@@ -157,6 +165,7 @@ describe('Cron Worker', () => {
         },
       });
 
+      await findAndExecDispatchJob(bot, 'create');
       expect(queue.upsertJobScheduler).toHaveBeenCalled();
     }));
 
@@ -194,6 +203,7 @@ describe('Cron Worker', () => {
         },
       });
       expect(bot).toBeDefined();
+      await findAndExecDispatchJob(bot, 'create');
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
 

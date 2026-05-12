@@ -116,7 +116,7 @@ export interface VitalsProps {
 export function Vitals(props: VitalsProps): JSX.Element {
   const medplum = useMedplum();
   const { patient, encounter } = props;
-  const [vitals, setVitals] = useState<Observation[]>(props.vitals);
+  const [vitals, setVitals] = useState(props.vitals);
   const [opened, { open, close }] = useDisclosure(false);
 
   const handleSubmit = useCallback(
@@ -152,7 +152,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
         );
       }
 
-      Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource<Observation>(obs as Observation)))
+      Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource(obs as Observation)))
         .then((newVitals) => setVitals([...newVitals, ...vitals]))
         .catch(console.error);
 

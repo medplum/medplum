@@ -55,7 +55,7 @@ Did you learn how to do something using Medplum but it wasn't obvious on first t
 Our documentation is hosted on [medplum.com/docs](/docs), but it is built from [Markdown](https://www.markdownguide.org/)
 files that live in our [Github repository](https://github.com/medplum/medplum/tree/main/packages/docs/docs).
 
-For relatively small changes, you can edit files directly from your web browser on [github.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
+For relatively small changes, you can edit files directly from your web browser on [github.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home)
 without needing to clone the repository.
 
 ### Fixing a bug or implementing a new feature
@@ -68,7 +68,7 @@ and implement it in your own version.
 
 **Ready to get started writing code?** First things first, you need to [clone the Medplum repository](./contributing/local-dev-setup).
 
-:::note Legal Note
+:::note[Legal Note]
 
 By submitting content to this project, you agree to adopt the [Developer Certificate of Origin (DCO)](https://developercertificate.org/) for your contributions.
 

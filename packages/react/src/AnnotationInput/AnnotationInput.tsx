@@ -12,7 +12,7 @@ export interface AnnotationInputProps extends ComplexTypeInputProps<Annotation> 
 
 export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
   const author = useMedplumProfile();
-  const [value, setValue] = useState<Annotation>(props.defaultValue || ({} as Annotation));
+  const [value, setValue] = useState(props.defaultValue || ({} as Annotation));
 
   function setText(text: string): void {
     const newValue: Annotation = text

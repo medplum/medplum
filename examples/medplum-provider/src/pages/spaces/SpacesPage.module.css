@@ -1,6 +1,31 @@
 .container {
+  position: relative;
   height: calc(100vh - var(--app-shell-header-height, 0));
   background-color: var(--mantine-color-gray-0);
   display: flex;
   overflow: hidden;
+}
+
+.fill {
+  display: flex;
+  flex: 1;
+}
+
+.blurred {
+  display: flex;
+  flex: 1;
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 10;
 }

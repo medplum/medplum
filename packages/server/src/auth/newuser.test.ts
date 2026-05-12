@@ -28,6 +28,7 @@ describe('New user', () => {
 
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
+    getConfig().requireVerifiedEmailForProjectCreation = undefined;
   });
 
   afterAll(async () => {
@@ -58,6 +59,7 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+    expect(res.body.emailVerificationRequired).toStrictEqual(false);
   });
 
   test('Register disabled', async () => {
@@ -208,7 +210,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -261,7 +263,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -313,7 +315,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // but *not* the access policy
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -376,7 +378,7 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -625,5 +627,25 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+  });
+
+  test('Require email verification for new project', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        projectId: 'new',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.emailVerificationRequired).toBe(true);
   });
 });

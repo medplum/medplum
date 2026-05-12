@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { HumanName } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -19,7 +18,7 @@ export const Basic = (): JSX.Element => (
     <HumanNameInput
       name="patient-name"
       path="Patient.name"
-      defaultValue={{ prefix: ['Mr.'], given: ['Homer', 'J.'], family: 'Simpson' } as HumanName}
+      defaultValue={{ prefix: ['Mr.'], given: ['Homer', 'J.'], family: 'Simpson' }}
       onChange={console.log}
       outcome={undefined}
     />
@@ -32,7 +31,7 @@ export const Disabled = (): JSX.Element => (
       disabled
       name="patient-name"
       path="Patient.name"
-      defaultValue={{ prefix: ['Mr.'], given: ['Homer', 'J.'], family: 'Simpson' } as HumanName}
+      defaultValue={{ prefix: ['Mr.'], given: ['Homer', 'J.'], family: 'Simpson' }}
       onChange={console.log}
       outcome={undefined}
     />
@@ -60,7 +59,7 @@ export const PartiallyDisabled = (): JSX.Element => {
       <HumanNameInput
         name="patient-name"
         path="Patient.name"
-        defaultValue={{ prefix: ['Mr.'], given: ['Homer', 'J.'], family: 'Simpson' } as HumanName}
+        defaultValue={{ prefix: ['Mr.'], given: ['Homer', 'J.'], family: 'Simpson' }}
         onChange={console.log}
         outcome={undefined}
       />

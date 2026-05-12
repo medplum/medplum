@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CreateFunctionRequest } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ListVersionsByFunctionCommand,
   ResourceNotFoundException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
@@ -112,6 +113,11 @@ describe('Deploy Streaming', () => {
 
       throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
+
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
+    mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 
   afterEach(() => {
@@ -164,7 +170,7 @@ describe('Deploy Streaming', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    } as CreateFunctionRequest);
+    });
 
     // Verify that this was uploaded as a CJS zip file with streaming wrapper
     const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);

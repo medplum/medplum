@@ -165,6 +165,11 @@
             "definition": "GraphQL Introspection"
           },
           {
+            "code": "scheduling",
+            "display": "Scheduling",
+            "definition": "Enable Medplum Scheduling features"
+          },
+          {
             "code": "websocket-subscriptions",
             "display": "WebSocket Subscriptions",
             "definition": "WebSocket Subscriptions"
@@ -178,6 +183,11 @@
             "code": "validate-terminology",
             "display": "Validate Terminology Bindings",
             "definition": "Validate that resource fields contain codes from the expected ValueSet"
+          },
+          {
+            "code": "range-search",
+            "display": "Range Search",
+            "definition": "Precision-aware range search for datetime and number values"
           }
         ]
       }
@@ -3648,6 +3658,99 @@
                   "code": "search"
                 }
               ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/package-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "package-status",
+        "url": "https://medplum.com/fhir/CodeSystem/package-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/package-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "pending",
+            "display": "Pending",
+            "definition": "The package is pending system review and cannot be installed"
+          },
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "The package is active and can be installed"
+          },
+          {
+            "code": "end-of-life",
+            "display": "End of Life",
+            "definition": "The package is no longer supported and cannot be installed"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/package-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "package-status",
+        "url": "https://medplum.com/fhir/ValueSet/package-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/package-status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/package-installation-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "package-installation-status",
+        "url": "https://medplum.com/fhir/CodeSystem/package-installation-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/package-installation-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "requested",
+            "display": "Requested",
+            "definition": "The package installation has been requested"
+          },
+          {
+            "code": "installing",
+            "display": "Installing",
+            "definition": "The package is currently being installed"
+          },
+          {
+            "code": "installed",
+            "display": "Installed",
+            "definition": "The package has been successfully installed"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "The package installation encountered an error"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/package-installation-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "package-installation-status",
+        "url": "https://medplum.com/fhir/ValueSet/package-installation-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/package-installation-status"
             }
           ]
         }

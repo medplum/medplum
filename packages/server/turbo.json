@@ -12,7 +12,7 @@
       "dependsOn": ["test:seed"],
       "outputs": ["coverage/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"],
-      "env": ["REDIS_PASSWORD_DISABLED_IN_TESTS", "POSTGRES_HOST", "POSTGRES_PORT"]
+      "env": ["REDIS_PASSWORD_DISABLED_IN_TESTS", "POSTGRES_HOST", "POSTGRES_PORT", "SERVER_TEST_CACHE_KEY"]
     }
   }
 }

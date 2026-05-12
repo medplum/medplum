@@ -48,4 +48,4 @@ We find the following table useful to summarize common data elements found in an
 
 ## Sample Data
 
-The [Inferno](https://github.com/inferno-framework) team provides representative sample data that conforms to the USCDI specification. [Download and import](/docs/tutorials/importing-sample-data.md) instructions sample data into your Medplum project.
+The [Inferno](https://github.com/inferno-framework) team provides representative sample data that conforms to the USCDI specification. [Download and import](/docs/tutorials/importing-sample-data) instructions sample data into your Medplum project.

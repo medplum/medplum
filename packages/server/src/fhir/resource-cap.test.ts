@@ -79,7 +79,7 @@ describe('FHIR Resource Limits', () => {
       },
     });
 
-    const systemRepo = getProjectSystemRepo(project);
+    const systemRepo = await getProjectSystemRepo(project);
     await systemRepo.createResource({ resourceType: 'Patient', meta: { project: project.id } });
 
     const res = await request(app)
@@ -158,7 +158,7 @@ describe('FHIR Resource Limits', () => {
           { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
           { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
         ],
-      } as Bundle);
+      });
     expect(res.status).toBe(200);
   });
 

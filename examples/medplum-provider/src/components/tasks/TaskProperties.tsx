@@ -15,7 +15,7 @@ interface TaskPropertiesProps extends PaperProps {
 export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
   const { task: initialTask, onTaskChange, ...paperProps } = props;
   const [task, setTask] = useState<Task | undefined>(initialTask);
-  const [dueDate, setDueDate] = useState<string | undefined>(task?.restriction?.period?.end);
+  const [dueDate, setDueDate] = useState(task?.restriction?.period?.end);
 
   useEffect(() => {
     setTask(initialTask);

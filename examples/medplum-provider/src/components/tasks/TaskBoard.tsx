@@ -75,12 +75,12 @@ export function TaskBoard({
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
+  const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
   const [total, setTotal] = useState<number | undefined>(undefined);
-  const requestIdRef = useRef<number>(0);
-  const fetchingRef = useRef<boolean>(false);
+  const requestIdRef = useRef(0);
+  const fetchingRef = useRef(false);
 
   const [filters, setFilters] = useState<FilterState>({
     performerType: undefined,

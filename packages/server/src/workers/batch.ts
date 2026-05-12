@@ -15,7 +15,7 @@ import type { AsyncJob, Bundle } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
-import { getAuthenticatedContext, runInAsyncContext } from '../context';
+import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -59,10 +59,11 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       queueName,
       (job) => {
         const { authState, requestId, traceId } = job.data;
-        return runInAsyncContext(authState, requestId, traceId, () => execBatchJob(job));
+        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJob(job));
       },
       {
         ...defaultOptions,
+        concurrency: 1,
         ...workerBullmq,
       }
     );

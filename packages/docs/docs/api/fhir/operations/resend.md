@@ -22,7 +22,7 @@ When a subscription notification fails or you need to reprocess a resource throu
 - **Selective Replay**: Re-trigger a specific subscription for a resource instead of all subscriptions
 - **Integration Testing**: Verify that subscriptions fire correctly without creating new test data
 
-:::note Admin Required
+:::note[Admin Required]
 The User, Bot, or ClientApplication invoking this operation must have [project admin credentials](/docs/access/admin).
 :::
 

@@ -14,7 +14,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -34,6 +34,8 @@ let corsClient: WithId<ClientApplication>;
 describe('Login', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    const systemRepo = getGlobalSystemRepo();
+
     await withTestContext(async () => {
       config.emailProvider = 'awsses';
       await initApp(app, config);
@@ -63,7 +65,7 @@ describe('Login', () => {
       });
 
       // Set the test user password
-      await setPassword(user, password);
+      await setPassword(systemRepo, user, password);
     });
   });
 
@@ -353,7 +355,7 @@ describe('Login', () => {
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project: newProject } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -362,9 +364,9 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(newProject);
       await systemRepo.updateResource({
-        ...project,
+        ...newProject,
         features: ['google-auth-required'],
       });
     });
@@ -541,7 +543,7 @@ describe('Login', () => {
     expect(res.body.login).toBeUndefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
-    expect(res.body.issue[0].details.text).toBe('Profile not active');
+    expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
   test('Success with no origin', async () => {

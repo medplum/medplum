@@ -42,7 +42,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
   const fetchAllCommunications = useCallback(async (): Promise<void> => {
     const searchParams = new URLSearchParams(query);
-    searchParams.append('identifier:not', 'ai-message-topic');
+    searchParams.append('identifier:not', 'http://medplum.com/ai-message|');
     searchParams.append('part-of:missing', 'true');
     searchParams.append('_has:Communication:part-of:_id:not', 'null');
 
@@ -143,7 +143,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       } else {
         const parentRef = communication.partOf[0].reference;
         if (parentRef) {
-          const parent = await medplum.readReference({ reference: parentRef } as any);
+          const parent = await medplum.readReference({ reference: parentRef });
           setSelectedThread(parent as Communication);
         }
       }

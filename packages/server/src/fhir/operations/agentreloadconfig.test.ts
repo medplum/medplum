@@ -120,7 +120,7 @@ describe('Agent/$reload-config', () => {
     expect(res.status).toBe(200);
     const outcome = res.body as OperationOutcome;
 
-    expect(outcome).toMatchObject<OperationOutcome>(allOk);
+    expect(outcome).toMatchObject(allOk);
     cleanup();
   });
 
@@ -210,7 +210,7 @@ describe('Agent/$reload-config', () => {
     expect(res.status).toBe(500);
 
     const outcome = res.body as OperationOutcome;
-    expect(outcome).toMatchObject<OperationOutcome>(serverError(new Error('Invalid response received from agent')));
+    expect(outcome).toMatchObject(serverError(new Error('Invalid response received from agent')));
 
     for (const handle of handles) {
       handle.cleanup();

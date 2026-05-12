@@ -6,7 +6,7 @@ sidebar_position: 70
 
 When self-hosting a Medplum server, you will have access to a "Super Admin" project. When you sign in as a member of the "Super Admin" project, you will have access to very powerful super admin privileges.
 
-:::danger
+:::danger[]
 
 Super admin features can cause unrepairable damage. Proceed with caution. With great power comes great responsibility!
 
@@ -27,7 +27,7 @@ The most important custom resource types are:
 
 From time to time, you may need to perform system level maintenance. The Medplum app has a special "Super Admin" page to make it easier to perform these tasks. You can find the "Super Admin" page at `/admin/super`.
 
-:::note
+:::note[]
 
 In the future, we hope that most of this maintenance will be 100% automatic and behind the scenes. For now, it is important that you understand this maintenance for system health.
 

@@ -5,7 +5,7 @@ import type { FhirResponseOptions } from '@medplum/fhir-router';
 import type { Binary, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { getConfig } from '../config/loader';
-import { getAuthenticatedContext } from '../context';
+import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { getBinaryStorage } from '../storage/loader';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 
@@ -61,8 +61,12 @@ export async function sendFhirResponse(
     return;
   }
 
-  const ctx = getAuthenticatedContext();
-  const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
+  let result = body;
+
+  const ctx = tryGetRequestContext();
+  if (ctx instanceof AuthenticatedRequestContext) {
+    result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
+  }
 
   res.set('Content-Type', options?.contentType ?? ContentType.FHIR_JSON);
   res.json(result);

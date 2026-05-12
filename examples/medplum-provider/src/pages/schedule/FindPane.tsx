@@ -3,17 +3,17 @@
 import { Button, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-import { SchedulingTransientIdentifier, serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
+import { hasSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
+import { extractReferencesFromCodeableReferenceLike } from '../../utils/servicetype';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -21,42 +21,75 @@ type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
   onSuccess: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
+  className?: string;
 };
 
-// Allows selection of a ServiceType found in the schedule's
-// SchedulingParameters extensions, and runs a `$find` operation to look for
-// upcoming slots that can be used to book an Appointment of that type.
+function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Element {
+  const service = props.value;
+
+  if (service.name) {
+    return <>{service.name}</>;
+  }
+
+  if (service.type) {
+    return <CodeableConceptDisplay value={service.type[0]} />;
+  }
+
+  return <>(Unnamed HealthcareService)</>;
+}
+
+// Allows selection of a schedulable HealthcareService that matches
+// `props.schedule.serviceType`. Uses $find to look for available appointment
+// times. On selection, uses $book to create an appointment.
 //
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
-export function FindPane(props: FindPaneProps): JSX.Element {
+export function FindPane(props: FindPaneProps): JSX.Element | null {
+  const medplum = useMedplum();
   const [slots, setSlots] = useState<readonly Slot[] | undefined>(undefined);
   const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
+  const [selectedHealthcareService, setSelectedHealthcareService] = useState<WithId<HealthcareService> | undefined>();
   const { schedule, range, onSuccess } = props;
-  const serviceTypes = useMemo(
-    () =>
-      serviceTypesFromSchedulingParameters(schedule).map((codeableConcept) => ({
-        codeableConcept,
-        id: uuidv4(),
-      })),
-    [schedule]
+
+  const [healthcareServices, setHealthcareServices] = useState<WithId<HealthcareService>[] | undefined>();
+
+  useEffect(() => {
+    const seen = new Set<string>();
+    const allRefs = extractReferencesFromCodeableReferenceLike(schedule.serviceType);
+    const refs = allRefs.filter((ref) => {
+      if (!ref.reference) {
+        return false;
+      }
+      if (seen.has(ref.reference)) {
+        return false;
+      }
+      seen.add(ref.reference);
+      return true;
+    });
+
+    Promise.all(refs.map((ref) => medplum.readReference(ref))).then(
+      (services) => setHealthcareServices(services),
+      (err) => showErrorNotification(err)
+    );
+  }, [medplum, schedule]);
+
+  const scheduleableServices = useMemo(
+    () => healthcareServices?.filter((service) => hasSchedulingParameters(service)),
+    [healthcareServices]
   );
 
-  const medplum = useMedplum();
-
-  // null: no selection made
-  // undefined: "wildcard" availability selected
-  // Coding: a specific service type was selected
-  const [serviceType, setServiceType] = useState<CodeableConcept | undefined | null>(
+  useEffect(() => {
     // If there is exactly one option, select it immediately instead of forcing user
     // to select it
-    serviceTypes.length === 1 ? serviceTypes[0].codeableConcept : null
-  );
+    if (scheduleableServices?.length === 1) {
+      setSelectedHealthcareService(scheduleableServices[0]);
+    }
+  }, [scheduleableServices]);
 
   // Ensure that we are searching for slots in the future by at least 30 minutes.
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
 
   useEffect(() => {
-    if (!schedule || serviceType === null) {
+    if (!schedule || !selectedHealthcareService) {
       return () => {};
     }
 
@@ -69,12 +102,12 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     let completed = false;
     const controller = new AbortController();
     const signal = controller.signal;
-    const params = new URLSearchParams({ start, end });
-    if (serviceType) {
-      serviceType.coding?.forEach((coding) => {
-        params.append('service-type', `${coding.system}|${coding.code}`);
-      });
-    }
+    const params = new URLSearchParams({
+      start,
+      end,
+      'service-type-reference': `HealthcareService/${selectedHealthcareService.id}`,
+    });
+
     medplum
       .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
       .then(
@@ -103,16 +136,16 @@ export function FindPane(props: FindPaneProps): JSX.Element {
         controller.abort();
       }
     };
-  }, [medplum, schedule, serviceType, range, earliestSchedulable]);
+  }, [medplum, schedule, selectedHealthcareService, range, earliestSchedulable]);
 
   const handleDismiss = useCallback(() => {
-    setServiceType(null);
+    setSelectedHealthcareService(undefined);
     setSlots(EMPTY);
   }, []);
 
   const handleBookSuccess = useCallback(
     (results: { appointments: Appointment[]; slots: Slot[] }) => {
-      setServiceType(null);
+      setSelectedHealthcareService(undefined);
       setSlots([]);
       setChosenSlot(undefined);
       onSuccess(results);
@@ -120,12 +153,16 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     [onSuccess]
   );
 
-  if (chosenSlot) {
+  if (!scheduleableServices?.length) {
+    return null;
+  }
+
+  if (selectedHealthcareService && chosenSlot) {
     return (
-      <Stack gap="sm" justify="flex-start">
+      <Stack gap="sm" justify="flex-start" className={props.className}>
         <Title order={4}>
           <Group justify="space-between">
-            <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
+            <HealthcareServiceDisplay value={selectedHealthcareService} />
             <Button variant="subtle" onClick={() => setChosenSlot(undefined)} aria-label="Clear selection">
               <IconX size={20} />
             </Button>
@@ -136,15 +173,13 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     );
   }
 
-  // tricky: `undefined` means the "wildcard" service type, so we explicitly
-  // test against `null` here.
-  if (serviceType !== null) {
+  if (selectedHealthcareService) {
     return (
-      <Stack gap="sm" justify="flex-start">
+      <Stack gap="sm" justify="flex-start" className={props.className}>
         <Title order={4}>
           <Group justify="space-between">
-            <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
-            {serviceTypes.length > 1 && (
+            <HealthcareServiceDisplay value={selectedHealthcareService} />
+            {scheduleableServices.length > 1 && (
               <Button variant="subtle" onClick={handleDismiss} aria-label="Clear selection">
                 <IconX size={20} />
               </Button>
@@ -167,18 +202,18 @@ export function FindPane(props: FindPaneProps): JSX.Element {
   }
 
   return (
-    <Stack gap="sm" justify="flex-start">
+    <Stack gap="sm" justify="flex-start" className={props.className}>
       <Title order={4}>Schedule&hellip;</Title>
-      {serviceTypes.map((st) => (
+      {scheduleableServices.map((service) => (
         <Button
-          key={st.id}
+          key={service.id}
           fullWidth
           variant="outline"
           rightSection={<IconChevronRight size={12} />}
           justify="space-between"
-          onClick={() => setServiceType(st.codeableConcept)}
+          onClick={() => setSelectedHealthcareService(service)}
         >
-          {st.codeableConcept ? <CodeableConceptDisplay value={st.codeableConcept} /> : 'Other'}
+          <HealthcareServiceDisplay value={service} />
         </Button>
       ))}
     </Stack>

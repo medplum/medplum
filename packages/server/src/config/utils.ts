@@ -48,6 +48,8 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
   config.defaultMaxUserWebSocketSubscriptions ??= 20;
+  config.asyncDelayScaling ??= 5;
+  config.aiRealtimeTranscriptionUrl ??= 'wss://api.openai.com/v1/realtime?intent=transcription';
 
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
@@ -101,7 +103,8 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirQuota';
+  | 'defaultFhirQuota'
+  | 'aiRealtimeTranscriptionUrl';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
@@ -184,8 +187,10 @@ const objectKeys = new Set([
   'ssl',
   'defaultProjectSystemSetting',
   'defaultOAuthClients',
+  'externalAuthProviders',
   'smtp',
   'arrayColumnPadding',
+  'subscriptionAutoDisable',
   'workers',
   'workers.enabled',
   'workers.bullmq',

@@ -137,9 +137,11 @@ function csvEscape(input: unknown): string {
       // ContactPoint
       return csvEscapeString((input as ContactPoint).value as string);
     }
-    if ('display' in input) {
-      // Reference
-      return csvEscapeString((input as Reference).display as string);
+    if ('reference' in input) {
+      // Reference - use display when present, otherwise the reference string (e.g. "AccessPolicy/123")
+      const ref = input as Reference;
+      const value = ref.display?.trim() || ref.reference || '';
+      return csvEscapeString(value);
     }
     if ('coding' in input) {
       // CodeableConcept

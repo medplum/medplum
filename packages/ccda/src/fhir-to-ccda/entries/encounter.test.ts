@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import type { Bundle, Composition, Condition, Encounter, EncounterParticipant, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Condition, Encounter, EncounterParticipant, Patient } from '@medplum/fhirtypes';
 import { OID_ENCOUNTER_ACTIVITIES, OID_ENCOUNTER_LOCATION, OID_PROBLEM_OBSERVATION } from '../../oids';
 import { FhirToCcdaConverter } from '../convert';
 import { createEncounterEntry } from './encounter';
@@ -35,7 +35,7 @@ describe('createEncounterEntry', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };
@@ -260,7 +260,7 @@ describe('createEncounterEntry', () => {
           condition: { reference: 'Condition/nonexistent' },
         },
         {
-          condition: { reference: 'Condition/invalid' } as any, // Wrong resource type for testing
+          condition: { reference: 'Condition/invalid' }, // Wrong resource type for testing
         },
       ],
     };
