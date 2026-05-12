@@ -21,7 +21,7 @@ export function RescopeUserWidget(): JSX.Element {
     !isSuperAdmin && currentProjectId ? { reference: `Project/${currentProjectId}` } : undefined
   );
   const [user, setUser] = useState<User | undefined>();
-  const [scope, setScope] = useState<UserScope>('loading');
+  const [currentScope, setCurrentScope] = useState<UserScope>('loading');
   const [submitting, setSubmitting] = useState(false);
 
   const projectReference = projectRef?.reference;
@@ -29,22 +29,22 @@ export function RescopeUserWidget(): JSX.Element {
 
   useEffect(() => {
     if (!user?.id) {
-      setScope('loading');
+      setCurrentScope('loading');
       return undefined;
     }
     let cancelled = false;
-    setScope('loading');
+    setCurrentScope('loading');
     medplum
       .readResource('User', user.id)
       .then((u) => {
         if (cancelled) {
           return;
         }
-        setScope(u.meta?.project && u.meta.project === projectIdForScope ? 'project' : 'global');
+        setCurrentScope(u.meta?.project && u.meta.project === projectIdForScope ? 'project' : 'global');
       })
       .catch(() => {
         if (!cancelled) {
-          setScope('global');
+          setCurrentScope('global');
         }
       });
     return () => {
@@ -53,9 +53,9 @@ export function RescopeUserWidget(): JSX.Element {
   }, [medplum, user, projectIdForScope]);
 
   let targetScope: 'project' | 'global' | undefined;
-  if (scope === 'project') {
+  if (currentScope === 'project') {
     targetScope = 'global';
-  } else if (scope === 'global' && isSuperAdmin) {
+  } else if (currentScope === 'global' && isSuperAdmin) {
     targetScope = 'project';
   }
   const canSubmit = Boolean(projectReference && user?.id && targetScope);
@@ -137,10 +137,10 @@ export function RescopeUserWidget(): JSX.Element {
           {user && (
             <Group gap="sm">
               <Text>{userDisplay}</Text>
-              {renderScopeBadge(scope)}
+              {renderScopeBadge(currentScope)}
             </Group>
           )}
-          {user && scope === 'global' && !isSuperAdmin && (
+          {user && currentScope === 'global' && !isSuperAdmin && (
             <Alert color="yellow">
               This User is in <strong>global</strong> scope. Only a super admin can assign a global User to a Project.
             </Alert>
