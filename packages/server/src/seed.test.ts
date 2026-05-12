@@ -7,6 +7,7 @@ import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
 import { SelectQuery } from './fhir/sql';
+import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
   getPendingPostDeployMigration,
@@ -14,7 +15,6 @@ import {
   preparePostDeployMigrationAsyncJob,
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
-import { globalLogger } from './logger';
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
 
