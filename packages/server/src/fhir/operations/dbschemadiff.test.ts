@@ -6,6 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { globalLogger } from '../../logger';
 import { initTestAuth } from '../../test.setup';
 
 describe('$db-schema-diff', () => {
@@ -15,8 +16,11 @@ describe('$db-schema-diff', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    // The migration script can log a lot to the console sometimes
-    console.log = jest.fn();
+    // The migration script can log a lot sometimes
+    jest.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
+    jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+    jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    jest.spyOn(globalLogger, 'debug').mockImplementation(() => undefined);
   });
 
   afterAll(async () => {
