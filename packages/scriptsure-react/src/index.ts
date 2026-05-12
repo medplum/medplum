@@ -4,4 +4,5 @@ export * from './common';
 export * from './loadScriptSureQuantityQualifiers';
 export * from './useScriptSureIFrame';
 export * from './useScriptSureOrderMedication';
+export * from './useScriptSureOrderSet';
 export * from './useScriptSurePharmacySearch';

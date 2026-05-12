@@ -49,32 +49,78 @@ export function getQuantityQualifierLabel(code: string | undefined): string | un
 }
 
 /**
- * Synonym patterns for NCI codes whose `name` (as returned by
- * `GET /v3/prescription/quantityqualifier`) is unlikely to appear verbatim in a
- * sig line — e.g. ScriptSure ships "Tablet dosing unit" but sigs say "tablet"
- * or "tab"; "International unit" has the abbreviation "IU". These extend
- * whatever regex we generate from the live catalog so the matcher works against
- * realistic sig text without depending on the catalog's exact wording.
+ * Priority tiers for qualifier rules. Higher-priority rules win during matching
+ * regardless of how long the catalog `name` happens to be:
+ *
+ *  - `DOSE_FORM` covers solid/discrete dispense units (tablet, capsule, suppository,
+ *    cartridge, …). These ALWAYS beat strength units in mixed text like
+ *    "Metformin ER 500 mg tablet" because mg is a strength on a tablet, never the
+ *    dispense unit.
+ *  - `DOSE_FORM_SPECIFIC` is a +10 bump for entries that must beat a less-specific
+ *    sibling (e.g. "Applicatorful" beats "Applicator").
+ *  - `LIQUID_VOLUME` covers `mL`, which CAN be the dispense unit (liquid bottles)
+ *    but loses to dose forms when both appear in the same string.
+ *  - `CATALOG_NAME` is the default for live-catalog entries we don't know about
+ *    — we generate `\b<name>s?\b` and trust that future DAW codes (e.g. "Lozenge")
+ *    look like real words.
+ *  - `STRENGTH_UNIT` is `null` (no rule emitted at all). mg, mcg, gm, IU are
+ *    strength/concentration units, never dispense units, so they should not show
+ *    up as inferred qualifiers — even when the live catalog includes them. Such
+ *    codes still appear in `mergeQuantityQualifierCatalog` for the dropdown.
  */
-const QUALIFIER_SYNONYMS: Readonly<Record<string, readonly RegExp[]>> = {
-  C28254: [/\b(?:milliliters?|millilitres?|ml|mls)\b/i],
-  C48481: [/\b(?:milligrams?|mg)\b/i],
-  C48482: [/\b(?:micrograms?|mcg|µg)\b/i],
-  C48478: [/\b(?:grams?|gm|gms)\b/i],
-  C48479: [/\b(?:international\s+units?|iu)\b/i],
-  C48483: [/\b(?:capsules?|caps?)\b/i],
-  C48542: [/\b(?:tablets?|tabs?)\b/i],
-  C48486: [/\bsuppositor(?:y|ies)\b/i],
-  C78783: [/\bapplicatorful?s?\b/i],
-  C62412: [/\bapplicators?\b/i],
-  C48484: [/\bpatch(?:es)?\b/i],
-  C48485: [/\bsprays?\b/i],
-  C48477: [/\bdrops?\b/i],
-  C48487: [/\bsyringes?\b/i],
-  C48488: [/\bvials?\b/i],
-  C48473: [/\b(?:ampoules?|ampules?)\b/i],
-  C48474: [/\bbags?\b/i],
-  C48475: [/\bbars?\b/i],
+const PRIORITY_DOSE_FORM = 100;
+const PRIORITY_DOSE_FORM_SPECIFIC = 110;
+const PRIORITY_LIQUID_VOLUME = 30;
+const PRIORITY_CATALOG_NAME = 50;
+
+interface SynonymGroup {
+  readonly priority: number;
+  readonly patterns: readonly RegExp[];
+}
+
+const TABLET_GROUP: SynonymGroup = {
+  priority: PRIORITY_DOSE_FORM,
+  patterns: [/\b(?:tablets?|tabs?)\b/i],
+};
+const CAPSULE_GROUP: SynonymGroup = {
+  priority: PRIORITY_DOSE_FORM,
+  patterns: [/\b(?:capsules?|caps?)\b/i],
+};
+
+/**
+ * Synonym patterns + priority for qualifier rows, keyed by the lowercased
+ * canonical `name` returned by `GET /v3/prescription/quantityqualifier` (and
+ * any practical aliases — e.g. ScriptSure ships "Tablet dosing unit" but sigs
+ * say "tablet" / "tab").
+ *
+ * Rows where the value is `null` are explicitly excluded from the matcher
+ * (strength units like Milligram). They remain selectable in the dropdown
+ * via {@link mergeQuantityQualifierCatalog}.
+ */
+const QUALIFIER_SYNONYMS_BY_NAME: Readonly<Record<string, SynonymGroup | null>> = {
+  tablet: TABLET_GROUP,
+  'tablet dosing unit': TABLET_GROUP,
+  capsule: CAPSULE_GROUP,
+  'capsule dosing unit': CAPSULE_GROUP,
+  suppository: { priority: PRIORITY_DOSE_FORM, patterns: [/\bsuppositor(?:y|ies)\b/i] },
+  patch: { priority: PRIORITY_DOSE_FORM, patterns: [/\bpatch(?:es)?\b/i] },
+  spray: { priority: PRIORITY_DOSE_FORM, patterns: [/\bsprays?\b/i] },
+  drop: { priority: PRIORITY_DOSE_FORM, patterns: [/\bdrops?\b/i] },
+  syringe: { priority: PRIORITY_DOSE_FORM, patterns: [/\bsyringes?\b/i] },
+  vial: { priority: PRIORITY_DOSE_FORM, patterns: [/\bvials?\b/i] },
+  ampule: { priority: PRIORITY_DOSE_FORM, patterns: [/\b(?:ampoules?|ampules?)\b/i] },
+  ampoule: { priority: PRIORITY_DOSE_FORM, patterns: [/\b(?:ampoules?|ampules?)\b/i] },
+  bag: { priority: PRIORITY_DOSE_FORM, patterns: [/\bbags?\b/i] },
+  bar: { priority: PRIORITY_DOSE_FORM, patterns: [/\bbars?\b/i] },
+  cartridge: { priority: PRIORITY_DOSE_FORM, patterns: [/\bcartridges?\b/i] },
+  applicator: { priority: PRIORITY_DOSE_FORM, patterns: [/\bapplicators?\b/i] },
+  applicatorful: { priority: PRIORITY_DOSE_FORM_SPECIFIC, patterns: [/\bapplicatorful?s?\b/i] },
+  milliliter: { priority: PRIORITY_LIQUID_VOLUME, patterns: [/\b(?:milliliters?|millilitres?|ml|mls)\b/i] },
+  millilitre: { priority: PRIORITY_LIQUID_VOLUME, patterns: [/\b(?:milliliters?|millilitres?|ml|mls)\b/i] },
+  milligram: null,
+  microgram: null,
+  gram: null,
+  'international unit': null,
 };
 
 const REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
@@ -89,41 +135,64 @@ export type QualifierMatcher = (text: string | undefined) => string | undefined;
 interface CompiledRule {
   code: string;
   pattern: RegExp;
+  priority: number;
+  nameLength: number;
 }
 
 /**
  * Compiles a {@link QualifierMatcher} from a quantity-qualifier catalog.
  *
- * For each catalog entry we register either:
- *  - the explicit synonym patterns from {@link QUALIFIER_SYNONYMS} (for codes
- *    whose `name` doesn't read well as a sig keyword, e.g. C48542 → "tablet"),
- *  - or a word-boundary regex around the catalog `name` (with optional
- *    plural `s`).
+ * Each catalog row is classified by canonical `name` (lowercased):
+ *  - **Known dose form** (tablet, capsule, suppository, patch, spray, drop,
+ *    syringe, vial, ampule, bag, bar, cartridge, applicator/applicatorful) →
+ *    use the explicit synonym patterns at `PRIORITY_DOSE_FORM` (or
+ *    `PRIORITY_DOSE_FORM_SPECIFIC` for the "applicatorful > applicator" case).
+ *  - **Liquid volume** (milliliter / millilitre) → `PRIORITY_LIQUID_VOLUME`,
+ *    so a sig like "Take 1 tablet … 250 mg/5 mL strength" picks Tablet.
+ *  - **Strength unit** (milligram, microgram, gram, international unit) → the
+ *    map yields `null` and we emit no rule, because mg/mcg/gm/IU are never the
+ *    real dispense unit on a solid dose form. They remain available as
+ *    dropdown options via {@link mergeQuantityQualifierCatalog}.
+ *  - **Anything else** (e.g. a brand-new code DAW ships before we've heard of
+ *    it) → we generate `\b<name>s?\b` at `PRIORITY_CATALOG_NAME` so the
+ *    matcher still recognizes it without any code changes.
  *
- * Rules are sorted by `name` length descending so that more specific entries
- * win over shorter prefixes (e.g. "Applicatorful" beats "Applicator").
+ * Rules are sorted by `priority` descending, then by `name.length` descending
+ * as a tiebreaker (matters for ties like "Applicator" vs "Applicators" or
+ * future synonym overlaps).
  *
  * @param catalog - Live response from `GET /v3/prescription/quantityqualifier`
  *   (and/or the static fallback rows).
  * @returns A {@link QualifierMatcher} closed over the catalog.
  */
 export function buildQualifierMatcher(catalog: readonly { potencyUnit: string; name: string }[]): QualifierMatcher {
-  const ordered = [...catalog]
-    .filter((row) => row.potencyUnit?.trim() && row.name?.trim())
-    .sort((a, b) => b.name.length - a.name.length);
-
   const compiled: CompiledRule[] = [];
-  for (const row of ordered) {
-    const synonyms = QUALIFIER_SYNONYMS[row.potencyUnit];
-    if (synonyms) {
-      for (const pattern of synonyms) {
-        compiled.push({ code: row.potencyUnit, pattern });
+  for (const row of catalog) {
+    const code = row.potencyUnit?.trim();
+    const name = row.name?.trim();
+    if (!code || !name) {
+      continue;
+    }
+    const synonym = QUALIFIER_SYNONYMS_BY_NAME[name.toLowerCase()];
+    if (synonym === null) {
+      continue;
+    }
+    if (synonym) {
+      for (const pattern of synonym.patterns) {
+        compiled.push({ code, pattern, priority: synonym.priority, nameLength: name.length });
       }
       continue;
     }
-    const escaped = row.name.trim().replace(REGEX_ESCAPE, '\\$&');
-    compiled.push({ code: row.potencyUnit, pattern: new RegExp(`\\b${escaped}s?\\b`, 'i') });
+    const escaped = name.replaceAll(REGEX_ESCAPE, String.raw`\$&`);
+    compiled.push({
+      code,
+      pattern: new RegExp(String.raw`\b${escaped}s?\b`, 'i'),
+      priority: PRIORITY_CATALOG_NAME,
+      nameLength: name.length,
+    });
   }
+
+  compiled.sort((a, b) => b.priority - a.priority || b.nameLength - a.nameLength);
 
   return (text) => {
     if (!text) {

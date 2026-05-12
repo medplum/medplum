@@ -43,6 +43,7 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
+import { OrderSetTabPanel } from './OrderSetTabPanel';
 import type { QualifierMatcher } from '../../components/meds/quantity-qualifiers';
 import {
   buildQualifierMatcher,
@@ -143,6 +144,65 @@ const SIG_QID_RE = /\bqid\b|four\s+times|\b4\s*x\b/;
 const SIG_TID_RE = /\btid\b|three\s+times|\b3\s*x\b/;
 const SIG_BID_RE = /\bbid\b|twice/;
 const SIG_DAILY_RE = /once\s+(?:a\s+)?day|once\s+daily|every\s+day|\bqd\b|\bqday\b|\bdaily\b/;
+
+/**
+ * English numbers that ScriptSure routinely spells out in canonical sigs
+ * (e.g. "every eight hours" rather than "every 8 hours"). We convert these
+ * back to digits before the interval regexes so days-supply inference works
+ * regardless of which form the upstream sig text uses.
+ */
+const SIG_NUMBER_WORDS: Readonly<Record<string, number>> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  twenty: 20,
+  twentyfour: 24,
+  'twenty-four': 24,
+  'twenty four': 24,
+  thirty: 30,
+  forty: 40,
+  fortyeight: 48,
+  'forty-eight': 48,
+  'forty eight': 48,
+  seventytwo: 72,
+  'seventy-two': 72,
+  'seventy two': 72,
+};
+
+const SIG_NUMBER_WORDS_ALTERNATION = Object.keys(SIG_NUMBER_WORDS)
+  .map((w) => w.replaceAll(/[ -]/g, '[ -]'))
+  .join('|');
+const SIG_NUMBER_WORDS_RE = new RegExp(String.raw`\b(?:${SIG_NUMBER_WORDS_ALTERNATION})\b`, 'gi');
+
+/**
+ * Replaces spelled-out English numbers with digits in `text` so the interval
+ * regexes can capture them. Idempotent on text that already uses digits.
+ *
+ * @param text - Lowercased sig line.
+ * @returns Same line with word-form numbers swapped for digit form.
+ */
+function digitizeSigNumberWords(text: string): string {
+  return text.replace(SIG_NUMBER_WORDS_RE, (match) => {
+    const key = match.toLowerCase();
+    const direct = SIG_NUMBER_WORDS[key];
+    if (direct !== undefined) {
+      return String(direct);
+    }
+    const collapsed = key.replaceAll(/[ -]/g, '');
+    const collapsedHit = SIG_NUMBER_WORDS[collapsed];
+    return collapsedHit === undefined ? match : String(collapsedHit);
+  });
+}
+
 const SIG_EVERY_HOURS_RE = /every\s+(\d+(?:\.\d+)?)\s*(?:hr|hour|hours)\b|\bq(\d+)h\b/;
 const SIG_EVERY_DAYS_RE = /every\s+(\d+(?:\.\d+)?)\s*(?:d|day|days)\b/;
 
@@ -229,7 +289,7 @@ function inferDailyDoseFromSig(sigLine: string): { perDose: number; dosesPerDay:
   if (!sigLine) {
     return undefined;
   }
-  const text = sigLine.toLowerCase();
+  const text = digitizeSigNumberWords(sigLine.toLowerCase());
   const dosesPerDay = inferDosesPerDayKeyword(text) || inferDosesPerDayFromInterval(text);
   if (!dosesPerDay) {
     return undefined;
@@ -922,6 +982,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
           <Tabs.List>
             <Tabs.Tab value="single">Single medication</Tabs.Tab>
             <Tabs.Tab value="compound">Compound</Tabs.Tab>
+            <Tabs.Tab value="order-set">Order set</Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="single" pt="md">
@@ -1199,6 +1260,16 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
               </Button>
             </Stack>
           </Tabs.Panel>
+
+          <Tabs.Panel value="order-set" pt="md">
+            <OrderSetTabPanel
+              patient={patient}
+              requester={requester}
+              onPatientChange={setPatient}
+              onRequesterChange={setRequester}
+              onOrderComplete={onOrderComplete}
+            />
+          </Tabs.Panel>
         </Tabs>
       </Panel>
     </Container>
@@ -1213,7 +1284,7 @@ function coverageLabel(coverage: Coverage): string {
   return parts.join(' · ');
 }
 
-interface OptionalContextFieldsProps {
+export interface OptionalContextFieldsProps {
   medplum: MedplumClient;
   patient: Patient | undefined;
   primaryCondition: Condition | undefined;
@@ -1224,7 +1295,7 @@ interface OptionalContextFieldsProps {
   setPharmacyOrg: (o: Organization | undefined) => void;
 }
 
-function OptionalContextFields(props: Readonly<OptionalContextFieldsProps>): JSX.Element {
+export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps>): JSX.Element {
   const {
     medplum,
     patient,

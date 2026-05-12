@@ -5,6 +5,7 @@ export * from './MedplumProvider/MedplumProvider.context';
 export * from './useCachedBinaryUrl/useCachedBinaryUrl';
 export * from './useEPrescribingIFrame/useEPrescribingIFrame';
 export * from './useEPrescribingOrder/useEPrescribingOrder';
+export * from './useEPrescribingOrderSet/useEPrescribingOrderSet';
 export * from './useNotificationCount/useNotificationCount';
 export * from './usePatientSummaryData/usePatientSummaryData';
 export * from './usePharmacySearch/usePharmacySearch';

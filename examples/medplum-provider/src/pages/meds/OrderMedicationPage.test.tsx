@@ -13,7 +13,7 @@ describe('OrderMedicationPage', () => {
     vi.clearAllMocks();
   });
 
-  test('shows single and compound tabs', async () => {
+  test('shows single, compound, and order-set tabs', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'executeBot').mockResolvedValue([]);
 
@@ -31,7 +31,8 @@ describe('OrderMedicationPage', () => {
       );
     });
 
-    expect(await screen.findByText('Single medication')).toBeInTheDocument();
-    expect(screen.getByText('Compound')).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Single medication' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Compound' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Order set' })).toBeInTheDocument();
   });
 });

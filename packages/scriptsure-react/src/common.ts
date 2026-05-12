@@ -40,6 +40,14 @@ export const SCRIPTSURE_PATIENT_SYNC_BOT: Identifier = {
   value: 'scriptsure-patient-sync-bot',
 };
 
+export const SCRIPTSURE_ORDER_SET_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'scriptsure-order-set-bot',
+};
+
+/** Identifier system for the ScriptSure orderset id stamped on FHIR PlanDefinitions. */
+export const SCRIPTSURE_ORDERSET_ID_SYSTEM = 'https://spa.scriptsure.com/orderset-id';
+
 export const SCRIPTSURE_SEARCH_PHARMACY_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'scriptsure-search-pharmacy-bot',
