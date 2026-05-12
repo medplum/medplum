@@ -159,7 +159,7 @@ export class AsAtom extends InfixOperatorAtom {
   }
 }
 
-export class ArithemticOperatorAtom extends InfixOperatorAtom {
+export class ArithmeticOperatorAtom extends InfixOperatorAtom {
   readonly impl: (x: number, y: number) => number | boolean;
 
   constructor(operator: string, left: Atom, right: Atom, impl: (x: number, y: number) => number | boolean) {
@@ -170,11 +170,13 @@ export class ArithemticOperatorAtom extends InfixOperatorAtom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const leftEvalResult = this.left.eval(context, input);
     const rightEvalResult = this.right.eval(context, input);
-    if (rightEvalResult.length !== 1) {
+    if (leftEvalResult.length < 1 || rightEvalResult.length < 1) {
       return [];
     }
-    const leftValue = leftEvalResult[0].value;
-    const rightValue = rightEvalResult[0].value;
+
+    const leftValue = singleton(leftEvalResult)?.value;
+    const rightValue = singleton(rightEvalResult)?.value;
+
     const leftNumber = isQuantity(leftValue) ? leftValue.value : leftValue;
     const rightNumber = isQuantity(rightValue) ? rightValue.value : rightValue;
     const result = this.impl(leftNumber, rightNumber);
