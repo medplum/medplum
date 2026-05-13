@@ -84,8 +84,8 @@ describe('Project $rate-limits operation', () => {
     expect(profiles.every((profile) => profile?.reference && profile?.display)).toBe(true);
   });
 
-  test('Returns empty membership list when no active consumers', async () => {
-    // Create a fresh project with no FHIR activity
+  test('Returns only the caller when no other active consumers', async () => {
+    // Create a fresh project — the only FHIR activity will be the $rate-limits call itself
     const fresh = await withTestContext(() =>
       registerNew({
         firstName: 'Fresh',
@@ -103,7 +103,8 @@ describe('Project $rate-limits operation', () => {
     expect(res.status).toBe(200);
     const body = res.body as Parameters;
     const membershipParams = getParametersByName(body, 'membership');
-    expect(membershipParams).toHaveLength(0);
+    // The $rate-limits call itself consumes quota (recordSearch), so the caller appears as an active consumer
+    expect(membershipParams).toHaveLength(1);
   });
 
   test('Returns rate limit status for specific membership IDs', async () => {
