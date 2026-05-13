@@ -2,27 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, concatUrls, redirect } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
+import type { ClientApplication, SmartAppLaunch } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'instance', resource: 'ClientApplication' }, {
   name: 'clientapplication-smart-launch',
-  status: 'active',
-  kind: 'operation',
   code: 'smart-launch',
-  experimental: true,
-  resource: ['ClientApplication'],
-  system: false,
-  type: false,
-  instance: true,
   parameter: [
     { use: 'in', name: 'patient', type: 'uuid', min: 0, max: '1' },
     { use: 'in', name: 'encounter', type: 'uuid', min: 0, max: '1' },
   ],
-};
+});
 
 type LaunchOperationParameters = {
   patient?: string;

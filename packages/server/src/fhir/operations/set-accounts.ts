@@ -16,27 +16,21 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import type { Repository, SystemRepository } from '../repo';
+import { makeOperationDefinition } from './definitions';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'instance', resource: 'Resource' as ResourceType }, {
   id: 'set-accounts',
   name: 'SetAccounts',
-  status: 'active',
-  kind: 'operation',
   code: 'set-accounts',
   description: `Updates account references for the target resource, and optionally any resources in the target's FHIR compartment`,
-  resource: ['Resource' as ResourceType],
-  system: false,
-  type: false,
-  instance: true,
   parameter: [
     {
       use: 'in',
@@ -63,7 +57,7 @@ const operation: OperationDefinition = {
       max: '1',
     },
   ],
-};
+});
 
 export interface SetAccountsParameters {
   accounts: Reference[];

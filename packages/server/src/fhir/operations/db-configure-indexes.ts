@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
@@ -12,6 +11,7 @@ import { withLongRunningDatabaseClient } from '../../migrations/migration-utils'
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidTableName } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {
   buildOutputParameters,
@@ -19,16 +19,9 @@ import {
   parseInputParameters,
 } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'system' }, {
   name: 'db-configure-indexes',
-  status: 'active',
-  kind: 'operation',
   code: 'db-configure-indexes',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
   parameter: [
     param('in', 'tableName', 'string', 1, '*'),
     param('in', 'fastUpdateAction', 'string', 0, '1'),
@@ -40,7 +33,7 @@ const operation: OperationDefinition = {
       param('out', 'durationMs', 'integer', 0, '1'),
     ]),
   ],
-};
+});
 
 type InputParameters = {
   tableName: string[];

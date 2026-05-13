@@ -28,19 +28,13 @@ Utility functions that use the `OperationDefinition` to automate implementation 
 ```ts
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { created } from '@medplum/core';
-import { Reference, OperationDefinition } from '@medplum/fhirtypes';
+import { Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { makeOperationDefinition } from './definitions';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'type', resource: 'Project' }, {
   name: 'project-init',
-  status: 'active',
-  kind: 'operation',
   code: 'init',
-  resource: ['Project'],
-  system: false,
-  type: true, // Available at route /Project/$init only
-  instance: false,
   parameter: [
     // Required param: name (string)
     { use: 'in', name: 'name', type: 'string', min: 1, max: '1' },
@@ -50,7 +44,7 @@ const operation: OperationDefinition = {
     // Output parameter: Project
     { use: 'out', name: 'return', type: 'Project', min: 1, max: '1' },
   ],
-};
+});
 
 interface ProjectInitParameters {
   name: string;

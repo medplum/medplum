@@ -2,31 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentUpgradeResponse, WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import type { Agent } from '@medplum/fhirtypes';
+import { makeOperationDefinition } from './definitions';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
 const DEFAULT_UPGRADE_TIMEOUT = 45000;
 const MAX_UPGRADE_TIMEOUT = 56000;
 
-export const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+export const operation = makeOperationDefinition({ scope: 'type-and-instance', resource: 'Agent' }, {
   name: 'agent-upgrade',
-  status: 'active',
-  kind: 'operation',
   code: 'upgrade',
-  experimental: true,
-  resource: ['Agent'],
-  system: false,
-  type: true,
-  instance: true,
   parameter: [
     { use: 'in', name: 'version', type: 'string', min: 0, max: '1' },
     { use: 'in', name: 'timeout', type: 'integer', min: 0, max: '1' },
     { use: 'in', name: 'force', type: 'boolean', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' },
   ],
-};
+});
 
 /**
  * Handles HTTP requests for the Agent $upgrade operation.

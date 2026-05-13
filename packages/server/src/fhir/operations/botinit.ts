@@ -16,7 +16,6 @@ import type {
   Attachment,
   Binary,
   Bot,
-  OperationDefinition,
   Project,
   ProjectMembership,
   Reference,
@@ -28,18 +27,12 @@ import type { Repository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
 import { deployBot } from './deploy';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const botInitOperation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const botInitOperation = makeOperationDefinition({ scope: 'type', resource: 'Bot' }, {
   name: 'bot-init',
-  status: 'active',
-  kind: 'operation',
   code: 'init',
-  resource: ['Bot'],
-  system: false,
-  type: true,
-  instance: false,
   parameter: [
     { use: 'in', name: 'name', type: 'string', min: 1, max: '1' },
     { use: 'in', name: 'description', type: 'string', min: 0, max: '1' },
@@ -48,7 +41,7 @@ const botInitOperation: OperationDefinition = {
     { use: 'in', name: 'executableCode', type: 'Attachment', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bot', min: 1, max: '1' },
   ],
-};
+});
 
 export interface BotInitParameters {
   readonly name: string;

@@ -2,23 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, isResourceType } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project, ResourceType } from '@medplum/fhirtypes';
+import type { Project, ResourceType } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'system' }, {
   name: 'get-ws-sub-stats',
-  status: 'active',
-  kind: 'operation',
   code: 'get-ws-sub-stats',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
   parameter: [
     {
       use: 'out',
@@ -28,7 +22,7 @@ const operation: OperationDefinition = {
       max: '1',
     },
   ],
-};
+});
 
 export interface WsSubResourceTypeStats {
   resourceType: string;

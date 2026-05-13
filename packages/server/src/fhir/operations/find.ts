@@ -18,7 +18,6 @@ import type {
   Appointment,
   Bundle,
   HealthcareService,
-  OperationDefinition,
   Reference,
   Schedule,
   Slot,
@@ -30,6 +29,7 @@ import { addMinutes } from '../../util/date';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
+import { makeOperationDefinition } from './definitions';
 import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
@@ -41,16 +41,9 @@ import {
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
 
-const scheduleFindOperation = {
-  resourceType: 'OperationDefinition',
+const scheduleFindOperation = makeOperationDefinition({ scope: 'instance', resource: 'Schedule' }, {
   name: 'find',
-  status: 'active',
-  kind: 'operation',
   code: 'find',
-  resource: ['Schedule'],
-  system: false,
-  type: false,
-  instance: true,
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
@@ -58,18 +51,11 @@ const scheduleFindOperation = {
     { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
-} as const satisfies OperationDefinition;
+});
 
-const appointmentFindOperation = {
-  resourceType: 'OperationDefinition',
+const appointmentFindOperation = makeOperationDefinition({ scope: 'type', resource: 'Appointment' }, {
   name: 'find',
-  status: 'active',
-  kind: 'operation',
   code: 'find',
-  resource: ['Appointment'],
-  system: false,
-  type: true,
-  instance: false,
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
@@ -78,7 +64,7 @@ const appointmentFindOperation = {
     { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
-} as const satisfies OperationDefinition;
+});
 
 type ScheduleFindParameters = {
   start: string;

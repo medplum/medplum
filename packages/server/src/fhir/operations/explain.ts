@@ -3,27 +3,21 @@
 import { allOk, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { RepositoryMode } from '@medplum/fhir-router';
-import type { OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
+import type { Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'system' }, {
   name: 'db-explain',
-  status: 'active',
-  kind: 'operation',
   code: 'explain',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
   parameter: [
     param('in', 'query', 'string', 1, '1'),
     param('in', 'analyze', 'boolean', 0, '1'),
@@ -35,7 +29,7 @@ const operation: OperationDefinition = {
     param('out', 'countEstimate', 'integer', 0, '1'),
     param('out', 'countAccurate', 'integer', 0, '1'),
   ],
-};
+});
 
 export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = requireSuperAdmin();

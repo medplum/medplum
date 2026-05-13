@@ -2,28 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { isValidTableName, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'system' }, {
   name: 'db-indexes',
-  status: 'active',
-  kind: 'operation',
   code: 'db-indexes',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
   parameter: [
     param('in', 'tableName', 'string', 0, '*'),
     param('out', 'defaultGinPendingListLimit', 'integer', 1, '1'),
@@ -36,7 +29,7 @@ const operation: OperationDefinition = {
       param('out', 'ginPendingListLimit', 'integer', 0, '1'),
     ]),
   ],
-};
+});
 
 interface GinIndexInfo {
   schemaName: string;

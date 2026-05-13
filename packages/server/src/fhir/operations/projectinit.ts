@@ -5,7 +5,6 @@ import { badRequest, createReference, created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   ClientApplication,
-  OperationDefinition,
   Project,
   ProjectMembership,
   Reference,
@@ -21,18 +20,12 @@ import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const projectInitOperation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const projectInitOperation = makeOperationDefinition({ scope: 'type', resource: 'Project' }, {
   name: 'project-init',
-  status: 'active',
-  kind: 'operation',
   code: 'init',
-  resource: ['Project'],
-  system: false,
-  type: true,
-  instance: false,
   parameter: [
     {
       use: 'in',
@@ -63,7 +56,7 @@ const projectInitOperation: OperationDefinition = {
       max: '1',
     },
   ],
-};
+});
 
 interface ProjectInitParameters {
   name: string;

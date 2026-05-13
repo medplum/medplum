@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, arrayify, forbidden, getReferenceString, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import { FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX, FHIR_RATE_LIMIT_PROJECT_PREFIX, getFhirQuotaConfig } from '../fhirquota';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const quotaParts: OperationDefinitionParameter[] = [
@@ -15,16 +16,9 @@ const quotaParts: OperationDefinitionParameter[] = [
   { use: 'out', name: 'msBeforeReset', type: 'integer', min: 0, max: '1' },
 ];
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'instance', resource: 'Project' }, {
   name: 'project-rate-limits',
-  status: 'active',
-  kind: 'operation',
   code: 'rate-limits',
-  resource: ['Project'],
-  system: false,
-  type: false,
-  instance: true,
   parameter: [
     { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
     {
@@ -46,7 +40,7 @@ const operation: OperationDefinition = {
       ],
     },
   ],
-};
+});
 
 type RateLimitsInput = {
   membershipId?: string | string[];

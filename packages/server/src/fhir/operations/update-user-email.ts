@@ -12,25 +12,18 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
 import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
 import { getProjectSystemRepo } from '../repo';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const op: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const op = makeOperationDefinition({ scope: 'instance', resource: 'User' }, {
   name: 'update-user-email',
-  status: 'active',
-  kind: 'operation',
   code: 'update-email',
-  experimental: true,
-  system: false,
-  type: false,
-  instance: true,
-  resource: ['User'],
   parameter: [
     {
       use: 'in',
@@ -65,7 +58,7 @@ const op: OperationDefinition = {
       documentation: 'The updated User resource',
     },
   ],
-};
+});
 
 type InputParams = {
   email: string;

@@ -2,23 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, isUUID } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
+import type { Subscription } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import type { CacheEntry } from '../repository/resource-cache';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'system' }, {
   name: 'clear-all-ws-subs',
-  status: 'active',
-  kind: 'operation',
   code: 'clear-all-ws-subs',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
   parameter: [
     {
       use: 'in',
@@ -49,7 +43,7 @@ const operation: OperationDefinition = {
       max: '1',
     },
   ],
-};
+});
 
 export async function clearAllWsSubsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

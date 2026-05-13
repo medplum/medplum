@@ -7,12 +7,12 @@ import type {
   CodeSystem,
   CodeSystemProperty,
   Coding,
-  OperationDefinition,
   OperationDefinitionParameter,
 } from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
 
@@ -34,17 +34,9 @@ function makeCodeAttributeParameter(
   };
 }
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'type', resource: 'CodeSystem' }, {
   name: 'codesystem-import',
-  status: 'active',
-  kind: 'operation',
   code: 'import',
-  experimental: true,
-  resource: ['CodeSystem'],
-  system: false,
-  type: true,
-  instance: false,
   parameter: [
     { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
     { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
@@ -62,7 +54,7 @@ const operation: OperationDefinition = {
     }),
     { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
   ],
-};
+});
 
 export type ImportedProperty = {
   code: string;

@@ -7,25 +7,17 @@ import type {
   Coding,
   ConceptMap,
   ConceptMapGroupElementTargetDependsOn,
-  OperationDefinition,
 } from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery, SelectQuery, Union } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, uniqueOn } from './utils/terminology';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
+const operation = makeOperationDefinition({ scope: 'type-and-instance', resource: 'ConceptMap' }, {
   name: 'conceptmap-import',
-  status: 'active',
-  kind: 'operation',
   code: 'import',
-  experimental: true,
-  resource: ['ConceptMap'],
-  system: false,
-  type: true,
-  instance: true,
   affectsState: true,
   parameter: [
     { use: 'in', name: 'url', type: 'uri', min: 0, max: '1' },
@@ -85,7 +77,7 @@ const operation: OperationDefinition = {
     },
     { use: 'out', name: 'return', type: 'ConceptMap', min: 1, max: '1' },
   ],
-};
+});
 
 export type ConceptMapImportParameters = {
   url?: string;
