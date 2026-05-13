@@ -167,6 +167,8 @@ jobs:
         node-version: [22, 24]
         pg-version: [14, 18]
         redis-version: [7]
+    permissions:
+      pull-requests: write # for coveralls to create coverage comments
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
