@@ -206,14 +206,14 @@ Full Practitioner resource example (with DEA)
 **Clinician Role Types:**
 
 
-| Value | Role                        |
-| ----- | --------------------------- |
-| `1`   | Prescribing Clinician       |
-| `2`   | Reporting Clinician         |
-| `3`   | EPCS Coordinator            |
-| `4`   | Clinician Admin             |
-| `5`   | Prescribing Agent Clinician |
-| `6`   | Proxy Clinician             |
+| Value | Role                        | Description                                              |
+| ----- | --------------------------- | -------------------------------------------------------- |
+| `1`   | Prescribing Clinician       | Can prescribe non-controlled and controlled medications  |
+| `2`   | Reporting Clinician         | Can view and report on prescriptions; cannot prescribe   |
+| `3`   | EPCS Coordinator            | Coordinates EPCS enrollment for other clinicians         |
+| `4`   | Clinician Admin             | Clinic administrator; can invite and manage other users  |
+| `5`   | Prescribing Agent Clinician | Prescribes on behalf of a supervising prescriber         |
+| `6`   | Proxy Clinician             | Proxy access to act on behalf of another clinician       |
 
 
 :::note[]
