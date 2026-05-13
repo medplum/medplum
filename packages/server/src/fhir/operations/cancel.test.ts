@@ -45,8 +45,8 @@ describe('Appointment/$cancel', () => {
     return systemRepo.createResource<Slot>({
       resourceType: 'Slot',
       status: 'busy',
-      start: '2026-01-15T14:00:00Z',
-      end: '2026-01-15T15:00:00Z',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
       schedule: createReference(schedule),
       meta: { project: project.project.id },
     });
@@ -62,7 +62,7 @@ describe('Appointment/$cancel', () => {
     return systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status,
-      ...(needsDates ? { start: '2026-01-15T14:00:00Z', end: '2026-01-15T15:00:00Z' } : {}),
+      ...(needsDates ? { start: '2026-05-15T14:00:00Z', end: '2026-05-15T15:00:00Z' } : {}),
       participant: [{ actor: createReference(practitioner), status: 'accepted' }],
       slot: slots.map((slot) => createReference(slot)),
       meta: { project: project.project.id },
@@ -185,8 +185,8 @@ describe('Appointment/$cancel', () => {
     const appointment = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
-      start: '2026-01-15T14:00:00Z',
-      end: '2026-01-15T15:00:00Z',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
       participant: [{ actor: createReference(practitioner), status: 'accepted' }],
       slot: [{ reference: 'Slot/00000000-0000-0000-0000-000000000000' }],
       meta: { project: project.project.id },
