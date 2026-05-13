@@ -14,6 +14,7 @@ import {
   writePostDeployActionsToBuilder,
 } from './migrate';
 import packageJson from '../../package.json';
+import { globalLogger } from '../logger';
 
 export const SCHEMA_DIR = resolve('./src/migrations/schema');
 export const DATA_DIR = resolve('./src/migrations/data');
@@ -48,7 +49,7 @@ export async function main(): Promise<void> {
       writePreDeployActionsToBuilder(preDeployBuilder, actions.preDeploy);
 
       if (dryRun) {
-        console.log(preDeployBuilder.toString());
+        globalLogger.write(preDeployBuilder.toString());
       } else {
         writeFileSync(`${SCHEMA_DIR}/v${getNextVersion(SCHEMA_DIR)}.ts`, preDeployBuilder.toString(), 'utf8');
         rewriteMigrationExports(SCHEMA_DIR);
@@ -60,7 +61,7 @@ export async function main(): Promise<void> {
       writePostDeployActionsToBuilder(postDeployBuilder, actions.postDeploy);
 
       if (dryRun) {
-        console.log(postDeployBuilder.toString());
+        globalLogger.write(postDeployBuilder.toString());
       } else {
         const id = `v${getNextVersion(DATA_DIR)}`;
         writeFileSync(`${DATA_DIR}/${id}.ts`, postDeployBuilder.toString(), 'utf8');
@@ -74,7 +75,7 @@ export async function main(): Promise<void> {
     const schemaBuilder = new FileBuilder();
     buildSchema(schemaBuilder);
     if (dryRun) {
-      console.log(schemaBuilder.toString());
+      globalLogger.write(schemaBuilder.toString());
     } else {
       writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
     }
@@ -128,7 +129,7 @@ function getVersionFromFilename(filename: string): number {
 
 if (import.meta.main) {
   main().catch((reason) => {
-    console.error(reason);
+    globalLogger.error('Migration failed', reason);
     process.exit(1);
   });
 }

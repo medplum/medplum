@@ -1397,17 +1397,16 @@ describe('Subscription Worker', () => {
     }));
 
   describe('Subscription AuditEvent destination with logging', () => {
-    let originalConsoleLog: typeof console.log;
+    let writeSpy: jest.SpyInstance;
 
     beforeEach(async () => {
       const config = await loadTestConfig();
       config.logAuditEvents = true;
-      originalConsoleLog = console.log;
-      console.log = jest.fn();
+      writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     });
 
     afterEach(async () => {
-      console.log = originalConsoleLog;
+      writeSpy.mockRestore();
       const config = await loadTestConfig();
       config.logAuditEvents = false;
     });
@@ -1462,9 +1461,9 @@ describe('Subscription Worker', () => {
         // Should NOT create AuditEvent resource in DB
         expect(bundle.entry?.length).toStrictEqual(0);
 
-        // Should log AuditEvent to console
-        expect(console.log).toHaveBeenCalled();
-        const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
+        // Should log AuditEvent via globalLogger
+        expect(writeSpy).toHaveBeenCalled();
+        const loggedCall = writeSpy.mock.calls.find((call) => {
           try {
             const parsed = JSON.parse(call[0]);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
@@ -1529,9 +1528,9 @@ describe('Subscription Worker', () => {
         // Should create AuditEvent resource in DB
         expect(bundle.entry?.length).toStrictEqual(1);
 
-        // Should also log AuditEvent to console
-        expect(console.log).toHaveBeenCalled();
-        const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
+        // Should also log AuditEvent via globalLogger
+        expect(writeSpy).toHaveBeenCalled();
+        const loggedCall = writeSpy.mock.calls.find((call) => {
           try {
             const parsed = JSON.parse(call[0]);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';

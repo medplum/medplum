@@ -57,7 +57,7 @@ export async function main(configName: string): Promise<void> {
 
 if (import.meta.main) {
   main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch((err) => {
-    console.log(err);
+    globalLogger.error('Fatal error during startup', err);
     process.exit(1);
   });
 }
