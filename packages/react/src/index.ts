@@ -105,6 +105,7 @@ export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
 export * from './QuantityDisplay/QuantityDisplay';
 export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';
+export * from './QuestionnaireForm/AIRealTimeQuestionnaireForm';
 export * from './QuestionnaireForm/QuestionnaireForm';
 export * from './QuestionnaireResponseDisplay/QuestionnaireResponseDisplay';
 export * from './RangeDisplay/RangeDisplay';
