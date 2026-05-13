@@ -2221,9 +2221,7 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(writeSpy).toHaveBeenLastCalledWith(
-          expect.stringMatching(/"level":"DEBUG".*WebSocket Subscriptions/)
-        );
+        expect(writeSpy).toHaveBeenLastCalledWith(expect.stringMatching(/"level":"DEBUG".*WebSocket Subscriptions/));
 
         writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
@@ -2287,9 +2285,7 @@ describe('Subscription Worker', () => {
         await assertPromise;
 
         expect(writeSpy).not.toHaveBeenCalledWith(
-          expect.stringMatching(
-            /"level":"WARN".*\[Subscription Access Policy\]: Access Policy not satisfied on/
-          )
+          expect.stringMatching(/"level":"WARN".*\[Subscription Access Policy\]: Access Policy not satisfied on/)
         );
         writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
