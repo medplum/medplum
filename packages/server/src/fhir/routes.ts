@@ -57,6 +57,7 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
+import { appointmentHoldHandler } from './operations/hold';
 import { appLaunchHandler } from './operations/launch';
 import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -389,6 +390,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Appointment Scheduling operations
   router.add('GET', '/Appointment/$find', appointmentFindHandler);
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
+  router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);

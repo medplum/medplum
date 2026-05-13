@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addMinutes, areIntervalsOverlapping, clamp } from './date';
+import { addMinutes, areIntervalsOverlapping, clamp, earliest, latest } from './date';
 
 describe('addMinutes', () => {
   test('adds the given number of minutes', () => {
@@ -139,5 +139,39 @@ describe('clamp', () => {
       end: new Date('2026-01-21'),
     };
     expect(clamp(date, interval)).toEqual(date);
+  });
+});
+
+describe('earliest', () => {
+  test('returns undefined for an empty array', () => {
+    expect(earliest([])).toBeUndefined();
+  });
+
+  test('returns the only element when given a single date', () => {
+    const date = new Date('2026-01-10');
+    expect(earliest([date])).toBe(date);
+  });
+
+  test('returns the earliest of multiple dates', () => {
+    expect(earliest([new Date('2026-01-10'), new Date('2026-01-05'), new Date('2026-01-20')])).toEqual(
+      new Date('2026-01-05')
+    );
+  });
+});
+
+describe('latest', () => {
+  test('returns undefined for an empty array', () => {
+    expect(latest([])).toBeUndefined();
+  });
+
+  test('returns the only element when given a single date', () => {
+    const date = new Date('2026-01-10');
+    expect(latest([date])).toBe(date);
+  });
+
+  test('returns the latest of multiple dates', () => {
+    expect(latest([new Date('2026-01-10'), new Date('2026-01-05'), new Date('2026-01-20')])).toEqual(
+      new Date('2026-01-20')
+    );
   });
 });
