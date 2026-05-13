@@ -69,6 +69,13 @@ describe('Seed', () => {
       // Run post-deploy migrations synchronously
       await synchronouslyRunAllPendingPostDeployMigrations(repo);
 
+      // Scheduling features use serializable transactions that touch these
+      // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
+      // to append to the same "pending list", which can cause transaction
+      // failures.
+      //
+      // Here we update the indexes on Appointment and Slot tables to disable `fastUpdate`,
+      // and then vacuum the tables to clear any existing pending list entries.
       const actions: OutputAction[] = [];
       const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
       const client = repo.getDatabaseClient(DatabaseMode.WRITER);
