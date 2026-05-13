@@ -4,7 +4,7 @@ import { ActionIcon, Group, Loader, Text, Tooltip } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import type { Questionnaire, QuestionnaireResponse, Parameters } from '@medplum/fhirtypes';
+import type { Parameters, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { useMedplum, useWhisper } from '@medplum/react-hooks';
 import { IconMicrophone, IconPlayerStopFilled } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -166,7 +166,12 @@ export interface AIRealTimeQuestionnaireFormProps extends QuestionnaireFormProps
 }
 
 export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element | null {
-  const { aiModel = DEFAULT_AI_MODEL, systemPrompt = DEFAULT_SYSTEM_PROMPT, onTranscript, ...questionnaireFormProps } = props;
+  const {
+    aiModel = DEFAULT_AI_MODEL,
+    systemPrompt = DEFAULT_SYSTEM_PROMPT,
+    onTranscript,
+    ...questionnaireFormProps
+  } = props;
   const medplum = useMedplum();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(
     props.questionnaireResponse as QuestionnaireResponse | undefined
@@ -322,9 +327,11 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     if (statusRef.current === 'speech_started') {
       return;
     }
-    flushTranscriptRef.current().catch((err) =>
-      showNotification({ color: 'red', message: `Error flushing transcript: ${normalizeErrorString(err)}` })
-    );
+    flushTranscriptRef
+      .current()
+      .catch((err) =>
+        showNotification({ color: 'red', message: `Error flushing transcript: ${normalizeErrorString(err)}` })
+      );
   }, SILENCE_DEBOUNCE_MS);
 
   useEffect(() => {

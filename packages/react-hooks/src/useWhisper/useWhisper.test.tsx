@@ -94,9 +94,7 @@ describe('useWhisper', () => {
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
 
     act(() => wsServer.send({ type: 'transcription_session.created' }));
-    await expect(wsServer).toReceiveMessage(
-      expect.objectContaining({ type: 'transcription_session.update' })
-    );
+    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'transcription_session.update' }));
 
     act(() => wsServer.send({ type: 'transcription_session.updated' }));
 
@@ -146,9 +144,7 @@ describe('useWhisper', () => {
     await wsServer.connected;
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
     act(() => wsServer.send({ type: 'transcription_session.created' }));
-    await expect(wsServer).toReceiveMessage(
-      expect.objectContaining({ type: 'transcription_session.update' })
-    );
+    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'transcription_session.update' }));
     act(() => wsServer.send({ type: 'transcription_session.updated' }));
 
     await waitFor(() => {
@@ -244,5 +240,4 @@ describe('useWhisper', () => {
       expect(result[1]).toBe(0x7f);
     });
   });
-
 });
