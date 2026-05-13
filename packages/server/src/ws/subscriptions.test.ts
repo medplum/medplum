@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, OperationOutcomeError, badRequest, getReferenceString, sleep } from '@medplum/core';
+import { ContentType, LogLevel, OperationOutcomeError, badRequest, getReferenceString, sleep } from '@medplum/core';
 import type {
   Binary,
   Bundle,
@@ -59,10 +59,7 @@ describe('WebSocket Subscription', () => {
   let patientSubscription: WithId<Subscription>;
 
   beforeAll(async () => {
-    jest.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
-    jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
-    jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
-    jest.spyOn(globalLogger, 'debug').mockImplementation(() => undefined);
+    jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
@@ -342,7 +339,8 @@ describe('WebSocket Subscription', () => {
         .sendJson({ type: 'unbind-from-token', payload: { token } })
         .exec(async () => {
           await sleep(150);
-          expect(globalLogger.warn).toHaveBeenCalledWith(
+          expect(globalLogger.log).toHaveBeenCalledWith(
+            LogLevel.WARN,
             expect.stringContaining('[WS] Failed to retrieve subscription cache entry when unbinding from token'),
             expect.anything()
           );

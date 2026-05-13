@@ -1684,7 +1684,7 @@ describe('Subscription Worker', () => {
   test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+      const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1743,20 +1743,21 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(logSpy).toHaveBeenCalledWith(
+        LogLevel.WARN,
         expect.stringContaining('Error occurred while checking access policy'),
         expect.anything()
       );
 
       globalLogger.level = LogLevel.NONE;
-      warnSpy.mockRestore();
+      logSpy.mockRestore();
     }));
 
   // TODO: Remove this test when enforcing AccessPolicy will not break things
   test('Subscription -- Rest Hook Sub does not meet AccessPolicy', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+      const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1817,13 +1818,14 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(logSpy).toHaveBeenCalledWith(
+        LogLevel.WARN,
         expect.stringContaining('Error occurred while checking access policy'),
         expect.anything()
       );
 
       globalLogger.level = LogLevel.NONE;
-      warnSpy.mockRestore();
+      logSpy.mockRestore();
     }));
 
   test('Subscription -- Access policy is evaluated once per author across multiple matching subscriptions', () =>
@@ -2185,7 +2187,7 @@ describe('Subscription Worker', () => {
     test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
-        const debugSpy = jest.spyOn(globalLogger, 'debug').mockImplementation(() => undefined);
+        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
         const {
           repo: noWsSubRepo,
@@ -2223,16 +2225,20 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(debugSpy).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
+        expect(logSpy).toHaveBeenLastCalledWith(
+          LogLevel.DEBUG,
+          expect.stringMatching(/WebSocket Subscriptions/),
+          undefined
+        );
 
-        debugSpy.mockRestore();
+        logSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
@@ -2286,11 +2292,12 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(warnSpy).not.toHaveBeenCalledWith(
+        expect(logSpy).not.toHaveBeenCalledWith(
+          LogLevel.WARN,
           expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on'),
           expect.anything()
         );
-        warnSpy.mockRestore();
+        logSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
@@ -2516,7 +2523,7 @@ describe('Subscription Worker', () => {
     test('Subscription Author Access Policy Removed', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
@@ -2571,21 +2578,22 @@ describe('Subscription Worker', () => {
         await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(logSpy).toHaveBeenCalledWith(
+          LogLevel.WARN,
           expect.stringContaining(
             '[Subscription Access Policy]: Error occurred while checking access policy for resource'
           ),
           expect.anything()
         );
-        expect(warnSpy.mock.calls.some((call) => JSON.stringify(call).includes('Gone'))).toBe(true);
-        warnSpy.mockRestore();
+        expect(logSpy.mock.calls.some((call) => JSON.stringify(call).includes('Gone'))).toBe(true);
+        logSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
@@ -2640,13 +2648,14 @@ describe('Subscription Worker', () => {
         await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(logSpy).toHaveBeenCalledWith(
+          LogLevel.WARN,
           expect.stringContaining(
             '[Subscription Access Policy]: Error occurred while checking access policy for resource'
           ),
           expect.anything()
         );
-        warnSpy.mockRestore();
+        logSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 

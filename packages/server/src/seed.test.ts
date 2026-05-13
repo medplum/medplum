@@ -50,16 +50,10 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 
 describe('Seed', () => {
   const originalConsoleLog = console.log;
-  let loggerInfoSpy: jest.SpyInstance;
-  let loggerWarnSpy: jest.SpyInstance;
-  let loggerErrorSpy: jest.SpyInstance;
-  let loggerDebugSpy: jest.SpyInstance;
+  let loggerLogSpy: jest.SpyInstance;
 
   beforeAll(async () => {
-    loggerInfoSpy = jest.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
-    loggerWarnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
-    loggerErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
-    loggerDebugSpy = jest.spyOn(globalLogger, 'debug').mockImplementation(() => undefined);
+    loggerLogSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
@@ -77,10 +71,7 @@ describe('Seed', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    loggerInfoSpy.mockRestore();
-    loggerWarnSpy.mockRestore();
-    loggerErrorSpy.mockRestore();
-    loggerDebugSpy.mockRestore();
+    loggerLogSpy.mockRestore();
   });
 
   test('Seeder completes successfully', () =>
@@ -100,9 +91,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        for (const spy of [loggerInfoSpy, loggerWarnSpy, loggerErrorSpy, loggerDebugSpy]) {
-          spy.mock.calls.forEach((call) => originalConsoleLog(...call));
-        }
+        loggerLogSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
