@@ -168,8 +168,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const handleSend = async (): Promise<void> => {
-    if (!input.trim()) {
+  const handleSend = async (overrideInput?: string): Promise<void> => {
+    if (isSendingRef.current) {
+      return;
+    }
+    const text = (overrideInput ?? input).trim();
+    if (!text) {
       return;
     }
 
@@ -178,7 +182,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(true);
     }
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: text };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     setInput('');
@@ -193,7 +197,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     try {
       const result = await processMessage({
         medplum,
-        input,
+        input: text,
         userMessage,
         currentMessages,
         currentTopicId,

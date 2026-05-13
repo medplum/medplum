@@ -177,10 +177,10 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     healthcareService = healthcareServices[0];
   }
 
-  const bufferSlots: Slot[] = [];
-
   const createdResources = await ctx.repo.withTransaction(
     async () => {
+      const bufferSlots: Slot[] = [];
+
       await Promise.all(
         proposedSlots.map(async (proposedSlot) => {
           const scheduleRefString = getReferenceString(proposedSlot.schedule);
