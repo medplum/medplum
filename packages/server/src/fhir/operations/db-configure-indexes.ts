@@ -50,7 +50,7 @@ type InputParameters = {
   ginPendingListLimitValue?: number;
 };
 
-type OutputAction = {
+export type OutputAction = {
   sql: string;
   durationMs?: number;
 };
@@ -125,7 +125,7 @@ type GinIndexConfig = {
   ginPendingListLimit?: 'reset' | number;
 };
 
-async function configureGinIndexes(
+export async function configureGinIndexes(
   client: PoolClient | Pool,
   actions: OutputAction[],
   tableNames: string[],
@@ -215,7 +215,11 @@ async function configureGinIndexes(
   }
 }
 
-async function vacuumTable(client: PoolClient | Pool, actions: OutputAction[], tableName: string): Promise<void> {
+export async function vacuumTable(
+  client: PoolClient | Pool,
+  actions: OutputAction[],
+  tableName: string
+): Promise<void> {
   const sql = `VACUUM ${escapeIdentifier(tableName)}`;
   const startTime = Date.now();
   await client.query(sql);
