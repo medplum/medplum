@@ -68,6 +68,7 @@ import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
+import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
@@ -238,6 +239,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Update User email
   router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
+
+  // Rescope User between server and project scope
+  router.add('POST', '/User/:id/$rescope', userRescopeOperation);
 
   // ConceptMap $translate
   router.add('GET', '/ConceptMap/$translate', conceptMapTranslateHandler);
