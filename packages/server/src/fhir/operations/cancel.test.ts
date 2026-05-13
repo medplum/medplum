@@ -22,6 +22,8 @@ describe('Appointment/$cancel', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
 
