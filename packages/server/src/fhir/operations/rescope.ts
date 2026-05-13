@@ -17,7 +17,7 @@ import type { OperationDefinition, Project, ProjectMembership, Reference, User }
 import assert from 'node:assert';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
-import { parseInputParameters } from './utils/parameters';
+import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -31,30 +31,9 @@ export const operation: OperationDefinition = {
   instance: true,
   resource: ['User'],
   parameter: [
-    {
-      use: 'in',
-      name: 'scope',
-      type: 'code',
-      min: 1,
-      max: '1',
-      documentation: 'Target scope for the User: "project" or "server"',
-    },
-    {
-      use: 'in',
-      name: 'project',
-      type: 'Reference',
-      min: 0,
-      max: '1',
-      documentation: 'The Project to scope the User to. Required when scope is "project".',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'User',
-      min: 1,
-      max: '1',
-      documentation: 'The updated User resource',
-    },
+    param('in', 'scope', 'code', 1, '1'),
+    param('in', 'project', 'Reference', 0, '1'),
+    param('out', 'return', 'User', 1, '1'),
   ],
 };
 
