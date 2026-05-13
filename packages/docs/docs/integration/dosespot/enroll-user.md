@@ -382,7 +382,7 @@ This eliminates the multi-turn admin/provider coordination required by the admin
 
 ### Prerequisites
 
-- The `DOSESPOT_USER_ID` project secret must be configured with an admin-level DoseSpot clinician ID (typically a Proxy/Clinic Admin user)
+- The `DOSESPOT_USER_ID` project secret must be configured with an admin-level DoseSpot clinician ID (typically a Proxy/Clinic Admin user). For Medplum-hosted deployments, contact Medplum support to have this configured.
 - An active `PractitionerRole` resource must exist for the provider with at least one code from system `https://dosespot.com/practitionerrole-type`
 
 ### Step 1: Create a PractitionerRole for the Provider
@@ -422,7 +422,9 @@ An administrator creates a `PractitionerRole` resource that authorizes the provi
 
 ### Step 2: Enable Self-Enrollment in the Provider App
 
-Use the `useDoseSpotIFrame` hook from `@medplum/dosespot-react` with `selfEnroll: true`. When a provider opens DoseSpot and has no DoseSpot identifier yet, the hook automatically runs `dosespot-self-enroll-prescriber-bot` before loading the iFrame.
+**If you are using the Medplum Provider App:** Self-enrollment is already enabled. Each time a provider opens the DoseSpot iFrame, the app automatically advances them through the enrollment process — no code changes needed.
+
+**If you are building your own app with `useDoseSpotIFrame`:** Set `selfEnroll: true` on the hook and ensure you are on `@medplum/dosespot-react` version 5.x.x or later. When a provider opens DoseSpot and has no DoseSpot identifier yet, the hook automatically runs `dosespot-self-enroll-prescriber-bot` before loading the iFrame, and each subsequent open advances enrollment to the next stage.
 
 ### Auto-Advancing Enrollment Flow
 
