@@ -228,6 +228,10 @@ const config: Config = {
               label: 'Contributing',
               to: '/docs/contributing',
             },
+            {
+              label: 'Events',
+              to: '/blog/events-calendar',
+            },
           ],
         },
         {

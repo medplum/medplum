@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
+  contentTooLarge,
   ContentType,
   parseLogLevel,
   unsupportedMediaType,
@@ -148,8 +149,8 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('Content could not be parsed'));
     return;
   }
-  if (err.type === 'entity.too.large') {
-    sendOutcome(res, badRequest('File too large'));
+  if (err.type === 'entity.too.large' || err.type === 'parameters.too.many') {
+    sendOutcome(res, contentTooLarge('Request body too large'));
     return;
   }
   if (err.type === 'stream.not.readable') {

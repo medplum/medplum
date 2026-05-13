@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
+import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
 import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
@@ -19,6 +20,8 @@ import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import type { CronJobData } from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
+import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
+import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
 import type { ReindexJobData } from '../workers/reindex';
 import { getReindexQueue } from '../workers/reindex';
 
@@ -753,6 +756,65 @@ describe('Super Admin routes', () => {
       expect(endTimestamp).toBeLessThanOrEqual(expectedMaxTime);
     }
   );
+
+  test('Lambda cleaner require async', async () => {
+    const res = await request(app)
+      .post('/admin/super/lambda-cleaner')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({});
+
+    expect(res.status).toStrictEqual(400);
+    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
+  });
+
+  test('Lambda cleaner enqueues job', async () => {
+    const queue = getLambdaCleanerQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/lambda-cleaner')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        keepLatest: 2,
+        deleteConcurrency: 3,
+        dryRun: false,
+      });
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'LambdaCleanerJob',
+      expect.objectContaining<Partial<LambdaCleanerJobData>>({
+        options: {
+          nameRegex: LAMBDA_NAME_REGEX_PATTERN,
+          keepLatest: 2,
+          deleteConcurrency: 3,
+          dryRun: false,
+        },
+      })
+    );
+  });
+
+  test('Lambda cleaner rejects invalid args', async () => {
+    const queue = getLambdaCleanerQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/lambda-cleaner')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        keepLatest: 0,
+        deleteConcurrency: 0,
+      });
+
+    expect(res.status).toStrictEqual(400);
+    expect(queue.add).not.toHaveBeenCalled();
+  });
 
   test('Set password access denied', async () => {
     const res = await request(app)

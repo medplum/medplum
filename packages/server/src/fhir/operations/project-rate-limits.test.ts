@@ -75,9 +75,10 @@ describe('Project $rate-limits operation', () => {
     const membershipParams = getParametersByName(body, 'membership');
     expect(membershipParams.length).toBeGreaterThan(0);
 
-    for (const membership of membershipParams) {
-      expect(getPartValue(membership, 'membershipId')).toBeDefined();
-    }
+    expect(membershipParams.map((p) => getPartValue(p, 'membershipId')).every((id) => id !== undefined)).toBe(true);
+
+    const profiles = membershipParams.map((p) => p.part?.find((part) => part.name === 'profile')?.valueReference);
+    expect(profiles.every((profile) => profile?.reference && profile?.display)).toBe(true);
   });
 
   test('Returns rate limit status for specific membership IDs', async () => {
