@@ -3,13 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { badRequest, createReference, created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  ClientApplication,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import type { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
@@ -21,42 +15,25 @@ import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
-const projectInitOperation = makeOperationDefinition({ scope: 'type', resource: 'Project' }, {
-  name: 'project-init',
-  code: 'init',
-  parameter: [
-    {
-      use: 'in',
-      name: 'name',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'owner',
-      type: 'Reference',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'ownerEmail',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'Project',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const projectInitOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Project' },
+  {
+    name: 'project-init',
+    code: 'init',
+    parameter: [
+      param('in', 'name', 'string', 1, '1'),
+      param('in', 'owner', 'Reference', 0, '1'),
+      param('in', 'ownerEmail', 'string', 0, '1'),
+      param('out', 'return', 'Project', 1, '1'),
+    ],
+  }
+);
 
 interface ProjectInitParameters {
   name: string;
