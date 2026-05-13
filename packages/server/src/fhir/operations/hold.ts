@@ -19,7 +19,7 @@ const holdOperation = {
   type: true,
   instance: false,
   parameter: [
-    { use: 'in', name: 'appointment', type: 'Resource', min: 1, max: '1' },
+    { use: 'in', name: 'appointment', type: 'Appointment', min: 1, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
 } as const satisfies OperationDefinition;
@@ -48,7 +48,7 @@ export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResp
   // We will write this attribute later, check that we aren't clobbering something that was submitted
   if (appointment.slot) {
     throw new OperationOutcomeError(
-      badRequest('Proposed appointment may not have Slot references', 'Parameters.appointment.slot')
+      badRequest('Proposed appointment must not have Slot references', 'Parameters.appointment.slot')
     );
   }
 
@@ -62,7 +62,12 @@ export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResp
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await validateAllAvailability(ctx.repo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = await Promise.all(slots.map((slot) => ctx.repo.createResource<Slot>(slot)));
+
+      const createdSlots: Slot[] = [];
+      for (const slot of slots) {
+        createdSlots.push(await ctx.repo.createResource<Slot>(slot));
+      }
+
       const createdAppointment = await ctx.repo.createResource<Appointment>({
         ...appointment,
         status: 'pending',

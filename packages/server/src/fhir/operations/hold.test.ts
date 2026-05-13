@@ -443,7 +443,7 @@ describe('Appointment/$hold', () => {
     expect(response.body).toHaveProperty('issue', [
       expect.objectContaining({
         severity: 'error',
-        details: { text: 'Proposed appointment may not have Slot references' },
+        details: { text: 'Proposed appointment must not have Slot references' },
       }),
     ]);
     expect(response.status).toEqual(400);

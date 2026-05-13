@@ -41,9 +41,9 @@ export function clamp(date: Date, interval: Interval): Date {
 }
 
 export function earliest(dates: Date[]): Date | undefined {
-  let min = dates[0];
-  for (const date of dates.slice(1)) {
-    if (date < min) {
+  let min: Date | undefined;
+  for (const date of dates) {
+    if (!min || date < min) {
       min = date;
     }
   }
@@ -51,9 +51,9 @@ export function earliest(dates: Date[]): Date | undefined {
 }
 
 export function latest(dates: Date[]): Date | undefined {
-  let max = dates[0];
-  for (const date of dates.slice(1)) {
-    if (date > max) {
+  let max: Date | undefined;
+  for (const date of dates) {
+    if (!max || date > max) {
       max = date;
     }
   }

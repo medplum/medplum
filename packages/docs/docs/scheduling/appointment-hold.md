@@ -96,9 +96,9 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$hold' \
 
 ## Parameters
 
-| Name          | Type        | Description                                                                                                                                                    | Required |
-| --------------| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------| -------- |
-| `appointment` | `Resource`  | An `Appointment` resource describing the desired appointment time. Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`.  | Yes      |
+| Name          | Type           | Description                                                                                                                                                    | Required |
+| --------------| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------| -------- |
+| `appointment` | `Appointment`  | An `Appointment` resource describing the desired appointment time. Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`.  | Yes      |
 
 
 ### Constraints
@@ -291,7 +291,7 @@ Returns `201 Created` with a response body containing a `Bundle` of all persiste
 
 ## Hold Logic
 
-`$hold` performs the following steps inside a serializable transaction:
+`$hold` performs the following steps atomically inside a database transaction:
 
 1. Validates that each proposed Slot's start/end matches a valid slot duration defined in the Schedule's `SchedulingParameters`
 2. Loads existing Slots in the time window (including buffer margins) for each Schedule

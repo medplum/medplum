@@ -248,7 +248,16 @@ async function handler(params: {
       return resultSlots;
     });
 
-    const actors = schedules.flatMap((schedule) => schedule.actor);
+    const participant = schedules.flatMap((schedule) =>
+      schedule.actor.map(
+        (actor) =>
+          ({
+            actor,
+            required: 'required',
+            status: 'needs-action',
+          }) as const
+      )
+    );
 
     const appointment = {
       resourceType: 'Appointment',
@@ -256,11 +265,7 @@ async function handler(params: {
       end,
       status: 'proposed',
       serviceType,
-      participant: actors.map((actor) => ({
-        actor: actor,
-        required: 'required',
-        status: 'needs-action',
-      })),
+      participant,
       contained: slots,
     } satisfies Appointment;
 
