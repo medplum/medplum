@@ -17,7 +17,7 @@ describe('$db-schema-diff', () => {
     await initApp(app, config);
 
     // The migration script can log a lot sometimes
-    jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
   });
 
   afterAll(async () => {

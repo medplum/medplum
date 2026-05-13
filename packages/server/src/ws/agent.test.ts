@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, getReferenceString, Hl7Message, LogLevel, MEDPLUM_VERSION, sleep } from '@medplum/core';
+import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import type { Agent, Bot, Device } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -526,7 +526,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
-    const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+    const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -537,12 +537,10 @@ describe('Agent WebSockets', () => {
       )
       .close()
       .expectClosed();
-    expect(logSpy).toHaveBeenLastCalledWith(
-      LogLevel.ERROR,
-      expect.stringContaining('[Agent]: Error received from agent'),
-      expect.anything()
+    expect(writeSpy).toHaveBeenLastCalledWith(
+      expect.stringMatching(/"level":"ERROR".*\[Agent\]: Error received from agent/)
     );
-    logSpy.mockRestore();
+    writeSpy.mockRestore();
   });
 
   describe('Bot failures', () => {

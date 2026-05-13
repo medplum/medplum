@@ -50,10 +50,10 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 
 describe('Seed', () => {
   const originalConsoleLog = console.log;
-  let loggerLogSpy: jest.SpyInstance;
+  let loggerWriteSpy: jest.SpyInstance;
 
   beforeAll(async () => {
-    loggerLogSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+    loggerWriteSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
@@ -71,7 +71,7 @@ describe('Seed', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    loggerLogSpy.mockRestore();
+    loggerWriteSpy.mockRestore();
   });
 
   test('Seeder completes successfully', () =>
@@ -91,7 +91,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        loggerLogSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
+        loggerWriteSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 

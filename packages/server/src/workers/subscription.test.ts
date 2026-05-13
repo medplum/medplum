@@ -1684,7 +1684,7 @@ describe('Subscription Worker', () => {
   test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1743,21 +1743,19 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(logSpy).toHaveBeenCalledWith(
-        LogLevel.WARN,
-        expect.stringContaining('Error occurred while checking access policy'),
-        expect.anything()
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
       );
 
       globalLogger.level = LogLevel.NONE;
-      logSpy.mockRestore();
+      writeSpy.mockRestore();
     }));
 
   // TODO: Remove this test when enforcing AccessPolicy will not break things
   test('Subscription -- Rest Hook Sub does not meet AccessPolicy', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1818,14 +1816,12 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(logSpy).toHaveBeenCalledWith(
-        LogLevel.WARN,
-        expect.stringContaining('Error occurred while checking access policy'),
-        expect.anything()
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
       );
 
       globalLogger.level = LogLevel.NONE;
-      logSpy.mockRestore();
+      writeSpy.mockRestore();
     }));
 
   test('Subscription -- Access policy is evaluated once per author across multiple matching subscriptions', () =>
@@ -2187,7 +2183,7 @@ describe('Subscription Worker', () => {
     test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
-        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const {
           repo: noWsSubRepo,
@@ -2225,20 +2221,18 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(logSpy).toHaveBeenLastCalledWith(
-          LogLevel.DEBUG,
-          expect.stringMatching(/WebSocket Subscriptions/),
-          undefined
+        expect(writeSpy).toHaveBeenLastCalledWith(
+          expect.stringMatching(/"level":"DEBUG".*WebSocket Subscriptions/)
         );
 
-        logSpy.mockRestore();
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
@@ -2292,12 +2286,12 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(logSpy).not.toHaveBeenCalledWith(
-          LogLevel.WARN,
-          expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on'),
-          expect.anything()
+        expect(writeSpy).not.toHaveBeenCalledWith(
+          expect.stringMatching(
+            /"level":"WARN".*\[Subscription Access Policy\]: Access Policy not satisfied on/
+          )
         );
-        logSpy.mockRestore();
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
@@ -2523,7 +2517,7 @@ describe('Subscription Worker', () => {
     test('Subscription Author Access Policy Removed', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
@@ -2578,22 +2572,20 @@ describe('Subscription Worker', () => {
         await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
-        expect(logSpy).toHaveBeenCalledWith(
-          LogLevel.WARN,
-          expect.stringContaining(
-            '[Subscription Access Policy]: Error occurred while checking access policy for resource'
-          ),
-          expect.anything()
+        expect(writeSpy).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /"level":"WARN".*\[Subscription Access Policy\]: Error occurred while checking access policy for resource/
+          )
         );
-        expect(logSpy.mock.calls.some((call) => JSON.stringify(call).includes('Gone'))).toBe(true);
-        logSpy.mockRestore();
+        expect(writeSpy.mock.calls.some((call) => JSON.stringify(call).includes('Gone'))).toBe(true);
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const logSpy = jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
@@ -2648,14 +2640,12 @@ describe('Subscription Worker', () => {
         await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
-        expect(logSpy).toHaveBeenCalledWith(
-          LogLevel.WARN,
-          expect.stringContaining(
-            '[Subscription Access Policy]: Error occurred while checking access policy for resource'
-          ),
-          expect.anything()
+        expect(writeSpy).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /"level":"WARN".*\[Subscription Access Policy\]: Error occurred while checking access policy for resource/
+          )
         );
-        logSpy.mockRestore();
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 

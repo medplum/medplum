@@ -115,7 +115,7 @@ describe('Database migrations', () => {
   let systemRepo: SystemRepository;
 
   beforeAll(async () => {
-    jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     jest.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
     jest
@@ -684,7 +684,7 @@ describe('Database migrations', () => {
 
     describe('Set data version', () => {
       beforeAll(async () => {
-        jest.spyOn(globalLogger, 'log').mockImplementation(() => undefined);
+        jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
       });
 
       test('Set data version -- Valid dataVersion', async () => {
