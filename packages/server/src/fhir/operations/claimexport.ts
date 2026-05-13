@@ -15,28 +15,31 @@ import { parseInputParameters } from './utils/parameters';
  * Operation definition for the Claim $export operation.
  * This operation exports a claim as a PDF document.
  */
-export const operation = makeOperationDefinition({ scope: 'instance', resource: 'Claim' }, {
-  name: 'claim-export',
-  code: 'export',
-  parameter: [
-    {
-      use: 'in',
-      name: 'resource',
-      type: 'Resource',
-      min: 1,
-      max: '1',
-      documentation: 'The claim to export',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'Media',
-      min: 1,
-      max: '1',
-      documentation: 'A Media resource containing the PDF document',
-    },
-  ],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Claim' },
+  {
+    name: 'claim-export',
+    code: 'export',
+    parameter: [
+      {
+        use: 'in',
+        name: 'resource',
+        type: 'Resource',
+        min: 1,
+        max: '1',
+        documentation: 'The claim to export',
+      },
+      {
+        use: 'out',
+        name: 'return',
+        type: 'Media',
+        min: 1,
+        max: '1',
+        documentation: 'A Media resource containing the PDF document',
+      },
+    ],
+  }
+);
 
 interface ClaimExportParameters {
   readonly resource: Claim;

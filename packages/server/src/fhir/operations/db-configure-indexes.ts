@@ -19,21 +19,24 @@ import {
   parseInputParameters,
 } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-configure-indexes',
-  code: 'db-configure-indexes',
-  parameter: [
-    param('in', 'tableName', 'string', 1, '*'),
-    param('in', 'fastUpdateAction', 'string', 0, '1'),
-    param('in', 'fastUpdateValue', 'boolean', 0, '1'),
-    param('in', 'ginPendingListLimitAction', 'string', 0, '1'),
-    param('in', 'ginPendingListLimitValue', 'integer', 0, '1'),
-    param('out', 'action', undefined, 0, '*', [
-      param('out', 'sql', 'string', 1, '1'),
-      param('out', 'durationMs', 'integer', 0, '1'),
-    ]),
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-configure-indexes',
+    code: 'db-configure-indexes',
+    parameter: [
+      param('in', 'tableName', 'string', 1, '*'),
+      param('in', 'fastUpdateAction', 'string', 0, '1'),
+      param('in', 'fastUpdateValue', 'boolean', 0, '1'),
+      param('in', 'ginPendingListLimitAction', 'string', 0, '1'),
+      param('in', 'ginPendingListLimitValue', 'integer', 0, '1'),
+      param('out', 'action', undefined, 0, '*', [
+        param('out', 'sql', 'string', 1, '1'),
+        param('out', 'durationMs', 'integer', 0, '1'),
+      ]),
+    ],
+  }
+);
 
 type InputParameters = {
   tableName: string[];

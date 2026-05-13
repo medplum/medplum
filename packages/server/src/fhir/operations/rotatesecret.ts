@@ -8,15 +8,18 @@ import { generateSecret } from '../../oauth/keys';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'instance', resource: 'ClientApplication' }, {
-  name: 'clientapplication-rotate-secret',
-  code: 'rotate-secret',
-  parameter: [
-    { use: 'in', name: 'secret', type: 'string', min: 0, max: '1' },
-    { use: 'in', name: 'retiringSecret', type: 'string', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'ClientApplication', min: 1, max: '1' },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'ClientApplication' },
+  {
+    name: 'clientapplication-rotate-secret',
+    code: 'rotate-secret',
+    parameter: [
+      { use: 'in', name: 'secret', type: 'string', min: 0, max: '1' },
+      { use: 'in', name: 'retiringSecret', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'ClientApplication', min: 1, max: '1' },
+    ],
+  }
+);
 
 type RotateSecretParameters = {
   secret?: string;

@@ -12,15 +12,18 @@ import { makeOperationDefinition } from './definitions';
 import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
-export const operation = makeOperationDefinition({ scope: 'instance', resource: 'Agent' }, {
-  name: 'agent-status',
-  code: 'status',
-  parameter: [
-    { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
-    { use: 'out', name: 'version', type: 'string', min: 1, max: '1' },
-    { use: 'out', name: 'lastUpdated', type: 'instant', min: 0, max: '1' },
-  ],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Agent' },
+  {
+    name: 'agent-status',
+    code: 'status',
+    parameter: [
+      { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
+      { use: 'out', name: 'version', type: 'string', min: 1, max: '1' },
+      { use: 'out', name: 'lastUpdated', type: 'instant', min: 0, max: '1' },
+    ],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $status operation.

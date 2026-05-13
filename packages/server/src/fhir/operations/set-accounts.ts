@@ -26,38 +26,41 @@ import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'instance', resource: 'Resource' as ResourceType }, {
-  id: 'set-accounts',
-  name: 'SetAccounts',
-  code: 'set-accounts',
-  description: `Updates account references for the target resource, and optionally any resources in the target's FHIR compartment`,
-  parameter: [
-    {
-      use: 'in',
-      name: 'accounts',
-      documentation: 'List of account references to set',
-      type: 'Reference',
-      min: 0,
-      max: '*',
-    },
-    {
-      use: 'in',
-      name: 'propagate',
-      documentation: 'If set, also push changes to other resources in the compartment of the target resource',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'resourcesUpdated',
-      documentation: 'Number of resources that were updated',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Resource' as ResourceType },
+  {
+    id: 'set-accounts',
+    name: 'SetAccounts',
+    code: 'set-accounts',
+    description: `Updates account references for the target resource, and optionally any resources in the target's FHIR compartment`,
+    parameter: [
+      {
+        use: 'in',
+        name: 'accounts',
+        documentation: 'List of account references to set',
+        type: 'Reference',
+        min: 0,
+        max: '*',
+      },
+      {
+        use: 'in',
+        name: 'propagate',
+        documentation: 'If set, also push changes to other resources in the compartment of the target resource',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'resourcesUpdated',
+        documentation: 'Number of resources that were updated',
+        type: 'integer',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export interface SetAccountsParameters {
   accounts: Reference[];

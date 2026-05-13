@@ -14,14 +14,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  Appointment,
-  Bundle,
-  HealthcareService,
-  Reference,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
@@ -41,30 +34,36 @@ import {
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
 
-const scheduleFindOperation = makeOperationDefinition({ scope: 'instance', resource: 'Schedule' }, {
-  name: 'find',
-  code: 'find',
-  parameter: [
-    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
-    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-});
+const scheduleFindOperation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Schedule' },
+  {
+    name: 'find',
+    code: 'find',
+    parameter: [
+      { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
+      { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
+  }
+);
 
-const appointmentFindOperation = makeOperationDefinition({ scope: 'type', resource: 'Appointment' }, {
-  name: 'find',
-  code: 'find',
-  parameter: [
-    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
-    { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
-    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-});
+const appointmentFindOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Appointment' },
+  {
+    name: 'find',
+    code: 'find',
+    parameter: [
+      { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
+      { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
+      { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
+  }
+);
 
 type ScheduleFindParameters = {
   start: string;

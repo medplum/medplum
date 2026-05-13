@@ -3,12 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  CodeSystem,
-  CodeSystemProperty,
-  Coding,
-  OperationDefinitionParameter,
-} from '@medplum/fhirtypes';
+import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
@@ -34,27 +29,30 @@ function makeCodeAttributeParameter(
   };
 }
 
-const operation = makeOperationDefinition({ scope: 'type', resource: 'CodeSystem' }, {
-  name: 'codesystem-import',
-  code: 'import',
-  parameter: [
-    { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
-    { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
-    makeCodeAttributeParameter('property', {
-      name: 'property',
-      type: 'code',
-      min: 1,
-      max: '1',
-    }),
-    makeCodeAttributeParameter('designation', {
-      name: 'language',
-      type: 'code',
-      min: 0,
-      max: '1',
-    }),
-    { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'type', resource: 'CodeSystem' },
+  {
+    name: 'codesystem-import',
+    code: 'import',
+    parameter: [
+      { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
+      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
+      makeCodeAttributeParameter('property', {
+        name: 'property',
+        type: 'code',
+        min: 1,
+        max: '1',
+      }),
+      makeCodeAttributeParameter('designation', {
+        name: 'language',
+        type: 'code',
+        min: 0,
+        max: '1',
+      }),
+      { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
+    ],
+  }
+);
 
 export type ImportedProperty = {
   code: string;

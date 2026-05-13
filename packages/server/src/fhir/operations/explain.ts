@@ -15,21 +15,24 @@ import {
   parseInputParameters,
 } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-explain',
-  code: 'explain',
-  parameter: [
-    param('in', 'query', 'string', 1, '1'),
-    param('in', 'analyze', 'boolean', 0, '1'),
-    param('in', 'format', 'string', 0, '1'),
-    param('in', 'count', 'boolean', 0, '1'),
-    param('out', 'query', 'string', 1, '1'),
-    param('out', 'parameters', 'string', 1, '1'),
-    param('out', 'explain', 'string', 1, '1'),
-    param('out', 'countEstimate', 'integer', 0, '1'),
-    param('out', 'countAccurate', 'integer', 0, '1'),
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-explain',
+    code: 'explain',
+    parameter: [
+      param('in', 'query', 'string', 1, '1'),
+      param('in', 'analyze', 'boolean', 0, '1'),
+      param('in', 'format', 'string', 0, '1'),
+      param('in', 'count', 'boolean', 0, '1'),
+      param('out', 'query', 'string', 1, '1'),
+      param('out', 'parameters', 'string', 1, '1'),
+      param('out', 'explain', 'string', 1, '1'),
+      param('out', 'countEstimate', 'integer', 0, '1'),
+      param('out', 'countAccurate', 'integer', 0, '1'),
+    ],
+  }
+);
 
 export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = requireSuperAdmin();

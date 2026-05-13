@@ -35,26 +35,29 @@ export interface WsSubProjectDetailStats {
   resourceTypes: WsSubResourceTypeDetailStats[];
 }
 
-const projectStatsOperation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'get-ws-sub-project-stats',
-  code: 'get-ws-sub-project-stats',
-  parameter: [
-    {
-      use: 'in',
-      name: 'projectId',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'stats',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const projectStatsOperation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'get-ws-sub-project-stats',
+    code: 'get-ws-sub-project-stats',
+    parameter: [
+      {
+        use: 'in',
+        name: 'projectId',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'stats',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

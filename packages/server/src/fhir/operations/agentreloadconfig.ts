@@ -6,11 +6,14 @@ import type { Agent } from '@medplum/fhirtypes';
 import { makeOperationDefinition } from './definitions';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 
-export const operation = makeOperationDefinition({ scope: 'type-and-instance', resource: 'Agent' }, {
-  name: 'agent-reload-config',
-  code: 'reload-config',
-  parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'Agent' },
+  {
+    name: 'agent-reload-config',
+    code: 'reload-config',
+    parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $reload-config operation.

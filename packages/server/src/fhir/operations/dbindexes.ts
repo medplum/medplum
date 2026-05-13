@@ -14,22 +14,25 @@ import {
   parseInputParameters,
 } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-indexes',
-  code: 'db-indexes',
-  parameter: [
-    param('in', 'tableName', 'string', 0, '*'),
-    param('out', 'defaultGinPendingListLimit', 'integer', 1, '1'),
-    param('out', 'index', undefined, 0, '*', [
-      param('out', 'schemaName', 'string', 1, '1'),
-      param('out', 'tableName', 'string', 1, '1'),
-      param('out', 'indexName', 'string', 1, '1'),
-      param('out', 'indexOptions', 'string', 0, '1'),
-      param('out', 'fastUpdate', 'boolean', 0, '1'),
-      param('out', 'ginPendingListLimit', 'integer', 0, '1'),
-    ]),
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-indexes',
+    code: 'db-indexes',
+    parameter: [
+      param('in', 'tableName', 'string', 0, '*'),
+      param('out', 'defaultGinPendingListLimit', 'integer', 1, '1'),
+      param('out', 'index', undefined, 0, '*', [
+        param('out', 'schemaName', 'string', 1, '1'),
+        param('out', 'tableName', 'string', 1, '1'),
+        param('out', 'indexName', 'string', 1, '1'),
+        param('out', 'indexOptions', 'string', 0, '1'),
+        param('out', 'fastUpdate', 'boolean', 0, '1'),
+        param('out', 'ginPendingListLimit', 'integer', 0, '1'),
+      ]),
+    ],
+  }
+);
 
 interface GinIndexInfo {
   schemaName: string;

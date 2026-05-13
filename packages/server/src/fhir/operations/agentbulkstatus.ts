@@ -8,11 +8,14 @@ import { getStatusForAgents } from './agentstatus';
 import { makeOperationDefinition } from './definitions';
 import { getAgentsForRequest, makeResultWrapperEntry } from './utils/agentutils';
 
-export const operation = makeOperationDefinition({ scope: 'type', resource: 'Agent' }, {
-  name: 'agent-bulk-status',
-  code: 'bulk-status',
-  parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'type', resource: 'Agent' },
+  {
+    name: 'agent-bulk-status',
+    code: 'bulk-status',
+    parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $status operation.

@@ -7,19 +7,22 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-invalid-indexes',
-  code: 'db-invalid-indexes',
-  parameter: [
-    {
-      use: 'out',
-      name: 'invalidIndex',
-      type: 'string',
-      min: 0,
-      max: '*',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-invalid-indexes',
+    code: 'db-invalid-indexes',
+    parameter: [
+      {
+        use: 'out',
+        name: 'invalidIndex',
+        type: 'string',
+        min: 0,
+        max: '*',
+      },
+    ],
+  }
+);
 
 export async function dbInvalidIndexesHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

@@ -8,14 +8,17 @@ import { getPresignedUrl } from '../../storage/loader';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'instance', resource: 'Binary' }, {
-  name: 'BinaryPresignedURL',
-  code: 'presigned-url',
-  parameter: [
-    { use: 'in', name: 'upload', type: 'boolean', min: 0, max: '1' },
-    { use: 'out', name: 'url', type: 'uri', min: 1, max: '1' },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Binary' },
+  {
+    name: 'BinaryPresignedURL',
+    code: 'presigned-url',
+    parameter: [
+      { use: 'in', name: 'upload', type: 'boolean', min: 0, max: '1' },
+      { use: 'out', name: 'url', type: 'uri', min: 1, max: '1' },
+    ],
+  }
+);
 
 type PresignedUrlParams = {
   upload?: boolean;

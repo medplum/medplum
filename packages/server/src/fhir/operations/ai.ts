@@ -10,54 +10,57 @@ import { sendFhirResponse } from '../response';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  id: 'ai',
-  url: 'https://medplum.com/fhir/OperationDefinition/ai',
-  name: 'ai',
-  code: 'ai',
-  parameter: [
-    {
-      name: 'messages',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the conversation messages array',
-    },
-    {
-      name: 'model',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
-    },
-    {
-      name: 'tools',
-      use: 'in',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the tools array (optional)',
-    },
-    {
-      name: 'content',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'AI response content',
-    },
-    {
-      name: 'tool_calls',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing tool calls array',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    id: 'ai',
+    url: 'https://medplum.com/fhir/OperationDefinition/ai',
+    name: 'ai',
+    code: 'ai',
+    parameter: [
+      {
+        name: 'messages',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the conversation messages array',
+      },
+      {
+        name: 'model',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
+      },
+      {
+        name: 'tools',
+        use: 'in',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the tools array (optional)',
+      },
+      {
+        name: 'content',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'AI response content',
+      },
+      {
+        name: 'tool_calls',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing tool calls array',
+      },
+    ],
+  }
+);
 
 type AIOperationParameters = {
   messages: string;

@@ -21,44 +21,47 @@ import { getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const op = makeOperationDefinition({ scope: 'instance', resource: 'User' }, {
-  name: 'update-user-email',
-  code: 'update-email',
-  parameter: [
-    {
-      use: 'in',
-      name: 'email',
-      type: 'string',
-      min: 1,
-      max: '1',
-      documentation: 'The new email to be set on the User',
-    },
-    {
-      use: 'in',
-      name: 'updateProfileTelecom',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-      documentation: 'If true, add the new email to the associated profile resource',
-    },
-    {
-      use: 'in',
-      name: 'skipEmailVerification',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-      documentation: 'If true, do not send the verification email and mark the email as non-verified',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'User',
-      min: 1,
-      max: '1',
-      documentation: 'The updated User resource',
-    },
-  ],
-});
+const op = makeOperationDefinition(
+  { scope: 'instance', resource: 'User' },
+  {
+    name: 'update-user-email',
+    code: 'update-email',
+    parameter: [
+      {
+        use: 'in',
+        name: 'email',
+        type: 'string',
+        min: 1,
+        max: '1',
+        documentation: 'The new email to be set on the User',
+      },
+      {
+        use: 'in',
+        name: 'updateProfileTelecom',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+        documentation: 'If true, add the new email to the associated profile resource',
+      },
+      {
+        use: 'in',
+        name: 'skipEmailVerification',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+        documentation: 'If true, do not send the verification email and mark the email as non-verified',
+      },
+      {
+        use: 'out',
+        name: 'return',
+        type: 'User',
+        min: 1,
+        max: '1',
+        documentation: 'The updated User resource',
+      },
+    ],
+  }
+);
 
 type InputParams = {
   email: string;

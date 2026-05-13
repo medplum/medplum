@@ -11,37 +11,32 @@ import {
   getReferenceString,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  AccessPolicy,
-  Attachment,
-  Binary,
-  Bot,
-  Project,
-  ProjectMembership,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { AccessPolicy, Attachment, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
-import { deployBot } from './deploy';
 import { makeOperationDefinition } from './definitions';
+import { deployBot } from './deploy';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const botInitOperation = makeOperationDefinition({ scope: 'type', resource: 'Bot' }, {
-  name: 'bot-init',
-  code: 'init',
-  parameter: [
-    { use: 'in', name: 'name', type: 'string', min: 1, max: '1' },
-    { use: 'in', name: 'description', type: 'string', min: 0, max: '1' },
-    { use: 'in', name: 'accessPolicy', type: 'Reference', min: 0, max: '1' },
-    { use: 'in', name: 'sourceCode', type: 'Attachment', min: 0, max: '1' },
-    { use: 'in', name: 'executableCode', type: 'Attachment', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bot', min: 1, max: '1' },
-  ],
-});
+const botInitOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Bot' },
+  {
+    name: 'bot-init',
+    code: 'init',
+    parameter: [
+      { use: 'in', name: 'name', type: 'string', min: 1, max: '1' },
+      { use: 'in', name: 'description', type: 'string', min: 0, max: '1' },
+      { use: 'in', name: 'accessPolicy', type: 'Reference', min: 0, max: '1' },
+      { use: 'in', name: 'sourceCode', type: 'Attachment', min: 0, max: '1' },
+      { use: 'in', name: 'executableCode', type: 'Attachment', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bot', min: 1, max: '1' },
+    ],
+  }
+);
 
 export interface BotInitParameters {
   readonly name: string;

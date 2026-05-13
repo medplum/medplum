@@ -14,36 +14,39 @@ import {
   parseInputParameters,
 } from './utils/parameters';
 
-const LookupOperation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-column-statistics',
-  code: 'db-column-statistics',
-  parameter: [
-    param('in', 'tableName', 'string', 0, '1'),
-    param('out', 'defaultStatisticsTarget', 'integer', 1, '1'),
-    param('out', 'table', undefined, 0, '1', [
-      param('out', 'tableName', 'string', 1, '1'),
-      param('out', 'column', undefined, 1, '*', [
-        param('out', 'name', 'string', 1, '1'),
-        param('out', 'statisticsTarget', 'integer', 1, '1'),
-        param('out', 'schemaName', 'string', 1, '1'),
+const LookupOperation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-column-statistics',
+    code: 'db-column-statistics',
+    parameter: [
+      param('in', 'tableName', 'string', 0, '1'),
+      param('out', 'defaultStatisticsTarget', 'integer', 1, '1'),
+      param('out', 'table', undefined, 0, '1', [
         param('out', 'tableName', 'string', 1, '1'),
-        param('out', 'type', 'string', 1, '1'),
-        param('out', 'notNull', 'boolean', 1, '1'),
-        param('out', 'defaultValue', 'string', 0, '1'),
-        param('out', 'nullFraction', 'decimal', 0, '1'),
-        param('out', 'avgWidth', 'integer', 0, '1'),
-        param('out', 'nDistinct', 'decimal', 0, '1'),
-        param('out', 'mostCommonValues', 'string', 0, '1'),
-        param('out', 'mostCommonFreqs', 'string', 0, '1'),
-        param('out', 'histogramBounds', 'string', 0, '1'),
-        param('out', 'correlation', 'decimal', 0, '1'),
-        param('out', 'mostCommonElems', 'string', 0, '1'),
-        param('out', 'mostCommonElemFreqs', 'string', 0, '1'),
-        param('out', 'elemCountHistogram', 'string', 0, '1'),
+        param('out', 'column', undefined, 1, '*', [
+          param('out', 'name', 'string', 1, '1'),
+          param('out', 'statisticsTarget', 'integer', 1, '1'),
+          param('out', 'schemaName', 'string', 1, '1'),
+          param('out', 'tableName', 'string', 1, '1'),
+          param('out', 'type', 'string', 1, '1'),
+          param('out', 'notNull', 'boolean', 1, '1'),
+          param('out', 'defaultValue', 'string', 0, '1'),
+          param('out', 'nullFraction', 'decimal', 0, '1'),
+          param('out', 'avgWidth', 'integer', 0, '1'),
+          param('out', 'nDistinct', 'decimal', 0, '1'),
+          param('out', 'mostCommonValues', 'string', 0, '1'),
+          param('out', 'mostCommonFreqs', 'string', 0, '1'),
+          param('out', 'histogramBounds', 'string', 0, '1'),
+          param('out', 'correlation', 'decimal', 0, '1'),
+          param('out', 'mostCommonElems', 'string', 0, '1'),
+          param('out', 'mostCommonElemFreqs', 'string', 0, '1'),
+          param('out', 'elemCountHistogram', 'string', 0, '1'),
+        ]),
       ]),
-    ]),
-  ],
-});
+    ],
+  }
+);
 
 export async function getColumnStatisticsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

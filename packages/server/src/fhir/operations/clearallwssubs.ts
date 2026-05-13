@@ -10,40 +10,43 @@ import type { CacheEntry } from '../repository/resource-cache';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'clear-all-ws-subs',
-  code: 'clear-all-ws-subs',
-  parameter: [
-    {
-      use: 'in',
-      name: 'projectId',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'pubSubKeysDeleted',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'cacheKeysDeleted',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'userKeysDeleted',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'clear-all-ws-subs',
+    code: 'clear-all-ws-subs',
+    parameter: [
+      {
+        use: 'in',
+        name: 'projectId',
+        type: 'string',
+        min: 0,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'pubSubKeysDeleted',
+        type: 'integer',
+        min: 1,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'cacheKeysDeleted',
+        type: 'integer',
+        min: 1,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'userKeysDeleted',
+        type: 'integer',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export async function clearAllWsSubsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

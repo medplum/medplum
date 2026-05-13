@@ -6,12 +6,15 @@ import type { AsyncJob } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
 
-export const operation = makeOperationDefinition({ scope: 'instance', resource: 'AsyncJob' }, {
-  id: 'AsyncJob-cancel',
-  name: 'asyncjob-cancel',
-  code: 'cancel',
-  parameter: [{ use: 'out', name: 'return', type: 'OperationOutcome', min: 1, max: '1' }],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'AsyncJob' },
+  {
+    id: 'AsyncJob-cancel',
+    name: 'asyncjob-cancel',
+    code: 'cancel',
+    parameter: [{ use: 'out', name: 'return', type: 'OperationOutcome', min: 1, max: '1' }],
+  }
+);
 
 /**
  * Handles HTTP requests for the AsyncJob $cancel operation.

@@ -16,31 +16,34 @@ const quotaParts: OperationDefinitionParameter[] = [
   { use: 'out', name: 'msBeforeReset', type: 'integer', min: 0, max: '1' },
 ];
 
-const operation = makeOperationDefinition({ scope: 'instance', resource: 'Project' }, {
-  name: 'project-rate-limits',
-  code: 'rate-limits',
-  parameter: [
-    { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
-    {
-      use: 'out',
-      name: 'project',
-      min: 1,
-      max: '1',
-      part: [{ use: 'out', name: 'id', type: 'string', min: 1, max: '1' }, ...quotaParts],
-    },
-    {
-      use: 'out',
-      name: 'membership',
-      min: 0,
-      max: '*',
-      part: [
-        { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
-        ...quotaParts,
-      ],
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Project' },
+  {
+    name: 'project-rate-limits',
+    code: 'rate-limits',
+    parameter: [
+      { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
+      {
+        use: 'out',
+        name: 'project',
+        min: 1,
+        max: '1',
+        part: [{ use: 'out', name: 'id', type: 'string', min: 1, max: '1' }, ...quotaParts],
+      },
+      {
+        use: 'out',
+        name: 'membership',
+        min: 0,
+        max: '*',
+        part: [
+          { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
+          { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
+          ...quotaParts,
+        ],
+      },
+    ],
+  }
+);
 
 type RateLimitsInput = {
   membershipId?: string | string[];

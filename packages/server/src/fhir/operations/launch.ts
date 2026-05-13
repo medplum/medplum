@@ -8,14 +8,17 @@ import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'instance', resource: 'ClientApplication' }, {
-  name: 'clientapplication-smart-launch',
-  code: 'smart-launch',
-  parameter: [
-    { use: 'in', name: 'patient', type: 'uuid', min: 0, max: '1' },
-    { use: 'in', name: 'encounter', type: 'uuid', min: 0, max: '1' },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'ClientApplication' },
+  {
+    name: 'clientapplication-smart-launch',
+    code: 'smart-launch',
+    parameter: [
+      { use: 'in', name: 'patient', type: 'uuid', min: 0, max: '1' },
+      { use: 'in', name: 'encounter', type: 'uuid', min: 0, max: '1' },
+    ],
+  }
+);
 
 type LaunchOperationParameters = {
   patient?: string;

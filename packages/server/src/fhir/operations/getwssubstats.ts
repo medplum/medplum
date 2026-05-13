@@ -10,19 +10,22 @@ import { getPubSubRedis } from '../../redis';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'get-ws-sub-stats',
-  code: 'get-ws-sub-stats',
-  parameter: [
-    {
-      use: 'out',
-      name: 'stats',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'get-ws-sub-stats',
+    code: 'get-ws-sub-stats',
+    parameter: [
+      {
+        use: 'out',
+        name: 'stats',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export interface WsSubResourceTypeStats {
   resourceType: string;

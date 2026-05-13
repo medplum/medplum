@@ -7,26 +7,29 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-stats',
-  code: 'db-stats',
-  parameter: [
-    {
-      use: 'in',
-      name: 'tableNames',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'tableString',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-stats',
+    code: 'db-stats',
+    parameter: [
+      {
+        use: 'in',
+        name: 'tableNames',
+        type: 'string',
+        min: 0,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'tableString',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

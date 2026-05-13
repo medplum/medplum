@@ -7,14 +7,17 @@ import { makeOperationDefinition } from './definitions';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
-export const operation = makeOperationDefinition({ scope: 'type-and-instance', resource: 'Agent' }, {
-  name: 'agent-fetch-logs',
-  code: 'fetch-logs',
-  parameter: [
-    { use: 'in', name: 'limit', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Parameters', min: 1, max: '1' },
-  ],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'Agent' },
+  {
+    name: 'agent-fetch-logs',
+    code: 'fetch-logs',
+    parameter: [
+      { use: 'in', name: 'limit', type: 'integer', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Parameters', min: 1, max: '1' },
+    ],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $fetch-logs operation.

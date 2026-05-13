@@ -8,19 +8,22 @@ import { generateMigrationActions, writePreDeployActionsToBuilder } from '../../
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation = makeOperationDefinition({ scope: 'system' }, {
-  name: 'db-schema-diff',
-  code: 'schema-diff',
-  parameter: [
-    {
-      use: 'out',
-      name: 'migrationString',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-  ],
-});
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-schema-diff',
+    code: 'schema-diff',
+    parameter: [
+      {
+        use: 'out',
+        name: 'migrationString',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

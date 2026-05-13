@@ -10,16 +10,19 @@ import { parseInputParameters } from './utils/parameters';
 const DEFAULT_UPGRADE_TIMEOUT = 45000;
 const MAX_UPGRADE_TIMEOUT = 56000;
 
-export const operation = makeOperationDefinition({ scope: 'type-and-instance', resource: 'Agent' }, {
-  name: 'agent-upgrade',
-  code: 'upgrade',
-  parameter: [
-    { use: 'in', name: 'version', type: 'string', min: 0, max: '1' },
-    { use: 'in', name: 'timeout', type: 'integer', min: 0, max: '1' },
-    { use: 'in', name: 'force', type: 'boolean', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' },
-  ],
-});
+export const operation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'Agent' },
+  {
+    name: 'agent-upgrade',
+    code: 'upgrade',
+    parameter: [
+      { use: 'in', name: 'version', type: 'string', min: 0, max: '1' },
+      { use: 'in', name: 'timeout', type: 'integer', min: 0, max: '1' },
+      { use: 'in', name: 'force', type: 'boolean', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' },
+    ],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $upgrade operation.
