@@ -93,6 +93,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
           case 'agent:reloadconfig:response':
           case 'agent:upgrade:response':
           case 'agent:logs:response':
+          case 'agent:stats:response':
             if (command.callback) {
               await publish(command.callback, JSON.stringify(command));
             }

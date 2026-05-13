@@ -1569,7 +1569,7 @@ describe('Appointment/$find', () => {
       schedule: `Schedule/${schedule.id}`,
     });
     expect(response.status).toBe(400);
-    expect(response.body.issue[0].details.text).toBe('$find only supported on schedules with exactly one actor');
+    expect(response.body.issue[0].details.text).toBe('Scheduling only supported on schedules with exactly one actor');
   });
 
   test('errors when service type is not present on all schedules', async () => {

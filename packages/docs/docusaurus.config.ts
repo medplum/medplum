@@ -49,6 +49,38 @@ const config: Config = {
             from: '/docs/charting/ordering-labs-imaging',
             to: '/docs/labs-imaging/ordering-labs-imaging',
           },
+          {
+            from: '/docs/charting/soap-notes',
+            to: '/docs/charting/visit-templates',
+          },
+          {
+            from: '/docs/charting/capturing-vital-signs',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/representing-diagnoses',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/allergy-intolerances',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/patient-demographics',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/implantable-devices',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/external-documents',
+            to: '/docs/fhir-datastore/external-documents',
+          },
+          {
+            from: '/docs/questionnaires/structured-data-capture',
+            to: '/docs/questionnaires/parsing-questionnaire-responses',
+          },
         ],
       },
     ],
