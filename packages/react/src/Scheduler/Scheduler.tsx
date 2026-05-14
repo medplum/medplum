@@ -17,10 +17,10 @@ type SchedulingOption<T> = [T, Date];
 export type FetchOptionsFunction<T> = (period: Period) => Promise<SchedulingOption<T>[]>;
 
 export interface BaseSchedulerProps<T> {
-  actor?: Reference | Resource;
-  fetchOptions: FetchOptionsFunction<T>;
-  children?: React.ReactNode;
-  onSelectOption?: (el: T, date: Date) => void;
+  readonly actor?: Reference | Resource;
+  readonly fetchOptions: FetchOptionsFunction<T>;
+  readonly children?: React.ReactNode;
+  readonly onSelectOption?: (el: T, date: Date) => void;
 }
 
 /**
@@ -216,12 +216,9 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   }, [medplum, props.schedule]);
 
   return (
-    <BaseScheduler
-      fetchOptions={fetchOptions}
-      onSelectOption={props.onSelectSlot}
-      children={props.children}
-      actor={actor}
-    />
+    <BaseScheduler fetchOptions={fetchOptions} onSelectOption={props.onSelectSlot} actor={actor}>
+      {props.children}
+    </BaseScheduler>
   );
 }
 

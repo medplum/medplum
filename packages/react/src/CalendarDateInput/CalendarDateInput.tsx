@@ -25,7 +25,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
 
   function moveMonth(delta: number): void {
     setMonth((currMonth) => {
-      const newMonth = new Date(currMonth.getTime());
+      const newMonth = new Date(currMonth);
       newMonth.setMonth(currMonth.getMonth() + delta);
       onChangeMonth(newMonth);
       return newMonth;
@@ -91,7 +91,7 @@ function buildGrid(startDate: Date, availableDates: Date[]): OptionalCalendarCel
 
   while (d.getMonth() === startDate.getMonth()) {
     row.push({
-      date: new Date(d.getTime()),
+      date: new Date(d),
       available: isDayAvailable(d, availableDates),
     });
 
