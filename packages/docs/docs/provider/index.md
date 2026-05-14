@@ -47,6 +47,13 @@ The following sections outline the primary functionality of the Medplum Provider
 - [Documenting Visits](./provider/visits#documenting-visits)
 - [Setting Up Care Templates (via Medplum App)](./provider/visits#setting-up-care-templates-via-medplum-app)
 
+#### [Spaces](./provider/spaces)
+
+- [How Spaces Works](./provider/spaces#how-spaces-works)
+- [Prerequisites](./provider/spaces#prerequisites)
+- [The Agent Loop](./provider/spaces#the-agent-loop)
+- [Customizing The Translator System Prompt](./provider/spaces#customizing-the-translator-system-prompt)
+
 #### Documentation Coming Soon:
 
 - Tasks
