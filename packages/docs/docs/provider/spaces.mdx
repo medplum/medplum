@@ -7,8 +7,6 @@ keywords: [Spaces, $ai, OpenAI, FHIR agent, AI assistant, Medplum Provider, ai-f
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/provider/spaces-examples.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Spaces
 
@@ -60,52 +58,45 @@ Three things to keep in mind:
 
 ### Enable Project Features
 
-The project must list both `ai` and `bots` in `Project.features`. The Provider app's Spaces page short-circuits if either is missing, and the `$ai` operation rejects the request server-side if `ai` is not enabled.
+Spaces requires the `ai` and `bots` features on your Medplum project. Both are disabled by default. Contact info@medplum.com to enable them on your account; project administrators cannot toggle these features directly.
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="enableFeaturesTs">{ExampleCode}</MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="enableFeaturesCli">{ExampleCode}</MedplumCodeBlock>
-  </TabItem>
-</Tabs>
-
-See [Project Features](/docs/access/projects) for the full list of toggles.
+The Provider app's Spaces page short-circuits if either feature is missing, and the `$ai` operation rejects the request server-side if `ai` is not enabled.
 
 ### Configure The OpenAI API Key
 
-Add your OpenAI key as a project secret named `OPENAI_API_KEY`. The `$ai` operation reads it from `Project.secret` on every call and forwards it to OpenAI's chat completions endpoint. It is never sent to the client.
+Add your OpenAI key as a project secret named `OPENAI_API_KEY`. The `$ai` operation reads it from the project on every call and forwards it to OpenAI's chat completions endpoint. It is never sent to the client.
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="addOpenAiSecretTs">{ExampleCode}</MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="addOpenAiSecretCli">{ExampleCode}</MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+You must be a project administrator to add secrets. In the [Medplum App](https://app.medplum.com):
+
+1. Open Project Admin (left sidebar, or [app.medplum.com/admin/project](https://app.medplum.com/admin/project)).
+2. Click the Secrets tab.
+3. Click Add and enter `OPENAI_API_KEY` as the name, `string` as the type, and your OpenAI key as the value.
+
+See [Bot Secrets](/docs/bots/bot-secrets) for the same workflow described in more detail.
 
 :::caution
 If the key is missing, the `$ai` operation returns `OpenAI API key not configured in project secrets` and every Spaces turn fails. Set this before deploying the bots.
 :::
 
-### Deploy The Four Bots
+### Deploy The Spaces Bots
 
-Spaces depends on four bots. All four are addressed by `Identifier` (system `https://www.medplum.com/bots`), so the Provider UI does not need to know their resource IDs.
+Spaces depends on three bots that ship under [`examples/medplum-demo-bots/src/spaces-bots`](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/spaces-bots) and are already registered in that project's `medplum.config.json`. The Provider UI resolves each one by `Identifier` (system `https://www.medplum.com/bots`), so the identifier values below are load-bearing.
 
-| Identifier Value             | Source File                                                                                                                                                                                       | Role                                                                       |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `ai-fhir-request-tools`      | [`fhir-translator-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-translator-bot.ts)                                                         | Translator. Emits `fhir_request` tool calls and a `visualize` flag.        |
-| `ai-resource-summary`        | [`fhir-summary-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-summary-bot.ts)                                                              | Non-streaming summary fallback.                                            |
-| `ai-resource-summary-sse`    | [`fhir-summary-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-summary-bot.ts)                                                              | Primary streaming summary path. Server-Sent Events.                        |
-| `ai-component-generator-sse` | [`fhir-visualizer-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-visualizer-bot.ts)                                                        | Streaming Recharts / Mantine `Chart()` JSX generation.                     |
+| Identifier Value             | Source File                                                                                                                                       | Role                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `ai-fhir-request-tools`      | [`fhir-translator-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-translator-bot.ts)         | Translator. Emits `fhir_request` tool calls and a `visualize` flag.   |
+| `ai-resource-summary-sse`    | [`fhir-summary-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-summary-bot.ts)               | Streaming summary bot (Server-Sent Events).                           |
+| `ai-component-generator-sse` | [`fhir-visualizer-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-visualizer-bot.ts)         | Streaming Recharts / Mantine `Chart()` JSX generation.                |
 
-Deploy each one with the Medplum CLI. Use the identifier values from the table above so the Provider UI can resolve them.
+To deploy:
 
-<MedplumCodeBlock language="bash" selectBlocks="deployBotsCli">{ExampleCode}</MedplumCodeBlock>
+1. Clone [the demo-bots project](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots) (or copy the `spaces-bots` directory and the matching entries from `medplum.config.json` into your own bot project).
+2. Build and deploy each bot following [Bot Basics](/docs/bots/bot-basics) and [Bots In Production](/docs/bots/bots-in-production).
+3. After deployment, open each [`Bot`](/docs/api/fhir/medplum/bot) resource in the Medplum App and add an `identifier` entry whose `system` is `https://www.medplum.com/bots` and whose `value` matches the table above. The Provider UI uses this identifier to find the bot, so a missing or mistyped value silently breaks the feature.
 
-See [Bot Basics](/docs/bots/bot-basics) and [Bots In Production](/docs/bots/bots-in-production) for general bot deployment guidance.
+:::note
+The non-streaming `ai-resource-summary` bot is referenced in the Provider source as a fallback path, but the shipping UI always uses the streaming variant. You only need to deploy a non-streaming summary bot if you fork the Provider app to disable streaming.
+:::
 
 ### Seed The Translator System Prompt
 

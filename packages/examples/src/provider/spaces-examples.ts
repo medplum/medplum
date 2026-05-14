@@ -8,61 +8,10 @@
 
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import type { Communication, Parameters, Project } from '@medplum/fhirtypes';
+import type { Communication, Parameters } from '@medplum/fhirtypes';
 // end-block imports
 
 const medplum = new MedplumClient();
-
-// start-block enableFeaturesTs
-// Read the current project, then patch its features list.
-const project = await medplum.searchOne('Project');
-if (!project?.id) {
-  throw new Error('No accessible Project found');
-}
-const existingFeatures = project.features ?? [];
-const required: NonNullable<Project['features']> = ['ai', 'bots'];
-const features = Array.from(new Set([...existingFeatures, ...required]));
-await medplum.updateResource<Project>({ ...project, features });
-// end-block enableFeaturesTs
-
-/*
-// start-block enableFeaturesCli
-medplum project update --features ai,bots
-// end-block enableFeaturesCli
-*/
-
-// start-block addOpenAiSecretTs
-// Add OPENAI_API_KEY to the project secret list.
-const projectForSecret = await medplum.searchOne('Project');
-if (!projectForSecret?.id) {
-  throw new Error('No accessible Project found');
-}
-const otherSecrets = (projectForSecret.secret ?? []).filter((s) => s.name !== 'OPENAI_API_KEY');
-await medplum.updateResource<Project>({
-  ...projectForSecret,
-  secret: [...otherSecrets, { name: 'OPENAI_API_KEY', valueString: 'sk-...' }],
-});
-// end-block addOpenAiSecretTs
-
-/*
-// start-block addOpenAiSecretCli
-medplum project secret set OPENAI_API_KEY 'sk-...'
-// end-block addOpenAiSecretCli
-*/
-
-/*
-// start-block deployBotsCli
-# From examples/medplum-demo-bots, deploy each Spaces bot with its identifier.
-# Repeat for each of the four bots; replace <bot-name> with the source filename
-# and <identifier-value> with the identifier value from the table.
-medplum bot create \
-  --name '<bot-name>' \
-  --source 'src/spaces-bots/<bot-name>.ts' \
-  --identifier 'https://www.medplum.com/bots|<identifier-value>'
-
-medplum bot deploy '<bot-name>'
-// end-block deployBotsCli
-*/
 
 // start-block seedSystemPromptTs
 // One-time setup: create the Communication that holds the translator's system
