@@ -18,6 +18,25 @@ Spaces is shipped as an example implementation. The Provider app source lives in
 
 The feature is reachable at `/Spaces/Communication` in the Provider app. It is gated on the project having both the `ai` and `bots` features enabled.
 
+## What You Can Do With Spaces
+
+The translator bot can issue any FHIR request the requester's AccessPolicy permits, so the practical capability surface is broad. Typical prompts fall into a few categories:
+
+| Category               | Example Prompts                                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search and lookup      | "Find the patient John Smith." "Which patients are scheduled with Dr. Chen this week?"                                                       |
+| Clinical summary       | "Summarize Maria Garcia's last three encounters." "What medications is this patient on?"                                                     |
+| Visualize trends       | "Show a growth chart for this patient." "Plot hemoglobin A1c over the last two years."                                                       |
+| Operational reporting  | "Chart provider utilization across the clinic for the past month." "How many lab orders did we place last week?"                             |
+| Schedule and tasks     | "Schedule a follow-up with Dr. Patel next Tuesday at 10am." "Create a task to fax the imaging report to the referring provider."             |
+| Orders and updates     | "Order a CBC for this patient." "Place a referral to cardiology." "Update the patient's phone number to 555-0142."                           |
+
+The first four rows are read-only and end at the summary bot. The visualization and reporting prompts additionally invoke the visualizer bot to render an interactive chart in the side panel. The last two rows trigger live FHIR writes through the same loop.
+
+:::caution
+Writes happen as soon as the loop reaches them. Treat clinically significant prompts (orders, referrals, status changes) the same way you would any draft – review the resulting resource before relying on it, and consider scoping the `ai` feature to AccessPolicies that do not include write access to high-risk resource types.
+:::
+
 ## How Spaces Works
 
 Spaces is not a single AI call. Each user prompt drives a short pipeline of bots and a tool-use loop:
@@ -168,7 +187,7 @@ Outputs: `content` (the narration), streamed as SSE chunks when the streaming va
 
 ### FHIR Visualizer Bot
 
-`ai-component-generator-sse`. Only invoked when the translator set `visualize=true` at least once during the loop. Receives the resolved FHIR resources and produces a self-contained `function Chart()` React component, streamed to the UI inside a fenced code block. The generated component uses pre-scoped [Recharts](https://recharts.org) primitives (line, bar, area, pie, scatter, composed) and [Mantine](https://mantine.dev) layout primitives — no `import` statements required.
+`ai-component-generator-sse`. Only invoked when the translator set `visualize=true` at least once during the loop. Receives the resolved FHIR resources and produces a self-contained `function Chart()` React component, streamed to the UI inside a fenced code block. The generated component uses pre-scoped [Recharts](https://recharts.org) primitives (line, bar, area, pie, scatter, composed) and [Mantine](https://mantine.dev) layout primitives – no `import` statements required.
 
 Inputs: `messages`, `model`, and `fhirData` (`valueString`, JSON array of resolved FHIR resources collected during the loop).
 
@@ -200,15 +219,15 @@ If you find users routinely hitting the cap, tighten the translator system promp
 
 ### Streaming Behavior
 
-The summary and visualizer bots stream their output as Server-Sent Events from OpenAI through `$ai` to the browser, so users see the narration appear word-by-word and the chart code render as it is generated. Tool calls run only on the non-streaming path — this is a constraint of OpenAI's streaming protocol, surfaced in the [`$ai` operation docs](/docs/ai/ai-operation).
+The summary and visualizer bots stream their output as Server-Sent Events from OpenAI through `$ai` to the browser, so users see the narration appear word-by-word and the chart code render as it is generated. Tool calls run only on the non-streaming path – this is a constraint of OpenAI's streaming protocol, surfaced in the [`$ai` operation docs](/docs/ai/ai-operation).
 
 ### Model Selection
 
-The Provider UI exposes a model selector in the chat input. The chosen model flows through to every bot via the `model` parameter and on to `$ai`. The dropdown contents are a UI concern; change it in [`ChatInput.tsx`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/spaces/ChatInput.tsx) if you want to expose different models. The bots themselves are model-agnostic — they pass whatever string they are given.
+The Provider UI exposes a model selector in the chat input. The chosen model flows through to every bot via the `model` parameter and on to `$ai`. The dropdown contents are a UI concern; change it in [`ChatInput.tsx`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/spaces/ChatInput.tsx) if you want to expose different models. The bots themselves are model-agnostic – they pass whatever string they are given.
 
 ## Customizing The Translator System Prompt
 
-The Communication that backs the translator's system prompt is the supported customization point. Edit it, and the next user message uses the new prompt — no bot redeploy required.
+The Communication that backs the translator's system prompt is the supported customization point. Edit it, and the next user message uses the new prompt – no bot redeploy required.
 
 <MedplumCodeBlock language="ts" selectBlocks="updateSystemPromptTs">{ExampleCode}</MedplumCodeBlock>
 
@@ -219,7 +238,7 @@ Recommendations:
 - Use `payload[1]` for anything that depends on the requester. The `{{ref}}` placeholder is replaced at request time, which is the only piece of per-user context the bot has by default.
 
 :::caution
-A prompt that contradicts the tool schema (for example, telling the model not to call any tools) will break the loop in subtle ways — the translator returns plain text, the summary bot gets no tool responses to narrate, and the chat shows a generic "I was unable to generate a response" message. Test prompt changes against a few representative user questions before rolling them out.
+A prompt that contradicts the tool schema (for example, telling the model not to call any tools) will break the loop in subtle ways – the translator returns plain text, the summary bot gets no tool responses to narrate, and the chat shows a generic "I was unable to generate a response" message. Test prompt changes against a few representative user questions before rolling them out.
 :::
 
 ## Security And Cost
@@ -231,9 +250,9 @@ A prompt that contradicts the tool schema (for example, telling the model not to
 
 ## See Also
 
-- [Medplum `$ai` Operation](/docs/ai/ai-operation) — the underlying FHIR operation that wraps OpenAI
-- [Medplum AI (MCP)](/docs/ai/mcp) — an alternative AI surface for tools that speak MCP
-- [Bot Basics](/docs/bots/bot-basics) — bot fundamentals and deployment
-- [Bot Secrets](/docs/bots/bot-secrets) — accessing project secrets from a bot
-- [Project Features](/docs/access/projects) — enabling the `ai` and `bots` flags
-- [Communication](/docs/api/fhir/resources/communication) FHIR resource API — conversation storage
+- [Medplum `$ai` Operation](/docs/ai/ai-operation) – the underlying FHIR operation that wraps OpenAI
+- [Medplum AI (MCP)](/docs/ai/mcp) – an alternative AI surface for tools that speak MCP
+- [Bot Basics](/docs/bots/bot-basics) – bot fundamentals and deployment
+- [Bot Secrets](/docs/bots/bot-secrets) – accessing project secrets from a bot
+- [Project Features](/docs/access/projects) – enabling the `ai` and `bots` flags
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API – conversation storage
