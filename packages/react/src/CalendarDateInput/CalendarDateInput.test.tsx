@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Slot } from '@medplum/fhirtypes';
-import { getMonthString, getStartMonth } from '../CalendarDateInput/CalendarDateInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { CalendarInput } from './CalendarInput';
+import { CalendarDateInput } from './CalendarDateInput';
+import { getMonthString, getStartMonth } from './CalendarDateInput.utils';
 
-describe('CalendarInput', () => {
+describe('CalendarDateInput', () => {
   test('Renders', () => {
     const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
+    render(<CalendarDateInput availableDates={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
     expect(screen.getByText(getMonthString(new Date()))).toBeDefined();
     expect(screen.getByText('SUN')).toBeDefined();
     expect(screen.getByText('1')).toBeDefined();
@@ -16,14 +15,14 @@ describe('CalendarInput', () => {
 
   test('Disabled days', () => {
     const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
+    render(<CalendarDateInput availableDates={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '4' }).disabled).toBe(true);
   });
 
   test('Change months', async () => {
     const onChangeMonth = jest.fn();
     const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onChangeMonth={onChangeMonth} onClick={onClick} />);
+    render(<CalendarDateInput availableDates={[]} onChangeMonth={onChangeMonth} onClick={onClick} />);
 
     const nextMonth = getStartMonth();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -51,15 +50,10 @@ describe('CalendarInput', () => {
     startTime.setDate(15);
     startTime.setHours(12, 0, 0, 0);
 
-    const slots: Slot[] = [
-      {
-        resourceType: 'Slot',
-        start: startTime.toISOString(),
-      },
-    ] as Slot[];
+    const availableDates = [startTime];
 
     const onClick = jest.fn();
-    render(<CalendarInput slots={slots} onChangeMonth={jest.fn()} onClick={onClick} />);
+    render(<CalendarDateInput availableDates={availableDates} onChangeMonth={jest.fn()} onClick={onClick} />);
 
     // Move forward one month
     await act(async () => {
@@ -78,6 +72,8 @@ describe('CalendarInput', () => {
     expect(onClick).toHaveBeenCalled();
 
     const result = onClick.mock.calls[0][0];
+    expect(result.getFullYear()).toBe(nextMonth.getFullYear());
+    expect(result.getMonth()).toBe(nextMonth.getMonth());
     expect(result.getDate()).toBe(15);
   });
 });
