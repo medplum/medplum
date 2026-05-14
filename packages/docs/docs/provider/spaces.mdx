@@ -22,16 +22,14 @@ The feature is reachable at `/Spaces/Communication` in the Provider app. It is g
 
 The translator bot can issue any FHIR request the requester's AccessPolicy permits, so the practical capability surface is broad. Typical prompts fall into a few categories:
 
-| Category               | Example Prompts                                                                                                                              |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Search and lookup      | "Find the patient John Smith." "Which patients are scheduled with Dr. Chen this week?"                                                       |
-| Clinical summary       | "Summarize Maria Garcia's last three encounters." "What medications is this patient on?"                                                     |
-| Visualize trends       | "Show a growth chart for this patient." "Plot hemoglobin A1c over the last two years."                                                       |
-| Operational reporting  | "Chart provider utilization across the clinic for the past month." "How many lab orders did we place last week?"                             |
-| Schedule and tasks     | "Schedule a follow-up with Dr. Patel next Tuesday at 10am." "Create a task to fax the imaging report to the referring provider."             |
-| Orders and updates     | "Order a CBC for this patient." "Place a referral to cardiology." "Update the patient's phone number to 555-0142."                           |
+- Search and lookup – "Find the patient John Smith." "Which patients are scheduled with Dr. Chen this week?"
+- Clinical summary – "Summarize Maria Garcia's last three encounters." "What medications is this patient on?"
+- Visualize trends – "Show a growth chart for this patient." "Plot hemoglobin A1c over the last two years."
+- Operational reporting – "Chart provider utilization across the clinic for the past month." "How many lab orders did we place last week?"
+- Schedule and tasks – "Schedule a follow-up with Dr. Patel next Tuesday at 10am." "Create a task to fax the imaging report to the referring provider."
+- Orders and updates – "Order a CBC for this patient." "Place a referral to cardiology." "Update the patient's phone number to 555-0142."
 
-The first four rows are read-only and end at the summary bot. The visualization and reporting prompts additionally invoke the visualizer bot to render an interactive chart in the side panel. The last two rows trigger live FHIR writes through the same loop.
+The first four bullets are read-only and end at the summary bot. The visualization and reporting prompts additionally invoke the visualizer bot to render an interactive chart in the side panel. The last two bullets trigger live FHIR writes through the same loop.
 
 :::caution
 Writes happen as soon as the loop reaches them. Treat clinically significant prompts (orders, referrals, status changes) the same way you would any draft – review the resulting resource before relying on it, and consider scoping the `ai` feature to AccessPolicies that do not include write access to high-risk resource types.
