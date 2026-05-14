@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Drawer, Group, Text } from '@mantine/core';
+import { ActionIcon, Box, Divider, Drawer, Group, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString, isReference, isResourceWithId } from '@medplum/core';
@@ -14,9 +14,11 @@ import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
+import { SideDrawer } from '../../components/SideDrawer';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
 import { mergeOverlappingSlots } from '../../utils/slots';
+import { AppointmentCancelButton } from './AppointmentCancelButton';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
 
@@ -218,6 +220,14 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, navigate]
   );
 
+  const handleCancelled = useCallback(
+    async (cancelledAppointment: WithId<Appointment>) => {
+      handleAppointmentUpdate(cancelledAppointment);
+      appointmentDetailsHandlers.close();
+    },
+    [handleAppointmentUpdate, appointmentDetailsHandlers]
+  );
+
   const schedulingEnabled = project?.features?.includes('scheduling');
 
   return (
@@ -281,21 +291,21 @@ export function SchedulePage(): JSX.Element | null {
           <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
         </Drawer>
       )}
-      <Drawer
+      <SideDrawer
         opened={appointmentDetailsOpened}
         onClose={appointmentDetailsHandlers.close}
-        title={
-          <Text size="xl" fw={700}>
-            Appointment Details
-          </Text>
-        }
-        position="right"
-        h="100%"
+        title="Appointment Details"
       >
         {appointmentDetails && (
-          <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
+          <Stack justify="space-between" h="100%">
+            <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
+            <Stack gap="md">
+              <Divider />
+              <AppointmentCancelButton appointment={appointmentDetails} onCancel={handleCancelled} />
+            </Stack>
+          </Stack>
         )}
-      </Drawer>
+      </SideDrawer>
     </Box>
   );
 }

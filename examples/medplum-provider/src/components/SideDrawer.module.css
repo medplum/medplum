@@ -1,0 +1,14 @@
+.SideDrawer {
+  /* Override some Mantine styles to make the Drawer body fill the full
+   * available height.  This makes it possible to place elements at the bottom
+   * of the drawer.
+   */
+  & :global(.mantine-Drawer-content) {
+    display: flex;
+    flex-direction: column;
+
+    & :global(.mantine-Drawer-body) {
+      flex-grow: 1;
+    }
+  }
+}
