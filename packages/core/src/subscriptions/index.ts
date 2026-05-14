@@ -211,7 +211,7 @@ export class SubscriptionManager {
       }
     });
 
-    ws.addEventListener('error', () => {
+    ws.addEventListener('error', (event) => {
       const errorEvent = {
         type: 'error',
         payload: new OperationOutcomeError({
@@ -223,7 +223,7 @@ export class SubscriptionManager {
               details: {
                 text: 'WebSocket connection closed due to an error',
               },
-              diagnostics: new Error('WebSocket error').toString(),
+              diagnostics: event.error.toString(),
             },
           ],
         }),
