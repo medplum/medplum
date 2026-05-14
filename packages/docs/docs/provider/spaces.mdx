@@ -22,21 +22,15 @@ The feature is reachable at `/Spaces/Communication` in the Provider app. It is g
 
 Spaces is not a single AI call. Each user prompt drives a short pipeline of bots and a tool-use loop:
 
-```
-User message
-   │
-   ▼
-ai-fhir-request-tools  ── translator bot
-   │  returns: tool_calls[]   and a visualize flag
-   ▼
-Provider UI executes each fhir_request directly against the FHIR API
-   │  loop up to 10 iterations
-   ▼
-ai-resource-summary-sse  ── streaming summary bot
-   │
-   ├── visualize=false ──▶ stream text into the chat
-   │
-   └── visualize=true  ──▶ ai-component-generator-sse  ──▶ JSX Chart() component
+```mermaid
+flowchart TD
+  U[User message] --> T[ai-fhir-request-tools<br/>translator bot]
+  T -->|tool_calls + visualize flag| X[Provider UI executes each<br/>fhir_request against the FHIR API]
+  X -->|loop up to 10 iterations| T
+  T -->|no tool calls| S[ai-resource-summary-sse<br/>streaming summary bot]
+  S -->|visualize = false| O1[Stream text into the chat]
+  S -->|visualize = true| V[ai-component-generator-sse<br/>chart generator bot]
+  V --> O2[JSX Chart component<br/>rendered in side panel]
 ```
 
 Three things to keep in mind:

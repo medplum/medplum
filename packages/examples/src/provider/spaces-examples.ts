@@ -21,7 +21,7 @@ if (!project?.id) {
 }
 const existingFeatures = project.features ?? [];
 const required: NonNullable<Project['features']> = ['ai', 'bots'];
-const features = Array.from(new Set([...existingFeatures, ...required])) as NonNullable<Project['features']>;
+const features = Array.from(new Set([...existingFeatures, ...required]));
 await medplum.updateResource<Project>({ ...project, features });
 // end-block enableFeaturesTs
 
