@@ -15,7 +15,7 @@ import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
-import { getProjectIdByClientId, sendLoginResult } from './utils';
+import { getProjectIdByClientId, getScopeString, sendLoginResult } from './utils';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -127,7 +127,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     projectId,
     clientId,
     resourceType,
-    scope: req.body.scope || 'openid offline',
+    scope: getScopeString(req.body.scope),
     nonce: req.body.nonce || randomUUID(),
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,

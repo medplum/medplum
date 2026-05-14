@@ -184,7 +184,7 @@ describe('FHIR Rate Limits', () => {
     const loginRes = await request(app).post('/auth/login').type('json').send({
       email,
       password,
-      scope: 'openid offline',
+      scope: 'openid offline_access',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });

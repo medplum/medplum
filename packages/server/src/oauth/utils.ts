@@ -86,7 +86,7 @@ export interface LoginRequest {
   readonly origin?: string;
   readonly pictureUrl?: string;
   readonly forceUseFirstMembership?: boolean;
-  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  /** @deprecated Use "offline_access" scope instead. */
   readonly remember?: boolean;
 }
 
@@ -178,7 +178,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 
   await authenticate(request, user);
 
-  const refreshSecret = includeRefreshToken(request) ? generateSecret(32) : undefined;
+  const refreshSecret = includeRefreshToken(request, client) ? generateSecret(32) : undefined;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -799,20 +799,28 @@ export function timingSafeEqualStr(a: string | undefined, b: string | undefined)
 /**
  * Determines if the login request should include a refresh token.
  * @param request - The login request.
+ * @param client - The client application.
  * @returns True if the login should include a refresh token.
  */
-function includeRefreshToken(request: LoginRequest): boolean {
+function includeRefreshToken(request: LoginRequest, client: ClientApplication | undefined): boolean {
   // Deprecated legacy "remember" flag
   if (request.remember) {
+    getLogger().warn('LoginRequest.remember is deprecated, use "offline_access" instead');
     return true;
   }
 
-  // Check for offline scope
-  // Google calls it "offline": https://developers.google.com/identity/protocols/oauth2/web-server#offline
-  // Auth0 calls it "offline_access": https://auth0.com/docs/secure/tokens/refresh-tokens/get-refresh-tokens
-  // We support both
-  const scopeArray = request.scope.split(' ');
-  return scopeArray.includes('offline') || scopeArray.includes('offline_access');
+  const scopeArray = request.scope?.split(' ');
+  if (scopeArray?.includes('offline')) {
+    // Historically, we supported "offline" as the scope for refresh tokens, but that is not the standard.
+    // Google called it "offline": https://developers.google.com/identity/protocols/oauth2/web-server#offline
+    getLogger().warn('Scope "offline" is deprecated, use "offline_access" instead');
+    return true;
+  }
+
+  // There are two ways that a client can indicate that it wants refresh tokens:
+  // 1. Include "offline_access" in the scope of the authorization request
+  // 2. Include "refresh_token" in the grant types of the client application registration
+  return client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access');
 }
 
 export function normalizeUserInfoUrl(userInfoUrl: string): string {

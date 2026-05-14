@@ -61936,6 +61936,20 @@
           },
           "type": "array"
         },
+        "grantType": {
+          "description": "Optional OAuth grant type for the client application. This specifies the allowed grant types for the client application.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "responseType": {
+          "description": "Optional OAuth response type for the client application. This specifies the allowed response types for the client application.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
         "defaultScope": {
           "description": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
           "items": {

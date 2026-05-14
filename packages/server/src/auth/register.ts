@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { createProject } from '../fhir/operations/projectinit';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { bcryptHashPassword } from './utils';
+import { bcryptHashPassword, getScopeString } from './utils';
 
 /*
  * This is a utility method for creating a Project, Profile, and ProjectMembership.
@@ -61,7 +61,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: request.scope ?? 'openid offline',
+    scope: getScopeString(request.scope),
     nonce: randomUUID(),
     email: email,
     password: password,

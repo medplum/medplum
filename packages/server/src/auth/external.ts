@@ -22,6 +22,7 @@ import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
 import { getClientApplication, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
+import { getScopeString } from './utils';
 
 /*
  * External authentication callback
@@ -111,7 +112,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     externalId,
     projectId,
     clientId: body.clientId,
-    scope: body.scope ?? 'openid offline',
+    scope: getScopeString(body.scope, client),
     nonce: body.nonce ?? randomUUID(),
     launchId: body.launch,
     codeChallenge: body.codeChallenge,
