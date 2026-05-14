@@ -188,9 +188,9 @@ export class FhirRateLimiter {
     const nextKey = getActiveRateLimitKey(this.projectKey, currentBucket + 1);
 
     const pipeline = this.redis.pipeline();
-    pipeline.zadd(currentKey, consumedPoints, this.userKey);
+    pipeline.zadd(currentKey, 'GT', consumedPoints, this.userKey);
     pipeline.expire(currentKey, FHIR_RATE_LIMIT_ACTIVE_TTL);
-    pipeline.zadd(nextKey, consumedPoints, this.userKey);
+    pipeline.zadd(nextKey, 'GT', consumedPoints, this.userKey);
     pipeline.expire(nextKey, FHIR_RATE_LIMIT_ACTIVE_TTL);
     pipeline.exec().catch((err) => {
       this.logger.error('Error tracking active rate limit consumer', err);
