@@ -70,7 +70,9 @@ There are some scenarios where you may want to **set a custom quota for a User, 
 **Important:** The `totalFhirQuota` will still be enforced, but `userFhirQuota` will be overridden for the User, Bot, or ClientApplication.
 :::
 
-:::tip[Avoiding quota with async batch requests]
+### Avoiding quota with async batch requests
+
+:::tip
 [Asynchronous batch requests](/docs/fhir-datastore/processing-async-bundles) do not count against a user's FHIR interaction quota. If you're running large data seeding or import jobs and hitting quota limits, processing the bundle with the `Prefer: respond-async` header is an alternative to raising the quota. Note that data will not be immediately available.
 :::
 
