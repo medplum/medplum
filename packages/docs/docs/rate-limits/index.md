@@ -71,7 +71,7 @@ There are some scenarios where you may want to **set a custom quota for a User, 
 :::
 
 :::tip[Avoiding quota with async batch requests]
-[Asynchronous batch requests](/docs/fhir-datastore/fhir-batch-requests#asynchronous-batch-requests) do not count against a user's FHIR interaction quota. If you're running large data seeding or import jobs and hitting quota limits, processing the bundle with the `Prefer: respond-async` header is an alternative to raising the quota. Note that data will not be immediately available.
+[Asynchronous batch requests](/docs/fhir-datastore/processing-async-bundles) do not count against a user's FHIR interaction quota. If you're running large data seeding or import jobs and hitting quota limits, processing the bundle with the `Prefer: respond-async` header is an alternative to raising the quota. Note that data will not be immediately available.
 :::
 
 ## Reporting Request and Load Rate Limits: HTTP Headers
