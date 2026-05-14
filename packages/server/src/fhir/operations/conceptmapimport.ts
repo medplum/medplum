@@ -3,89 +3,80 @@
 import type { TypedValue, WithId } from '@medplum/core';
 import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  Coding,
-  ConceptMap,
-  ConceptMapGroupElementTargetDependsOn,
-  OperationDefinition,
-} from '@medplum/fhirtypes';
+import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery, SelectQuery, Union } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, uniqueOn } from './utils/terminology';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'conceptmap-import',
-  status: 'active',
-  kind: 'operation',
-  code: 'import',
-  experimental: true,
-  resource: ['ConceptMap'],
-  system: false,
-  type: true,
-  instance: true,
-  affectsState: true,
-  parameter: [
-    { use: 'in', name: 'url', type: 'uri', min: 0, max: '1' },
-    {
-      use: 'in',
-      name: 'mapping',
-      min: 1,
-      max: '*',
-      part: [
-        { use: 'in', name: 'source', type: 'Coding', min: 1, max: '1' },
-        // `target.system` is required; leave `target.code` empty for null map
-        { use: 'in', name: 'target', type: 'Coding', min: 1, max: '1' },
-        // Default value of relationship is `equivalent`, to reduce overhead
-        {
-          use: 'in',
-          name: 'relationship',
-          type: 'code',
-          min: 0,
-          max: '1',
-          binding: {
-            strength: 'required',
-            valueSet: 'http://hl7.org/fhir/ValueSet/concept-map-equivalence',
+const operation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'ConceptMap' },
+  {
+    name: 'conceptmap-import',
+    code: 'import',
+    affectsState: true,
+    parameter: [
+      { use: 'in', name: 'url', type: 'uri', min: 0, max: '1' },
+      {
+        use: 'in',
+        name: 'mapping',
+        min: 1,
+        max: '*',
+        part: [
+          { use: 'in', name: 'source', type: 'Coding', min: 1, max: '1' },
+          // `target.system` is required; leave `target.code` empty for null map
+          { use: 'in', name: 'target', type: 'Coding', min: 1, max: '1' },
+          // Default value of relationship is `equivalent`, to reduce overhead
+          {
+            use: 'in',
+            name: 'relationship',
+            type: 'code',
+            min: 0,
+            max: '1',
+            binding: {
+              strength: 'required',
+              valueSet: 'http://hl7.org/fhir/ValueSet/concept-map-equivalence',
+            },
           },
-        },
-        { use: 'in', name: 'comment', type: 'string', min: 0, max: '1' },
-        {
-          use: 'in',
-          name: 'property',
-          min: 0,
-          max: '*',
-          part: [
-            { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
-            { use: 'in', name: 'value', type: 'Any', min: 1, max: '1' },
-          ],
-        },
-        {
-          use: 'in',
-          name: 'dependsOn',
-          min: 0,
-          max: '*',
-          part: [
-            { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
-            { use: 'in', name: 'value', type: 'Any', min: 0, max: '1' },
-          ],
-        },
-        {
-          use: 'in',
-          name: 'product',
-          min: 0,
-          max: '*',
-          part: [
-            { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
-            { use: 'in', name: 'value', type: 'Any', min: 0, max: '1' },
-          ],
-        },
-      ],
-    },
-    { use: 'out', name: 'return', type: 'ConceptMap', min: 1, max: '1' },
-  ],
-};
+          { use: 'in', name: 'comment', type: 'string', min: 0, max: '1' },
+          {
+            use: 'in',
+            name: 'property',
+            min: 0,
+            max: '*',
+            part: [
+              { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+              { use: 'in', name: 'value', type: 'Any', min: 1, max: '1' },
+            ],
+          },
+          {
+            use: 'in',
+            name: 'dependsOn',
+            min: 0,
+            max: '*',
+            part: [
+              { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+              { use: 'in', name: 'value', type: 'Any', min: 0, max: '1' },
+            ],
+          },
+          {
+            use: 'in',
+            name: 'product',
+            min: 0,
+            max: '*',
+            part: [
+              { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+              { use: 'in', name: 'value', type: 'Any', min: 0, max: '1' },
+            ],
+          },
+        ],
+      },
+      { use: 'out', name: 'return', type: 'ConceptMap', min: 1, max: '1' },
+    ],
+  }
+);
 
 export type ConceptMapImportParameters = {
   url?: string;
