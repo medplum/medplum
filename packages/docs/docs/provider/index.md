@@ -52,7 +52,7 @@ The following sections outline the primary functionality of the Medplum Provider
 - [How Spaces Works](./provider/spaces#how-spaces-works)
 - [Prerequisites](./provider/spaces#prerequisites)
 - [The Agent Loop](./provider/spaces#the-agent-loop)
-- [Customizing The Translator System Prompt](./provider/spaces#customizing-the-translator-system-prompt)
+- [Customizing System Prompts](./provider/spaces#customizing-system-prompts)
 
 #### Documentation Coming Soon:
 

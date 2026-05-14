@@ -13,20 +13,18 @@ import type { Communication, Parameters } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-// start-block seedSystemPromptTs
-// One-time setup: create the Communication that holds the translator's system
-// prompt and profile-context template. payload[0] is the system prompt;
-// payload[1] is a profile-context template where {{ref}} is substituted with
-// the requester's reference string at request time.
+// start-block seedSystemPromptsTs
+// One-time setup: create the three Communications that hold the system prompts
+// for the translator, summary, and visualizer bots. The bodies below are a
+// thin wiring skeleton - the loop runs end-to-end with these in place, but
+// you should replace each payload[0].contentString with prompts authored for
+// your deployment before exposing Spaces to users.
+
+// Translator: produces the fhir_request tool calls that drive the loop.
 await medplum.createResource<Communication>({
   resourceType: 'Communication',
   status: 'completed',
-  identifier: [
-    {
-      system: 'http://medplum.com/ai-spaces',
-      value: 'ai-fhir-request-tools',
-    },
-  ],
+  identifier: [{ system: 'http://medplum.com/ai-spaces', value: 'ai-fhir-request-tools' }],
   payload: [
     {
       contentString: [
@@ -34,15 +32,49 @@ await medplum.createResource<Communication>({
         'Use the fhir_request tool for every FHIR operation - never invent results.',
         'For updates, first GET the resource, then PUT the modified full resource.',
         'Set visualize=true on the tool call when the result should be a chart',
-        '(e.g. growth trends, lab values over time, observation series).',
+        '(for example trends or values over time).',
       ].join('\n'),
     },
     {
+      // payload[1] is a profile-context template; {{ref}} is replaced at request
+      // time with the requester's reference string (e.g. Practitioner/abc-123).
       contentString: 'The requester is {{ref}}. Scope queries to data they are entitled to see.',
     },
   ],
 });
-// end-block seedSystemPromptTs
+
+// Summary: narrates the FHIR responses the translator collected.
+await medplum.createResource<Communication>({
+  resourceType: 'Communication',
+  status: 'completed',
+  identifier: [{ system: 'http://medplum.com/ai-spaces', value: 'ai-resource-summary-sse' }],
+  payload: [
+    {
+      contentString: [
+        'You translate FHIR response bundles into clear, human-readable summaries.',
+        'Lead with the most clinically relevant detail. Be concise.',
+        'If the response is an empty bundle, say so plainly and suggest what to try next.',
+      ].join('\n'),
+    },
+  ],
+});
+
+// Visualizer: produces a self-contained Chart() React component when asked.
+await medplum.createResource<Communication>({
+  resourceType: 'Communication',
+  status: 'completed',
+  identifier: [{ system: 'http://medplum.com/ai-spaces', value: 'ai-component-generator-sse' }],
+  payload: [
+    {
+      contentString: [
+        'You generate a self-contained function Chart() React component that visualizes FHIR data.',
+        'Use only the Recharts and Mantine components already in scope - do not write import statements.',
+        'Prefer LineChart or AreaChart for trends over time and BarChart or PieChart for categorical counts.',
+      ].join('\n'),
+    },
+  ],
+});
+// end-block seedSystemPromptsTs
 
 // start-block updateSystemPromptTs
 // To tune the translator at runtime, edit payload[0].contentString on the

@@ -14,6 +14,8 @@ Spaces is the in-app AI assistant in [Medplum Provider](https://provider.medplum
 
 Spaces is shipped as an example implementation. The Provider app source lives in [`examples/medplum-provider`](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) and the bot source in [`examples/medplum-demo-bots/src/spaces-bots`](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/spaces-bots). Use this page to set Spaces up in your own project, understand what it does behind the chat input, and tune the parts that are designed to be tuned.
 
+The assistant's behavior – what it says, what it refuses, which FHIR strategies it uses, how it summarizes, what charts it favors – is determined by three [`Communication`](/docs/api/fhir/resources/communication) resources that you author for your deployment. Spaces ships without canonical prompts on purpose: the right behavior depends on what your clinic plans to use the feature for. See [Author System Prompt Communications](#author-system-prompt-communications) below.
+
 The feature is reachable at `/Spaces/Communication` in the Provider app. It is gated on the project having both the `ai` and `bots` features enabled.
 
 ## What You Can Do With Spaces
@@ -98,17 +100,23 @@ To deploy:
 The non-streaming `ai-resource-summary` bot is referenced in the Provider source as a fallback path, but the shipping UI always uses the streaming variant. You only need to deploy a non-streaming summary bot if you fork the Provider app to disable streaming.
 :::
 
-### Seed The Translator System Prompt
+### Author System Prompt Communications
 
-The translator bot does not embed its system prompt in code. It loads it from a [`Communication`](/docs/api/fhir/resources/communication) resource at request time. This makes the prompt editable without redeploying the bot. The Communication must exist before the first user message or the translator throws.
+Each of the three Spaces bots loads its system prompt from a [`Communication`](/docs/api/fhir/resources/communication) resource at request time, not from code. These prompts are operator-authored content. They decide what Spaces does in your clinic: its tone, what it refuses, which FHIR-call strategies the translator prefers, how aggressively the summary bot narrates, which chart types the visualizer reaches for. Treat writing them as part of building the feature, not as a setup step that copies a canned recipe.
 
-The contract is:
+Three Communications are required, one per bot. The identifier system is `http://medplum.com/ai-spaces`; the value matches the bot identifier value used by the Provider UI.
 
-- Identifier: system `http://medplum.com/ai-spaces`, value `ai-fhir-request-tools`.
-- `payload[0].contentString` is the system prompt sent to OpenAI.
-- `payload[1].contentString` is a profile-context template. Any `{{ref}}` placeholder is replaced at request time with the requester's reference string (for example, `Practitioner/abc-123`) and appended to the system prompt.
+| Bot                          | Prompt Communication `identifier.value` | Payload Shape                                                                                                                                                                                                                  |
+| ---------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ai-fhir-request-tools`      | `ai-fhir-request-tools`                 | `payload[0]` is the system prompt. `payload[1]` is a profile-context template; any `{{ref}}` is replaced at request time with the requester's reference string (for example, `Practitioner/abc-123`) and appended to the prompt. |
+| `ai-resource-summary-sse`    | `ai-resource-summary-sse`               | `payload[0]` is the system prompt. No profile-context template.                                                                                                                                                                |
+| `ai-component-generator-sse` | `ai-component-generator-sse`            | `payload[0]` is the system prompt. No profile-context template.                                                                                                                                                                |
 
-<MedplumCodeBlock language="ts" selectBlocks="seedSystemPromptTs">{ExampleCode}</MedplumCodeBlock>
+If any Communication is missing, the corresponding bot throws (`"... system prompt is not available"`) and that part of the loop fails: a missing translator prompt stops the user's message; a missing summary prompt leaves the chat without narration; a missing visualizer prompt leaves the chart panel empty.
+
+The example below seeds all three Communications. The bodies are thin but functional – the loop will run end-to-end so you can verify wiring – they are not production prompts. Replace each `payload[0].contentString` with text authored for your deployment before exposing Spaces to users.
+
+<MedplumCodeBlock language="ts" selectBlocks="seedSystemPromptsTs">{ExampleCode}</MedplumCodeBlock>
 
 ## Conversation Data Model
 
@@ -214,20 +222,20 @@ The summary and visualizer bots stream their output as Server-Sent Events from O
 
 The Provider UI exposes a model selector in the chat input. The chosen model flows through to every bot via the `model` parameter and on to `$ai`. The dropdown contents are a UI concern; change it in [`ChatInput.tsx`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/spaces/ChatInput.tsx) if you want to expose different models. The bots themselves are model-agnostic – they pass whatever string they are given.
 
-## Customizing The Translator System Prompt
+## Customizing System Prompts
 
-The Communication that backs the translator's system prompt is the supported customization point. Edit it, and the next user message uses the new prompt – no bot redeploy required.
+Spaces' behavior – when it calls FHIR, how it phrases summaries, which chart types it reaches for – is determined almost entirely by the three system-prompt Communications, not by the bot code (the bots are thin wrappers around `$ai`). To change behavior, edit `payload[0].contentString` on the relevant Communication. The next user message picks up the new prompt without a bot redeploy.
 
 <MedplumCodeBlock language="ts" selectBlocks="updateSystemPromptTs">{ExampleCode}</MedplumCodeBlock>
 
-Recommendations:
+Guidance per bot:
 
-- Keep the instruction telling the model to use `fhir_request` for every FHIR operation. Removing it lets the model invent results.
-- Append domain-specific guidance rather than rewriting the whole prompt. For example, "when the user asks about vitals, prefer Observation searches that include both code and date".
-- Use `payload[1]` for anything that depends on the requester. The `{{ref}}` placeholder is replaced at request time, which is the only piece of per-user context the bot has by default.
+- Translator (`ai-fhir-request-tools`). Keep the instruction telling the model to use the `fhir_request` tool for every FHIR operation – removing it lets the model invent results. Append clinic-specific guidance rather than rewriting the whole prompt. Use `payload[1]` for anything that depends on the requester; `{{ref}}` is the only per-user context the bot has by default.
+- Summary (`ai-resource-summary-sse`). Tune narration depth, terminology, and whether the bot mentions resource IDs or sticks to clinical content. This prompt also sets the tone users hear most.
+- Visualizer (`ai-component-generator-sse`). Bias toward specific chart types or labelling conventions for your specialty, and remind the model that only the pre-scoped Recharts and Mantine components are available – it must not write `import` statements.
 
 :::caution
-A prompt that contradicts the tool schema (for example, telling the model not to call any tools) will break the loop in subtle ways – the translator returns plain text, the summary bot gets no tool responses to narrate, and the chat shows a generic "I was unable to generate a response" message. Test prompt changes against a few representative user questions before rolling them out.
+A prompt that contradicts the tool schema (for example, telling the translator not to call any tools) will break the loop in subtle ways – the translator returns plain text, the summary bot gets no tool responses to narrate, and the chat shows a generic "I was unable to generate a response" message. Test prompt changes against representative user questions before rolling them out.
 :::
 
 ## Security And Cost
