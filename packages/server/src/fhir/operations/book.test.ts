@@ -172,6 +172,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
+    expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
   });
 
@@ -642,6 +643,7 @@ describe('Appointment/$book', () => {
       });
 
     if (succeeds) {
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
     } else {
       expect(response.status).toEqual(400);
@@ -825,6 +827,7 @@ describe('Appointment/$book', () => {
             },
           ],
         });
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
     }
   );
@@ -1229,13 +1232,13 @@ describe('Appointment/$book', () => {
           ],
         });
 
-      expect(response.status).toEqual(400);
       expect(response.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
           { severity: 'error', code: 'invalid', details: { text: 'Multiple matching HealthcareServices found' } },
         ],
       });
+      expect(response.status).toEqual(400);
     });
 
     test('fails when booking outside HealthcareService availability', async () => {
@@ -1395,7 +1398,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.status).toEqual(400);
     expect(response.body).toHaveProperty('issue', [
       {
         severity: 'error',
@@ -1405,6 +1407,7 @@ describe('Appointment/$book', () => {
         },
       },
     ]);
+    expect(response.status).toEqual(400);
   });
 
   test('when the service type has no system attribute', async () => {
@@ -1461,6 +1464,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
+    expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
   });
 });
