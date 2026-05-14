@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import type { Appointment, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -27,7 +28,7 @@ describe('AppointmentDetails', () => {
   });
 
   type SetupOptions = {
-    appointment: Appointment;
+    appointment: WithId<Appointment>;
     onUpdate?: (appointment: Appointment) => void;
   };
 
@@ -50,7 +51,7 @@ describe('AppointmentDetails', () => {
     });
   };
 
-  const createAppointment = (overrides?: Partial<Appointment>): Appointment => ({
+  const createAppointment = (overrides?: Partial<Appointment>): WithId<Appointment> => ({
     resourceType: 'Appointment',
     id: 'appointment-1',
     status: 'booked',
@@ -294,7 +295,7 @@ describe('AppointmentDetails', () => {
   });
 
   describe('Set Up Encounter', () => {
-    let patient: Patient;
+    let patient: WithId<Patient>;
 
     beforeEach(async () => {
       patient = await medplum.createResource<Patient>({
@@ -303,7 +304,7 @@ describe('AppointmentDetails', () => {
       });
     });
 
-    const createAppointmentWithPatient = (patientId: string): Appointment => ({
+    const createAppointmentWithPatient = (patientId: string): WithId<Appointment> => ({
       resourceType: 'Appointment',
       id: 'appointment-with-patient',
       status: 'booked',
@@ -322,7 +323,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('renders Set Up Encounter section when patient participant is loaded', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -343,7 +344,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('Apply button is disabled when class and care template are not selected', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -352,7 +353,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('shows warning notification when form submitted without required fields filled', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -372,7 +373,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('does not call createEncounter when required fields are not filled', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -404,7 +405,7 @@ describe('AppointmentDetails', () => {
       const encounterError = new Error('Failed to create encounter');
       vi.mocked(createEncounter).mockRejectedValue(encounterError);
 
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -439,7 +440,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('renders patient name when patient participant is loaded', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {

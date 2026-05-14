@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName, formatPeriod, isReference } from '@medplum/core';
 import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodingInput, Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
@@ -15,8 +16,8 @@ import { showErrorNotification } from '../../utils/notifications';
 import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 type UpdateAppointmentFormProps = {
-  appointment: Appointment;
-  onUpdate: (appointment: Appointment) => void;
+  appointment: WithId<Appointment>;
+  onUpdate: (appointment: WithId<Appointment>) => void;
 };
 
 function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
@@ -39,7 +40,7 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
       ],
     } satisfies Appointment;
 
-    let result: Appointment;
+    let result: WithId<Appointment>;
     try {
       result = await medplum.updateResource(updated);
     } catch (error) {
@@ -75,8 +76,8 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
 // As one example, this can be used after a patient has scheduled an appointment
 // via $find/$hold to set up an Encounter and apply a plan definition to it.
 export function AppointmentDetails(props: {
-  appointment: Appointment;
-  onUpdate: (appointment: Appointment) => void;
+  appointment: WithId<Appointment>;
+  onUpdate: (appointment: WithId<Appointment>) => void;
 }): JSX.Element {
   const medplum = useMedplum();
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
