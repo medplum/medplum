@@ -93,10 +93,10 @@ describe('useWhisper', () => {
     await wsServer.connected;
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
 
-    act(() => wsServer.send({ type: 'transcription_session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'transcription_session.update' }));
+    act(() => wsServer.send({ type: 'session.created' }));
+    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
 
-    act(() => wsServer.send({ type: 'transcription_session.updated' }));
+    act(() => wsServer.send({ type: 'session.updated' }));
 
     await waitFor(() => {
       expect(result.current.status).toBe('listening');
@@ -143,9 +143,9 @@ describe('useWhisper', () => {
 
     await wsServer.connected;
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
-    act(() => wsServer.send({ type: 'transcription_session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'transcription_session.update' }));
-    act(() => wsServer.send({ type: 'transcription_session.updated' }));
+    act(() => wsServer.send({ type: 'session.created' }));
+    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
+    act(() => wsServer.send({ type: 'session.updated' }));
 
     await waitFor(() => {
       expect(result.current.status).toBe('listening');
