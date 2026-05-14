@@ -96,10 +96,6 @@ To deploy:
 2. Build and deploy each bot following [Bot Basics](/docs/bots/bot-basics) and [Bots In Production](/docs/bots/bots-in-production).
 3. After deployment, open each [`Bot`](/docs/api/fhir/medplum/bot) resource in the Medplum App and add an `identifier` entry whose `system` is `https://www.medplum.com/bots` and whose `value` matches the table above. The Provider UI uses this identifier to find the bot, so a missing or mistyped value silently breaks the feature.
 
-:::note
-The non-streaming `ai-resource-summary` bot is referenced in the Provider source as a fallback path, but the shipping UI always uses the streaming variant. You only need to deploy a non-streaming summary bot if you fork the Provider app to disable streaming.
-:::
-
 ### Author System Prompt Communications
 
 Each of the three Spaces bots loads its system prompt from a [`Communication`](/docs/api/fhir/resources/communication) resource at request time, not from code. These prompts are operator-authored content. They decide what Spaces does in your clinic: its tone, what it refuses, which FHIR-call strategies the translator prefers, how aggressively the summary bot narrates, which chart types the visualizer reaches for. Treat writing them as part of building the feature, not as a setup step that copies a canned recipe.
@@ -108,7 +104,7 @@ Three Communications are required, one per bot. The identifier system is `http:/
 
 | Bot                          | Prompt Communication `identifier.value` | Payload Shape                                                                                                                                                                                                                  |
 | ---------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ai-fhir-request-tools`      | `ai-fhir-request-tools`                 | `payload[0]` is the system prompt. `payload[1]` is a profile-context template; any `{{ref}}` is replaced at request time with the requester's reference string (for example, `Practitioner/abc-123`) and appended to the prompt. |
+| `ai-fhir-request-tools`      | `ai-fhir-request-tools`                 | Both payloads are required. `payload[0]` is the system prompt. `payload[1]` is a profile-context template; any `{{ref}}` is replaced at request time with the requester's reference string (for example, `Practitioner/abc-123`) and appended to the prompt. |
 | `ai-resource-summary-sse`    | `ai-resource-summary-sse`               | `payload[0]` is the system prompt. No profile-context template.                                                                                                                                                                |
 | `ai-component-generator-sse` | `ai-component-generator-sse`            | `payload[0]` is the system prompt. No profile-context template.                                                                                                                                                                |
 
@@ -153,9 +149,9 @@ One per turn (user, assistant, tool). Each is linked to its topic by `partOf`.
 
 <MedplumCodeBlock language="ts" selectBlocks="loadConversationMessagesTs">{ExampleCode}</MedplumCodeBlock>
 
-## The Four Bots
+## The Bots
 
-All four bots are thin wrappers over [`$ai`](/docs/ai/ai-operation). They accept a `Parameters` resource with a `messages` JSON array and a `model` string, and they return a `Parameters` resource the Provider UI can consume directly.
+All three bots are thin wrappers over [`$ai`](/docs/ai/ai-operation). They accept a `Parameters` resource with a `messages` JSON array and a `model` string, and they return a `Parameters` resource the Provider UI can consume directly.
 
 ### FHIR Translator Bot
 
@@ -166,7 +162,7 @@ Inputs:
 | Parameter  | Type          | Required | Description                                                                  |
 | ---------- | ------------- | -------- | ---------------------------------------------------------------------------- |
 | `messages` | `valueString` | Yes      | JSON-encoded conversation history (OpenAI chat format).                      |
-| `model`    | `valueString` | No       | OpenAI model to use. Defaults to `gpt-4` if omitted.                         |
+| `model`    | `valueString` | No       | OpenAI model to use. Defaults to `gpt-4` if omitted. The shipping Provider UI always passes a model from the chat-input dropdown, so this default only applies when you invoke the bot directly. |
 
 Outputs: `content` (string, may be null when the model only returns tool calls), `tool_calls` (JSON array of `{ id, function: { name, arguments } }`), and `visualize` (boolean).
 
@@ -176,11 +172,11 @@ The translator is the only bot that loops. The Provider UI re-invokes it after e
 
 ### FHIR Summary Bot
 
-`ai-resource-summary` (non-streaming) and `ai-resource-summary-sse` (streaming). Takes the conversation history after the loop has finished and produces a plain-language narration of the resources the translator pulled. The streaming variant is the path the Provider UI uses by default; the non-streaming one is a fallback.
+`ai-resource-summary-sse`. Takes the conversation history after the loop has finished and produces a streaming, plain-language narration of the resources the translator pulled.
 
 Inputs: same `messages` and `model` parameters as the translator.
 
-Outputs: `content` (the narration), streamed as SSE chunks when the streaming variant is invoked.
+Outputs: `content` (the narration), streamed as SSE chunks.
 
 ### FHIR Visualizer Bot
 
