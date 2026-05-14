@@ -133,7 +133,7 @@ describe('useWhisper', () => {
       createScriptProcessor: jest.fn().mockReturnValue(processor),
       close: jest.fn().mockResolvedValue(undefined),
     };
-    (globalThis as any).AudioContext = jest.fn().mockImplementation(() => audioContext);
+    globalThis.AudioContext = jest.fn().mockImplementation(() => audioContext);
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
 
