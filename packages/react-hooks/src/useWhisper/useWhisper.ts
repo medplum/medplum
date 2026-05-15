@@ -74,21 +74,29 @@ export function useWhisper({
   const setupSession = useCallback(() => {
     websocketRef.current?.send(
       JSON.stringify({
-        type: 'transcription_session.update',
+        type: 'session.update',
         session: {
-          input_audio_format: 'pcm16',
-          input_audio_transcription: {
-            model,
-            language,
-          },
-          turn_detection: {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 200,
-          },
-          input_audio_noise_reduction: {
-            type: 'near_field',
+          type: 'transcription',
+          audio: {
+            input: {
+              format: {
+                type: 'audio/pcm',
+                rate: 24000,
+              },
+              transcription: {
+                model,
+                language,
+              },
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 200,
+              },
+              noise_reduction: {
+                type: 'near_field',
+              },
+            },
           },
         },
       })
@@ -103,7 +111,7 @@ export function useWhisper({
       return;
     }
 
-    const audioContext = new AudioContext({ sampleRate: 16000 });
+    const audioContext = new AudioContext({ sampleRate: 24000 });
     const source = audioContext.createMediaStreamSource(audioStream);
     const processor = audioContext.createScriptProcessor(4096, 1, 1);
 
@@ -138,12 +146,10 @@ export function useWhisper({
     (message: any) => {
       switch (message.type) {
         case 'session.created':
-        case 'transcription_session.created':
           setupSession();
           break;
 
         case 'session.updated':
-        case 'transcription_session.updated':
           startAudioCapture();
           break;
 
@@ -187,58 +193,56 @@ export function useWhisper({
     [setupSession, startAudioCapture]
   );
 
+  const acquireMicrophone = useCallback(async (): Promise<MediaStream> => {
+    setStatus('requesting_microphone');
+    const audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate: 24000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    });
+    audioStreamRef.current = audioStream;
+    return audioStream;
+  }, []);
+
+  const openWebSocket = useCallback((): ReconnectingWebSocket => {
+    setStatus('connecting');
+    const url = buildWebSocketUrl(medplum.getBaseUrl());
+    console.debug('[useWhisper] connecting to', url);
+    const websocket = new ReconnectingWebSocket(url);
+    websocketRef.current = websocket;
+
+    websocket.onopen = () => setStatus('connected');
+    websocket.onmessage = (event) => handleMessage(JSON.parse(event.data));
+    websocket.onerror = (err) => {
+      setError(err);
+      setStatus('error');
+      stop();
+    };
+    websocket.onclose = () => setStatus('disconnected');
+
+    websocket.send(
+      JSON.stringify({
+        type: 'ai-realtime:connect',
+        accessToken: medplum.getAccessToken(),
+      })
+    );
+    return websocket;
+  }, [medplum, handleMessage, stop]);
+
   const start = useCallback(async () => {
     try {
       setError(undefined);
-      setStatus('requesting_microphone');
-
-      const audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-
-      audioStreamRef.current = audioStream;
-
-      setStatus('connecting');
-
-      const url = buildWebSocketUrl(medplum.getBaseUrl());
-      console.debug('[useWhisper] connecting to', url);
-      const websocket = new ReconnectingWebSocket(url);
-
-      websocketRef.current = websocket;
-
-      websocket.onopen = () => setStatus('connected');
-
-      websocket.onmessage = (event) => {
-        handleMessage(JSON.parse(event.data));
-      };
-
-      websocket.onerror = (err) => {
-        setError(err);
-        setStatus('error');
-        stop();
-      };
-
-      websocket.onclose = () => {
-        setStatus('disconnected');
-      };
-
-      websocket.send(
-        JSON.stringify({
-          type: 'ai-realtime:connect',
-          accessToken: medplum.getAccessToken(),
-        })
-      );
+      await acquireMicrophone();
+      openWebSocket();
     } catch (err) {
       setError(err);
       setStatus('error');
       stop();
     }
-  }, [medplum, handleMessage, stop]);
+  }, [acquireMicrophone, openWebSocket, stop]);
 
   useEffect(() => {
     return () => stop();

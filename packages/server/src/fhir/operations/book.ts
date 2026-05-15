@@ -12,20 +12,13 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  Appointment,
-  Bundle,
-  HealthcareService,
-  OperationDefinition,
-  Patient,
-  Reference,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Patient, Reference, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { getServiceTypeReferences } from '../../util/servicetype';
 import { copyPaths, withPath, withPaths } from '../../util/withpath';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   applyExistingSlots,
@@ -36,22 +29,18 @@ import {
   slotsOverlappingInterval,
 } from './utils/scheduling';
 
-const bookOperation = {
-  resourceType: 'OperationDefinition',
-  name: 'book',
-  status: 'active',
-  kind: 'operation',
-  code: 'book',
-  resource: ['Appointment'],
-  system: false,
-  type: true,
-  instance: false,
-  parameter: [
-    { use: 'in', name: 'slot', type: 'Resource', min: 1, max: '*' },
-    { use: 'in', name: 'patient-reference', type: 'Reference', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-} as const satisfies OperationDefinition;
+const bookOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Appointment' },
+  {
+    name: 'book',
+    code: 'book',
+    parameter: [
+      { use: 'in', name: 'slot', type: 'Resource', min: 1, max: '*' },
+      { use: 'in', name: 'patient-reference', type: 'Reference', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
+  }
+);
 
 type BookParameters = {
   slot: Slot[];
