@@ -164,14 +164,13 @@ const config: Config = {
           position: 'left',
         },
         {
+          // Label clicks through to /solutions; the dropdown surfaces Case
+          // Studies as a related destination without duplicating the overview link.
           type: 'dropdown',
           label: 'Solutions',
           position: 'left',
           to: '/solutions',
-          items: [
-            { label: 'Solutions overview', to: '/solutions' },
-            { label: 'Case Studies', to: '/case-studies' },
-          ],
+          items: [{ label: 'Case Studies', to: '/case-studies' }],
         },
         {
           // Clicking the label defaults to /docs (the primary destination).
