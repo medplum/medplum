@@ -43,9 +43,9 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
   if (ctx instanceof AuthenticatedRequestContext) {
     next();
   } else {
-    if (res.req.query[PROMPT_BASIC_AUTH_PARAM]) {
-      res.set('WWW-Authenticate', `Basic realm="${getConfig().baseUrl}"`);
-    }
+    const requestAuthScheme = req.headers.authorization?.split(' ')[0] ?? 'Bearer';
+    const responseAuthScheme = res.req.query[PROMPT_BASIC_AUTH_PARAM] ? 'Basic' : requestAuthScheme;
+    res.set('WWW-Authenticate', `${responseAuthScheme} realm="${getConfig().baseUrl}"`);
     next(new OperationOutcomeError(unauthorized));
   }
 }

@@ -18,6 +18,7 @@ import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentFetchLogsHandler } from './operations/agentfetchlogs';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
+import { agentStatsHandler } from './operations/agentstats';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
@@ -56,6 +57,7 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
+import { appointmentHoldHandler } from './operations/hold';
 import { appLaunchHandler } from './operations/launch';
 import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -66,6 +68,7 @@ import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
+import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
@@ -237,6 +240,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Update User email
   router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
 
+  // Rescope User between server and project scope
+  router.add('POST', '/User/:id/$rescope', userRescopeOperation);
+
   // ConceptMap $translate
   router.add('GET', '/ConceptMap/$translate', conceptMapTranslateHandler);
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
@@ -297,6 +303,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Agent $fetch-logs operation
   router.add('GET', '/Agent/$fetch-logs', agentFetchLogsHandler);
   router.add('GET', '/Agent/:id/$fetch-logs', agentFetchLogsHandler);
+
+  // Agent $stats operation
+  router.add('GET', '/Agent/$stats', agentStatsHandler);
+  router.add('GET', '/Agent/:id/$stats', agentStatsHandler);
 
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
@@ -384,6 +394,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Appointment Scheduling operations
   router.add('GET', '/Appointment/$find', appointmentFindHandler);
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
+  router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);

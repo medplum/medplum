@@ -7,31 +7,6 @@ import type { Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { collectReferences } from '../references';
 
-/*
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'RefreshReferenceDisplayStrings',
-  status: 'active',
-  kind: 'operation',
-  code: 'refresh-reference-display',
-  description: 'Updates the Reference.display field on any references contained in the resource',
-  resource: ['Resource' as ResourceType],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    {
-      use: 'out',
-      type: 'Resource',
-      name: 'return',
-      min: 1,
-      max: '1',
-      documentation: 'The updated resource',
-    },
-  ],
-};
-*/
-
 export async function refreshReferenceDisplayHandler(req: FhirRequest): Promise<FhirResponse> {
   const { id, resourceType } = req.params;
   if (!id || !resourceType) {

@@ -60,7 +60,7 @@
     "@medplum/definitions": "5.1.11",
     "@medplum/fhirtypes": "5.1.11",
     "dataloader": "2.2.3",
-    "graphql": "16.13.2",
+    "graphql": "16.14.0",
     "rfc6902": "5.2.0"
   },
   "engines": {

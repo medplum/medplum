@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, arrayify, forbidden, getReferenceString, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import { FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX, FHIR_RATE_LIMIT_PROJECT_PREFIX, getFhirQuotaConfig } from '../fhirquota';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const quotaParts: OperationDefinitionParameter[] = [
@@ -15,38 +16,34 @@ const quotaParts: OperationDefinitionParameter[] = [
   { use: 'out', name: 'msBeforeReset', type: 'integer', min: 0, max: '1' },
 ];
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'project-rate-limits',
-  status: 'active',
-  kind: 'operation',
-  code: 'rate-limits',
-  resource: ['Project'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
-    {
-      use: 'out',
-      name: 'project',
-      min: 1,
-      max: '1',
-      part: [{ use: 'out', name: 'id', type: 'string', min: 1, max: '1' }, ...quotaParts],
-    },
-    {
-      use: 'out',
-      name: 'membership',
-      min: 0,
-      max: '*',
-      part: [
-        { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'profileReference', type: 'string', min: 0, max: '1' },
-        ...quotaParts,
-      ],
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Project' },
+  {
+    name: 'project-rate-limits',
+    code: 'rate-limits',
+    parameter: [
+      { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
+      {
+        use: 'out',
+        name: 'project',
+        min: 1,
+        max: '1',
+        part: [{ use: 'out', name: 'id', type: 'string', min: 1, max: '1' }, ...quotaParts],
+      },
+      {
+        use: 'out',
+        name: 'membership',
+        min: 0,
+        max: '*',
+        part: [
+          { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
+          { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
+          ...quotaParts,
+        ],
+      },
+    ],
+  }
+);
 
 type RateLimitsInput = {
   membershipId?: string | string[];
@@ -106,7 +103,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     const pttl = results[i * 2 + 1][1] as number;
     return {
       membershipId: membership.id as string,
-      profileReference: membership.profile?.reference,
+      profile: membership.profile,
       ...buildQuotaStatus(consumed, pttl, userLimit),
     };
   });

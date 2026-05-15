@@ -3,31 +3,27 @@
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, isOperationOutcome, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Agent, OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { Agent, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getCacheRedis } from '../../redis';
+import { makeOperationDefinition } from './definitions';
 import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
-export const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'agent-status',
-  status: 'active',
-  kind: 'operation',
-  code: 'status',
-  experimental: true,
-  resource: ['Agent'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
-    { use: 'out', name: 'version', type: 'string', min: 1, max: '1' },
-    { use: 'out', name: 'lastUpdated', type: 'instant', min: 0, max: '1' },
-  ],
-};
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Agent' },
+  {
+    name: 'agent-status',
+    code: 'status',
+    parameter: [
+      { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
+      { use: 'out', name: 'version', type: 'string', min: 1, max: '1' },
+      { use: 'out', name: 'lastUpdated', type: 'instant', min: 0, max: '1' },
+    ],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $status operation.
