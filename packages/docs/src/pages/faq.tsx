@@ -57,8 +57,10 @@ export default function FAQPage(): JSX.Element {
             <FAQItem question="What programming languages does Medplum support?">
               <p>
                 Bots are written in TypeScript. The official SDK is TypeScript, plus a Node-based CLI for scripting and
-                deployment. The REST and GraphQL APIs work from any language. React components ship for the patient and
-                provider app surfaces.
+                deployment. The REST and GraphQL APIs work from any language. For UI work, the{' '}
+                <code>@medplum/react</code> component library &mdash; questionnaire forms, patient timelines, resource
+                tables, scheduling pickers, and more &mdash; is documented on{' '}
+                <Link to="https://storybook.medplum.com">Storybook</Link>.
               </p>
             </FAQItem>
             <FAQItem question="How does Medplum compare to Mirth Connect?">

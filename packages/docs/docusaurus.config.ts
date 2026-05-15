@@ -178,6 +178,7 @@ const config: Config = {
             { label: 'Case Studies', to: '/case-studies' },
             { label: 'Blog', to: '/blog' },
             { label: 'GitHub', to: 'https://github.com/medplum/medplum' },
+            { label: 'Storybook', to: 'https://storybook.medplum.com' },
             { label: 'Discord', to: 'https://discord.gg/medplum' },
             { label: 'Knowledge Base', to: 'https://linen.medplum.com' },
           ],

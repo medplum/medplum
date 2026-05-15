@@ -6,9 +6,12 @@ import {
   IconClipboardList,
   IconDatabase,
   IconMessages,
+  IconNotes,
+  IconPlugConnected,
   IconReceiptDollar,
   IconRobot,
   IconRouter,
+  IconShieldLock,
   IconSparkles,
 } from '@tabler/icons-react';
 import CodeBlock from '@theme/CodeBlock';
@@ -118,6 +121,20 @@ export default function PlatformPage(): JSX.Element {
             />
             <BentoCell
               span={2}
+              icon={<IconPlugConnected />}
+              title="Integrations"
+              description="Connect to labs, EHRs, payors, pharmacies, registries, and CRMs. The most-used feature of the platform — FHIR, HL7, SFTP, C-CDA, and modern REST through one engine."
+              href="/docs/integration"
+            />
+            <BentoCell
+              span={2}
+              icon={<IconNotes />}
+              title="Charting"
+              description="The durable record of care: encounter notes, vitals, allergies, problem lists, and orders. Headless — your app owns the screens; FHIR keeps the data interoperable."
+              href="/docs/charting"
+            />
+            <BentoCell
+              span={2}
               icon={<IconClipboardList />}
               title="Questionnaires"
               description="Collect data from patients, clinicians, and staff through custom forms. Built on FHIR Questionnaire with a Google Forms-style builder and drop-in React components."
@@ -136,6 +153,13 @@ export default function PlatformPage(): JSX.Element {
               title="Communications"
               description="Patient messaging, care-team threads, SMS, email, and async encounters. Threaded around encounters so messages document and bill correctly."
               href="/docs/communications"
+            />
+            <BentoCell
+              span={2}
+              icon={<IconShieldLock />}
+              title="Access Controls"
+              description="Fine-grained authorization via the AccessPolicy resource. Per-resource and per-field controls, IP allowlists, SMART scopes, and project isolation. Audit-logged on every read."
+              href="/docs/access"
             />
             <BentoCell
               span={2}
