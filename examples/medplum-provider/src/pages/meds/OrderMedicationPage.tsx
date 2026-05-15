@@ -43,7 +43,6 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
-import { OrderSetTabPanel } from './OrderSetTabPanel';
 import type { QualifierMatcher } from '../../components/meds/quantity-qualifiers';
 import {
   buildQualifierMatcher,
@@ -52,6 +51,7 @@ import {
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
 import { showErrorNotification } from '../../utils/notifications';
+import { OrderSetTabPanel } from './OrderSetTabPanel';
 
 const DEFAULT_QUANTITY_QUALIFIER = 'C48542';
 

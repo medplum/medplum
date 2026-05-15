@@ -203,7 +203,8 @@ export function OrderSetTabPanel(props: Readonly<OrderSetTabPanelProps>): JSX.El
   });
 
   const submitDisabled = !patient?.id || !requester || (!planDefinitionIdInput && scriptSureIdEscape === undefined);
-  const summaryWarnUnsynced = Boolean(planDefinition) && pdScriptSureId === undefined && scriptSureIdEscape === undefined;
+  const summaryWarnUnsynced =
+    Boolean(planDefinition) && pdScriptSureId === undefined && scriptSureIdEscape === undefined;
 
   const handleSubmit = useCallback(async (): Promise<void> => {
     if (submitDisabled) {

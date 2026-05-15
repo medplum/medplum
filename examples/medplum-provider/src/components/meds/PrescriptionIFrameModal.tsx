@@ -204,8 +204,8 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
             icon={<IconAlertCircle size={16} />}
             title="Confirmation pending"
           >
-            We have not received a confirmation from the e-prescribing system yet. You can leave this dialog
-            open and refresh the medications list shortly, or close it and check back later.
+            We have not received a confirmation from the e-prescribing system yet. You can leave this dialog open and
+            refresh the medications list shortly, or close it and check back later.
           </Alert>
         )}
         <Box
