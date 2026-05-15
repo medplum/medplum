@@ -164,23 +164,42 @@ const config: Config = {
           position: 'left',
         },
         {
-          to: '/solutions',
+          type: 'dropdown',
           label: 'Solutions',
           position: 'left',
+          to: '/solutions',
+          items: [
+            { label: 'Solutions overview', to: '/solutions' },
+            { label: 'Case Studies', to: '/case-studies' },
+          ],
         },
         {
+          // Clicking the label defaults to /docs (the primary destination).
+          // The dropdown groups developer-facing resources at one click rather
+          // than elevating Storybook/Knowledge Base to the same level as Docs.
           type: 'dropdown',
-          label: 'Resources',
+          label: 'Developer Resources',
           position: 'left',
+          to: '/docs',
           items: [
             { type: 'doc', docId: 'home', label: 'Docs' },
-            { label: 'FAQ', to: '/faq' },
-            { label: 'Case Studies', to: '/case-studies' },
-            { label: 'Blog', to: '/blog' },
             { label: 'GitHub', to: 'https://github.com/medplum/medplum' },
             { label: 'Storybook', to: 'https://storybook.medplum.com' },
             { label: 'Discord', to: 'https://discord.gg/medplum' },
             { label: 'Knowledge Base', to: 'https://linen.medplum.com' },
+          ],
+        },
+        {
+          // Generic / non-developer resources. Compliance lives here for the
+          // buyer audience; the same /docs/compliance page is also reachable
+          // via Docs for engineers.
+          type: 'dropdown',
+          label: 'Resources',
+          position: 'left',
+          items: [
+            { label: 'Blog', to: '/blog' },
+            { label: 'Compliance', to: '/docs/compliance' },
+            { label: 'Open Source', to: '/open-source' },
           ],
         },
         {
@@ -231,6 +250,10 @@ const config: Config = {
             {
               label: 'Case Studies',
               to: '/case-studies',
+            },
+            {
+              label: 'FAQ',
+              to: '/faq',
             },
             {
               label: 'Discord',
