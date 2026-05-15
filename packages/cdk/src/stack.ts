@@ -5,7 +5,7 @@ import type { App } from 'aws-cdk-lib';
 import { Stack, Tags } from 'aws-cdk-lib';
 import { BackEnd } from './backend';
 import { CloudTrailAlarms } from './cloudtrail';
-import { DataWarehouse } from './datawarehouse';
+import { DataWarehouse } from './data-warehouse';
 import { FrontEnd } from './frontend';
 import { Storage } from './storage';
 

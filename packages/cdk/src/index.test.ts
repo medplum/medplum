@@ -623,6 +623,62 @@ describe('Infra', () => {
         'Fn::GetAtt': [Match.stringLikeRegexp('DataWarehouse.*TableBucket'), 'TableBucketARN'],
       },
     });
+    template.hasResourceProperties('AWS::LakeFormation::Resource', {
+      ResourceArn: {
+        'Fn::GetAtt': [Match.stringLikeRegexp('DataWarehouse.*TableBucket'), 'TableBucketARN'],
+      },
+      UseServiceLinkedRole: false,
+      WithFederation: true,
+      RoleArn: {
+        'Fn::GetAtt': [Match.stringLikeRegexp('DataWarehouse.*LakeFormationS3TablesRole'), 'Arn'],
+      },
+    });
+    template.hasResourceProperties('AWS::IAM::Role', {
+      AssumeRolePolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'sts:AssumeRole',
+            Effect: 'Allow',
+            Principal: {
+              Service: 'lakeformation.amazonaws.com',
+            },
+          }),
+        ]),
+      },
+      Description: 'Role used by Lake Formation to access S3 Tables data warehouse resources',
+    });
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 's3tables:ListTableBuckets',
+            Effect: 'Allow',
+            Resource: '*',
+          }),
+          Match.objectLike({
+            Action: Match.arrayWith(['s3tables:GetTableBucket', 's3tables:ListTables']),
+            Effect: 'Allow',
+            Resource: {
+              'Fn::GetAtt': [Match.stringLikeRegexp('DataWarehouse.*TableBucket'), 'TableBucketARN'],
+            },
+          }),
+        ]),
+      }),
+    });
+    template.hasResourceProperties('AWS::Glue::Catalog', {
+      Name: 'medplum-unittest-s3tablescatalog',
+      CatalogInput: {
+        FederatedCatalog: {
+          Identifier: {
+            'Fn::GetAtt': [Match.stringLikeRegexp('DataWarehouse.*TableBucket'), 'TableBucketARN'],
+          },
+          ConnectionName: 'aws:s3tables',
+        },
+        CreateDatabaseDefaultPermissions: [],
+        CreateTableDefaultPermissions: [],
+        AllowFullTableExternalDataAccess: true,
+      },
+    });
     template.hasResourceProperties('AWS::IAM::Role', {
       Policies: Match.arrayWith([
         Match.objectLike({
@@ -654,6 +710,50 @@ describe('Infra', () => {
 
     template.resourceCountIs('AWS::S3Tables::TableBucket', 0);
     template.resourceCountIs('AWS::S3Tables::Namespace', 0);
-    expect(JSON.stringify(template.toJSON())).not.toContain('s3tables:*');
+    template.resourceCountIs('AWS::LakeFormation::Resource', 0);
+    template.resourceCountIs('AWS::Glue::Catalog', 0);
+    const templateJson = template.toJSON() as { Resources: Record<string, { Type: string; Properties?: any }> };
+    const resources = Object.values(templateJson.Resources);
+    const lakeFormationRoles = resources.filter(
+      (resource) =>
+        resource.Type === 'AWS::IAM::Role' &&
+        resource.Properties?.AssumeRolePolicyDocument?.Statement?.some(
+          (statement: any) => statement?.Principal?.Service === 'lakeformation.amazonaws.com'
+        )
+    );
+    const lakeFormationPolicies = resources.filter(
+      (resource) =>
+        resource.Type === 'AWS::IAM::Policy' &&
+        resource.Properties?.PolicyDocument?.Statement?.some((statement: any) => {
+          const actions = Array.isArray(statement?.Action) ? statement.Action : [statement?.Action];
+          return actions.includes('s3tables:ListTableBuckets');
+        })
+    );
+    expect(lakeFormationRoles).toHaveLength(0);
+    expect(lakeFormationPolicies).toHaveLength(0);
+    expect(JSON.stringify(templateJson)).not.toContain('s3tables:*');
+  });
+
+  test('Data warehouse Glue catalog name can be customized', async () => {
+    const app = new App();
+    const normalizedConfig = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumDataWarehouseCustomCatalogStack',
+      dataWarehouse: {
+        tableBucketName: 'medplum-dw-table-bucket-custom',
+        catalogName: 'custom-medplum-s3tables-catalog',
+      },
+    });
+    const stack = new MedplumStack(app, normalizedConfig);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.hasResourceProperties('AWS::Glue::Catalog', {
+      Name: 'custom-medplum-s3tables-catalog',
+      CatalogInput: {
+        FederatedCatalog: {
+          ConnectionName: 'aws:s3tables',
+        },
+      },
+    });
   });
 });
