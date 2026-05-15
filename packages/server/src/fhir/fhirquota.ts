@@ -91,6 +91,14 @@ export class FhirRateLimiter {
     this.current = result;
   }
 
+  getMembershipKey(membershipId: string): string {
+    return this.limiter.getKey(membershipId);
+  }
+
+  getProjectKey(): string {
+    return this.projectLimiter.getKey(this.projectKey);
+  }
+
   attachRateLimitHeader(res: Response): void {
     if (this.current) {
       const t = Math.ceil(this.current.msBeforeNext / 1000);
