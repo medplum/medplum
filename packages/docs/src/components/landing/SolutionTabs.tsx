@@ -20,7 +20,7 @@ interface SolutionTab {
   readonly icon: ReactNode;
   readonly eyebrow?: string;
   readonly description: string;
-  readonly highlights: readonly string[];
+  readonly highlights: readonly ReactNode[];
   readonly startsFrom?: { readonly name: string; readonly href: string };
 }
 
@@ -112,9 +112,11 @@ const TABS: readonly SolutionTab[] = [
     title: 'Interoperability',
     icon: <IconTransform />,
     description:
-      'Healthcare data is fragmented and complex. Medplum is your central interoperability hub for HL7, C-CDA, FHIRcast, SFTP, and modern REST. A modern alternative to Mirth and Corepoint.',
+      'Medplum is your central interoperability hub. The Medplum Agent handles on-prem HL7 and DICOM bridging; the platform handles C-CDA, FHIRcast, SFTP, and modern REST. A modern alternative to legacy engines like Mirth and Corepoint.',
     highlights: [
-      'HL7 v2 over MLLP',
+      <>
+        HL7 v2 over MLLP via the <Link to="/docs/agent">Medplum Agent</Link>
+      </>,
       'C-CDA bidirectional translation',
       'FHIRcast Hub (STU3)',
       'SFTP and REST integrations',
@@ -162,8 +164,8 @@ export function SolutionTabs(): JSX.Element {
         <div className={styles.panelHighlights}>
           <div className={styles.panelLabel}>What&apos;s included</div>
           <ul>
-            {active.highlights.map((h) => (
-              <li key={h}>{h}</li>
+            {active.highlights.map((h, i) => (
+              <li key={i}>{h}</li>
             ))}
           </ul>
         </div>

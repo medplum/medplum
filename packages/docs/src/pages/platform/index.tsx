@@ -93,48 +93,56 @@ export default function PlatformPage(): JSX.Element {
               icon={<IconDatabase />}
               title="Clinical Data Platform"
               description="Your central nervous system for healthcare data. A secure repository and API covering every FHIR R4 resource, with REST, GraphQL, time-aware search, subscriptions, and audit logging built in."
+              href="/docs/fhir-datastore"
             />
             <BentoCell
               span={2}
               icon={<IconRobot />}
               title="Bots"
               description="Build automated, custom workflows that run inside Medplum. TypeScript functions, triggered by resource changes or HTTP, handling HL7 transforms, eligibility checks, and notifications."
+              href="/docs/bots"
             />
             <BentoCell
               span={2}
               icon={<IconSparkles />}
               title="AI &amp; MCP"
               description="An MCP server exposes FHIR to Claude and other LLM agents through your access policies. The $ai operation provides FHIR-native function calling against OpenAI."
+              href="/docs/ai"
             />
             <BentoCell
               span={2}
               icon={<IconRouter />}
               title="Medplum Agent"
               description="A modern alternative to legacy engines like Mirth. The Agent runs in your local network and tunnels HL7 and DICOM to the cloud over encrypted WebSockets."
+              href="/docs/agent"
             />
             <BentoCell
               span={2}
               icon={<IconClipboardList />}
               title="Questionnaires"
               description="Collect data from patients, clinicians, and staff through custom forms. Built on FHIR Questionnaire with a Google Forms-style builder and drop-in React components."
+              href="/docs/questionnaires"
             />
             <BentoCell
               span={2}
               icon={<IconCalendarEvent />}
               title="Scheduling"
               description="Supports the full range of clinical workflows, from a single practitioner's calendar to multi-location clinics with equipment constraints. Built on FHIR Schedule, Slot, and Appointment."
+              href="/docs/scheduling"
             />
             <BentoCell
               span={2}
               icon={<IconMessages />}
               title="Communications"
               description="Patient messaging, care-team threads, SMS, email, and async encounters. Threaded around encounters so messages document and bill correctly."
+              href="/docs/communications"
             />
             <BentoCell
               span={2}
               icon={<IconReceiptDollar />}
               title="Billing &amp; RCM"
               description="Charge capture, claims, eligibility, and patient payments built on the FHIR Financial Module — on the same datastore as your clinical data."
+              href="/docs/billing"
             />
           </Bento>
         </Section>

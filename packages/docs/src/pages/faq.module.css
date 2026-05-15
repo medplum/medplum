@@ -1,0 +1,71 @@
+/* FAQ-specific hero overrides. Differs from the Platform/Solutions hero
+   in three ways:
+   - Single column (there's no companion image)
+   - Title stretches the full width (no text-wrap balance)
+   - Wrapped in a rounded violet-tinted panel with a soft radial gradient
+     for visual interest. */
+
+.heroFaq {
+  position: relative;
+  overflow: hidden;
+  /* Override the inherited grid from landingStyles.hero so heroText spans full width */
+  display: block !important;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--oc-violet-1-rgb), 0.6);
+  padding: 4rem 3rem;
+  margin: 2rem 0 0 0;
+}
+
+[data-theme='dark'] .heroFaq {
+  border-color: rgba(var(--oc-violet-7-rgb), 0.4);
+}
+
+/* Lift hero text above the decorative backdrop */
+.heroFaq > *:not(.heroDecoration) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Decorative gradient layer — two radial blobs in opposite corners
+   plus a subtle vertical fade. Sits behind the hero text. */
+.heroDecoration {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 65% at 90% 15%, rgba(var(--oc-grape-3-rgb), 0.55), transparent 65%),
+    radial-gradient(ellipse 60% 55% at 8% 85%, rgba(var(--oc-violet-3-rgb), 0.45), transparent 65%),
+    linear-gradient(180deg, rgba(var(--oc-violet-0-rgb), 0.35), rgba(var(--oc-grape-0-rgb), 0.1));
+}
+
+[data-theme='dark'] .heroDecoration {
+  background:
+    radial-gradient(ellipse 70% 65% at 90% 15%, rgba(var(--oc-grape-7-rgb), 0.45), transparent 65%),
+    radial-gradient(ellipse 60% 55% at 8% 85%, rgba(var(--oc-violet-7-rgb), 0.4), transparent 65%),
+    linear-gradient(180deg, rgba(var(--oc-violet-9-rgb), 0.3), rgba(var(--oc-grape-9-rgb), 0.1));
+}
+
+/* Allow the title to stretch full width (was capped to ~58% by the grid + balanced wrapping) */
+.heroFaq .titleStretch {
+  text-wrap-style: normal;
+  max-width: 100%;
+  font-style: normal;
+}
+
+/* Lead paragraph: more horizontal room, defensive no-italic */
+.heroFaq .leadFull {
+  max-width: 100%;
+  font-style: normal;
+}
+
+.heroFaq .textFullWidth {
+  max-width: 100%;
+}
+
+@media (max-width: 996px) {
+  .heroFaq {
+    padding: 2.5rem 1.5rem;
+    border-radius: 18px;
+  }
+}

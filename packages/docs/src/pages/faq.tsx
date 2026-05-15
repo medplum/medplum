@@ -8,17 +8,19 @@ import { FAQGroup, FAQItem } from '../components/landing/FAQ';
 import { Section } from '../components/landing/Section';
 import { SectionHeader } from '../components/landing/SectionHeader';
 import landingStyles from './platform/landing.module.css';
+import styles from './faq.module.css';
 
 export default function FAQPage(): JSX.Element {
   return (
     <Layout title="FAQ" description="Frequently asked questions about Medplum.">
       <Container>
         <Section>
-          <div className={landingStyles.hero}>
-            <div className={landingStyles.heroText}>
+          <div className={`${landingStyles.hero} ${styles.heroFaq}`}>
+            <div className={styles.heroDecoration} aria-hidden="true" />
+            <div className={`${landingStyles.heroText} ${styles.textFullWidth}`}>
               <div className={landingStyles.heroEyebrow}>Resources</div>
-              <h1 className={landingStyles.heroTitle}>Frequently asked questions</h1>
-              <p className={landingStyles.heroLead}>
+              <h1 className={`${landingStyles.heroTitle} ${styles.titleStretch}`}>Frequently asked questions</h1>
+              <p className={`${landingStyles.heroLead} ${styles.leadFull}`}>
                 The questions teams ask before adopting Medplum. Missing something?{' '}
                 <Link to="mailto:hello@medplum.com">Email us</Link> or post in{' '}
                 <Link to="https://discord.gg/medplum">Discord</Link>.
@@ -54,9 +56,9 @@ export default function FAQPage(): JSX.Element {
             </FAQItem>
             <FAQItem question="What programming languages does Medplum support?">
               <p>
-                Bots are written in TypeScript. The official SDK is TypeScript with first-party Python and CLI support.
-                The REST and GraphQL APIs work from any language. React components ship for the patient and provider app
-                surfaces.
+                Bots are written in TypeScript. The official SDK is TypeScript, plus a Node-based CLI for scripting and
+                deployment. The REST and GraphQL APIs work from any language. React components ship for the patient and
+                provider app surfaces.
               </p>
             </FAQItem>
             <FAQItem question="How does Medplum compare to Mirth Connect?">
@@ -85,8 +87,7 @@ export default function FAQPage(): JSX.Element {
             </FAQItem>
             <FAQItem question="Do you offer enterprise support?">
               <p>
-                Yes. Enterprise plans include dedicated infrastructure, custom SLAs, named support engineers, and
-                onboarding help.{' '}
+                Yes. Enterprise plans include dedicated infrastructure, custom SLAs, and onboarding support.{' '}
                 <Link to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a">Contact sales</Link> to scope it.
               </p>
             </FAQItem>
@@ -115,16 +116,16 @@ export default function FAQPage(): JSX.Element {
             </FAQItem>
             <FAQItem question="Where is patient data stored?">
               <p>
-                On the managed cloud, data is stored in AWS US-East-1 by default, encrypted at rest and in transit.
-                Customers requiring data residency in EU, Canada, or other regions can request alternative deployment
-                regions on enterprise plans. Self-hosted customers retain full control over data location.
+                On the managed cloud, data is stored in AWS, encrypted at rest and in transit. Customers with data
+                residency requirements (EU, Canada, other regions) can request alternative deployment regions on
+                enterprise plans. Self-hosted customers retain full control over data location.
               </p>
             </FAQItem>
             <FAQItem question="How are bots and integrations audited?">
               <p>
                 Every API call, every resource mutation, and every bot execution is captured as a FHIR{' '}
-                <code>AuditEvent</code>. Logs are queryable through the same search API as clinical data, exportable to
-                your SIEM, and retained per your plan&apos;s retention policy.
+                <code>AuditEvent</code>. Logs are queryable through the same search API as clinical data and retained
+                per your plan&apos;s retention policy.
               </p>
             </FAQItem>
           </FAQGroup>
@@ -165,9 +166,9 @@ export default function FAQPage(): JSX.Element {
             </FAQItem>
             <FAQItem question="Do you offer professional services?">
               <p>
-                We don&apos;t take on paid implementation work directly. We introduce customers to a network of partners
-                who specialize in Medplum implementations. <Link to="mailto:hello@medplum.com">Email us</Link> for an
-                intro.
+                Medplum doesn&apos;t take on paid implementation work directly. Customers typically build with their own
+                engineering teams or work with consulting partners.{' '}
+                <Link to="mailto:hello@medplum.com">Email us</Link> if you&apos;d like a recommendation.
               </p>
             </FAQItem>
             <FAQItem question="Who actually uses Medplum in production?">

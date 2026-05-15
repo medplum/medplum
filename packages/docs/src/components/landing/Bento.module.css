@@ -152,6 +152,75 @@
   color: var(--oc-gray-4);
 }
 
+/* When the cell is wrapped in a Link, suppress the default anchor underline
+   and color treatment so it still reads as a card. */
+.linkable {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.linkable:hover,
+.linkable:focus-visible {
+  text-decoration: none;
+  color: inherit;
+}
+
+.linkable:focus-visible {
+  outline: 2px solid var(--oc-grape-7);
+  outline-offset: 2px;
+}
+
+/* Corner arrow indicator for linkable cells. Sits in the bottom-right via
+   margin-top: auto + align-self, so it stays at the bottom regardless of
+   description length. Animates on hover. */
+.arrow {
+  align-self: flex-end;
+  margin-top: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  background: rgba(var(--oc-grape-0-rgb), 0.7);
+  color: var(--oc-grape-7);
+  opacity: 0.6;
+  transition: opacity 200ms ease, background 200ms ease, color 200ms ease, transform 200ms ease;
+}
+
+[data-theme='dark'] .arrow {
+  background: rgba(var(--oc-grape-9-rgb), 0.5);
+  color: var(--oc-grape-3);
+}
+
+/* Accent-colored cells: arrow tile is white-ish so it pops against the gradient bg */
+.violet .arrow,
+.indigo .arrow,
+.orange .arrow {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme='dark'] .violet .arrow,
+[data-theme='dark'] .indigo .arrow,
+[data-theme='dark'] .orange .arrow {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.linkable:hover .arrow,
+.linkable:focus-visible .arrow {
+  opacity: 1;
+  background: var(--oc-grape-7);
+  color: white;
+  transform: translate(2px, -2px);
+}
+
+[data-theme='dark'] .linkable:hover .arrow,
+[data-theme='dark'] .linkable:focus-visible .arrow {
+  background: var(--oc-grape-5);
+  color: var(--oc-gray-9);
+}
+
 /* Mobile: collapse to 2 cols, then 1 col */
 @media (max-width: 996px) {
   .bento {

@@ -26,7 +26,10 @@ td {
   display: inline-block;
 }
 
-details summary {
+/* Scoped to <details> inside table cells so this italic stays inside the
+   FHIR resource property tables and doesn't leak to every <details>
+   elsewhere on the site (e.g. the FAQ accordion). */
+td details summary {
   font-style: italic;
   margin-bottom: 0.2ch;
 }
