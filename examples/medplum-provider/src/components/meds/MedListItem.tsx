@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Group, Stack, Text } from '@mantine/core';
-import type { EPrescribingExtensions } from '@medplum/core';
-import { formatCodeableConcept, formatDate, formatHumanName, getEPrescribingPendingOrderStatus } from '@medplum/core';
-import type { HumanName, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
+import type { MedicationOrderExtensions } from '@medplum/core';
+import { formatCodeableConcept, formatDate, formatHumanName, getPendingMedicationOrderStatus } from '@medplum/core';
+import type { MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -16,14 +16,14 @@ interface MedListItemProps {
   selectedItem: MedicationRequest | undefined;
   activeTab: MedTab;
   onItemSelect: (item: MedicationRequest) => string;
-  ePrescribingExtensions: EPrescribingExtensions;
+  medicationOrderExtensions: MedicationOrderExtensions;
 }
 
 export function MedListItem(props: MedListItemProps): JSX.Element {
-  const { item, selectedItem, activeTab, onItemSelect, ePrescribingExtensions } = props;
+  const { item, selectedItem, activeTab, onItemSelect, medicationOrderExtensions } = props;
   const isSelected = selectedItem?.id === item.id;
   const requester = useResource(item.requester) as Practitioner | undefined;
-  const pendingStatus = getEPrescribingPendingOrderStatus(item, ePrescribingExtensions);
+  const pendingStatus = getPendingMedicationOrderStatus(item, medicationOrderExtensions);
 
   return (
     <MedplumLink to={onItemSelect(item)} underline="never">
@@ -115,7 +115,7 @@ const getSubText = (item: MedicationRequest, requester: Practitioner | undefined
   const dosage = item.dosageInstruction?.[0]?.text;
   const dosagePart = dosage ? ` · ${dosage}` : '';
   if (requester?.resourceType === 'Practitioner') {
-    return `${date} · ${formatHumanName(requester.name?.[0] as HumanName)}${dosagePart}`;
+    return `${date} · ${formatHumanName(requester.name?.[0])}${dosagePart}`;
   }
   return `${date}${dosagePart}`;
 };

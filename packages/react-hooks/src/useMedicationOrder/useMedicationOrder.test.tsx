@@ -7,7 +7,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { useEPrescribingOrder } from './useEPrescribingOrder';
+import { useMedicationOrder } from './useMedicationOrder';
 
 const SEARCH_BOT = { system: 'https://www.medplum.com/bots', value: 'drug-search' };
 const ORDER_BOT = { system: 'https://www.medplum.com/bots', value: 'order-medication' };
@@ -22,12 +22,12 @@ function wrapper(medplum: MockClient) {
   };
 }
 
-describe('useEPrescribingOrder', () => {
+describe('useMedicationOrder', () => {
   test('searchMedications returns validated Medication array', async () => {
     const medplum = new MockClient();
     jest.spyOn(medplum, 'executeBot').mockResolvedValueOnce([{ resourceType: 'Medication', id: 'm1' }]);
 
-    const { result } = renderHook(() => useEPrescribingOrder(SEARCH_BOT, ORDER_BOT), {
+    const { result } = renderHook(() => useMedicationOrder(SEARCH_BOT, ORDER_BOT), {
       wrapper: wrapper(medplum),
     });
 
@@ -44,7 +44,7 @@ describe('useEPrescribingOrder', () => {
     const medplum = new MockClient();
     jest.spyOn(medplum, 'executeBot').mockResolvedValueOnce({ not: 'medications' });
 
-    const { result } = renderHook(() => useEPrescribingOrder(SEARCH_BOT, ORDER_BOT), {
+    const { result } = renderHook(() => useMedicationOrder(SEARCH_BOT, ORDER_BOT), {
       wrapper: wrapper(medplum),
     });
 
@@ -55,12 +55,12 @@ describe('useEPrescribingOrder', () => {
     const medplum = new MockClient();
     const orderResponse = {
       orderId: 1,
-      scriptSurePatientId: 2,
+      vendorPatientId: 2,
       launchUrl: 'https://example.com/iframe',
     };
     jest.spyOn(medplum, 'executeBot').mockResolvedValueOnce(orderResponse);
 
-    const { result } = renderHook(() => useEPrescribingOrder(SEARCH_BOT, ORDER_BOT), {
+    const { result } = renderHook(() => useMedicationOrder(SEARCH_BOT, ORDER_BOT), {
       wrapper: wrapper(medplum),
     });
 
@@ -77,7 +77,7 @@ describe('useEPrescribingOrder', () => {
     const medplum = new MockClient();
     jest.spyOn(medplum, 'executeBot').mockResolvedValueOnce({ launchUrl: 'only-url' });
 
-    const { result } = renderHook(() => useEPrescribingOrder(SEARCH_BOT, ORDER_BOT), {
+    const { result } = renderHook(() => useMedicationOrder(SEARCH_BOT, ORDER_BOT), {
       wrapper: wrapper(medplum),
     });
 

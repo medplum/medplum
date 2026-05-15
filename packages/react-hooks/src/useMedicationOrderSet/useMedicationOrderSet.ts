@@ -4,7 +4,7 @@ import type { Identifier } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
-export interface UseEPrescribingOrderSetOptions {
+export interface UseMedicationOrderSetOptions {
   /** Patient to prescribe against. Hook stays idle (no bot call) until set. */
   readonly patientId: string | undefined;
   /** Medplum PlanDefinition id (vendor-neutral). Bot resolves it to the vendor's order set id. */
@@ -17,11 +17,10 @@ export interface UseEPrescribingOrderSetOptions {
    * Defaults to `'vendorOrderSetId'`.
    */
   readonly vendorOrderSetIdField?: string;
-  readonly darkmode?: 'on' | 'off';
   readonly appId?: string;
 }
 
-export interface UseEPrescribingOrderSetReturn {
+export interface UseMedicationOrderSetReturn {
   /** Most recent successful URL from the order-set bot, or undefined while loading / on error. */
   readonly url: string | undefined;
   /** True while a bot call is in flight. */
@@ -40,7 +39,7 @@ export interface UseEPrescribingOrderSetReturn {
  * Generic React hook that calls a vendor-agnostic order-set widget URL bot
  * and exposes the resulting URL plus refresh/loading/error state.
  *
- * The hook is a "build a URL" hook (mirrors {@link useEPrescribingIFrame});
+ * The hook is a "build a URL" hook (mirrors {@link useMedicationIFrame});
  * it does not stamp Medplum resources or create vendor-side resources, so
  * `refresh` is safe to call repeatedly (the bot is naturally idempotent).
  *
@@ -48,17 +47,23 @@ export interface UseEPrescribingOrderSetReturn {
  * on input change and on unmount via a per-effect `cancelled` flag, so
  * React 18 Strict Mode double-mount does not surface stale URLs.
  *
+ * **Identifier stability matters.** As with {@link useMedicationOrder},
+ * `botIdentifier` is tracked by reference. Pass a module-level constant
+ * (preferred) or a `useMemo`-stabilized value, otherwise the internal
+ * `useEffect` will re-run on every render and the bot will be called
+ * repeatedly with the same payload.
+ *
  * @param botIdentifier - Bot identifier for the order-set URL bot
- *   (e.g. `SCRIPTSURE_ORDER_SET_BOT`).
+ *   (e.g. `SCRIPTSURE_ORDER_SET_BOT`). Must be reference-stable.
  * @param options - Patient, picker (PD or vendor id), iframe styling.
  * @returns `{ url, loading, error, refresh }`.
  */
-export function useEPrescribingOrderSet(
+export function useMedicationOrderSet(
   botIdentifier: Identifier,
-  options: UseEPrescribingOrderSetOptions
-): UseEPrescribingOrderSetReturn {
+  options: UseMedicationOrderSetOptions
+): UseMedicationOrderSetReturn {
   const medplum = useMedplum();
-  const { patientId, planDefinitionId, vendorOrderSetId, vendorOrderSetIdField, darkmode, appId } = options;
+  const { patientId, planDefinitionId, vendorOrderSetId, vendorOrderSetIdField, appId } = options;
   const vendorIdField = vendorOrderSetIdField ?? 'vendorOrderSetId';
 
   const [url, setUrl] = useState<string | undefined>(undefined);
@@ -67,8 +72,8 @@ export function useEPrescribingOrderSet(
 
   // Latest options snapshot so `refresh` always uses current values without
   // re-creating the callback when only the inputs change.
-  const optionsRef = useRef({ patientId, planDefinitionId, vendorOrderSetId, vendorIdField, darkmode, appId });
-  optionsRef.current = { patientId, planDefinitionId, vendorOrderSetId, vendorIdField, darkmode, appId };
+  const optionsRef = useRef({ patientId, planDefinitionId, vendorOrderSetId, vendorIdField, appId });
+  optionsRef.current = { patientId, planDefinitionId, vendorOrderSetId, vendorIdField, appId };
 
   const buildPayload = (): Record<string, unknown> | undefined => {
     const o = optionsRef.current;
@@ -86,9 +91,6 @@ export function useEPrescribingOrderSet(
     }
     if (hasVendorId) {
       payload[o.vendorIdField] = o.vendorOrderSetId;
-    }
-    if (o.darkmode !== undefined) {
-      payload.darkmode = o.darkmode;
     }
     if (o.appId !== undefined) {
       payload.appId = o.appId;
@@ -155,7 +157,7 @@ export function useEPrescribingOrderSet(
     return (): void => {
       cancelled = true;
     };
-  }, [medplum, botIdentifier, patientId, planDefinitionId, vendorOrderSetId, vendorIdField, darkmode, appId]);
+  }, [medplum, botIdentifier, patientId, planDefinitionId, vendorOrderSetId, vendorIdField, appId]);
 
   return { url, loading, error, refresh };
 }

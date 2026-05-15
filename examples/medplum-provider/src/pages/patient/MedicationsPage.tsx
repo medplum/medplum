@@ -9,6 +9,7 @@ import {
   Group,
   Loader,
   Modal,
+  Pagination,
   Paper,
   ScrollArea,
   Skeleton,
@@ -26,11 +27,11 @@ import {
 } from '@medplum/dosespot-react';
 import type { MedicationRequest } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { SCRIPTSURE_EPRESCRIBING_EXTENSIONS, useScriptSureOrderMedication } from '@medplum/scriptsure-react';
+import { SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS, useScriptSureOrderMedication } from '@medplum/scriptsure-react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { MedicationRequestDetails } from '../../components/meds/MedicationRequestDetails';
 import type { MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
@@ -42,18 +43,91 @@ import { showErrorNotification } from '../../utils/notifications';
 import { OrderMedicationPage } from '../meds/OrderMedicationPage';
 import classes from './MedsPage.module.css';
 
+/** Server-side _count for the medication list page. */
+const PAGE_SIZE = 20;
+
+/**
+ * FHIR `MedicationRequest.status` filter for each UI tab. Comma-OR semantics
+ * follow the FHIR search spec ("multipleOr") so we get a single round-trip
+ * per tab regardless of how many backing statuses we lump together.
+ */
+const TAB_TO_STATUS_PARAM: Record<MedTab, string> = {
+  active: 'active,on-hold,unknown',
+  draft: 'draft',
+  completed: 'completed,stopped,cancelled,entered-in-error',
+};
+
+const STATUS_PARAM_TO_TAB: Record<string, MedTab> = {
+  'active,on-hold,unknown': 'active',
+  draft: 'draft',
+  'completed,stopped,cancelled,entered-in-error': 'completed',
+};
+
+const DEFAULT_TAB: MedTab = 'active';
+
 export function MedicationsPage(): JSX.Element {
   const { patientId, medicationRequestId } = useParams();
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
 
-  const [activeTab, setActiveTab] = useState<MedTab>('active');
-  const [allOrders, setAllOrders] = useState<MedicationRequest[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusParam = searchParams.get('status') ?? TAB_TO_STATUS_PARAM[DEFAULT_TAB];
+  const activeTab: MedTab = STATUS_PARAM_TO_TAB[statusParam] ?? DEFAULT_TAB;
+  const offset = Math.max(0, Number.parseInt(searchParams.get('_offset') ?? '0', 10) || 0);
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+
+  const setTab = useCallback(
+    (next: MedTab) => {
+      const status = TAB_TO_STATUS_PARAM[next];
+      // Reset paging on tab change so the user lands on page 1 of the new status set.
+      setSearchParams(
+        (prev) => {
+          const updated = new URLSearchParams(prev);
+          updated.set('status', status);
+          updated.delete('_offset');
+          return updated;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const setPage = useCallback(
+    (page: number) => {
+      const nextOffset = Math.max(0, (page - 1) * PAGE_SIZE);
+      setSearchParams(
+        (prev) => {
+          const updated = new URLSearchParams(prev);
+          if (nextOffset === 0) {
+            updated.delete('_offset');
+          } else {
+            updated.set('_offset', String(nextOffset));
+          }
+          return updated;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const [orders, setOrders] = useState<MedicationRequest[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [iframeModalOpened, setIframeModalOpened] = useState(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>();
+  // refreshLaunchUrl reads this ref instead of closing over `iframeUrl`, so the
+  // callback identity stays stable across URL changes. Without this the
+  // PrescriptionIFrameModal effect that depends on `onRefreshLaunchUrl` would
+  // re-run every time we set a new URL (including the one returned by the
+  // refresh call itself, which would form a refresh loop).
+  const iframeUrlRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    iframeUrlRef.current = iframeUrl;
+  }, [iframeUrl]);
   /** MR id for iframe session + polling when URL/detail selection lags behind a new order. */
   const [iframePollMrId, setIframePollMrId] = useState<string | undefined>();
   const [currentOrder, setCurrentOrder] = useState<MedicationRequest | undefined>();
@@ -64,27 +138,41 @@ export function MedicationsPage(): JSX.Element {
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
   const [syncing, setSyncing] = useState(false);
 
-  const filteredItems = useMemo(() => filterMedicationRequestsByTab(allOrders, activeTab), [allOrders, activeTab]);
-
   const fetchOrders = useCallback(async (): Promise<void> => {
     if (!patientReference) {
       showErrorNotification('Patient not found');
       return;
     }
     try {
-      const searchParams = new URLSearchParams({
+      const params = new URLSearchParams({
         subject: patientReference,
-        _count: '100',
+        status: statusParam,
+        _count: String(PAGE_SIZE),
+        _offset: String(offset),
         _sort: '-_lastUpdated',
+        _total: 'accurate',
         _fields:
           '_lastUpdated,status,intent,medicationCodeableConcept,dosageInstruction,dispenseRequest,subject,requester,authoredOn,identifier,extension',
       });
-      const results = await medplum.searchResources('MedicationRequest', searchParams, { cache: 'no-cache' });
-      setAllOrders(results);
+      const bundle = await medplum.search('MedicationRequest', params, { cache: 'no-cache' });
+      const entries: MedicationRequest[] = [];
+      for (const entry of bundle.entry ?? []) {
+        if (entry.resource?.resourceType === 'MedicationRequest') {
+          entries.push(entry.resource);
+        }
+      }
+      setOrders(entries);
+      if (typeof bundle.total === 'number') {
+        setTotal(bundle.total);
+      } else {
+        // Fallback for servers that omit `total`: assume "at least this many" so paging
+        // controls remain visible if the current page is full.
+        setTotal(offset + entries.length + (entries.length === PAGE_SIZE ? 1 : 0));
+      }
     } catch (error) {
       showErrorNotification(error);
     }
-  }, [medplum, patientReference]);
+  }, [medplum, patientReference, statusParam, offset]);
 
   const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -101,6 +189,8 @@ export function MedicationsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   const handleOrderSelect = useCallback(
     (order: MedicationRequest): string => {
       return `/Patient/${patientId}/MedicationRequest/${order.id}`;
@@ -113,13 +203,13 @@ export function MedicationsPage(): JSX.Element {
       setCurrentOrder(undefined);
       return;
     }
-    const fromList = allOrders.find((mr) => mr.id === medicationRequestId);
+    const fromList = orders.find((mr) => mr.id === medicationRequestId);
     if (fromList) {
       setCurrentOrder(fromList);
       return;
     }
     medplum.readResource('MedicationRequest', medicationRequestId).then(setCurrentOrder).catch(showErrorNotification);
-  }, [medicationRequestId, allOrders, medplum]);
+  }, [medicationRequestId, orders, medplum]);
 
   const handleDoseSpotSync = useCallback(async (): Promise<void> => {
     if (!patient?.id) {
@@ -158,13 +248,15 @@ export function MedicationsPage(): JSX.Element {
       setIframePollMrId(result.medicationRequestId);
       setIframeUrl(result.launchUrl);
       setIframeModalOpened(true);
+      // Switch to the Draft tab (URL-driven) so the just-created draft MR is visible
+      // in the list once the server-side search refreshes.
+      setTab('draft');
       await fetchData();
-      setActiveTab('draft');
       if (result.medicationRequestId && patientId) {
         navigate(`/Patient/${patientId}/MedicationRequest/${result.medicationRequestId}`)?.catch(console.error);
       }
     },
-    [fetchData, navigate, patientId]
+    [fetchData, navigate, patientId, setTab]
   );
 
   const handleOpenScriptSureFromDetails = useCallback(async (): Promise<void> => {
@@ -185,11 +277,11 @@ export function MedicationsPage(): JSX.Element {
   const refreshLaunchUrl = useCallback(async (): Promise<string | undefined> => {
     const mrId = iframePollMrId ?? currentOrder?.id;
     if (!patientId || !mrId) {
-      return iframeUrl;
+      return iframeUrlRef.current;
     }
     const res = await orderMedication({ patientId, medicationRequestId: mrId });
     return res.launchUrl;
-  }, [patientId, currentOrder, iframePollMrId, orderMedication, iframeUrl]);
+  }, [patientId, currentOrder, iframePollMrId, orderMedication]);
 
   const handleIframeFhirSynced = useCallback((): void => {
     setIframeModalOpened(false);
@@ -212,7 +304,7 @@ export function MedicationsPage(): JSX.Element {
                 <Group gap="xs">
                   <Tabs
                     value={activeTab}
-                    onChange={(v) => setActiveTab((v as MedTab) || 'active')}
+                    onChange={(v) => setTab((v as MedTab) || DEFAULT_TAB)}
                     variant="unstyled"
                     className="pill-tabs"
                   >
@@ -251,22 +343,22 @@ export function MedicationsPage(): JSX.Element {
               </Flex>
             </Paper>
             <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" p="0.5rem">
+            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <ScrollArea style={{ flex: 1 }} p="0.5rem">
                 {loading && <MedListSkeleton />}
-                {!loading && filteredItems.length === 0 && <EmptyMedsState activeTab={activeTab} />}
+                {!loading && orders.length === 0 && <EmptyMedsState activeTab={activeTab} />}
                 {!loading &&
-                  filteredItems.length > 0 &&
-                  filteredItems.map((item, index) => (
+                  orders.length > 0 &&
+                  orders.map((item, index) => (
                     <React.Fragment key={item.id}>
                       <MedListItem
                         item={item}
                         selectedItem={currentOrder}
                         activeTab={activeTab}
                         onItemSelect={handleOrderSelect}
-                        ePrescribingExtensions={SCRIPTSURE_EPRESCRIBING_EXTENSIONS}
+                        medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
                       />
-                      {index < filteredItems.length - 1 && (
+                      {index < orders.length - 1 && (
                         <Box px="0.5rem">
                           <Divider />
                         </Box>
@@ -274,6 +366,18 @@ export function MedicationsPage(): JSX.Element {
                     </React.Fragment>
                   ))}
               </ScrollArea>
+              {!loading && totalPages > 1 && (
+                <Box p="xs">
+                  <Pagination
+                    size="sm"
+                    value={currentPage}
+                    onChange={setPage}
+                    total={totalPages}
+                    siblings={0}
+                    boundaries={1}
+                  />
+                </Box>
+              )}
             </Paper>
           </Flex>
         </Box>
@@ -283,7 +387,7 @@ export function MedicationsPage(): JSX.Element {
             <MedicationRequestDetails
               key={currentOrder.id}
               medicationRequest={currentOrder}
-              ePrescribingExtensions={SCRIPTSURE_EPRESCRIBING_EXTENSIONS}
+              medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
               onOpenInScriptSure={() => handleOpenScriptSureFromDetails().catch(showErrorNotification)}
             />
           ) : (
@@ -321,27 +425,6 @@ export function MedicationsPage(): JSX.Element {
       />
     </Box>
   );
-}
-
-function filterMedicationRequestsByTab(requests: MedicationRequest[], tab: MedTab): MedicationRequest[] {
-  const filtered = requests.filter((mr) => {
-    const s = mr.status;
-    switch (tab) {
-      case 'draft':
-        return s === 'draft';
-      case 'active':
-        return s === 'active' || s === 'on-hold' || s === 'unknown';
-      case 'completed':
-        return s === 'completed' || s === 'stopped' || s === 'cancelled' || s === 'entered-in-error';
-      default:
-        return false;
-    }
-  });
-  return filtered.sort((a, b) => {
-    const aDate = a.meta?.lastUpdated || a.authoredOn;
-    const bDate = b.meta?.lastUpdated || b.authoredOn;
-    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-  });
 }
 
 function EmptyMedsState({ activeTab }: { activeTab: MedTab }): JSX.Element {

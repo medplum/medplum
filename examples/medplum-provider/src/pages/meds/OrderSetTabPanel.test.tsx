@@ -44,7 +44,7 @@ const UNSYNCED_PD: PlanDefinition = {
   action: [{ id: 'x', title: 'Lisinopril 10 mg' }],
 };
 
-const URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA&darkmode=off';
+const URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA';
 
 interface HarnessProps {
   initialPatient?: Patient;

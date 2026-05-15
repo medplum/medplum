@@ -4,15 +4,13 @@ import { MockClient } from '@medplum/mock';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import type { UseEPrescribingOrderSetOptions } from './useEPrescribingOrderSet';
-import { useEPrescribingOrderSet } from './useEPrescribingOrderSet';
+import type { UseMedicationOrderSetOptions } from './useMedicationOrderSet';
+import { useMedicationOrderSet } from './useMedicationOrderSet';
 
 const ORDER_SET_BOT = { system: 'https://www.medplum.com/bots', value: 'order-set-bot' };
 const PATIENT_ID = 'patient-1';
-const SCRIPTSURE_URL_A =
-  'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA&darkmode=off';
-const SCRIPTSURE_URL_B =
-  'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokB&darkmode=off';
+const SCRIPTSURE_URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA';
+const SCRIPTSURE_URL_B = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokB';
 
 function wrapper(medplum: MockClient) {
   return function Wrapper(props: { children: ReactNode }): JSX.Element {
@@ -22,15 +20,15 @@ function wrapper(medplum: MockClient) {
 
 function renderOrderSetHook(
   medplum: MockClient,
-  options: UseEPrescribingOrderSetOptions
-): ReturnType<typeof renderHook<ReturnType<typeof useEPrescribingOrderSet>, UseEPrescribingOrderSetOptions>> {
-  return renderHook((opts: UseEPrescribingOrderSetOptions) => useEPrescribingOrderSet(ORDER_SET_BOT, opts), {
+  options: UseMedicationOrderSetOptions
+): ReturnType<typeof renderHook<ReturnType<typeof useMedicationOrderSet>, UseMedicationOrderSetOptions>> {
+  return renderHook((opts: UseMedicationOrderSetOptions) => useMedicationOrderSet(ORDER_SET_BOT, opts), {
     wrapper: wrapper(medplum),
     initialProps: options,
   });
 }
 
-describe('useEPrescribingOrderSet', () => {
+describe('useMedicationOrderSet', () => {
   test('happy path — calls bot with default vendorOrderSetId field and exposes URL', async () => {
     const medplum = new MockClient();
     const exec = jest.spyOn(medplum, 'executeBot').mockResolvedValue({ url: SCRIPTSURE_URL_A });
@@ -38,7 +36,6 @@ describe('useEPrescribingOrderSet', () => {
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
       vendorOrderSetId: 377,
-      darkmode: 'off',
     });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -47,7 +44,6 @@ describe('useEPrescribingOrderSet', () => {
     expect(exec).toHaveBeenCalledWith(ORDER_SET_BOT, {
       patientId: PATIENT_ID,
       vendorOrderSetId: 377,
-      darkmode: 'off',
     });
     expect(result.current.url).toBe(SCRIPTSURE_URL_A);
     expect(result.current.error).toBeUndefined();
@@ -221,7 +217,7 @@ describe('useEPrescribingOrderSet', () => {
 
   test('omits url when bot result has no url field', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'executeBot').mockResolvedValue({ scriptSurePatientId: 1 });
+    jest.spyOn(medplum, 'executeBot').mockResolvedValue({ vendorPatientId: 1 });
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,

@@ -4,7 +4,7 @@
 import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
 import { getIdentifier } from './utils';
 
-/** Re-export common coding systems used with e-prescribing medication search. */
+/** Re-export common coding systems used with medication-order drug search. */
 export { NDC, RXNORM } from './constants';
 
 /**
@@ -33,7 +33,7 @@ export interface MedicationOrderDrugInput {
 }
 
 /**
- * Vendor-neutral input for an e-prescribing order-medication bot (matches ScriptSure bot shape).
+ * Vendor-neutral input for an order-medication bot (matches the ScriptSure bot shape).
  */
 export interface MedicationOrderRequest {
   readonly patientId: string;
@@ -59,24 +59,26 @@ export interface MedicationOrderRequest {
   readonly pharmacyNote?: string;
   /** Free-text patient instructions (additional sig); maps to dosageInstruction[0].patientInstruction when using MR path. */
   readonly patientInstruction?: string;
-  readonly darkmode?: 'on' | 'off';
   readonly appId?: string;
 }
 
 /**
- * Vendor-neutral output from an e-prescribing order-medication bot.
+ * Vendor-neutral output from an order-medication bot.
  */
 export interface MedicationOrderResponse {
   readonly orderId: number;
-  /** ScriptSure patient id; other vendors may use a different semantic — keep as number when possible. */
-  readonly scriptSurePatientId: number;
+  /**
+   * Vendor-side patient id (numeric in ScriptSure today; other vendors may use a different
+   * shape). Kept as `number` for backwards compatibility with the ScriptSure bot output.
+   */
+  readonly vendorPatientId: number;
   readonly launchUrl: string;
   readonly medicationRequestId?: string;
   readonly pendingOrderStatus?: 'queued' | 'reused';
 }
 
 /**
- * Parameters for an e-prescribing drug search bot.
+ * Parameters for a drug search bot used by {@link MedicationOrderRequest} flows.
  */
 export interface MedicationSearchParams {
   readonly term?: string;
@@ -93,9 +95,10 @@ export interface MedicationSearchParams {
 }
 
 /**
- * Extension URLs / identifier systems used to read pending order state from a MedicationRequest.
+ * Vendor-neutral mapping of the extension URLs / identifier systems used to read
+ * pending medication-order state stamped on a `MedicationRequest`.
  */
-export interface EPrescribingExtensions {
+export interface MedicationOrderExtensions {
   readonly pendingOrderIdSystem: string;
   readonly pendingOrderStatusUrl: string;
   readonly iframeUrlExtension: string;
@@ -114,8 +117,8 @@ export function isMedicationOrderResponse(value: unknown): value is MedicationOr
   return (
     typeof obj.orderId === 'number' &&
     Number.isFinite(obj.orderId) &&
-    typeof obj.scriptSurePatientId === 'number' &&
-    Number.isFinite(obj.scriptSurePatientId) &&
+    typeof obj.vendorPatientId === 'number' &&
+    Number.isFinite(obj.vendorPatientId) &&
     typeof obj.launchUrl === 'string' &&
     obj.launchUrl.length > 0
   );
@@ -138,41 +141,41 @@ export function isMedicationArray(value: unknown): value is Medication[] {
 }
 
 /**
- * Reads pending order id from MedicationRequest identifiers.
+ * Reads the pending medication-order id from MedicationRequest identifiers.
  * @param medicationRequest - Draft or active MR carrying vendor identifiers.
  * @param ext - Vendor extension URL and identifier system configuration.
  * @returns The pending order id string, if present.
  */
-export function getEPrescribingPendingOrderId(
+export function getPendingMedicationOrderId(
   medicationRequest: MedicationRequest,
-  ext: EPrescribingExtensions
+  ext: MedicationOrderExtensions
 ): string | undefined {
   return getIdentifier(medicationRequest, ext.pendingOrderIdSystem);
 }
 
 /**
- * Reads pending order status code from MedicationRequest extensions.
+ * Reads the pending medication-order status code from MedicationRequest extensions.
  * @param medicationRequest - MR to read.
  * @param ext - Vendor extension URL configuration.
  * @returns The status code (e.g. queued), if present.
  */
-export function getEPrescribingPendingOrderStatus(
+export function getPendingMedicationOrderStatus(
   medicationRequest: MedicationRequest,
-  ext: EPrescribingExtensions
+  ext: MedicationOrderExtensions
 ): string | undefined {
   const e = medicationRequest.extension?.find((x) => x.url === ext.pendingOrderStatusUrl);
   return e?.valueCode;
 }
 
 /**
- * Reads iframe launch URL from MedicationRequest extensions.
+ * Reads the medication-order iframe launch URL from MedicationRequest extensions.
  * @param medicationRequest - MR to read.
  * @param ext - Vendor extension URL configuration.
  * @returns The launch URL, if present.
  */
-export function getEPrescribingIframeUrl(
+export function getMedicationOrderIframeUrl(
   medicationRequest: MedicationRequest,
-  ext: EPrescribingExtensions
+  ext: MedicationOrderExtensions
 ): string | undefined {
   const e = medicationRequest.extension?.find((x) => x.url === ext.iframeUrlExtension);
   return e?.valueUrl;

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { EPrescribingExtensions } from '@medplum/core';
+import type { MedicationOrderExtensions } from '@medplum/core';
 import type { Identifier } from '@medplum/fhirtypes';
 
 export const MEDPLUM_BOT_SYSTEM = 'https://www.medplum.com/bots';
@@ -24,7 +24,7 @@ export const SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION = 'https://scriptsure.com
 
 export const SCRIPTSURE_IFRAME_URL_EXTENSION = 'https://scriptsure.com/iframe-url';
 
-export const SCRIPTSURE_EPRESCRIBING_EXTENSIONS: EPrescribingExtensions = {
+export const SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS: MedicationOrderExtensions = {
   pendingOrderIdSystem: SCRIPTSURE_PENDING_ORDER_ID_SYSTEM,
   pendingOrderStatusUrl: SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION,
   iframeUrlExtension: SCRIPTSURE_IFRAME_URL_EXTENSION,

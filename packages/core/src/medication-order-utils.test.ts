@@ -3,9 +3,9 @@
 
 import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
 import {
-  getEPrescribingIframeUrl,
-  getEPrescribingPendingOrderId,
-  getEPrescribingPendingOrderStatus,
+  getMedicationOrderIframeUrl,
+  getPendingMedicationOrderId,
+  getPendingMedicationOrderStatus,
   isMedicationArray,
   isMedicationOrderResponse,
 } from './medication-order-utils';
@@ -21,7 +21,7 @@ describe('isMedicationOrderResponse', () => {
     expect(
       isMedicationOrderResponse({
         orderId: 1,
-        scriptSurePatientId: 2,
+        vendorPatientId: 2,
         launchUrl: 'https://example.com/widget',
       })
     ).toBe(true);
@@ -33,7 +33,7 @@ describe('isMedicationOrderResponse', () => {
     expect(
       isMedicationOrderResponse({
         orderId: 1,
-        scriptSurePatientId: 2,
+        vendorPatientId: 2,
       })
     ).toBe(false);
   });
@@ -54,8 +54,8 @@ describe('isMedicationArray', () => {
   });
 });
 
-describe('EPrescribing getters', () => {
-  test('getEPrescribingPendingOrderId', () => {
+describe('MedicationOrder getters', () => {
+  test('getPendingMedicationOrderId', () => {
     const mr = {
       resourceType: 'MedicationRequest' as const,
       status: 'draft' as const,
@@ -63,10 +63,10 @@ describe('EPrescribing getters', () => {
       subject: { reference: 'Patient/1' },
       identifier: [{ system: TEST_EXT.pendingOrderIdSystem, value: '99' }],
     } satisfies MedicationRequest;
-    expect(getEPrescribingPendingOrderId(mr, TEST_EXT)).toBe('99');
+    expect(getPendingMedicationOrderId(mr, TEST_EXT)).toBe('99');
   });
 
-  test('getEPrescribingPendingOrderStatus', () => {
+  test('getPendingMedicationOrderStatus', () => {
     const mr = {
       resourceType: 'MedicationRequest' as const,
       status: 'draft' as const,
@@ -74,10 +74,10 @@ describe('EPrescribing getters', () => {
       subject: { reference: 'Patient/1' },
       extension: [{ url: TEST_EXT.pendingOrderStatusUrl, valueCode: 'queued' }],
     } satisfies MedicationRequest;
-    expect(getEPrescribingPendingOrderStatus(mr, TEST_EXT)).toBe('queued');
+    expect(getPendingMedicationOrderStatus(mr, TEST_EXT)).toBe('queued');
   });
 
-  test('getEPrescribingIframeUrl', () => {
+  test('getMedicationOrderIframeUrl', () => {
     const mr = {
       resourceType: 'MedicationRequest' as const,
       status: 'draft' as const,
@@ -85,6 +85,6 @@ describe('EPrescribing getters', () => {
       subject: { reference: 'Patient/1' },
       extension: [{ url: TEST_EXT.iframeUrlExtension, valueUrl: 'https://iframe.example/' }],
     } satisfies MedicationRequest;
-    expect(getEPrescribingIframeUrl(mr, TEST_EXT)).toBe('https://iframe.example/');
+    expect(getMedicationOrderIframeUrl(mr, TEST_EXT)).toBe('https://iframe.example/');
   });
 });

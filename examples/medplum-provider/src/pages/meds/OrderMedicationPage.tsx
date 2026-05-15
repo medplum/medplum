@@ -363,11 +363,7 @@ function resolveQuantityQualifier(
   if (inferred) {
     return inferred;
   }
-  const trimmed = raw?.trim();
-  if (trimmed && trimmed !== DEFAULT_QUANTITY_QUALIFIER) {
-    return trimmed;
-  }
-  return trimmed || DEFAULT_QUANTITY_QUALIFIER;
+  return raw?.trim() || DEFAULT_QUANTITY_QUALIFIER;
 }
 
 function parseScriptSureSigs(medication: Medication, matcher: QualifierMatcher): ParsedSig[] {
@@ -857,8 +853,9 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
       sigOptions.length > 0 && sigOptions[sigIndex] ? sigOptions[sigIndex].quantityQualifier : manualQtyQualifier;
 
     setSubmitting(true);
+    let createdMr: MedicationRequest | undefined;
     try {
-      const mr = await medplum.createResource<MedicationRequest>({
+      createdMr = await medplum.createResource<MedicationRequest>({
         resourceType: 'MedicationRequest',
         status: 'draft',
         intent: 'order',
@@ -895,7 +892,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
 
       const res = await orderMedication({
         patientId: patient.id,
-        medicationRequestId: mr.id,
+        medicationRequestId: createdMr.id,
         conditionIds: primaryCondition?.id ? [primaryCondition.id] : [],
         coverageId: coverage?.id,
         pharmacyOrganizationId: pharmacyOrg?.id,
@@ -905,6 +902,17 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
 
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
     } catch (e) {
+      // The bot call (or downstream FHIR write) failed after the draft MR was created.
+      // Clean up the orphan draft so the MedicationsPage doesn't grow stale "draft" rows
+      // for every aborted attempt. We swallow delete failures so the original error
+      // is the one the user sees.
+      if (createdMr?.id) {
+        try {
+          await medplum.deleteResource('MedicationRequest', createdMr.id);
+        } catch {
+          // ignore - we still want to surface the original error
+        }
+      }
       showErrorNotification(e);
     } finally {
       setSubmitting(false);

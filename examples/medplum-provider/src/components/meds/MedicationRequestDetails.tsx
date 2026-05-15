@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Button, Divider, Group, Paper, ScrollArea, Stack, Text, Tooltip } from '@mantine/core';
-import type { EPrescribingExtensions } from '@medplum/core';
+import type { MedicationOrderExtensions } from '@medplum/core';
 import {
   formatCodeableConcept,
   formatDate,
   formatHumanName,
-  getEPrescribingIframeUrl,
-  getEPrescribingPendingOrderId,
-  getEPrescribingPendingOrderStatus,
+  getMedicationOrderIframeUrl,
+  getPendingMedicationOrderId,
+  getPendingMedicationOrderStatus,
 } from '@medplum/core';
-import type { Dosage, HumanName, MedicationRequest, Patient, Practitioner, Quantity } from '@medplum/fhirtypes';
+import type { Dosage, MedicationRequest, Patient, Practitioner, Quantity } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { IconExternalLink, IconMaximize } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -19,7 +19,7 @@ import { getQuantityQualifierLabel } from './quantity-qualifiers';
 
 interface MedicationRequestDetailsProps {
   medicationRequest: MedicationRequest;
-  ePrescribingExtensions: EPrescribingExtensions;
+  medicationOrderExtensions: MedicationOrderExtensions;
   onOpenInScriptSure: () => void;
 }
 
@@ -86,10 +86,10 @@ function formatDosageLine(dosage: Dosage, index: number): JSX.Element {
   const body = bits.length > 0 ? bits.join(' · ') : '—';
   return (
     <Group key={index} align="flex-start" gap="lg" wrap="nowrap">
-      <Text fw={500} size="sm" style={{ width: '150px', flexShrink: 0 }} c="dimmed">
+      <Text fw={500} size="sm" miw={150} maw={150} c="dimmed">
         {label}
       </Text>
-      <Text size="sm" style={{ flex: 1 }}>
+      <Text size="sm" flex={1}>
         {body}
       </Text>
     </Group>
@@ -100,10 +100,10 @@ function DetailRow(props: { label: string; children: ReactNode }): JSX.Element {
   const { label, children } = props;
   return (
     <Group align="flex-start" gap="lg" wrap="nowrap">
-      <Text fw={500} size="sm" style={{ width: '150px', flexShrink: 0 }} c="dimmed">
+      <Text fw={500} size="sm" miw={150} maw={150} c="dimmed">
         {label}
       </Text>
-      <Stack gap={4} style={{ flex: 1 }}>
+      <Stack gap={4} flex={1}>
         {children}
       </Stack>
     </Group>
@@ -111,14 +111,14 @@ function DetailRow(props: { label: string; children: ReactNode }): JSX.Element {
 }
 
 export function MedicationRequestDetails(props: MedicationRequestDetailsProps): JSX.Element {
-  const { medicationRequest, ePrescribingExtensions, onOpenInScriptSure } = props;
+  const { medicationRequest, medicationOrderExtensions, onOpenInScriptSure } = props;
   const navigate = useNavigate();
   const requesterRes = useResource(medicationRequest.requester) as Practitioner | undefined;
   const patientRes = useResource(medicationRequest.subject) as Patient | undefined;
 
-  const pendingId = getEPrescribingPendingOrderId(medicationRequest, ePrescribingExtensions);
-  const pendingStatus = getEPrescribingPendingOrderStatus(medicationRequest, ePrescribingExtensions);
-  const storedIframeUrl = getEPrescribingIframeUrl(medicationRequest, ePrescribingExtensions);
+  const pendingId = getPendingMedicationOrderId(medicationRequest, medicationOrderExtensions);
+  const pendingStatus = getPendingMedicationOrderStatus(medicationRequest, medicationOrderExtensions);
+  const storedIframeUrl = getMedicationOrderIframeUrl(medicationRequest, medicationOrderExtensions);
 
   const medText =
     medicationRequest.medicationCodeableConcept?.text ||
@@ -127,7 +127,7 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
 
   const requesterName =
     medicationRequest.requester?.display ||
-    (requesterRes?.resourceType === 'Practitioner' ? formatHumanName(requesterRes.name?.[0] as HumanName) : undefined);
+    (requesterRes?.resourceType === 'Practitioner' ? formatHumanName(requesterRes.name?.[0]) : undefined);
 
   const dispQty = medicationRequest.dispenseRequest?.quantity;
   const rawQualifier = dispQty?.unit?.trim() || dispQty?.code?.trim();
@@ -230,7 +230,7 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
 
             {patientRes?.resourceType === 'Patient' && (
               <DetailRow label="Patient">
-                <Text size="sm">{formatHumanName(patientRes.name?.[0] as HumanName)}</Text>
+                <Text size="sm">{formatHumanName(patientRes.name?.[0])}</Text>
               </DetailRow>
             )}
 

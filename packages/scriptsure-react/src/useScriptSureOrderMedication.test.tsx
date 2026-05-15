@@ -36,7 +36,7 @@ describe('useScriptSureOrderMedication', () => {
     const medplum = new MockClient();
     medplum.executeBot = vi
       .fn()
-      .mockResolvedValueOnce({ orderId: 1, scriptSurePatientId: 2, launchUrl: 'https://iframe.example/' });
+      .mockResolvedValueOnce({ orderId: 1, vendorPatientId: 2, launchUrl: 'https://iframe.example/' });
 
     const { result } = renderHook(() => useScriptSureOrderMedication(), { wrapper: wrapper(medplum) });
 

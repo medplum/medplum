@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { UseEPrescribingOrderSetReturn } from '@medplum/react-hooks';
-import { useEPrescribingOrderSet } from '@medplum/react-hooks';
+import type { UseMedicationOrderSetReturn } from '@medplum/react-hooks';
+import { useMedicationOrderSet } from '@medplum/react-hooks';
 import { SCRIPTSURE_ORDER_SET_BOT } from './common';
 
 export interface UseScriptSureOrderSetOptions {
@@ -11,16 +11,15 @@ export interface UseScriptSureOrderSetOptions {
   readonly planDefinitionId?: string;
   /** ScriptSure orderset id (escape hatch when no synced PD exists yet). */
   readonly scriptSureOrdersetId?: number;
-  readonly darkmode?: 'on' | 'off';
   readonly appId?: string;
 }
 
-export type UseScriptSureOrderSetReturn = UseEPrescribingOrderSetReturn;
+export type UseScriptSureOrderSetReturn = UseMedicationOrderSetReturn;
 
 /**
  * React hook that returns the ScriptSure order-set prescribing widget URL.
  *
- * Thin wrapper around the generic {@link useEPrescribingOrderSet} hook,
+ * Thin wrapper around the generic {@link useMedicationOrderSet} hook,
  * pre-configured with `SCRIPTSURE_ORDER_SET_BOT` and the ScriptSure-specific
  * bot payload field name (`scriptSureOrdersetId`).
  *
@@ -32,12 +31,11 @@ export type UseScriptSureOrderSetReturn = UseEPrescribingOrderSetReturn;
  * @returns `{ url, loading, error, refresh }`.
  */
 export function useScriptSureOrderSet(options: UseScriptSureOrderSetOptions): UseScriptSureOrderSetReturn {
-  return useEPrescribingOrderSet(SCRIPTSURE_ORDER_SET_BOT, {
+  return useMedicationOrderSet(SCRIPTSURE_ORDER_SET_BOT, {
     patientId: options.patientId,
     planDefinitionId: options.planDefinitionId,
     vendorOrderSetId: options.scriptSureOrdersetId,
     vendorOrderSetIdField: 'scriptSureOrdersetId',
-    darkmode: options.darkmode,
     appId: options.appId,
   });
 }

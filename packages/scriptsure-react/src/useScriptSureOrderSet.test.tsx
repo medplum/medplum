@@ -8,8 +8,8 @@ import { vi } from 'vitest';
 import { SCRIPTSURE_ORDER_SET_BOT } from './common';
 import { useScriptSureOrderSet } from './useScriptSureOrderSet';
 
-const URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA&darkmode=off';
-const URL_B = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokB&darkmode=off';
+const URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA';
+const URL_B = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokB';
 
 function wrapper(medplum: MockClient) {
   return function Wrapper(props: { children: ReactNode }): JSX.Element {
@@ -26,16 +26,14 @@ describe('useScriptSureOrderSet', () => {
     const medplum = new MockClient();
     medplum.executeBot = vi.fn().mockResolvedValue({ url: URL_A, scriptSurePatientId: 100, scriptSureOrdersetId: 377 });
 
-    const { result } = renderHook(
-      () => useScriptSureOrderSet({ patientId: 'p1', scriptSureOrdersetId: 377, darkmode: 'off' }),
-      { wrapper: wrapper(medplum) }
-    );
+    const { result } = renderHook(() => useScriptSureOrderSet({ patientId: 'p1', scriptSureOrdersetId: 377 }), {
+      wrapper: wrapper(medplum),
+    });
 
     await waitFor(() => expect(result.current.url).toBe(URL_A));
     expect(medplum.executeBot).toHaveBeenCalledWith(SCRIPTSURE_ORDER_SET_BOT, {
       patientId: 'p1',
       scriptSureOrdersetId: 377,
-      darkmode: 'off',
     });
   });
 
