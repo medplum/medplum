@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, arrayify, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, OperationDefinitionParameter, ProjectMembership } from '@medplum/fhirtypes';
+import type {
+  OperationDefinition,
+  OperationDefinitionParameter,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import {
@@ -86,10 +91,11 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     const activeKey = getActiveRateLimitKey(project.id);
     const activeMembershipIds = await redis.zrevrange(activeKey, 0, 999);
     if (activeMembershipIds.length > 0) {
-      const reads = await Promise.allSettled(
-        activeMembershipIds.map((id) => ctx.repo.readResource<ProjectMembership>('ProjectMembership', id))
-      );
-      memberships = reads.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+      const references: Reference<ProjectMembership>[] = activeMembershipIds.map((id) => ({
+        reference: `ProjectMembership/${id}`,
+      }));
+      const reads = await ctx.repo.readReferences<ProjectMembership>(references);
+      memberships = reads.filter((r): r is ProjectMembership & { id: string } => !(r instanceof Error));
     } else {
       memberships = [];
     }
