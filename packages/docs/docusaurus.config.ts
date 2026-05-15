@@ -81,6 +81,21 @@ const config: Config = {
             from: '/docs/questionnaires/structured-data-capture',
             to: '/docs/questionnaires/parsing-questionnaire-responses',
           },
+          // Old Products top-level and subpages all funnel to the Platform landing.
+          // Subpages were never shipped publicly, so we point each at the landing rather
+          // than at a per-capability deep link.
+          { from: '/products', to: '/platform' },
+          { from: '/products/billing', to: '/platform' },
+          { from: '/products/bots', to: '/platform' },
+          { from: '/products/careplans', to: '/platform' },
+          { from: '/products/communications', to: '/platform' },
+          { from: '/products/integration', to: '/platform' },
+          { from: '/products/questionnaires', to: '/platform' },
+          { from: '/products/scheduling', to: '/platform' },
+          // Solutions consolidations — thin/duplicate pages funnel to the Solutions landing.
+          { from: '/solutions/medplum-ehr', to: '/solutions' },
+          { from: '/solutions/pediatrics', to: '/solutions' },
+          { from: '/solutions/agent', to: '/platform' },
         ],
       },
     ],
@@ -144,8 +159,8 @@ const config: Config = {
       },
       items: [
         {
-          to: '/products',
-          label: 'Products',
+          to: '/platform',
+          label: 'Platform',
           position: 'left',
         },
         {
@@ -154,10 +169,18 @@ const config: Config = {
           position: 'left',
         },
         {
-          type: 'doc',
-          docId: 'home',
-          position: 'left',
+          type: 'dropdown',
           label: 'Resources',
+          position: 'left',
+          items: [
+            { type: 'doc', docId: 'home', label: 'Docs' },
+            { label: 'FAQ', to: '/faq' },
+            { label: 'Case Studies', to: '/case-studies' },
+            { label: 'Blog', to: '/blog' },
+            { label: 'GitHub', to: 'https://github.com/medplum/medplum' },
+            { label: 'Discord', to: 'https://discord.gg/medplum' },
+            { label: 'Knowledge Base', to: 'https://linen.medplum.com' },
+          ],
         },
         {
           to: '/pricing',
@@ -184,7 +207,7 @@ const config: Config = {
           title: 'Developers',
           items: [
             {
-              label: 'Getting started',
+              label: 'Quickstart',
               to: '/docs/tutorials',
             },
             {

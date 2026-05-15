@@ -1,0 +1,107 @@
+/* Solutions-specific CTA banner — distinct from the Platform page's
+   minimal inline buttons. Mirrors the homepage CTA banner's gradient
+   feel but lives inside the page container. */
+
+.ctaBanner {
+  margin: 5rem auto 4rem auto;
+  padding: 4rem 3rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--oc-grape-7), var(--oc-violet-8));
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.ctaBanner::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 60%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 60%);
+  pointer-events: none;
+}
+
+.ctaInner {
+  position: relative;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  margin: 0 0 1rem 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: white;
+  text-wrap-style: balance;
+}
+
+.ctaDescription {
+  font-size: 1.125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0 0 2rem 0;
+  text-wrap-style: pretty;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ctaPrimary,
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 999px;
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+  text-decoration: none;
+}
+
+.ctaPrimary {
+  background: white;
+  color: var(--oc-grape-8);
+}
+
+.ctaPrimary:hover {
+  text-decoration: none;
+  color: var(--oc-grape-8);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+}
+
+.ctaSecondary {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.ctaSecondary:hover {
+  text-decoration: none;
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 996px) {
+  .ctaBanner {
+    padding: 3rem 1.5rem;
+    margin: 3rem auto;
+  }
+  .ctaTitle {
+    font-size: 1.75rem;
+  }
+  .ctaDescription {
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,182 @@
+.bento {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.25rem;
+  margin: 3rem auto;
+  max-width: 100%;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  border-radius: 20px;
+  background: white;
+  border: 1px solid rgba(var(--oc-gray-3-rgb), 0.5);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  overflow: hidden;
+}
+
+.cell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(var(--oc-grape-2-rgb), 0.18);
+  border-color: rgba(var(--oc-grape-2-rgb), 0.6);
+}
+
+[data-theme='dark'] .cell {
+  background: #1b1b1d;
+  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
+}
+
+[data-theme='dark'] .cell:hover {
+  box-shadow: 0 16px 40px rgba(var(--oc-grape-9-rgb), 0.35);
+  border-color: rgba(var(--oc-grape-5-rgb), 0.5);
+}
+
+/* Spans on a 6-column grid */
+.span2 {
+  grid-column: span 2;
+}
+.span3 {
+  grid-column: span 3;
+}
+.span4 {
+  grid-column: span 4;
+}
+.span6 {
+  grid-column: span 6;
+}
+
+/* Accent variants — limited to violet/indigo/orange.
+   The visual rule for /platform: only the 2 featured cells (span 4 + span 6)
+   get a colored background; the other 7 stay plain white. */
+.violet {
+  background: linear-gradient(135deg, rgba(var(--oc-violet-0-rgb), 0.5), rgba(var(--oc-grape-0-rgb), 0.4));
+  border-color: rgba(var(--oc-violet-1-rgb), 0.6);
+}
+.indigo {
+  background: linear-gradient(135deg, rgba(var(--oc-indigo-0-rgb), 0.5), rgba(var(--oc-blue-0-rgb), 0.4));
+  border-color: rgba(var(--oc-indigo-1-rgb), 0.6);
+}
+.orange {
+  background: linear-gradient(135deg, rgba(var(--oc-orange-0-rgb), 0.45), rgba(var(--oc-yellow-0-rgb), 0.35));
+  border-color: rgba(var(--oc-orange-1-rgb), 0.6);
+}
+
+[data-theme='dark'] .violet {
+  background: linear-gradient(135deg, rgba(var(--oc-violet-9-rgb), 0.45), rgba(var(--oc-grape-9-rgb), 0.35));
+  border-color: rgba(var(--oc-violet-7-rgb), 0.4);
+}
+[data-theme='dark'] .indigo {
+  background: linear-gradient(135deg, rgba(var(--oc-indigo-9-rgb), 0.45), rgba(var(--oc-blue-9-rgb), 0.35));
+  border-color: rgba(var(--oc-indigo-7-rgb), 0.4);
+}
+[data-theme='dark'] .orange {
+  background: linear-gradient(135deg, rgba(var(--oc-orange-9-rgb), 0.35), rgba(var(--oc-yellow-9-rgb), 0.25));
+  border-color: rgba(var(--oc-orange-7-rgb), 0.4);
+}
+
+.icon {
+  display: flex;
+  width: 3.25rem;
+  height: 3.25rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  background: rgba(var(--oc-grape-0-rgb), 0.55);
+  border-radius: 14px;
+  color: var(--oc-grape-8);
+}
+
+.icon svg {
+  width: 1.875rem;
+  height: 1.875rem;
+}
+
+[data-theme='dark'] .icon {
+  background: rgba(var(--oc-grape-9-rgb), 0.4);
+  color: var(--oc-grape-3);
+}
+
+/* When a cell already has a colored background, the icon tile blends in
+   with white rather than competing with the gradient. */
+.violet .icon,
+.indigo .icon,
+.orange .icon {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme='dark'] .violet .icon,
+[data-theme='dark'] .indigo .icon,
+[data-theme='dark'] .orange .icon {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oc-grape-7);
+  margin-bottom: 0.5rem;
+}
+
+[data-theme='dark'] .eyebrow {
+  color: var(--oc-grape-4);
+}
+
+.cell .title {
+  margin: 0 0 0.625rem 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--oc-gray-9);
+  text-wrap-style: balance;
+}
+
+[data-theme='dark'] .cell .title {
+  color: var(--oc-gray-0);
+}
+
+.cell .description {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--oc-gray-7);
+  text-wrap-style: pretty;
+}
+
+[data-theme='dark'] .cell .description {
+  color: var(--oc-gray-4);
+}
+
+/* Mobile: collapse to 2 cols, then 1 col */
+@media (max-width: 996px) {
+  .bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .span2,
+  .span3,
+  .span4,
+  .span6 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .bento {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .span2,
+  .span3,
+  .span4,
+  .span6 {
+    grid-column: span 1;
+  }
+  .cell {
+    padding: 1.5rem;
+  }
+}

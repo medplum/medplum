@@ -1,0 +1,355 @@
+/* Shared hero/CTA styles for the /platform and /solutions landing pages. */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 3rem;
+  margin: 2rem auto 0 auto;
+  padding: 4rem 0 2rem 0;
+}
+
+/* Modifier: when the hero pairs the copy with a code window instead of a
+   decorative illustration, give the code column more horizontal room. */
+.heroWithCode {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 2.5rem;
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+}
+
+.heroEyebrow {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oc-grape-7);
+  margin-bottom: 1.25rem;
+}
+
+[data-theme='dark'] .heroEyebrow {
+  color: var(--oc-grape-4);
+}
+
+.heroTitle {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.5rem 0;
+  color: var(--oc-gray-9);
+  text-wrap-style: balance;
+}
+
+[data-theme='dark'] .heroTitle {
+  color: var(--oc-gray-0);
+}
+
+.heroLead {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--oc-gray-7);
+  max-width: 60ch;
+  margin: 0;
+  text-wrap-style: pretty;
+}
+
+[data-theme='dark'] .heroLead {
+  color: var(--oc-gray-4);
+}
+
+.heroImage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.heroImage img {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  display: block;
+}
+
+/* Hero CTA buttons (just below the lead paragraph on /platform).
+   Subtle row beneath the copy; not the page's primary CTA. */
+.heroButtons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+/* Code-block hero treatment — replaces the decorative image on /platform.
+   Renders a faux-IDE window with a chrome bar and a syntax-highlighted code
+   block. Anchors the page as a developer-facing surface. */
+.heroCode {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.heroCodeWindow {
+  width: 100%;
+  min-width: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--oc-gray-3-rgb), 0.7);
+  box-shadow: 0 18px 50px rgba(var(--oc-violet-3-rgb), 0.22);
+  background: #0e0e10;
+}
+
+[data-theme='dark'] .heroCodeWindow {
+  border-color: rgba(var(--oc-gray-8-rgb), 0.6);
+  box-shadow: 0 18px 50px rgba(var(--oc-violet-9-rgb), 0.4);
+}
+
+.heroCodeChrome {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  background: #1a1a1d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.heroCodeDot {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.heroCodeDot:nth-child(1) {
+  background: #ff5f57;
+}
+.heroCodeDot:nth-child(2) {
+  background: #febc2e;
+}
+.heroCodeDot:nth-child(3) {
+  background: #28c840;
+}
+
+.heroCodeFilename {
+  margin-left: 0.75rem;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.01em;
+}
+
+/* Strip Docusaurus CodeBlock's own chrome inside the hero window so the
+   syntax-highlighted code sits flush with our custom chrome bar above it. */
+.heroCodeBlock {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.heroCode :global(.theme-code-block) {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #0e0e10 !important;
+}
+
+.heroCode :global(.theme-code-block .codeBlockContent) {
+  background: #0e0e10 !important;
+}
+
+.heroCode :global(.theme-code-block pre) {
+  font-size: 0.8125rem !important;
+  line-height: 1.55 !important;
+  padding: 1.25rem 1.5rem !important;
+  overflow-x: auto !important;
+}
+
+.heroCode :global(.theme-code-block code) {
+  white-space: pre !important;
+}
+
+.heroCode :global(.theme-code-block .buttonGroup) {
+  display: none;
+}
+
+/* Architecture diagram section between the Bento and the CTA.
+   Centers the system-overview SVG inside a soft-tinted frame so it
+   reads as a visual exhibit, not body copy. */
+.architectureDiagram {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(135deg, rgba(var(--oc-violet-0-rgb), 0.35), rgba(var(--oc-grape-0-rgb), 0.25));
+  border: 1px solid rgba(var(--oc-violet-1-rgb), 0.5);
+  border-radius: 20px;
+}
+
+[data-theme='dark'] .architectureDiagram {
+  background: linear-gradient(135deg, rgba(var(--oc-violet-9-rgb), 0.35), rgba(var(--oc-grape-9-rgb), 0.25));
+  border-color: rgba(var(--oc-violet-7-rgb), 0.4);
+}
+
+.architectureDiagram img {
+  width: 100%;
+  max-width: 880px;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 996px) {
+  .architectureDiagram {
+    padding: 1.5rem;
+  }
+}
+
+
+.ctaButtons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 4rem 0;
+}
+
+/* Platform-specific CTA: split into a value-prop block on the left and a
+   "spec sheet" credentials list on the right. Developer-focused, dense,
+   visually distinct from the centered gradient banner on /solutions. */
+.platformCta {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 3rem;
+  align-items: start;
+  margin: 4rem 0 4rem 0;
+  padding: 3rem;
+  border: 1px solid rgba(var(--oc-gray-3-rgb), 0.6);
+  border-radius: 20px;
+  background: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .platformCta {
+  background: #1b1b1d;
+  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
+}
+
+.platformCtaText {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.platformCtaEyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oc-grape-7);
+}
+
+[data-theme='dark'] .platformCtaEyebrow {
+  color: var(--oc-grape-4);
+}
+
+.platformCtaTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--oc-gray-9);
+  text-wrap-style: balance;
+}
+
+[data-theme='dark'] .platformCtaTitle {
+  color: var(--oc-gray-0);
+}
+
+.platformCtaButtons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.platformCtaCreds {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+  font-family: 'Poppins', system-ui;
+}
+
+.platformCtaCreds li {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 1rem;
+  align-items: baseline;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px dashed rgba(var(--oc-gray-3-rgb), 0.8);
+}
+
+[data-theme='dark'] .platformCtaCreds li {
+  border-bottom-color: rgba(var(--oc-gray-8-rgb), 0.7);
+}
+
+.platformCtaCreds li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.credLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oc-gray-6);
+}
+
+[data-theme='dark'] .credLabel {
+  color: var(--oc-gray-5);
+}
+
+.credValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .credValue {
+  color: var(--oc-gray-2);
+}
+
+@media (max-width: 996px) {
+  .platformCta {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2rem;
+  }
+  .platformCtaTitle {
+    font-size: 1.375rem;
+  }
+}
+
+@media (max-width: 996px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2.5rem 0 1.5rem 0;
+  }
+  .heroImage {
+    order: -1;
+  }
+  .heroImage img {
+    max-width: 280px;
+  }
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  .heroLead {
+    font-size: 1.125rem;
+  }
+}

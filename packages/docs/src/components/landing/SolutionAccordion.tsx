@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import {
-  IconChartHistogram,
   IconChevronRight,
-  IconFileTextSpark,
-  IconFirstAidKit,
   IconHeartRateMonitor,
   IconMinus,
   IconPlus,
-  IconReceiptDollar,
+  IconStethoscope,
+  IconTransform,
   IconUserHeart,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -30,65 +28,46 @@ const solutions: SolutionItem[] = [
   {
     title: 'Custom EHR',
     description: [
-      'Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and specifications',
-      'Gain complete control over your clinical data and operations',
+      'Ship a custom EHR in months, not years — built on the open-source Medplum Provider starter app',
+      'Charting, scheduling, orders, and billing on a unified FHIR data model',
     ],
     icon: <IconHeartRateMonitor size={24} />,
-    link: '/solutions/custom-ehr',
+    link: '/solutions',
     imageSrc: '/img/solutions/custom-ehr.webp',
   },
   {
-    title: 'Patient Engagement',
+    title: 'Patient Portal',
     description: [
-      'Deepen your connection with patients by creating custom, modern experiences that truly resonate',
-      'Drive better health outcomes through seamless and engaging interactions',
+      'A patient experience that feels like your brand, white-labeled on your own domain',
+      'Records, scheduling, messaging, and intake powered by our open-source Foo Medical starter',
     ],
     icon: <IconUserHeart size={24} />,
-    link: '/solutions/patient-portal',
+    link: '/solutions',
     imageSrc: '/img/solutions/patient-engagement.webp',
     imageClassName: styles.imgPatientEngagement,
   },
   {
-    title: 'Scribe & Agents',
+    title: 'Provider Portal',
     description: [
-      'Go beyond simple transcription with agentic scribes that take action, not just notes',
-      'Elevate your AI capabilities to streamline operations and enhance decision-making',
+      'Give referring physicians and partner clinicians secure access — without standing up a whole EHR',
+      'Notifications, threaded collaboration, and granular access controls out of the box',
     ],
-    icon: <IconFileTextSpark size={24} />,
+    icon: <IconStethoscope size={24} />,
     link: '/solutions',
+    // TODO(phase-b): swap to a dedicated provider-portal.webp asset
     imageSrc: '/img/solutions/scribe-agents.webp',
     imageClassName: styles.imgScribeAgents,
   },
   {
-    title: 'Population Health',
+    title: 'Interoperability',
     description: [
-      'Transform fragmented patient data into powerful insights for coordinated care delivery',
-      'Our platform empowers population health teams to improve outcomes and maximize shared savings',
+      'A modern, cloud-native alternative to Mirth and Corepoint — HL7, C-CDA, FHIRcast, SFTP under one roof',
+      'On-prem bridging via the Medplum Agent, transforms in TypeScript bots, audit-logged end to end',
     ],
-    icon: <IconChartHistogram size={24} />,
+    icon: <IconTransform size={24} />,
     link: '/solutions',
+    // TODO(phase-b): swap to a dedicated interoperability.webp asset
     imageSrc: '/img/solutions/population-health.webp',
-  },
-  {
-    title: 'Care Management',
-    description: [
-      'Free your care managers to focus on providing truly compassionate and personalized support',
-      'Streamline administrative tasks so they can dedicate more time to what matters most: patient well-being',
-    ],
-    icon: <IconFirstAidKit size={24} />,
-    link: '/solutions',
-    imageSrc: '/img/solutions/care-management.webp',
-  },
-  {
-    title: 'Revenue Cycle Management',
-    description: [
-      'Design and automate custom routing and business rules that perfectly fit your financial operations',
-      'Optimize your revenue cycle for efficiency and maximum returns',
-    ],
-    icon: <IconReceiptDollar size={24} />,
-    link: '/solutions',
-    imageSrc: '/img/solutions/rcm.webp',
-    imageClassName: styles.imgRcm,
   },
 ];
 
