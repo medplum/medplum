@@ -83,9 +83,7 @@ describe('EncounterModal', () => {
     });
 
     const createButton = screen.getByRole('button', { name: /Create Encounter/i });
-    await act(async () => {
-      await user.click(createButton);
-    });
+    await user.click(createButton);
 
     await waitFor(() => {
       expect(screen.getByText('Please fill out required fields.')).toBeInTheDocument();
@@ -171,9 +169,7 @@ describe('EncounterModal', () => {
 
     // The error notification will show when trying to create without filling required fields
     const createButton = screen.getByRole('button', { name: /Create Encounter/i });
-    await act(async () => {
-      await user.click(createButton);
-    });
+    await user.click(createButton);
 
     // Should show validation error - use getAllByText since there may be multiple
     await waitFor(() => {
@@ -274,9 +270,7 @@ describe('EncounterModal', () => {
 
     // Should show validation error when trying to create without patient
     const createButton = screen.getByRole('button', { name: /Create Encounter/i });
-    await act(async () => {
-      await user.click(createButton);
-    });
+    await user.click(createButton);
 
     // Use getAllByText since there may be multiple validation messages
     await waitFor(() => {
