@@ -49,14 +49,14 @@ export default function FAQPage(): JSX.Element {
               <p>
                 Not by itself. Medplum is the platform underneath custom EHRs. Our open source{' '}
                 <Link to="https://github.com/medplum/medplum-provider">Medplum Provider</Link> starter is a working EHR
-                application that customers fork and customize. Most teams ship a production EHR on top of it in three
-                to six months.
+                application that customers fork and customize. Most teams ship a production EHR on top of it in three to
+                six months.
               </p>
             </FAQItem>
             <FAQItem question="What programming languages does Medplum support?">
               <p>
-                Bots are written in TypeScript. The official SDK is TypeScript, plus a Node-based CLI for scripting
-                and deployment. The REST and GraphQL APIs work from any language. For UI work, the{' '}
+                Bots are written in TypeScript. The official SDK is TypeScript, plus a Node-based CLI for scripting and
+                deployment. The REST and GraphQL APIs work from any language. For UI work, the{' '}
                 <code>@medplum/react</code> component library &mdash; questionnaire forms, patient timelines, resource
                 tables, scheduling pickers, and more &mdash; is documented on{' '}
                 <Link to="https://storybook.medplum.com">Storybook</Link>.
@@ -72,8 +72,8 @@ export default function FAQPage(): JSX.Element {
             <FAQItem question="Can I migrate data from another system?">
               <p>
                 Yes. Most customers migrate from a combination of EHRs, custom databases, and one-off exports. We
-                support bulk FHIR import, HL7 ingestion, and arbitrary transforms via Bots. Talk to us about your
-                source systems and we&apos;ll point you at the right path.
+                support bulk FHIR import, HL7 ingestion, and arbitrary transforms via Bots. Talk to us about your source
+                systems and we&apos;ll point you at the right path.
               </p>
             </FAQItem>
           </FAQGroup>
@@ -81,9 +81,9 @@ export default function FAQPage(): JSX.Element {
           <FAQGroup title="Pricing & plans">
             <FAQItem question="Is Medplum free?">
               <p>
-                The open source Medplum platform is free under the Apache 2.0 license &mdash; you can self-host on
-                your own infrastructure indefinitely. The managed cloud is free for development and prototyping;
-                production usage is billed per project. See <Link to="/pricing">Pricing</Link>.
+                The open source Medplum platform is free under the Apache 2.0 license &mdash; you can self-host on your
+                own infrastructure indefinitely. The managed cloud is free for development and prototyping; production
+                usage is billed per project. See <Link to="/pricing">Pricing</Link>.
               </p>
             </FAQItem>
             <FAQItem question="Do you offer enterprise support?">
@@ -104,9 +104,8 @@ export default function FAQPage(): JSX.Element {
           <FAQGroup title="Compliance & security">
             <FAQItem question="Is Medplum HIPAA compliant?">
               <p>
-                Yes. The managed cloud is HIPAA-aligned and we sign BAAs on paid plans. Self-hosted deployments
-                inherit HIPAA controls when configured per our{' '}
-                <Link to="/docs/compliance">compliance guide</Link>.
+                Yes. The managed cloud is HIPAA-aligned and we sign BAAs on paid plans. Self-hosted deployments inherit
+                HIPAA controls when configured per our <Link to="/docs/compliance">compliance guide</Link>.
               </p>
             </FAQItem>
             <FAQItem question="What certifications does Medplum hold?">
@@ -142,10 +141,10 @@ export default function FAQPage(): JSX.Element {
             </FAQItem>
             <FAQItem question="What's the difference between the managed cloud and self-hosted?">
               <p>
-                Same code, different operator. The managed cloud is run by Medplum &mdash; compliance, scaling,
-                backups, and upgrades included. Self-hosted is operated by your team, typically on AWS, GCP, or
-                Azure. Both expose identical APIs. Customers can start on the managed cloud and move to self-hosted
-                later (or vice versa).
+                Same code, different operator. The managed cloud is run by Medplum &mdash; compliance, scaling, backups,
+                and upgrades included. Self-hosted is operated by your team, typically on AWS, GCP, or Azure. Both
+                expose identical APIs. Customers can start on the managed cloud and move to self-hosted later (or vice
+                versa).
               </p>
             </FAQItem>
             <FAQItem question="Can I contribute?">
@@ -161,23 +160,22 @@ export default function FAQPage(): JSX.Element {
           <FAQGroup title="Implementation & support">
             <FAQItem question="How long does it take to get started?">
               <p>
-                A working prototype on the managed cloud takes about an hour: create an account, install the SDK,
-                write your first FHIR resource. A production EHR shipping to real users typically takes three to six
-                months from initial commit. The{' '}
-                <Link to="/docs/tutorials">quickstart</Link> walks through the first hour.
+                A working prototype on the managed cloud takes about an hour: create an account, install the SDK, write
+                your first FHIR resource. A production EHR shipping to real users typically takes three to six months
+                from initial commit. The <Link to="/docs/tutorials">quickstart</Link> walks through the first hour.
               </p>
             </FAQItem>
             <FAQItem question="Do you offer professional services?">
               <p>
-                Medplum doesn&apos;t take on paid implementation work directly. Customers typically build with their
-                own engineering teams or work with consulting partners.{' '}
-                <Link to="mailto:hello@medplum.com">Email us</Link> if you&apos;d like a recommendation.
+                Medplum doesn&apos;t take on paid implementation work directly. Customers typically build with their own
+                engineering teams or work with consulting partners. <Link to="mailto:hello@medplum.com">Email us</Link>{' '}
+                if you&apos;d like a recommendation.
               </p>
             </FAQItem>
             <FAQItem question="Who actually uses Medplum in production?">
               <p>
-                Companies like Ro, Develo, Summer Health, Ensage, Chamber Cardio, Rad AI, Flexpa, Lumba Health,
-                Titan Intake, and Kit.com. See <Link to="/case-studies">case studies</Link> for the deep dives.
+                Companies like Ro, Develo, Summer Health, Ensage, Chamber Cardio, Rad AI, Flexpa, Lumba Health, Titan
+                Intake, and Kit.com. See <Link to="/case-studies">case studies</Link> for the deep dives.
               </p>
             </FAQItem>
           </FAQGroup>
