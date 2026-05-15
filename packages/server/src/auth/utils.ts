@@ -3,7 +3,6 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
 import type {
-  ClientApplication,
   ContactPoint,
   Login,
   OperationOutcome,
@@ -278,16 +277,4 @@ export function validateRecaptcha(projectValidation?: (p: Project) => OperationO
     }
     next();
   };
-}
-
-export function getScopeString(requestedScope: string | undefined, client?: ClientApplication): string {
-  if (requestedScope) {
-    return requestedScope;
-  }
-
-  if (client?.defaultScope) {
-    return client.defaultScope.join(' ');
-  }
-
-  return 'openid offline_access';
 }
