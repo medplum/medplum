@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Adapted from https://github.com/codyebberson/medplum-ai-realtime/blob/main/src/hooks/useWhisper.ts
 import { ReconnectingWebSocket } from '@medplum/core';
-import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export type WhisperStatus =
   | 'idle'
@@ -187,58 +187,56 @@ export function useWhisper({
     [setupSession, startAudioCapture]
   );
 
+  const acquireMicrophone = useCallback(async (): Promise<MediaStream> => {
+    setStatus('requesting_microphone');
+    const audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate: 16000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    });
+    audioStreamRef.current = audioStream;
+    return audioStream;
+  }, []);
+
+  const openWebSocket = useCallback((): ReconnectingWebSocket => {
+    setStatus('connecting');
+    const url = buildWebSocketUrl(medplum.getBaseUrl());
+    console.debug('[useWhisper] connecting to', url);
+    const websocket = new ReconnectingWebSocket(url);
+    websocketRef.current = websocket;
+
+    websocket.onopen = () => setStatus('connected');
+    websocket.onmessage = (event) => handleMessage(JSON.parse(event.data));
+    websocket.onerror = (err) => {
+      setError(err);
+      setStatus('error');
+      stop();
+    };
+    websocket.onclose = () => setStatus('disconnected');
+
+    websocket.send(
+      JSON.stringify({
+        type: 'ai-realtime:connect',
+        accessToken: medplum.getAccessToken(),
+      })
+    );
+    return websocket;
+  }, [medplum, handleMessage, stop]);
+
   const start = useCallback(async () => {
     try {
       setError(undefined);
-      setStatus('requesting_microphone');
-
-      const audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-
-      audioStreamRef.current = audioStream;
-
-      setStatus('connecting');
-
-      const url = buildWebSocketUrl(medplum.getBaseUrl());
-      console.debug('[useWhisper] connecting to', url);
-      const websocket = new ReconnectingWebSocket(url);
-
-      websocketRef.current = websocket;
-
-      websocket.onopen = () => setStatus('connected');
-
-      websocket.onmessage = (event) => {
-        handleMessage(JSON.parse(event.data));
-      };
-
-      websocket.onerror = (err) => {
-        setError(err);
-        setStatus('error');
-        stop();
-      };
-
-      websocket.onclose = () => {
-        setStatus('disconnected');
-      };
-
-      websocket.send(
-        JSON.stringify({
-          type: 'ai-realtime:connect',
-          accessToken: medplum.getAccessToken(),
-        })
-      );
+      await acquireMicrophone();
+      openWebSocket();
     } catch (err) {
       setError(err);
       setStatus('error');
       stop();
     }
-  }, [medplum, handleMessage, stop]);
+  }, [acquireMicrophone, openWebSocket, stop]);
 
   useEffect(() => {
     return () => stop();
@@ -254,7 +252,7 @@ export function useWhisper({
   };
 }
 
-function convertToPCM16(float32Array: Float32Array): Uint8Array {
+export function convertToPCM16(float32Array: Float32Array): Uint8Array {
   const pcm16Array = new Int16Array(float32Array.length);
 
   for (let i = 0; i < float32Array.length; i++) {
