@@ -845,15 +845,32 @@ export async function getExternalUserInfo(
     throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
   }
 
+  if (idp?.userInfoApiKey) {
+    const url = new URL(userInfoUrl);
+    url.searchParams.set('key', idp.userInfoApiKey);
+    userInfoUrl = url.toString();
+  }
+
   let response;
   try {
-    response = await fetch(userInfoUrl, {
-      method: 'GET',
-      headers: {
-        Accept: ContentType.JSON,
-        Authorization: `Bearer ${externalAccessToken}`,
-      },
-    });
+    if (idp?.userInfoTokenField) {
+      response = await fetch(userInfoUrl, {
+        method: 'POST',
+        headers: {
+          Accept: ContentType.JSON,
+          'Content-Type': ContentType.JSON,
+        },
+        body: JSON.stringify({ [idp.userInfoTokenField]: externalAccessToken }),
+      });
+    } else {
+      response = await fetch(userInfoUrl, {
+        method: 'GET',
+        headers: {
+          Accept: ContentType.JSON,
+          Authorization: `Bearer ${externalAccessToken}`,
+        },
+      });
+    }
   } catch (err: any) {
     log.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
@@ -870,18 +887,27 @@ export async function getExternalUserInfo(
   }
 
   const contentType = response.headers.get('content-type');
+  let claims: Record<string, unknown>;
   try {
     if (contentType?.includes(ContentType.JSON)) {
-      return await response.json();
+      claims = await response.json();
     } else if (contentType?.includes(ContentType.JWT)) {
-      return parseJWTPayload(await response.text());
+      claims = parseJWTPayload(await response.text());
+    } else {
+      throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
     }
   } catch (err: any) {
     log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
-  throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
+  if (idp?.userInfoResponsePath) {
+    for (const key of idp.userInfoResponsePath.split('.')) {
+      claims = claims[key] as Record<string, unknown>;
+    }
+  }
+
+  return claims;
 }
 
 interface ValidationAssertion {

@@ -5369,6 +5369,54 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "IdentityProvider.userInfoTokenField",
+            "path" : "IdentityProvider.userInfoTokenField",
+            "short" : "Optional field name for token in POST-style userinfo requests.",
+            "definition" : "When set, the userinfo request will use POST with a JSON body instead of GET with a Bearer header. The token will be placed in the body under this field name (e.g. 'idToken' for Google Cloud Identity Platform / Firebase).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.userInfoTokenField",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.userInfoApiKey",
+            "path" : "IdentityProvider.userInfoApiKey",
+            "short" : "Optional API key appended as ?key= to the userinfo URL.",
+            "definition" : "When set, appended as a 'key' query parameter to the userinfo URL. Required by some identity providers such as Google Cloud Identity Platform / Firebase.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.userInfoApiKey",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.userInfoResponsePath",
+            "path" : "IdentityProvider.userInfoResponsePath",
+            "short" : "Optional dot-separated path to unwrap claims from the userinfo response.",
+            "definition" : "Dot-separated path used to extract the claims object from a nested userinfo response body (e.g. 'users.0' for Google Cloud Identity Platform / Firebase, whose response shape is { users: [{ email, localId, ... }] }).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.userInfoResponsePath",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }

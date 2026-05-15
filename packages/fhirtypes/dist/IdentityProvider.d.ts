@@ -51,4 +51,24 @@ export interface IdentityProvider {
    * Optional flag to use the subject field instead of the email field.
    */
   useSubject?: boolean;
+
+  /**
+   * When set, the userinfo request will use POST with a JSON body instead of GET with a Bearer
+   * header. The token will be placed in the body under this field name (e.g. 'idToken' for
+   * Google Cloud Identity Platform / Firebase).
+   */
+  userInfoTokenField?: string;
+
+  /**
+   * When set, appended as a 'key' query parameter to the userinfo URL. Required by some identity
+   * providers such as Google Cloud Identity Platform / Firebase.
+   */
+  userInfoApiKey?: string;
+
+  /**
+   * Dot-separated path used to extract the claims object from a nested userinfo response body
+   * (e.g. 'users.0' for Google Cloud Identity Platform / Firebase, whose response shape is
+   * { users: [{ email, localId, ... }] }).
+   */
+  userInfoResponsePath?: string;
 }

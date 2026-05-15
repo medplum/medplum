@@ -83,6 +83,7 @@ describe('OAuth2 Token', () => {
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
+  let gcipAuthClient: ClientApplication;
   let systemRepo: SystemRepository;
 
   beforeAll(async () => {
@@ -144,6 +145,23 @@ describe('OAuth2 Token', () => {
         userInfoUrl: 'https://example.com/oauth2/userinfo',
         clientId: '123',
         clientSecret: '456',
+      },
+    });
+
+    // Create a GCIP external auth client (POST-style userinfo)
+    gcipAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'GCIP Auth Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+        clientId: 'gcip-client-id',
+        clientSecret: 'gcip-client-secret',
+        userInfoTokenField: 'idToken',
+        userInfoApiKey: 'fake-api-key',
+        userInfoResponsePath: 'users.0',
       },
     });
 
@@ -2012,6 +2030,81 @@ describe('OAuth2 Token', () => {
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test('Token exchange GCIP POST-style userinfo success', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation((url: string, options: RequestInit) => {
+      expect(url).toContain('key=fake-api-key');
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body as string)).toMatchObject({ idToken: 'gcip-id-token' });
+      return {
+        status: 200,
+        json: () => ({ users: [{ email, localId: 'firebase-uid-123' }] }),
+        headers: { get: () => ContentType.JSON },
+      };
+    });
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'gcip-id-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange GCIP POST-style userinfo failure', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 400,
+      headers: { get: () => ContentType.JSON },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'invalid-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+  });
+
+  test('Token exchange userInfoApiKey appended to URL', async () => {
+    let capturedUrl = '';
+    (fetch as unknown as jest.Mock).mockImplementation((url: string) => {
+      capturedUrl = url;
+      return {
+        status: 200,
+        json: () => ({ users: [{ email, localId: 'firebase-uid-123' }] }),
+        headers: { get: () => ContentType.JSON },
+      };
+    });
+
+    await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'gcip-id-token',
+    });
+    expect(capturedUrl).toContain('key=fake-api-key');
+  });
+
+  test('Token exchange userInfoResponsePath unwraps nested claims', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => ({ users: [{ email, localId: 'firebase-uid-456' }] }),
+      headers: { get: () => ContentType.JSON },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'gcip-id-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {
