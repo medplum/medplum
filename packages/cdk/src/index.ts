@@ -9,6 +9,7 @@ import { MedplumStack } from './stack';
 
 export * from './backend';
 export * from './cloudtrail';
+export * from './datawarehouse';
 export * from './frontend';
 export * from './guardduty';
 export * from './stack';

@@ -364,6 +364,20 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
+        // S3 Tables: access table bucket + tables for data warehouse sync sink.
+        ...(config.dataWarehouse
+          ? [
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: ['s3tables:*'],
+                resources: [
+                  `arn:aws:s3tables:${region}:${accountNumber}:bucket/${config.dataWarehouse.tableBucketName}`,
+                  `arn:aws:s3tables:${region}:${accountNumber}:bucket/${config.dataWarehouse.tableBucketName}/table/*`,
+                ],
+              }),
+            ]
+          : []),
+
         // IAM: Pass role to innvoke lambda functions
         // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html
         new iam.PolicyStatement({

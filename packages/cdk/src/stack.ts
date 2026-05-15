@@ -5,6 +5,7 @@ import type { App } from 'aws-cdk-lib';
 import { Stack, Tags } from 'aws-cdk-lib';
 import { BackEnd } from './backend';
 import { CloudTrailAlarms } from './cloudtrail';
+import { DataWarehouse } from './datawarehouse';
 import { FrontEnd } from './frontend';
 import { Storage } from './storage';
 
@@ -29,6 +30,7 @@ export class MedplumPrimaryStack extends Stack {
   backEnd: BackEnd;
   frontEnd: FrontEnd;
   storage: Storage;
+  dataWarehouse?: DataWarehouse;
   cloudTrail: CloudTrailAlarms;
 
   constructor(scope: App, config: MedplumInfraConfig) {
@@ -43,6 +45,9 @@ export class MedplumPrimaryStack extends Stack {
     this.backEnd = new BackEnd(this, config);
     this.frontEnd = new FrontEnd(this, config, config.region);
     this.storage = new Storage(this, config, config.region);
+    if (config.dataWarehouse) {
+      this.dataWarehouse = new DataWarehouse(this, config);
+    }
     this.cloudTrail = new CloudTrailAlarms(this, config);
   }
 }
