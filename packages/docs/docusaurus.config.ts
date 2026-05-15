@@ -144,20 +144,47 @@ const config: Config = {
       },
       items: [
         {
-          to: '/products',
-          label: 'Products',
+          to: '/platform',
+          label: 'Platform',
           position: 'left',
         },
         {
-          to: '/solutions',
+          // Label clicks through to /solutions; the dropdown surfaces Case
+          // Studies as a related destination without duplicating the overview link.
+          type: 'dropdown',
           label: 'Solutions',
           position: 'left',
+          to: '/solutions',
+          items: [{ label: 'Case Studies', to: '/case-studies' }],
         },
         {
-          type: 'doc',
-          docId: 'home',
+          // Clicking the label defaults to /docs (the primary destination).
+          // The dropdown groups developer-facing resources at one click rather
+          // than elevating Storybook/Knowledge Base to the same level as Docs.
+          type: 'dropdown',
+          label: 'Developers',
           position: 'left',
+          to: '/docs',
+          items: [
+            { type: 'doc', docId: 'home', label: 'Docs' },
+            { label: 'GitHub', to: 'https://github.com/medplum/medplum' },
+            { label: 'Storybook', to: 'https://storybook.medplum.com' },
+            { label: 'Discord', to: 'https://discord.gg/medplum' },
+            { label: 'Knowledge Base', to: 'https://linen.medplum.com' },
+          ],
+        },
+        {
+          // Generic / non-developer resources. Compliance lives here for the
+          // buyer audience; the same /docs/compliance page is also reachable
+          // via Docs for engineers.
+          type: 'dropdown',
           label: 'Resources',
+          position: 'left',
+          items: [
+            { label: 'Blog', to: '/blog' },
+            { label: 'Compliance', to: '/docs/compliance' },
+            { label: 'Open Source', to: '/open-source' },
+          ],
         },
         {
           to: '/pricing',
@@ -184,7 +211,7 @@ const config: Config = {
           title: 'Developers',
           items: [
             {
-              label: 'Getting started',
+              label: 'Quickstart',
               to: '/docs/tutorials',
             },
             {
@@ -207,6 +234,10 @@ const config: Config = {
             {
               label: 'Case Studies',
               to: '/case-studies',
+            },
+            {
+              label: 'FAQ',
+              to: '/faq',
             },
             {
               label: 'Discord',
