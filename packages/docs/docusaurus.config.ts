@@ -178,7 +178,7 @@ const config: Config = {
           // The dropdown groups developer-facing resources at one click rather
           // than elevating Storybook/Knowledge Base to the same level as Docs.
           type: 'dropdown',
-          label: 'Developer Resources',
+          label: 'Developers',
           position: 'left',
           to: '/docs',
           items: [
