@@ -7,8 +7,8 @@ import { Container } from '../components/Container';
 import { FAQGroup, FAQItem } from '../components/landing/FAQ';
 import { Section } from '../components/landing/Section';
 import { SectionHeader } from '../components/landing/SectionHeader';
-import landingStyles from './platform/landing.module.css';
 import styles from './faq.module.css';
+import landingStyles from './platform/landing.module.css';
 
 export default function FAQPage(): JSX.Element {
   return (
@@ -167,8 +167,8 @@ export default function FAQPage(): JSX.Element {
             <FAQItem question="Do you offer professional services?">
               <p>
                 Medplum doesn&apos;t take on paid implementation work directly. Customers typically build with their own
-                engineering teams or work with consulting partners.{' '}
-                <Link to="mailto:hello@medplum.com">Email us</Link> if you&apos;d like a recommendation.
+                engineering teams or work with consulting partners. <Link to="mailto:hello@medplum.com">Email us</Link>{' '}
+                if you&apos;d like a recommendation.
               </p>
             </FAQItem>
             <FAQItem question="Who actually uses Medplum in production?">
