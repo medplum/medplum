@@ -100,11 +100,13 @@ describe('EncounterModal', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  test('Displays care template section', () => {
+  test('Displays care template section', async () => {
     setup();
 
     expect(screen.getByText('Apply care template')).toBeInTheDocument();
     expect(screen.getByText(/You can select template for new encounter/i)).toBeInTheDocument();
+    // Drain pending async state updates (e.g. ResourceInput default value resolution)
+    await act(async () => {});
   });
 
   test('Form fields can be populated with values', async () => {
