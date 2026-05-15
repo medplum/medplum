@@ -820,7 +820,7 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
   // There are two ways that a client can indicate that it wants refresh tokens:
   // 1. Include "offline_access" in the scope of the authorization request
   // 2. Include "refresh_token" in the grant types of the client application registration
-  return client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access');
+  return !!(client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access'));
 }
 
 export function normalizeUserInfoUrl(userInfoUrl: string): string {
