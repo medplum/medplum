@@ -1,0 +1,113 @@
+/* FAQ page hero styles. Self-contained — no shared dependency on
+   /platform's landing.module.css. The FAQ hero is single-column with
+   a violet/grape gradient backdrop, distinct from the two-column
+   Platform/Solutions heroes. */
+
+.heroFaq {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--oc-violet-1-rgb), 0.6);
+  padding: 4rem 4rem;
+  margin: 2rem 0 0 0;
+}
+
+[data-theme='dark'] .heroFaq {
+  border-color: rgba(var(--oc-violet-7-rgb), 0.4);
+}
+
+@media (max-width: 996px) {
+  .heroFaq {
+    padding: 2.5rem 1.75rem;
+    border-radius: 18px;
+  }
+}
+
+/* Lift hero text above the decorative backdrop */
+.heroFaq > *:not(.heroDecoration) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Decorative gradient layer — two radial blobs in opposite corners
+   plus a subtle vertical fade. Sits behind the hero text. */
+.heroDecoration {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 65% at 90% 15%, rgba(var(--oc-grape-3-rgb), 0.55), transparent 65%),
+    radial-gradient(ellipse 60% 55% at 8% 85%, rgba(var(--oc-violet-3-rgb), 0.45), transparent 65%),
+    linear-gradient(180deg, rgba(var(--oc-violet-0-rgb), 0.35), rgba(var(--oc-grape-0-rgb), 0.1));
+}
+
+[data-theme='dark'] .heroDecoration {
+  background:
+    radial-gradient(ellipse 70% 65% at 90% 15%, rgba(var(--oc-grape-7-rgb), 0.45), transparent 65%),
+    radial-gradient(ellipse 60% 55% at 8% 85%, rgba(var(--oc-violet-7-rgb), 0.4), transparent 65%),
+    linear-gradient(180deg, rgba(var(--oc-violet-9-rgb), 0.3), rgba(var(--oc-grape-9-rgb), 0.1));
+}
+
+/* Inner text container */
+.heroText {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Eyebrow tag above the title */
+.heroEyebrow {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oc-grape-7);
+  margin-bottom: 1.25rem;
+}
+
+[data-theme='dark'] .heroEyebrow {
+  color: var(--oc-grape-4);
+}
+
+/* Full-width title; no text-wrap balance because we want it to stretch */
+.heroTitle {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.5rem 0;
+  color: var(--oc-gray-9);
+  text-wrap-style: normal;
+  font-style: normal;
+}
+
+[data-theme='dark'] .heroTitle {
+  color: var(--oc-gray-0);
+}
+
+@media (max-width: 996px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+}
+
+/* Lead paragraph — defensive font-style: normal to be safe */
+.heroLead {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--oc-gray-7);
+  margin: 0;
+  text-wrap-style: pretty;
+  font-style: normal;
+}
+
+[data-theme='dark'] .heroLead {
+  color: var(--oc-gray-4);
+}
+
+@media (max-width: 996px) {
+  .heroLead {
+    font-size: 1.125rem;
+  }
+}
