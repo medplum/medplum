@@ -52,7 +52,7 @@ A successful enqueue returns:
 - **HTTP `202 Accepted`**
 - A small **`OperationOutcome`** body whose first issue’s **`diagnostics`** field is the absolute URL of the status endpoint (mirrors the **`Content-Location`** response header)
 
-Save that URL — it is the polling location for the rest of the workflow.
+Save that URL: it is the polling location for the rest of the workflow.
 
 ### 4. Poll `GET …/fhir/R4/job/{id}/status`
 
