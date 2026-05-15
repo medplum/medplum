@@ -69,6 +69,8 @@ describe('Appointment/$book', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
@@ -1474,6 +1476,8 @@ describe('scheduling flow integration test', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
   });
