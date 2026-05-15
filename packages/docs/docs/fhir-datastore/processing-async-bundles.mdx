@@ -115,7 +115,7 @@ Ensure the caller’s [access policies](/docs/access/access-policies) allow:
 - Creating and reading the enqueued **`AsyncJob`**
 - Reading the outcome **`Binary`** that stores the `batch-response`
 
-If either is blocked, polling or downloading results will fail with **403/404** even though the job ran.
+If either is blocked, polling or downloading results will fail with an HTTP **403/404** error status even though the job ran.
 
 ## Limitations
 
