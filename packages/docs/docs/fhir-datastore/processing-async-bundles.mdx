@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # Processing Asynchronous Bundles
 
-Medplum can process a FHIR **batch** `Bundle` in the background when you ask for the [asynchronous request pattern](https://hl7.org/fhir/R5/async-bundle.html). The HTTP request returns **`202 Accepted`** immediately with a **status URL**; you poll that URL until the job finishes, reading an **`AsyncJob`** on each response. When the job succeeds, you download the **`batch-response`** payload from a linked **`Binary`**.
+Medplum can process a FHIR **batch** `Bundle` in the background when you ask for the [asynchronous request pattern](https://hl7.org/fhir/R5/async-bundle.html). When the batch request includes the `Prefer: respond-async` HTTP header, the server will respond immediately with a **`202 Accepted`** status code and a **status URL** in the `Content-Location` response header.  You should poll that URL until the job finishes, reading the status of the **`AsyncJob`** resource tracking the operation on each response. When the job succeeds, you can download the resulting **`batch-response`** Bundle payload from a linked **`Binary`** resource.
 
 For how to **author** batch bundles (entries, internal references, error semantics), see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests). This page covers only the **async workflow**: headers, status URLs, polling, results, quotas, and limitations.
 
