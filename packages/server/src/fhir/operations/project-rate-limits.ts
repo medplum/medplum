@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, arrayify, forbidden, getReferenceString } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { allOk, arrayify, badRequest, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinitionParameter, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -63,17 +64,27 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
   const redis = getRateLimitRedis();
 
-  let memberships: ProjectMembership[];
+  let memberships: WithId<ProjectMembership>[];
   if (membershipIds) {
-    const reads = await Promise.all(
-      membershipIds.map((id) => ctx.repo.readResource<ProjectMembership>('ProjectMembership', id))
-    );
-    for (const membership of reads) {
+    const references: Reference<ProjectMembership>[] = membershipIds.map((id) => ({
+      reference: `ProjectMembership/${id}`,
+    }));
+    const reads = await ctx.repo.readReferences<ProjectMembership>(references);
+    const failedIds = membershipIds.filter((_, i) => reads[i] instanceof Error);
+    if (failedIds.length > 0) {
+      return [
+        badRequest(
+          `Encountered an error when trying to read the following ${failedIds.length} memberships: ${failedIds.join(', ')}`
+        ),
+      ];
+    }
+    const successful = reads as WithId<ProjectMembership>[];
+    for (const membership of successful) {
       if (membership.project?.reference !== getReferenceString(project)) {
         return [forbidden];
       }
     }
-    memberships = reads;
+    memberships = successful;
   } else {
     const activeKey = getActiveRateLimitKey(project.id);
     const activeMembershipIds = await redis.zrevrange(activeKey, 0, 999);
@@ -82,7 +93,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
         reference: `ProjectMembership/${id}`,
       }));
       const reads = await ctx.repo.readReferences<ProjectMembership>(references);
-      memberships = reads.filter((r): r is ProjectMembership & { id: string } => !(r instanceof Error));
+      memberships = reads.filter((r): r is WithId<ProjectMembership> => !(r instanceof Error));
     } else {
       memberships = [];
     }
@@ -96,12 +107,12 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
       allOk,
       buildOutputParameters(operation, {
         project: { id: project.id },
-        membership: memberships.map((m) => ({ membershipId: m.id as string, profile: m.profile })),
+        membership: memberships.map((m) => ({ membershipId: m.id, profile: m.profile })),
       }),
     ];
   }
 
-  const keys = memberships.map((m) => limiter.getMembershipKey(m.id as string));
+  const keys = memberships.map((m) => limiter.getMembershipKey(m.id));
   keys.push(limiter.getProjectKey());
 
   const pipeline = redis.pipeline();
@@ -121,7 +132,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     const consumed = consumedValues[i];
     const pttl = results[i + 1][1] as number;
     return {
-      membershipId: membership.id as string,
+      membershipId: membership.id,
       profile: membership.profile,
       ...buildQuotaStatus(consumed, pttl, userLimit),
     };
