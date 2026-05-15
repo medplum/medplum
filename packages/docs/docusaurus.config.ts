@@ -81,6 +81,14 @@ const config: Config = {
             from: '/docs/questionnaires/structured-data-capture',
             to: '/docs/questionnaires/parsing-questionnaire-responses',
           },
+          // Thin or duplicate /solutions/* subpages now funnel to the
+          // /solutions landing (where the new SolutionTabs explorer shows
+          // all seven solution patterns). The /solutions/agent page is
+          // sent to the Agent docs since the Agent is fundamentally a
+          // platform capability (it has no standalone solutions page).
+          { from: '/solutions/medplum-ehr', to: '/solutions' },
+          { from: '/solutions/pediatrics', to: '/solutions' },
+          { from: '/solutions/agent', to: '/docs/agent' },
         ],
       },
     ],
