@@ -144,8 +144,8 @@ const config: Config = {
       },
       items: [
         {
-          to: '/products',
-          label: 'Products',
+          to: '/platform',
+          label: 'Platform',
           position: 'left',
         },
         {
