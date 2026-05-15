@@ -50,8 +50,8 @@ export default function PlatformPage(): JSX.Element {
               <h1 className={styles.heroTitle}>Integrated tools and services for healthcare software</h1>
               <p className={styles.heroLead}>
                 A platform of integrated, modular products for building secure, compliant healthcare applications.
-                Custom EHRs, patient portals, lab systems, and integration hubs on a single FHIR data model. Apache
-                2.0, available managed or self-hosted.
+                Custom EHRs, patient portals, lab systems, and integration hubs on a single FHIR data model. Apache 2.0,
+                available managed or self-hosted.
               </p>
               <div className={styles.heroButtons}>
                 <Link to="/docs/tutorials" className="button button--primary button--lg">

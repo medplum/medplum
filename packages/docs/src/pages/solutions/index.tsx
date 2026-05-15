@@ -20,8 +20,8 @@ export default function SolutionsPage(): JSX.Element {
               <div className={platformStyles.heroEyebrow}>Solutions</div>
               <h1 className={platformStyles.heroTitle}>A foundation for healthcare innovation</h1>
               <p className={platformStyles.heroLead}>
-                A flexible, secure, and compliant foundation for healthcare applications. Whether you&apos;re building
-                a custom EHR, a patient portal, a lab network, or an interoperability hub, Medplum helps you ship in
+                A flexible, secure, and compliant foundation for healthcare applications. Whether you&apos;re building a
+                custom EHR, a patient portal, a lab network, or an interoperability hub, Medplum helps you ship in
                 months instead of years.
               </p>
             </div>
@@ -50,10 +50,7 @@ export default function SolutionsPage(): JSX.Element {
               browse case studies from companies already shipping.
             </p>
             <div className={styles.ctaButtons}>
-              <Link
-                to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a"
-                className={styles.ctaPrimary}
-              >
+              <Link to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" className={styles.ctaPrimary}>
                 Book a demo
               </Link>
               <Link to="/case-studies" className={styles.ctaSecondary}>
