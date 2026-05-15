@@ -8,12 +8,21 @@
 .heroFaq {
   position: relative;
   overflow: hidden;
-  /* Override the inherited grid from landingStyles.hero so heroText spans full width */
+  /* Override the inherited grid + zero horizontal padding from landingStyles.hero.
+     Both !importants are required because the shared .hero rule can win on CSS
+     load order (it's loaded after faq.module.css in the bundled output). */
   display: block !important;
   border-radius: 24px;
   border: 1px solid rgba(var(--oc-violet-1-rgb), 0.6);
-  padding: 4rem 3rem;
+  padding: 4rem 4rem !important;
   margin: 2rem 0 0 0;
+}
+
+@media (max-width: 996px) {
+  .heroFaq {
+    padding: 2.5rem 1.75rem !important;
+    border-radius: 18px;
+  }
 }
 
 [data-theme='dark'] .heroFaq {
@@ -61,11 +70,4 @@
 
 .heroFaq .textFullWidth {
   max-width: 100%;
-}
-
-@media (max-width: 996px) {
-  .heroFaq {
-    padding: 2.5rem 1.5rem;
-    border-radius: 18px;
-  }
 }
