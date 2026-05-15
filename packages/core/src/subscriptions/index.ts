@@ -8,7 +8,7 @@ import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
 import type { Logger } from '../logger';
-import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
+import { normalizeErrorString, OperationOutcomeError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
 import type { ProfileResource, WithId } from '../utils';
@@ -211,10 +211,22 @@ export class SubscriptionManager {
       }
     });
 
-    ws.addEventListener('error', () => {
+    ws.addEventListener('error', (event) => {
       const errorEvent = {
         type: 'error',
-        payload: new OperationOutcomeError(serverError(new Error('WebSocket error'))),
+        payload: new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'exception',
+              details: {
+                text: 'WebSocket connection closed due to an error',
+              },
+              diagnostics: event.error.toString(),
+            },
+          ],
+        }),
       } as SubscriptionEventMap['error'];
       this.masterSubEmitter?.dispatchEvent(errorEvent);
       for (const emitter of this.getAllCriteriaEmitters()) {
