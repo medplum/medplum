@@ -3,24 +3,21 @@
 
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, OperationDefinition } from '@medplum/fhirtypes';
+import type { Appointment } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { withPaths } from '../../util/withpath';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { assertAllLoaded } from './utils/scheduling';
 
-const cancelOperation = {
-  resourceType: 'OperationDefinition',
-  name: 'cancel',
-  status: 'active',
-  kind: 'operation',
-  code: 'cancel',
-  resource: ['Appointment'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [{ use: 'out', name: 'return', type: 'Appointment', min: 1, max: '1' }],
-} as const satisfies OperationDefinition;
+const cancelOperation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Appointment' },
+  {
+    name: 'cancel',
+    code: 'cancel',
+    parameter: [{ use: 'out', name: 'return', type: 'Appointment', min: 1, max: '1' }],
+  }
+);
 
 type CancelParameters = {};
 
