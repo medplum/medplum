@@ -16,6 +16,7 @@ import {
   getActiveRateLimitKey,
   getFhirQuotaConfig,
 } from '../fhirquota';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const quotaParts: OperationDefinitionParameter[] = [
@@ -25,38 +26,34 @@ const quotaParts: OperationDefinitionParameter[] = [
   { use: 'out', name: 'msBeforeReset', type: 'integer', min: 0, max: '1' },
 ];
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'project-rate-limits',
-  status: 'active',
-  kind: 'operation',
-  code: 'rate-limits',
-  resource: ['Project'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
-    {
-      use: 'out',
-      name: 'project',
-      min: 1,
-      max: '1',
-      part: [{ use: 'out', name: 'id', type: 'string', min: 1, max: '1' }, ...quotaParts],
-    },
-    {
-      use: 'out',
-      name: 'membership',
-      min: 0,
-      max: '*',
-      part: [
-        { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
-        ...quotaParts,
-      ],
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Project' },
+  {
+    name: 'project-rate-limits',
+    code: 'rate-limits',
+    parameter: [
+      { use: 'in', name: 'membershipId', type: 'string', min: 0, max: '*' },
+      {
+        use: 'out',
+        name: 'project',
+        min: 1,
+        max: '1',
+        part: [{ use: 'out', name: 'id', type: 'string', min: 1, max: '1' }, ...quotaParts],
+      },
+      {
+        use: 'out',
+        name: 'membership',
+        min: 0,
+        max: '*',
+        part: [
+          { use: 'out', name: 'membershipId', type: 'string', min: 1, max: '1' },
+          { use: 'out', name: 'profile', type: 'Reference', min: 0, max: '1' },
+          ...quotaParts,
+        ],
+      },
+    ],
+  }
+);
 
 type RateLimitsInput = {
   membershipId?: string | string[];
