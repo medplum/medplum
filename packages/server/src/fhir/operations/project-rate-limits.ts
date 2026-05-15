@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, arrayify, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  OperationDefinition,
-  OperationDefinitionParameter,
-  ProjectMembership,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import {
