@@ -2,30 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidColumnName, isValidTableName } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
-const UpdateOperation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'db-configure-column-statistics',
-  status: 'active',
-  kind: 'operation',
-  code: 'db-configure-column-statistics',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    param('in', 'tableName', 'string', 1, '1'),
-    param('in', 'columnNames', 'string', 1, '*'),
-    param('in', 'resetToDefault', 'boolean', 1, '1'),
-    param('in', 'newStatisticsTarget', 'integer', 0, '1'),
-  ],
-};
+const UpdateOperation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-configure-column-statistics',
+    code: 'db-configure-column-statistics',
+    parameter: [
+      param('in', 'tableName', 'string', 1, '1'),
+      param('in', 'columnNames', 'string', 1, '*'),
+      param('in', 'resetToDefault', 'boolean', 1, '1'),
+      param('in', 'newStatisticsTarget', 'integer', 0, '1'),
+    ],
+  }
+);
 
 export async function configureColumnStatisticsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

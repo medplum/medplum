@@ -13,29 +13,25 @@ import {
   parseReference,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
+import { makeOperationDefinition } from './definitions';
 import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
-export const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'user-rescope',
-  status: 'active',
-  kind: 'operation',
-  code: 'rescope',
-  experimental: true,
-  system: false,
-  type: false,
-  instance: true,
-  resource: ['User'],
-  parameter: [
-    param('in', 'scope', 'code', 1, '1'),
-    param('in', 'project', 'Reference', 0, '1'),
-    param('out', 'return', 'User', 1, '1'),
-  ],
-};
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'User' },
+  {
+    name: 'user-rescope',
+    code: 'rescope',
+    parameter: [
+      param('in', 'scope', 'code', 1, '1'),
+      param('in', 'project', 'Reference', 0, '1'),
+      param('out', 'return', 'User', 1, '1'),
+    ],
+  }
+);
 
 type RescopeParams = {
   scope: 'project' | 'server';
