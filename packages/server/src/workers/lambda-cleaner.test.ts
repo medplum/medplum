@@ -140,7 +140,7 @@ describe('Lambda version cleanup worker', () => {
         nameRegex: '^medplum-bot-lambda-[a-z]$',
         keepLatest: 1,
         dryRun: true,
-        deleteConcurrency: 5,
+        deleteConcurrency: 1,
       },
       publishedVersionsScanned: 2,
       functionsScanned: 1,

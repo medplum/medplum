@@ -60,6 +60,11 @@ tsconfig.build.tsbuildinfo
 packages/agent/*agent-*-linux*
 packages/agent/sea-prep.blob
 packages/agent/src/upgrader-logs-*.txt
+packages/agent/agent.properties
+packages/agent/src/.*-audit.json
+packages/agent/src/medplum-agent-main-*.log
+packages/agent/src/medplum-agent-channels-*.log
+packages/agent/src/stop-service-logs-*.txt
 
 # Local .terraform directories
 **/.terraform/*

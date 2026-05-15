@@ -1,0 +1,46 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentStatsResponse, WithId } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Agent } from '@medplum/fhirtypes';
+import { makeOperationDefinition } from './definitions';
+import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
+
+export const operation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'Agent' },
+  {
+    name: 'agent-stats',
+    code: 'stats',
+    parameter: [{ use: 'out', name: 'return', type: 'Parameters', min: 1, max: '1' }],
+  }
+);
+
+/**
+ * Handles HTTP requests for the Agent $stats operation.
+ *
+ * Endpoints:
+ *   [fhir base]/Agent/$stats
+ *   [fhir base]/Agent/[id]/$stats
+ *
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
+ */
+export async function agentStatsHandler(req: FhirRequest): Promise<FhirResponse> {
+  return handleBulkAgentOperation(req, async (agent) => fetchStats(agent));
+}
+
+async function fetchStats(agent: WithId<Agent>): Promise<FhirResponse> {
+  return sendAndHandleAgentRequest<AgentStatsResponse>(agent, { type: 'agent:stats:request' }, 'agent:stats:response', {
+    successHandler: (response) => {
+      return {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify(response.stats),
+          },
+        ],
+      };
+    },
+  });
+}
