@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumInfraConfig } from '@medplum/core';
 import {
+  CfnOutput,
+  CfnResource,
   aws_iam as iam,
   aws_lakeformation as lakeformation,
   aws_s3tables as s3tables,
   aws_ssm as ssm,
-  CfnOutput,
-  CfnResource,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
