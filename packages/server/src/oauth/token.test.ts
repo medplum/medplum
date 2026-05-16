@@ -2184,6 +2184,46 @@ describe('OAuth2 Token', () => {
     expect(res.body.access_token).toBeDefined();
   });
 
+  test('Pre-authorized code with missing client_id', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      'pre-authorized_code': 'big-long-string',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing client_id');
+  });
+
+  test('Pre-authorized code with missing code', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing pre-authorized_code');
+  });
+
+  test('Pre-authorized code with invalid client_id', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      'pre-authorized_code': 'big-long-string',
+      client_id: 'invalid-client-id',
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test('Pre-authorized code with invalid code', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': 'invalid-code',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid pre-authorized_code');
+  });
+
   test('Pre-authorized code success', async () => {
     const testAccount = await addTestUser(project);
 
@@ -2209,6 +2249,16 @@ describe('OAuth2 Token', () => {
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeUndefined();
+
+    // Try to use the same pre-authorized code again, should fail since it can only be used once
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body.error).toBe('invalid_request');
+    expect(res3.body.error_description).toBe('Invalid pre-authorized_code');
   });
 });
 

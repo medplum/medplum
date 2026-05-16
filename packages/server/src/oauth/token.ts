@@ -481,7 +481,7 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
   });
 
   if (!searchResult.entry || searchResult.entry.length === 0) {
-    sendTokenError(res, 'invalid_request', 'Invalid code');
+    sendTokenError(res, 'invalid_request', 'Invalid pre-authorized_code');
     return;
   }
 
