@@ -61406,6 +61406,7 @@
           "items": {
             "enum": [
               "ai",
+              "ai-realtime",
               "aws-comprehend",
               "aws-textract",
               "bots",
@@ -61416,7 +61417,8 @@
               "scheduling",
               "websocket-subscriptions",
               "transaction-bundles",
-              "validate-terminology"
+              "validate-terminology",
+              "range-search"
             ]
           },
           "type": "array"
@@ -61929,6 +61931,20 @@
         },
         "allowedOrigin": {
           "description": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "grantType": {
+          "description": "Optional OAuth grant type for the client application. This specifies the allowed grant types for the client application.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "responseType": {
+          "description": "Optional OAuth response type for the client application. This specifies the allowed response types for the client application.",
           "items": {
             "$ref": "#/definitions/string"
           },

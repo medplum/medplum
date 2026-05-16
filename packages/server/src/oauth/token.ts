@@ -428,7 +428,7 @@ export async function exchangeExternalAuthToken(
     externalId,
     projectId,
     clientId,
-    scope: req.body.scope || 'openid offline',
+    scope: req.body.scope || 'openid offline_access',
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),

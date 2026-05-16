@@ -182,6 +182,18 @@ export interface ClientApplication {
   allowedOrigin?: string[];
 
   /**
+   * Optional OAuth grant type for the client application. This specifies
+   * the allowed grant types for the client application.
+   */
+  grantType?: string[];
+
+  /**
+   * Optional OAuth response type for the client application. This
+   * specifies the allowed response types for the client application.
+   */
+  responseType?: string[];
+
+  /**
    * Optional default OAuth scope for the client application. This scope is
    * used when the client application does not specify a scope in the
    * authorization request.

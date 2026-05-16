@@ -1646,6 +1646,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return results;
   }
 
+  supportsRangeSearch(): boolean {
+    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
+  }
+
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.

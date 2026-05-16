@@ -11,7 +11,9 @@ import type { AuthState } from '../oauth/middleware';
 
 export const FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX = 'medplum:rl:fhir:membership:';
 export const FHIR_RATE_LIMIT_PROJECT_PREFIX = 'medplum:rl:fhir:project:';
+export const FHIR_RATE_LIMIT_ACTIVE_PREFIX = 'medplum:rl:fhir:active:';
 export const FHIR_RATE_LIMIT_DURATION = 60;
+export const FHIR_RATE_LIMIT_ACTIVE_TTL = 120;
 
 export interface FhirQuotaConfig {
   userLimit: number;
@@ -34,7 +36,13 @@ type InMemoryBlock = {
 };
 const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 
+export function getActiveRateLimitKey(projectId: string, minuteBucket?: number): string {
+  const bucket = minuteBucket ?? Math.floor(Date.now() / 60_000);
+  return `${FHIR_RATE_LIMIT_ACTIVE_PREFIX}${projectId}:${bucket}`;
+}
+
 export class FhirRateLimiter {
+  private readonly redis: Redis;
   private readonly limiter: RateLimiterRedis;
   private readonly userKey: string;
   private readonly projectLimiter: RateLimiterRedis;
@@ -56,6 +64,7 @@ export class FhirRateLimiter {
     logger: Logger,
     async?: boolean
   ) {
+    this.redis = redis;
     this.limiter = new RateLimiterRedis({
       keyPrefix: FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
       storeClient: redis,
@@ -89,6 +98,14 @@ export class FhirRateLimiter {
       }
     }
     this.current = result;
+  }
+
+  getMembershipKey(membershipId: string): string {
+    return this.limiter.getKey(membershipId);
+  }
+
+  getProjectKey(): string {
+    return this.projectLimiter.getKey(this.projectKey);
   }
 
   attachRateLimitHeader(res: Response): void {
@@ -134,6 +151,7 @@ export class FhirRateLimiter {
       }
       const projectResult = await this.projectLimiter.consume(this.projectKey, points);
       this.setState(result, projectResult);
+      this.trackActiveConsumer(result.consumedPoints);
     } catch (err: unknown) {
       if (err instanceof Error) {
         this.logger.error('Error updating FHIR quota', err);
@@ -148,6 +166,7 @@ export class FhirRateLimiter {
       }
       const result = err;
       this.setState(result);
+      this.trackActiveConsumer(result.consumedPoints);
       this.logger.warn('User rate limited', {
         limit: this.limiter.points,
         used: result.consumedPoints,
@@ -169,6 +188,21 @@ export class FhirRateLimiter {
       }
     }
     return undefined;
+  }
+
+  private trackActiveConsumer(consumedPoints: number): void {
+    const currentBucket = Math.floor(Date.now() / 60_000);
+    const currentKey = getActiveRateLimitKey(this.projectKey, currentBucket);
+    const nextKey = getActiveRateLimitKey(this.projectKey, currentBucket + 1);
+
+    const pipeline = this.redis.pipeline();
+    pipeline.zadd(currentKey, 'GT', consumedPoints, this.userKey);
+    pipeline.expire(currentKey, FHIR_RATE_LIMIT_ACTIVE_TTL);
+    pipeline.zadd(nextKey, 'GT', consumedPoints, this.userKey);
+    pipeline.expire(nextKey, FHIR_RATE_LIMIT_ACTIVE_TTL);
+    pipeline.exec().catch((err) => {
+      this.logger.error('Error tracking active rate limit consumer', err);
+    });
   }
 
   /**
