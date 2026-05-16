@@ -469,7 +469,7 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
   }
 
   const systemRepo = getGlobalSystemRepo();
-  const searchResult = await systemRepo.search({
+  const searchResult = await systemRepo.search<Login>({
     resourceType: 'Login',
     filters: [
       {
@@ -480,12 +480,11 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
     ],
   });
 
-  if (!searchResult.entry || searchResult.entry.length === 0) {
+  const login = searchResult?.entry?.[0]?.resource;
+  if (login?.authMethod !== 'pre-authorized') {
     sendTokenError(res, 'invalid_request', 'Invalid pre-authorized_code');
     return;
   }
-
-  const login = searchResult.entry[0].resource as WithId<Login>;
 
   if (login.client?.reference !== `ClientApplication/${clientId}`) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -497,7 +496,7 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  if (login.expiresAt && new Date(login.expiresAt) < new Date()) {
+  if (!login.expiresAt || new Date(login.expiresAt) < new Date()) {
     sendTokenError(res, 'invalid_grant', 'Pre-authorized code expired');
     return;
   }
