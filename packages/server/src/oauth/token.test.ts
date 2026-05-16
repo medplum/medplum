@@ -2257,8 +2257,8 @@ describe('OAuth2 Token', () => {
       'pre-authorized_code': res.body.preAuthorizedCode,
     });
     expect(res3.status).toBe(400);
-    expect(res3.body.error).toBe('invalid_request');
-    expect(res3.body.error_description).toBe('Invalid pre-authorized_code');
+    expect(res3.body.error).toBe('invalid_grant');
+    expect(res3.body.error_description).toBe('Token already granted');
   });
 });
 

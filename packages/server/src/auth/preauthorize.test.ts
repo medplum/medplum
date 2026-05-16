@@ -10,6 +10,7 @@ import type { ServerInviteResponse } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
+import { MAX_PRE_AUTH_CODE_TTL } from './preauthorize';
 
 describe('Pre-authorize', () => {
   const app = express();
@@ -83,6 +84,26 @@ describe('Pre-authorize', () => {
     expect(res.body).toMatchObject(notFound);
   });
 
+  test('Expire time too short', async () => {
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ clientId: client.id, expiresIn: 0 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('expiresIn must be a positive integer not exceeding 86400 seconds'));
+  });
+
+  test('Expire time too long', async () => {
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ clientId: client.id, expiresIn: MAX_PRE_AUTH_CODE_TTL + 1 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('expiresIn must be a positive integer not exceeding 86400 seconds'));
+  });
+
   test('Success', async () => {
     const res = await request(app)
       .post('/auth/preauthorize')
@@ -92,6 +113,7 @@ describe('Pre-authorize', () => {
       .send({ clientId: client.id });
     expect(res.status).toBe(200);
     expect(res.body.preAuthorizedCode).toBeDefined();
+    expect(res.body.expiresAt).toBeDefined();
     expect(res.body.code).toBeUndefined();
   });
 });

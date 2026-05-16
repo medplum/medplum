@@ -9,24 +9,33 @@ import { getAuthenticatedContext } from '../context';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
+export const DEFAULT_PRE_AUTH_CODE_TTL = 60 * 60; // 1 hour
+export const MAX_PRE_AUTH_CODE_TTL = 24 * 60 * 60; // 24 hours
+
 export const preAuthorizeValidator = makeValidationMiddleware([
   body('clientId').isUUID().withMessage('Client ID is required'),
+  body('scope').optional().isString().withMessage('Scope must be a string'),
+  body('nonce').optional().isString().withMessage('Nonce must be a string'),
+  body('expiresIn')
+    .optional()
+    .isInt({ min: 1, max: MAX_PRE_AUTH_CODE_TTL })
+    .withMessage(`expiresIn must be a positive integer not exceeding ${MAX_PRE_AUTH_CODE_TTL} seconds`),
 ]);
 
 export async function preAuthorizeHandler(req: Request, res: Response): Promise<void> {
   const { authState, repo } = getAuthenticatedContext();
-
   const { project, membership, onBehalfOfMembership } = authState;
   if (!membership.admin) {
     throw new OperationOutcomeError(forbidden);
   }
-
   if (!onBehalfOfMembership) {
     throw new OperationOutcomeError(badRequest('Pre-authorization requires onBehalfOfMembership'));
   }
 
   const preAuthorizedCode = generateSecret(128);
   const preAuthorizedCodeHash = createHash('sha256').update(preAuthorizedCode).digest('hex');
+  const expiresIn = req.body.expiresIn ?? DEFAULT_PRE_AUTH_CODE_TTL;
+  const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
   const client = await repo.readResource<ClientApplication>('ClientApplication', req.body.clientId);
   const [resourceType, _id] = parseReference(onBehalfOfMembership.profile);
   await repo.getSystemRepo().createResource<Login>({
@@ -38,11 +47,12 @@ export async function preAuthorizeHandler(req: Request, res: Response): Promise<
     membership: createReference(onBehalfOfMembership),
     user: onBehalfOfMembership.user,
     authTime: new Date().toISOString(),
-    preAuthorizedCodeHash,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    preAuthorizedCodeHash,
+    expiresAt,
   });
-  res.status(200).json({ preAuthorizedCode });
+  res.status(200).json({ preAuthorizedCode, expiresAt });
 }
