@@ -497,6 +497,11 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
     return;
   }
 
+  if (login.expiresAt && new Date(login.expiresAt) < new Date()) {
+    sendTokenError(res, 'invalid_grant', 'Pre-authorized code expired');
+    return;
+  }
+
   if (login.granted) {
     await revokeLogin(systemRepo, login);
     sendTokenError(res, 'invalid_grant', 'Token already granted');

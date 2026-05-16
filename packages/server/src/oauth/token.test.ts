@@ -24,7 +24,7 @@ import type {
 import express from 'express';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
-import { randomUUID, X509Certificate } from 'node:crypto';
+import { createHash, randomUUID, X509Certificate } from 'node:crypto';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
@@ -81,6 +81,7 @@ describe('OAuth2 Token', () => {
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let adminMembership: WithId<ProjectMembership>;
   let accessToken: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
@@ -92,7 +93,12 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client, accessToken } = await createTestProject({
+    ({
+      project,
+      client,
+      membership: adminMembership,
+      accessToken,
+    } = await createTestProject({
       withAccessToken: true,
       withClient: true,
       membership: { admin: true },
@@ -2222,6 +2228,35 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid pre-authorized_code');
+  });
+
+  test('Pre-authorized code expired', async () => {
+    // Create a pre-authorized code that is already expired
+    const preAuthorizedCode = generateSecret(128);
+    const preAuthorizedCodeHash = createHash('sha256').update(preAuthorizedCode).digest('hex');
+    const expiresAt = new Date(Date.now() - 1000).toISOString(); // expired 1 second ago
+    await systemRepo.createResource<Login>({
+      resourceType: 'Login',
+      authMethod: 'pre-authorized',
+      project: createReference(project),
+      client: createReference(client),
+      membership: createReference(adminMembership),
+      user: adminMembership.user,
+      authTime: new Date().toISOString(),
+      scope: 'openid',
+      nonce: randomUUID(),
+      preAuthorizedCodeHash,
+      expiresAt,
+    });
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': preAuthorizedCode,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_grant');
+    expect(res.body.error_description).toBe('Pre-authorized code expired');
   });
 
   test('Pre-authorized code success', async () => {
