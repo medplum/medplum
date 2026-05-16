@@ -46,6 +46,7 @@ const preAuthResult = await medplum.post(
     expiresIn: 3600,
     nonce: 'optional-nonce-value',
   },
+  undefined,
   {
     headers: {
       'X-Medplum-On-Behalf-Of': ON_BEHALF_OF,
