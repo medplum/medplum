@@ -61418,7 +61418,8 @@
               "websocket-subscriptions",
               "transaction-bundles",
               "validate-terminology",
-              "range-search"
+              "range-search",
+              "log-streaming"
             ]
           },
           "type": "array"
