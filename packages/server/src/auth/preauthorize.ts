@@ -25,10 +25,7 @@ export const preAuthorizeValidator = makeValidationMiddleware([
 export async function preAuthorizeHandler(req: Request, res: Response): Promise<void> {
   const { authState, repo } = getAuthenticatedContext();
   const { project, membership, onBehalfOfMembership } = authState;
-  if (project.superAdmin) {
-    throw new OperationOutcomeError(forbidden);
-  }
-  if (!membership.admin) {
+  if (project.superAdmin || !membership.admin) {
     throw new OperationOutcomeError(forbidden);
   }
   if (!onBehalfOfMembership) {
