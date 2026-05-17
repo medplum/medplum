@@ -462,7 +462,13 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const client = await getClientApplication(clientId);
+  let client;
+  try {
+    client = await getClientApplication(clientId);
+  } catch {
+    sendTokenError(res, 'invalid_client', 'Invalid client');
+    return;
+  }
   if (client.status && client.status !== 'active') {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
@@ -509,6 +515,20 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
 
   if (login.revoked) {
     sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
+
+  login.remoteAddress = req.ip;
+  login.userAgent = req.get('User-Agent');
+
+  try {
+    const membership = await systemRepo.readReference(login.membership);
+    const project = await systemRepo.readReference(membership.project);
+    const userConfig = await getUserConfiguration(systemRepo, project, membership);
+    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
+    await checkIpAccessRules(login, accessPolicy);
+  } catch (err) {
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err));
     return;
   }
 

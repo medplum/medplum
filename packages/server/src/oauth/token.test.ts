@@ -2216,7 +2216,9 @@ describe('OAuth2 Token', () => {
       'pre-authorized_code': 'big-long-string',
       client_id: 'invalid-client-id',
     });
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_client');
+    expect(res.body.error_description).toBe('Invalid client');
   });
 
   test('Pre-authorized code with invalid code', async () => {
@@ -2257,6 +2259,49 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_grant');
     expect(res.body.error_description).toBe('Pre-authorized code expired');
+  });
+
+  test('Pre-authorized code IP address restriction', async () => {
+    const testAccount = await addTestUser(project, {
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: '*' }],
+      ipAccessRule: [
+        { name: 'Block test', value: '6.6.6.6', action: 'block' },
+        { name: 'Allow by default', value: '*', action: 'allow' },
+      ],
+    });
+
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+      .type('json')
+      .send({ clientId: client.id });
+    expect(res.status).toBe(200);
+    expect(res.body.preAuthorizedCode).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    // Login with pre-authorized code from 6.6.6.6
+    // Should fail because of IP address block
+    const res1 = await request(app).post('/oauth2/token').set('X-Forwarded-For', '6.6.6.6').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res1.status).toBe(400);
+    expect(res1.body.error).toBe('invalid_request');
+    expect(res1.body.error_description).toBe('IP address not allowed');
+
+    // Login with pre-authorized code from 5.5.5.5
+    // Should succeed
+    const res2 = await request(app).post('/oauth2/token').set('X-Forwarded-For', '5.5.5.5').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.error).toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
   });
 
   test('Pre-authorized code success', async () => {
