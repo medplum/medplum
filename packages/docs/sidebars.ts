@@ -270,6 +270,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'auth/mfa' },
         { type: 'doc', id: 'auth/token-exchange' },
         { type: 'doc', id: 'auth/session-management' },
+        { type: 'doc', id: 'auth/pre-authorized-code' },
       ],
     },
     {
