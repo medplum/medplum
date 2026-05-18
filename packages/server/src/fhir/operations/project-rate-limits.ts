@@ -1,16 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, arrayify, forbidden, getReferenceString } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { allOk, arrayify, badRequest, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinitionParameter, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
-import {
-  FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
-  FHIR_RATE_LIMIT_PROJECT_PREFIX,
-  getActiveRateLimitKey,
-  getFhirQuotaConfig,
-} from '../fhirquota';
+import { getActiveRateLimitKey, getFhirQuotaConfig } from '../fhirquota';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -68,17 +64,27 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
   const redis = getRateLimitRedis();
 
-  let memberships: ProjectMembership[];
+  let memberships: WithId<ProjectMembership>[];
   if (membershipIds) {
-    const reads = await Promise.all(
-      membershipIds.map((id) => ctx.repo.readResource<ProjectMembership>('ProjectMembership', id))
-    );
-    for (const membership of reads) {
+    const references: Reference<ProjectMembership>[] = membershipIds.map((id) => ({
+      reference: `ProjectMembership/${id}`,
+    }));
+    const reads = await ctx.repo.readReferences<ProjectMembership>(references);
+    const failedIds = membershipIds.filter((_, i) => reads[i] instanceof Error);
+    if (failedIds.length > 0) {
+      return [
+        badRequest(
+          `Encountered an error when trying to read the following ${failedIds.length} memberships: ${failedIds.join(', ')}`
+        ),
+      ];
+    }
+    const successful = reads as WithId<ProjectMembership>[];
+    for (const membership of successful) {
       if (membership.project?.reference !== getReferenceString(project)) {
         return [forbidden];
       }
     }
-    memberships = reads;
+    memberships = successful;
   } else {
     const activeKey = getActiveRateLimitKey(project.id);
     const activeMembershipIds = await redis.zrevrange(activeKey, 0, 999);
@@ -87,7 +93,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
         reference: `ProjectMembership/${id}`,
       }));
       const reads = await ctx.repo.readReferences<ProjectMembership>(references);
-      memberships = reads.filter((r): r is ProjectMembership & { id: string } => !(r instanceof Error));
+      memberships = reads.filter((r): r is WithId<ProjectMembership> => !(r instanceof Error));
     } else {
       memberships = [];
     }
@@ -95,32 +101,44 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
   const { userLimit, projectLimit } = getFhirQuotaConfig(project);
 
+  const limiter = ctx.fhirRateLimiter;
+  if (!limiter) {
+    return [
+      allOk,
+      buildOutputParameters(operation, {
+        project: { id: project.id },
+        membership: memberships.map((m) => ({ membershipId: m.id, profile: m.profile })),
+      }),
+    ];
+  }
+
+  const keys = memberships.map((m) => limiter.getMembershipKey(m.id));
+  keys.push(limiter.getProjectKey());
+
   const pipeline = redis.pipeline();
-  for (const membership of memberships) {
-    const key = `${FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX}:${membership.id}`;
-    pipeline.get(key);
+  pipeline.mget(...keys);
+  for (const key of keys) {
     pipeline.pttl(key);
   }
-  const projectKey = `${FHIR_RATE_LIMIT_PROJECT_PREFIX}:${project.id}`;
-  pipeline.get(projectKey);
-  pipeline.pttl(projectKey);
 
   const results = await pipeline.exec();
   if (!results) {
     return [allOk, buildOutputParameters(operation, { project: { id: project.id }, membership: [] })];
   }
 
+  const consumedValues = results[0][1] as (string | null)[];
+
   const membershipResults = memberships.map((membership, i) => {
-    const consumed = results[i * 2][1] as string | null;
-    const pttl = results[i * 2 + 1][1] as number;
+    const consumed = consumedValues[i];
+    const pttl = results[i + 1][1] as number;
     return {
-      membershipId: membership.id as string,
+      membershipId: membership.id,
       profile: membership.profile,
       ...buildQuotaStatus(consumed, pttl, userLimit),
     };
   });
 
-  const projectConsumed = results[results.length - 2][1] as string | null;
+  const projectConsumed = consumedValues[consumedValues.length - 1];
   const projectPttl = results[results.length - 1][1] as number;
 
   return [

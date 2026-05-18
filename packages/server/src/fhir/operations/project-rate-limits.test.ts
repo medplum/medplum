@@ -178,6 +178,24 @@ describe('Project $rate-limits operation', () => {
     expect(res.status).toBe(403);
   });
 
+  test('Returns badRequest when a membership ID cannot be read', async () => {
+    const membershipsRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .set('X-Medplum', 'extended');
+    expect(membershipsRes.status).toBe(200);
+    const validId = (membershipsRes.body.entry[0].resource as ProjectMembership).id;
+
+    const missingId = randomUUID();
+    const res = await request(app)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${validId}&membershipId=${missingId}`)
+      .set('Authorization', `Bearer ${admin.accessToken}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue?.[0]?.details?.text).toContain(missingId);
+    expect(res.body.issue?.[0]?.details?.text).toContain('1 memberships');
+  });
+
   test('Rejects membership from different project', async () => {
     const other = await withTestContext(() =>
       registerNew({

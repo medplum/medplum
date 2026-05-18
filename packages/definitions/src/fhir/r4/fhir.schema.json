@@ -61418,7 +61418,8 @@
               "websocket-subscriptions",
               "transaction-bundles",
               "validate-terminology",
-              "range-search"
+              "range-search",
+              "log-streaming"
             ]
           },
           "type": "array"
@@ -61936,6 +61937,20 @@
           },
           "type": "array"
         },
+        "grantType": {
+          "description": "Optional OAuth grant type for the client application. This specifies the allowed grant types for the client application.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "responseType": {
+          "description": "Optional OAuth response type for the client application. This specifies the allowed response types for the client application.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
         "defaultScope": {
           "description": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
           "items": {
@@ -62144,8 +62159,13 @@
             "execute",
             "external",
             "google",
-            "password"
+            "password",
+            "pre-authorized"
           ]
+        },
+        "preAuthorizedCodeHash": {
+          "description": "The hash of the pre-authorized code used to obtain OAuth Pre-Authorized Code Grant.",
+          "$ref": "#/definitions/code"
         },
         "authTime": {
           "description": "Time when the End-User authentication occurred.",
@@ -62181,6 +62201,10 @@
         "mfaVerified": {
           "description": "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
           "$ref": "#/definitions/boolean"
+        },
+        "expiresAt": {
+          "description": "The time at which a token will expire for this login.",
+          "$ref": "#/definitions/instant"
         },
         "granted": {
           "description": "Whether a token has been granted for this login.",
