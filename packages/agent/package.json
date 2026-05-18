@@ -30,10 +30,10 @@
     "@medplum/hl7": "5.1.12",
     "dcmjs-dimse": "0.3.3",
     "iconv-lite": "0.7.2",
-    "semver": "7.7.4",
+    "semver": "7.8.0",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.20.0"
+    "ws": "8.20.1"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.1.12",
