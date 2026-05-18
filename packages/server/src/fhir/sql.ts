@@ -1048,17 +1048,22 @@ export class UpdateQuery extends BaseQuery {
 export class InsertQuery extends BaseQuery {
   private readonly values?: Record<string, any>[];
   private readonly query?: SelectQuery;
+  private readonly queryColumns?: string[];
   private returnColumns?: string[];
   private conflictColumns?: string[];
   private conflictCondition?: Condition;
   private ignoreConflict?: boolean;
 
-  constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
+  constructor(tableName: string, values: Record<string, any>[] | SelectQuery, queryColumns?: string[]) {
     super(tableName);
     if (Array.isArray(values)) {
       this.values = values;
+      if (queryColumns?.length) {
+        throw new Error('InsertQuery queryColumns are only valid for INSERT ... SELECT');
+      }
     } else {
       this.query = values;
+      this.queryColumns = queryColumns;
     }
   }
 
@@ -1088,6 +1093,9 @@ export class InsertQuery extends BaseQuery {
       this.appendColumns(sql, columnNames);
       this.appendAllValues(sql, columnNames);
     } else {
+      if (this.queryColumns?.length) {
+        this.appendColumns(sql, this.queryColumns);
+      }
       this.appendSubquery(sql);
     }
     this.appendMerge(sql);

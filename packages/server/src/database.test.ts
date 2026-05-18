@@ -21,6 +21,7 @@ import {
   acquireAdvisoryLock,
   closeDatabase,
   DatabaseMode,
+  escapePgOptionsArg,
   getDatabasePool,
   getDefaultStatementTimeout,
   initDatabase,
@@ -251,6 +252,11 @@ describe('Database config', () => {
         options: undefined,
       })
     );
+  });
+
+  test('escapePgOptionsArg', () => {
+    expect(escapePgOptionsArg('repeatable read')).toBe('repeatable\\ read');
+    expect(escapePgOptionsArg('a\\b c')).toBe('a\\\\b\\ c');
   });
 
   test('getDefaultStatementTimeout', async () => {

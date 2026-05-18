@@ -245,6 +245,13 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
     });
 
+    test('Select whereExpr not equals empty string', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').whereExpr(new Constant(`"MyTable"."name" <> ''`)).buildSql(sql);
+      expect(sql.toString()).toBe(`SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> ''`);
+      expect(sql.getValues()).toStrictEqual([]);
+    });
+
     test('Select where lower like', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', 'LOWER_LIKE', 'x').buildSql(sql);
@@ -290,6 +297,32 @@ describe('SqlBuilder', () => {
       const db = { query: jest.fn() } as unknown as PoolClient;
       await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
       expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test('Insert into select', () => {
+      const sql = new SqlBuilder();
+      new InsertQuery('MyTable', new SelectQuery('MyOtherTable').column('id').where('active', '=', true)).buildSql(sql);
+      expect(sql.toString()).toBe(
+        'INSERT INTO "MyTable" SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "MyOtherTable"."active" = $1'
+      );
+      expect(sql.getValues()).toStrictEqual([true]);
+    });
+
+    test('Insert into select with target columns', () => {
+      const sql = new SqlBuilder();
+      new InsertQuery('MyTable', new SelectQuery('MyOtherTable').column('sourceId').column('sourceName'), [
+        'id',
+        'name',
+      ]).buildSql(sql);
+      expect(sql.toString()).toBe(
+        'INSERT INTO "MyTable" ("id", "name") SELECT "MyOtherTable"."sourceId", "MyOtherTable"."sourceName" FROM "MyOtherTable"'
+      );
+    });
+
+    test('Insert query columns throw for values insert', () => {
+      expect(() => new InsertQuery('MyTable', [{ id: '1' }], ['id'])).toThrow(
+        'InsertQuery queryColumns are only valid for INSERT ... SELECT'
+      );
     });
 
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {

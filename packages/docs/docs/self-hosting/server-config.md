@@ -347,6 +347,55 @@ See [BullMQ Job Removal](https://docs.bullmq.io/guide/jobs/auto-removal).
 
 **Default:** `false`
 
+### dataWarehouse
+
+Optional configuration for the scheduled Data Warehouse sync worker. This worker runs incremental sync jobs via BullMQ on a fixed cron schedule.
+It uses `readonlyDatabase` connection settings when available; otherwise it falls back to `database`.
+History tables synced are every `{ResourceType}_History` name derived from indexed repository resource types (the same pattern as database migrations), not a separate configurable list.
+
+#### dataWarehouse.enabled
+
+Enable or disable the scheduled Data Warehouse sync worker.
+
+**Default:** `false`
+
+#### dataWarehouse.cron
+
+Cron expression used for scheduling sync runs.
+
+**Default:** None
+
+#### dataWarehouse.sink
+
+Warehouse export sink type.
+
+- `s3tables`: Managed Iceberg tables in Amazon S3 Tables (existing behavior). Uses the top-level [`awsRegion`](#awsregion) for AWS API and DuckDB S3 credentials.
+- `local`: Write per-table Parquet files to `dataWarehouse.localBasePath`.
+
+**Default:** `s3tables`
+
+#### dataWarehouse.awsS3TableArn
+
+AWS S3 Table ARN for managed Iceberg table access.
+
+Required when `dataWarehouse.sink` is `s3tables`.
+
+**Default:** None
+
+#### dataWarehouse.localBasePath
+
+Base output directory for local Parquet exports. Each repository history table is written as `<table_key>.parquet` under this directory.
+
+Required when `dataWarehouse.sink` is `local`.
+
+**Default:** None
+
+#### dataWarehouse.namespace
+
+Optional Iceberg namespace used by sync.
+
+**Default:** `default`
+
 ### awsRegion
 
 The AWS Region identifier.

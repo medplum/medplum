@@ -175,6 +175,12 @@ export interface MedplumServerConfig {
   workers?: MedplumWorkersConfig;
 
   /**
+   * Optional configuration for scheduled data warehouse sync jobs.
+   * Runs incremental in-server data warehouse sync jobs on a fixed cron pattern.
+   */
+  dataWarehouse?: MedplumDataWarehouseConfig;
+
+  /**
    * Optional mTLS certificate header for incoming requests.
    * If set, the server will attempt to extract the client certificate from the specified header.
    * Header name should be all lowercase.
@@ -290,7 +296,8 @@ export type WorkerName =
   | 'batch'
   | 'post-deploy-migration'
   | 'set-accounts'
-  | 'lambda-cleaner';
+  | 'lambda-cleaner'
+  | 'data-warehouse-sync';
 
 export interface MedplumWorkersConfig {
   /**
@@ -305,6 +312,27 @@ export interface MedplumWorkersConfig {
    * Only takes effect for workers that are enabled.
    */
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
+}
+
+export type MedplumDataWarehouseSinkType = 's3tables' | 'local';
+
+export interface MedplumDataWarehouseConfig {
+  /**
+   * Enables/disables the scheduled sync worker. Defaults to false.
+   */
+  enabled?: boolean;
+  /**
+   * BullMQ cron pattern used to schedule sync runs.
+   */
+  cron?: string;
+  /** Warehouse destination sink type. */
+  sink?: MedplumDataWarehouseSinkType;
+  /** Required when sink is `s3tables`. */
+  awsS3TableArn?: string;
+  /** Required when sink is `local`. */
+  localBasePath?: string;
+  /** Optional Iceberg namespace used by sync. */
+  namespace?: string;
 }
 
 export interface MedplumFissionConfig {

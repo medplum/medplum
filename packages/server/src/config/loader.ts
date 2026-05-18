@@ -11,6 +11,7 @@ import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
+import { validateDataWarehouseConfig } from './validate-config';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 
@@ -63,7 +64,9 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     throw new Error('Missing required config setting: baseUrl. Please set "baseUrl" in your configuration.');
   }
 
-  cachedConfig = addDefaults(config);
+  const withDefaults = addDefaults(config);
+  validateDataWarehouseConfig(withDefaults);
+  cachedConfig = withDefaults;
   return cachedConfig;
 }
 
@@ -157,6 +160,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
+  validateDataWarehouseConfig(config);
   return config;
 }
 
@@ -218,6 +222,10 @@ function loadEnvConfig(): MedplumServerConfig {
       key = key.substring('WORKERS_'.length);
       currConfig = config.workers ??= {};
       section = 'workers';
+    } else if (key.startsWith('DATA_WAREHOUSE_')) {
+      key = key.substring('DATA_WAREHOUSE_'.length);
+      currConfig = config.dataWarehouse ??= {};
+      section = 'dataWarehouse';
     }
 
     // Convert key from CAPITAL_CASE to camelCase

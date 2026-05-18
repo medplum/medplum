@@ -345,6 +345,60 @@ describe('Config', () => {
     expect(config.workers?.bullmq).toStrictEqual({ subscription: { concurrency: 50 } });
   });
 
+  test('Env config dataWarehouse prefix', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_AWS_REGION', 'us-west-2');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_AWS_S3_TABLE_ARN', 'arn:aws:s3tables:us-east-1:123456789012:bucket/test');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_SINK', 's3tables');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_NAMESPACE', 'test');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse).toBeDefined();
+    expect(config.dataWarehouse?.enabled).toBe(true);
+    expect(config.dataWarehouse?.cron).toStrictEqual('0 * * * *');
+    expect(config.awsRegion).toStrictEqual('us-west-2');
+    expect(config.dataWarehouse?.awsS3TableArn).toStrictEqual('arn:aws:s3tables:us-east-1:123456789012:bucket/test');
+    expect(config.dataWarehouse?.sink).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.namespace).toStrictEqual('test');
+  });
+
+  test('loadConfig throws when dataWarehouse is enabled for s3tables but awsS3TableArn is missing', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_SINK', 's3tables');
+
+    // when
+    await expect(loadConfig('env')).rejects.toThrow(
+      // then
+      'dataWarehouse.awsS3TableArn is required when dataWarehouse.sink is "s3tables"'
+    );
+  });
+
+  test('Env config dataWarehouse local sink fields', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_SINK', 'local');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_LOCAL_BASE_PATH', '/tmp/warehouse');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse).toBeDefined();
+    expect(config.dataWarehouse?.sink).toStrictEqual('local');
+    expect(config.dataWarehouse?.localBasePath).toStrictEqual('/tmp/warehouse');
+  });
+
   test('Multi-source: file then env overlay', async () => {
     setEnv('MEDPLUM_PORT', '9999');
 
@@ -398,5 +452,7 @@ describe('Config', () => {
     expect(config.defaultRateLimit).toStrictEqual(-1);
     expect(config.defaultSuperAdminClientId).toBeDefined();
     expect(config.defaultSuperAdminClientSecret).toBeDefined();
+    expect(config.dataWarehouse?.enabled).toStrictEqual(false);
+    expect(config.dataWarehouse?.cron).toBeUndefined();
   });
 });
