@@ -1250,7 +1250,10 @@ function generateIndexesActions(
   return actions;
 }
 
-function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
+export function generateConstraintsActions(
+  startTable: TableDefinition,
+  targetTable: TableDefinition
+): PhasalMigration {
   const actions: PhasalMigration = {
     preDeploy: [],
     postDeploy: [],
