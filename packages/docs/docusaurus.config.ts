@@ -303,6 +303,12 @@ const config: Config = {
     },
   },
   themes: ['@docusaurus/theme-mermaid'],
+  scripts: [
+    {
+      src: 'https://ddwl4m2hdecbv.cloudfront.net/b/LNKLDHEYLZOJ/LNKLDHEYLZOJ.js.gz',
+      async: true,
+    },
+  ],
 };
 
 export default config;
