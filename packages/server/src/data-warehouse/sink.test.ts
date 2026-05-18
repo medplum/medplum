@@ -16,9 +16,7 @@ describe('data warehouse sinks', () => {
         icebergTable: 'patient_history',
       });
       expect(table).toContain('patient_history.parquet');
-      expect(sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')).toBe(
-        'TRUE'
-      );
+      expect(sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')).toBe('TRUE');
     } finally {
       rmSync(basePath, { recursive: true, force: true });
     }

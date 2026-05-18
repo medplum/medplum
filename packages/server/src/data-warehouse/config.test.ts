@@ -25,9 +25,7 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
     expect(parsed.pathname).toBe('/medplum');
     expect(parsed.username).toBe('medplum');
     expect(parsed.password).toBe('secret');
-    expect(parsed.searchParams.get('options')).toBe(
-      `-c statement_timeout=${DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT}`
-    );
+    expect(parsed.searchParams.get('options')).toBe(`-c statement_timeout=${DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT}`);
   });
 
   test('uses custom queryTimeout in options', () => {

@@ -4,10 +4,7 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
-import {
-  buildPgConnectionURI,
-  DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
-} from './config';
+import { buildPgConnectionURI, DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT } from './config';
 import { buildDuckdbPostgresAttachQuery } from './warehouse-sql';
 
 /**

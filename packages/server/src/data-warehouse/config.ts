@@ -13,10 +13,7 @@ export const DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT = 60000;
  * @param params - URI search params to append to.
  * @param ssl - Medplum database SSL settings.
  */
-export function appendMedplumDatabaseSslSearchParams(
-  params: URLSearchParams,
-  ssl?: MedplumDatabaseSslConfig
-): void {
+export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ssl?: MedplumDatabaseSslConfig): void {
   if (!ssl) {
     return;
   }
@@ -56,9 +53,7 @@ export function buildPgConnectionURI(db: MedplumDatabaseConfig): string {
   }
 
   // Userinfo is pre-encoded so `@` in usernames does not terminate the authority section.
-  const url = new URL(
-    `postgresql://${encodeURIComponent(username)}:${encodeURIComponent(password)}@localhost/`
-  );
+  const url = new URL(`postgresql://${encodeURIComponent(username)}:${encodeURIComponent(password)}@localhost/`);
   url.hostname = host;
   if (port !== undefined) {
     url.port = String(port);

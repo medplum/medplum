@@ -7,7 +7,6 @@ import { Column, Constant, InsertQuery, SelectQuery, SqlBuilder } from '../fhir/
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
 
-
 /** Default Iceberg catalog schema for warehouse objects. */
 export const DEFAULT_NAMESPACE = 'default';
 
@@ -22,7 +21,6 @@ export const PROJECT_ID_JSON_PATH = '$.meta.project';
 
 /** Iceberg / Parquet column names written for each resource history row (order matters for INSERT). */
 export const WAREHOUSE_HISTORY_COLUMN_NAMES = ['id', 'version_id', 'content', 'last_updated', 'project_id'] as const;
-
 
 /** Options required to build managed Iceberg attach/setup SQL (extensions, secrets, attach). */
 export interface ManagedIcebergAttachOptions {
@@ -225,7 +223,7 @@ export function buildManagedIcebergExtensionQueries(): string[] {
  * DuckDB default secret for S3-backed Iceberg (managed S3 Tables path).
  * @see https://duckdb.org/docs/current/core_extensions/postgres
  * @see https://duckdb.org/docs/current/core_extensions/aws#credential_chain-provider
- * 
+ *
  * @param s3Region - AWS region passed to the secret.
  * @returns Single `CREATE SECRET` statement.
  */
@@ -243,7 +241,6 @@ export function buildManagedS3CredentialSecretQuery(s3Region: string): string {
 export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): string {
   return `ATTACH '${awsS3TableArn}' AS "${S3_TABLES_CATALOG}" ( TYPE iceberg, ENDPOINT_TYPE s3_tables );`;
 }
-
 
 /**
  * DuckDB setup for managed Iceberg (extensions, optional S3 secret, Postgres attach, S3 Tables attach).
