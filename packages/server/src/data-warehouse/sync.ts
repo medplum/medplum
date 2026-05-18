@@ -23,7 +23,6 @@ export interface SyncResourceResult {
   icebergTable: string;
   table: string;
   count: number;
-  action: SyncAction;
 }
 
 export interface SyncResult {
@@ -31,14 +30,6 @@ export interface SyncResult {
 }
 
 export type SyncAction = 'skip-empty' | 'insert';
-
-export function getSyncAction(count: number): SyncAction {
-  if (count === 0) {
-    return 'skip-empty';
-  }
-
-  return 'insert';
-}
 
 function logSyncProgress(
   options: SyncOptions,
@@ -77,14 +68,12 @@ async function runWarehouseTableSync(
 
     const countReader = await connection.runAndReadAll(buildCountFromHistoryTableQuery(postgresTable, sourcePredicate));
     const count = Number((countReader.getRowObjectsJson() as { count: number }[])[0]?.count ?? 0);
-    const action = getSyncAction(count);
 
-    if (action === 'insert') {
+    if (count > 0) {
       logSyncProgress(options, `Syncing ${icebergTable}: ${count} rows`, {
         table: resultTableName,
         icebergTable,
         count,
-        action,
       });
       await options.sink.writeRows(connection, { tableSpec: spec, namespace, sourcePredicate });
     } else {
@@ -92,7 +81,6 @@ async function runWarehouseTableSync(
         table: resultTableName,
         icebergTable,
         count,
-        action,
       });
     }
 
@@ -100,7 +88,6 @@ async function runWarehouseTableSync(
       icebergTable,
       table: resultTableName,
       count,
-      action,
     });
   }
 
