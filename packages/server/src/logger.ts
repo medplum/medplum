@@ -3,25 +3,14 @@
 import { LogLevel, Logger } from '@medplum/core';
 import { requestContextStore } from './request-context-store';
 
-let drainPromise: Promise<void> | undefined;
-
 export function writeLineToStdout(msg: string): void {
-  if (drainPromise) {
-    drainPromise = drainPromise.then(() => doWrite(msg));
-    return;
-  }
-  doWrite(msg);
+  process.stdout.write(msg + '\n');
 }
 
-function doWrite(msg: string): void {
-  if (!process.stdout.write(msg + '\n')) {
-    drainPromise = new Promise<void>((resolve) => {
-      process.stdout.once('drain', () => {
-        drainPromise = undefined;
-        resolve();
-      });
-    });
-  }
+export async function drainStdout(): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    process.stdout.write('', (err) => (err ? reject(err) : resolve()));
+  });
 }
 
 export const globalLogger = new Logger(
