@@ -8,9 +8,10 @@ export function writeLineToStdout(msg: string): void {
 }
 
 export async function drainStdout(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    process.stdout.write('', (err) => (err ? reject(err) : resolve()));
-  });
+  if (!process.stdout.writableNeedDrain) {
+    return;
+  }
+  await new Promise<void>((resolve) => process.stdout.once('drain', resolve));
 }
 
 export const globalLogger = new Logger(
