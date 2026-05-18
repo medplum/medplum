@@ -4,14 +4,14 @@ import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
-import { globalLogger } from './logger';
+import { drainStdout, globalLogger } from './logger';
 import { getServerVersion } from './util/version';
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
   });
 
-  process.on('uncaughtException', (err) => {
+  process.on('uncaughtException', async (err) => {
     globalLogger.error('Uncaught exception thrown', err);
 
     if (err.message && typeof err.message === 'string' && err.message.includes('Connection terminated unexpectedly')) {
@@ -28,6 +28,11 @@ export async function main(configName: string): Promise<void> {
       return;
     }
 
+    // We need to wait for stdout to drain before calling exit
+    // Since calling process.exit immediately kills the process without waiting
+    // Using console.log ensures this always happens before the call to process.exit
+    // But since we are calling stdout.write we need to await this ourselves at process close
+    await drainStdout();
     process.exit(1);
   });
 
@@ -56,8 +61,13 @@ export async function main(configName: string): Promise<void> {
 }
 
 if (import.meta.main) {
-  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch((err) => {
+  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch(async (err) => {
     globalLogger.error('Fatal error during startup', err);
+    // We need to wait for stdout to drain before calling exit
+    // Since calling process.exit immediately kills the process without waiting
+    // Using console.log ensures this always happens before the call to process.exit
+    // But since we are calling stdout.write we need to await this ourselves at process close
+    await drainStdout();
     process.exit(1);
   });
 }
