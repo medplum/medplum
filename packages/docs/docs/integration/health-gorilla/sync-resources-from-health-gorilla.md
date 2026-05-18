@@ -110,10 +110,10 @@ When syncing `DiagnosticReport` resources, related `ServiceRequest` resources ma
 
 - **Timeouts:** The bot may process many resources in one run. Large date ranges can exceed the default bot timeout (600 seconds in the shared deployment). Prefer smaller windows or `syncOnlyMissing: true` for repeat runs.
 - **Subscriptions:** Ensure `setup-subscriptions` has been run so day-to-day results use `receive-from-health-gorilla`. Manual sync does not replace subscriptions; it recovers gaps.
-- **Receive-only migrations:** When [migrating in receive-only mode](./index#migrating-to-health-gorilla-labs), combine placeholder orders in Medplum with a targeted `DiagnosticReport` sync for the migration window if webhooks were not yet active.
+- **Receive-only migrations:** When [migrating in receive-only mode](/docs/integration/health-gorilla#migrating-to-health-gorilla-labs), combine placeholder orders in Medplum with a targeted `DiagnosticReport` sync for the migration window if webhooks were not yet active.
 - **Quest preliminary results:** Quest may send multiple updates for the same report. Syncing an already-imported report updates it in place, consistent with webhook delivery.
 
 ## Related reading
 
 - [Receiving Results](./receiving-results) — FHIR result model, PDFs, and order matching
-- [Health Gorilla overview](./index) — migration phases and prerequisites
+- [Health Gorilla overview](/docs/integration/health-gorilla) — migration phases and prerequisites
