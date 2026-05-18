@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { LogLevel, Logger } from '@medplum/core';
+import { once } from 'node:events';
 import { requestContextStore } from './request-context-store';
 
 export function writeLineToStdout(msg: string): void {
@@ -11,7 +12,7 @@ export async function drainStdout(): Promise<void> {
   if (!process.stdout.writableNeedDrain) {
     return;
   }
-  await new Promise<void>((resolve) => process.stdout.once('drain', resolve));
+  await once(process.stdout, 'drain');
 }
 
 export const globalLogger = new Logger(
