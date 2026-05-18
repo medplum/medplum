@@ -48,6 +48,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import type { PgQueryable } from './sql';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -424,10 +425,16 @@ describe('FHIR Repo', () => {
     const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Tx Project' });
     const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
 
-    await systemRepo.withTransaction(async (txRepo) => {
-      await txRepo.readResource('Patient', patient.id);
-      await txRepo.getSystemRepo().readResource('Project', project.id);
-    });
+    await systemRepo.withTransaction(
+      async (txRepo) => {
+        await txRepo.readResource('Patient', patient.id);
+        await txRepo.getSystemRepo().readResource('Project', project.id);
+      },
+      {
+        resourceTypes: ['Patient', 'Project'],
+        source: 'repo.test.mixedTransactionAccess',
+      }
+    );
 
     expect(infoSpy).toHaveBeenCalledWith(
       '[RepoSplit] Mixed transaction access',
@@ -1384,21 +1391,42 @@ describe('FHIR Repo', () => {
       return patients;
     }
 
-    async function countRows(tableName: string, id: string): Promise<number> {
+    async function countRows(db: PgQueryable, tableName: string, id: string): Promise<number> {
       const query = new SelectQuery(tableName).column('id').where('id', '=', id);
-      return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
+      return (
+        await query.execute(
+          systemRepo.getDatabaseClient({
+            mode: DatabaseMode.READER,
+            operation: 'read',
+            resourceTypes: ['Patient'],
+            source: 'repo.test.countRows',
+          })
+        )
+      ).length;
     }
 
     async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
-      expect(await countRows('Patient', patient.id)).toStrictEqual(0);
-      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+      const db = systemRepo.getDatabaseClient({
+        mode: DatabaseMode.READER,
+        operation: 'read',
+        resourceTypes: ['Patient'],
+        source: 'repo.test.countRows',
+      });
+      expect(await countRows(db, 'Patient', patient.id)).toStrictEqual(0);
+      expect(await countRows(db, 'Patient_History', patient.id)).toStrictEqual(0);
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
       expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
-      expect(await countRows('Patient', patient.id)).toStrictEqual(1);
-      expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
+      const db = systemRepo.getDatabaseClient({
+        mode: DatabaseMode.READER,
+        operation: 'read',
+        resourceTypes: ['Patient'],
+        source: 'repo.test.countRows',
+      });
+      expect(await countRows(db, 'Patient', patient.id)).toStrictEqual(1);
+      expect(await countRows(db, 'Patient_History', patient.id)).toBeGreaterThan(0);
     }
 
     async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
@@ -1782,7 +1810,12 @@ describe('FHIR Repo', () => {
 
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+    const client = systemRepo.getDatabaseClient({
+      mode: DatabaseMode.WRITER,
+      operation: 'read',
+      resourceTypes: ['User'],
+      source: 'repo.test.getProjectIdColumn',
+    });
     return (await projectIdQuery.execute(client))[0].projectId;
   }
 
@@ -1834,10 +1867,17 @@ describe('FHIR Repo', () => {
       { async: true },
       async () => {
         const startTime = Date.now();
-        await repo.withTransaction(async (txRepo) => {
-          await txRepo.createResource({ resourceType: 'Patient' });
-          expect(Date.now() - startTime).toBeLessThan(100);
-        });
+        await repo.withTransaction(
+          async (txRepo) => {
+            await txRepo.createResource({ resourceType: 'Patient' });
+            expect(Date.now() - startTime).toBeLessThan(100);
+          },
+          {
+            source: 'repo.test.asyncQuotaDelay',
+
+            resourceTypes: ['Patient'],
+          }
+        );
         expect(Date.now() - startTime).toBeGreaterThan(100);
       }
     );
@@ -1860,17 +1900,30 @@ describe('FHIR Repo', () => {
       }
 
       let finishedTransaction = false;
-      await repo.withTransaction(async (txRepo) => {
-        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        const querySpy = spyOnQuery(client);
-        await txRepo.createResource(patient);
-        const calls = querySpy.mock.calls;
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
-        querySpy.mockRestore();
-        finishedTransaction = true;
-      });
+      await repo.withTransaction(
+        async (txRepo) => {
+          const client = txRepo.getDatabaseClient({
+            mode: DatabaseMode.WRITER,
+            operation: 'write',
+            resourceTypes: ['Patient'],
+            source: 'repo.test.insertReferenceBatching.client',
+          });
+          const querySpy = spyOnQuery(client);
+          await txRepo.createResource(patient);
+          const calls = querySpy.mock.calls;
+          expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
+          expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
+          expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(
+            2
+          );
+          querySpy.mockRestore();
+          finishedTransaction = true;
+        },
+        {
+          resourceTypes: ['Patient'],
+          source: 'repo.test.insertReferenceBatching',
+        }
+      );
       expect(finishedTransaction).toBe(true);
     }));
 
@@ -1885,7 +1938,12 @@ describe('FHIR Repo', () => {
 
       const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
 
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient({
+        mode: DatabaseMode.WRITER,
+        operation: 'write',
+        resourceTypes: ['Patient'],
+        source: 'repo.test.versionColumn',
+      });
       expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version

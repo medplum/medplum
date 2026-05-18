@@ -201,7 +201,10 @@ export class BatchProcessor {
           this.state = cloneState(preTransactionState);
           return this.processEntriesAndBuild();
         }),
-      { serializable: bundleInfo.requiresStrongTransaction }
+      {
+        serializable: bundleInfo.requiresStrongTransaction,
+        resourceTypes: [], // TODO: Determine resource types from bundle
+      }
     );
   }
 

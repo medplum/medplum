@@ -783,7 +783,12 @@ describe('Reindex Worker', () => {
         identifier: [{ system: idSystem, value: mrn }],
       });
 
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient({
+        mode: DatabaseMode.WRITER,
+        operation: 'write',
+        resourceTypes: ['Patient'],
+        source: 'reindex.test',
+      });
       const getVersionQuery = (id: string[]): SelectQuery =>
         new SelectQuery('Patient').column('id').column('__version').where('id', 'IN', id);
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, outdatedPatient.id]);
