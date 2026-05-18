@@ -14,11 +14,11 @@ function baseServerConfig(overrides?: Partial<MedplumServerConfig>): MedplumServ
 }
 
 describe('validateDataWarehouseConfig', () => {
-  it('no-ops when dataWarehouse is absent', () => {
+  test('no-ops when dataWarehouse is absent', () => {
     expect(() => validateDataWarehouseConfig(baseServerConfig())).not.toThrow();
   });
 
-  it('no-ops when dataWarehouse.enabled is false', () => {
+  test('no-ops when dataWarehouse.enabled is false', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -28,7 +28,7 @@ describe('validateDataWarehouseConfig', () => {
     ).not.toThrow();
   });
 
-  it('no-ops when enabled is false even if sink fields are missing', () => {
+  test('no-ops when enabled is false even if sink fields are missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -38,7 +38,7 @@ describe('validateDataWarehouseConfig', () => {
     ).not.toThrow();
   });
 
-  it('throws when enabled and cron is missing', () => {
+  test('throws when enabled and cron is missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -48,7 +48,7 @@ describe('validateDataWarehouseConfig', () => {
     ).toThrow('dataWarehouse.cron is required when dataWarehouse.enabled is true');
   });
 
-  it('throws when enabled and cron is whitespace only', () => {
+  test('throws when enabled and cron is whitespace only', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -63,7 +63,7 @@ describe('validateDataWarehouseConfig', () => {
     ).toThrow('dataWarehouse.cron is required when dataWarehouse.enabled is true');
   });
 
-  it('throws when sink is s3tables (default) and awsS3TableArn is missing', () => {
+  test('throws when sink is s3tables (default) and awsS3TableArn is missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -73,7 +73,7 @@ describe('validateDataWarehouseConfig', () => {
     ).toThrow('dataWarehouse.sink must be "s3tables" or "local"');
   });
 
-  it('throws when sink is s3tables and awsS3TableArn is whitespace only', () => {
+  test('throws when sink is s3tables and awsS3TableArn is whitespace only', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -83,7 +83,7 @@ describe('validateDataWarehouseConfig', () => {
     ).toThrow('dataWarehouse.awsS3TableArn is required when dataWarehouse.sink is "s3tables"');
   });
 
-  it('passes when sink is s3tables and awsS3TableArn is set', () => {
+  test('passes when sink is s3tables and awsS3TableArn is set', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -99,7 +99,7 @@ describe('validateDataWarehouseConfig', () => {
     ).not.toThrow();
   });
 
-  it('throws when sink is local and localBasePath is missing', () => {
+  test('throws when sink is local and localBasePath is missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
@@ -109,7 +109,7 @@ describe('validateDataWarehouseConfig', () => {
     ).toThrow('dataWarehouse.localBasePath is required when dataWarehouse.sink is "local"');
   });
 
-  it('passes when sink is local and localBasePath is set', () => {
+  test('passes when sink is local and localBasePath is set', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
