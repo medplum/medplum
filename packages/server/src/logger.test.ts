@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LogLevel, sleep } from '@medplum/core';
-import { globalLogger } from './logger';
+import { LogLevel } from '@medplum/core';
+import { drainStdout, globalLogger } from './logger';
 
 describe('Global Logger', () => {
   let writeSpy: jest.SpyInstance;
@@ -62,34 +62,39 @@ describe('Global Logger', () => {
     );
   });
 
-  test('Awaits drain when stdout buffer is backed up', async () => {
-    const drainHandlers: (() => void)[] = [];
+  test('Writes are not queued when stdout buffer is backed up', () => {
     writeSpy.mockImplementation((() => false) as any);
-    const onceSpy = jest.spyOn(process.stdout, 'once').mockImplementation((event: any, handler: any) => {
-      if (event === 'drain') {
-        drainHandlers.push(handler);
-      }
-      return process.stdout;
-    });
 
     globalLogger.level = LogLevel.ERROR;
     globalLogger.error('first');
     expect(writeSpy).toHaveBeenCalledTimes(1);
 
-    // Second write should be queued behind the pending drain promise.
+    // Writes are no longer queued behind drain — drain is awaited explicitly at process exit.
     globalLogger.error('second');
-    expect(writeSpy).toHaveBeenCalledTimes(1);
-
-    // Simulate drain — queued write fires.
-    drainHandlers.forEach((h) => h());
-    // Need to wait one tick for event handlers
-    await sleep(0);
     expect(writeSpy).toHaveBeenCalledTimes(2);
+  });
 
-    // Drain any pending state created by the second write.
-    drainHandlers.forEach((h) => h());
-    await sleep(0);
+  test('drainStdout is a no-op when stdout does not need draining', async () => {
+    Object.defineProperty(process.stdout, 'writableNeedDrain', { value: false, configurable: true });
+    const onceSpy = jest.spyOn(process.stdout, 'once');
+    await drainStdout();
+    expect(onceSpy).not.toHaveBeenCalled();
+    onceSpy.mockRestore();
+  });
+
+  test('drainStdout awaits the drain event when stdout needs draining', async () => {
+    Object.defineProperty(process.stdout, 'writableNeedDrain', { value: true, configurable: true });
+    const onceSpy = jest.spyOn(process.stdout, 'once').mockImplementation((event: any, handler: any) => {
+      if (event === 'drain') {
+        setImmediate(handler);
+      }
+      return process.stdout;
+    });
+
+    await drainStdout();
+    expect(onceSpy).toHaveBeenCalledWith('drain', expect.any(Function));
 
     onceSpy.mockRestore();
+    Object.defineProperty(process.stdout, 'writableNeedDrain', { value: false, configurable: true });
   });
 });
