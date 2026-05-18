@@ -511,7 +511,14 @@ superAdminRouter.post(
 
     const startTime = Date.now();
     const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-    await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+    await systemRepo
+      .getDatabaseClient({
+        mode: DatabaseMode.WRITER,
+        operation: 'write',
+        resourceTypes: [],
+        source: 'admin.super.updateTableSettings',
+      })
+      .query(query);
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -562,7 +569,14 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
       const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-      await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+      await systemRepo
+        .getDatabaseClient({
+          mode: DatabaseMode.WRITER,
+          operation: 'write',
+          resourceTypes: [],
+          source: 'admin.super.vacuum',
+        })
+        .query(query);
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

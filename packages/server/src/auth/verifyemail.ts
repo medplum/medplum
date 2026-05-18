@@ -38,10 +38,16 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 
   const user = await systemRepo.readReference(securityRequest.user);
 
-  await systemRepo.withTransaction(async (txRepo) => {
-    await txRepo.updateResource<User>({ ...user, emailVerified: true });
-    await txRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
-  });
+  await systemRepo.withTransaction(
+    async (txRepo) => {
+      await txRepo.updateResource<User>({ ...user, emailVerified: true });
+      await txRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
+    },
+    {
+      resourceTypes: ['User', 'UserSecurityRequest'],
+      source: 'verifyEmailHandler',
+    }
+  );
 
   if (securityRequest.redirectUri) {
     // Send a "redirect", but don't actually follow it, because the client may want to handle the redirect themselves (e.g. in a React app).

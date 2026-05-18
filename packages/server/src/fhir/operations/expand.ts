@@ -239,7 +239,12 @@ async function includeInExpansion(
   codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
 ): Promise<void> {
-  const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
+  const db = getAuthenticatedContext().repo.getDatabaseClient({
+    mode: DatabaseMode.READER,
+    operation: 'read',
+    resourceTypes: ['CodeSystem'],
+    source: 'expand.includeInExpansion',
+  });
   await hydrateCodeSystemProperties(db, codeSystem);
 
   const query = expansionQuery(include, codeSystem, params);

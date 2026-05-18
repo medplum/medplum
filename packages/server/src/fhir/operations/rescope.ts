@@ -172,7 +172,11 @@ async function rescopeUserToProject(
         project: targetRef,
       });
     },
-    { serializable: true } // We need serializable here since if a new project membership is added for this user, we want this tx to fail
+    {
+      resourceTypes: ['Project', 'ProjectMembership', 'User'],
+      source: 'rescopeUserToProject',
+      serializable: true,
+    } // We need serializable here since if a new project membership is added for this user, we want this tx to fail
   );
 }
 
@@ -187,15 +191,21 @@ async function rescopeUserToProject(
 async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithId<User>): Promise<WithId<User>> {
   const systemRepo = ctx.systemRepo;
 
-  return systemRepo.withTransaction(async (txRepo) => {
-    const rereadUser = await txRepo.readResource<User>('User', user.id);
-    if (!rereadUser.project) {
-      throw new OperationOutcomeError(badRequest('User is already server-scoped'));
+  return systemRepo.withTransaction(
+    async (txRepo) => {
+      const rereadUser = await txRepo.readResource<User>('User', user.id);
+      if (!rereadUser.project) {
+        throw new OperationOutcomeError(badRequest('User is already server-scoped'));
+      }
+
+      delete rereadUser.project;
+      delete rereadUser.meta?.project;
+
+      return txRepo.updateResource(rereadUser);
+    },
+    {
+      resourceTypes: ['User'],
+      source: 'rescopeUserToServer',
     }
-
-    delete rereadUser.project;
-    delete rereadUser.meta?.project;
-
-    return txRepo.updateResource(rereadUser);
-  });
+  );
 }

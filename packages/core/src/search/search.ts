@@ -597,3 +597,7 @@ export function invalidSearchOperator(operator: Operator, searchParameterCodeOrI
   }
   return badRequest(`Invalid operator ${operator} for ${searchParameterCodeOrId}`);
 }
+
+export function getSearchResourceTypes(searchRequest: SearchRequest): Iterable<ResourceType> {
+  return searchRequest.types ? searchRequest.types : [searchRequest.resourceType];
+}

@@ -2,11 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { isResourceType } from '@medplum/core';
+import type { TransactionOptions } from '@medplum/fhir-router';
 import type { Reference, ResourceType } from '@medplum/fhirtypes';
+import type { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 
 export type RepositoryAccessLayer = 'sql' | 'cache';
-export type RepositoryAccessOperation = 'read' | 'write';
+export type RepositoryAccessOperation = 'read' | 'write' | 'transaction' | 'configuration';
+
+export interface RepositoryAccessOptions {
+  readonly resourceTypes: Iterable<ResourceType>;
+  readonly source: string;
+}
+
+export interface ExecuteSqlOptions extends RepositoryAccessOptions {
+  readonly operation: RepositoryAccessOperation;
+  readonly mode: DatabaseMode;
+}
+
+export interface TransactionSqlOptions extends RepositoryAccessOptions, TransactionOptions {}
 
 type TransactionAccessFrame = {
   sqlReadCount: number;
@@ -114,7 +128,7 @@ export class RepositoryAccessTracker {
     if (layer === 'sql') {
       if (operation === 'read') {
         frame.sqlReadCount++;
-      } else {
+      } else if (operation === 'write') {
         frame.sqlWriteCount++;
       }
     } else if (operation === 'read') {
@@ -123,9 +137,14 @@ export class RepositoryAccessTracker {
       frame.cacheWriteCount++;
     }
 
-    const resourceTypeSet = operation === 'read' ? frame.readResourceTypes : frame.writeResourceTypes;
-    for (const resourceType of access.all) {
-      resourceTypeSet.add(resourceType);
+    if (operation === 'read') {
+      for (const resourceType of access.all) {
+        frame.readResourceTypes.add(resourceType);
+      }
+    } else if (operation === 'write') {
+      for (const resourceType of access.all) {
+        frame.writeResourceTypes.add(resourceType);
+      }
     }
     for (const resourceType of access.special) {
       frame.specialResourceTypes.add(resourceType);
