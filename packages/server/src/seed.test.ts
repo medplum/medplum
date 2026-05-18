@@ -79,7 +79,12 @@ describe('Seed', () => {
       // and then vacuum the tables to clear any existing pending list entries.
       const actions: OutputAction[] = [];
       const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient({
+        mode: DatabaseMode.WRITER,
+        operation: 'write',
+        resourceTypes: ['Appointment', 'Slot'],
+        source: 'seed.test.configureIndexes',
+      });
       await configureGinIndexes(client, actions, tables, { fastUpdate: false });
       for (const table of tables) {
         await vacuumTable(client, actions, table);

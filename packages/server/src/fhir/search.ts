@@ -341,7 +341,12 @@ async function getSearchEntries<T extends Resource>(
     builder.limit(config.fhirSearchMinLimit);
   }
 
-  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  const client = repo.getDatabaseClient({
+    mode: DatabaseMode.READER,
+    operation: 'read',
+    resourceTypes: trackedResourceTypes,
+    source: 'search.getSearchEntries.statementConfig',
+  });
   let rows: any[];
   try {
     if (config.fhirSearchDiscourageSeqScan) {

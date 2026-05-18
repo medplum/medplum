@@ -104,13 +104,22 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   }
 
   try {
-    await repo.withTransaction(async (txRepo) => {
-      // `importCodeSystem` does not read/write any resource tables, only derivative tables, so we can
-      // drop down to utilizing a raw database client here and opt-out of resource type access tracking
-      // TODO: this should probably report access of "CodeSystem" to the access tracker.
-      const db = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
-    });
+    await repo.withTransaction(
+      async (txRepo) => {
+        // `importCodeSystem` operates only on CodeSystem derivative tables
+        const db = txRepo.getDatabaseClient({
+          mode: DatabaseMode.WRITER,
+          operation: 'write',
+          resourceTypes: ['CodeSystem'],
+          source: 'codeSystemImportHandler.client',
+        });
+        await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
+      },
+      {
+        resourceTypes: ['CodeSystem'],
+        source: 'codeSystemImportHandler',
+      }
+    );
   } catch (err) {
     return [normalizeOperationOutcome(err)];
   }

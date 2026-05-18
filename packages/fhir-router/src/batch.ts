@@ -112,6 +112,7 @@ class BatchProcessor {
       (txRepo) => this.withRepo(txRepo, () => this.processBatch(bundleInfo, resultEntries)),
       {
         serializable: bundleInfo.requiresStrongTransaction,
+        resourceTypes: [], // TODO: Determine resource types from bundle
       }
     );
   }

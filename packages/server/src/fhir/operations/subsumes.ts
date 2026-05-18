@@ -78,7 +78,12 @@ export async function isSubsumed(
 ): Promise<boolean> {
   const { repo } = getAuthenticatedContext();
   const base = selectCoding(codeSystem.id, baseCode);
-  const db = repo.getDatabaseClient(DatabaseMode.READER);
+  const db = repo.getDatabaseClient({
+    mode: DatabaseMode.READER,
+    operation: 'read',
+    resourceTypes: ['CodeSystem'],
+    source: 'subsumes.isA',
+  });
 
   const parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
   if (!parentProperty) {
