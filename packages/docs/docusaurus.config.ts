@@ -305,6 +305,9 @@ const config: Config = {
   themes: ['@docusaurus/theme-mermaid'],
   scripts: [
     {
+      src: 'https://cdn-cookieyes.com/client_data/11362a9d5311bc6aa21c5f47d05599c6/script.js',
+    },
+    {
       src: 'https://ddwl4m2hdecbv.cloudfront.net/b/LNKLDHEYLZOJ/LNKLDHEYLZOJ.js.gz',
       async: true,
     },
