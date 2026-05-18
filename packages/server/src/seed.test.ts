@@ -32,7 +32,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
     return;
   }
 
-  console.log(
+  globalLogger.write(
     `${new Date().toISOString()} - Running pending post-deploy migrations ${pendingMigration} through ${lastVersion}`
   );
 
@@ -45,9 +45,9 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
-  console.log(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
+  globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);
-  console.log(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
+  globalLogger.write(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
 }
 
 describe('Seed', () => {
@@ -63,7 +63,7 @@ describe('Seed', () => {
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
 
-    console.log(`${new Date().toISOString()} - Initializing app services`);
+    globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
     await withTestContext(async () => {
       const repo = getGlobalSystemRepo();
