@@ -49,10 +49,11 @@ import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
+import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
-import { getSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
@@ -251,6 +252,12 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
   } else {
     validateSearchResourceType(repo, searchRequest.resourceType);
   }
+  for (const include of searchRequest.include ?? EMPTY) {
+    validateSearchResourceType(repo, include.resourceType as ResourceType);
+  }
+  for (const include of searchRequest.revInclude ?? EMPTY) {
+    validateSearchResourceType(repo, include.resourceType as ResourceType);
+  }
 }
 
 /**
@@ -260,11 +267,9 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
  */
 function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
   validateResourceType(resourceType);
-
   if (resourceType === 'Binary') {
     throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
   }
-
   if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)) {
     throw new OperationOutcomeError(forbidden);
   }
@@ -352,7 +357,7 @@ async function getSearchEntries<T extends Resource>(
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      } as WithId<T>);
+      });
     }
   }
   let nextResource: T | undefined;
@@ -1031,14 +1036,34 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-
-  if (impl.searchStrategy === 'token-column') {
-    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
-  } else if (impl.searchStrategy === 'lookup-table') {
-    return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  switch (impl.searchStrategy) {
+    case SearchStrategies.TOKEN_COLUMN:
+      return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    case SearchStrategies.LOOKUP_TABLE:
+      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+    case SearchStrategies.RANGE_COLUMN:
+      if (!repo.supportsRangeSearch()) {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          { ...impl, searchStrategy: 'column' },
+          filter
+        );
+      }
+      if (param.id === 'MeasureReport-period') {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          impl as unknown as ColumnSearchParameterImplementation,
+          filter
+        );
+      }
+      return buildRangeColumnsSearchFilter(resourceType, table, param, filter);
+    default:
+      return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
   }
-
-  return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
 /**
@@ -1556,9 +1581,15 @@ function addOrderByClause(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'token-column') {
+  if (impl.searchStrategy === SearchStrategies.TOKEN_COLUMN) {
     addTokenColumnsOrderBy(builder, impl, sortRule);
-  } else if (impl.searchStrategy === 'lookup-table') {
+  } else if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+    if (repo.supportsRangeSearch()) {
+      addRangeColumnsOrderBy(builder, impl, sortRule);
+    } else {
+      builder.orderBy(impl.columnName, sortRule.descending);
+    }
+  } else if (impl.searchStrategy === SearchStrategies.LOOKUP_TABLE) {
     impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
@@ -1658,6 +1689,7 @@ function buildChainedSearchUsingReferenceTable(
   param: ChainedSearchParameter
 ): Expression {
   let link = param.chain[0];
+  validateSearchResourceType(repo, link.targetType as ResourceType);
   let currentTable = nextChainedTable(link);
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
@@ -1676,6 +1708,7 @@ function buildChainedSearchUsingReferenceTable(
   // Add joins to inner query for all subsequent chain links
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
+    validateSearchResourceType(repo, link.targetType as ResourceType);
     if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {

@@ -2,68 +2,65 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
+import type { ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'ai',
-  url: 'https://medplum.com/fhir/OperationDefinition/ai',
-  name: 'ai',
-  status: 'active',
-  kind: 'operation',
-  code: 'ai',
-  resource: ['Parameters'],
-  system: false,
-  type: false,
-  instance: false,
-  parameter: [
-    {
-      name: 'messages',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the conversation messages array',
-    },
-    {
-      name: 'model',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
-    },
-    {
-      name: 'tools',
-      use: 'in',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the tools array (optional)',
-    },
-    {
-      name: 'content',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'AI response content',
-    },
-    {
-      name: 'tool_calls',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing tool calls array',
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    id: 'ai',
+    url: 'https://medplum.com/fhir/OperationDefinition/ai',
+    name: 'ai',
+    code: 'ai',
+    parameter: [
+      {
+        name: 'messages',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the conversation messages array',
+      },
+      {
+        name: 'model',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
+      },
+      {
+        name: 'tools',
+        use: 'in',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the tools array (optional)',
+      },
+      {
+        name: 'content',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'AI response content',
+      },
+      {
+        name: 'tool_calls',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing tool calls array',
+      },
+    ],
+  }
+);
 
 type AIOperationParameters = {
   messages: string;

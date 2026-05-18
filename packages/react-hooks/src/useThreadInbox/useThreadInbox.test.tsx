@@ -360,10 +360,13 @@ describe('useThreadInbox', () => {
       },
     } as any);
 
-    const { result, rerender } = renderHook(({ threadId }) => useThreadInbox({ query: 'status=completed', threadId }), {
-      wrapper,
-      initialProps: { threadId: 'comm-1' as string | undefined },
-    });
+    const { result, rerender } = renderHook<ReturnType<typeof useThreadInbox>, { threadId: string | undefined }>(
+      ({ threadId }) => useThreadInbox({ query: 'status=completed', threadId }),
+      {
+        wrapper,
+        initialProps: { threadId: 'comm-1' },
+      }
+    );
 
     await waitFor(() => {
       expect(result.current.selectedThread?.id).toBe('comm-1');

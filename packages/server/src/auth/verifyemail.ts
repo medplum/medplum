@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, createReference, resolveId } from '@medplum/core';
+import { allOk, badRequest, createReference, redirectOk, resolveId } from '@medplum/core';
 import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -42,18 +42,23 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
     await systemRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
   });
 
-  sendOutcome(res, allOk);
+  if (securityRequest.redirectUri) {
+    // Send a "redirect", but don't actually follow it, because the client may want to handle the redirect themselves (e.g. in a React app).
+    sendOutcome(res, redirectOk(new URL(securityRequest.redirectUri)));
+  } else {
+    sendOutcome(res, allOk);
+  }
 }
 
 /**
- * Creates a "verify email" for the user.
- * Returns the URL to the email verification request.
+ * Creates a "verify email" request for the user.
+ * Returns the created UserSecurityRequest, which contains the secret that should be sent in the verification email.
  * @param user - The user to create the request for.
  * @param redirectUri - Optional URI for redirection to the client application.
- * @returns The URL to reset the password.
+ * @returns The created UserSecurityRequest.
  */
 export async function verifyEmail(user: User, redirectUri?: string): Promise<WithId<UserSecurityRequest>> {
-  // Create the password change request
+  // Create the email verification request
   const systemRepo = getGlobalSystemRepo();
   return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',

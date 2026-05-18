@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { calculateAgeString } from '@medplum/core';
 import { Notifications } from '@mantine/notifications';
+import { calculateAgeString } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as medplumReact from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
@@ -23,6 +24,7 @@ describe('PatientPage', () => {
   });
 
   const setup = (initialPath = '/Patient/patient-123'): ReturnType<typeof render> => {
+    window.history.pushState({}, '', initialPath);
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
@@ -125,6 +127,12 @@ describe('PatientPage', () => {
   test('renders homer summary information in sidebar', async () => {
     const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
     setup(`/Patient/${HomerSimpson.id}`);
+
+    if (!HomerSimpson.birthDate) {
+      throw new Error('Test data in unexpected state - homer has no birthdate');
+    }
+
+    const age = calculateAgeString(HomerSimpson.birthDate);
 
     await waitFor(() => {
       expect(patientSummarySpy).toHaveBeenCalled();

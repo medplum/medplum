@@ -7,7 +7,16 @@ import TabItem from '@theme/TabItem';
 
 # Prescriber Enrollment
 
-This guide explains how to enroll a new prescriber in DoseSpot via the Medplum **Enroll Prescriber Bot**, including the full workflow for enabling Electronic Prescriptions for Controlled Substances (EPCS).
+This guide explains how to enroll a new prescriber in DoseSpot. Medplum provides two enrollment bots:
+
+| Approach | Bot | Best for |
+|---|---|---|
+| **Admin-driven** | `dosespot-enroll-prescriber-bot` | IT admin enrolls each provider manually; full control over each step |
+| **Self-service** | `dosespot-self-enroll-prescriber-bot` | Provider enrolls themselves the first time they open the DoseSpot iFrame; no back-and-forth with admin |
+
+Both bots support full EPCS enrollment (IDP + TFA). The self-service bot auto-advances through each registration stage on each call, while the admin bot requires explicit `initIdp`/`initTfa` flags.
+
+## Admin-Driven Enrollment (dosespot-enroll-prescriber-bot)
 
 :::note[Prerequisites]
 The user executing the bot must:
@@ -15,7 +24,6 @@ The user executing the bot must:
 1. Be an admin in your project (`ProjectMembership.admin`)
 2. Already have access to DoseSpot (DoseSpot identifier on their ProjectMembership)
 3. Have a Clinician Admin role type in DoseSpot (as specified in the `practitionerRoleTypes` parameter)
-
 :::
 
 ## Enrollment Workflow Overview
@@ -133,7 +141,7 @@ If a prescriber has DEA numbers for multiple states, add multiple identifier ent
 ]
 ```
 
-:::caution
+:::caution[]
 If you request IDP or TFA initialization but the Practitioner has no DEA number identifiers, the bot will return an error asking you to add them first.
 :::
 
@@ -198,17 +206,17 @@ Full Practitioner resource example (with DEA)
 **Clinician Role Types:**
 
 
-| Value | Role                        |
-| ----- | --------------------------- |
-| `1`   | Prescribing Clinician       |
-| `2`   | Reporting Clinician         |
-| `3`   | EPCS Coordinator            |
-| `4`   | Clinician Admin             |
-| `5`   | Prescribing Agent Clinician |
-| `6`   | Proxy Clinician             |
+| Value | Role                        | Description                                              |
+| ----- | --------------------------- | -------------------------------------------------------- |
+| `1`   | Prescribing Clinician       | Can prescribe non-controlled and controlled medications  |
+| `2`   | Reporting Clinician         | Can view and report on prescriptions; cannot prescribe   |
+| `3`   | EPCS Coordinator            | Coordinates EPCS enrollment for other clinicians         |
+| `4`   | Clinician Admin             | Clinic administrator; can invite and manage other users  |
+| `5`   | Prescribing Agent Clinician | Prescribes on behalf of a supervising prescriber         |
+| `6`   | Proxy Clinician             | Proxy access to act on behalf of another clinician       |
 
 
-:::note
+:::note[]
 Users that need to invite others should be added with the Clinician Admin role type (`4`).
 :::
 
@@ -315,7 +323,7 @@ The bot returns the following fields:
 | `doseSpotClinicianId` | `number`            | The DoseSpot clinician ID                                                                          |
 | `projectMembership`   | `ProjectMembership` | The updated ProjectMembership with DoseSpot identifier                                             |
 | `practitioner`        | `Practitioner`      | The updated Practitioner with registration status extension and EPCS qualification (if applicable) |
-| `registrationStatus`  | `string`            | Current DoseSpot registration status (e.g., `"Pending"`, `"IDPSuccess"`, `"TFAActivatedSuccess"`)  |
+| `registrationStatus`  | `string`            | <details><summary>Current DoseSpot registration status (all values)</summary>`"Pending"`<br/>`"RegistrationSuccess"`<br/>`"RegistrationError"`<br/>`"IDPSuccess"`<br/>`"IDPError"`<br/>`"TFAActivateInit"`<br/>`"TFAActivatedSuccess"`<br/>`"TFAActivatedError"`<br/>`"TFADeactivateInit"`<br/>`"TFADeactivatedSuccess"`<br/>`"TFADeactivatedError"`<br/>`"IDPInitializeSuccess"`</details> |
 | `idpInitialized`      | `boolean`           | Whether IDP was initialized in this run                                                            |
 | `tfaInitialized`      | `boolean`           | Whether TFA was initialized in this run                                                            |
 
@@ -362,5 +370,125 @@ After each run, the bot updates the Practitioner resource with:
 | TFA activation is already in progress    | TFA init requested while a previous activation is pending    | Prescriber must complete the pending TFA activation in the DoseSpot iFrame                                                 |
 | TFA is already activated                 | TFA init requested but TFA is already active                 | To change TFA type, deactivate TFA first, then re-initiate                                                                 |
 | IDP has not been completed yet           | TFA init requested before IDP is done                        | Complete the IDP process first (run bot with `initIdp: true`, then prescriber completes IDP in iFrame)                     |
+
+
+---
+
+## Self-Service Enrollment (dosespot-self-enroll-prescriber-bot)
+
+Self-service enrollment lets a provider enroll themselves in DoseSpot without any admin involvement. The first time a provider opens the DoseSpot iFrame, the bot runs automatically, creates the clinician record, and auto-advances through each registration stage on every subsequent call. Providers complete remaining steps (legal agreement, IDP, TFA) directly in the DoseSpot iFrame.
+
+This eliminates the multi-turn admin/provider coordination required by the admin-driven bot.
+
+### Prerequisites
+
+- The `DOSESPOT_USER_ID` project secret must be configured with an admin-level DoseSpot clinician ID (typically a Proxy/Clinic Admin user). For Medplum-hosted deployments, contact Medplum support to have this configured.
+- An active `PractitionerRole` resource must exist for the provider with at least one code from system `https://dosespot.com/practitionerrole-type`
+
+### Step 1: Create a PractitionerRole for the Provider
+
+An administrator creates a `PractitionerRole` resource that authorizes the provider for one or more DoseSpot role types:
+
+```json
+{
+  "resourceType": "PractitionerRole",
+  "practitioner": { "reference": "Practitioner/<practitioner-id>" },
+  "organization": { "reference": "Organization/<clinic-id>" },
+  "active": true,
+  "code": [
+    {
+      "coding": [
+        {
+          "system": "https://dosespot.com/practitionerrole-type",
+          "code": "PrescribingClinician",
+          "display": "Prescribing Clinician"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Available role type codes:**
+
+| Code | Description |
+|------|-------------|
+| `PrescribingClinician` | Can prescribe medications |
+| `ReportingClinician` | Can view/report but not prescribe |
+| `EpcsCoordinator` | Coordinates EPCS enrollment |
+| `ClinicianAdmin` | Clinic administrator |
+| `PrescribingAgentClinician` | Prescribes on behalf of another |
+| `ProxyClinician` | Proxy access |
+
+### Step 2: Enable Self-Enrollment in the Provider App
+
+**If you are using the Medplum Provider App:** Self-enrollment is already enabled. Each time a provider opens the DoseSpot iFrame, the app automatically advances them through the enrollment process — no code changes needed.
+
+**If you are building your own app with `useDoseSpotIFrame`:** Set `selfEnroll: true` on the hook and ensure you are on `@medplum/dosespot-react` version 5.x.x or later. When a provider opens DoseSpot and has no DoseSpot identifier yet, the hook automatically runs `dosespot-self-enroll-prescriber-bot` before loading the iFrame, and each subsequent open advances enrollment to the next stage.
+
+### Auto-Advancing Enrollment Flow
+
+The bot is idempotent and advances the provider through each stage automatically:
+
+```mermaid
+sequenceDiagram
+    participant Provider
+    participant Bot as Self-Enroll Bot
+    participant DoseSpot as DoseSpot iFrame
+
+    Provider->>Bot: Opens DoseSpot iFrame (call 1)
+    Bot-->>Provider: Clinician created. nextSteps: "Sign the legal agreement in the iframe."
+
+    Provider->>DoseSpot: Signs legal agreement
+    Provider->>Bot: Opens DoseSpot iFrame (call 2)
+    Bot-->>Provider: IDP initiated. nextSteps: "Complete identity proofing (IDP) in the iframe."
+
+    Provider->>DoseSpot: Completes IDP
+    Provider->>Bot: Opens DoseSpot iFrame (call 3)
+    Bot-->>Provider: TFA initiated. nextSteps: "Complete two-factor authentication (TFA) setup in the iframe."
+
+    Provider->>DoseSpot: Completes TFA
+    Provider->>Bot: Opens DoseSpot iFrame (call 4)
+    Bot-->>Provider: epcsEnabled: true. nextSteps: "EPCS enrollment complete."
+```
+
+### Practitioner Resource Requirements
+
+The Practitioner resource must include all of the following before self-enrollment will succeed. If any field is missing, the bot returns a clear error so the provider can update their profile and retry.
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `address` | Yes | Complete address: line, city, state, postal code |
+| `telecom` (phone) | Yes | `system: "phone"`, `use: "work"` |
+| `telecom` (fax) | Yes | `system: "fax"` |
+| `identifier` (NPI) | Yes | `system: "http://hl7.org/fhir/sid/us-npi"` |
+| `identifier` (DEA) | For EPCS | `system: "http://terminology.hl7.org/NamingSystem/USDEANumber"` — triggers EPCS enrollment automatically |
+
+EPCS is requested implicitly: if the Practitioner has DEA number identifiers, the bot requests EPCS enrollment and auto-initiates IDP and TFA when eligible.
+
+### Bot Input
+
+The bot runs as the authenticated provider (`runAsUser: true`) and resolves the practitioner identity from `auth/me` — no `practitionerId` input is needed.
+
+```typescript
+{
+  medicalLicenseNumbers?: DoseSpotMedicalLicenseNumber[];  // Optional state medical license numbers
+  tfaType?: 'Mobile' | 'Token';                           // TFA type (default: Mobile)
+}
+```
+
+### Bot Output
+
+```typescript
+{
+  status: 'created' | 'already_enrolled' | 'advanced';  // What happened this invocation
+  doseSpotClinicianId: number;                           // DoseSpot clinician ID
+  registrationStatus: string;                            // Current DoseSpot registration status
+  epcsEnabled: boolean;                                  // Whether EPCS is fully activated
+  nextSteps: string[];                                   // Human-readable guidance shown to the provider
+}
+```
+
+The `nextSteps` array contains user-facing instructions that your app should display to guide the provider through any remaining steps in the iFrame.
 
 

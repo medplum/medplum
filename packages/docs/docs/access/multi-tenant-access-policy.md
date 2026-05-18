@@ -218,7 +218,7 @@ Once you've decided on your tenant resource type and created your tenant resourc
 
 Most implementations will be able to just assign Patients to tenants. This is because Patient is the only resource where _"propagation"_ is supported to the Patient's _"related"_ resources. See [Why is Patient a special case?](#why-is-patient-a-special-case) for more details.
 
-:::info
+:::info[]
 If your Patient is also a User that can log in, this will not impact what that Patient User can access. Instead, this impacts who can access that Patient.
 :::
 
@@ -683,6 +683,12 @@ To do this, do not include the `_compartment` check in resource type criteria fo
 <MedplumCodeBlock language="ts" selectBlocks="access-policy-mixed">
   {ExampleCode}
 </MedplumCodeBlock>
+
+## Optional: Building a Tenant Selector
+
+After you’ve granted a user access to multiple tenants, most MSO apps also need a way to decide **which tenant context the user is working in right now** (e.g., “Clinic A” vs “Clinic B”), while still supporting “cross-tenant” workflows like consolidated scheduling.
+
+See [Building a Tenant Selector](/docs/access/tenant-selector).
 
 ## Conclusion
 

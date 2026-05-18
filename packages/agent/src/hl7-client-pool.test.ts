@@ -7,6 +7,7 @@ import { Hl7Server, __getCtorCallCount, __resetCtorCallCount } from '@medplum/hl
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
+import { Hl7MessageTracker } from './hl7-message-tracker';
 import { getFreePort } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
@@ -58,15 +59,7 @@ function createFakeClient({
           getPendingMessageCount: jest.fn().mockReturnValue(pendingMessages ?? 0),
         }
       : undefined,
-    startTrackingStats: jest.fn(() => {
-      if (stats) {
-        client.stats = stats as any;
-      }
-    }),
-    stopTrackingStats: jest.fn(() => {
-      client.stats = undefined;
-    }),
-    stats: stats as any,
+    stats: (stats ?? { getRttSamples: () => [], getPendingCount: () => 0 }) as any,
   } as unknown as EnhancedHl7Client;
 
   return client;
@@ -107,6 +100,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 1,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // First request
@@ -135,6 +129,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 3,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Get 3 clients without releasing
@@ -158,6 +153,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Get 2 clients (max)
@@ -184,6 +180,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 1,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const msg = Hl7Message.parse(
@@ -208,6 +205,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 3,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Get multiple clients
@@ -231,6 +229,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const client = createFakeClient();
@@ -250,6 +249,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -272,6 +272,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const client1 = pool.getClient();
@@ -308,6 +309,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 10,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // First request
@@ -337,6 +339,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Get 2 clients (max)
@@ -361,6 +364,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 10,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -384,6 +388,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 10,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -406,6 +411,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 10,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -433,6 +439,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       jest.useFakeTimers();
@@ -465,6 +472,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       jest.useFakeTimers();
@@ -491,6 +499,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 1,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       jest.useFakeTimers();
@@ -522,6 +531,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 1,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       jest.useFakeTimers();
@@ -563,6 +573,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       jest.useFakeTimers();
@@ -596,6 +607,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter,
+        messageTracker: new Hl7MessageTracker(),
       });
 
       pool.startAutoClientGc();
@@ -614,6 +626,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter,
+        messageTracker: new Hl7MessageTracker(),
       });
 
       jest.useFakeTimers();
@@ -662,6 +675,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 2,
         log,
         heartbeatEmitter,
+        messageTracker: new Hl7MessageTracker(),
       });
 
       expect(addEventListener).toHaveBeenCalledTimes(1);
@@ -681,6 +695,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 3,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Create 3 clients
@@ -705,6 +720,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 1,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Close the pool
@@ -731,6 +747,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 3,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Send 5 concurrent requests with max 3 clients
@@ -770,6 +787,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 3,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       // Send 5 concurrent requests with max 3 clients
@@ -812,6 +830,7 @@ describe('Hl7ClientPool', () => {
         maxClients: 3,
         log,
         heartbeatEmitter: new TypedEventTarget(),
+        messageTracker: new Hl7MessageTracker(),
       });
 
       const clientAStats = {
@@ -825,15 +844,12 @@ describe('Hl7ClientPool', () => {
 
       const clientA = createFakeClient({ stats: clientAStats });
       const clientB = createFakeClient({ stats: clientBStats });
-      const clientWithoutStats = createFakeClient();
 
-      pool.getClients().push(clientA, clientB, clientWithoutStats);
-
-      pool.startTrackingStats();
+      pool.getClients().push(clientA, clientB);
 
       const poolStats = pool.getPoolStats();
       expect(poolStats).toBeDefined();
-      expect(poolStats?.rtt).toStrictEqual({
+      expect(poolStats.rtt).toStrictEqual({
         count: 3,
         min: 100,
         max: 200,

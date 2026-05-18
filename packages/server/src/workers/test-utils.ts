@@ -4,6 +4,7 @@ import type { BackgroundJobInteraction } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue } from 'bullmq';
+import { UnrecoverableError } from '../__mocks__/bullmq';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -113,7 +114,7 @@ async function findAndExecJob(
       await execJob(job);
       break; // Exit loop if successful
     } catch (err) {
-      if (attempt === maxRetries - 1) {
+      if (attempt === maxRetries - 1 || err instanceof UnrecoverableError) {
         throw err;
       }
     }

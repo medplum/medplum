@@ -540,6 +540,32 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('Load balancer algorithm', async () => {
+    const filename = await writeConfig('./medplum.lb-algorithm.config.json', {
+      ...baseConfig,
+      name: 'lb-algorithm',
+      stackName: 'MedplumLoadBalancerAlgorithmStack',
+      loadBalancerAlgorithm: 'least_outstanding_requests',
+      mtlsDomainName: 'mtls.medplum.com',
+      mtlsSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Invalid load balancer algorithm', async () => {
+    const filename = await writeConfig('./medplum.lb-algorithm-invalid.config.json', {
+      ...baseConfig,
+      name: 'lb-algorithm-invalid',
+      stackName: 'MedplumLoadBalancerAlgorithmInvalidStack',
+      loadBalancerAlgorithm: 'bogus_algorithm',
+    });
+
+    await expect(main({ config: filename })).rejects.toThrow(/loadBalancerAlgorithm/);
+    await unlink(filename);
+  });
+
   test('mTLS', async () => {
     const filename = await writeConfig('./medplum.mtls.config.json', {
       ...baseConfig,
@@ -549,6 +575,19 @@ describe('Infra', () => {
       mtlsSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
       mtlsInternetFacing: true,
       mtlsWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumMtlsIpSet',
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('GuardDuty', async () => {
+    const filename = await writeConfig('./medplum.guardduty.config.json', {
+      ...baseConfig,
+      name: 'guardduty',
+      stackName: 'MedplumGuardDutyStack',
+      guardDutyMalwareProtectionEnabled: true,
+      clamScanEnabled: false,
     });
 
     await expect(main({ config: filename })).resolves.not.toThrow();

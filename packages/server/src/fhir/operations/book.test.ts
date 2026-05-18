@@ -21,6 +21,7 @@ import { loadTestConfig } from '../../config/loader';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import { toCodeableReferenceLike } from '../../util/servicetype';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -59,26 +60,43 @@ describe('Appointment/$book', () => {
   let practitioner1: Practitioner;
   let practitioner2: Practitioner;
   let patient: Patient;
+  let officeVisitService: WithId<HealthcareService>;
+  let followupService: WithId<HealthcareService>;
+
+  const officeVisit: CodeableConcept = {
+    coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
+  };
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
     practitioner2 = await makePractitioner({ timezone: 'America/New_York' });
     patient = await makePatient();
+
+    officeVisitService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Office Visit',
+      type: [officeVisit],
+      meta: { project: project.project.id },
+    });
+
+    followupService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Follow Up Visit',
+      meta: { project: project.project.id },
+    });
   });
 
   afterAll(async () => {
     await shutdownApp();
   });
 
-  const officeVisit: CodeableConcept = {
-    coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
-  };
-
   function makeSchedulingExtension(opts?: {
-    serviceType?: CodeableConcept;
+    service?: WithId<HealthcareService>;
     duration?: number;
   }): SchedulingParametersExtension {
     const duration = opts?.duration ?? 60;
@@ -93,10 +111,10 @@ describe('Appointment/$book', () => {
       ],
     };
 
-    if (opts?.serviceType) {
+    if (opts?.service) {
       extension.extension.push({
-        url: 'serviceType',
-        valueCodeableConcept: opts.serviceType,
+        url: 'service',
+        valueReference: createReference(opts.service),
       });
     }
 
@@ -108,7 +126,8 @@ describe('Appointment/$book', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(opts.actor)],
-      extension: opts.extension ?? [makeSchedulingExtension({ serviceType: officeVisit })],
+      serviceType: toCodeableReferenceLike(officeVisitService),
+      extension: opts.extension ?? [makeSchedulingExtension({ service: officeVisitService })],
     });
   }
 
@@ -147,7 +166,7 @@ describe('Appointment/$book', () => {
             resource: {
               resourceType: 'Slot',
               schedule: createReference(schedule),
-              serviceType: [officeVisit],
+              serviceType: toCodeableReferenceLike(officeVisitService),
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
               status: 'free',
@@ -155,6 +174,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
+    expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
   });
 
@@ -319,6 +339,7 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot start times',
         },
+        expression: ['Parameters.slot[0].start', 'Parameters.slot[1].start'],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -365,6 +386,57 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot end times',
         },
+        expression: ['Parameters.slot[0].end', 'Parameters.slot[1].end'],
+      },
+    ]);
+    expect(response.status).toEqual(400);
+  });
+
+  test('when slots have different service types', async () => {
+    const schedule1 = await makeSchedule({ actor: practitioner1 });
+    const schedule2 = await makeSchedule({ actor: practitioner2 });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule1),
+              start: '2026-01-15T14:00:00Z',
+              end: '2026-01-15T15:00:00Z',
+              status: 'free',
+              serviceType: toCodeableReferenceLike(officeVisitService),
+            } satisfies Slot,
+          },
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule2),
+              start: '2026-01-15T14:00:00Z',
+              end: '2026-01-15T15:00:00Z',
+              status: 'free',
+              serviceType: toCodeableReferenceLike(followupService),
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response.body).toHaveProperty('issue', [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'Mismatched service types',
+        },
+        expression: [
+          'Parameters.slot[0].serviceType[0].extension[0].valueReference.reference',
+          'Parameters.slot[1].serviceType[0].extension[0].valueReference.reference',
+        ],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -446,7 +518,7 @@ describe('Appointment/$book', () => {
       });
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: 'No matching scheduling parameters found' } }],
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'No matching HealthcareService found' } }],
     });
     expect(response.status).toEqual(400);
   });
@@ -573,6 +645,7 @@ describe('Appointment/$book', () => {
       });
 
     if (succeeds) {
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
     } else {
       expect(response.status).toEqual(400);
@@ -710,6 +783,7 @@ describe('Appointment/$book', () => {
         resourceType: 'Schedule',
         meta: { project: project.project.id },
         actor: [createReference(practitioner1)],
+        serviceType: toCodeableReferenceLike(officeVisitService),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -728,8 +802,8 @@ describe('Appointment/$book', () => {
                 valueDuration: { value: alignmentOffset, unit: 'min' },
               },
               {
-                url: 'serviceType',
-                valueCodeableConcept: officeVisit,
+                url: 'service',
+                valueReference: createReference(officeVisitService),
               },
             ],
           },
@@ -755,6 +829,7 @@ describe('Appointment/$book', () => {
             },
           ],
         });
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
     }
   );
@@ -764,6 +839,7 @@ describe('Appointment/$book', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(practitioner1)],
+      serviceType: toCodeableReferenceLike(officeVisitService),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -778,8 +854,8 @@ describe('Appointment/$book', () => {
               valueDuration: { value: 20, unit: 'min' },
             },
             {
-              url: 'serviceType',
-              valueCodeableConcept: officeVisit,
+              url: 'service',
+              valueReference: createReference(officeVisitService),
             },
           ],
         },
@@ -874,6 +950,7 @@ describe('Appointment/$book', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(practitioner1)],
+      serviceType: toCodeableReferenceLike(officeVisitService),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -892,8 +969,8 @@ describe('Appointment/$book', () => {
               valueDuration: { value: 15, unit: 'min' },
             },
             {
-              url: 'serviceType',
-              valueCodeableConcept: officeVisit,
+              url: 'service',
+              valueReference: createReference(officeVisitService),
             },
           ],
         },
@@ -1129,6 +1206,43 @@ describe('Appointment/$book', () => {
       expect(response.status).toEqual(201);
     });
 
+    test('fails when multiple HealthcareServices match the slot service type tokens', async () => {
+      // Two HealthcareServices sharing the same coding — the token-based fallback is
+      // ambiguous and must fail rather than silently picking one.
+      const sharedCode = { coding: [{ system: 'http://example.com', code: 'shared-svc' }] };
+      await makeHealthcareService(sharedCode, 45);
+      await makeHealthcareService(sharedCode, 60);
+      const schedule = await makeScheduleNoParams(practitioner1);
+
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [sharedCode],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T15:00:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+
+      expect(response.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [
+          { severity: 'error', code: 'invalid', details: { text: 'Multiple matching HealthcareServices found' } },
+        ],
+      });
+      expect(response.status).toEqual(400);
+    });
+
     test('fails when booking outside HealthcareService availability', async () => {
       const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
       await makeHealthcareService(serviceType, 60);
@@ -1165,7 +1279,7 @@ describe('Appointment/$book', () => {
       // overridden).
       const serviceType = { coding: [{ system: 'http://example.com', code: 'dentistry' }] };
 
-      await systemRepo.createResource<HealthcareService>({
+      const service = await systemRepo.createResource<HealthcareService>({
         resourceType: 'HealthcareService',
         meta: { project: project.project.id },
         type: [serviceType],
@@ -1189,13 +1303,14 @@ describe('Appointment/$book', () => {
         resourceType: 'Schedule',
         meta: { project: project.project.id },
         actor: [createReference(practitioner1)],
+        serviceType: toCodeableReferenceLike(service),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
               threeDayAvailability,
               { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
-              { url: 'serviceType', valueCodeableConcept: serviceType },
+              { url: 'service', valueReference: createReference(service) },
             ],
           },
         ],
@@ -1285,7 +1400,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.status).toEqual(400);
     expect(response.body).toHaveProperty('issue', [
       {
         severity: 'error',
@@ -1295,6 +1409,7 @@ describe('Appointment/$book', () => {
         },
       },
     ]);
+    expect(response.status).toEqual(400);
   });
 
   test('when the service type has no system attribute', async () => {
@@ -1302,17 +1417,25 @@ describe('Appointment/$book', () => {
       text: 'Simple initial visit',
       coding: [{ code: 'simple-initial-visit' }],
     };
+
+    const service = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      type: [initialVisit],
+      meta: { project: project.project.id },
+    });
+
     const schedule = await systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(practitioner1)],
+      serviceType: toCodeableReferenceLike(service),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
             {
-              url: 'serviceType',
-              valueCodeableConcept: initialVisit,
+              url: 'service',
+              valueReference: createReference(service),
             },
             threeDayAvailability,
             {
@@ -1343,6 +1466,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
+    expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
   });
 });
@@ -1352,6 +1476,8 @@ describe('scheduling flow integration test', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
   });
@@ -1365,6 +1491,13 @@ describe('scheduling flow integration test', () => {
   };
 
   test('a slot from $find can be used as input to $book', async () => {
+    const service = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Office Visit',
+      type: [officeVisit],
+      meta: { project: project.project.id },
+    });
+
     const practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.project.id },
@@ -1380,6 +1513,7 @@ describe('scheduling flow integration test', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(practitioner)],
+      serviceType: toCodeableReferenceLike(service),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -1406,8 +1540,8 @@ describe('scheduling flow integration test', () => {
               valueDuration: { value: 15, unit: 'min' },
             },
             {
-              url: 'serviceType',
-              valueCodeableConcept: officeVisit,
+              url: 'service',
+              valueReference: createReference(service),
             },
           ],
         },
@@ -1420,7 +1554,7 @@ describe('scheduling flow integration test', () => {
       .query({
         start: new Date('2026-01-28T07:00:00.000-07:00'),
         end: new Date('2026-01-28T12:00:00.000-07:00'),
-        'service-type': 'https://example.com/fhir|office-visit',
+        'service-type-reference': `HealthcareService/${service.id}`,
       });
 
     expect(findResponse.body).not.toHaveProperty('issue');

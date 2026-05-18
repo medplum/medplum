@@ -5,12 +5,13 @@ import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
 
 export function RegisterPage(): JSX.Element | null {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const config = getConfig();
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function RegisterPage(): JSX.Element | null {
       }}
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}
+      login={searchParams.get('login') || undefined}
     >
       <Logo size={32} />
       <Title order={3} py="lg">

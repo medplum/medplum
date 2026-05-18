@@ -218,13 +218,9 @@ describe('Client', () => {
     vi.resetAllMocks();
     // Default to browser environment for most tests
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
     mockEnvironment.getBuffer.mockReturnValue(undefined);
-  });
-
-  afterAll(() => {
-    Object.defineProperty(globalThis.window, 'sessionStorage', { value: undefined });
   });
 
   test('Constructor', () => {
@@ -465,7 +461,6 @@ describe('Client', () => {
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();
-    expect(sessionStorage.length).toStrictEqual(0);
   });
 
   test('SignOut', async () => {
@@ -735,7 +730,7 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
-      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      const codeVerifier = localStorage.getItem('codeVerifier');
       expect(codeVerifier).toHaveLength(128);
 
       const { searchParams } = new URL(result);
@@ -1004,7 +999,7 @@ describe('Client', () => {
   test('Basic auth in browser', async () => {
     // Mock browser environment (already set in beforeEach, but explicit for clarity)
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
     mockEnvironment.getBuffer.mockReturnValue(undefined);
 
@@ -1036,7 +1031,7 @@ describe('Client', () => {
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
     mockEnvironment.getWindow.mockReturnValue(undefined);
     mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer);
 
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
@@ -2109,7 +2104,7 @@ describe('Client', () => {
     // vi.spyOn(window, 'XMLHttpRequest').mockImplementation(() => xhrMock as XMLHttpRequest);
     vi.spyOn(window, 'XMLHttpRequest').mockImplementation(function () {
       return xhrMock as XMLHttpRequest;
-    } as any);
+    });
 
     const onProgress = vi.fn();
 
@@ -3034,7 +3029,7 @@ describe('Client', () => {
         accessToken: '6789',
         refreshToken: 'fghi',
       } satisfies LoginState),
-    } as StorageEvent);
+    });
     expect(mockReload).not.toHaveBeenCalled();
     expect(client.getAccessToken()).toBe('6789');
 
@@ -3048,7 +3043,7 @@ describe('Client', () => {
       newValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner2}` } satisfies Reference<Practitioner>,
       }),
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when going from no profile to a new profile
@@ -3059,7 +3054,7 @@ describe('Client', () => {
       newValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when going from a profile to no profile (logged out)
@@ -3070,7 +3065,7 @@ describe('Client', () => {
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
       newValue: null,
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when storage is cleared
@@ -3096,7 +3091,7 @@ describe('Client', () => {
         accessToken: '6789',
         refreshToken: 'fghi',
       } satisfies LoginState),
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should NOT refresh if sessionDetails.profile.id IS the same as the ID of the profile in the newEvent
@@ -3117,7 +3112,7 @@ describe('Client', () => {
         accessToken: '6789',
         refreshToken: 'fghi',
       } satisfies LoginState),
-    } as StorageEvent);
+    });
     expect(mockReload).not.toHaveBeenCalled();
   });
 
@@ -4368,6 +4363,55 @@ describe('Client', () => {
 
     const getPromise2 = client.get(client.fhirUrl('Patient', '123'));
     await expect(getPromise2).resolves.toEqual(patient);
+  });
+
+  test('Browser ReadableStream uses duplex half', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const client = new MedplumClient({ fetch });
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('Hello world'));
+        controller.close();
+      },
+    });
+    const response = await client.post('/test', stream, 'application/octet-stream');
+    expect(response).toBeDefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/test',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/octet-stream',
+        }),
+        body: expect.any(ReadableStream),
+        duplex: 'half',
+      })
+    );
+  });
+
+  test('Node.js Readable uses duplex half', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const client = new MedplumClient({ fetch });
+    // const stream = Readable.from(['Hello world']);
+    const stream = {
+      pipe: vi.fn(),
+      on: vi.fn(),
+    };
+    const response = await client.post('/test', stream, 'application/octet-stream');
+    expect(response).toBeDefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/test',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/octet-stream',
+        }),
+        body: stream,
+        duplex: 'half',
+      })
+    );
   });
 });
 

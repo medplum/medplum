@@ -42,7 +42,7 @@ If the Medplum server is configured to serve binary content directly and no sign
 1. The temporary signing key is unique per server, so it will not work in a multi-server clustered environment.
 2. The temporary signing key is temporary, and will not survive server restarts, so any presigned URLs generated will require a refresh.
 
-:::note
+:::note[]
 
 Security Update: Historically, Medplum example configuration files included a hardcoded sample signing key. We have removed these keys entirely to eliminate the risk of accidental usage in production and to enforce best security practices from the start.
 

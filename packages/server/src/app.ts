@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
+  contentTooLarge,
   ContentType,
   parseLogLevel,
   unsupportedMediaType,
@@ -135,12 +136,21 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   if (err.type === 'request.aborted') {
     return;
   }
+  if (err.code === 'ECONNRESET' && err.message?.includes('aborted')) {
+    // this could be handled/suppressed in an http server 'error' event handler
+    // Error: aborted
+    //   at abortIncoming (node:_http_server:848:17)
+    //   at socketOnClose (node:_http_server:842:3)
+    //   at Socket.emit (node:events:521:24)
+    //   at TCP.<anonymous> (node:net:350:12)
+    return;
+  }
   if (err.type === 'entity.parse.failed') {
     sendOutcome(res, badRequest('Content could not be parsed'));
     return;
   }
-  if (err.type === 'entity.too.large') {
-    sendOutcome(res, badRequest('File too large'));
+  if (err.type === 'entity.too.large' || err.type === 'parameters.too.many') {
+    sendOutcome(res, contentTooLarge('Request body too large'));
     return;
   }
   if (err.type === 'stream.not.readable') {

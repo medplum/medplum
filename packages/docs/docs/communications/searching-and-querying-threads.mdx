@@ -120,7 +120,7 @@ To show threads the current user participates in, filter by `recipient`:
 
 This works when thread headers list all participants — including the thread creator — in `recipient`. The Medplum [`ThreadInbox`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadInbox/ThreadInbox.tsx) component follows this convention: when a new thread is created, the sender is added to `recipient` alongside other participants, so a `recipient`-based query returns threads the user started _and_ threads they were added to.
 
-:::note
+:::note[]
 
 FHIR search does not support a single query for `recipient OR sender`. If your thread headers don't follow the convention above, run two searches (`recipient=Practitioner/{id}` and `sender=Practitioner/{id}`) and merge results client-side.
 

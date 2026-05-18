@@ -34,8 +34,8 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
+import type { AdvancedOptions, Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
@@ -81,7 +81,8 @@ const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
  * The upper limit on the number of times a job can be attempted.
- * Using exponential backoff, 19 attempts is about 73 hours (2^18 seconds).
+ * Using exponential backoff capped at 8 hours delay, 19 attempts takes ~72-80 hours (10 attempts to reach ~5 hours delay + 9 attempts spaced 8 hours apart).
+ * Jitter is applied, and may cause the actual delay to vary up to 10% from the calculated delay.
  */
 const MAX_JOB_ATTEMPTS = 19;
 
@@ -98,6 +99,12 @@ const DEFAULT_ATTEMPTS = 4;
  * before dropping the job.
  */
 const MAX_PREAMBLE_ATTEMPTS = MAX_JOB_ATTEMPTS;
+
+/** Base retry delay, set at 20 seconds. */
+const BASE_DELAY = 20_000;
+
+/** Maximum delay between retries, set at 8 hours. */
+const MAX_DELAY = 8 * 60 * 60_000;
 
 /*
  * The subscription worker inspects every resource change,
@@ -119,6 +126,11 @@ export interface SubscriptionJobData {
   readonly traceId?: string;
   readonly authState?: AuthState;
   readonly verbose?: boolean;
+}
+
+export interface SatisfiesAccessPolicyOpts {
+  /** The `ProjectMembership` ID of the author of the `Subscription`, for which the `AccessPolicy` should be taken from.  */
+  readonly authorMembershipId?: string;
 }
 
 function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string | undefined> {
@@ -143,12 +155,18 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: {
-      attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
+    settings: {
+      backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
+        if (type !== 'cappedExponential') {
+          throw new Error('Invalid backoff strategy for subscription queue');
+        }
+        const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
+        return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
       },
+    } as AdvancedOptions,
+    defaultJobOptions: {
+      attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
+      backoff: { type: 'cappedExponential' }, // see above
     },
   });
 
@@ -215,19 +233,29 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param resource - The resource to evaluate against the `AccessPolicy`.
  * @param project - The project containing the resource.
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
+ * @param options - Optional options for configuring `satisfiesAccessPolicy`.
  * @returns True if access policy is satisfied for this Subscription notification, otherwise returns false
  */
 async function satisfiesAccessPolicy(
   resource: Resource,
   project: WithId<Project>,
-  subscription: Subscription
+  subscription: Subscription,
+  options?: SatisfiesAccessPolicyOpts
 ): Promise<boolean> {
   let satisfied = true;
   try {
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
     // The current Repository author, which must exist for Repository to successfully construct
     const subAuthor = subscription.meta?.author as Reference;
-    const membership = await findProjectMembership(project.id, subAuthor);
+    let membership: WithId<ProjectMembership> | undefined;
+    if (options?.authorMembershipId) {
+      membership = await getGlobalSystemRepo().readResource<ProjectMembership>(
+        'ProjectMembership',
+        options.authorMembershipId
+      );
+    } else {
+      membership = await findProjectMembership(project.id, subAuthor);
+    }
     if (membership) {
       const accessPolicy = await buildAccessPolicy(membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
@@ -318,7 +346,7 @@ export async function addSubscriptionJobs(
   // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
   // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
   const accessPolicyCache = new Map<string, boolean>();
-  for (const subscription of subscriptions) {
+  for (const { subscription, authorMembershipId } of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
       continue;
@@ -348,10 +376,13 @@ export async function addSubscriptionJobs(
       // return `true` for rest-hook subscriptions (see the TODO comment on that function).
       // Without it, a cached `true` from a rest-hook sub could bypass the real policy check
       // for a websocket sub sharing the same author.
-      const cacheKey = `${authorRef}:${subscription.channel.type}`;
+      const cacheKey =
+        subscription.channel.type === 'websocket' && authorMembershipId
+          ? authorMembershipId
+          : `${authorRef}:${subscription.channel.type}`;
       let satisfied = accessPolicyCache.get(cacheKey);
       if (satisfied === undefined) {
-        satisfied = await satisfiesAccessPolicy(resource, project, subscription);
+        satisfied = await satisfiesAccessPolicy(resource, project, subscription, { authorMembershipId });
         accessPolicyCache.set(cacheKey, satisfied);
       }
       if (!satisfied) {
@@ -419,16 +450,21 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
   }
 }
 
+interface SubscriptionWithMetadata {
+  subscription: WithId<Subscription>;
+  authorMembershipId?: string;
+}
+
 /**
  * Loads the list of all subscriptions in this repository.
  * @param resource - The resource that was created or updated.
  * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
+async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<SubscriptionWithMetadata[]> {
   const projectId = project.id;
   const systemRepo = await getProjectSystemRepo(projectId);
-  const subscriptions = await systemRepo.searchResources<Subscription>({
+  const restHookSubscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
     filters: [
@@ -445,7 +481,11 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     ],
   });
 
-  const redisOnlySubRefStrs: string[] = [];
+  const subscriptionsWithMetadata: SubscriptionWithMetadata[] = restHookSubscriptions.map((subscription) => ({
+    subscription,
+  }));
+
+  const activeSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
   const expiredSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
   const entries = await getActiveSubscriptions(projectId, resource.resourceType);
 
@@ -474,7 +514,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
         }
 
         if (matches) {
-          redisOnlySubRefStrs.push(ref);
+          activeSubEntries[ref] = entry;
         }
       } catch (err) {
         getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
@@ -493,9 +533,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     await cleanupActiveSubs(projectId, expiredSubEntries);
   }
 
-  if (redisOnlySubRefStrs.length) {
+  const activeSubKeys = Object.keys(activeSubEntries);
+  if (activeSubKeys.length) {
     const cacheRedis = getCacheRedis();
-    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
+    const redisOnlySubStrs = await cacheRedis.mget(activeSubKeys);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
@@ -506,14 +547,14 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       // Trying 5 for now (50 -> 5)
       if (redisOnlySubStrs.length - activeSubStrs.length >= 5) {
         getLogger().warn('Excessive subscription cache miss', {
-          numKeys: redisOnlySubRefStrs.length,
+          numKeys: redisOnlySubStrs.length,
           hitRate: activeSubStrs.length / redisOnlySubStrs.length,
           projectId,
         });
         const inactiveSubs: string[] = [];
         for (let i = 0; i < redisOnlySubStrs.length; i++) {
           if (!redisOnlySubStrs[i]) {
-            inactiveSubs.push(redisOnlySubRefStrs[i]);
+            inactiveSubs.push(activeSubKeys[i]);
           }
         }
         await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
@@ -521,7 +562,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
       for (const { resource } of inMemorySubs) {
-        subscriptions.push(resource);
+        subscriptionsWithMetadata.push({
+          subscription: resource,
+          authorMembershipId: activeSubEntries[getReferenceString(resource)].membershipId,
+        });
       }
     } else {
       globalLogger.debug(
@@ -529,7 +573,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       );
     }
   }
-  return subscriptions;
+  return subscriptionsWithMetadata;
 }
 
 /**
@@ -686,11 +730,19 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
-    log.info('Sending rest hook to: ' + url);
+    log.info('Sending rest hook', {
+      url,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
     fetchEndTime = Date.now();
-    log.info('Received rest hook status: ' + response.status);
+    log.info('Received rest hook response', {
+      status: response.status,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
       systemRepo,
@@ -706,7 +758,11 @@ async function sendRestHook(
     }
   } catch (ex) {
     fetchEndTime = Date.now();
-    log.info('Subscription exception: ' + ex);
+    log.info('Subscription exception', {
+      err: ex,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     await createSubscriptionAuditEvent(
       systemRepo,
       resource,
@@ -722,8 +778,8 @@ async function sendRestHook(
   recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
   log.info('Subscription rest hook fetch duration', {
     fetchDurationMs,
-    subscription: subscription.id,
-    project: subscription?.meta?.project,
+    subscriptionId: subscription.id,
+    projectId: subscription?.meta?.project,
   });
 
   if (error) {
@@ -852,25 +908,25 @@ async function catchJobError(
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
       ?.valueInteger ?? DEFAULT_ATTEMPTS;
 
-  if (job.attemptsMade < maxJobAttempts) {
-    globalLogger.debug(`Retrying job due to error: ${err}`);
-
-    // Lower the job priority
-    // "Note that the priorities go from 1 to 2 097 152, where a lower number is always a higher priority than higher numbers."
-    // "Jobs without a `priority`` assigned will get the most priority."
-    // See: https://docs.bullmq.io/guide/jobs/prioritized
-    await job.changePriority({ priority: 1 + job.attemptsMade });
-
-    throw err;
+  if (job.attemptsMade >= maxJobAttempts) {
+    // All retries exhausted - record as a final failure for auto-disable tracking
+    globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
+    const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+    const result = await recordSubscriptionFailure(subscription.id, triggers);
+    if (result) {
+      await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
+    }
+    // Throw a special error type to force BullMQ to move the job to failed state, instead of retrying again
+    throw new UnrecoverableError(err instanceof Error ? err.message : 'Subscription exhausted available retries');
   }
 
-  // All retries exhausted - record as a final failure for auto-disable tracking
-  globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
-  const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
-  const result = await recordSubscriptionFailure(subscription.id, triggers);
-  if (result) {
-    await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
-  }
+  globalLogger.debug(`Retrying job due to error: ${err}`);
+  // Lower the job priority
+  // "Note that the priorities go from 1 to 2 097 152, where a lower number is always a higher priority than higher numbers."
+  // "Jobs without a `priority`` assigned will get the most priority."
+  // See: https://docs.bullmq.io/guide/jobs/prioritized
+  await job.changePriority({ priority: 1 + job.attemptsMade });
+  throw err; // Will retry, using the BullMQ backoff strategy defined above
 }
 
 async function autoDisableSubscription(

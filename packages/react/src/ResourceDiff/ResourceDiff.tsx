@@ -22,8 +22,8 @@ export function ResourceDiff(props: ResourceDiffProps): JSX.Element {
     revisedResource = { ...revisedResource, meta: undefined };
   }
 
-  const original = stringify(originalResource, true).match(/[^\r\n]+/g) as string[];
-  const revised = stringify(revisedResource, true).match(/[^\r\n]+/g) as string[];
+  const original = stringify(originalResource, true).match(/[^\r\n]+/g) ?? ['{', '}'];
+  const revised = stringify(revisedResource, true).match(/[^\r\n]+/g) ?? ['{', '}'];
   const deltas = diff(original, revised);
   return (
     <pre style={{ color: 'gray' }}>

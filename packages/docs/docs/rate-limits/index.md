@@ -9,10 +9,11 @@ send many requests in quick succession may receive HTTP error responses with sta
 
 ## Total Requests Rate Limit
 
-| Category                      | Free tier                        | Paid tier                         |
-| ----------------------------- | -------------------------------- | --------------------------------- |
-| Auth (`/auth/*`, `/oauth2/*`) | 160 requests per IP per minute   | 160 requests per IP per minute    |
-| Others (including `/auth/me`) | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
+| Category                                                              | Free tier                        | Paid tier                         |
+| --------------------------------------------------------------------- | -------------------------------- | --------------------------------- |
+| Login (`/auth/login`, `/auth/newuser`, `/auth/newproject`)            | 5 requests per IP per minute     | 5 requests per IP per minute      |
+| Auth (other `/auth/*` and `/oauth2/*` endpoints)                      | 160 requests per IP per minute   | 160 requests per IP per minute    |
+| Default (all other endpoints, including `/auth/me`)                   | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
 
 All rate limits are calculated per IP address over a one minute window.
 
@@ -63,10 +64,14 @@ To view or update the Project-level limits:
 
 If those values are not set, the server defaults will be used.
 
-:::info
+:::info[]
 There are some scenarios where you may want to **set a custom quota for a User, Bot, or ClientApplication**. For example, say you expect higher traffic for a specific User, Bot, or ClientApplication than the default user quota in your project, you can set a custom quota for that User, Bot, or ClientApplication. See [how to set user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits) for more information about how to do this.
 
 **Important:** The `totalFhirQuota` will still be enforced, but `userFhirQuota` will be overridden for the User, Bot, or ClientApplication.
+:::
+
+:::tip[Avoiding quota with async batch requests]
+[Asynchronous batch requests](/docs/fhir-datastore/fhir-batch-requests#asynchronous-batch-requests) do not count against a user's FHIR interaction quota. If you're running large data seeding or import jobs and hitting quota limits, processing the bundle with the `Prefer: respond-async` header is an alternative to raising the quota. Note that data will not be immediately available.
 :::
 
 ## Reporting Request and Load Rate Limits: HTTP Headers

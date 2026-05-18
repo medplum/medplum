@@ -57,6 +57,8 @@ tsconfig.build.tsbuildinfo
 *.p12
 
 # Agent artifacts
+packages/agent/agent.properties
+packages/agent/src/.*-audit.json
 packages/agent/*agent-*-linux*
 packages/agent/sea-prep.blob
 packages/agent/src/upgrader-logs-*.txt

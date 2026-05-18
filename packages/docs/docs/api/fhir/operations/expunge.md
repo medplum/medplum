@@ -6,7 +6,7 @@ sidebar_position: 21
 
 The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record by marking it as deleted), expunge completely removes all traces of the resource.
 
-:::warning
+:::warning[]
 This operation is **irreversible**. Once a resource is expunged, it cannot be recovered. Use with caution.
 :::
 

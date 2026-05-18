@@ -194,7 +194,7 @@ The most common use for this field is to record comments from the task assignee 
 
 `Tasks` can be organized into a hierarchical structure to create subtasks. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field that can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
 
-:::caution
+:::caution[]
 
 While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
 
@@ -215,4 +215,4 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 - [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
 - [Medplum Task Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube
 - [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
-- [Charting Data Model](/docs/charting#encounter-charting)
+- [Chart data model](/docs/charting/chart-data-model#encounter-centric-resources)

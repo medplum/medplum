@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { arrayify } from '../array';
 import type { GetTypedPropertyValueOptions } from '../fhirpath/utils';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
 import { isResource } from '../types';
-import { arrayify } from '../utils';
 import type { InternalTypeSchema } from './types';
 import { getDataType } from './types';
 import { isPrimitiveType } from './validation';

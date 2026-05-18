@@ -56,7 +56,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
         item: [
           {
             linkId: 'q1',
-            answer: [{ valueReference: createReference(profile) as Reference<Practitioner> }],
+            answer: [{ valueReference: createReference(profile) }],
           },
         ],
       };
@@ -117,7 +117,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             defaultValue={patient}
             disabled={!allowPatientSelection && !!patient}
             onChange={(value) => {
-              setPatient(value ? (createReference(value) as Reference<Patient>) : undefined);
+              setPatient(value ? createReference(value) : undefined);
             }}
           />
         </Stack>

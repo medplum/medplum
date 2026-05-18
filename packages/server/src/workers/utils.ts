@@ -13,6 +13,13 @@ import { getLogger, globalLogger } from '../logger';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
+/**
+ *
+ * @param projectId - The ID of the project to search in.
+ * @param profile - The profile to find a project membership for.
+ * @throws An error whenever there are multiple project memberships for the given user.
+ * @returns A promise that resolves to a `ProjectMembership` or `undefined` if no `ProjectMembership` found.
+ */
 export function findProjectMembership(
   projectId: string,
   profile: Reference
@@ -207,7 +214,7 @@ function getFinishedJobFieldsForLogging(job: Job): Record<string, string | numbe
 export function addVerboseQueueLogging<TDataType>(
   queue: Queue,
   worker: Worker,
-  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | undefined>
+  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>
 ): void {
   worker.on('active', (job, prev) => {
     globalLogger.info(`${queue.name} worker: active`, {

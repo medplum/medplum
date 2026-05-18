@@ -46,7 +46,7 @@ const clinic = await medplum.createResource<Organization>({
 
 ### Organizationally Contained Access Restrictions
 
-:::info
+:::info[]
 To see reference implementation of each enrollment operation, see the [MSO Demo App Enrollment Operations](https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts).
 :::
 
@@ -132,7 +132,7 @@ const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
 
 Then, the [AccessPolicy](/docs/access/access-policies) can be configured to restrict access to all of the resources based on the Organization references in each resource's **compartment**. Here is what the Practitioner AccessPolicy might look like:
 
-:::info
+:::info[]
 The `%organization` value is replaced at runtime with one or more of the Organization references from the Practitioner's ProjectMembership.access array
 :::
 
@@ -242,7 +242,7 @@ const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
 
 along with this AccessPolicy:
 
-:::note
+:::note[]
 The `%profile` value does not need to be explicitly added to the Practitioner's ProjectMembership like the Organization references are. `%profile` is a special variable that, in this case, is replaced with a reference to the Practitioner.
 :::
 

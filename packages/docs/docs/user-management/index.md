@@ -100,7 +100,7 @@ If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
 
 To create a new `Project` resource via the API, you will need to create a `ClientApplication` with super admin privileges.
 
-:::warning
+:::warning[]
 
 Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/access/access-policies) to this `ClientApplication` to reduce it's privileges.
 
@@ -352,7 +352,7 @@ For more information, see the [`/invite` endpoint API docs](/docs/api/project-ad
 
 See [Access Control](/docs/access/access-policies) for more details.
 
-:::caution
+:::caution[]
 
 Creating Practitioners via API is an advanced scenario and should be done with extreme caution. If you are planning to do programmatic creation of Practitioners, we highly recommend trying it in a test environment first and ensuring that the logins and associated access controls behave as expected.
 

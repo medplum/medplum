@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
+import type { ClientApplication, Project, ProjectSetting } from '@medplum/fhirtypes';
 import type { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -89,17 +89,7 @@ export interface MedplumServerConfig {
   defaultSuperAdminClientId?: string;
   defaultSuperAdminClientSecret?: string;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
-  defaultProjectFeatures?: (
-    | 'aws-comprehend'
-    | 'aws-textract'
-    | 'bots'
-    | 'cron'
-    | 'email'
-    | 'google-auth-required'
-    | 'graphql-introspection'
-    | 'websocket-subscriptions'
-    | 'transaction-bundles'
-  )[];
+  defaultProjectFeatures?: Project['features'];
   defaultProjectSystemSetting?: ProjectSetting[];
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
@@ -192,6 +182,19 @@ export interface MedplumServerConfig {
    * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
    */
   mtlsCertHeader?: string;
+
+  rangeSearch?: boolean;
+
+  /**
+   * Optional URL for AI real-time transcription service.
+   * Default is `wss://api.openai.com/v1/realtime?intent=transcription`.
+   */
+  aiRealtimeTranscriptionUrl?: string;
+
+  /**
+   * Optional flag to require email verification before allowing users to create projects.
+   */
+  requireVerifiedEmailForProjectCreation?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -286,7 +289,8 @@ export type WorkerName =
   | 'reindex'
   | 'batch'
   | 'post-deploy-migration'
-  | 'set-accounts';
+  | 'set-accounts'
+  | 'lambda-cleaner';
 
 export interface MedplumWorkersConfig {
   /**

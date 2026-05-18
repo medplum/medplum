@@ -57,7 +57,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
     <Form onSubmit={handleSubmit}>
       <Stack>
         <CodeableConceptInput
-          binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
+          binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
           label="ICD-10 Code"
           name="diagnosis"
           path="Condition.code"

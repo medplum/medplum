@@ -145,7 +145,7 @@ The `_total` parameter can have three values: `accurate`, `estimate`, and `none`
 | `estimate`       | Tells the Medplum server that you are willing to accept an approximate count. This is usually faster than the accurate option as it may use database statistics or other methods for estimating the total number without scanning the entire dataset. This option is particularly useful when you need a rough idea of the number of resources without requiring precision. |
 | `accurate`       | The Medplum server will perform additional processing to calculate the exact number of resources that match the search criteria. This can be more time-consuming, especially for large datasets, but you will receive a precise count. Use this option when an exact number is crucial for your use case.                                                                   |
 
-:::warning
+:::warning[]
 
 Because computing counts is an expensive operation, Medplum **only produces estimated counts above a certain threshold**.
 

@@ -15,7 +15,7 @@ The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointm
 
 ## Use Cases
 
-- **Single-provider booking**: Book a patient into an open slot returned by [`$find`](/docs/scheduling/schedule-find)
+- **Single-provider booking**: Book a patient into an open slot returned by [`$find`](/docs/scheduling/appointment-find)
 - **Multi-resource booking**: Simultaneously book multiple Schedules (e.g., surgeon + OR room + anesthesiologist) for the same appointment time
 - **Programmatic scheduling**: Automate appointment creation from external systems while respecting provider availability rules
 
@@ -50,6 +50,15 @@ const result = await medplum.post(
           start: '2026-03-10T09:00:00.000Z',
           end: '2026-03-10T10:00:00.000Z',
           schedule: { reference: 'Schedule/my-schedule-id' },
+          serviceType: [
+            {
+              coding: [{ code: 'inital-visit' }],
+              extension: [
+                url: 'https://medplum.com/fhir/service-type-reference',
+                valueReference: { reference: "HealthcareService/my-healthcareservice-id"}
+              ]
+            }
+          ]
         } satisfies Slot,
       },
       {
@@ -82,7 +91,13 @@ const result = await medplum.post(
           start: '2026-03-11T08:00:00.000Z',
           end: '2026-03-11T10:00:00.000Z',
           schedule: { reference: 'Schedule/surgeon-schedule-id' },
-          serviceType: [{ coding: [{ code: 'bariatric-surgery' }] }],
+          serviceType: [{
+            coding: [{ code: 'bariatric-surgery' }],
+            extension: [
+              url: 'https://medplum.com/fhir/service-type-reference',
+              valueReference: { reference: "HealthcareService/my-healthcareservice-id"}
+            ]
+          }],
         } satisfies Slot,
       },
       {
@@ -93,6 +108,13 @@ const result = await medplum.post(
           start: '2026-03-11T08:00:00.000Z',
           end: '2026-03-11T10:00:00.000Z',
           schedule: { reference: 'Schedule/or-room-schedule-id' },
+          serviceType: [{
+            coding: [{ code: 'bariatric-surgery' }],
+            extension: [
+              url: 'https://medplum.com/fhir/service-type-reference',
+              valueReference: { reference: "HealthcareService/my-healthcareservice-id"}
+            ]
+          }],
         } satisfies Slot,
       },
     ],
@@ -118,6 +140,13 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
           "start": "2026-03-10T09:00:00.000Z",
           "end": "2026-03-10T10:00:00.000Z",
           "schedule": { "reference": "Schedule/my-schedule-id" }
+          "serviceType": [{
+            "coding": [{ "code": "bariatric-surgery" }],
+            "extension": [
+              "url": 'https://medplum.com/fhir/service-type-reference',
+              "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
+            ]
+          }],
         }
       },
       {
@@ -133,14 +162,14 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
 
 ## Parameters
 
-| Name               | Type        | Description                                                                                                               | Required |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `slot`             | `Resource`  | A `Slot` resource describing the desired booking time. Must include `start`, `end`, and `schedule`. Repeatable for multi-resource bookings. | Yes (1+) |
-| `patient-reference`| `Reference` | Reference to a [`Patient`](/docs/api/fhir/resources/patient) to include as a participant on the Appointment               | No       |
+| Name               | Type        | Description                                                                                                                                                | Required |
+| ------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `slot`             | `Resource`  | A `Slot` resource describing the desired booking time. Must include `start`, `end`, `schedule`, and `serviceType`. Repeatable for multi-resource bookings. | Yes (1+) |
+| `patient-reference`| `Reference` | Reference to a [`Patient`](/docs/api/fhir/resources/patient) to include as a participant on the Appointment                                                | No       |
 
 ### Multi-resource Bookings
 
-Pass multiple `slot` parameters (one per Schedule) to book all resources atomically. All slots must share the same `start` and `end` times.
+Pass multiple `slot` parameters (one per Schedule) to book all resources atomically. All slots must share the same `start` time, `end` time, and `serviceType`.
 
 ```json
 {
@@ -154,7 +183,13 @@ Pass multiple `slot` parameters (one per Schedule) to book all resources atomica
         "start": "2026-03-11T08:00:00.000Z",
         "end": "2026-03-11T10:00:00.000Z",
         "schedule": { "reference": "Schedule/surgeon-schedule-id" },
-        "serviceType": [{ "coding": [{ "code": "bariatric-surgery" }] }]
+        "serviceType": [{
+          "coding": [{ "code": "bariatric-surgery" }]
+          "extension": [
+            "url": 'https://medplum.com/fhir/service-type-reference',
+            "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
+          ]
+        }]
       }
     },
     {
@@ -165,6 +200,13 @@ Pass multiple `slot` parameters (one per Schedule) to book all resources atomica
         "start": "2026-03-11T08:00:00.000Z",
         "end": "2026-03-11T10:00:00.000Z",
         "schedule": { "reference": "Schedule/or-room-schedule-id" }
+        "serviceType": [{
+          "coding": [{ "code": "bariatric-surgery" }]
+          "extension": [
+            "url": 'https://medplum.com/fhir/service-type-reference',
+            "valueReference": { "reference": "HealthcareService/my-healthcareservice-id"}
+          ]
+        }]
       }
     }
   ]
@@ -173,11 +215,14 @@ Pass multiple `slot` parameters (one per Schedule) to book all resources atomica
 
 ### Constraints
 
-- All `slot` parameters must share the same `start` and `end` times
+- All `slot` parameters must have matching `start`, `end` , and `serviceType` attributes
 - Each referenced Schedule must have exactly **one actor**
 - Each actor must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 - The requested time must match a valid slot duration from the Schedule's `SchedulingParameters`
 - No existing busy Slots may overlap the requested time window (including buffer windows)
+- The `serviceType` attribute must reference the HealthcareService you are trying to schedule
+
+The easiest way to meet these requirements is to use a result from a [`$find` operation](/docs/scheduling/appointment-find).
 
 ## Output
 
@@ -291,7 +336,7 @@ The transaction uses serializable isolation to prevent double-booking under conc
 
 ## Related
 
-- [Schedule `$find`](/docs/scheduling/schedule-find) - Find available Slots before booking
+- [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots before booking
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)

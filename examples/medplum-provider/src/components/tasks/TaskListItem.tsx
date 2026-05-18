@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import type { HumanName, Task } from '@medplum/fhirtypes';
+import type { Task } from '@medplum/fhirtypes';
 import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -41,9 +41,9 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
           </Group>
           <Stack gap={0} c="dimmed">
             {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
-            {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
+            {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0])}</Text>}
             {owner?.resourceType === 'Practitioner' && (
-              <Text size="sm">Assigned to {formatHumanName(owner.name?.[0] as HumanName)}</Text>
+              <Text size="sm">Assigned to {formatHumanName(owner.name?.[0])}</Text>
             )}
           </Stack>
         </Stack>

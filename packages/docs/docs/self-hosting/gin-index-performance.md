@@ -4,7 +4,7 @@ sidebar_position: 101
 
 # GIN Index Performance
 
-:::caution
+:::caution[]
 
 The operations described in this guide require [super admin](/docs/self-hosting/super-admin-guide) privileges and are only available to self-hosted deployments.
 
@@ -59,7 +59,7 @@ Prefer: respond-async
 
 This disables `fastupdate` on all GIN indexes for the specified table and automatically runs `VACUUM` to flush the existing pending list.
 
-:::tip
+:::tip[]
 
 You can specify multiple `tableName` parameters to configure indexes on several tables in a single request.
 
@@ -85,7 +85,7 @@ As a complementary measure, tuning the server's transaction retry settings helps
 | `transactionAttempts` | `3` - `4` | Number of retry attempts for serialization failures |
 | `transactionExpBackoffBaseDelayMs` | `200` | Base delay in milliseconds for exponential backoff between retries |
 
-:::caution
+:::caution[]
 
 Transaction retries mask the symptoms but don't address the root cause. If you're seeing a high rate of serialization errors, disabling `fastupdate` on the affected tables is the recommended fix.
 

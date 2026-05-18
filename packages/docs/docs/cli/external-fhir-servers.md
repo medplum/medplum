@@ -95,7 +95,7 @@ medplum profile set example \
     --private-key-path "/path/to/privatekey.pem"
 ```
 
-:::note
+:::note[]
 
 If you are authenticating with Epic and it returns `\{"error":"invalid_client","error_description":null\}`, here is a [Doc to Troubleshoot](https://fhir.epic.com/Resources/jwt_auth_troubleshoot_eof).
 
@@ -192,7 +192,7 @@ medplum login \
     --issuer "api.example.com"
 ```
 
-:::note
+:::note[]
 When running `medplum login --profile <profile>`, all of the flags need to be set with the flags and valid data
 :::
 

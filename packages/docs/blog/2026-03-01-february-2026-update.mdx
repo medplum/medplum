@@ -49,7 +49,7 @@ February saw a major investment in [WebSocket subscriptions](/docs/subscriptions
 Building on January's [`$find` and `$book`](/docs/scheduling/defining-availability) foundation, scheduling received several refinements this month:
 
 - **Customizable appointment creation before [`$book`](/docs/scheduling/appointment-book)** — Developers can now inject custom fields and logic into the appointment object before the booking operation executes, enabling clinic-specific workflows
-- **`_count` parameter for [`$find`](/docs/scheduling/schedule-find)** — Limits the number of available slots returned, improving efficiency for high-volume scheduling queries
+- **`_count` parameter for [`$find`](/docs/scheduling/appointment-find)** — Limits the number of available slots returned, improving efficiency for high-volume scheduling queries
 - **Adding a visit now creates a busy slot** — The [Provider calendar](/docs/provider/schedule) correctly blocks time when a visit is added, ensuring accurate availability display
 - **Improved UTC/local day discrepancy handling** — Scheduling operations behave correctly when the server's UTC time and the local calendar day differ
 
@@ -121,7 +121,7 @@ February's documentation work was substantial, with a major restoration of SDK d
 
 - **DoseSpot notifications** — Updated documentation for [DoseSpot](/docs/medications/e-prescibe) notification handling ([David Yanez](https://github.com/techdavidy))
 - **Patient login and launch URI clarification** — Improved docs for patient-facing login flows and SMART launch URIs, contributed by [Mallikharjuna Mulpuri](https://github.com/mallikharjunamulpuri)
-- **Allergy representation** — Clarified allergy status and AllergyIntolerance formatting in the [representing allergies guide](/docs/charting/allergy-intolerances), contributed by [Aaron Hong](https://github.com/aaronhong)
+- **Allergy representation** — Clarified allergy status and AllergyIntolerance formatting in the [chart data model](/docs/charting/chart-data-model#allergies-and-intolerances), contributed by [Aaron Hong](https://github.com/aaronhong)
 - **CareTeam tenancy patterns** — Clarified per-patient CareTeam cardinality and multi-tenancy patterns ([Rahul Agarwal](https://github.com/rahul1))
 
 **Infrastructure and Security**
