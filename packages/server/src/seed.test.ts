@@ -51,7 +51,6 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  const originalConsoleLog = console.log;
   let loggerWriteSpy: jest.SpyInstance;
 
   beforeAll(async () => {
@@ -109,7 +108,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        loggerWriteSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
+        loggerWriteSpy.mock.calls.forEach((call) => console.log(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
