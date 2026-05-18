@@ -5,11 +5,29 @@ import type { Identifier } from '@medplum/fhirtypes';
 
 export const MEDPLUM_BOT_SYSTEM = 'https://www.medplum.com/bots';
 
+/**
+ * @deprecated Use the vendor-neutral `$drug-search` custom FHIR operation via
+ * `useMedicationOrder().searchMedications(...)` (see `@medplum/react-hooks`).
+ * The bot identifier is kept exported for one release to preserve source
+ * compatibility for any caller still invoking `medplum.executeBot(...)`
+ * directly. Project deploys via `medplum-ee/packages/scriptsure/src/scripts/deploy.ts`
+ * now register an `OperationDefinition` with code `drug-search` whose
+ * `operationDefinition-implementation` extension points at this bot.
+ */
 export const SCRIPTSURE_DRUG_SEARCH_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'scriptsure-drug-search-bot',
 };
 
+/**
+ * @deprecated Use the vendor-neutral `$order-medication` custom FHIR operation via
+ * `useMedicationOrder().orderMedication(...)` (see `@medplum/react-hooks`).
+ * The bot identifier is kept exported for one release to preserve source
+ * compatibility for any caller still invoking `medplum.executeBot(...)`
+ * directly. Project deploys via `medplum-ee/packages/scriptsure/src/scripts/deploy.ts`
+ * now register an `OperationDefinition` with code `order-medication` whose
+ * `operationDefinition-implementation` extension points at this bot.
+ */
 export const SCRIPTSURE_ORDER_MEDICATION_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'scriptsure-order-medication-bot',

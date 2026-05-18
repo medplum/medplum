@@ -86,7 +86,7 @@ function formatDosageLine(dosage: Dosage, index: number): JSX.Element {
   const body = bits.length > 0 ? bits.join(' · ') : '—';
   return (
     <Group key={index} align="flex-start" gap="lg" wrap="nowrap">
-      <Text fw={500} size="sm" miw={150} maw={150} c="dimmed">
+      <Text fw={500} size="sm" w={150} c="dimmed">
         {label}
       </Text>
       <Text size="sm" flex={1}>
@@ -100,7 +100,7 @@ function DetailRow(props: { label: string; children: ReactNode }): JSX.Element {
   const { label, children } = props;
   return (
     <Group align="flex-start" gap="lg" wrap="nowrap">
-      <Text fw={500} size="sm" miw={150} maw={150} c="dimmed">
+      <Text fw={500} size="sm" w={150} c="dimmed">
         {label}
       </Text>
       <Stack gap={4} flex={1}>

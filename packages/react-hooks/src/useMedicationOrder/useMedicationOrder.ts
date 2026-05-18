@@ -5,10 +5,12 @@ import type { MedicationOrderRequest, MedicationOrderResponse, MedicationSearchP
 import {
   INVALID_MEDICATION_ORDER_RESPONSE,
   INVALID_MEDICATION_SEARCH_RESPONSE,
-  isMedicationArray,
-  isMedicationOrderResponse,
+  isResource,
+  medicationOrderRequestToParameters,
+  medicationSearchParamsToParameters,
+  parametersToMedicationOrderResponse,
 } from '@medplum/core';
-import type { Identifier, Medication } from '@medplum/fhirtypes';
+import type { Bundle, Medication, Parameters } from '@medplum/fhirtypes';
 import { useCallback } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
@@ -18,50 +20,56 @@ export interface UseMedicationOrderReturn {
 }
 
 /**
- * Generic hook for e-prescribing drug search and order-medication bots.
+ * Vendor-neutral hook for e-prescribing drug search and order-medication via
+ * **FHIR custom operations** (no Bot identifiers required).
  *
- * **Identifier stability matters.** The two `Identifier` arguments are tracked
- * by reference in the internal `useCallback` dependency arrays — passing fresh
- * object literals on every render (inline `{ system, value }` literals in JSX,
- * for example) re-creates `searchMedications` and `orderMedication` on every
- * render, which in turn invalidates any consumer `useCallback` / `useEffect`
- * that depends on them. To avoid this, declare the bot identifiers as
- * **module-level constants** (preferred) or wrap them in `useMemo`. The
- * vendor-specific wrappers in `@medplum/scriptsure-react` (e.g.
- * `useScriptSureOrderMedication`) are the canonical examples — they import
- * `SCRIPTSURE_DRUG_SEARCH_BOT` and `SCRIPTSURE_ORDER_MEDICATION_BOT` from a
- * sibling module so the references are stable for the whole app lifetime.
+ * Hits two project-scoped operations whose backing Bot is chosen at deploy time
+ * via an `OperationDefinition` resource carrying the
+ * `operationDefinition-implementation` extension — see
+ * [bot operations docs](https://www.medplum.com/docs/bots/custom-fhir-operations).
+ * The server's `tryCustomOperation` dispatch handles the OD → Bot lookup, so
+ * projects can swap vendors (ScriptSure today, DoseSpot tomorrow) by deploying
+ * a different bot under the same operation code.
  *
- * @param searchBotIdentifier - Bot identifier for drug search (returns Medication[]). Must be reference-stable.
- * @param orderBotIdentifier - Bot identifier for creating a pending order (returns MedicationOrderResponse from medplum-core). Must be reference-stable.
- * @returns Callbacks to search medications and submit an order bot request.
+ * - `searchMedications`: `POST /fhir/R4/Medication/$drug-search` — expects the
+ *   bot to return a `Bundle<Medication>` (single-Resource `return` shortcut on
+ *   the OperationDefinition).
+ * - `orderMedication`: `POST /fhir/R4/MedicationRequest/$order-medication` —
+ *   expects the bot to return a `Parameters` envelope with named primitives;
+ *   `parametersToMedicationOrderResponse` decodes it.
+ *
+ * @returns Callbacks to search medications and submit an order request.
  */
-export function useMedicationOrder(
-  searchBotIdentifier: Identifier,
-  orderBotIdentifier: Identifier
-): UseMedicationOrderReturn {
+export function useMedicationOrder(): UseMedicationOrderReturn {
   const medplum = useMedplum();
 
   const searchMedications = useCallback(
     async (params: MedicationSearchParams): Promise<Medication[]> => {
-      const response = await medplum.executeBot(searchBotIdentifier, params);
-      if (!isMedicationArray(response)) {
+      const url = medplum.fhirUrl('Medication', '$drug-search');
+      const body = medicationSearchParamsToParameters(params);
+      const response = await medplum.post(url, body);
+      if (!isResource<Bundle<Medication>>(response, 'Bundle')) {
         throw new Error(INVALID_MEDICATION_SEARCH_RESPONSE);
       }
-      return response;
+      return (response.entry ?? []).map((e) => e.resource).filter((r): r is Medication => Boolean(r));
     },
-    [medplum, searchBotIdentifier]
+    [medplum]
   );
 
   const orderMedication = useCallback(
     async (input: MedicationOrderRequest): Promise<MedicationOrderResponse> => {
-      const response = await medplum.executeBot(orderBotIdentifier, input);
-      if (!isMedicationOrderResponse(response)) {
+      const url = medplum.fhirUrl('MedicationRequest', '$order-medication');
+      const body = medicationOrderRequestToParameters(input);
+      const response = await medplum.post(url, body);
+      if (!isResource<Parameters>(response, 'Parameters')) {
+        // Server returned something other than a Parameters envelope. Surface the
+        // existing INVALID_MEDICATION_ORDER_RESPONSE so callers (e.g. the Provider
+        // App's draft-MR cleanup branch) keep their single error-handling path.
         throw new Error(INVALID_MEDICATION_ORDER_RESPONSE);
       }
-      return response;
+      return parametersToMedicationOrderResponse(response);
     },
-    [medplum, orderBotIdentifier]
+    [medplum]
   );
 
   return { searchMedications, orderMedication };

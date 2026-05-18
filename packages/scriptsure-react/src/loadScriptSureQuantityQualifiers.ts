@@ -2,34 +2,52 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumClient } from '@medplum/core';
-import { SCRIPTSURE_DRUG_SEARCH_BOT } from './common';
+import { isResource, medicationSearchParamsToParameters } from '@medplum/core';
+import type { Parameters } from '@medplum/fhirtypes';
 
-function isQuantityQualifierResponse(
-  value: unknown
-): value is { quantityQualifiers: { potencyUnit: string; name: string }[] } {
-  if (typeof value !== 'object' || value === null) {
-    return false;
+/**
+ * Reads `{ code, label }` rows from a `Parameters` resource produced by the
+ * `$drug-quantity-qualifiers` custom operation. Tolerates either flat parts
+ * (`code` + `label` as sibling primitives — current bot output) or grouped
+ * `quantityQualifier` part-bearing entries (defensive against a future shape
+ * change).
+ *
+ * @param params - `Parameters` resource returned by the operation.
+ * @returns `{ code, label }` rows for UI selects.
+ */
+function parametersToQuantityQualifiers(params: Parameters): { code: string; label: string }[] {
+  const rows: { code: string; label: string }[] = [];
+  for (const p of params.parameter ?? []) {
+    if (p.name !== 'quantityQualifier' || !p.part) {
+      continue;
+    }
+    const code = p.part.find((part) => part.name === 'code')?.valueString;
+    const label = p.part.find((part) => part.name === 'label')?.valueString;
+    if (typeof code === 'string' && typeof label === 'string') {
+      rows.push({ code, label });
+    }
   }
-  const q = (value as { quantityQualifiers?: unknown }).quantityQualifiers;
-  return Array.isArray(q) && (q.length === 0 || typeof (q[0] as { potencyUnit?: string })?.potencyUnit === 'string');
+  return rows;
 }
 
 /**
  * Fetches NCI potency-unit codes for dispense quantity qualifiers via the
- * `scriptsure-drug-search-bot` with `{ quantityQualifiers: true }`.
+ * vendor-neutral `$drug-quantity-qualifiers` custom FHIR operation. Each
+ * Medplum project picks the vendor implementation at deploy time by pointing
+ * its `OperationDefinition` at the appropriate Bot (ScriptSure's
+ * `scriptsure-drug-search-bot` today; see `deploy.ts`).
  *
  * @param medplum - Medplum client (user session).
- * @returns `{ code, label }` rows for UI selects (maps `potencyUnit` → `code`).
+ * @returns `{ code, label }` rows for UI selects.
  */
 export async function loadScriptSureQuantityQualifiers(
   medplum: MedplumClient
 ): Promise<{ code: string; label: string }[]> {
-  const response = await medplum.executeBot(SCRIPTSURE_DRUG_SEARCH_BOT, { quantityQualifiers: true });
-  if (!isQuantityQualifierResponse(response)) {
+  const url = medplum.fhirUrl('Medication', '$drug-quantity-qualifiers');
+  const body = medicationSearchParamsToParameters({ quantityQualifiers: true });
+  const response = await medplum.post(url, body);
+  if (!isResource<Parameters>(response, 'Parameters')) {
     return [];
   }
-  return response.quantityQualifiers.map((row) => ({
-    code: row.potencyUnit,
-    label: row.name,
-  }));
+  return parametersToQuantityQualifiers(response);
 }

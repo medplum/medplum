@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
+import type { Medication, MedicationRequest, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { getIdentifier } from './utils';
 
 /** Re-export common coding systems used with medication-order drug search. */
@@ -179,4 +179,266 @@ export function getMedicationOrderIframeUrl(
 ): string | undefined {
   const e = medicationRequest.extension?.find((x) => x.url === ext.iframeUrlExtension);
   return e?.valueUrl;
+}
+
+// ============================================================================
+// Custom FHIR operation ↔ Parameters serialization
+//
+// The vendor-neutral drug-search / order-medication custom FHIR operations
+// (e.g. POST /fhir/R4/MedicationRequest/$order-medication) accept a `Parameters`
+// resource on the wire. These helpers convert between the runtime TS shapes
+// and that envelope so `useMedicationOrder` doesn't need to know the encoding
+// rules.
+// ============================================================================
+
+/**
+ * Builds a typed `ParametersParameter` entry. Use only when `value` is defined;
+ * `undefined` should be filtered out upstream so optional fields don't leak as
+ * empty `valueXxx` keys.
+ *
+ * @param name - Parameter name (matches `OperationDefinition.parameter[].name`).
+ * @param key - The `valueXxx` key (e.g. `valueString`, `valueInteger`).
+ * @param value - The runtime JS value to place under `valueXxx`.
+ * @returns A `ParametersParameter` ready to push into `Parameters.parameter`.
+ */
+function param(name: string, key: string, value: unknown): ParametersParameter {
+  return { name, [key]: value } as ParametersParameter;
+}
+
+/**
+ * Returns the inner `valueXxx` (or `resource`, or parsed `part`) for a single
+ * `ParametersParameter` entry. Matches the unwrap rules used by the server's
+ * `buildOutputParameters` round-trip and by the bot-side `parseInput` helper.
+ *
+ * @param p - The parameter entry to read.
+ * @returns The unwrapped JS value, or `undefined` when none is present.
+ */
+function readParameterValue(p: ParametersParameter): unknown {
+  if (p.resource !== undefined) {
+    return p.resource;
+  }
+  if (p.part?.length) {
+    return p.part;
+  }
+  for (const key of Object.keys(p)) {
+    if (key.startsWith('value')) {
+      return (p as unknown as Record<string, unknown>)[key];
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Encodes a {@link MedicationSearchParams} as a FHIR `Parameters` body for the
+ * vendor-neutral `$drug-search` (and `$drug-quantity-qualifiers`) custom
+ * operations. Optional fields are omitted entirely so the wire payload stays
+ * minimal and mirrors the legacy `executeBot` plain-JSON shape that the bot's
+ * `parseInput` helper would otherwise have to coerce.
+ *
+ * @param params - Drug search parameters (vendor-neutral subset).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationSearchParamsToParameters(params: MedicationSearchParams): Parameters {
+  const parameter: ParametersParameter[] = [];
+  if (params.term !== undefined) {
+    parameter.push(param('term', 'valueString', params.term));
+  }
+  if (params.ndc !== undefined) {
+    parameter.push(param('ndc', 'valueString', params.ndc));
+  }
+  if (params.rxNorm !== undefined) {
+    parameter.push(param('rxNorm', 'valueString', params.rxNorm));
+  }
+  if (params.routedMedId !== undefined) {
+    parameter.push(param('routedMedId', 'valueInteger', params.routedMedId));
+  }
+  if (params.searchOtc !== undefined) {
+    parameter.push(param('searchOtc', 'valueBoolean', params.searchOtc));
+  }
+  if (params.searchSupply !== undefined) {
+    parameter.push(param('searchSupply', 'valueBoolean', params.searchSupply));
+  }
+  if (params.searchBrand !== undefined) {
+    parameter.push(param('searchBrand', 'valueBoolean', params.searchBrand));
+  }
+  if (params.searchGeneric !== undefined) {
+    parameter.push(param('searchGeneric', 'valueBoolean', params.searchGeneric));
+  }
+  if (params.includeCode !== undefined) {
+    parameter.push(param('includeCode', 'valueBoolean', params.includeCode));
+  }
+  if (params.quantityQualifiers !== undefined) {
+    parameter.push(param('quantityQualifiers', 'valueBoolean', params.quantityQualifiers));
+  }
+  return { resourceType: 'Parameters', parameter };
+}
+
+/**
+ * Encodes a single {@link MedicationOrderDrugInput} as a `ParametersParameter`
+ * (named entry containing nested `part:` for the drug fields). Used by
+ * {@link medicationOrderRequestToParameters}; each drug line becomes a
+ * separate top-level `drugs` entry so the OperationDefinition's
+ * `max: '*'` cardinality serializes correctly.
+ *
+ * @param name - The outer parameter name (`drugs` for the primary list).
+ * @param drug - A single drug line.
+ * @returns A `ParametersParameter` with `part:` for each defined field.
+ */
+function drugLineToParameter(name: string, drug: MedicationOrderDrugInput): ParametersParameter {
+  const part: ParametersParameter[] = [];
+  if (drug.ndc !== undefined) {
+    part.push(param('ndc', 'valueString', drug.ndc));
+  }
+  if (drug.rxNorm !== undefined) {
+    part.push(param('rxNorm', 'valueString', drug.rxNorm));
+  }
+  if (drug.routedMedId !== undefined) {
+    part.push(param('routedMedId', 'valueInteger', drug.routedMedId));
+  }
+  part.push(param('quantity', 'valueDecimal', drug.quantity));
+  if (drug.quantityQualifier !== undefined) {
+    part.push(param('quantityQualifier', 'valueString', drug.quantityQualifier));
+  }
+  if (drug.refill !== undefined) {
+    part.push(param('refill', 'valueInteger', drug.refill));
+  }
+  if (drug.drugOrder !== undefined) {
+    part.push(param('drugOrder', 'valueInteger', drug.drugOrder));
+  }
+  if (drug.sigLine3 !== undefined) {
+    part.push(param('sigLine3', 'valueString', drug.sigLine3));
+  }
+  if (drug.useSubstitution !== undefined) {
+    part.push(param('useSubstitution', 'valueBoolean', drug.useSubstitution));
+  }
+  return { name, part };
+}
+
+/**
+ * Encodes a {@link MedicationOrderRequest} as a FHIR `Parameters` body for the
+ * vendor-neutral `$order-medication` custom operation.
+ *
+ * Nested arrays (`drugs`, `compoundSigs`, `diagnoses`) are emitted as one
+ * `parameter` entry per element so the OperationDefinition's `max: '*'`
+ * cardinality round-trips; primitive arrays (`conditionIds`) likewise emit
+ * one entry per id. Optional fields are omitted entirely.
+ *
+ * @param req - The order-medication request (vendor-neutral).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationOrderRequestToParameters(req: MedicationOrderRequest): Parameters {
+  const parameter: ParametersParameter[] = [];
+
+  parameter.push(param('patientId', 'valueId', req.patientId));
+  if (req.medicationRequestId !== undefined) {
+    parameter.push(param('medicationRequestId', 'valueId', req.medicationRequestId));
+  }
+  if (req.combinationMed !== undefined) {
+    parameter.push(param('combinationMed', 'valueBoolean', req.combinationMed));
+  }
+  if (req.drugs) {
+    for (const d of req.drugs) {
+      parameter.push(drugLineToParameter('drugs', d));
+    }
+  }
+  if (req.compoundTitle !== undefined) {
+    parameter.push(param('compoundTitle', 'valueString', req.compoundTitle));
+  }
+  if (req.compoundQuantity !== undefined) {
+    parameter.push(param('compoundQuantity', 'valueDecimal', req.compoundQuantity));
+  }
+  if (req.compoundQuantityQualifier !== undefined) {
+    parameter.push(param('compoundQuantityQualifier', 'valueString', req.compoundQuantityQualifier));
+  }
+  if (req.compoundSigs) {
+    for (const sig of req.compoundSigs) {
+      const part: ParametersParameter[] = [
+        param('sigOrder', 'valueInteger', sig.sigOrder),
+        param('line3', 'valueString', sig.line3),
+      ];
+      if (sig.drugId !== undefined) {
+        part.push(param('drugId', 'valueInteger', sig.drugId));
+      }
+      parameter.push({ name: 'compoundSigs', part });
+    }
+  }
+  if (req.conditionIds) {
+    for (const id of req.conditionIds) {
+      parameter.push(param('conditionIds', 'valueId', id));
+    }
+  }
+  if (req.coverageId !== undefined) {
+    parameter.push(param('coverageId', 'valueId', req.coverageId));
+  }
+  if (req.payerOrganizationId !== undefined) {
+    parameter.push(param('payerOrganizationId', 'valueId', req.payerOrganizationId));
+  }
+  if (req.pharmacyOrganizationId !== undefined) {
+    parameter.push(param('pharmacyOrganizationId', 'valueId', req.pharmacyOrganizationId));
+  }
+  if (req.diagnoses) {
+    for (const dx of req.diagnoses) {
+      parameter.push({
+        name: 'diagnoses',
+        part: [param('icdId', 'valueString', dx.icdId), param('name', 'valueString', dx.name)],
+      });
+    }
+  }
+  if (req.pharmacyNcpdpId !== undefined) {
+    parameter.push(param('pharmacyNcpdpId', 'valueString', req.pharmacyNcpdpId));
+  }
+  if (req.pharmacyName !== undefined) {
+    parameter.push(param('pharmacyName', 'valueString', req.pharmacyName));
+  }
+  if (req.writtenDate !== undefined) {
+    parameter.push(param('writtenDate', 'valueDate', req.writtenDate));
+  }
+  if (req.fillDate !== undefined) {
+    parameter.push(param('fillDate', 'valueDate', req.fillDate));
+  }
+  if (req.durationDays !== undefined) {
+    parameter.push(param('durationDays', 'valueInteger', req.durationDays));
+  }
+  if (req.pharmacyNote !== undefined) {
+    parameter.push(param('pharmacyNote', 'valueString', req.pharmacyNote));
+  }
+  if (req.patientInstruction !== undefined) {
+    parameter.push(param('patientInstruction', 'valueString', req.patientInstruction));
+  }
+  if (req.appId !== undefined) {
+    parameter.push(param('appId', 'valueString', req.appId));
+  }
+
+  return { resourceType: 'Parameters', parameter };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$order-medication` custom
+ * operation into a typed {@link MedicationOrderResponse}. Throws
+ * `INVALID_MEDICATION_ORDER_RESPONSE` when required fields are missing.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link MedicationOrderResponse}.
+ */
+export function parametersToMedicationOrderResponse(params: Parameters): MedicationOrderResponse {
+  const map: Record<string, unknown> = {};
+  for (const p of params.parameter ?? []) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const candidate = {
+    orderId: typeof map.orderId === 'number' ? map.orderId : Number.NaN,
+    vendorPatientId: typeof map.vendorPatientId === 'number' ? map.vendorPatientId : Number.NaN,
+    launchUrl: typeof map.launchUrl === 'string' ? map.launchUrl : '',
+    medicationRequestId: typeof map.medicationRequestId === 'string' ? map.medicationRequestId : undefined,
+    pendingOrderStatus:
+      map.pendingOrderStatus === 'queued' || map.pendingOrderStatus === 'reused'
+        ? map.pendingOrderStatus
+        : undefined,
+  };
+  if (!isMedicationOrderResponse(candidate)) {
+    throw new Error(INVALID_MEDICATION_ORDER_RESPONSE);
+  }
+  return candidate;
 }
