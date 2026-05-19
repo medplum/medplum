@@ -118,11 +118,9 @@ describe('runFromCli', () => {
   test('logs and exits via exitAfterStdoutDrain when main rejects', async () => {
     const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
     const errorSpy = jest.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
-    const indexSpy = jest
-      .spyOn(migrate, 'indexStructureDefinitionsAndSearchParameters')
-      .mockImplementation(() => {
-        throw new Error('boom');
-      });
+    const indexSpy = jest.spyOn(migrate, 'indexStructureDefinitionsAndSearchParameters').mockImplementation(() => {
+      throw new Error('boom');
+    });
 
     await runFromCli();
 
