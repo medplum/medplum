@@ -26,7 +26,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
-import { initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, waitFor } from '../../test.setup';
 import {
   DEFAULT_LAMBDA_TIMEOUT,
   getLambdaNameForBot,
@@ -40,12 +40,46 @@ const TEST_LAYER_ARN = 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1
 describe('Deploy', () => {
   const app = express();
   let accessToken: string;
+  let projectId: string;
   let mockLambdaClient: AwsClientStub<LambdaClient>;
+
+  /**
+   * Creates a bot via the admin endpoint (which auto-creates a ProjectMembership),
+   * then optionally updates it with additional properties like timeout.
+   */
+  async function createTestBot(botProps?: Partial<Bot>): Promise<Bot> {
+    const res = await request(app)
+      .post(`/admin/projects/${projectId}/bot`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: botProps?.name ?? 'Test Bot',
+        runtimeVersion: botProps?.runtimeVersion ?? 'awslambda',
+      });
+    expect(res.status).toBe(201);
+    const bot = res.body as Bot;
+
+    // If additional properties are needed (e.g. timeout, code), update the bot
+    const { name: _name, runtimeVersion: _rv, resourceType: _rt, ...extraProps } = botProps ?? {};
+    if (Object.keys(extraProps).length > 0) {
+      const updateRes = await request(app)
+        .put(`/fhir/R4/Bot/${bot.id}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ ...bot, ...extraProps });
+      expect(updateRes.status).toBe(200);
+      return updateRes.body as Bot;
+    }
+
+    return bot;
+  }
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    const result = await createTestProject({ withAccessToken: true });
+    accessToken = result.accessToken;
+    projectId = result.project.id;
   });
 
   afterAll(async () => {
@@ -136,25 +170,8 @@ describe('Deploy', () => {
   });
 
   test('Happy path', async () => {
-    // Step 1: Create a bot
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-      });
-    expect(res1.status).toBe(201);
-
-    const bot = res1.body as Bot;
+    // Step 1: Create a bot via admin endpoint (auto-creates ProjectMembership)
+    const bot = await createTestBot();
     const name = `medplum-bot-lambda-${bot.id}`;
 
     // Step 2: Deploy the bot
@@ -224,25 +241,8 @@ describe('Deploy', () => {
   test('Deploy bot with lambda layer update', async () => {
     // When deploying a bot, we check if we need to update the bot configuration.
     // This test verifies that we correctly update the bot configuration when the lambda layer changes.
-    // Step 1: Create a bot
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-      export async function handler() {
-        console.log('input', input);
-        return input;
-      }
-      `,
-      });
-    expect(res1.status).toBe(201);
-
-    const bot = res1.body as Bot;
+    // Step 1: Create a bot via admin endpoint (auto-creates ProjectMembership)
+    const bot = await createTestBot();
     const name = `medplum-bot-lambda-${bot.id}`;
 
     // Step 2: Deploy the bot
@@ -321,25 +321,8 @@ describe('Deploy', () => {
   });
 
   test('Deploy bot with timeout configured', async () => {
-    // Step 1: Create a bot with no timeout
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-      });
-    expect(res1.status).toBe(201);
-
-    const bot = res1.body as Bot;
+    // Step 1: Create a bot with no timeout via admin endpoint (auto-creates ProjectMembership)
+    const bot = await createTestBot();
 
     // Step 2: Deploy the bot without timeout ... check that default timeout was set on lambda
     const res2 = await request(app)
@@ -441,27 +424,7 @@ describe('Deploy', () => {
   });
 
   test('Deploying new Bot with no timeout results in Bot with default timeout', async () => {
-    const botProps = {
-      resourceType: 'Bot',
-      name: 'Test Bot',
-      runtimeVersion: 'awslambda',
-      code: `
-    export async function handler() {
-      console.log('input', input);
-      return input;
-    }
-    `,
-    };
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        ...botProps,
-      });
-    expect(res1.status).toBe(201);
-
-    const bot = res1.body as Bot;
+    const bot = await createTestBot();
 
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -482,7 +445,12 @@ describe('Deploy', () => {
       .get(`/fhir/R4/Bot/${bot.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.body).toMatchObject({ ...botProps, timeout: DEFAULT_LAMBDA_TIMEOUT });
+    expect(res3.body).toMatchObject({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      runtimeVersion: 'awslambda',
+      timeout: DEFAULT_LAMBDA_TIMEOUT,
+    });
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
@@ -492,25 +460,7 @@ describe('Deploy', () => {
   });
 
   test('Deploy fails when Bot timeout is greater than max', async () => {
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-        timeout: 1000,
-      });
-    expect(res1.status).toBe(201);
-
-    const bot = res1.body as Bot;
+    const bot = await createTestBot({ timeout: 1000 });
 
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -529,19 +479,8 @@ describe('Deploy', () => {
   });
 
   test('Cleans up old lambda versions, keeping the two newest', async () => {
-    // Step 1: Create a bot
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `export async function handler() { return null; }`,
-      });
-    expect(res1.status).toBe(201);
-    const bot = res1.body as Bot;
+    // Step 1: Create a bot via admin endpoint (auto-creates ProjectMembership)
+    const bot = await createTestBot();
     const name = `medplum-bot-lambda-${bot.id}`;
 
     // Step 2: Initial deploy creates the lambda
@@ -584,18 +523,7 @@ describe('Deploy', () => {
   });
 
   test('Cleanup tolerates DeleteFunction errors', async () => {
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `export async function handler() { return null; }`,
-      });
-    expect(res1.status).toBe(201);
-    const bot = res1.body as Bot;
+    const bot = await createTestBot();
 
     // Initial deploy creates the lambda
     const res2 = await request(app)
@@ -627,18 +555,7 @@ describe('Deploy', () => {
   });
 
   test('Cleanup logs uncaught errors without failing deploy', async () => {
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `export async function handler() { return null; }`,
-      });
-    expect(res1.status).toBe(201);
-    const bot = res1.body as Bot;
+    const bot = await createTestBot();
     const name = `medplum-bot-lambda-${bot.id}`;
 
     // Initial deploy creates the lambda
@@ -681,25 +598,7 @@ describe('Deploy', () => {
       throw new TooManyRequestsException({ message: 'Too many requests', $metadata: {} });
     });
 
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-        timeout: 100,
-      });
-    expect(res1.status).toBe(201);
-
-    const bot = res1.body as Bot;
+    const bot = await createTestBot({ timeout: 100 });
 
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)

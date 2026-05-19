@@ -90,33 +90,29 @@ describe('Deploy', () => {
 
     const binary = res1.body as Binary;
 
-    // Step 2: Create a bot
+    // Step 2: Create a bot via admin endpoint (auto-creates ProjectMembership)
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
+      .post(`/admin/projects/${projectId}/bot`)
       .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
       .send({
-        resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
-        executableCode: { url: `Binary/${binary.id}` },
-      } satisfies Bot);
+      });
     expect(res2.status).toBe(201);
 
     const bot = res2.body as Bot;
 
-    // Step 3: Create a ProjectMembership for the bot
+    // Step 3: Update bot to attach executableCode
     const res2b = await request(app)
-      .post(`/fhir/R4/ProjectMembership`)
+      .put(`/fhir/R4/Bot/${bot.id}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
-        resourceType: 'ProjectMembership',
-        project: { reference: `Project/${projectId}` },
-        user: { reference: `Bot/${bot.id}` },
-        profile: { reference: `Bot/${bot.id}` },
+        ...bot,
+        executableCode: { url: `Binary/${binary.id}` },
       });
-    expect(res2b.status).toBe(201);
+    expect(res2b.status).toBe(200);
 
     // Step 4: Deploy the bot
     const res3 = await request(app)
@@ -134,9 +130,10 @@ describe('Deploy', () => {
     expect(readStreamToStringSpy).toHaveBeenCalledWith(expect.any(Object));
     expect(deployLambdaSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        ...bot,
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
         executableCode: expect.objectContaining({ url: expect.any(String) }),
-        meta: expect.objectContaining({ ...bot.meta, lastUpdated: expect.any(String), versionId: expect.any(String) }),
       }),
       code
     );
@@ -152,35 +149,20 @@ describe('Deploy', () => {
       }
       `;
 
-    // Step 1: Create a bot
+    // Step 1: Create a bot via admin endpoint (auto-creates ProjectMembership)
     const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
+      .post(`/admin/projects/${projectId}/bot`)
       .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
       .send({
-        resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
-        code,
       });
     expect(res1.status).toBe(201);
 
     const bot = res1.body as Bot;
 
-    // Step 2: Create a ProjectMembership for the bot
-    const res1b = await request(app)
-      .post(`/fhir/R4/ProjectMembership`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'ProjectMembership',
-        project: { reference: `Project/${projectId}` },
-        user: { reference: `Bot/${bot.id}` },
-        profile: { reference: `Bot/${bot.id}` },
-      });
-    expect(res1b.status).toBe(201);
-
-    // Step 3: Deploy the bot with code parameter
+    // Step 2: Deploy the bot with code parameter
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -191,9 +173,10 @@ describe('Deploy', () => {
     expect(res2.status).toBe(200);
     expect(deployLambdaSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        ...bot,
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
         executableCode: expect.objectContaining({ url: expect.any(String) }),
-        meta: expect.objectContaining({ ...bot.meta, lastUpdated: expect.any(String), versionId: expect.any(String) }),
       }),
       code
     );
