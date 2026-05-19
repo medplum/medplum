@@ -46,6 +46,8 @@ describe('Deploy', () => {
   /**
    * Creates a bot via the admin endpoint (which auto-creates a ProjectMembership),
    * then optionally updates it with additional properties like timeout.
+   * @param botProps - Optional bot properties to set on the created bot.
+   * @returns The created Bot resource.
    */
   async function createTestBot(botProps?: Partial<Bot>): Promise<Bot> {
     const res = await request(app)
@@ -77,7 +79,7 @@ describe('Deploy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    const result = await createTestProject({ withAccessToken: true });
+    const result = await createTestProject({ withAccessToken: true, membership: { admin: true } });
     accessToken = result.accessToken;
     projectId = result.project.id;
   });

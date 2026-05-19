@@ -39,7 +39,7 @@ describe('Deploy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    const result = await createTestProject({ withAccessToken: true });
+    const result = await createTestProject({ withAccessToken: true, membership: { admin: true } });
     accessToken = result.accessToken;
     projectId = result.project.id;
   });
