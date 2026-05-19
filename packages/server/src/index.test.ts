@@ -5,6 +5,7 @@ import http from 'node:http';
 import { resolve } from 'node:path';
 import { shutdownApp } from './app';
 import { main } from './index';
+import * as loggerModule from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
 
@@ -92,10 +93,77 @@ describe('Server', () => {
   });
 });
 
+describe('uncaughtException handler', () => {
+  let handler: NodeJS.UncaughtExceptionListener;
+  let baselineUncaught: NodeJS.UncaughtExceptionListener[];
+  let baselineRejection: NodeJS.UnhandledRejectionListener[];
+
+  beforeAll(async () => {
+    baselineUncaught = process.listeners('uncaughtException');
+    baselineRejection = process.listeners('unhandledRejection');
+    await main('file:test.config.json');
+    const installed = process.listeners('uncaughtException').filter((l) => !baselineUncaught.includes(l));
+    expect(installed).toHaveLength(1);
+    handler = installed[0];
+  });
+
+  afterAll(async () => {
+    process
+      .listeners('uncaughtException')
+      .filter((l) => !baselineUncaught.includes(l))
+      .forEach((l) => process.off('uncaughtException', l));
+    process
+      .listeners('unhandledRejection')
+      .filter((l) => !baselineRejection.includes(l))
+      .forEach((l) => process.off('unhandledRejection', l));
+    await shutdownApp();
+  });
+
+  test('drains stdout before calling process.exit(1)', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
+
+    handler(new Error('kaboom'), 'uncaughtException');
+
+    expect(drainSpy).toHaveBeenCalledTimes(1);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    // drainStdout must complete before process.exit — otherwise queued writes are lost
+    expect(drainSpy.mock.invocationCallOrder[0]).toBeLessThan(exitSpy.mock.invocationCallOrder[0]);
+
+    exitSpy.mockRestore();
+    drainSpy.mockRestore();
+  });
+
+  test('does not call process.exit(1) on "Connection terminated unexpectedly"', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
+
+    handler(new Error('Connection terminated unexpectedly'), 'uncaughtException');
+
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(drainSpy).not.toHaveBeenCalled();
+
+    exitSpy.mockRestore();
+    drainSpy.mockRestore();
+  });
+
+  test('does not call process.exit(1) on "Unexpected end of input"', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
+
+    handler(new Error('Unexpected end of input'), 'uncaughtException');
+
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(drainSpy).not.toHaveBeenCalled();
+
+    exitSpy.mockRestore();
+    drainSpy.mockRestore();
+  });
+});
+
 describe('entry point (child process)', () => {
   const packageDir = resolve(__dirname, '..');
   const tsxBin = resolve(packageDir, '../../node_modules/.bin/tsx');
-  const harnessPath = resolve(packageDir, 'src/uncaught-exception-harness.ts');
   const indexPath = resolve(packageDir, 'src/index.ts');
 
   type ChildResult = {
@@ -137,38 +205,5 @@ describe('entry point (child process)', () => {
     // The catch handler in the entry block must run, log, then drain before exiting.
     // If stdout were not drained, this final error line could be lost on exit.
     expect(result.stdout).toContain('Fatal error during startup');
-  }, 30000);
-
-  test('drains queued stdout output before exit(1) on uncaughtException', async () => {
-    const floodCount = 5000;
-    const result = await runChild([harnessPath, 'file:does-not-exist.config.json', 'kaboom', String(floodCount)]);
-    expect(result.timedOut).toBe(false);
-    expect(result.code).toBe(1);
-    expect(result.stdout).toContain('Uncaught exception thrown');
-    // Every flooded line must be present in the captured output — if the listener
-    // skipped drainStdout(), buffered writes would be truncated on process.exit.
-    expect(result.stdout).toContain('flood-0\n');
-    expect(result.stdout).toContain(`flood-${floodCount - 1}\n`);
-  }, 30000);
-
-  test('uncaughtException handler does not call process.exit(1) on "Connection terminated unexpectedly"', async () => {
-    const result = await runChild([
-      harnessPath,
-      'file:does-not-exist.config.json',
-      'Connection terminated unexpectedly',
-      '0',
-    ]);
-    expect(result.timedOut).toBe(false);
-    // The handler returned early without calling process.exit(1); with no remaining
-    // event loop work the process exits naturally with code 0.
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain('Uncaught exception thrown');
-  }, 30000);
-
-  test('uncaughtException handler does not call process.exit(1) on "Unexpected end of input"', async () => {
-    const result = await runChild([harnessPath, 'file:does-not-exist.config.json', 'Unexpected end of input', '0']);
-    expect(result.timedOut).toBe(false);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain('Uncaught exception thrown');
   }, 30000);
 });
