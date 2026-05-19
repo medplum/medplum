@@ -130,7 +130,16 @@ export function MedicationsPage(): JSX.Element {
   }, [iframeUrl]);
   /** MR id for iframe session + polling when URL/detail selection lags behind a new order. */
   const [iframePollMrId, setIframePollMrId] = useState<string | undefined>();
-  const [currentOrder, setCurrentOrder] = useState<MedicationRequest | undefined>();
+  const [fetchedOrder, setFetchedOrder] = useState<MedicationRequest | undefined>();
+
+  const orderFromList = useMemo(
+    () => (medicationRequestId ? orders.find((mr) => mr.id === medicationRequestId) : undefined),
+    [medicationRequestId, orders]
+  );
+
+  const currentOrder = medicationRequestId
+    ? (orderFromList ?? (fetchedOrder?.id === medicationRequestId ? fetchedOrder : undefined))
+    : undefined;
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
@@ -199,17 +208,21 @@ export function MedicationsPage(): JSX.Element {
   );
 
   useEffect(() => {
-    if (!medicationRequestId) {
-      setCurrentOrder(undefined);
-      return;
+    let cancelled = false;
+    if (medicationRequestId && !orderFromList) {
+      medplum
+        .readResource('MedicationRequest', medicationRequestId)
+        .then((mr) => {
+          if (!cancelled) {
+            setFetchedOrder(mr);
+          }
+        })
+        .catch(showErrorNotification);
     }
-    const fromList = orders.find((mr) => mr.id === medicationRequestId);
-    if (fromList) {
-      setCurrentOrder(fromList);
-      return;
-    }
-    medplum.readResource('MedicationRequest', medicationRequestId).then(setCurrentOrder).catch(showErrorNotification);
-  }, [medicationRequestId, orders, medplum]);
+    return () => {
+      cancelled = true;
+    };
+  }, [medicationRequestId, orderFromList, medplum]);
 
   const handleDoseSpotSync = useCallback(async (): Promise<void> => {
     if (!patient?.id) {

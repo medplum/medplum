@@ -137,9 +137,7 @@ describe('PatientPage', () => {
       expect(patientSummarySpy).toHaveBeenCalled();
     });
     expect(await screen.findByText('Male')).toBeInTheDocument();
-    expect(
-      await screen.findByText(`1956-05-12 (${calculateAgeString(HomerSimpson.birthDate as string)})`)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(`1956-05-12 (${age})`)).toBeInTheDocument();
   });
 
   test('handles empty pathname correctly', async () => {
