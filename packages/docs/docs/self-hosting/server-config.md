@@ -353,7 +353,7 @@ Optional configuration for the scheduled Data Warehouse sync worker. This worker
 It uses `readonlyDatabase` connection settings when available; otherwise it falls back to `database`.
 History tables synced are every `{ResourceType}_History` name derived from indexed repository resource types (the same pattern as database migrations), not a separate configurable list.
 
-When `dataWarehouse.enabled` is `true`, you must set `cron` and `sink`. There is no default sink. You must also set the fields required for your chosen sink: `awsS3TableArn` and `namespace` for `s3tables`, or `localBasePath` for `local`.
+When `dataWarehouse.enabled` is `true`, you must set `cron` and `destination`. There is no default destination. You must also set the fields required for your chosen destination: `awsS3TableArn` and `namespace` for `s3tables`, or `localBasePath` for `local`.
 
 Example (`s3tables`):
 
@@ -362,7 +362,7 @@ Example (`s3tables`):
   "dataWarehouse": {
     "enabled": true,
     "cron": "0 * * * *",
-    "sink": "s3tables",
+    "destination": "s3tables",
     "awsS3TableArn": "arn:aws:s3tables:us-east-1:123456789012:bucket/my-warehouse",
     "namespace": "default"
   }
@@ -376,7 +376,7 @@ Example (`local`):
   "dataWarehouse": {
     "enabled": true,
     "cron": "0 * * * *",
-    "sink": "local",
+    "destination": "local",
     "localBasePath": "/var/medplum/warehouse"
   }
 }
@@ -396,9 +396,9 @@ Cron expression used for scheduling sync runs.
 
 **Default:** None
 
-#### dataWarehouse.sink
+#### dataWarehouse.destination
 
-Warehouse export sink type.
+Warehouse export destination type.
 
 - `s3tables`: Managed Iceberg tables in Amazon S3 Tables. Uses the top-level [`awsRegion`](#awsregion) for AWS API and DuckDB S3 credentials.
 - `local`: Write per-table Parquet files to `dataWarehouse.localBasePath`.
@@ -411,7 +411,7 @@ Warehouse export sink type.
 
 AWS S3 Table ARN for managed Iceberg table access.
 
-**Required when:** `dataWarehouse.sink` is `s3tables`
+**Required when:** `dataWarehouse.destination` is `s3tables`
 
 **Default:** None
 
@@ -419,15 +419,15 @@ AWS S3 Table ARN for managed Iceberg table access.
 
 Base output directory for local Parquet exports. Each repository history table is written as `<table_key>.parquet` under this directory.
 
-**Required when:** `dataWarehouse.sink` is `local`
+**Required when:** `dataWarehouse.destination` is `local`
 
 **Default:** None
 
 #### dataWarehouse.namespace
 
-Iceberg namespace used by sync when using the `s3tables` sink.
+Iceberg namespace used by sync when using the `s3tables` destination.
 
-**Required when:** `dataWarehouse.sink` is `s3tables`
+**Required when:** `dataWarehouse.destination` is `s3tables`
 
 **Default:** None
 
