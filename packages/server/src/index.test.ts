@@ -98,7 +98,13 @@ describe('entry point (child process)', () => {
   const harnessPath = resolve(packageDir, 'src/uncaught-exception-harness.ts');
   const indexPath = resolve(packageDir, 'src/index.ts');
 
-  type ChildResult = { code: number | null; signal: NodeJS.Signals | null; stdout: string; stderr: string; timedOut: boolean };
+  type ChildResult = {
+    code: number | null;
+    signal: NodeJS.Signals | null;
+    stdout: string;
+    stderr: string;
+    timedOut: boolean;
+  };
 
   function runChild(args: string[], timeoutMs = 15000): Promise<ChildResult> {
     return new Promise((res, rej) => {
@@ -160,12 +166,7 @@ describe('entry point (child process)', () => {
   }, 30000);
 
   test('uncaughtException handler does not call process.exit(1) on "Unexpected end of input"', async () => {
-    const result = await runChild([
-      harnessPath,
-      'file:does-not-exist.config.json',
-      'Unexpected end of input',
-      '0',
-    ]);
+    const result = await runChild([harnessPath, 'file:does-not-exist.config.json', 'Unexpected end of input', '0']);
     expect(result.timedOut).toBe(false);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('Uncaught exception thrown');
