@@ -424,6 +424,10 @@ const sidebars: SidebarsConfig = {
       id: 'integration/c-cda',
     },
     {
+      type: 'doc',
+      id: 'integration/electronic-prior-auth',
+    },
+    {
       type: 'html',
       value: '<strong>Deploy & Operate</strong>',
       className: 'sidebar-title',
