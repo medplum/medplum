@@ -15,6 +15,20 @@ export async function drainStdout(): Promise<void> {
   await once(process.stdout, 'drain');
 }
 
+/**
+ * Awaits stdout drain before calling `process.exit(code)`.
+ *
+ * `process.exit` immediately kills the process without flushing buffered writes,
+ * so callers that have just written via `stdout.write` (e.g. final error logs)
+ * must await drain themselves to avoid losing the last lines on exit.
+ *
+ * @param code - The exit code to pass to `process.exit`. Defaults to 1.
+ */
+export async function exitAfterStdoutDrain(code = 1): Promise<void> {
+  await drainStdout();
+  process.exit(code);
+}
+
 export const globalLogger = new Logger(
   writeLineToStdout,
   undefined,

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { LogLevel } from '@medplum/core';
-import { drainStdout, globalLogger } from './logger';
+import { drainStdout, exitAfterStdoutDrain, globalLogger } from './logger';
 
 describe('Global Logger', () => {
   let writeSpy: jest.SpyInstance;
@@ -96,5 +96,18 @@ describe('Global Logger', () => {
 
     onceSpy.mockRestore();
     Object.defineProperty(process.stdout, 'writableNeedDrain', { value: false, configurable: true });
+  });
+
+  test('exitAfterStdoutDrain drains then exits with given code (default 1)', async () => {
+    Object.defineProperty(process.stdout, 'writableNeedDrain', { value: false, configurable: true });
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+
+    await exitAfterStdoutDrain();
+    expect(exitSpy).toHaveBeenLastCalledWith(1);
+
+    await exitAfterStdoutDrain(2);
+    expect(exitSpy).toHaveBeenLastCalledWith(2);
+
+    exitSpy.mockRestore();
   });
 });

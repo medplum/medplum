@@ -1,10 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { spawn } from 'node:child_process';
 import http from 'node:http';
-import { resolve } from 'node:path';
 import { shutdownApp } from './app';
-import { main } from './index';
+import { main, runFromCli } from './index';
 import * as loggerModule from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
@@ -120,90 +118,49 @@ describe('uncaughtException handler', () => {
   });
 
   test('drains stdout before calling process.exit(1)', async () => {
-    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-    const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
+    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
 
     await handler(new Error('kaboom'), 'uncaughtException');
 
-    expect(drainSpy).toHaveBeenCalledTimes(1);
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    // drainStdout must complete before process.exit — otherwise queued writes are lost
-    expect(drainSpy.mock.invocationCallOrder[0]).toBeLessThan(exitSpy.mock.invocationCallOrder[0]);
+    expect(exitDrainSpy).toHaveBeenCalledTimes(1);
+    expect(exitDrainSpy).toHaveBeenCalledWith();
 
-    exitSpy.mockRestore();
-    drainSpy.mockRestore();
+    exitDrainSpy.mockRestore();
   });
 
   test('does not call process.exit(1) on "Connection terminated unexpectedly"', async () => {
-    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-    const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
+    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
 
     await handler(new Error('Connection terminated unexpectedly'), 'uncaughtException');
 
-    expect(exitSpy).not.toHaveBeenCalled();
-    expect(drainSpy).not.toHaveBeenCalled();
+    expect(exitDrainSpy).not.toHaveBeenCalled();
 
-    exitSpy.mockRestore();
-    drainSpy.mockRestore();
+    exitDrainSpy.mockRestore();
   });
 
   test('does not call process.exit(1) on "Unexpected end of input"', async () => {
-    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-    const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
+    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
 
     await handler(new Error('Unexpected end of input'), 'uncaughtException');
 
-    expect(exitSpy).not.toHaveBeenCalled();
-    expect(drainSpy).not.toHaveBeenCalled();
+    expect(exitDrainSpy).not.toHaveBeenCalled();
 
-    exitSpy.mockRestore();
-    drainSpy.mockRestore();
+    exitDrainSpy.mockRestore();
   });
 });
 
-describe('entry point (child process)', () => {
-  const packageDir = resolve(__dirname, '..');
-  const tsxBin = resolve(packageDir, '../../node_modules/.bin/tsx');
-  const indexPath = resolve(packageDir, 'src/index.ts');
+describe('runFromCli', () => {
+  test('logs and exits via exitAfterStdoutDrain on startup error', async () => {
+    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const errorSpy = jest.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
 
-  type ChildResult = {
-    code: number | null;
-    signal: NodeJS.Signals | null;
-    stdout: string;
-    stderr: string;
-    timedOut: boolean;
-  };
+    await runFromCli(['node', 'index.ts', 'file:does-not-exist.config.json']);
 
-  function runChild(args: string[], timeoutMs = 15000): Promise<ChildResult> {
-    return new Promise((res, rej) => {
-      const child = spawn(tsxBin, args, { cwd: packageDir });
-      let stdout = '';
-      let stderr = '';
-      child.stdout.on('data', (d: Buffer) => {
-        stdout += d.toString();
-      });
-      child.stderr.on('data', (d: Buffer) => {
-        stderr += d.toString();
-      });
-      let timedOut = false;
-      const t = setTimeout(() => {
-        timedOut = true;
-        child.kill('SIGKILL');
-      }, timeoutMs);
-      child.on('exit', (code, signal) => {
-        clearTimeout(t);
-        res({ code, signal, stdout, stderr, timedOut });
-      });
-      child.on('error', rej);
-    });
-  }
+    expect(errorSpy).toHaveBeenCalled();
+    expect(errorSpy.mock.calls[0][0]).toBe('Fatal error during startup');
+    expect(exitDrainSpy).toHaveBeenCalledTimes(1);
 
-  test('runs main when invoked as the entry module and drains stdout before exit(1) on startup error', async () => {
-    const result = await runChild([indexPath, 'file:does-not-exist.config.json']);
-    expect(result.timedOut).toBe(false);
-    expect(result.code).toBe(1);
-    // The catch handler in the entry block must run, log, then drain before exiting.
-    // If stdout were not drained, this final error line could be lost on exit.
-    expect(result.stdout).toContain('Fatal error during startup');
-  }, 30000);
+    exitDrainSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 });

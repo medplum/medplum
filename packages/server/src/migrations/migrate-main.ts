@@ -5,16 +5,16 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Client } from 'pg';
 import * as semver from 'semver';
+import packageJson from '../../package.json';
+import { exitAfterStdoutDrain, globalLogger } from '../logger';
 import type { BuildMigrationOptions } from './migrate';
 import {
-  generateMigrationActions,
   buildSchema,
+  generateMigrationActions,
   indexStructureDefinitionsAndSearchParameters,
-  writePreDeployActionsToBuilder,
   writePostDeployActionsToBuilder,
+  writePreDeployActionsToBuilder,
 } from './migrate';
-import packageJson from '../../package.json';
-import { globalLogger } from '../logger';
 
 export const SCHEMA_DIR = resolve('./src/migrations/schema');
 export const DATA_DIR = resolve('./src/migrations/data');
@@ -127,9 +127,16 @@ function getVersionFromFilename(filename: string): number {
   return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
 }
 
+export async function runFromCli(): Promise<void> {
+  try {
+    await main();
+  } catch (reason) {
+    globalLogger.error('Migration failed', reason as Error);
+    await exitAfterStdoutDrain();
+  }
+}
+
 if (import.meta.main) {
-  main().catch((reason) => {
-    globalLogger.error('Migration failed', reason);
-    process.exit(1);
-  });
+  // We should never hit the catch block here but we can't do top-level await due to how we transpile to CJS for Jest
+  runFromCli().catch(console.error);
 }

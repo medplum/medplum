@@ -4,8 +4,9 @@ import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
-import { drainStdout, globalLogger } from './logger';
+import { exitAfterStdoutDrain, globalLogger } from './logger';
 import { getServerVersion } from './util/version';
+
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
@@ -28,12 +29,7 @@ export async function main(configName: string): Promise<void> {
       return;
     }
 
-    // We need to wait for stdout to drain before calling exit
-    // Since calling process.exit immediately kills the process without waiting
-    // Using console.log ensures this always happens before the call to process.exit
-    // But since we are calling stdout.write we need to await this ourselves at process close
-    await drainStdout();
-    process.exit(1);
+    await exitAfterStdoutDrain();
   });
 
   globalLogger.info('Starting Medplum Server...', { configName, version: getServerVersion() });
@@ -60,14 +56,16 @@ export async function main(configName: string): Promise<void> {
   });
 }
 
+export async function runFromCli(argv: string[]): Promise<void> {
+  try {
+    await main(argv.length === 3 ? argv[2] : 'file:medplum.config.json');
+  } catch (err) {
+    globalLogger.error('Fatal error during startup', err as Error);
+    await exitAfterStdoutDrain();
+  }
+}
+
 if (import.meta.main) {
-  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch(async (err) => {
-    globalLogger.error('Fatal error during startup', err);
-    // We need to wait for stdout to drain before calling exit
-    // Since calling process.exit immediately kills the process without waiting
-    // Using console.log ensures this always happens before the call to process.exit
-    // But since we are calling stdout.write we need to await this ourselves at process close
-    await drainStdout();
-    process.exit(1);
-  });
+  // We should never hit the catch block here but we can't do top-level await due to how we transpile to CJS for Jest
+  runFromCli(process.argv).catch(console.error);
 }
