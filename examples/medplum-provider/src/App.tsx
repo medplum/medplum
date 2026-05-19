@@ -67,8 +67,11 @@ export function App(): JSX.Element | null {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const project = medplum.getProject();
-  const setupDisabledByProject = project?.setting?.find((s) => s.name === HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
-  const [setupDismissedByUser, setSetupDismissedByUser] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
+  const setupDisabledByProject =
+    project?.setting?.find((s) => s.name === HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
+  const [setupDismissedByUser, setSetupDismissedByUser] = useState(
+    () => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true'
+  );
   const setupDismissed = setupDisabledByProject || setupDismissedByUser;
   const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
   const membership = medplum.getProjectMembership();
