@@ -12,12 +12,7 @@ import type { SyncOptions } from '../data-warehouse/sync';
 import { syncData } from '../data-warehouse/sync';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import {
-  addVerboseQueueLogging,
-  getBullmqRedisConnectionOptions,
-  getWorkerBullmqConfig,
-  queueRegistry,
-} from './utils';
+import { addVerboseQueueLogging, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 export interface DataWarehouseSyncJobData {
   trigger: 'scheduler';
