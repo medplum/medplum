@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Anchor, Button, CopyButton, Group, Stack, Stepper, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Anchor,
+  Button,
+  CopyButton,
+  Group,
+  Stack,
+  Stepper,
+  Text,
+  TextInput,
+  Title,
+  Tooltip,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
@@ -43,7 +55,9 @@ export function AdminPage(): JSX.Element {
         existingPatient ??
           medplum.createResource<Patient>({
             resourceType: 'Patient',
-            meta: { tag: [{ system: 'https://medplum.com/tags', code: 'preauth-demo', display: 'Pre-Authorized Code Demo' }] },
+            meta: {
+              tag: [{ system: 'https://medplum.com/tags', code: 'preauth-demo', display: 'Pre-Authorized Code Demo' }],
+            },
             name: [{ given: ['Jane'], family: 'Smith' }],
             birthDate: '2008-03-15',
             gender: 'female',
@@ -52,7 +66,9 @@ export function AdminPage(): JSX.Element {
           medplum.createResource<Questionnaire>({
             ...PHQA,
             id: undefined,
-            meta: { tag: [{ system: 'https://medplum.com/tags', code: 'preauth-demo', display: 'Pre-Authorized Code Demo' }] },
+            meta: {
+              tag: [{ system: 'https://medplum.com/tags', code: 'preauth-demo', display: 'Pre-Authorized Code Demo' }],
+            },
           }),
       ]);
 
@@ -116,17 +132,13 @@ export function AdminPage(): JSX.Element {
             <Anchor href="https://www.medplum.com/docs/auth/pre-authorized-code" target="_blank">
               OID4VCI pre-authorized code flow.
             </Anchor>
-            <br />
-            A Medplum Bot calls <code>/auth/preauthorize</code> to generate a one-time code and packages it
-            into a magic link.
+            <br />A Medplum Bot calls <code>/auth/preauthorize</code> to generate a one-time code and packages it into a
+            magic link.
           </Text>
         </div>
 
         <Stepper active={active} orientation="vertical">
-          <Stepper.Step
-            label="Populate project resources"
-            description="Create a demo patient and PHQ-A questionnaire"
-          >
+          <Stepper.Step label="Populate project resources" description="Create a demo patient and PHQ-A questionnaire">
             <Stack mt="sm" gap="sm">
               <Text size="sm">
                 This will create a demo <strong>Patient</strong> (Jane Smith) and the <strong>PHQ-A</strong>{' '}
@@ -145,7 +157,11 @@ export function AdminPage(): JSX.Element {
               {patient && questionnaire && (
                 <Stack gap={4}>
                   <Text size="sm">
-                    Patient: <strong>{patient.name?.[0]?.given?.[0]} {patient.name?.[0]?.family}</strong> ({patient.id})
+                    Patient:{' '}
+                    <strong>
+                      {patient.name?.[0]?.given?.[0]} {patient.name?.[0]?.family}
+                    </strong>{' '}
+                    ({patient.id})
                   </Text>
                   <Text size="sm">
                     Questionnaire: <strong>{questionnaire.title}</strong> ({questionnaire.id})
@@ -153,8 +169,8 @@ export function AdminPage(): JSX.Element {
                 </Stack>
               )}
               <Text size="sm">
-                The magic link encodes a one-time pre-authorized code. When the patient opens it, they are
-                automatically authenticated and can fill out the questionnaire.
+                The magic link encodes a one-time pre-authorized code. When the patient opens it, they are automatically
+                authenticated and can fill out the questionnaire.
               </Text>
               <div>
                 <Button onClick={() => handleGenerateLink().catch(console.error)} loading={generating}>
@@ -199,7 +215,11 @@ export function AdminPage(): JSX.Element {
                     >
                       Open in new tab
                     </Button>
-                    <Button variant="subtle" onClick={() => handleGenerateLink().catch(console.error)} loading={generating}>
+                    <Button
+                      variant="subtle"
+                      onClick={() => handleGenerateLink().catch(console.error)}
+                      loading={generating}
+                    >
                       Generate new link
                     </Button>
                   </Group>

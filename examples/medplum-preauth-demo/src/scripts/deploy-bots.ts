@@ -75,7 +75,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
     bot = (await medplum.post(`admin/projects/${projectId}/bot`, {
       name: botDescription.name,
       description: botDescription.description,
-    })) as Bot & { id: string };
+    }));
     console.log(`  Created ${getReferenceString(bot)}`);
   } else {
     console.log(`  Found existing ${getReferenceString(bot)}`);
@@ -123,9 +123,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
   }
 
   // Grant the bot Project Admin so it can call /auth/preauthorize
-  const membershipBundle = await medplum.get(
-    medplum.fhirUrl('ProjectMembership') + `?profile=Bot/${bot.id}`
-  ) as { entry?: { resource?: { id?: string; admin?: boolean; [key: string]: unknown } }[] };
+  const membershipBundle = (await medplum.get(medplum.fhirUrl('ProjectMembership') + `?profile=Bot/${bot.id}`));
   const membership = membershipBundle.entry?.[0]?.resource;
   if (membership?.id) {
     if (!membership.admin) {
