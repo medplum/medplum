@@ -280,8 +280,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 13. 01/05/25 - Added search params: ActivityDefinition-code, Communication-priority, Communication-priority-order, ProjectMembership-active (https://github.com/medplum/medplum/pull/8160)
    * 14. 04/14/26 - Added search params: ProjectMembership-admin, Practitioner-qualification-code (https://github.com/medplum/medplum/pull/8919)
    *                and sort inline array columns (https://github.com/medplum/medplum/pull/8961)
+   * 15. 05/19/26 - Added range-column search strategy (https://github.com/medplum/medplum/pull/9159)
+   *                Project.features (https://github.com/medplum/medplum/pull/9049)
+   *                Login.preAuthorizedCodeHash (https://github.com/medplum/medplum/pull/9231)
+   *                Project.link (https://github.com/medplum/medplum/pull/9159)
    */
-  static readonly VERSION: number = 14;
+  static readonly VERSION: number = 15;
 
   constructor(context: RepositoryContext, connection?: RepositoryConnection) {
     super();
