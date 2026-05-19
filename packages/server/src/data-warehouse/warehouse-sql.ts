@@ -1,16 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Expression } from '../fhir/sql';
-import {
-  Column,
-  Condition,
-  Constant,
-  Disjunction,
-  InsertQuery,
-  SelectQuery,
-  SqlBuilder,
-  Subquery,
-} from '../fhir/sql';
+import { Column, Condition, Constant, Disjunction, InsertQuery, SelectQuery, SqlBuilder, Subquery } from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -168,10 +159,7 @@ export function buildProjectedSelectFromHistoryTable(
   );
 }
 
-export function buildCountFromHistoryTableQuery(
-  sourceHistoryTable: string,
-  sourcePredicate: Expression
-): SqlBuilder {
+export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate: Expression): SqlBuilder {
   const qualifiedTableName = buildCatalogQualifiedTableIdentifier(POSTGRES_CATALOG, sourceHistoryTable);
   const query = new SelectQuery(qualifiedTableName)
     .raw('COUNT(*) AS count')

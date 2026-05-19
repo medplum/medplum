@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { S3TablesClient } from '@aws-sdk/client-s3tables';
-import type { Expression } from '../../fhir/sql';
 import type { WarehouseSourceTable } from '../../data-warehouse/config';
 import type {
   DataWarehouseSink,
@@ -18,6 +17,7 @@ import {
   buildProjectedSelectFromHistoryTableQuery,
   runParameterizedWarehouseSql,
 } from '../../data-warehouse/warehouse-sql';
+import type { Expression } from '../../fhir/sql';
 import { createS3TablesClient, tableExists } from './data-warehouse-client';
 
 export class S3TablesWarehouseSink implements DataWarehouseSink {

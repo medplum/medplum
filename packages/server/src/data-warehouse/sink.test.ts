@@ -18,7 +18,9 @@ describe('data warehouse sinks', () => {
       });
       expect(table).toContain('patient_history.parquet');
       const sourcePredicateSql = new SqlBuilder();
-      sourcePredicateSql.appendExpression(sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default'));
+      sourcePredicateSql.appendExpression(
+        sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')
+      );
       expect(sourcePredicateSql.toString()).toBe('TRUE');
     } finally {
       rmSync(basePath, { recursive: true, force: true });

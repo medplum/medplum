@@ -140,7 +140,10 @@ describe('SqlBuilder', () => {
 
     test('Select where is not null expression', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').whereExpr(new Condition(new Column('MyTable', 'name'), '!=', null)).buildSql(sql);
+      new SelectQuery('MyTable')
+        .column('id')
+        .whereExpr(new Condition(new Column('MyTable', 'name'), '!=', null))
+        .buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
     });
 
@@ -149,7 +152,9 @@ describe('SqlBuilder', () => {
       const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
       new SelectQuery('MyOtherTable')
         .column('id')
-        .whereExpr(new Disjunction([new Condition(new Subquery(maxSubquery), '=', null), new Condition('name', '>', 'x')]))
+        .whereExpr(
+          new Disjunction([new Condition(new Subquery(maxSubquery), '=', null), new Condition('name', '>', 'x')])
+        )
         .buildSql(sql);
       expect(sql.toString()).toBe(
         'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE ((SELECT MAX(name) FROM "MyTable") IS NULL OR "name" > $1)'
@@ -159,10 +164,7 @@ describe('SqlBuilder', () => {
     test('Select where greater than subquery', () => {
       const sql = new SqlBuilder();
       const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
-      new SelectQuery('MyOtherTable')
-        .column('id')
-        .where('name', '>', new Subquery(maxSubquery))
-        .buildSql(sql);
+      new SelectQuery('MyOtherTable').column('id').where('name', '>', new Subquery(maxSubquery)).buildSql(sql);
       expect(sql.toString()).toBe(
         'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "MyOtherTable"."name" > (SELECT MAX(name) FROM "MyTable")'
       );

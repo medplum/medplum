@@ -338,7 +338,12 @@ export class Condition implements Expression {
   parameter: any;
   readonly parameterType?: string;
 
-  constructor(column: Column | string | Subquery, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
+  constructor(
+    column: Column | string | Subquery,
+    operator: keyof typeof Operator,
+    parameter: any,
+    parameterType?: string
+  ) {
     if (
       (operator === 'ARRAY_OVERLAPS_AND_IS_NOT_NULL' || operator === 'ARRAY_OVERLAPS' || operator === 'ARRAY_EMPTY') &&
       !parameterType
