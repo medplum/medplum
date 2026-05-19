@@ -58,6 +58,15 @@ export const SCRIPTSURE_PATIENT_SYNC_BOT: Identifier = {
   value: 'scriptsure-patient-sync-bot',
 };
 
+/**
+ * @deprecated Use the vendor-neutral `$order-set-url` custom FHIR operation via
+ * `useScriptSureOrderSet(...)` (thin wrapper around `useMedicationOrderSet`).
+ * The bot identifier is kept exported for one release to preserve source
+ * compatibility for any caller still invoking `medplum.executeBot(...)`
+ * directly. Project deploys via `medplum-ee/packages/scriptsure/src/scripts/deploy.ts`
+ * now register an `OperationDefinition` with code `order-set-url` whose
+ * `operationDefinition-implementation` extension points at this bot.
+ */
 export const SCRIPTSURE_ORDER_SET_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'scriptsure-order-set-bot',

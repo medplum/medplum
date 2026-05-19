@@ -2,17 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Medication, MedicationRequest, Parameters } from '@medplum/fhirtypes';
-import type { MedicationOrderRequest, MedicationOrderResponse, MedicationSearchParams } from './medication-order-utils';
+import type {
+  MedicationOrderRequest,
+  MedicationOrderResponse,
+  MedicationOrderSetRequest,
+  MedicationOrderSetResponse,
+  MedicationSearchParams,
+} from './medication-order-utils';
 import {
   INVALID_MEDICATION_ORDER_RESPONSE,
+  INVALID_MEDICATION_ORDER_SET_RESPONSE,
   getMedicationOrderIframeUrl,
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
   isMedicationArray,
   isMedicationOrderResponse,
+  isMedicationOrderSetResponse,
   medicationOrderRequestToParameters,
+  medicationOrderSetRequestToParameters,
   medicationSearchParamsToParameters,
   parametersToMedicationOrderResponse,
+  parametersToMedicationOrderSetResponse,
 } from './medication-order-utils';
 
 const TEST_EXT = {
@@ -309,5 +319,91 @@ describe('Custom FHIR operation Parameters helpers', () => {
       ],
     };
     expect(parametersToMedicationOrderResponse(params).pendingOrderStatus).toBe('reused');
+  });
+
+  describe('isMedicationOrderSetResponse', () => {
+    test('accepts valid response with only launchUrl', () => {
+      expect(isMedicationOrderSetResponse({ launchUrl: 'https://example.com/widget' })).toBe(true);
+    });
+
+    test('rejects missing or empty launchUrl', () => {
+      expect(isMedicationOrderSetResponse({})).toBe(false);
+      expect(isMedicationOrderSetResponse(null)).toBe(false);
+      expect(isMedicationOrderSetResponse({ launchUrl: '' })).toBe(false);
+    });
+  });
+
+  test('medicationOrderSetRequestToParameters encodes planDefinitionId branch', () => {
+    const req: MedicationOrderSetRequest = {
+      patientId: 'pat-1',
+      planDefinitionId: 'pd-1',
+      appId: 'provider-app',
+    };
+    const result = medicationOrderSetRequestToParameters(req);
+    expect(result.resourceType).toBe('Parameters');
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'planDefinitionId', valueId: 'pd-1' },
+      { name: 'appId', valueString: 'provider-app' },
+    ]);
+  });
+
+  test('medicationOrderSetRequestToParameters encodes numeric vendorOrderSetId as valueInteger', () => {
+    const result = medicationOrderSetRequestToParameters({
+      patientId: 'pat-1',
+      vendorOrderSetId: 377,
+    });
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'vendorOrderSetId', valueInteger: 377 },
+    ]);
+  });
+
+  test('medicationOrderSetRequestToParameters encodes string vendorOrderSetId as valueString', () => {
+    const result = medicationOrderSetRequestToParameters({
+      patientId: 'pat-1',
+      vendorOrderSetId: 'os-377-alpha',
+    });
+    expect(result.parameter).toContainEqual({ name: 'vendorOrderSetId', valueString: 'os-377-alpha' });
+  });
+
+  test('parametersToMedicationOrderSetResponse round-trips the order-set response shape', () => {
+    const expected: MedicationOrderSetResponse = {
+      launchUrl: 'https://ui.example.com/widgets/prescription/order-set/24057/377?sessiontoken=tok',
+      vendorPatientId: 24057,
+      vendorOrderSetId: 377,
+      planDefinitionId: 'pd-1',
+    };
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'launchUrl', valueUri: 'https://ui.example.com/widgets/prescription/order-set/24057/377?sessiontoken=tok' },
+        { name: 'vendorPatientId', valueInteger: 24057 },
+        { name: 'vendorOrderSetId', valueInteger: 377 },
+        { name: 'planDefinitionId', valueId: 'pd-1' },
+      ],
+    };
+    expect(parametersToMedicationOrderSetResponse(params)).toEqual(expected);
+  });
+
+  test('parametersToMedicationOrderSetResponse tolerates missing optional echoes', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'launchUrl', valueUri: 'https://example.com/widget' }],
+    };
+    expect(parametersToMedicationOrderSetResponse(params)).toEqual({
+      launchUrl: 'https://example.com/widget',
+      vendorPatientId: undefined,
+      vendorOrderSetId: undefined,
+      planDefinitionId: undefined,
+    });
+  });
+
+  test('parametersToMedicationOrderSetResponse rejects missing launchUrl', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
+    };
+    expect(() => parametersToMedicationOrderSetResponse(params)).toThrow(INVALID_MEDICATION_ORDER_SET_RESPONSE);
   });
 });

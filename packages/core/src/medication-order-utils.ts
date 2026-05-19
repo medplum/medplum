@@ -18,6 +18,11 @@ export const INVALID_MEDICATION_ORDER_RESPONSE = 'Invalid response from order me
 export const INVALID_MEDICATION_SEARCH_RESPONSE = 'Invalid response from medication search bot';
 
 /**
+ * Stable error when an order-set widget-url response is missing `launchUrl`.
+ */
+export const INVALID_MEDICATION_ORDER_SET_RESPONSE = 'Invalid response from order-set bot';
+
+/**
  * Vendor-neutral drug line for {@link MedicationOrderRequest}.
  */
 export interface MedicationOrderDrugInput {
@@ -78,6 +83,41 @@ export interface MedicationOrderResponse {
 }
 
 /**
+ * Vendor-neutral input for an order-set widget-URL bot.
+ *
+ * One of `planDefinitionId` (Medplum reverse-lookup to the vendor's orderset id
+ * via a cross-system identifier) or `vendorOrderSetId` (escape hatch when no
+ * synced PD exists) is required. Bots reject input where both are set so the
+ * intent is unambiguous on the wire.
+ */
+export interface MedicationOrderSetRequest {
+  readonly patientId: string;
+  readonly planDefinitionId?: string;
+  /**
+   * Vendor-side order-set id. Numeric in ScriptSure today; kept as
+   * `number | string` so vendors with non-numeric ids can adopt the operation
+   * without a wire-format change.
+   */
+  readonly vendorOrderSetId?: number | string;
+  readonly appId?: string;
+}
+
+/**
+ * Vendor-neutral output from an order-set widget-URL bot.
+ *
+ * The bot itself does not create FHIR resources — it just resolves the vendor
+ * ids and returns an iframe URL the prescriber loads to review/sign the whole
+ * order set in one pass. Optional echoes (`vendorPatientId`, `vendorOrderSetId`,
+ * `planDefinitionId`) are surfaced for diagnostics and audit logging.
+ */
+export interface MedicationOrderSetResponse {
+  readonly launchUrl: string;
+  readonly vendorPatientId?: number | string;
+  readonly vendorOrderSetId?: number | string;
+  readonly planDefinitionId?: string;
+}
+
+/**
  * Parameters for a drug search bot used by {@link MedicationOrderRequest} flows.
  */
 export interface MedicationSearchParams {
@@ -122,6 +162,19 @@ export function isMedicationOrderResponse(value: unknown): value is MedicationOr
     typeof obj.launchUrl === 'string' &&
     obj.launchUrl.length > 0
   );
+}
+
+/**
+ * Type guard: validates an order-set widget-URL bot response.
+ * @param value - Unknown bot JSON payload.
+ * @returns True when the value matches {@link MedicationOrderSetResponse}.
+ */
+export function isMedicationOrderSetResponse(value: unknown): value is MedicationOrderSetResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return typeof obj.launchUrl === 'string' && obj.launchUrl.length > 0;
 }
 
 /**
@@ -437,6 +490,76 @@ export function parametersToMedicationOrderResponse(params: Parameters): Medicat
   };
   if (!isMedicationOrderResponse(candidate)) {
     throw new Error(INVALID_MEDICATION_ORDER_RESPONSE);
+  }
+  return candidate;
+}
+
+/**
+ * Encodes a {@link MedicationOrderSetRequest} as a FHIR `Parameters` body for
+ * the vendor-neutral `$order-set-url` custom operation
+ * (`POST /fhir/R4/PlanDefinition/$order-set-url`). Optional fields are omitted
+ * entirely so the wire payload mirrors the legacy `executeBot` plain-JSON
+ * shape the bot's `parseInput` helper would otherwise have to coerce.
+ *
+ * `vendorOrderSetId` is encoded as `valueInteger` when numeric and
+ * `valueString` otherwise — keeping the operation usable by future vendors
+ * whose order-set ids are not numeric.
+ *
+ * @param req - Order-set request (vendor-neutral).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationOrderSetRequestToParameters(req: MedicationOrderSetRequest): Parameters {
+  const parameter: ParametersParameter[] = [];
+  parameter.push(param('patientId', 'valueId', req.patientId));
+  if (req.planDefinitionId !== undefined) {
+    parameter.push(param('planDefinitionId', 'valueId', req.planDefinitionId));
+  }
+  if (req.vendorOrderSetId !== undefined) {
+    if (typeof req.vendorOrderSetId === 'number') {
+      parameter.push(param('vendorOrderSetId', 'valueInteger', req.vendorOrderSetId));
+    } else {
+      parameter.push(param('vendorOrderSetId', 'valueString', req.vendorOrderSetId));
+    }
+  }
+  if (req.appId !== undefined) {
+    parameter.push(param('appId', 'valueString', req.appId));
+  }
+  return { resourceType: 'Parameters', parameter };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$order-set-url` custom operation
+ * into a typed {@link MedicationOrderSetResponse}. Throws
+ * `INVALID_MEDICATION_ORDER_SET_RESPONSE` when `launchUrl` is missing or empty.
+ *
+ * Echoed vendor ids (`vendorPatientId`, `vendorOrderSetId`) are preserved as
+ * the wire type — `number` when sent as `valueInteger`, `string` when sent as
+ * `valueString` — so downstream code can read either without conversion.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link MedicationOrderSetResponse}.
+ */
+export function parametersToMedicationOrderSetResponse(params: Parameters): MedicationOrderSetResponse {
+  const map: Record<string, unknown> = {};
+  for (const p of params.parameter ?? []) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const candidate: MedicationOrderSetResponse = {
+    launchUrl: typeof map.launchUrl === 'string' ? map.launchUrl : '',
+    vendorPatientId:
+      typeof map.vendorPatientId === 'number' || typeof map.vendorPatientId === 'string'
+        ? map.vendorPatientId
+        : undefined,
+    vendorOrderSetId:
+      typeof map.vendorOrderSetId === 'number' || typeof map.vendorOrderSetId === 'string'
+        ? map.vendorOrderSetId
+        : undefined,
+    planDefinitionId: typeof map.planDefinitionId === 'string' ? map.planDefinitionId : undefined,
+  };
+  if (!isMedicationOrderSetResponse(candidate)) {
+    throw new Error(INVALID_MEDICATION_ORDER_SET_RESPONSE);
   }
   return candidate;
 }

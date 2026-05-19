@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
+import type { Parameters, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { SCRIPTSURE_ORDER_SET_BOT, SCRIPTSURE_ORDERSET_ID_SYSTEM } from '@medplum/scriptsure-react';
+import { SCRIPTSURE_ORDERSET_ID_SYSTEM } from '@medplum/scriptsure-react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -45,6 +45,14 @@ const UNSYNCED_PD: PlanDefinition = {
 };
 
 const URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokA';
+const ORDER_SET_OPERATION_URL = 'fhir/R4/PlanDefinition/$order-set-url';
+
+function paramsResponse(launchUrl: string): Parameters {
+  return {
+    resourceType: 'Parameters',
+    parameter: [{ name: 'launchUrl', valueUri: launchUrl }],
+  };
+}
 
 interface HarnessProps {
   initialPatient?: Patient;
@@ -104,9 +112,9 @@ describe('OrderSetTabPanel', () => {
     expect(btn).toBeDisabled();
   });
 
-  test('escape-hatch ScriptSure id sends the orderset bot the right payload', async () => {
+  test('escape-hatch ScriptSure id sends the $order-set-url operation the right payload', async () => {
     const medplum = new MockClient();
-    medplum.executeBot = vi.fn().mockResolvedValue({ url: URL_A });
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue(paramsResponse(URL_A));
     const onOrderComplete = vi.fn();
 
     await act(async () => {
@@ -126,11 +134,15 @@ describe('OrderSetTabPanel', () => {
       fireEvent.change(numericInput, { target: { value: '377' } });
     });
 
-    await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalledWith(SCRIPTSURE_ORDER_SET_BOT, {
-        patientId: PATIENT.id,
-        scriptSureOrdersetId: 377,
-      });
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const [calledUrl, body] = post.mock.calls.at(-1) ?? [];
+    expect(calledUrl?.toString()).toContain(ORDER_SET_OPERATION_URL);
+    expect(body).toMatchObject({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'patientId', valueId: PATIENT.id },
+        { name: 'vendorOrderSetId', valueInteger: 377 },
+      ],
     });
 
     const btn = screen.getByRole('button', { name: /Open prescribing widget/i });
