@@ -8,12 +8,14 @@ import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
-import type { DataWarehouseSink, DuckdbConnectionForSink } from './sink';
+import type { DataWarehouseSink } from './sink';
+import type { DuckdbConnection } from './warehouse-sql';
 import {
   buildCountFromHistoryTableQuery,
   DEFAULT_NAMESPACE,
   runParameterizedWarehouseSqlReadAll,
 } from './warehouse-sql';
+import { globalLogger } from '../logger';
 
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
@@ -45,14 +47,14 @@ function logSyncProgress(
     return;
   }
 
-  console.log(message);
+  globalLogger.info(message, metadata);
 }
 
 function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
 }
 
-type WarehouseSyncDuckdbConnection = DuckdbConnectionForSink & {
+type WarehouseSyncDuckdbConnection = DuckdbConnection & {
   closeSync(): void;
 };
 

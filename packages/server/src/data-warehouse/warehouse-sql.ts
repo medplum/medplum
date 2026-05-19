@@ -74,10 +74,6 @@ export async function runParameterizedWarehouseSqlReadAll(
   return statement.runAndReadAll();
 }
 
-function buildCatalogQualifiedTableIdentifier(catalog: string, table: string): string {
-  return `${catalog}"."${table}`;
-}
-
 function getQualifiedTableIdentifierParts(qualifiedTable: string, minParts = 1): string[] {
   const parts = qualifiedTable.split('.');
   if (parts.length < minParts || parts.some((part) => !part)) {
@@ -132,19 +128,20 @@ export function buildProjectedSelectFromHistoryTableQuery(
   sourceHistoryTable: string,
   sourcePredicate: Expression
 ): SelectQuery {
-  const qualifiedTableName = buildCatalogQualifiedTableIdentifier(POSTGRES_CATALOG, sourceHistoryTable);
+  const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
+  const col = (name: string, alias?: string): Column => new Column(table, name, false, alias);
   const escapedProjectIdPath = PROJECT_ID_JSON_PATH;
-  const query = new SelectQuery(qualifiedTableName);
+  const query = new SelectQuery(table);
   query
     .column('id')
-    .column(new Column(qualifiedTableName, 'versionId', false, 'version_id'))
+    .column(col('versionId', 'version_id'))
     .column('content')
-    .column(new Column(qualifiedTableName, 'lastUpdated', false, 'last_updated'))
+    .column(col('lastUpdated', 'last_updated'))
     // duckdb only allows json_extract_string() on JSON content
     .raw(`json_extract_string(content, '${escapedProjectIdPath}') AS project_id`)
     // ...and you can't call json_extract_string() on non-JSON content
-    .where(new Column(qualifiedTableName, 'content'), '!=', null)
-    .where(new Column(qualifiedTableName, 'content'), '!=', '')
+    .where('content', '!=', null)
+    .where('content', '!=', '')
     .whereExpr(sourcePredicate)
     .orderBy('lastUpdated');
   return query;
@@ -160,11 +157,11 @@ export function buildProjectedSelectFromHistoryTable(
 }
 
 export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate: Expression): SqlBuilder {
-  const qualifiedTableName = buildCatalogQualifiedTableIdentifier(POSTGRES_CATALOG, sourceHistoryTable);
-  const query = new SelectQuery(qualifiedTableName)
+  const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
+  const query = new SelectQuery(table)
     .raw('COUNT(*) AS count')
-    .where(new Column(qualifiedTableName, 'content'), '!=', null)
-    .where(new Column(qualifiedTableName, 'content'), '!=', '')
+    .where('content', '!=', null)
+    .where('content', '!=', '')
     .whereExpr(sourcePredicate);
 
   return buildSqlBuilder((sql) => {

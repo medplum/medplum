@@ -6,9 +6,9 @@ import type { WarehouseSourceTable } from '../../data-warehouse/config';
 import type {
   DataWarehouseSink,
   DataWarehouseSinkType,
-  DuckdbConnectionForSink,
   SinkQueryContext,
 } from '../../data-warehouse/sink';
+import type { DuckdbConnection } from '../../data-warehouse/warehouse-sql';
 import {
   buildInsertIntoSelectQuery,
   buildManagedIcebergQualifiedTable,
@@ -58,7 +58,7 @@ export class S3TablesWarehouseSink implements DataWarehouseSink {
     return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg);
   }
 
-  async writeRows(connection: DuckdbConnectionForSink, context: SinkQueryContext): Promise<void> {
+  async writeRows(connection: DuckdbConnection, context: SinkQueryContext): Promise<void> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(context.namespace, context.tableSpec.icebergTable);
     const projectedSelectQuery = buildProjectedSelectFromHistoryTableQuery(
       context.tableSpec.postgresTable,

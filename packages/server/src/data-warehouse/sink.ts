@@ -16,8 +16,6 @@ import {
 
 export type DataWarehouseSinkType = 's3tables' | 'local';
 
-export type DuckdbConnectionForSink = DuckdbConnection;
-
 export interface SinkQueryContext {
   tableSpec: WarehouseSourceTable;
   namespace: string;
@@ -29,7 +27,7 @@ export interface DataWarehouseSink {
   getSetupQueries(connectionString: string): string[];
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
   buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression;
-  writeRows(connection: DuckdbConnectionForSink, context: SinkQueryContext): Promise<void>;
+  writeRows(connection: DuckdbConnection, context: SinkQueryContext): Promise<void>;
   /**
    * For local sinks, use the path to the Parquet file
    * For Iceberg, you'll use the Iceberg table name
@@ -60,7 +58,7 @@ export class LocalParquetWarehouseSink implements DataWarehouseSink {
     return buildTrueSourcePredicate();
   }
 
-  async writeRows(connection: DuckdbConnectionForSink, context: SinkQueryContext): Promise<void> {
+  async writeRows(connection: DuckdbConnection, context: SinkQueryContext): Promise<void> {
     const parquetPath = this.getParquetPathForTable(context.tableSpec);
     const projectedSelect = buildProjectedSelectFromHistoryTable(
       context.tableSpec.postgresTable,
