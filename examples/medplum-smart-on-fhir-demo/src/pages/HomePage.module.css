@@ -1,0 +1,49 @@
+.page {
+  min-height: 100vh;
+  background-color: var(--mantine-color-body);
+  --text-secondary: var(--mantine-color-gray-7);
+}
+
+[data-mantine-color-scheme="dark"] .page {
+  --text-secondary: var(--mantine-color-gray-5);
+}
+
+.container {
+  max-width: 800px;
+}
+
+.textSecondary {
+  color: var(--text-secondary);
+}
+
+.sectionIcon {
+  background-color: var(--mantine-color-blue-6);
+  border: none;
+  flex-shrink: 0;
+}
+
+.sectionIconSecondary {
+  color: var(--mantine-color-gray-6);
+  flex-shrink: 0;
+}
+
+.flexOne {
+  flex: 1;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+}
+
+.launchGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--mantine-spacing-md);
+}
+
+@media (max-width: 600px) {
+  .launchGrid {
+    grid-template-columns: 1fr;
+  }
+}

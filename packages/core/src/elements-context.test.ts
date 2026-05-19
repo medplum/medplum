@@ -349,3 +349,7 @@ describe('buildElementsContext', () => {
     checkSchema();
   });
 });
+
+function fail(message: string): never {
+  throw new Error(message);
+}

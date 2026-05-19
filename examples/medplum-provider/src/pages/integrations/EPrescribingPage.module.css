@@ -1,0 +1,15 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--app-shell-header-height, 0));
+}
+
+.tabBar {
+  flex-shrink: 0;
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.iframeContainer {
+  flex: 1;
+  min-height: 0;
+}

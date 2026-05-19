@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockAnswers = {
   'first-name': { valueString: 'Jamie' },

@@ -1,33 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Flex,
-  Paper,
-  Group,
-  Button,
-  Divider,
   ActionIcon,
-  ScrollArea,
-  Stack,
-  Skeleton,
-  Text,
   Box,
+  Divider,
+  Flex,
+  Group,
   Modal,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  Tabs,
+  Text,
+  Tooltip,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { JSX } from 'react';
-import type { ServiceRequest } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import { useNavigate, useParams } from 'react-router';
+import type { ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { showErrorNotification } from '../../utils/notifications';
 import { IconPlus } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { LabListItem } from '../../components/labs/LabListItem';
-import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
+import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
-import cx from 'clsx';
+import { showErrorNotification } from '../../utils/notifications';
+import { OrderLabsPage } from '../labs/OrderLabsPage';
 import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';
@@ -40,8 +40,8 @@ export function LabsPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<LabTab>('completed');
   const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
   const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [newOrderModalOpened, setNewOrderModalOpened] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
@@ -140,28 +140,30 @@ export function LabsPage(): JSX.Element {
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
                 <Group gap="xs">
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeTab === 'completed' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => handleTabChange('completed')}
+                  <Tabs
+                    value={activeTab}
+                    onChange={(value) => handleTabChange(value as string)}
+                    variant="unstyled"
+                    className="pill-tabs"
                   >
-                    Completed
-                  </Button>
-
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeTab === 'open' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => handleTabChange('open')}
-                  >
-                    Open
-                  </Button>
+                    <Tabs.List>
+                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
+                      <Tabs.Tab value="open">Open</Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs>
                 </Group>
 
-                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewOrderModalOpened(true)}>
-                  <IconPlus size={16} />
-                </ActionIcon>
+                <Tooltip label="Order Labs" position="bottom" openDelay={500}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="filled"
+                    color="blue"
+                    size={32}
+                    onClick={() => setNewOrderModalOpened(true)}
+                  >
+                    <IconPlus size={16} />
+                  </ActionIcon>
+                </Tooltip>
               </Flex>
             </Paper>
 

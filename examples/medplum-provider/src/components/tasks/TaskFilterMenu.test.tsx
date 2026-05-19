@@ -37,10 +37,10 @@ describe('TaskFilterMenu', () => {
     await user.hover(screen.getByText('Status'));
 
     await waitFor(() => {
-      expect(screen.getByText('in-progress')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('in-progress'));
+    await user.click(screen.getByText('In Progress'));
 
     expect(onFilterChange).toHaveBeenCalledWith(TaskFilterType.STATUS, 'in-progress');
   });
@@ -99,10 +99,10 @@ describe('TaskFilterMenu', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('routine')).toBeInTheDocument();
-      expect(screen.getByText('urgent')).toBeInTheDocument();
-      expect(screen.getByText('asap')).toBeInTheDocument();
-      expect(screen.getByText('stat')).toBeInTheDocument();
+      expect(screen.getByText('Routine')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
+      expect(screen.getByText('ASAP')).toBeInTheDocument();
+      expect(screen.getByText('Stat')).toBeInTheDocument();
     });
   });
 
@@ -120,10 +120,10 @@ describe('TaskFilterMenu', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     expect(onFilterChange).toHaveBeenCalledWith(TaskFilterType.PRIORITY, 'urgent');
   });
@@ -141,15 +141,14 @@ describe('TaskFilterMenu', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
-      expect(screen.getByText('stat')).toBeInTheDocument();
-      expect(screen.getByText('routine')).toBeInTheDocument();
-      expect(screen.getByText('asap')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
+      expect(screen.getByText('Stat')).toBeInTheDocument();
+      expect(screen.getByText('Routine')).toBeInTheDocument();
+      expect(screen.getByText('ASAP')).toBeInTheDocument();
     });
 
-    // Verify that the menu is rendering correctly with priorities
-    const urgentText = screen.getByText('urgent');
-    const statText = screen.getByText('stat');
+    const urgentText = screen.getByText('Urgent');
+    const statText = screen.getByText('Stat');
     expect(urgentText).toBeInTheDocument();
     expect(statText).toBeInTheDocument();
   });

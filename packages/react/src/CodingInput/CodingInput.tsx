@@ -16,7 +16,7 @@ export interface CodingInputProps
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
   const { defaultValue, onChange, withHelpText, response, ...rest } = props;
-  const [value, setValue] = useState<Coding | undefined>(response?.answer?.[0]?.valueCoding ?? defaultValue);
+  const [value, setValue] = useState(response?.answer?.[0]?.valueCoding ?? defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newValue = newValues[0];
@@ -38,7 +38,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
   );
 }
 
-function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
+export function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
   return {
     system: coding.system,
     code: coding.code,
@@ -46,7 +46,7 @@ function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
   };
 }
 
-function valueSetElementToCoding(element: ValueSetExpansionContains): Coding {
+export function valueSetElementToCoding(element: ValueSetExpansionContains): Coding {
   return {
     system: element.system,
     code: element.code,

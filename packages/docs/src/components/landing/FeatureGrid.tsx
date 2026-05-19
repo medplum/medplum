@@ -7,11 +7,19 @@ import styles from './FeatureGrid.module.css';
 export interface FeatureGridProps {
   readonly columns: number;
   readonly children?: ReactNode;
+  readonly variant?: 'default' | 'ecosystem' | 'complexity';
 }
 
 export function FeatureGrid(props: FeatureGridProps): JSX.Element {
+  const classNames = [styles.featureGrid];
+  if (props.variant === 'ecosystem') {
+    classNames.push(styles.ecosystemVariant);
+  } else if (props.variant === 'complexity') {
+    classNames.push(styles.complexityVariant);
+  }
+
   return (
-    <div className={styles.featureGrid} style={{ '--columns': props.columns } as CSSProperties}>
+    <div className={classNames.join(' ')} style={{ '--columns': props.columns } as CSSProperties}>
       {props.children}
     </div>
   );

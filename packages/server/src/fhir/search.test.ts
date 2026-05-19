@@ -5,11 +5,13 @@ import {
   createReference,
   getReferenceString,
   getSearchParameter,
+  isDefined,
   LOINC,
   normalizeErrorString,
   Operator,
   parseSearchRequest,
   SNOMED,
+  UCUM,
 } from '@medplum/core';
 import type {
   ActivityDefinition,
@@ -49,35 +51,41 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
-import { getSystemRepo, Repository } from './repo';
-import { clampEstimateCount, getCount } from './search';
+import type { SystemRepository } from './repo';
+import { getGlobalSystemRepo, Repository } from './repo';
+import type { ChainedSearchLink } from './search';
+import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
+import { loadStructureDefinitions } from './structure';
 
 jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe('project-scoped Repository', () => {
+describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {
   let config: MedplumServerConfig;
   let repo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initAppServices(config);
-    const { project } = await createTestProject();
+    const { project } = await createTestProject({ project: { features } });
     repo = new Repository({
       strictMode: true,
       projects: [project],
       currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -184,50 +192,132 @@ describe('project-scoped Repository', () => {
     }
   );
 
-  test('getCount returns estimate and accurate with forceAccurate', () =>
-    withTestContext(async () => {
-      const result = await getCount(repo, { resourceType: 'Patient' }, { forceAccurate: true });
-      expect(result).toHaveProperty('estimate');
-      expect(result).toHaveProperty('accurate');
-      expect(typeof result.estimate).toBe('number');
-      expect(typeof result.accurate).toBe('number');
-    }));
+  describe('getCount', () => {
+    let getDbClientSpy: jest.SpyInstance;
 
-  test('getCount returns estimate without forceAccurate when below threshold', () =>
-    withTestContext(async () => {
-      // Without forceAccurate, accurate is only returned if estimate < accurateCountThreshold
-      // Since we're testing with minimal data, both should be returned (estimate will be below threshold)
-      const result = await getCount(repo, { resourceType: 'Patient' });
-      expect(result).toHaveProperty('estimate');
-      expect(typeof result.estimate).toBe('number');
-      // With low data counts, accurate should still be returned since estimate < threshold
-      expect(result).toHaveProperty('accurate');
-    }));
+    beforeEach(() => {
+      getDbClientSpy = jest.spyOn(repo, 'getDatabaseClient');
+    });
 
-  test('getCount returns only estimate when above threshold', () =>
-    withTestContext(async () => {
-      const prevThreshold = config.accurateCountThreshold;
-      config.accurateCountThreshold = 0;
+    afterEach(() => {
+      getDbClientSpy.mockRestore();
+    });
 
-      const result = await getCount(repo, { resourceType: 'Patient' });
-      expect(result).toHaveProperty('estimate');
-      expect(typeof result.estimate).toBe('number');
-      expect(result).not.toHaveProperty('accurate');
+    test('returns estimate and accurate with forceAccurate', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(typeof result.estimate).toBe('number');
+        expect(typeof result.accurate).toBe('number');
+      }));
 
-      config.accurateCountThreshold = prevThreshold;
-    }));
+    test('returns estimate without forceAccurate when below threshold', () =>
+      withTestContext(async () => {
+        // Without forceAccurate, accurate is only returned if estimate < accurateCountThreshold
+        // Since we're testing with minimal data, both should be returned (estimate will be below threshold)
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        // With low data counts, accurate should still be returned since estimate < threshold
+        expect(result).toHaveProperty('accurate');
+      }));
 
-  test('getCount uses rowCount option for clamping', () =>
-    withTestContext(async () => {
-      // Create some patients to ensure non-zero counts
-      await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest1' }] });
-      await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest2' }] });
+    test('returns only estimate when above threshold', () =>
+      withTestContext(async () => {
+        const prevThreshold = config.accurateCountThreshold;
+        config.accurateCountThreshold = 0;
 
-      const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 2, forceAccurate: true });
-      expect(result).toHaveProperty('estimate');
-      expect(result).toHaveProperty('accurate');
-      expect(result.accurate).toBeGreaterThanOrEqual(2);
-    }));
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(result).not.toHaveProperty('accurate');
+
+        config.accurateCountThreshold = prevThreshold;
+      }));
+
+    test('uses rowCount option for clamping', () =>
+      withTestContext(async () => {
+        // Create some patients to ensure non-zero counts
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest1' }] });
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest2' }] });
+
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 2, forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(result.accurate).toBeGreaterThanOrEqual(2);
+      }));
+
+    test('short-circuits when rowCount <= pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5 });
+        expect(result).toStrictEqual({ estimate: 5, accurate: 5 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits with offset when rowCount <= pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', offset: 10 }, { rowCount: 3 });
+        expect(result).toStrictEqual({ estimate: 13, accurate: 13 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits with explicit count when rowCount <= count', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', count: 50 }, { rowCount: 30 });
+        expect(result).toStrictEqual({ estimate: 30, accurate: 30 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits when rowCount is 0 and no offset', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 0 });
+        expect(result).toStrictEqual({ estimate: 0, accurate: 0 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount is 0 with offset', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', offset: 20 }, { rowCount: 0 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when forceAccurate is set', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5, forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(typeof result.estimate).toBe('number');
+        expect(typeof result.accurate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when cursor is present', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', cursor: 'abc123' }, { rowCount: 5 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount > pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 21 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount is undefined', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+  });
 
   test('Search _summary', () =>
     withTestContext(async () => {
@@ -2501,6 +2591,59 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
     }));
 
+  test('Reverse include on denied type', () =>
+    withTestContext(async () => {
+      const { repo, client } = await createTestProject({
+        withRepo: true,
+        withClient: true,
+        accessPolicy: { resource: [{ resourceType: 'ClientApplication' }] },
+      });
+
+      await expect(
+        repo.search({
+          resourceType: 'ClientApplication',
+          revInclude: [
+            {
+              resourceType: 'ProjectMembership',
+              searchParam: 'profile',
+            },
+          ],
+          total: 'accurate',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: client.id }],
+        })
+      ).rejects.toThrow('Forbidden');
+    }));
+
+  test('Chained search through denied type', () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: 'Observation' }, { resourceType: 'Organization' }] },
+      });
+
+      const organization = await repo.createResource({
+        resourceType: 'Organization',
+        name: randomUUID(),
+      });
+
+      const patient = await getGlobalSystemRepo().createResource({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        managingOrganization: createReference(organization),
+      });
+
+      await repo.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        code: { text: 'Seen by doctor' },
+      });
+
+      await expect(
+        repo.search(parseSearchRequest(`Observation?patient.organization.name=${organization.name}`))
+      ).rejects.toThrow('Forbidden');
+    }));
+
   test('_include:iterate', () =>
     withTestContext(async () => {
       /*
@@ -3359,6 +3502,75 @@ describe('project-scoped Repository', () => {
       expect(result2.entry?.[0]?.resource?.id).toStrictEqual(obs2.id);
     }));
 
+  test.each<[number, string]>([
+    [0, 'Z'],
+    [1, 'Z'],
+    [6, 'Z'],
+    [12, 'Z'],
+    [23, 'Z'],
+    [0, '-08:00'],
+    [23, '-08:00'],
+    [0, '+03:00'],
+    [23, '+03:00'],
+  ])('birthdate covers all hours: %d (%s)', (hour, tz) =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01T${hour.toString().padStart(2, '0')}:00:00${tz}`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    })
+  );
+
+  test('birthdate with multiple values', () =>
+    withTestContext(async () => {
+      if (!features) {
+        return; // Skip test without feature flag
+      }
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01,2001-01-01`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    }));
+
   test('_filter search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -3520,7 +3732,7 @@ describe('project-scoped Repository', () => {
       expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
-  test('_filter with chained search', () =>
+  test('_filter with reverse chained search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -3595,6 +3807,12 @@ describe('project-scoped Repository', () => {
         identifier: [{ system: 'http://example.com/mrn', value: mrn }],
       });
 
+      // Patient not expected to match any searches
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: 'no-match' }],
+      });
+
       const practitioner = await repo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         name: [{ given: ['Yves'] }],
@@ -3608,6 +3826,7 @@ describe('project-scoped Repository', () => {
           text: 'Strep test',
         },
         subject: createReference(patient),
+        performer: [createReference(patient)],
       });
 
       const observation2 = await repo.createResource<Observation>({
@@ -3631,9 +3850,53 @@ describe('project-scoped Repository', () => {
       });
 
       expect(result.entry).toHaveLength(2);
-      expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual(
-        expect.arrayContaining([observation1.id, observation2.id])
+      expect(getEntryIds(result)).toStrictEqual(expect.arrayContaining([observation1.id, observation2.id]));
+
+      // Patients with observations performed by themselves with an ID equal to observation1.id
+      const result2 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id eq '${observation1.id}'`)
       );
+      expect(getEntryIds(result2)).toStrictEqual([patient.id]);
+
+      // Patients with observations performed by themselves with an ID equal to observation2.id
+      const result3 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id eq '${observation2.id}'`)
+      );
+      expect(getEntryIds(result3)).toStrictEqual([]);
+
+      // Patients with observations performed by themselves with an ID NOT equal to observation1.id
+      const result4 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id ne '${observation1.id}'`)
+      );
+      expect(getEntryIds(result4)).toStrictEqual([]);
+
+      // Patients with observations performed by themselves with an ID NOT equal to observation2.id
+      const result5 = await repo.search(
+        parseSearchRequest(`Patient?_filter=_has:Observation:performer:_id ne '${observation2.id}'`)
+      );
+      expect(getEntryIds(result5)).toStrictEqual([patient.id]);
+    }));
+
+  test('reverse chain with prefix modifier', async () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        birthDate: '2000-01-01',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        effectiveDateTime: '2000-01-01',
+        status: 'final',
+        code: { text: 'Temp.' },
+        subject: createReference(patient),
+        valueQuantity: { value: 101, code: '[degF]', system: UCUM },
+      });
+
+      const result = await repo.search(parseSearchRequest('Patient?_has:Observation:subject:value-quantity=gt100'));
+      expect(getEntryIds(result)).toStrictEqual([patient.id]);
     }));
 
   test('Lookup table exact match with comma disjunction', () =>
@@ -3699,47 +3962,101 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle, s)).toBeTruthy();
     }));
 
-  test('Filter task by due date', () =>
-    withTestContext(async () => {
-      const code = randomUUID();
+  describe('Filter Task by due-date', () => {
+    const code = randomUUID();
+    let task: WithId<Task>;
+    const start = '2025-05-15T12:00:00.000Z';
+    const startPlusOneSecond = '2025-05-15T12:00:01.000Z';
+    beforeAll(async () => {
+      task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: { coding: [{ code }] },
+        restriction: {
+          period: {
+            start,
+            end: '2025-05-15T13:00:00.000Z',
+          },
+        },
+      });
+    });
 
-      // Create 3 tasks
-      // Mix of "no due date", using "start", and using "end"
-      const task1 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-      });
-      const task2 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-        restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
-      });
-      const task3 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-        restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
-      });
+    test.each([
+      [Operator.LESS_THAN, start, false],
+      [Operator.LESS_THAN_OR_EQUALS, start, true],
+      [Operator.GREATER_THAN_OR_EQUALS, start, true],
+      [Operator.GREATER_THAN, start, features?.includes('range-search')],
 
-      // Sort and filter by due date
-      const bundle = await repo.search<Task>({
-        resourceType: 'Task',
-        filters: [
-          { code: 'code', operator: Operator.EQUALS, value: code },
-          { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
-        ],
-        sortRules: [{ code: 'due-date' }],
-      });
-      expect(bundle.entry?.length).toStrictEqual(2);
-      expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
-      expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
-      expect(bundleContains(bundle, task1)).not.toBeTruthy();
-    }));
+      [Operator.LESS_THAN, startPlusOneSecond, true],
+      [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true],
+      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, features?.includes('range-search')],
+      [Operator.GREATER_THAN, startPlusOneSecond, features?.includes('range-search')],
+
+      [Operator.GREATER_THAN, '2025-05-01', true],
+      [Operator.GREATER_THAN, '2025-06-01', false],
+    ])('with %s %s', (operator, value, expected) =>
+      withTestContext(async () => {
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator, value },
+          ],
+          sortRules: [{ code: 'due-date' }],
+        });
+
+        if (expected) {
+          expect(bundle.entry?.length).toStrictEqual(1);
+          expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task.id);
+        } else {
+          expect(bundle.entry?.length).toStrictEqual(0);
+        }
+      })
+    );
+
+    test('multiple resources', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+
+        // Create 3 tasks
+        // Mix of "no due date", using "start", and using "end"
+        const task1 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+        });
+        const task2 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
+        });
+        const task3 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
+        });
+
+        // Sort and filter by due date
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
+          ],
+          sortRules: [{ code: 'due-date' }],
+        });
+        expect(bundle.entry?.length).toStrictEqual(2);
+        expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
+        expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
+        expect(bundleContains(bundle, task1)).not.toBeTruthy();
+      }));
+  });
 
   test('Get estimated count with filter on human name', async () =>
     withTestContext(async () => {
@@ -4761,7 +5078,6 @@ describe('project-scoped Repository', () => {
 
     test('Cursor pagination dedupes across page boundaries', () =>
       withTestContext(async () => {
-        const systemRepo = getSystemRepo();
         const identifier = randomUUID();
         const lastUpdated = new Date();
         lastUpdated.setMilliseconds(0);
@@ -4887,20 +5203,29 @@ describe('project-scoped Repository', () => {
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
-  test('Date array columns', async () =>
-    withTestContext(async () => {
-      const result = await repo.search({
-        resourceType: 'MedicationRequest',
-        filters: [
-          {
-            code: 'date',
-            operator: Operator.EQUALS,
-            value: new Date().toISOString(),
-          },
-        ],
-      });
-      expect(result.entry).toHaveLength(0);
-    }));
+  test.each(['2028-06-01T23:45:56.890-11:00', '2028-06', 'lt2028-06-06'])(
+    'Date array columns match search value %s',
+    async (value) =>
+      withTestContext(async () => {
+        if (!features) {
+          return; // Skip test without feature flag
+        }
+        const identifier = randomUUID();
+        const resource = await repo.createResource<Goal>({
+          resourceType: 'Goal',
+          identifier: [{ value: identifier }],
+          lifecycleStatus: 'active',
+          description: { text: 'Test' },
+          subject: { reference: 'Patient/example' },
+          target: [{ dueDate: '2028-06-01' }],
+        });
+
+        const searchReq = parseSearchRequest(`Goal?identifier=${identifier}&target-date=${value}`);
+        const res = await repo.search(searchReq);
+        expect(res.entry).toHaveLength(1);
+        expect(res.entry?.[0].resource?.id).toStrictEqual(resource.id);
+      })
+  );
 
   describe('discourage sequential scans', () => {
     let querySpy: jest.SpyInstance;
@@ -4948,11 +5273,12 @@ describe('project-scoped Repository', () => {
   });
 });
 
-describe('systemRepo', () => {
-  const systemRepo = getSystemRepo();
+describe.each([true, false])('systemRepo', (rangeSearch) => {
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.rangeSearch = rangeSearch;
     await initAppServices(config);
   });
 
@@ -5387,5 +5713,35 @@ describe('systemRepo', () => {
         }).rejects.toThrow(expectedError);
       })
     );
+  });
+});
+
+function getEntryIds(result: Bundle<WithId<Resource>>): string[] {
+  return result.entry?.map((e) => e.resource?.id).filter(isDefined) ?? [];
+}
+
+describe('parseChainedParameter', () => {
+  beforeAll(async () => {
+    loadStructureDefinitions();
+  });
+  test('reverse chained search with prefix operators', () => {
+    const searchRequest = parseSearchRequest('Patient?_has:EpisodeOfCare:patient:date=ge2026-04-01');
+    expect(searchRequest.filters?.length).toStrictEqual(1);
+    const filter = searchRequest.filters?.[0];
+    assert(filter);
+
+    const chain = parseChainedParameter(searchRequest.resourceType, filter);
+    expect(chain.chain.length).toStrictEqual(1);
+    expect(chain.chain[0]).toMatchObject<Partial<ChainedSearchLink>>({
+      originType: 'Patient',
+      targetType: 'EpisodeOfCare',
+      code: 'patient',
+      direction: Direction.REVERSE,
+    });
+    expect(chain.filter).toMatchObject<Partial<Filter>>({
+      code: 'date',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: '2026-04-01',
+    });
   });
 });

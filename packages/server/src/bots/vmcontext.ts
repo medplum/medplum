@@ -8,12 +8,12 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import type { Binary, Reference } from '@medplum/fhirtypes';
+import type { Binary } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
@@ -27,7 +27,7 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * @returns The bot execution result.
  */
 export async function runInVmContext(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, input, contentType, traceId, headers } = request;
+  const { bot, input, contentType, traceId, headers, runAs } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -42,8 +42,8 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     return { success: false, logResult: 'Executable code is not a Binary' };
   }
 
-  const systemRepo = getSystemRepo();
-  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const systemRepo = await getProjectSystemRepo(runAs.project);
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl });
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();

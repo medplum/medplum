@@ -11,7 +11,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getRedis } from '../redis';
+import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { setTopicCurrentContext } from './utils';
 
@@ -231,7 +231,7 @@ describe('FHIRcast routes', () => {
   });
 
   test('Redis returns `null`', async () => {
-    const redis = getRedis();
+    const redis = getCacheRedis();
     const mockCommander = new MockChainableCommander();
     const mockFn = (() => {
       return mockCommander;
@@ -269,7 +269,7 @@ describe('FHIRcast routes', () => {
   });
 
   test('Redis result contains error', async () => {
-    const redis = getRedis();
+    const redis = getCacheRedis();
     const mockCommander = new MockChainableCommander();
     const mockFn = (() => {
       return mockCommander;
@@ -794,7 +794,7 @@ describe('FHIRcast routes', () => {
     expect(publishRes.status).toBe(202);
     expect(publishRes.body.event?.event?.['context.versionId']).toBeDefined();
 
-    const latestContextStr = (await getRedis().get(
+    const latestContextStr = (await getCacheRedis().get(
       `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestContextStr).toBeTruthy();
@@ -865,5 +865,36 @@ describe('FHIRcast routes', () => {
     expect(
       (publishRes.body.event.event as FhircastEventPayload<'DiagnosticReport-update'>)['context.priorVersionId']
     ).toStrictEqual(versionId);
+  });
+
+  test('`DiagnosticReport-update` returns 400 when current context is not a DiagnosticReport', async () => {
+    const topic = randomUUID();
+    const versionId = generateId();
+
+    // Setup a Patient context (no content bundle)
+    await setTopicCurrentContext(project.id, topic, {
+      'context.type': 'Patient',
+      'context.versionId': versionId,
+      context: [{ key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } }],
+    });
+
+    const context = [
+      { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
+      { key: 'patient', reference: { reference: 'Patient/xyz-789' } },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'transaction' } },
+    ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
+
+    const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-update', context, versionId);
+
+    const res = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(payload);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', details: { text: 'No DiagnosticReport currently open for this topic' } }],
+    });
   });
 });

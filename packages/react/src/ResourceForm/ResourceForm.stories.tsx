@@ -42,6 +42,7 @@ function useFakeGetAccessPolicy(medplum: MedplumClient, accessPolicy: AccessPoli
       return accessPolicy;
     }
 
+    // eslint-disable-next-line react-hooks/immutability
     medplum.getAccessPolicy = fakeGetAccessPolicy;
 
     return () => {
@@ -256,6 +257,7 @@ function useFakeRequestProfileSchema(medplum: MedplumClient): void {
       );
     }
 
+    // eslint-disable-next-line react-hooks/immutability
     medplum.requestProfileSchema = fakeRequestProfileSchema;
 
     return () => {

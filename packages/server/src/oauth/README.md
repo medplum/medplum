@@ -195,7 +195,7 @@ Be sure to logout between each test by visiting <http://host.docker.internal:810
 
 In "EHR Launch Sequence":
 
-Make sure "Scopes" includes "fhirUser launch launch/patient offline*access openid profile user/*._ patient/_.\_"
+Make sure "Scopes" includes "fhirUser launch launch/patient offline_access openid profile user/*._ patient/_.\_"
 
 Launch URL's:
 

@@ -108,7 +108,7 @@ import {
  */
 export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
-export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env?.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -196,6 +196,17 @@ export interface MedplumClientOptions {
   fhircastHubUrl?: string;
 
   /**
+   * CDS Services URL.
+   *
+   * Default value is `baseUrl + "/cds-services"`.
+   *
+   * Can be specified as absolute URL or relative to `baseUrl`.
+   *
+   * Use this if you want to use a different path when connecting to a CDS Services endpoint.
+   */
+  cdsServicesUrl?: string;
+
+  /**
    * The client ID.
    *
    * Client ID can be used for SMART-on-FHIR customization.
@@ -253,6 +264,29 @@ export interface MedplumClientOptions {
    * Default value is `0`, which disables auto batching.
    */
   autoBatchTime?: number;
+
+  /**
+   * The maximum time in milliseconds to wait between retries for failed requests.
+   *
+   * When the client encounters a rate-limited response (HTTP 429) or a server error (HTTP 5xx), it will automatically retry the request after a delay. The delay is calculated using an exponential backoff strategy, and this setting defines the maximum delay time.
+   *
+   * If the retry delay exceeds this maximum time, the client will not retry the request and will return the error response to the caller immediately. Setting this value to zero disables retries for failed requests.
+   *
+   * Default value is `2000` (2 seconds).
+   */
+  maxRetryTime?: number;
+
+  /**
+   * The maximum number of retries for failed requests.
+   *
+   * When the client encounters a retryable response (HTTP 429 or 5xx), it will automatically retry the request.
+   * This setting defines the maximum number of retry attempts.
+   *
+   * This can be overridden per-request using the `maxRetries` option in `MedplumRequestOptions`.
+   *
+   * Default value is `2`.
+   */
+  maxRetries?: number;
 
   /**
    * The refresh grace period in milliseconds.
@@ -416,6 +450,11 @@ export interface MedplumRequestOptions extends RequestInit {
    * Only applies when the client is configured with auto-batching enabled.
    */
   disableAutoBatch?: boolean;
+
+  /**
+   * See: https://developer.mozilla.org/en-US/docs/Web/API/Request/duplex
+   */
+  duplex?: 'half';
 }
 
 export interface PushToAgentOptions extends MedplumRequestOptions {
@@ -464,7 +503,7 @@ export interface BaseLoginRequest {
 export interface EmailPasswordLoginRequest extends BaseLoginRequest {
   readonly email: string;
   readonly password: string;
-  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  /** @deprecated Use "offline_access" scope instead. */
   readonly remember?: boolean;
 }
 
@@ -473,7 +512,7 @@ export interface NewUserRequest {
   readonly lastName: string;
   readonly email: string;
   readonly password: string;
-  readonly recaptchaToken: string;
+  readonly recaptchaToken?: string;
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
   readonly projectId?: string;
@@ -503,6 +542,7 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly emailVerificationRequired?: boolean;
   readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
   readonly enrollQrCode?: string;
@@ -766,6 +806,7 @@ interface RequestState {
  * Standard identifiers: {@link https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types}
  * JWT bearer extension: {@link https://datatracker.ietf.org/doc/html/rfc7523}
  * Token exchange extension: {@link https://datatracker.ietf.org/doc/html/rfc8693}
+ * Pre-authorized code: {@link https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-urnietfparamsoauthgrant-typ}
  */
 export const OAuthGrantType = {
   ClientCredentials: 'client_credentials',
@@ -773,6 +814,7 @@ export const OAuthGrantType = {
   RefreshToken: 'refresh_token',
   JwtBearer: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
   TokenExchange: 'urn:ietf:params:oauth:grant-type:token-exchange',
+  PreAuthorizedCode: 'urn:ietf:params:oauth:grant-type:pre-authorized_code',
 } as const;
 export type OAuthGrantType = (typeof OAuthGrantType)[keyof typeof OAuthGrantType];
 
@@ -940,10 +982,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly fhircastHubUrl: string;
+  private readonly cdsServicesUrl: string;
   private readonly defaultHeaders: Record<string, string>;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly maxRetries: number;
+  private readonly maxRetryTime: number;
   private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
@@ -983,6 +1028,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
     this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
     this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
+    this.cdsServicesUrl = concatUrls(this.baseUrl, options?.cdsServicesUrl ?? 'cds-services');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.credentialsInHeader = options?.authCredentialsMethod === 'header';
@@ -990,6 +1036,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
     this.logLevel = this.initializeLogLevel(options);
+    this.maxRetries = options?.maxRetries ?? 2;
+    this.maxRetryTime = options?.maxRetryTime ?? 2000;
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -1133,6 +1181,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Returns the current CDS Services URL.
+   * By default, this is set to `https://api.medplum.com/cds-services`.
+   * This can be overridden by setting the `cdsServicesUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current CDS Services URL.
+   */
+  getCdsServicesUrl(): string {
+    return this.cdsServicesUrl;
+  }
+
+  /**
    * Returns default headers to include in all requests.
    * This can be used to set custom headers such as Cookies or Authorization headers.
    * @category HTTP
@@ -1148,9 +1207,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   clear(): void {
     this.storage.clear();
-    if (isBrowserEnvironment()) {
-      sessionStorage.clear();
-    }
     this.clearActiveLogin();
   }
 
@@ -1709,7 +1765,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
     const promise = new ReadablePromise(
-      this.search<RT>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
+      this.search(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
     this.setCacheEntry(cacheKey, promise, options);
     return promise;
@@ -1748,7 +1804,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(this.search<RT>(resourceType, query, options).then(bundleToResourceArray));
+    const promise = new ReadablePromise(this.search(resourceType, query, options).then(bundleToResourceArray));
     this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
@@ -2978,7 +3034,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The list of CDS services.
    */
   getCdsServices(options?: MedplumRequestOptions): Promise<CdsDiscoveryResponse> {
-    return this.get<CdsDiscoveryResponse>('/cds-services', options);
+    return this.get<CdsDiscoveryResponse>(this.cdsServicesUrl, options);
   }
 
   /**
@@ -2989,7 +3045,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The CDS response.
    */
   callCdsService(id: string, body: CdsRequest, options?: MedplumRequestOptions): Promise<CdsResponse> {
-    return this.post(`/cds-services/${id}`, body, ContentType.JSON, options);
+    return this.post(concatUrls(this.cdsServicesUrl, id), body, ContentType.JSON, options);
   }
 
   /**
@@ -3188,6 +3244,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise to the response body as a blob.
    */
   async download(url: URL | string, options: MedplumRequestOptions = {}): Promise<Blob> {
+    const response = await this.downloadResponse(url, options);
+    return response.blob();
+  }
+
+  /**
+   * Downloads the URL as a Response. Can accept binary URLs in the form of `Binary/{id}` as well.
+   * @category Read
+   * @param url - The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
+   * @param options - Optional fetch request init options.
+   * @returns Promise to the response body as a Response.
+   */
+  async downloadResponse(url: URL | string, options: MedplumRequestOptions = {}): Promise<Response> {
     if (this.refreshPromise) {
       await this.refreshPromise;
     }
@@ -3207,8 +3275,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetchWithRetry(url.toString(), options);
-    return response.blob();
+    return this.fetchWithRetry(url.toString(), options);
   }
 
   /**
@@ -3439,6 +3506,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setCacheEntry(key: string, value: ReadablePromise<any>, options: MedplumRequestOptions | undefined): void {
     if (this.isCacheEnabled(options)) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
+
+      // If the request is aborted, remove the abort result from the cache so
+      // later attempts will not re-resolve the abort.
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          this.requestCache.delete(key);
+        });
+      }
     }
   }
 
@@ -3566,7 +3641,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
     // Default of 2 matches old behavior with the new semantics
-    const maxRetries = options?.maxRetries ?? 2;
+    const maxRetries = options?.maxRetries ?? this.maxRetries;
 
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
@@ -3589,7 +3664,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         const delayMs = this.getRetryDelay(attemptNum);
-        const maxRetryTime = options.maxRetryTime ?? 2_000;
+        const maxRetryTime = options.maxRetryTime ?? this.maxRetryTime;
         // Return to user immediately if delay would be very long
         if (delayMs > maxRetryTime) {
           return response;
@@ -3746,7 +3821,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     };
 
     // Execute the batch request
-    const response = await this.post<Bundle>(this.fhirBaseUrl, batch);
+    const response = await this.post(this.fhirBaseUrl, batch);
 
     // Process the response
     for (let i = 0; i < entries.length; i++) {
@@ -3864,6 +3939,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data?.constructor.name === 'Uint8Array'))
     ) {
       options.body = data;
+    } else if (
+      typeof data === 'object' &&
+      data !== null &&
+      (typeof data.getReader === 'function' || (typeof data.pipe === 'function' && typeof data.on === 'function'))
+    ) {
+      options.body = data;
+      options.duplex = 'half'; // Required for ReadableStream in Node 18+ and in most browsers
     } else if (data) {
       options.body = JSON.stringify(data);
     }
@@ -3895,10 +3977,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   async startPkce(): Promise<{ codeChallengeMethod: CodeChallengeMethod; codeChallenge: string }> {
     const pkceState = getRandomString();
-    sessionStorage.setItem('pkceState', pkceState);
+    this.storage.setString('pkceState', pkceState);
 
     const codeVerifier = getRandomString().slice(0, 128);
-    sessionStorage.setItem('codeVerifier', codeVerifier);
+    this.storage.setString('codeVerifier', codeVerifier);
 
     try {
       const arrayHash = await encryptSHA256(codeVerifier);
@@ -3923,7 +4005,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const loginRequest = await this.ensureCodeChallenge(loginParams ?? {});
     const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
+    url.searchParams.set('state', this.storage.getString('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
     url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? locationUtils.getOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
@@ -3948,11 +4030,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       redirect_uri: loginParams?.redirectUri ?? locationUtils.getOrigin(),
     };
 
-    if (typeof sessionStorage !== 'undefined') {
-      const codeVerifier = sessionStorage.getItem('codeVerifier');
-      if (codeVerifier) {
-        tokenParams.code_verifier = codeVerifier;
-      }
+    const codeVerifier = this.storage.getString('codeVerifier');
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
     }
 
     return this.fetchTokens(tokenParams);
@@ -3970,36 +4050,79 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.refresh();
+      this.refresh(gracePeriod);
     }
     return this.refreshPromise ?? Promise.resolve();
   }
 
   /**
    * Tries to refresh the auth tokens.
+   *
+   * When `navigator.locks` is available, the network call is wrapped in a Web Lock
+   * scoped to this client's storage namespace. This serializes refresh attempts across
+   * browser tabs/windows on the same origin so a single-use refresh token is not
+   * consumed by more than one tab. Tabs that wait on the lock re-read the latest
+   * tokens from storage when they acquire it and skip the network call if another tab
+   * has already refreshed.
+   *
+   * @param gracePeriod - Optional grace period in milliseconds threaded through to the post-lock authentication check.
    * @returns The refresh promise if available; otherwise undefined.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  private refresh(): Promise<void> | undefined {
+  private refresh(gracePeriod?: number): Promise<void> | undefined {
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
 
-    if (this.refreshToken) {
-      this.refreshPromise = this.fetchTokens({
-        grant_type: OAuthGrantType.RefreshToken,
-        client_id: this.clientId ?? '',
-        refresh_token: this.refreshToken,
-      });
-      return this.refreshPromise;
+    if (!this.refreshToken && !(this.clientId && this.clientSecret)) {
+      return undefined;
     }
 
-    if (this.clientId && this.clientSecret) {
-      this.refreshPromise = this.startClientLogin(this.clientId, this.clientSecret);
-      return this.refreshPromise;
+    this.refreshPromise = this.runRefreshWithLock(gracePeriod);
+    return this.refreshPromise;
+  }
+
+  /**
+   * Acquires a cross-tab Web Lock (when available) and performs the token refresh.
+   * Tabs that wait on the lock check storage on acquisition and skip the network call
+   * if a peer tab has already produced a fresh access token.
+   * @param gracePeriod - Optional grace period in milliseconds used by the post-lock authentication check to decide whether the current token still has enough life left to skip the network refresh.
+   * @returns Promise that resolves when the refresh (or short-circuit) is complete.
+   */
+  private async runRefreshWithLock(gracePeriod?: number): Promise<ProfileResource | undefined> {
+    const run = (): Promise<ProfileResource | undefined> => {
+      // Re-read latest tokens from storage before hitting the network.
+      // A peer tab may have completed a refresh while we were queued on the lock.
+      const latest = this.getActiveLogin();
+      if (latest?.accessToken && latest.accessToken !== this.accessToken) {
+        this.setAccessToken(latest.accessToken, latest.refreshToken);
+      }
+      if (this.isAuthenticated(gracePeriod)) {
+        return Promise.resolve(this.getProfile());
+      }
+
+      if (this.refreshToken) {
+        return this.fetchTokens({
+          grant_type: OAuthGrantType.RefreshToken,
+          client_id: this.clientId ?? '',
+          refresh_token: this.refreshToken,
+        });
+      }
+
+      if (this.clientId && this.clientSecret) {
+        return this.startClientLogin(this.clientId, this.clientSecret);
+      }
+
+      return Promise.resolve(undefined);
+    };
+
+    const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+    if (!locks?.request) {
+      return run();
     }
 
-    return undefined;
+    const lockName = `medplum-refresh:${this.storage.makeKey('activeLogin')}`;
+    return locks.request(lockName, run);
   }
 
   /**
@@ -4277,16 +4400,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (isContextVersionRequired(event)) {
       return this.post(
         this.fhircastHubUrl,
-        createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
+        createFhircastMessagePayload(topic, event, context, versionId as string),
         ContentType.JSON
       );
     }
     assertContextVersionOptional(event);
-    return this.post(
-      this.fhircastHubUrl,
-      createFhircastMessagePayload<typeof event>(topic, event, context),
-      ContentType.JSON
-    );
+    return this.post(this.fhircastHubUrl, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**
@@ -4523,9 +4642,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return;
     }
     this.subscriptionManager.removeCriteria(criteria, subscriptionProps);
-    if (this.subscriptionManager.getCriteriaCount() === 0) {
-      this.subscriptionManager.closeWebSocket();
-    }
   }
 
   /**

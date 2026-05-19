@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, ContentType, getStatus, Operator } from '@medplum/core';
+import { ContentType, Operator } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { getBotDefaultHeaders, getResponseBodyFromResult } from '../bots/utils';
+import { getBotDefaultHeaders, sendBotResponse } from '../bots/utils';
 import { getAuthenticatedContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 
 // CDS Hooks
@@ -61,8 +60,7 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
   }
 
   // Read the bot again as system repo to get full bot details
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', id);
 
   // Execute the bot
   // This also handles logging, auditing, etc.
@@ -77,7 +75,5 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
     defaultHeaders: getBotDefaultHeaders(req, bot),
   });
 
-  const responseBody = getResponseBodyFromResult(result);
-  const outcome = result.success ? allOk : badRequest(result.logResult);
-  res.status(getStatus(outcome)).type(ContentType.JSON).send(responseBody);
+  await sendBotResponse(req, res, result);
 });

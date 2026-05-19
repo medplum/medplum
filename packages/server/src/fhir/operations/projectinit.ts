@@ -3,14 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { badRequest, createReference, created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  ClientApplication,
-  OperationDefinition,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import type { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
@@ -19,50 +12,28 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { getSystemRepo } from '../repo';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { makeOperationDefinition } from './definitions';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
-const projectInitOperation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'project-init',
-  status: 'active',
-  kind: 'operation',
-  code: 'init',
-  resource: ['Project'],
-  system: false,
-  type: true,
-  instance: false,
-  parameter: [
-    {
-      use: 'in',
-      name: 'name',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'owner',
-      type: 'Reference',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'ownerEmail',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'Project',
-      min: 1,
-      max: '1',
-    },
-  ],
-};
+const projectInitOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Project' },
+  {
+    name: 'project-init',
+    code: 'init',
+    parameter: [
+      param('in', 'name', 'string', 1, '1'),
+      param('in', 'owner', 'Reference', 0, '1'),
+      param('in', 'ownerEmail', 'string', 0, '1'),
+      param('out', 'return', 'Project', 1, '1'),
+    ],
+  }
+);
 
 interface ProjectInitParameters {
   name: string;
@@ -98,10 +69,10 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     });
     ownerRef = createReference(user);
   } else if (login.user.reference?.startsWith('User/')) {
-    ownerRef = login.user as Reference;
+    ownerRef = login.user;
   }
 
-  const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
+  const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
       return [badRequest('Only Users are permitted to be the owner of a new Project')];
@@ -121,6 +92,24 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  */
 export async function createProject(
   projectName: string,
+  admin: User
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile: WithId<ProfileResource>;
+  membership: WithId<ProjectMembership>;
+}>;
+export async function createProject(
+  projectName: string,
+  admin?: User
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
+}>;
+export async function createProject(
+  projectName: string,
   admin?: User
 ): Promise<{
   project: WithId<Project>;
@@ -129,7 +118,7 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
   const config = getConfig();
 
   log.info('Project creation request received', { name: projectName });
@@ -154,11 +143,12 @@ export async function createProject(
 
   if (admin) {
     const profile = await createProfile(
+      systemRepo,
       project,
       'Practitioner',
       admin.firstName,
       admin.lastName,
-      admin.email as string
+      admin.email
     );
     const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };

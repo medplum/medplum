@@ -1921,6 +1921,159 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('Disabled enableWhen items excluded from submitted response', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'enable-when-submit',
+        title: 'Enable When',
+        item: [
+          {
+            linkId: 'q1',
+            text: "Enabled when the answer is 'Yes'",
+            type: 'choice',
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+          {
+            linkId: 'q2',
+            type: 'choice',
+            text: "Displayed because the answer is 'Yes'!",
+            enableWhen: [{ question: 'q1', operator: '=', answerString: 'Yes' }],
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Pick "Yes" on Q1 to enable Q2
+    await act(async () => {
+      fireEvent.click(screen.getAllByLabelText('Yes')[0]);
+    });
+
+    // Pick "Yes" on Q2
+    await act(async () => {
+      fireEvent.click(screen.getAllByLabelText('Yes')[1]);
+    });
+
+    // Switch Q1 back to "No" to disable Q2
+    await act(async () => {
+      fireEvent.click(screen.getAllByLabelText('No')[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    const submittedLinkIds = (response.item ?? []).map((i: { linkId: string }) => i.linkId);
+    expect(submittedLinkIds).toEqual(['q1']);
+  });
+
+  test('Questionnaire hidden extension', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'hidden-extension',
+        title: 'Hidden Extension Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Visible Question',
+            type: 'string',
+          },
+          {
+            linkId: 'q2',
+            text: 'Hidden Question',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+                valueBoolean: true,
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            text: 'Another Visible Question',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    // Visible questions should be rendered
+    expect(screen.getByText('Visible Question')).toBeInTheDocument();
+    expect(screen.getByText('Another Visible Question')).toBeInTheDocument();
+
+    // Hidden question should not be rendered
+    expect(screen.queryByText('Hidden Question')).not.toBeInTheDocument();
+  });
+
+  test('Questionnaire hidden extension takes precedence over enableWhen', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'hidden-precedence',
+        title: 'Hidden Precedence Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Trigger Question',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            text: 'Should Be Hidden',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+                valueBoolean: true,
+              },
+            ],
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: '=',
+                answerString: 'Yes',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    // Trigger question should be visible
+    expect(screen.getByText('Trigger Question')).toBeInTheDocument();
+
+    // Hidden question should not be rendered even when enableWhen condition is met
+    expect(screen.queryByText('Should Be Hidden')).not.toBeInTheDocument();
+
+    // Click on "Yes" to satisfy enableWhen condition
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Yes'));
+    });
+
+    // Hidden question should still not be rendered because hidden extension takes precedence
+    expect(screen.queryByText('Should Be Hidden')).not.toBeInTheDocument();
+  });
+
   test('Multi Select', async () => {
     await setup({
       questionnaire: {
@@ -2088,19 +2241,16 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const dropDown = screen.getByText('choice');
-
     await act(async () => {
-      fireEvent.click(dropDown);
+      fireEvent.click(screen.getByLabelText('Yes'));
     });
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'Yes' });
+      fireEvent.click(screen.getByLabelText('No'));
     });
 
-    await act(async () => {
-      fireEvent.change(dropDown, { target: 'No' });
-    });
+    expect(screen.getByLabelText('Yes')).toBeChecked();
+    expect(screen.getByLabelText('No')).toBeChecked();
   });
 
   test('Multi Select Code shows with no data', async () => {

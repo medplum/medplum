@@ -6,7 +6,6 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
-import type { Request } from 'express';
 import { simpleParser } from 'mailparser';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
@@ -14,13 +13,13 @@ import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
 
 describe('Email', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {
@@ -221,7 +220,7 @@ describe('Email', () => {
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req as Request);
+    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req);
 
     await sendEmail(systemRepo, {
       to: 'alice@example.com',

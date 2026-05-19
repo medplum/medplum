@@ -2,80 +2,68 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
+import type { ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'ai',
-  url: 'https://medplum.com/fhir/OperationDefinition/ai',
-  name: 'ai',
-  status: 'active',
-  kind: 'operation',
-  code: 'ai',
-  resource: ['Parameters'],
-  system: false,
-  type: false,
-  instance: false,
-  parameter: [
-    {
-      name: 'messages',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the conversation messages array',
-    },
-    {
-      name: 'apiKey',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'OpenAI API key',
-    },
-    {
-      name: 'model',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
-    },
-    {
-      name: 'tools',
-      use: 'in',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the tools array (optional)',
-    },
-    {
-      name: 'content',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'AI response content',
-    },
-    {
-      name: 'tool_calls',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing tool calls array',
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    id: 'ai',
+    url: 'https://medplum.com/fhir/OperationDefinition/ai',
+    name: 'ai',
+    code: 'ai',
+    parameter: [
+      {
+        name: 'messages',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the conversation messages array',
+      },
+      {
+        name: 'model',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
+      },
+      {
+        name: 'tools',
+        use: 'in',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the tools array (optional)',
+      },
+      {
+        name: 'content',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'AI response content',
+      },
+      {
+        name: 'tool_calls',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing tool calls array',
+      },
+    ],
+  }
+);
 
 type AIOperationParameters = {
   messages: string;
-  apiKey: string;
   model: string;
   tools?: string;
 };
@@ -128,6 +116,11 @@ export async function aiOperation(
     return [forbidden];
   }
 
+  const apiKey = ctx.project.secret?.find((s) => s.name === 'OPENAI_API_KEY')?.valueString;
+  if (!apiKey) {
+    return [badRequest('OpenAI API key not configured in project secrets')];
+  }
+
   const params = parseInputParameters<AIOperationParameters>(operation, req);
   let messages: any[];
   try {
@@ -160,7 +153,7 @@ export async function aiOperation(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    await streamAIToClient(messages, params.apiKey, params.model, tools, res);
+    await streamAIToClient(messages, apiKey, params.model, tools, res);
     res.end();
 
     // Return undefined for streaming - response already sent
@@ -168,7 +161,7 @@ export async function aiOperation(
   }
 
   try {
-    const result = (await callAI(messages, params.apiKey, params.model, tools)) as {
+    const result = (await callAI(messages, apiKey, params.model, tools)) as {
       content: string | null;
       tool_calls: any[];
     };

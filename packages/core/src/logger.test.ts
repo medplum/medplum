@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { LogLevel, Logger, parseLogLevel, serializeError } from './logger';
 
 describe('Logger', () => {
   let testLogger: Logger;
-  let testOutput: jest.Mock<void, [Record<string, any>]>;
+  let testOutput: Mock<(msg: unknown) => void>;
 
   beforeEach(() => {
-    testOutput = jest.fn();
+    testOutput = vi.fn();
     testLogger = new Logger((msg) => testOutput(JSON.parse(msg)), undefined, LogLevel.DEBUG);
   });
 
@@ -351,7 +353,7 @@ describe('serializeError', () => {
       const errors = [new Error('First error'), new Error('Second error'), 'String error'];
       const aggregateError = new AggregateError(errors, 'Multiple errors occurred');
 
-      const result = serializeError(aggregateError as any);
+      const result = serializeError(aggregateError);
 
       expect(result.error).toContain('Multiple errors occurred');
       expect(result.message).toBe('Multiple errors occurred');

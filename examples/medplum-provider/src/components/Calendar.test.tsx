@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { render, screen, userEvent } from '../test-utils/render';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
-import { Calendar } from './Calendar';
-import type { Range } from '../types/scheduling';
 import { describe, expect, test, vi } from 'vitest';
+import { render, screen, userEvent } from '../test-utils/render';
+import type { Range } from '../types/scheduling';
+import { Calendar } from './Calendar';
 
 // Mock document.elementFromPoint for react-big-calendar Selection
 document.elementFromPoint = vi.fn(() => null);

@@ -12605,6 +12605,17 @@
           ]
         },
         {
+          "id": "Bot.streamingEnabled",
+          "path": "Bot.streamingEnabled",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
           "id": "Bot.auditEventTrigger",
           "path": "Bot.auditEventTrigger",
           "min": 0,

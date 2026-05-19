@@ -21,7 +21,7 @@ import { useAdminStatus } from '../utils/admin';
 export function NewClinicPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const [name, setName] = useState<string>('');
+  const [name, setName] = useState('');
   const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   const handleCreateClinic = async (): Promise<void> => {

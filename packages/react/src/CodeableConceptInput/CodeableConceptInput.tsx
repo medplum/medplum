@@ -25,7 +25,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     valuePath: _valuePath,
     ...rest
   } = props;
-  const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
+  const [value, setValue] = useState(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newConcept = valueSetElementToCodeableConcept(newValues);

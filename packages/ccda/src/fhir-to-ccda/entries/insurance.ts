@@ -13,7 +13,7 @@ import {
   OID_POLICY_HOLDER_PARTICIPANT,
 } from '../../oids';
 import { INSURANCE_COVERAGE_TYPE_MAPPER } from '../../systems';
-import type { CcdaEntry, CcdaEntryRelationship, CcdaId, CcdaParticipant } from '../../types';
+import type { CcdaEntry, CcdaEntryRelationship, CcdaParticipant } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
@@ -47,7 +47,7 @@ export function createInsuranceEntry(converter: FhirToCcdaConverter, account: Ac
             { '@_root': OID_POLICY_ACTIVITY, '@_extension': '2015-08-01' },
             { '@_root': OID_POLICY_ACTIVITY },
           ],
-          id: mapIdentifiers(coverage.id, coverage.identifier) as CcdaId[],
+          id: mapIdentifiers(coverage.id, coverage.identifier),
           code: {
             '@_code': INSURANCE_COVERAGE_TYPE_MAPPER.mapFhirToCcdaWithDefault(coverage.type?.coding?.[0]?.code, '9999'),
             '@_displayName': coverage.type?.coding?.[0]?.display || 'Unknown',
@@ -131,7 +131,7 @@ export function createInsuranceEntry(converter: FhirToCcdaConverter, account: Ac
                 {
                   '@_classCode': 'ACT',
                   '@_moodCode': 'DEF',
-                  id: mapIdentifiers(coverage.id, coverage.identifier) as CcdaId[],
+                  id: mapIdentifiers(coverage.id, coverage.identifier),
                   code: {
                     '@_code': 'PAYOR',
                     '@_codeSystem': '2.16.840.1.113883.5.110',

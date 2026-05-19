@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
-import type { Filter, SearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Operator, globalSchema } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -118,7 +118,7 @@ describe('SearchPopupMenu', () => {
         code: 'birthdate',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -283,7 +283,7 @@ describe('SearchPopupMenu', () => {
         code: 'value-quantity',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -401,7 +401,7 @@ describe('SearchPopupMenu', () => {
         code: 'organization',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -525,7 +525,7 @@ describe('SearchPopupMenu', () => {
         code: 'name',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -557,6 +557,73 @@ describe('SearchPopupMenu', () => {
           operator: Operator.MISSING,
         },
       ]);
+    }
+  });
+
+  test('Token submenu prompt', async () => {
+    const searchParam = globalSchema.types['MedicationRequest'].searchParams?.['code'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    await setup({
+      search: {
+        resourceType: 'MedicationRequest',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT },
+      { text: 'Text contains...', operator: Operator.TEXT },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      const optionButton = await screen.findByText(option.text);
+      await act(async () => {
+        fireEvent.click(optionButton);
+      });
+
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
+        code: 'code',
+        operator: option.operator,
+        value: '',
+      });
+    }
+  });
+
+  test('URI submenu prompt', async () => {
+    const searchParam = globalSchema.types['Device'].searchParams?.['url'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    await setup({
+      search: {
+        resourceType: 'Device',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      const optionButton = await screen.findByText(option.text);
+      await act(async () => {
+        fireEvent.click(optionButton);
+      });
+
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
+        code: 'url',
+        operator: option.operator,
+        value: '',
+      });
     }
   });
 

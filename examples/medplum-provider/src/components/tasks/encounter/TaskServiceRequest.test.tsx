@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest, Task } from '@medplum/fhirtypes';
+import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { TaskServiceRequest } from './TaskServiceRequest';
-import { act, fireEvent, render, screen, waitFor } from '../../../test-utils/render';
-import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { useParams } from 'react-router';
-import type { WithId } from '@medplum/core';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '../../../test-utils/render';
+import { TaskServiceRequest } from './TaskServiceRequest';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
   const actual = await vi.importActual('@medplum/health-gorilla-react');
@@ -27,7 +27,7 @@ vi.mock('react-router', async () => {
 });
 
 const SNOMED_SYSTEM = 'http://snomed.info/sct';
-const SNOMED_DIAGNOSTIC_REPORT_CODE = '108252007';
+const SNOMED_LAB_PROCEDURE_CODE = '108252007';
 
 describe('TaskServiceRequest', () => {
   let medplum: MockClient;
@@ -44,6 +44,11 @@ describe('TaskServiceRequest', () => {
       resourceType: 'ServiceRequest',
       id: 'service-request-123',
       status: 'draft',
+      category: [
+        {
+          coding: [{ system: SNOMED_SYSTEM, code: SNOMED_LAB_PROCEDURE_CODE, display: 'Laboratory procedure' }],
+        },
+      ],
       code: {
         coding: [
           {
@@ -58,8 +63,8 @@ describe('TaskServiceRequest', () => {
           },
           {
             system: SNOMED_SYSTEM,
-            code: SNOMED_DIAGNOSTIC_REPORT_CODE,
-            display: 'Diagnostic Report',
+            code: SNOMED_LAB_PROCEDURE_CODE,
+            display: 'Laboratory procedure',
           },
         ],
       },
@@ -297,7 +302,7 @@ describe('TaskServiceRequest', () => {
       const testsPassed = calls[calls.length - 1][0];
       // Should only have 2 tests, not 3 (diagnostic report code filtered out)
       expect(testsPassed).toHaveLength(2);
-      expect(testsPassed.every((test: { code: string }) => test.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)).toBe(true);
+      expect(testsPassed.every((test: { code: string }) => test.code !== SNOMED_LAB_PROCEDURE_CODE)).toBe(true);
     });
   });
 

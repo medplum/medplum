@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, normalizeErrorString, resolveId } from '@medplum/core';
+import { allOk, badRequest, isResourceType, normalizeErrorString, resolveId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
@@ -12,6 +12,7 @@ const ONE_HOUR = 60 * 60 * 1000;
 
 export type AdditionalWsBindingClaims = {
   subscription_id: string;
+  membership_id: string;
 };
 
 // Source (for backport version): https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/OperationDefinition-backport-subscription-get-ws-binding-token.json.html
@@ -139,7 +140,7 @@ const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { login, profile, repo, project } = getAuthenticatedContext();
+  const { login, profile, repo, project, membership } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
 
   if (!project.features?.includes('websocket-subscriptions')) {
@@ -154,10 +155,29 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
 
   const { id: subscriptionId } = req.params;
 
+  let subscription: Subscription;
   try {
-    await repo.readResource<Subscription>('Subscription', subscriptionId);
+    subscription = await repo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err: unknown) {
     return [badRequest(`Error reading subscription: ${normalizeErrorString(err)}`)];
+  }
+
+  if (subscription.channel?.type !== 'websocket') {
+    return [badRequest(`Invalid channel type for this operation: ${subscription.channel?.type}`)];
+  }
+
+  if (!subscription.criteria) {
+    return [badRequest('Invalid empty Subscription criteria')];
+  }
+
+  const criteriaResourceType = subscription.criteria.split('?')[0];
+  // We need to prevent invalid criteria from ever being bound to since it has the possibility of gumming up the pipes
+  if (!isResourceType(criteriaResourceType)) {
+    return [
+      badRequest(
+        `Invalid Subscription criteria: '${subscription.criteria}'. '${criteriaResourceType}' is not a valid resource type.`
+      ),
+    ];
   }
 
   const token = await generateAccessToken(
@@ -172,7 +192,9 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
     {
       additionalClaims: {
         subscription_id: subscriptionId,
+        membership_id: membership.id,
       } satisfies AdditionalWsBindingClaims,
+      lifetime: '1h',
     }
   );
 

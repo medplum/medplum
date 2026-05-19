@@ -103,7 +103,7 @@ export interface CcdaCode<T extends string = string> {
   '@_displayName'?: string;
   originalText?: CcdaText;
   translation?: CcdaCode[];
-  '@_nullFlavor'?: 'UNK' | 'NA';
+  '@_nullFlavor'?: 'UNK' | 'NA' | 'OTH';
 }
 
 export interface CcdaText {
@@ -290,9 +290,11 @@ export interface CcdaSubstanceAdministration {
 }
 
 export interface CcdaQuantity {
-  '@_xsi:type'?: 'PQ' | 'CO';
+  '@_xsi:type'?: 'PQ' | 'CO' | 'IVL_PQ';
   '@_value'?: string;
   '@_unit'?: string;
+  low?: CcdaQuantity;
+  high?: CcdaQuantity;
 }
 
 export interface CcdaInteger {

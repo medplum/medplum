@@ -34,12 +34,12 @@ Medplum also provides the `readResource` helper function as a part of the `Medpl
   </TabItem>
 </Tabs>
 
-:::note Reading a Deleted Resource
+:::note[Reading a Deleted Resource]
 
 If you attempt to read a resource with an `id` that does not exist, you will receive a status code of `404 Not Found`. However, if you search for a resource that has been deleted you will receive a staus code of `410 Gone`.
 
 :::
-:::note Reading Multiple Resources
+:::note[Reading Multiple Resources]
 
 If you want to read multiple resources, you should use Medplum's search functionality. For more info see the [Search Basics docs](/docs/search/basic-search)
 

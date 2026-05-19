@@ -2,28 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, concatUrls, redirect } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
+import type { ClientApplication, SmartAppLaunch } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { getSystemRepo } from '../repo';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'clientapplication-smart-launch',
-  status: 'active',
-  kind: 'operation',
-  code: 'smart-launch',
-  experimental: true,
-  resource: ['ClientApplication'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    { use: 'in', name: 'patient', type: 'uuid', min: 0, max: '1' },
-    { use: 'in', name: 'encounter', type: 'uuid', min: 0, max: '1' },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'ClientApplication' },
+  {
+    name: 'clientapplication-smart-launch',
+    code: 'smart-launch',
+    parameter: [
+      { use: 'in', name: 'patient', type: 'uuid', min: 0, max: '1' },
+      { use: 'in', name: 'encounter', type: 'uuid', min: 0, max: '1' },
+    ],
+  }
+);
 
 type LaunchOperationParameters = {
   patient?: string;
@@ -31,13 +26,14 @@ type LaunchOperationParameters = {
 };
 
 export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> {
+  const ctx = getAuthenticatedContext();
   if (!req.params.id) {
     return [badRequest('ClientApplication to launch must be specified')];
   }
 
   const params = parseInputParameters<LaunchOperationParameters>(operation, req);
 
-  const clientApp = await getSystemRepo().readResource<ClientApplication>('ClientApplication', req.params.id);
+  const clientApp = await ctx.systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
 
   if (!clientApp.launchUri) {
     return [badRequest('ClientApplication not configured for launch')];
@@ -46,7 +42,7 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
     return [badRequest('Only one launch context can be specified')];
   }
 
-  const launch = await getAuthenticatedContext().repo.createResource<SmartAppLaunch>({
+  const launch = await ctx.repo.createResource<SmartAppLaunch>({
     resourceType: 'SmartAppLaunch',
     patient: params.patient ? { reference: `Patient/${params.patient}` } : undefined,
     encounter: params.encounter ? { reference: `Encounter/${params.encounter}` } : undefined,

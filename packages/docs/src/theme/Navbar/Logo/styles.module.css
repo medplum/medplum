@@ -2,7 +2,6 @@
   display: flex;
   align-items: center;
   height: 100%;
-  margin-right: 24px;
 }
 
 .logoImage {
@@ -14,5 +13,5 @@
 }
 
 .logoImage:hover {
-  transform: scale(1.03);
+  color: var(--oc-grape-9);
 }

@@ -78,6 +78,6 @@ Once the server is running with the correct configuration:
 
 ## See Also
 
-- [Medplum Bot Basics](https://www.medplum.com/docs/bots/bot-basics)
-- [Provisioning Bot Layers](https://www.medplum.com/docs/bots/bot-lambda-layer)
+- [Medplum Bot Basics](/docs/bots/bot-basics)
+- [Provisioning Bot Layers](/docs/bots/bot-lambda-layer)
 - [AWS CLI Configuration Guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html)

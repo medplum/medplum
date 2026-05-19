@@ -26,4 +26,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2025
+[Apache 2.0](../../LICENSE.txt)

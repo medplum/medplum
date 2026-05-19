@@ -1,24 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mocked } from 'vitest';
+import { vi } from 'vitest';
 import { decodeBase64, decodeBase64Url, encodeBase64, encodeBase64Url } from './base64';
 
 // Mock the environment module
-jest.mock('./environment');
+vi.mock('./environment');
 
 import * as environment from './environment';
 
-const mockEnvironment = environment as jest.Mocked<typeof environment>;
+const mockEnvironment = environment as Mocked<typeof environment>;
 
 describe('Base64', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('Browser', () => {
     // Mock browser environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -37,7 +39,7 @@ describe('Base64', () => {
     // Mock Node.js environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
     mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer);
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -69,14 +71,14 @@ describe('Base64URL', () => {
   const unicodeStringBase64Url = '8J-Ri_CfjI0';
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('Browser', () => {
     // Mock browser environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
 
     // Test encoding
     expect(encodeBase64Url(paddingString)).toBe(paddingStringBase64Url);
@@ -91,7 +93,7 @@ describe('Base64URL', () => {
     // Mock Node.js environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
     mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer);
 
     // Test encoding
     expect(encodeBase64Url(paddingString)).toBe(paddingStringBase64Url);

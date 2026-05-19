@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
+import type { PresignedUrlOptions } from './base';
 
 /**
  * Binary input type.
@@ -38,5 +39,5 @@ export interface BinaryStorage {
 
   copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 
-  getPresignedUrl(binary: Binary): Promise<string>;
+  getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string>;
 }

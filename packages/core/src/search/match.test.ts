@@ -156,6 +156,15 @@ describe('Search matching', () => {
 
     search.filters[0].value = 'Patient/456';
     expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
+
+    // ID-only special case does not work with `subject` because it has multiple target types
+    search.filters[0].operator = Operator.EQUALS;
+    search.filters[0].value = '123';
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
+
+    // ID-only special case does work with `patient` because it has only one target type
+    search.filters[0].code = 'patient';
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
   });
 
   test('Empty reference filter', () => {
@@ -838,33 +847,36 @@ describe('Search matching', () => {
       });
     });
 
-    describe('start greater than', () => {
+    describe('start and end', () => {
+      const start = '2025-05-15T12:00:00.000Z';
+      const startPlusOneSecond = '2025-05-15T12:00:01.000Z';
+      const end = '2025-05-15T13:00:00.000Z';
       const task: Task = {
         resourceType: 'Task',
         status: 'accepted',
         intent: 'order',
-        restriction: {
-          period: {
-            start: '2025-05-15T12:00:00.000Z',
-            end: '2025-05-15T13:00:00.000Z',
-          },
-        },
+        restriction: { period: { start, end } },
       };
 
-      test('true', () => {
-        const search: SearchRequest = {
-          resourceType: 'Task',
-          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
-        };
-        expect(matchesSearchRequest(task, search)).toBe(true);
-      });
+      test.each([
+        [Operator.LESS_THAN, start, false], // start is not before start
+        [Operator.LESS_THAN_OR_EQUALS, start, true], // start is equal to start
+        [Operator.GREATER_THAN_OR_EQUALS, start, true], // start is equal to start
+        [Operator.GREATER_THAN, start, true], // end is after start
 
-      test('false', () => {
+        [Operator.LESS_THAN, startPlusOneSecond, true], // start is before startPlusOneSecond
+        [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true], // start is before startPlusOneSecond
+        [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, true], // end is after startPlusOneSecond
+        [Operator.GREATER_THAN, startPlusOneSecond, true], // end is after startPlusOneSecond
+
+        [Operator.GREATER_THAN, '2025-05-01', true], // end is after date
+        [Operator.GREATER_THAN, '2025-06-01', false], // end is before date
+      ])('%s %s', (operator, value, expected) => {
         const search: SearchRequest = {
           resourceType: 'Task',
-          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+          filters: [{ code: 'due-date', operator, value }],
         };
-        expect(matchesSearchRequest(task, search)).toBe(false);
+        expect(matchesSearchRequest(task, search)).toBe(expected);
       });
     });
 

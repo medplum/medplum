@@ -100,6 +100,7 @@ function useFakeRequestProfileSchema(medplum: MedplumClient): void {
       );
     }
 
+    // eslint-disable-next-line react-hooks/immutability
     medplum.requestProfileSchema = fakeRequestProfileSchema;
 
     return () => {

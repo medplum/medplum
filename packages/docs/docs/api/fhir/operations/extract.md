@@ -9,12 +9,12 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 - **Patient Intake**: Convert registration forms into Patient, Coverage, and RelatedPerson resources
 - **Clinical Assessments**: Transform PHQ-9, GAD-7, or other assessment questionnaires into Observation resources with proper coding
 - **History Collection**: Extract past medical history responses into Condition resources
-- **Prior Authorization**: Generate ServiceRequest and supporting documentation from PA request forms
+- **Prior Authorization**: Generate CoverageEligbilityRequest and supporting documentation from PA request forms
 - **Research Data Collection**: Convert study questionnaires into Observation resources for analysis
 
 [template-extract]: https://build.fhir.org/ig/HL7/sdc/extraction.html#template-extract
 [sdc-ig]: https://build.fhir.org/ig/HL7/sdc/
-[data-capture]: /docs/questionnaires/structured-data-capture
+[data-capture]: /docs/questionnaires/parsing-questionnaire-responses
 
 ## Invoke the `$extract` operation
 
@@ -75,7 +75,7 @@ curl 'https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8
 
 ## Related
 
-- [Structured Data Capture Guide](/docs/questionnaires/structured-data-capture) - Complete guide to SDC workflows
+- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) — Complete guide to SDC workflows
 - [FHIR Questionnaire Resource](https://hl7.org/fhir/R4/questionnaire.html) - FHIR specification for Questionnaire
 - [FHIR QuestionnaireResponse Resource](https://hl7.org/fhir/R4/questionnaireresponse.html) - FHIR specification for QuestionnaireResponse
 - [HL7 SDC Implementation Guide](https://build.fhir.org/ig/HL7/sdc/) - Official Structured Data Capture IG

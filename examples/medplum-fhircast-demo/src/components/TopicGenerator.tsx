@@ -11,7 +11,7 @@ interface TopicGeneratorProps {
 
 export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element {
   const { onTopicChange } = props;
-  const [syncing, setSyncing] = useState<boolean>(false);
+  const [syncing, setSyncing] = useState(false);
   const [topic, setTopic] = useState<string>();
   const prevTopic = usePrevious(topic);
 

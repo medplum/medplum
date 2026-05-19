@@ -5,8 +5,8 @@ import { getDisplayString } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconFileText } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import classes from './ResourceBox.module.css';
 
 interface ResourceBoxProps {

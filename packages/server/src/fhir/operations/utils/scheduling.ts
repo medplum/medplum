@@ -1,11 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY, getExtensionValue, isDefined } from '@medplum/core';
-import type { Coding, Resource, Slot } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import {
+  badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
+  EMPTY,
+  getExtensionValue,
+  getReferenceString,
+  isDefined,
+  isResource,
+  OperationOutcomeError,
+  Operator,
+  resolveId,
+} from '@medplum/core';
+import type {
+  Appointment,
+  CodeableConcept,
+  HealthcareService,
+  Reference,
+  Resource,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
-import { areIntervalsOverlapping, clamp } from '../../../util/date';
+import { areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
+import { extractReferencesFromCodeableReferenceLike } from '../../../util/servicetype';
+import type { WithPath } from '../../../util/withpath';
+import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
+import type { Repository } from '../../repo';
 import type { SchedulingParameters } from './scheduling-parameters';
+import { chooseSchedulingParameterGroup } from './scheduling-parameters';
+import { uniqueOn } from './terminology';
 
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
 // (Date#getDay() uses zero-based indexing and Temporal#dayOfWeek uses one-based indexing)
@@ -13,12 +40,9 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
-  let t = Temporal.ZonedDateTime.from({
-    year: interval.start.getFullYear(),
-    month: interval.start.getMonth() + 1,
-    day: interval.start.getDate(),
-    timeZone,
-  });
+  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
+    .toZonedDateTimeISO(timeZone)
+    .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
 
   const results: Temporal.ZonedDateTime[] = [];
   while (t.epochMilliseconds < interval.end.valueOf()) {
@@ -28,7 +52,7 @@ function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.Zoned
   return results;
 }
 
-function hasMatchingServiceType(slot: Slot, inputCoding: readonly Coding[]): boolean {
+function hasMatchingServiceType(slot: Slot, concepts: readonly CodeableConcept[]): boolean {
   const serviceType = slot.serviceType ?? [];
   // Slots without any service type are considered as "wildcard" slots that support
   // any service type codes
@@ -36,17 +60,21 @@ function hasMatchingServiceType(slot: Slot, inputCoding: readonly Coding[]): boo
     return true;
   }
 
-  // If we didn't get a specific code to test for, we should only match wildcard slots,
+  // If we didn't get a specific concept to test for, we should only match wildcard slots,
   // which we ruled out above.
-  if (inputCoding.length === 0) {
+  if (concepts.length === 0) {
     return false;
   }
 
-  const codes = new Set(inputCoding.map((coding) => `${coding.system}|${coding.code}`));
+  const codes = new Set(
+    concepts.flatMap((concept) =>
+      (concept.coding ?? EMPTY).map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`)
+    )
+  );
 
   // Check if there any of the Slot's service type codes match the input code
   for (const codeableConcept of serviceType) {
-    if (codeableConcept.coding?.some((c) => codes.has(`${c.system}|${c.code}`))) {
+    if (codeableConcept.coding?.some((c) => codes.has(`${c.system ?? ''}|${c.code ?? ''}`))) {
       return true;
     }
   }
@@ -118,15 +146,17 @@ export function resolveAvailability(
     const dayOfWeek = dayNames[dayStart.dayOfWeek];
     return schedulingParameters.availability
       .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
-      .flatMap((availability) =>
-        availability.timeOfDay.map((timeOfDay) => {
-          const [hour, minute, second] = timeOfDay.split(':').map(Number);
-          const start = dayStart.withPlainTime({ hour, minute, second });
-          const end = start.add({ minutes: availability.duration });
-          const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
-          return intersectIntervals(availableInterval, interval);
-        })
-      )
+      .map((availability) => {
+        const [sH, sM, sS] = availability.availableStartTime.split(':').map(Number);
+        const [eH, eM, eS] = availability.availableEndTime.split(':').map(Number);
+        const start = dayStart.withPlainTime({ hour: sH, minute: sM, second: sS });
+        let end = dayStart.withPlainTime({ hour: eH, minute: eM, second: eS });
+        if (end.epochMilliseconds <= start.epochMilliseconds) {
+          end = end.add({ days: 1 });
+        }
+        const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
+        return intersectIntervals(availableInterval, interval);
+      })
       .filter(isDefined);
   });
 }
@@ -174,7 +204,7 @@ export function normalizeIntervals(intervals: Interval[]): Interval[] {
  * @param listB - Second normalized (sorted, non-overlapping) list of intervals
  * @returns An array of pairs, each containing an interval from listA and its overlapping intervals from listB
  */
-function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
+export function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
   const result: [Interval, Interval[]][] = [];
   let indexB = 0;
 
@@ -249,7 +279,7 @@ export function applyExistingSlots(params: {
   availability: Interval[];
   slots: Slot[];
   range: Interval;
-  serviceType?: readonly Coding[];
+  serviceType?: readonly CodeableConcept[];
 }): Interval[] {
   const freeSlotIntervals = params.slots
     .filter((slot) => slot.status === 'free')
@@ -266,4 +296,307 @@ export function applyExistingSlots(params: {
   );
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
   return removeAvailability(allAvailability, busySlotIntervals);
+}
+
+export function assertAllLoaded<T extends Resource>(
+  objects: WithPath<T | Error>[],
+  message: string
+): asserts objects is WithPath<T>[] {
+  const invalid = objects.find((obj) => !isResource(obj));
+  if (invalid) {
+    throw new OperationOutcomeError(badRequest(message, getPath(invalid)));
+  }
+}
+
+export async function getSchedulingParametersGroup(
+  repo: Repository,
+  schedules: WithPath<WithId<Schedule>>[],
+  healthcareService: WithPath<WithId<HealthcareService>>
+): Promise<Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>> {
+  schedules.forEach((schedule) => {
+    if (schedule.actor.length !== 1) {
+      throw new OperationOutcomeError(
+        badRequest('Scheduling only supported on schedules with exactly one actor', getPath(schedule))
+      );
+    }
+  });
+
+  const actors = await repo
+    .readReferences(schedules.map((schedule) => schedule.actor[0]))
+    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+  assertAllLoaded(actors, 'Loading schedule.actor failed');
+
+  const group = chooseSchedulingParameterGroup(schedules, healthcareService);
+
+  return new Map(
+    group.entries().map(([schedule, parameters], idx) => {
+      const actor = actors[idx];
+      assert(actor);
+      const timezone = parameters.timezone ?? getTimeZone(actor);
+      if (!timezone) {
+        throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
+      }
+      return [schedule, { ...parameters, timezone }];
+    })
+  );
+}
+
+// Finds keys that can be used to index into `T` and yield a primitive type
+// that can be compared with strict equality.
+type PrimitiveKey<T> = {
+  [K in keyof T]-?: T[K] extends string | number | boolean | undefined ? K : never;
+}[keyof T];
+
+export function assertAllMatch<T extends object>(
+  objects: WithPath<T>[],
+  attribute: PrimitiveKey<T> & string,
+  msg: string
+): void {
+  if (objects.length <= 1) {
+    return;
+  }
+  const mismatched = objects.find((value) => value[attribute] !== objects[0][attribute]);
+  if (mismatched) {
+    throw new OperationOutcomeError(
+      badRequest(msg, [`${getPath(objects[0])}.${attribute}`, `${getPath(mismatched)}.${attribute}`])
+    );
+  }
+}
+
+export async function slotsOverlappingInterval(
+  repo: Repository,
+  schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
+  interval: Interval
+): Promise<Slot[]> {
+  const searchStart = interval.start.toISOString();
+  const searchEnd = interval.end.toISOString();
+  const results = await repo.searchResources<Slot>({
+    resourceType: 'Slot',
+    count: DEFAULT_MAX_SEARCH_COUNT,
+    filters: [
+      {
+        code: 'schedule',
+        operator: Operator.EQUALS,
+        value: schedules.map((schedule) => getReferenceString(schedule)).join(','),
+      },
+      {
+        code: 'status',
+        operator: Operator.EQUALS,
+        value: 'busy,busy-tentative,busy-unavailable,free',
+      },
+      {
+        code: '_filter',
+        operator: Operator.EQUALS,
+        value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
+      },
+    ],
+  });
+
+  // If we filled a full search page of slots, then there may be slots we
+  // didn't fetch that would impact availability. Fail loudly here.
+  if (results.length === DEFAULT_MAX_SEARCH_COUNT) {
+    throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
+  }
+  return results;
+}
+
+// Ensures that the input slots match our scheduling parameter constraints
+//
+// Intentionally skipped for now: testing parameters.alignmentInterval and
+// parameters.alignmentOffset. See https://github.com/medplum/medplum/pull/8331.
+function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters): void {
+  // Expect exactly one 'busy' slot with duration matching parameters.duration
+  const busySlots = slots.filter((slot) => slot.status === 'busy');
+  if (busySlots.length !== 1) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Expected exactly one 'busy' slot per schedule`,
+        slots.map((slot) => getPath(slot))
+      )
+    );
+  }
+  const busySlot = busySlots[0];
+  const busyDurationMinutes = (new Date(busySlot.end).getTime() - new Date(busySlot.start).getTime()) / 60_000;
+  if (busyDurationMinutes !== parameters.duration) {
+    throw new OperationOutcomeError(
+      badRequest('Slot duration does not match scheduling parameters duration', getPath(busySlot))
+    );
+  }
+
+  const busyStartMs = new Date(busySlot.start).getTime();
+  const busyEndMs = new Date(busySlot.end).getTime();
+
+  // If bufferBefore is set, expect one 'busy-unavailable' slot ending at the start of the busy slot
+  if (parameters.bufferBefore > 0) {
+    const bufferBeforeSlots = slots.filter(
+      (slot) => slot.status === 'busy-unavailable' && new Date(slot.end).getTime() === busyStartMs
+    );
+    if (bufferBeforeSlots.length !== 1) {
+      throw new OperationOutcomeError(
+        badRequest(
+          "Expected exactly one 'busy-unavailable' slot ending at the start of the busy slot (bufferBefore)",
+          getPath(busySlot)
+        )
+      );
+    }
+    const bufferBeforeSlot = bufferBeforeSlots[0];
+    const bufferBeforeDurationMinutes =
+      (new Date(bufferBeforeSlot.end).getTime() - new Date(bufferBeforeSlot.start).getTime()) / 60_000;
+    if (bufferBeforeDurationMinutes !== parameters.bufferBefore) {
+      throw new OperationOutcomeError(
+        badRequest(
+          `Buffer-before slot duration (${bufferBeforeDurationMinutes} min) does not match scheduling parameters bufferBefore (${parameters.bufferBefore} min)`,
+          getPath(bufferBeforeSlot)
+        )
+      );
+    }
+  }
+
+  // If bufferAfter is set, expect one 'busy-unavailable' slot starting at the end of the busy slot
+  if (parameters.bufferAfter > 0) {
+    const bufferAfterSlots = slots.filter(
+      (slot) => slot.status === 'busy-unavailable' && new Date(slot.start).getTime() === busyEndMs
+    );
+    if (bufferAfterSlots.length !== 1) {
+      throw new OperationOutcomeError(
+        badRequest(
+          "Expected exactly one 'busy-unavailable' slot starting at the end of the busy slot (bufferAfter)",
+          getPath(busySlot)
+        )
+      );
+    }
+    const bufferAfterSlot = bufferAfterSlots[0];
+    const bufferAfterDurationMinutes =
+      (new Date(bufferAfterSlot.end).getTime() - new Date(bufferAfterSlot.start).getTime()) / 60_000;
+    if (bufferAfterDurationMinutes !== parameters.bufferAfter) {
+      throw new OperationOutcomeError(
+        badRequest(
+          `Buffer-after slot duration (${bufferAfterDurationMinutes} min) does not match scheduling parameters bufferAfter (${parameters.bufferAfter} min)`,
+          getPath(bufferAfterSlot)
+        )
+      );
+    }
+  }
+}
+
+async function validateAvailability(
+  repo: Repository,
+  healthcareService: HealthcareService,
+  schedule: WithId<Schedule>,
+  parameters: SchedulingParameters & { timezone: string },
+  interval: Interval
+): Promise<void> {
+  const existingSlots = await slotsOverlappingInterval(repo, [schedule], interval);
+  let availability = resolveAvailability(parameters, interval, parameters.timezone);
+  availability = applyExistingSlots({
+    availability,
+    slots: existingSlots,
+    range: interval,
+    serviceType: healthcareService.type,
+  });
+  const hasAvailability = availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
+  if (!hasAvailability) {
+    // TODO: tie back to specific slot that has problem
+    throw new OperationOutcomeError(badRequest('Requested time slot is not available'));
+  }
+}
+
+export async function validateProposedAppointment(
+  repo: Repository,
+  proposedAppointment: WithPath<Appointment>
+): Promise<
+  [
+    Appointment,
+    WithPath<Slot>[],
+    HealthcareService,
+    Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>,
+  ]
+> {
+  const { contained, ...appointment } = proposedAppointment;
+  const serviceRefs = extractReferencesFromCodeableReferenceLike(appointment.serviceType);
+  if (serviceRefs.length === 0) {
+    throw new OperationOutcomeError(
+      badRequest('Appointment has no service reference', 'Parameters.appointment.serviceType')
+    );
+  }
+  if (serviceRefs.length > 1) {
+    throw new OperationOutcomeError(
+      badRequest('Appointment has too many service references', 'Parameters.appointment.serviceType')
+    );
+  }
+
+  const proposedSlots = filterWithPaths(
+    contained,
+    (r) => isResource<Slot>(r, 'Slot'),
+    `${getPath(proposedAppointment)}.contained`
+  );
+  if (!proposedSlots.length) {
+    throw new OperationOutcomeError(
+      badRequest('Appointment has no contained Slot resources', 'Parameters.appointment')
+    );
+  }
+
+  const busySlots = proposedSlots.filter((slot) => slot.status === 'busy');
+  assertAllMatch(busySlots, 'start', 'Mismatched slot start times');
+  assertAllMatch(busySlots, 'end', 'Mismatched slot end times');
+
+  const scheduleRefs = uniqueOn(
+    proposedSlots.map((slot) => withPath(slot.schedule, `${getPath(slot)}.schedule`)),
+    (ref) => {
+      if (!ref.reference) {
+        throw new OperationOutcomeError(badRequest('Slot missing schedule reference', getPath(ref)));
+      }
+      return ref.reference;
+    }
+  );
+
+  const [schedules, healthcareService] = await Promise.all([
+    repo.readReferences(scheduleRefs).then((schedules) => copyPaths(scheduleRefs, schedules)),
+    repo.readReference(serviceRefs[0]).then((service) => withPath(service, 'HealthcareService')),
+  ]);
+  assertAllLoaded(schedules, 'Schedule load failed');
+
+  const schedulingParameterGroup = await getSchedulingParametersGroup(repo, schedules, healthcareService);
+
+  // Check that scheduling parameters match proposedSlots
+  for (const schedule of schedules) {
+    const parameters = schedulingParameterGroup.get(schedule);
+    assert(parameters);
+
+    const slotsForSchedule = proposedSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+    validateSlots(slotsForSchedule, parameters);
+  }
+
+  return [appointment, proposedSlots, healthcareService, schedulingParameterGroup];
+}
+
+export async function validateAllAvailability(
+  repo: Repository,
+  allSlots: WithPath<Slot>[],
+  healthcareService: HealthcareService,
+  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>
+): Promise<void> {
+  const groupedSlots = Object.groupBy(allSlots, (slot) => slot.schedule.reference ?? 'unknown');
+  for (const [schedule, parameters] of schedulingParameterGroup.entries()) {
+    const refstr = getReferenceString(schedule);
+    const slots = groupedSlots[refstr];
+    delete groupedSlots[refstr];
+    assert(slots);
+    const start = earliest(slots.map((slot) => new Date(slot.start)));
+    const end = latest(slots.map((slot) => new Date(slot.end)));
+    assert(start && end);
+    const interval = { start, end };
+    await validateAvailability(repo, healthcareService, schedule, parameters, interval);
+  }
+
+  // Any unprocessed slots represent some kind of error
+  const unprocessedSlots = Object.values(groupedSlots).flat().filter(isDefined);
+  if (unprocessedSlots.length) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'Got slots that did not map to scheduling parameters',
+        unprocessedSlots.map((slot) => getPath(slot))
+      )
+    );
+  }
 }

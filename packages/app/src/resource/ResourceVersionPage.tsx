@@ -103,7 +103,7 @@ export function ResourceVersionPage(): JSX.Element {
               <DescriptionListEntry term="Date/Time">{formatDateTime(value.meta?.lastUpdated)}</DescriptionListEntry>
             </DescriptionList>
           </Box>
-          {currTab === 'diff' && <ResourceDiff original={prev ?? ({ resourceType, id } as Resource)} revised={value} />}
+          {currTab === 'diff' && <ResourceDiff original={prev ?? ({} as Resource)} revised={value} />}
           {currTab === 'raw' && <pre style={{ fontSize: '9pt' }}>{JSON.stringify(value, undefined, 2)}</pre>}
         </Stack>
       </Panel>

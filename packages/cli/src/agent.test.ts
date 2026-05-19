@@ -32,7 +32,7 @@ describe('Agent CLI', () => {
   beforeAll(() => {
     process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
-    }) as unknown as typeof process.exit;
+    });
     processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
     consoleTableSpy = jest.spyOn(console, 'table').mockImplementation(jest.fn());
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(jest.fn());
@@ -1394,6 +1394,433 @@ describe('Agent CLI', () => {
         expect.objectContaining({ cache: 'reload' })
       );
       expect(processError).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Agent `stats` command', () => {
+    function makeStatsParameters(overrides?: Record<string, unknown>): Parameters {
+      return {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify({
+              hl7ConnectionsOpen: 1,
+              ping: 5,
+              webSocketQueueDepth: 0,
+              hl7QueueDepth: 0,
+              hl7ClientCount: 0,
+              live: true,
+              outstandingHeartbeats: 0,
+              channelStats: {},
+              clientStats: {},
+              ...overrides,
+            }),
+          },
+        ],
+      };
+    }
+
+    function makeRttStats(values: Partial<Record<string, number>> = {}): Record<string, number> {
+      return {
+        count: values.count ?? 10,
+        pendingCount: values.pendingCount ?? 0,
+        min: values.min ?? 1,
+        average: values.average ?? 5,
+        max: values.max ?? 9,
+        p50: values.p50 ?? 5,
+        p95: values.p95 ?? 8,
+        p99: values.p99 ?? 9,
+      };
+    }
+
+    describe('By ID', () => {
+      test('One agent stats by ID', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      { name: 'result', resource: makeStatsParameters() },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', agentId])).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$stats?_id=${agentId}`).href,
+          }),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+
+      test('Multiple agents stats by ID', async () => {
+        const agentIds = [randomUUID(), randomUUID(), randomUUID()];
+        const agents: Agent[] = await Promise.all(
+          agentIds.map((id, i) =>
+            medplum.createResource({
+              id,
+              resourceType: 'Agent',
+              name: `Test Agent ${i + 1}`,
+              status: 'active',
+            })
+          )
+        );
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: agents.map((agent) => ({
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    { name: 'result', resource: makeStatsParameters() },
+                  ],
+                },
+              })),
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', ...agentIds])).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$stats?_id=${encodeURIComponent(agentIds.join(','))}`).href,
+          }),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+
+      test('Both IDs and criteria present', async () => {
+        const agentIds = [randomUUID(), randomUUID()];
+
+        await expect(
+          main(['node', 'index.js', 'agent', 'stats', ...agentIds, '--criteria', 'Agent?name=Test Agent'])
+        ).rejects.toThrow('Process exited with exit code 1');
+        expect(medplumGetSpy).not.toHaveBeenCalled();
+        expect(processError).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'Error: Ambiguous arguments and options combination; [agentIds...] arg and --criteria <criteria> flag are mutually exclusive'
+          )
+        );
+      });
+
+      test('Invalid ID in agent list', async () => {
+        const agentIds = [randomUUID(), 'asdad', randomUUID()];
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', ...agentIds])).rejects.toThrow(
+          'Process exited with exit code 1'
+        );
+        expect(medplumGetSpy).not.toHaveBeenCalled();
+        expect(processError).toHaveBeenCalledWith(expect.stringContaining("Input 'asdad' is not a valid agentId"));
+      });
+    });
+
+    describe('By criteria', () => {
+      test('Basic case', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      { name: 'result', resource: makeStatsParameters() },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(
+          main(['node', 'index.js', 'agent', 'stats', '--criteria', 'Agent?name=Test Agent'])
+        ).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ href: medplum.fhirUrl('Agent', '$stats?name=Test+Agent').href }),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+
+      test('JSON output', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      { name: 'result', resource: makeStatsParameters() },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(
+          main(['node', 'index.js', 'agent', 'stats', '--criteria', 'Agent?name=Test Agent', '--output', 'json'])
+        ).resolves.toBeUndefined();
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('"stats"'));
+        expect(consoleTableSpy).not.toHaveBeenCalled();
+        expect(processError).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Rendering', () => {
+      test('Renders summary, channel, and client tables with extra fields', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      {
+                        name: 'result',
+                        resource: makeStatsParameters({
+                          channelStats: { 'channel-a': { rtt: makeRttStats({ count: 42, average: 7 }) } },
+                          clientStats: { 'client-a': { rtt: makeRttStats({ count: 3, max: 12 }) } },
+                          extraField: 'extra-value',
+                        }),
+                      },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', agentId])).resolves.toBeUndefined();
+        expect(processError).not.toHaveBeenCalled();
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining(`Test Agent 1 (${agentId})`));
+        expect(consoleInfoSpy).toHaveBeenCalledWith('Channel Stats:');
+        expect(consoleInfoSpy).toHaveBeenCalledWith('Client Stats:');
+
+        const tableCalls = consoleTableSpy.mock.calls.map((call) => call[0]);
+
+        const summary = tableCalls.find(
+          (arg) => arg && typeof arg === 'object' && !Array.isArray(arg) && 'live' in arg
+        );
+        expect(summary).toMatchObject({
+          live: 'true',
+          ping: '5',
+          hl7ConnectionsOpen: '1',
+          hl7ClientCount: '0',
+          hl7QueueDepth: '0',
+          webSocketQueueDepth: '0',
+          outstandingHeartbeats: '0',
+          extraField: 'extra-value',
+        });
+
+        const channelTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'channel-a');
+        expect(channelTable).toEqual([
+          expect.objectContaining({
+            name: 'channel-a',
+            count: 42,
+            pending: 0,
+            'avg (ms)': 7,
+          }),
+        ]);
+
+        const clientTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'client-a');
+        expect(clientTable).toEqual([
+          expect.objectContaining({
+            name: 'client-a',
+            count: 3,
+            'max (ms)': 12,
+          }),
+        ]);
+      });
+
+      test('Skips channel and client tables when no rtt entries', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      { name: 'result', resource: makeStatsParameters() },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', agentId])).resolves.toBeUndefined();
+        expect(processError).not.toHaveBeenCalled();
+        expect(consoleInfoSpy).not.toHaveBeenCalledWith('Channel Stats:');
+        expect(consoleInfoSpy).not.toHaveBeenCalledWith('Client Stats:');
+        expect(consoleTableSpy).toHaveBeenCalledTimes(1);
+      });
+
+      test('Reports unavailable stats when payload is malformed', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      {
+                        name: 'result',
+                        resource: {
+                          resourceType: 'Parameters',
+                          parameter: [{ name: 'stats', valueString: '{not valid json' }],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', agentId])).resolves.toBeUndefined();
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining(`Failed to parse stats for agent ${agentId}`)
+        );
+        expect(consoleInfoSpy).toHaveBeenCalledWith('  (stats unavailable)');
+        expect(consoleTableSpy).not.toHaveBeenCalled();
+      });
+
+      test('Renders multiple agents with a separator', async () => {
+        const agentIds = [randomUUID(), randomUUID()];
+        const agents: Agent[] = await Promise.all(
+          agentIds.map((id, i) =>
+            medplum.createResource({
+              id,
+              resourceType: 'Agent',
+              name: `Test Agent ${i + 1}`,
+              status: 'active',
+            })
+          )
+        );
+
+        medplum.router.router.add('GET', 'Agent/$stats', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: agents.map((agent) => ({
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    { name: 'result', resource: makeStatsParameters() },
+                  ],
+                },
+              })),
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'stats', ...agentIds])).resolves.toBeUndefined();
+        expect(processError).not.toHaveBeenCalled();
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining(`Test Agent 1 (${agentIds[0]})`));
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining(`Test Agent 2 (${agentIds[1]})`));
+        expect(consoleTableSpy).toHaveBeenCalledTimes(2);
+      });
     });
   });
 });

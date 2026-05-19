@@ -92,7 +92,7 @@ By aligning with these standards, this library ensures that C-CDA documents can 
 ## Related Reading
 
 * [Medplum C-CDA Library](https://github.com/medplum/medplum/tree/main/packages/ccda)
-* [Medplum FHIR Server Documentation](https://www.medplum.com/docs/api/fhir)
+* [Medplum FHIR Server Documentation](/docs/api/fhir)
 * [FHIR R4 Specification](https://hl7.org/fhir/R4/)
 * [US Core Implementation Guide](https://www.hl7.org/fhir/us/core/)
 * [USCDI Website](https://www.healthit.gov/isp/united-states-core-data-interoperability-uscdi)

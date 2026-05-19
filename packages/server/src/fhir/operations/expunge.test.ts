@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, LOINC } from '@medplum/core';
+import { ContentType, createReference, LOINC } from '@medplum/core';
 import type { Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -8,15 +8,16 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { getRedis } from '../../redis';
+import { getCacheRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
 
+const systemRepo = getGlobalSystemRepo();
+
 describe('Expunge', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   let superAdminAccessToken: string;
 
   beforeAll(async () => {
@@ -70,18 +71,51 @@ describe('Expunge', () => {
     expect(await existsInLookupTable('HumanName', patient.id)).toBe(false);
   });
 
-  test('Expunge project compartment', async () => {
-    const { project, client, membership } = await createTestProject({ withClient: true });
-    expect(project).toBeDefined();
-    expect(client).toBeDefined();
-    expect(membership).toBeDefined();
+  test.each([
+    { name: 'super admin', project: 'linked', superAdmin: true, outcome: 'success' },
+    { name: 'super admin', project: 'main', superAdmin: true, outcome: 'success' },
+    { name: 'project admin', project: 'linked', membership: { admin: true }, outcome: 'failure' },
+    { name: 'project admin', project: 'main', membership: { admin: true }, outcome: 'success' },
+    { name: 'non-admin', project: 'linked', membership: { admin: false }, outcome: 'failure' },
+    { name: 'non-admin', project: 'main', membership: { admin: false }, outcome: 'failure' },
+  ])('Expunge $project project as $name $outcome', async (opts) => {
+    const {
+      project: linkedProject,
+      client: linkedClient,
+      membership: linkedMembership,
+      repo: linkedRepo,
+    } = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+
+    const { project, client, membership, accessToken } = await createTestProject({
+      withClient: true,
+      withAccessToken: true,
+      membership: opts.membership,
+      project: { link: [{ project: createReference(linkedProject) }] },
+    });
+
+    const linkedPatient = await linkedRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: linkedProject.id },
+      name: [{ given: ['Linked'], family: 'Patient' }],
+    });
 
     const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-    expect(patient).toBeDefined();
+
+    const linkedObs = await linkedRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta: { project: linkedProject.id },
+      status: 'final',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      subject: { reference: 'Patient/' + linkedPatient.id },
+    });
 
     const obs = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
@@ -90,22 +124,39 @@ describe('Expunge', () => {
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
-    expect(obs).toBeDefined();
+
+    const projectToExpunge = opts.project === 'linked' ? linkedProject : project;
+    const accessTokenToUse = opts.superAdmin ? superAdminAccessToken : accessToken;
 
     // Expunge the project
     const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$expunge?everything=true`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .post(`/fhir/R4/Project/${projectToExpunge.id}/$expunge?everything=true`)
+      .set('Authorization', 'Bearer ' + accessTokenToUse)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(res.status).toBe(202);
+    if (opts.outcome === 'success') {
+      expect(res.status).toBe(202);
 
-    await waitForAsyncJob(res.headers['content-location'], app, superAdminAccessToken);
+      await waitForAsyncJob(res.headers['content-location'], app, accessTokenToUse);
 
-    expect(await existsInDatabase('Project', project.id)).toBe(false);
-    expect(await existsInDatabase('ClientApplication', client.id)).toBe(false);
-    expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(false);
+      const mainResourcesExists = opts.project === 'linked';
+      const linkedResourcesExist = opts.project === 'main';
+
+      expect(await existsInDatabase('Patient', patient.id)).toBe(mainResourcesExists);
+      expect(await existsInDatabase('Observation', obs.id)).toBe(mainResourcesExists);
+      expect(await existsInDatabase('Project', project.id)).toBe(mainResourcesExists);
+      expect(await existsInDatabase('ClientApplication', client.id)).toBe(mainResourcesExists);
+      expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(mainResourcesExists);
+
+      expect(await existsInDatabase('Patient', linkedPatient.id)).toBe(linkedResourcesExist);
+      expect(await existsInDatabase('Observation', linkedObs.id)).toBe(linkedResourcesExist);
+      expect(await existsInDatabase('Project', linkedProject.id)).toBe(linkedResourcesExist);
+      expect(await existsInDatabase('ClientApplication', linkedClient.id)).toBe(linkedResourcesExist);
+      expect(await existsInDatabase('ProjectMembership', linkedMembership.id)).toBe(linkedResourcesExist);
+    } else {
+      expect(res.status).toBe(403);
+    }
   });
 
   test('Expunger.expunge() expunges all resource types', async () => {
@@ -185,7 +236,7 @@ describe('Expunge', () => {
 });
 
 async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
-  const redis = await getRedis().get(`${resourceType}/${id}`);
+  const redis = await getCacheRedis().get(`${resourceType}/${id}`);
   return !!redis;
 }
 

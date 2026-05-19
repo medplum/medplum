@@ -17,7 +17,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
-import { getSystemRepo, Repository } from './repo';
+import { getGlobalSystemRepo, Repository } from './repo';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
@@ -25,7 +25,7 @@ import { TokenQueryOperators } from './token-column';
 import type { Token } from './tokens';
 import { buildTokensForSearchParameter } from './tokens';
 
-const systemRepo = getSystemRepo();
+const systemRepo = getGlobalSystemRepo();
 
 beforeAll(async () => {
   const config = await loadTestConfig();

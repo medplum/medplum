@@ -29,6 +29,14 @@ describe('mapCcdaToFhirDateTime', () => {
     expect(mapCcdaToFhirDateTime('202401011234')).toBe('2024-01-01T12:34:00Z');
   });
 
+  test('should handle YYYYMMDDHHMM-TZ (no seconds with timezone)', () => {
+    expect(mapCcdaToFhirDateTime('201507221400-0500')).toBe('2015-07-22T14:00:00-05:00');
+  });
+
+  test('should handle YYYYMMDDHHMM+TZ (no seconds with positive timezone)', () => {
+    expect(mapCcdaToFhirDateTime('201507221400+0530')).toBe('2015-07-22T14:00:00+05:30');
+  });
+
   test('should handle YYYYMMDDHHMMSSzzzzz with timezone offset', () => {
     expect(mapCcdaToFhirDateTime('20241001090000-0500')).toBe('2024-10-01T09:00:00-05:00');
   });

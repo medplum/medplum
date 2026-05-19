@@ -1,38 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Flex,
-  Paper,
-  Group,
-  Button,
-  Divider,
   ActionIcon,
-  ScrollArea,
-  Stack,
-  Skeleton,
-  Text,
   Box,
-  Pagination,
   Center,
+  Divider,
+  Flex,
+  Group,
+  Pagination,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  Tabs,
+  Text,
+  Tooltip,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { JSX } from 'react';
-import cx from 'clsx';
-import classes from './TaskBoard.module.css';
-import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
-import { Link, useNavigate } from 'react-router';
+import { Operator, parseSearchRequest } from '@medplum/core';
+import type { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { showErrorNotification } from '../../utils/notifications';
-import { TaskFilterType } from './TaskFilterMenu.utils';
-import type { TaskFilterValue } from './TaskFilterMenu.utils';
-import { TaskFilterMenu } from './TaskFilterMenu';
 import { IconPlus } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { showErrorNotification } from '../../utils/notifications';
+import { NewTaskModal } from './NewTaskModal';
+import classes from './TaskBoard.module.css';
+import { TaskDetailPanel } from './TaskDetailPanel';
+import { TaskFilterMenu } from './TaskFilterMenu';
+import type { TaskFilterValue } from './TaskFilterMenu.utils';
+import { TaskFilterType } from './TaskFilterMenu.utils';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
-import { NewTaskModal } from './NewTaskModal';
-import { TaskDetailPanel } from './TaskDetailPanel';
 
 interface FilterState {
   performerType: CodeableConcept | undefined;
@@ -75,12 +75,12 @@ export function TaskBoard({
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
+  const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
   const [total, setTotal] = useState<number | undefined>(undefined);
-  const requestIdRef = useRef<number>(0);
-  const fetchingRef = useRef<boolean>(false);
+  const requestIdRef = useRef(0);
+  const fetchingRef = useRef(false);
 
   const [filters, setFilters] = useState<FilterState>({
     performerType: undefined,
@@ -96,37 +96,12 @@ export function TaskBoard({
   // Parse current search from query string
   const currentSearch = useMemo(() => parseSearchRequest(`Task?${query}`), [query]);
 
-  // Parse status filters from query string
-  const selectedStatuses = useMemo(() => {
-    const statusFilters = currentSearch.filters?.filter((f) => f.code === 'status') || [];
-    const statuses: Task['status'][] = [];
-    statusFilters.forEach((filter) => {
-      const values = filter.value.split(',');
-      values.forEach((value) => {
-        const trimmedValue = value.trim();
-        if (trimmedValue && !statuses.includes(trimmedValue as Task['status'])) {
-          statuses.push(trimmedValue as Task['status']);
-        }
-      });
-    });
-    return statuses;
-  }, [currentSearch]);
+  const selectedStatuses = useMemo(() => parseFilterValues<Task['status']>(currentSearch, 'status'), [currentSearch]);
 
-  // Parse priority filters from query string
-  const selectedPriorities = useMemo(() => {
-    const priorityFilters = currentSearch.filters?.filter((f) => f.code === 'priority') || [];
-    const priorities: Task['priority'][] = [];
-    priorityFilters.forEach((filter) => {
-      const values = filter.value.split(',');
-      values.forEach((value) => {
-        const trimmedValue = value.trim();
-        if (trimmedValue && !priorities.includes(trimmedValue as Task['priority'])) {
-          priorities.push(trimmedValue as Task['priority']);
-        }
-      });
-    });
-    return priorities;
-  }, [currentSearch]);
+  const selectedPriorities = useMemo(
+    () => parseFilterValues<NonNullable<Task['priority']>>(currentSearch, 'priority'),
+    [currentSearch]
+  );
 
   const fetchTasks = useCallback(async (): Promise<void> => {
     if (fetchingRef.current) {
@@ -227,54 +202,14 @@ export function TaskBoard({
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
     switch (filterType) {
-      case TaskFilterType.STATUS: {
-        const statusValue = value as Task['status'];
-        const newStatuses = selectedStatuses.includes(statusValue)
-          ? selectedStatuses.filter((s) => s !== statusValue)
-          : [...selectedStatuses, statusValue];
-
-        const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'status') || [];
-        const newFilters = [...otherFilters];
-
-        if (newStatuses.length > 0) {
-          newFilters.push({
-            code: 'status',
-            operator: Operator.EQUALS,
-            value: newStatuses.join(','),
-          });
-        }
-
-        onChange({
-          ...currentSearch,
-          filters: newFilters,
-          offset: 0,
-        });
+      case TaskFilterType.STATUS:
+        onChange(toggleFilterValue(currentSearch, 'status', selectedStatuses, value as Task['status']));
         break;
-      }
-      case TaskFilterType.PRIORITY: {
-        const priorityValue = value as Task['priority'];
-        const newPriorities = selectedPriorities.includes(priorityValue)
-          ? selectedPriorities.filter((p) => p !== priorityValue)
-          : [...selectedPriorities, priorityValue];
-
-        const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'priority') || [];
-        const newFilters = [...otherFilters];
-
-        if (newPriorities.length > 0) {
-          newFilters.push({
-            code: 'priority',
-            operator: Operator.EQUALS,
-            value: newPriorities.join(','),
-          });
-        }
-
-        onChange({
-          ...currentSearch,
-          filters: newFilters,
-          offset: 0,
-        });
+      case TaskFilterType.PRIORITY:
+        onChange(
+          toggleFilterValue(currentSearch, 'priority', selectedPriorities, value as NonNullable<Task['priority']>)
+        );
         break;
-      }
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
@@ -289,6 +224,16 @@ export function TaskBoard({
     }
   };
 
+  const handleClearAllFilters = (): void => {
+    const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'status' && f.code !== 'priority') || [];
+    onChange({
+      ...currentSearch,
+      filters: otherFilters,
+      offset: 0,
+    });
+    setFilters((prev) => ({ ...prev, performerType: undefined }));
+  };
+
   return (
     <Box w="100%" h="100%">
       <Flex h="100%">
@@ -296,39 +241,41 @@ export function TaskBoard({
           <Flex direction="column" h="100%" className={classes.borderRight}>
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
+                <Tabs
+                  value={isMyTasks ? 'my' : 'all'}
+                  onChange={(value) => {
+                    navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
+                  }}
+                  variant="unstyled"
+                  className="pill-tabs"
+                >
+                  <Tabs.List>
+                    <Tabs.Tab value="my">My Tasks</Tabs.Tab>
+                    <Tabs.Tab value="all">All Tasks</Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
+
                 <Group gap="xs">
-                  <Button
-                    component={Link}
-                    to={myTasksUri}
-                    className={cx(classes.button, { [classes.selected]: isMyTasks })}
-                    h={32}
-                    radius="xl"
-                  >
-                    My Tasks
-                  </Button>
-
-                  <Button
-                    component={Link}
-                    to={allTasksUri}
-                    className={cx(classes.button, { [classes.selected]: !isMyTasks })}
-                    h={32}
-                    radius="xl"
-                  >
-                    All Tasks
-                  </Button>
-
                   <TaskFilterMenu
                     statuses={selectedStatuses}
                     priorities={selectedPriorities}
                     performerType={filters.performerType}
                     performerTypes={performerTypes}
                     onFilterChange={handleFilterChange}
+                    onClearAllFilters={handleClearAllFilters}
                   />
+                  <Tooltip label="New Task" position="bottom" openDelay={500}>
+                    <ActionIcon
+                      radius="xl"
+                      variant="filled"
+                      color="blue"
+                      size={32}
+                      onClick={() => setNewTaskModalOpened(true)}
+                    >
+                      <IconPlus size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Group>
-
-                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewTaskModalOpened(true)}>
-                  <IconPlus size={16} />
-                </ActionIcon>
               </Flex>
             </Paper>
 
@@ -398,19 +345,59 @@ function EmptyTasksState(): JSX.Element {
   );
 }
 
+const SKELETON_WIDTHS = [
+  ['85%', '60%', '72%'],
+  ['70%', '80%', '55%'],
+  ['92%', '50%', '65%'],
+  ['78%', '68%', '58%'],
+  ['88%', '45%', '75%'],
+  ['74%', '70%', '62%'],
+];
+
 function TaskListSkeleton(): JSX.Element {
   return (
     <Stack gap="md" p="md">
-      {Array.from({ length: 6 }).map((_, index) => (
+      {SKELETON_WIDTHS.map((widths, index) => (
         <Stack key={index}>
           <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
+            <Skeleton height={16} width={widths[0]} />
+            <Skeleton height={14} width={widths[1]} />
+            <Skeleton height={14} width={widths[2]} />
           </Flex>
           <Divider />
         </Stack>
       ))}
     </Stack>
   );
+}
+
+function parseFilterValues<T extends string>(search: SearchRequest, code: string): T[] {
+  const values: T[] = [];
+  for (const filter of search.filters?.filter((f) => f.code === code) || []) {
+    for (const raw of filter.value.split(',')) {
+      const v = raw.trim() as T;
+      if (v && !values.includes(v)) {
+        values.push(v);
+      }
+    }
+  }
+  return values;
+}
+
+function toggleFilterValue<T extends string>(
+  search: SearchRequest,
+  code: string,
+  selected: T[],
+  value: T
+): SearchRequest {
+  const updated = selected.includes(value) ? selected.filter((s) => s !== value) : [...selected, value];
+  const otherFilters = search.filters?.filter((f) => f.code !== code) || [];
+  return {
+    ...search,
+    filters:
+      updated.length > 0
+        ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
+        : otherFilters,
+    offset: 0,
+  };
 }

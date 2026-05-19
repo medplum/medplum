@@ -3,9 +3,12 @@
 import type { MedplumClient } from '@medplum/core';
 import { EMPTY } from '@medplum/core';
 import type { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
-import { createReadStream, writeFile } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import type { ReadableStream } from 'node:stream/web';
 import { createMedplumClient } from './util/client';
 import { MedplumCommand, addSubcommand, getUnsupportedExtension, prettyPrint } from './utils';
 
@@ -35,16 +38,23 @@ bulkExportCommand
     const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since, { pollStatusOnAccepted: true });
 
-    response.output?.forEach(async ({ type, url }) => {
+    for (const { type, url } of response.output ?? EMPTY) {
       const fileUrl = new URL(url);
-      const data = await medplum.download(url);
       const fileName = `${type}_${fileUrl.pathname}`.replaceAll(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
       const path = resolve(targetDirectory ?? '', fileName);
 
-      writeFile(`${path}`, await data.text(), () => {
-        console.log(`${path} is created`);
-      });
-    });
+      const res = await medplum.downloadResponse(url);
+      if (!res.ok) {
+        throw new Error(`Download failed: ${res.status} ${res.statusText}`);
+      }
+      if (!res.body) {
+        throw new Error('Download response missing body');
+      }
+
+      const nodeStream = Readable.fromWeb(res.body as ReadableStream<Uint8Array>);
+      await pipeline(nodeStream, createWriteStream(path));
+      console.log(`${path} is created`);
+    }
   });
 
 bulkImportCommand

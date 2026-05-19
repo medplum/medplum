@@ -15,7 +15,7 @@ import exampleDataSet from '../../data/example/example-data.json';
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
 
   // Get the data type and capitalize the first letter
   const { dataType } = useParams();

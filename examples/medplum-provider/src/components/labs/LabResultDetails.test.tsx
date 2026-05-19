@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { DiagnosticReport, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '../../test-utils/render';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
+import { render, screen, waitFor } from '../../test-utils/render';
 import { LabResultDetails } from './LabResultDetails';
-import type { DiagnosticReport, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 
 const mockPatient: Patient = {
   resourceType: 'Patient',

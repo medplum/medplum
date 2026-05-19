@@ -13,33 +13,41 @@ import type {
   ProjectMembership,
   Resource,
 } from '@medplum/fhirtypes';
+import { generateKeyPairSync } from 'crypto';
 import type { Express } from 'express';
 import type Redis from 'ioredis';
+import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { setDefaultResultOrder } from 'node:dns';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type internal from 'node:stream';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
-import type { RepositoryContext } from './fhir/repo';
-import { Repository, getSystemRepo } from './fhir/repo';
+import { getRepoForLogin } from './fhir/accesspolicy';
+import type { Repository } from './fhir/repo';
+import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
-
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
+  client?: Partial<ClientApplication>;
   accessPolicy?: Partial<AccessPolicy>;
   membership?: Partial<ProjectMembership>;
   superAdmin?: boolean;
   withClient?: boolean;
   withAccessToken?: boolean;
-  withRepo?: boolean | Partial<RepositoryContext>;
+  withRepo?: boolean;
+  extendedMode?: boolean;
 }
 
 type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
@@ -52,14 +60,13 @@ export type TestProjectResult<T extends TestProjectOptions> = {
   membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
   login: T['withAccessToken'] extends true ? WithId<Login> : undefined;
   accessToken: T['withAccessToken'] extends true ? string : undefined;
-  repo: T['withRepo'] extends true | Partial<RepositoryContext> ? Repository : undefined;
+  repo: T['withRepo'] extends true ? Repository : undefined;
 };
 
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
-  const systemRepo = getSystemRepo();
-
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an optional input parameter
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
@@ -80,7 +87,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 
   let client: WithId<ClientApplication> | undefined;
   let accessPolicy: AccessPolicy | undefined;
-  let membership: ProjectMembership | undefined;
+  let membership: WithId<ProjectMembership> | undefined;
   let login: WithId<Login> | undefined;
   let accessToken: string | undefined;
   let repo: Repository | undefined;
@@ -100,6 +107,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
           url: 'https://example.com/logo.png',
         },
       },
+      ...options?.client,
     });
 
     if (options?.accessPolicy) {
@@ -119,7 +127,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       ...options?.membership,
     });
 
-    if (options?.withAccessToken) {
+    if (options?.withAccessToken || options?.withRepo) {
       const scope = 'openid';
 
       login = await systemRepo.createResource<Login>({
@@ -140,25 +148,11 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         profile: client.resourceType + '/' + client.id,
         scope,
       });
-    }
 
-    if (options?.withRepo) {
-      const repoContext: RepositoryContext = {
-        projects: [project],
-        currentProject: project,
-        author: createReference(client),
-        superAdmin: options?.superAdmin,
-        projectAdmin: options?.membership?.admin,
-        accessPolicy,
-        strictMode: project.strictMode,
-        extendedMode: true,
-        checkReferencesOnWrite: project.checkReferencesOnWrite,
-      };
-
-      if (typeof options.withRepo === 'object') {
-        Object.assign(repoContext, options.withRepo);
+      if (options?.withRepo) {
+        const userConfig = { resourceType: 'UserConfiguration' } as const;
+        repo = await getRepoForLogin({ login, project, membership, userConfig }, options?.extendedMode ?? true);
       }
-      repo = new Repository(repoContext);
     }
   }
 
@@ -186,7 +180,7 @@ export async function addTestUser(
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   if (accessPolicy) {
-    const systemRepo = getSystemRepo();
+    const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
       meta: { project: project.id },
@@ -280,16 +274,34 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
   });
 }
 
-export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<AsyncJob> {
-  for (let i = 0; i < 100; i++) {
+export type WaitForAsyncJobOptions = {
+  maxAttempts?: number;
+  pollIntervalMs?: number;
+  completionDelayMs?: number;
+};
+
+export async function waitForAsyncJob(
+  contentLocation: string,
+  app: Express,
+  accessToken: string,
+  options?: WaitForAsyncJobOptions
+): Promise<AsyncJob> {
+  const maxAttempts = options?.maxAttempts ?? 100;
+  const pollIntervalMs = options?.pollIntervalMs ?? 450;
+  const completionDelayMs = options?.completionDelayMs ?? 500;
+
+  for (let i = 0; i < maxAttempts; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
-      await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
+      if (completionDelayMs > 0) {
+        await sleep(completionDelayMs); // Buffer time to ensure that any remaining async processing has fully completed
+      }
       return res.body as AsyncJob;
     }
-    await sleep(450);
+    await sleep(pollIntervalMs);
   }
   throw new Error('Async Job did not complete');
 }
@@ -360,4 +372,192 @@ export async function deleteRedisKeys(redisInstance: Redis, prefix: string): Pro
   totalDeleted = deletedCounts.reduce((sum, count) => sum + count, 0);
 
   return totalDeleted;
+}
+
+/**
+ * Helper function to generate a self-signed certificate for testing.
+ * @param subject - The subject name for the certificate.
+ * @param isCA - Whether the certificate should be a CA certificate.
+ * @returns The generated certificate and private key.
+ */
+export function generateSelfSignedCert(subject: string, isCA = false): { cert: string; privateKey: string } {
+  const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  });
+
+  // Create certificate using X509Certificate (Node.js 15.6+)
+  const cert = createCertificate(subject, subject, publicKey, privateKey, isCA);
+
+  return { cert, privateKey };
+}
+
+/**
+ * Helper function to generate a CA-signed certificate for testing.
+ * @param subject - The subject name for the certificate.
+ * @param ca - The CA certificate and private key.
+ * @param ca.cert - The CA certificate.
+ * @param ca.privateKey - The CA private key.
+ * @returns The generated certificate and private key.
+ */
+export function generateCaSignedCert(
+  subject: string,
+  ca: { cert: string; privateKey: string }
+): { cert: string; privateKey: string } {
+  const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  });
+
+  const cert = createCaSignedCertificate(subject, publicKey, privateKey, ca.cert, ca.privateKey);
+
+  return { cert, privateKey };
+}
+
+/**
+ * Creates a certificate using openssl command
+ * @param subject - The subject name for the certificate.
+ * @param issuer - The issuer name for the certificate.
+ * @param publicKey - The public key for the certificate.
+ * @param signingKey - The private key used to sign the certificate.
+ * @param isCA - Whether the certificate should be a CA certificate.
+ * @param notBeforeDays - Number of days from now when the certificate becomes valid.
+ * @param notAfterDays - Number of days from now when the certificate expires.
+ * @returns The generated certificate in PEM format.
+ */
+function createCertificate(
+  subject: string,
+  issuer: string,
+  publicKey: string,
+  signingKey: string,
+  isCA: boolean,
+  notBeforeDays = 0,
+  notAfterDays = 365
+): string {
+  // Create temporary directory
+  const tmpDir = mkdtempSync(join(tmpdir(), 'cert-test-'));
+
+  try {
+    // Write keys to temporary files
+    const publicKeyPath = join(tmpDir, 'public.pem');
+    const signingKeyPath = join(tmpDir, 'signing.pem');
+    const certPath = join(tmpDir, 'cert.pem');
+    const configPath = join(tmpDir, 'openssl.cnf');
+
+    writeFileSync(publicKeyPath, publicKey);
+    writeFileSync(signingKeyPath, signingKey);
+
+    // Create OpenSSL config
+    const config = `
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = ${subject.replace('CN=', '')}
+
+[v3_req]
+basicConstraints = CA:${isCA ? 'TRUE' : 'FALSE'}
+keyUsage = ${isCA ? 'keyCertSign, cRLSign' : 'digitalSignature, keyEncipherment'}
+`;
+
+    writeFileSync(configPath, config);
+
+    // Calculate dates
+    const notBefore = new Date();
+    notBefore.setDate(notBefore.getDate() + notBeforeDays);
+    const notAfter = new Date();
+    notAfter.setDate(notAfter.getDate() + notAfterDays);
+
+    // Generate certificate using OpenSSL
+    const cmd = `openssl req -new -x509 -key "${signingKeyPath}" -out "${certPath}" -days ${notAfterDays - notBeforeDays} -config "${configPath}"`;
+
+    execSync(cmd, { stdio: 'pipe' });
+
+    const cert = readFileSync(certPath, 'utf8');
+    return cert;
+  } finally {
+    // Cleanup
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Creates a CA-signed certificate using openssl command.
+ * @param subject - The subject name for the certificate.
+ * @param publicKey - The public key for the certificate.
+ * @param privateKey - The private key for the certificate.
+ * @param caCert - The CA certificate.
+ * @param caPrivateKey - The CA private key.
+ * @param notBeforeDays - Number of days from now when the certificate becomes valid.
+ * @param notAfterDays - Number of days from now when the certificate expires.
+ * @returns The generated certificate in PEM format.
+ */
+function createCaSignedCertificate(
+  subject: string,
+  publicKey: string,
+  privateKey: string,
+  caCert: string,
+  caPrivateKey: string,
+  notBeforeDays = 0,
+  notAfterDays = 365
+): string {
+  // Create temporary directory
+  const tmpDir = mkdtempSync(join(tmpdir(), 'cert-test-'));
+
+  try {
+    // Write files to temporary directory
+    const privateKeyPath = join(tmpDir, 'private.pem');
+    const csrPath = join(tmpDir, 'csr.pem');
+    const certPath = join(tmpDir, 'cert.pem');
+    const caCertPath = join(tmpDir, 'ca-cert.pem');
+    const caKeyPath = join(tmpDir, 'ca-key.pem');
+    const configPath = join(tmpDir, 'openssl.cnf');
+    const extConfigPath = join(tmpDir, 'ext.cnf');
+
+    writeFileSync(privateKeyPath, privateKey);
+    writeFileSync(caCertPath, caCert);
+    writeFileSync(caKeyPath, caPrivateKey);
+
+    // Create OpenSSL config for CSR
+    const config = `
+[req]
+distinguished_name = req_distinguished_name
+prompt = no
+
+[req_distinguished_name]
+CN = ${subject.replace('CN=', '')}
+`;
+
+    writeFileSync(configPath, config);
+
+    // Create extension config
+    const extConfig = `
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+`;
+
+    writeFileSync(extConfigPath, extConfig);
+
+    // Step 1: Generate CSR
+    execSync(`openssl req -new -key "${privateKeyPath}" -out "${csrPath}" -config "${configPath}"`, {
+      stdio: 'pipe',
+    });
+
+    // Step 2: Sign CSR with CA
+    const days = notAfterDays - notBeforeDays;
+    execSync(
+      `openssl x509 -req -in "${csrPath}" -CA "${caCertPath}" -CAkey "${caKeyPath}" -CAcreateserial -out "${certPath}" -days ${days} -extfile "${extConfigPath}"`,
+      { stdio: 'pipe' }
+    );
+
+    const cert = readFileSync(certPath, 'utf8');
+    return cert;
+  } finally {
+    // Cleanup
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
 }

@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Period, Resource } from '@medplum/fhirtypes';
+import type { Period, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { LRUCache } from '../cache';
+import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toPeriod, toTypedValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
@@ -34,6 +36,8 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
   return true;
 }
 
+const searchExprCache = new LRUCache<FhirPathAtom>(1000);
+
 /**
  * Determines if the resource matches the search filter.
  * @param resource - The resource that was created or updated.
@@ -46,13 +50,18 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
   if (!searchParam) {
     return false;
   }
-  const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
+  const typedValues = evalFhirPathTyped(
+    searchParam.expression as string,
+    [toTypedValue(resource)],
+    undefined,
+    searchExprCache
+  );
   if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
     return matchesMissingOrPresent(typedValues, filter);
   }
   switch (searchParam.type) {
     case 'reference':
-      return matchesReferenceFilter(typedValues, filter);
+      return matchesReferenceFilter(searchParam, typedValues, filter);
     case 'string':
     case 'uri':
       return matchesStringFilter(typedValues, filter);
@@ -75,7 +84,7 @@ function matchesMissingOrPresent(typedValues: TypedValue[], filter: Filter): boo
   return desired === exists;
 }
 
-function matchesReferenceFilter(typedValues: TypedValue[], filter: Filter): boolean {
+function matchesReferenceFilter(searchParam: SearchParameter, typedValues: TypedValue[], filter: Filter): boolean {
   const negated = isNegated(filter.operator);
 
   if (filter.value === '' && typedValues.length === 0) {
@@ -88,12 +97,13 @@ function matchesReferenceFilter(typedValues: TypedValue[], filter: Filter): bool
   const references = convertToSearchableReferences(typedValues);
 
   for (const filterValue of splitSearchOnComma(filter.value)) {
-    let match = references.includes(filterValue);
-    if (!match && filter.code === '_compartment') {
-      // Backwards compability for compartment search parameter
-      // In previous versions, the resource type was not required in compartment values
-      // So, "123" would match "Patient/123"
-      // We need to maintain this behavior for backwards compatibility
+    let match = false;
+    if (filterValue.includes('/')) {
+      match = references.includes(filterValue);
+    } else if (searchParam.target?.length === 1 || filter.code === '_compartment') {
+      // If the filter value does not include a resource type, then it can match any reference that ends with '/' + filterValue
+      // This is only allowed if the search parameter has a single target type,
+      // or if the search parameter is _compartment (which is a special case for backwards compatibility reasons)
       match = references.some((reference) => reference?.endsWith('/' + filterValue));
     }
     if (match) {

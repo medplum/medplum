@@ -14,7 +14,8 @@ export default function PricingPage(): JSX.Element {
             Plans for startups, enterprises, and everyone in between.
           </p>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
-            For questions about pricing or to <Link href="https://cal.com/medplum/15">schedule a demo</Link> please
+            For questions about pricing or to{' '}
+            <Link href="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a">book an intro call</Link> please
             reach out to us at <Link href="mailto:hello@medplum.com">hello@medplum.com</Link>.
           </p>
           <table style={{ width: 950, margin: 'auto' }}>
@@ -510,7 +511,8 @@ export default function PricingPage(): JSX.Element {
             <h3>Notes</h3>
             <ol>
               <li id="note1">
-                <strong>Free</strong>: recommended for prototyping or learning.
+                <strong>Free</strong>: recommended for prototyping or learning. See{' '}
+                <Link href="/open-source">Why Open Source</Link>.
               </li>
               <li id="note2">
                 <strong>Production</strong>: recommended for production applications, e.g. treatment of patients or
@@ -526,7 +528,8 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note5">
                 <strong>Community</strong>: refers to self-hosting the{' '}
-                <Link href="https://github.com/medplum/medplum">Medplum application</Link>.
+                <Link href="https://github.com/medplum/medplum">Medplum application</Link>. See{' '}
+                <Link href="/open-source">Why Open Source</Link>.
               </li>
               <li id="note6">
                 <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their

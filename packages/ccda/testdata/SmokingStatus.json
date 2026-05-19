@@ -103,14 +103,16 @@
         ],
         "qualification": [
           {
-            "coding": [
-              {
-                "system": "http://nucc.org/provider-taxonomy",
-                "code": "200000000X",
-                "display": "Allopathic and Osteopathic Physicians"
-              }
-            ],
-            "text": "Allopathic and Osteopathic Physicians"
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "200000000X",
+                  "display": "Allopathic and Osteopathic Physicians"
+                }
+              ],
+              "text": "Allopathic and Osteopathic Physicians"
+            }
           }
         ]
       }
@@ -141,14 +143,16 @@
         ],
         "qualification": [
           {
-            "coding": [
-              {
-                "system": "http://nucc.org/provider-taxonomy",
-                "code": "200000000X",
-                "display": "Allopathic and Osteopathic Physicians"
-              }
-            ],
-            "text": "Allopathic and Osteopathic Physicians"
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "200000000X",
+                  "display": "Allopathic and Osteopathic Physicians"
+                }
+              ],
+              "text": "Allopathic and Osteopathic Physicians"
+            }
           }
         ]
       }

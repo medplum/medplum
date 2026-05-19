@@ -20,8 +20,8 @@ import type { PlanDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import cx from 'clsx';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import classes from './AddPlanDefinition.module.css';
 
 interface AddPlanDefinitionProps {
@@ -34,7 +34,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
   const [opened, setOpened] = useState(false);
   const [planDefinitions, setPlanDefinitions] = useState<PlanDefinition[]>([]);
   const [selectedPlanDefinition, setSelectedPlanDefinition] = useState<PlanDefinition | undefined>();
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
 

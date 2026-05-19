@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text, Group, ScrollArea, Divider, Paper, Flex } from '@mantine/core';
-import type { JSX } from 'react';
-import { useState, useEffect } from 'react';
-import { useMedplum, MedplumLink } from '@medplum/react';
-import type { Communication } from '@medplum/fhirtypes';
-import { loadRecentTopics } from '../../utils/spacePersistence';
-import { showErrorNotification } from '../../utils/notifications';
+import { Divider, Flex, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
-import classes from './HistoryList.module.css';
+import type { Communication } from '@medplum/fhirtypes';
+import { MedplumLink, useMedplum } from '@medplum/react';
 import cx from 'clsx';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
+import { loadRecentTopics } from '../../utils/spacePersistence';
+import classes from './HistoryList.module.css';
 
 interface HistoryListProps {
   currentTopicId?: string;

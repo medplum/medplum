@@ -134,7 +134,7 @@ The `PatchOperation` below sends an `add` operation to the `name` of the [`Patie
 </Tabs>
 </details>
 
-:::note Preventing Race Conditions
+:::note[Preventing Race Conditions]
 In the TypeScript patch example, a second `PatchOperation` is included:
 
 `{ op: 'test', path: '/meta/versionId', value: patient.meta?.versionId }`

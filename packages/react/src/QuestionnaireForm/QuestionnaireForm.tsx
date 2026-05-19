@@ -10,7 +10,7 @@ import {
   useQuestionnaireForm,
 } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { SignatureInput } from '../SignatureInput/SignatureInput';
@@ -34,11 +34,13 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const medplum = useMedplum();
   const [signatureRequiredSubmitted, setSignatureRequiredSubmitted] = useState(false);
   const propsRef = useRef(props);
-  propsRef.current = props;
+  const pendingChangeRef = useRef<QuestionnaireResponse | undefined>(undefined);
+  useLayoutEffect(() => {
+    propsRef.current = props;
+  });
 
   const onFormChange = useCallback((response: QuestionnaireResponse) => {
-    setSignatureRequiredSubmitted(false);
-    propsRef.current.onChange?.(response);
+    pendingChangeRef.current = response;
   }, []);
 
   const formState = useQuestionnaireForm({
@@ -51,7 +53,37 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     onChange: onFormChange,
   });
   const formStateRef = useRef(formState);
-  formStateRef.current = formState;
+  useLayoutEffect(() => {
+    formStateRef.current = formState;
+  });
+
+  // Intentionally run after every commit.
+  //
+  // `useQuestionnaireForm` currently invokes its `onChange` callback while the form
+  // is rendering/initializing. Calling `setState` directly from that callback caused
+  // React to warn that `QuestionnaireForm` was updating a parent during render.
+  //
+  // To avoid that render-phase update, `onFormChange` stages the latest response in
+  // `pendingChangeRef`, and this effect flushes it after commit. The effect clears
+  // the ref before calling `setSignatureRequiredSubmitted(false)`, so the state
+  // update does not create an infinite loop: the rerender triggered by `setState`
+  // immediately exits because there is no longer a pending change to flush.
+  //
+  // A more complete fix would be to move `useQuestionnaireForm`'s `onChange`
+  // emission out of render entirely. Until then, this effect must run on every
+  // commit so it can detect newly staged ref-based changes that do not participate
+  // in React's dependency tracking.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const pendingChange = pendingChangeRef.current;
+    if (!pendingChange) {
+      return;
+    }
+
+    pendingChangeRef.current = undefined;
+    setSignatureRequiredSubmitted(false);
+    propsRef.current.onChange?.(pendingChange);
+  });
 
   const isSignatureRequired = useMemo(() => {
     if (formState.loading) {

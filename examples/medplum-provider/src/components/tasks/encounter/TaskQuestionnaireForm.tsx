@@ -10,8 +10,8 @@ import {
   useMedplum,
   useMedplumProfile,
 } from '@medplum/react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {
@@ -61,12 +61,12 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
 
       if (questionnaireResponseReference) {
         const response = await medplum.readReference(questionnaireResponseReference);
-        setQuestionnaireResponse(response as QuestionnaireResponse);
+        setQuestionnaireResponse(response);
       }
 
       if (questionnaireReference) {
         const questionnaireResponse = await medplum.readReference(questionnaireReference);
-        setQuestionnaire(questionnaireResponse as Questionnaire);
+        setQuestionnaire(questionnaireResponse);
       }
     };
 

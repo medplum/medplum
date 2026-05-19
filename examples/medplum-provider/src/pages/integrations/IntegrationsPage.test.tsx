@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { fireEvent, render, screen } from '../../test-utils/render';
 import { IntegrationsPage } from './IntegrationsPage';
-import { render, screen, fireEvent } from '../../test-utils/render';
 
 describe('IntegrationsPage', () => {
   let mockLocationHref: string;

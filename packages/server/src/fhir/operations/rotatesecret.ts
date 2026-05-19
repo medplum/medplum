@@ -2,29 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ClientApplication, OperationDefinition } from '@medplum/fhirtypes';
+import type { ClientApplication } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { generateSecret } from '../../oauth/keys';
-import { getSystemRepo } from '../repo';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'clientapplication-rotate-secret',
-  status: 'active',
-  kind: 'operation',
-  code: 'rotate-secret',
-  experimental: true,
-  resource: ['ClientApplication'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    { use: 'in', name: 'secret', type: 'string', min: 0, max: '1' },
-    { use: 'in', name: 'retiringSecret', type: 'string', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'ClientApplication', min: 1, max: '1' },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'ClientApplication' },
+  {
+    name: 'clientapplication-rotate-secret',
+    code: 'rotate-secret',
+    parameter: [
+      { use: 'in', name: 'secret', type: 'string', min: 0, max: '1' },
+      { use: 'in', name: 'retiringSecret', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'ClientApplication', min: 1, max: '1' },
+    ],
+  }
+);
 
 type RotateSecretParameters = {
   secret?: string;
@@ -41,8 +36,8 @@ type RotateSecretParameters = {
  * @returns The FHIR response.
  */
 export async function rotateSecretHandler(req: FhirRequest): Promise<FhirResponse> {
-  const repo = getAuthenticatedContext().repo;
-  if (!repo.isSuperAdmin() && !repo.isProjectAdmin()) {
+  const ctx = getAuthenticatedContext();
+  if (!ctx.repo.isSuperAdmin() && !ctx.repo.isProjectAdmin()) {
     return [forbidden];
   }
 
@@ -55,7 +50,7 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   // Patch using system repo since the secret fields should not generally be user-writeable
-  const systemRepo = getSystemRepo();
+  const systemRepo = ctx.systemRepo;
   const clientApp = await systemRepo.withTransaction(async () => {
     let clientApp = await systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
     if (params.secret && params.secret === clientApp.secret) {

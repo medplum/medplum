@@ -10,18 +10,25 @@ import { getConfig } from '../../config/loader';
 let client: LambdaClient;
 
 /**
- * Executes a Bot in an AWS Lambda.
- * @param request - The bot request.
- * @returns The bot execution result.
+ * Returns the shared LambdaClient singleton, creating it if necessary.
+ * @returns The LambdaClient instance.
  */
-export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
+export function getExecuteLambdaClient(): LambdaClient {
+  if (!client) {
+    client = new LambdaClient({ region: getConfig().awsRegion });
+  }
+  return client;
+}
+
+/**
+ * Builds the common Lambda invocation payload from a bot execution request.
+ * @param request - The bot execution context.
+ * @returns The payload object to send to the Lambda function.
+ */
+export function buildLambdaPayload(request: BotExecutionContext): Record<string, unknown> {
   const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
-  if (!client) {
-    client = new LambdaClient({ region: config.awsRegion });
-  }
-  const name = getLambdaFunctionName(bot);
-  const payload = {
+  return {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
     requester,
@@ -32,6 +39,16 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
     traceId,
     headers,
   };
+}
+
+/**
+ * Executes a Bot in an AWS Lambda.
+ * @param request - The bot request.
+ * @returns The bot execution result.
+ */
+export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
+  const name = getLambdaFunctionName(request.bot);
+  const payload = buildLambdaPayload(request);
 
   // Build the command
   const encoder = new TextEncoder();
@@ -44,7 +61,7 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
 
   // Execute the command
   try {
-    const response = await client.send(command);
+    const response = await getExecuteLambdaClient().send(command);
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
 
     // The response from AWS Lambda is always JSON, even if the function returns a string
@@ -96,9 +113,9 @@ export function getLambdaFunctionName(bot: Bot): string {
  * @param logResult - The raw log result from the AWS lambda event.
  * @returns The parsed log result.
  */
-function parseLambdaLog(logResult: string): string {
+export function parseLambdaLog(logResult: string): string {
   const logBuffer = Buffer.from(logResult, 'base64');
-  const log = logBuffer.toString('ascii');
+  const log = logBuffer.toString('utf-8');
   const lines = log.split('\n');
   const result = [];
   for (const line of lines) {
@@ -112,5 +129,19 @@ function parseLambdaLog(logResult: string): string {
     }
     result.push(line);
   }
-  return result.join('\n').trim();
+  return sanitizeLogResult(result.join('\n').trim());
+}
+
+/**
+ * Sanitizes a log result string to ensure it's valid for FHIR string fields.
+ * FHIR strings only allow: \r, \n, \t, and characters from \u0020 to \uFFFF.
+ * This removes or replaces control characters that would cause validation errors.
+ * @param str - The string to sanitize.
+ * @returns The sanitized string.
+ */
+export function sanitizeLogResult(str: string): string {
+  // Replace invalid control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F) with empty string
+  // Keep valid characters: \t (0x09), \n (0x0A), \r (0x0D), and \u0020-\uFFFF
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }

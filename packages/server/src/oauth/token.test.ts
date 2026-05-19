@@ -6,6 +6,7 @@ import {
   createReference,
   encodeBase64,
   encodeBase64Url,
+  getReferenceString,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
@@ -23,7 +24,7 @@ import type {
 import express from 'express';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID, X509Certificate } from 'node:crypto';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
@@ -31,8 +32,10 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
-import { createTestProject, withTestContext } from '../test.setup';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
+import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
 
@@ -71,7 +74,6 @@ jest.mock('node-fetch');
 
 describe('OAuth2 Token', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   const domain = randomUUID() + '.example.com';
   const email = `text@${domain}`;
   const password = randomUUID();
@@ -79,16 +81,29 @@ describe('OAuth2 Token', () => {
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let adminMembership: WithId<ProjectMembership>;
+  let accessToken: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({ withClient: true }));
+    ({
+      project,
+      client,
+      membership: adminMembership,
+      accessToken,
+    } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    }));
+    systemRepo = await getProjectSystemRepo(project);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -128,7 +143,7 @@ describe('OAuth2 Token', () => {
     });
 
     // Set the test user password
-    await setPassword(user, password);
+    await setPassword(systemRepo, user, password);
 
     // Create a new client application with external auth
     externalAuthClient = await createClient(systemRepo, {
@@ -281,6 +296,27 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid authorization header');
+  });
+
+  test('Client credentials auth header empty secret', async () => {
+    // Create a client without an secret
+    const badClient = await withTestContext(() =>
+      systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        name: 'Bad Client',
+        description: 'Bad Client',
+        secret: '',
+        redirectUris: ['https://example.com'],
+      })
+    );
+
+    const header = Buffer.from(badClient.id + ':' + badClient.secret).toString('base64');
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .type('form')
+      .set('Authorization', 'Basic ' + header)
+      .send();
+    expect(res.status).toBe(401);
   });
 
   test('Token for client empty secret', async () => {
@@ -830,7 +866,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -841,7 +877,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -853,7 +889,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid offline');
+    expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -899,7 +935,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -910,7 +946,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -942,7 +978,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: codeHash,
       codeChallengeMethod: 'S256',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -964,7 +1000,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: codeHash,
       codeChallengeMethod: 'S256',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -975,7 +1011,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -987,7 +1023,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid offline');
+    expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -1000,7 +1036,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1011,7 +1047,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1046,7 +1082,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1057,7 +1093,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1073,7 +1109,7 @@ describe('OAuth2 Token', () => {
       });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid offline');
+    expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -1087,7 +1123,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1098,7 +1134,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1124,7 +1160,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1135,7 +1171,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1161,7 +1197,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1172,7 +1208,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1205,7 +1241,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1217,7 +1253,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1230,7 +1266,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid offline');
+    expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -1243,7 +1279,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res4.status).toBe(200);
     expect(res4.body.token_type).toBe('Bearer');
-    expect(res4.body.scope).toBe('openid offline');
+    expect(res4.body.scope).toBe('openid offline_access');
     expect(res4.body.expires_in).toBe(3600);
     expect(res4.body.id_token).toBeDefined();
     expect(res4.body.access_token).toBeDefined();
@@ -1275,7 +1311,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1284,12 +1320,12 @@ describe('OAuth2 Token', () => {
       client_id: validLifetimeClient.id,
       code: res.body.code,
       code_verifier: 'xyz',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
 
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(60);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1339,7 +1375,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1348,12 +1384,12 @@ describe('OAuth2 Token', () => {
       client_id: validLifetimeClient.id,
       code: res.body.code,
       code_verifier: 'xyz',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
 
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1403,7 +1439,7 @@ describe('OAuth2 Token', () => {
       expect(patient.profile).toBeDefined();
 
       // Force set the password
-      await setPassword(patient.user, patientPassword);
+      await setPassword(systemRepo, patient.user, patientPassword);
       return patient;
     });
 
@@ -1414,7 +1450,7 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline',
+      scope: 'openid offline_access',
     });
     expect(res.status).toBe(200);
 
@@ -1426,7 +1462,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.patient).toStrictEqual(testPatient.profile.id);
   });
 
@@ -1772,6 +1808,63 @@ describe('OAuth2 Token', () => {
     expect(res2.body.encounter).toBeDefined();
   });
 
+  test.each([
+    {
+      fieldName: 'patient',
+      resourceType: 'Patient',
+      externalId: '0e4af968e733693405e943e1',
+      identifierSystem: 'https://healthgorilla.com/patient-id',
+      responseField: 'patient',
+    },
+    {
+      fieldName: 'encounter',
+      resourceType: 'Encounter',
+      externalId: 'VISIT-12345',
+      identifierSystem: 'https://example.com/visit-id',
+      responseField: 'encounter',
+    },
+  ])(
+    'Smart App Launch with $fieldName identifier returns identifier value',
+    async ({ fieldName, resourceType, externalId, identifierSystem, responseField }) => {
+      const fhirId = randomUUID();
+
+      // Create a SmartAppLaunch with both reference and identifier
+      const launch = await withTestContext(() =>
+        systemRepo.createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          [fieldName]: {
+            reference: `${resourceType}/${fhirId}`,
+            identifier: {
+              system: identifierSystem,
+              value: externalId,
+            },
+          },
+        })
+      );
+
+      const res = await request(app).post('/auth/login').type('json').send({
+        clientId: client.id,
+        launch: launch.id,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+      expect(res.status).toBe(200);
+
+      const res2 = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: 'authorization_code',
+        code: res.body.code,
+        client_id: client.id,
+        client_secret: client.secret,
+        code_verifier: 'xyz',
+      });
+      expect(res2.status).toBe(200);
+      // When identifier is present, it should be returned instead of the FHIR resource ID
+      expect(res2.body[responseField]).toBe(externalId);
+    }
+  );
+
   test('IP address allow', async () => {
     const res = await request(app).post('/auth/login').set('X-Forwarded-For', '5.5.5.5').type('json').send({
       clientId: client.id,
@@ -1962,7 +2055,50 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
+
+    // Create a test user
+    const email = `test-${randomUUID()}@example.com`;
+    const password = 'test-password';
+    await inviteUser({
+      project: superAdminProject,
+      resourceType: 'Practitioner',
+      firstName: 'Test',
+      lastName: 'Test',
+      email,
+      password,
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline_access', // Request offline_access access
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline_access');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('Grant types refresh_token should include refresh token', async () => {
+    const client = await createClient(systemRepo, {
+      project,
+      name: 'Test Client with Refresh Token',
+      refreshTokenLifetime: '60s',
+      grantType: [OAuthGrantType.AuthorizationCode, OAuthGrantType.RefreshToken],
+    });
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;
@@ -1981,7 +2117,8 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      scope: 'openid offline', // Request offline access
+      scope: 'openid', // Do not request offline_access access
+      clientId: client.id,
     });
     expect(res.status).toBe(200);
 
@@ -1992,11 +2129,216 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+  });
+
+  test('mTLS error on client not found', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('x-mtls-cert', encodeURIComponent('invalid-cert'))
+      .send({
+        grant_type: 'client_credentials',
+        client_id: randomUUID(),
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toStrictEqual('invalid_request');
+    expect(res.body.error_description).toBe('Error reading client: Not found');
+  });
+
+  test('mTLS error missing trust store', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('x-mtls-cert', encodeURIComponent('fake-cert'))
+      .send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toStrictEqual('invalid_request');
+    expect(res.body.error_description).toBe('Client does not have a configured certificate trust store');
+  });
+
+  test('mTLS with self-signed certificate success', async () => {
+    const { cert } = generateSelfSignedCert('CN=Test Client');
+    const result = validateClientCert(cert, cert);
+    expect(result).toBeInstanceOf(X509Certificate);
+    expect(result.subject).toBe('CN=Test Client');
+
+    const { client } = await createTestProject({
+      withClient: true,
+      client: {
+        certificateTrustStore: cert,
+      },
+    });
+
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('x-mtls-cert', encodeURIComponent(cert))
+      .send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Pre-authorized code with missing client_id', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      'pre-authorized_code': 'big-long-string',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing client_id');
+  });
+
+  test('Pre-authorized code with missing code', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing pre-authorized_code');
+  });
+
+  test('Pre-authorized code with invalid client_id', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      'pre-authorized_code': 'big-long-string',
+      client_id: 'invalid-client-id',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_client');
+    expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Pre-authorized code with invalid code', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': 'invalid-code',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid pre-authorized_code');
+  });
+
+  test('Pre-authorized code expired', async () => {
+    // Create a pre-authorized code that is already expired
+    const preAuthorizedCode = generateSecret(128);
+    const preAuthorizedCodeHash = createHash('sha256').update(preAuthorizedCode).digest('hex');
+    const expiresAt = new Date(Date.now() - 1000).toISOString(); // expired 1 second ago
+    await systemRepo.createResource<Login>({
+      resourceType: 'Login',
+      authMethod: 'pre-authorized',
+      project: createReference(project),
+      client: createReference(client),
+      membership: createReference(adminMembership),
+      user: adminMembership.user,
+      authTime: new Date().toISOString(),
+      scope: 'openid',
+      nonce: randomUUID(),
+      preAuthorizedCodeHash,
+      expiresAt,
+    });
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': preAuthorizedCode,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_grant');
+    expect(res.body.error_description).toBe('Pre-authorized code expired');
+  });
+
+  test('Pre-authorized code IP address restriction', async () => {
+    const testAccount = await addTestUser(project, {
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: '*' }],
+      ipAccessRule: [
+        { name: 'Block test', value: '6.6.6.6', action: 'block' },
+        { name: 'Allow by default', value: '*', action: 'allow' },
+      ],
+    });
+
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+      .type('json')
+      .send({ clientId: client.id });
+    expect(res.status).toBe(200);
+    expect(res.body.preAuthorizedCode).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    // Login with pre-authorized code from 6.6.6.6
+    // Should fail because of IP address block
+    const res1 = await request(app).post('/oauth2/token').set('X-Forwarded-For', '6.6.6.6').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res1.status).toBe(400);
+    expect(res1.body.error).toBe('invalid_request');
+    expect(res1.body.error_description).toBe('IP address not allowed');
+
+    // Login with pre-authorized code from 5.5.5.5
+    // Should succeed
+    const res2 = await request(app).post('/oauth2/token').set('X-Forwarded-For', '5.5.5.5').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.error).toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
+  });
+
+  test('Pre-authorized code success', async () => {
+    const testAccount = await addTestUser(project);
+
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+      .type('json')
+      .send({ clientId: client.id });
+    expect(res.status).toBe(200);
+    expect(res.body.preAuthorizedCode).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeUndefined();
+
+    // Try to use the same pre-authorized code again, should fail since it can only be used once
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res.body.preAuthorizedCode,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body.error).toBe('invalid_grant');
+    expect(res3.body.error_description).toBe('Token already granted');
   });
 });
 

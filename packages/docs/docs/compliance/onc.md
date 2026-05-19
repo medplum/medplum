@@ -20,7 +20,7 @@ Medplum is ONC Certified. Below are certification resources and documentation.
 
 This Health IT Module is compliant with the ONC Certification Criteria for Health IT and has been certified by an ONC-ACB in accordance with the applicable certification criteria adopted by the Secretary of Health and Human Services. This certification does not represent an endorsement by the U.S. Department of Health and Human Services.
 
-## Standards Version Advancement Process Notices {#svap}
+## Standards Version Advancement Process Notices {/* #svap */}
 
 Notice of Intent to Implement HL7 FHIR US Core Implementation Guide STU 5.0.1 for 170.315(g)(10)
 
@@ -37,8 +37,8 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | Criteria                                            | Description                                          |
 | --------------------------------------------------- | ---------------------------------------------------- |
 | [a2](/docs/careplans/diagnostic-catalog) | CPOE - Laboratory  |
-| [a5](/docs/charting/patient-demographics) | Demographics  |
-| [a14](/docs/charting/implantable-devices) | Implantable Device List  |
+| [a5](/docs/charting/chart-data-model#patient-demographics) | Demographics  |
+| [a14](/docs/charting/chart-data-model#implantable-devices) | Implantable Device List  |
 | [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
 | b11                                                 | Decision Support Interventions                       |

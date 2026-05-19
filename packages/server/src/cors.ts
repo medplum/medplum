@@ -4,7 +4,7 @@ import type cors from 'cors';
 import type { Request } from 'express';
 import { getConfig } from './config/loader';
 
-const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location'];
+const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location', 'RateLimit'];
 
 /**
  * CORS configuration.
@@ -43,6 +43,7 @@ const prefixes = [
   '/.well-known/',
   '/admin/',
   '/auth/',
+  '/cds-services',
   '/email/',
   '/fhir/',
   '/fhircast/',

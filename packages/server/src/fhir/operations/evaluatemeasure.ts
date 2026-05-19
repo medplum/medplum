@@ -79,7 +79,7 @@ async function evaluateMeasure(
     report.group = await Promise.all(measure.group.map((g) => evaluateMeasureGroup(repo, params, g)));
   }
 
-  return repo.createResource<MeasureReport>(report);
+  return repo.createResource(report);
 }
 
 /**

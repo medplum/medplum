@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Flex, Menu, Text, Box, Badge, ActionIcon, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Flex, Menu, Text, Tooltip } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
-import { IconChevronDown, IconPencil, IconCheck } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconPencil } from '@tabler/icons-react';
 import type { JSX } from 'react';
 
 interface TaskStatusPanelProps {

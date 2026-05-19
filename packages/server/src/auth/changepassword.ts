@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Reference, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { pwnedPassword } from 'hibp';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword } from './utils';
+import { setPassword } from './setpassword';
 
 export const changePasswordValidator = makeValidationMiddleware([
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
@@ -20,10 +20,9 @@ export const changePasswordValidator = makeValidationMiddleware([
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
-  const systemRepo = getSystemRepo();
-  const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
-  await changePassword({
+  await changePassword(ctx.systemRepo, {
     user,
     oldPassword: req.body.oldPassword,
     newPassword: req.body.newPassword,
@@ -33,12 +32,12 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
 }
 
 export interface ChangePasswordRequest {
-  user: User;
+  user: WithId<User>;
   oldPassword: string;
   newPassword: string;
 }
 
-async function changePassword(request: ChangePasswordRequest): Promise<void> {
+async function changePassword(systemRepo: SystemRepository, request: ChangePasswordRequest): Promise<void> {
   const oldPasswordHash = request.user.passwordHash;
   if (!oldPasswordHash) {
     throw new OperationOutcomeError(badRequest('Existing password not set', 'oldPassword'));
@@ -49,15 +48,5 @@ async function changePassword(request: ChangePasswordRequest): Promise<void> {
     throw new OperationOutcomeError(badRequest('Incorrect password', 'oldPassword'));
   }
 
-  const numPwns = await pwnedPassword(request.newPassword);
-  if (numPwns > 0) {
-    throw new OperationOutcomeError(badRequest('Password found in breach database', 'newPassword'));
-  }
-
-  const newPasswordHash = await bcryptHashPassword(request.newPassword);
-  const systemRepo = getSystemRepo();
-  await systemRepo.updateResource<User>({
-    ...request.user,
-    passwordHash: newPasswordHash,
-  });
+  await setPassword(systemRepo, request.user, request.newPassword);
 }

@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
-import { getSystemRepo } from '../repo';
+import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidTableName } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {
   buildOutputParameters,
@@ -18,28 +19,24 @@ import {
   parseInputParameters,
 } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'db-configure-indexes',
-  status: 'active',
-  kind: 'operation',
-  code: 'db-configure-indexes',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    param('in', 'tableName', 'string', 1, '*'),
-    param('in', 'fastUpdateAction', 'string', 0, '1'),
-    param('in', 'fastUpdateValue', 'boolean', 0, '1'),
-    param('in', 'ginPendingListLimitAction', 'string', 0, '1'),
-    param('in', 'ginPendingListLimitValue', 'integer', 0, '1'),
-    param('out', 'action', undefined, 0, '*', [
-      param('out', 'sql', 'string', 1, '1'),
-      param('out', 'durationMs', 'integer', 0, '1'),
-    ]),
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-configure-indexes',
+    code: 'db-configure-indexes',
+    parameter: [
+      param('in', 'tableName', 'string', 1, '*'),
+      param('in', 'fastUpdateAction', 'string', 0, '1'),
+      param('in', 'fastUpdateValue', 'boolean', 0, '1'),
+      param('in', 'ginPendingListLimitAction', 'string', 0, '1'),
+      param('in', 'ginPendingListLimitValue', 'integer', 0, '1'),
+      param('out', 'action', undefined, 0, '*', [
+        param('out', 'sql', 'string', 1, '1'),
+        param('out', 'durationMs', 'integer', 0, '1'),
+      ]),
+    ],
+  }
+);
 
 type InputParameters = {
   tableName: string[];
@@ -49,7 +46,7 @@ type InputParameters = {
   ginPendingListLimitValue?: number;
 };
 
-type OutputAction = {
+export type OutputAction = {
   sql: string;
   durationMs?: number;
 };
@@ -98,7 +95,7 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
     );
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(systemRepo);
   await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
@@ -124,7 +121,7 @@ type GinIndexConfig = {
   ginPendingListLimit?: 'reset' | number;
 };
 
-async function configureGinIndexes(
+export async function configureGinIndexes(
   client: PoolClient | Pool,
   actions: OutputAction[],
   tableNames: string[],
@@ -214,7 +211,11 @@ async function configureGinIndexes(
   }
 }
 
-async function vacuumTable(client: PoolClient | Pool, actions: OutputAction[], tableName: string): Promise<void> {
+export async function vacuumTable(
+  client: PoolClient | Pool,
+  actions: OutputAction[],
+  tableName: string
+): Promise<void> {
   const sql = `VACUUM ${escapeIdentifier(tableName)}`;
   const startTime = Date.now();
   await client.query(sql);

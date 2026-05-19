@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient } from '@medplum/mock';
-import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { SpacesPage } from './SpacesPage';
 import type { Communication } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { SpacesPage } from './SpacesPage';
 
 const mockTopic: Communication = {
   resourceType: 'Communication',
@@ -38,6 +38,9 @@ describe('SpacesPage', () => {
 
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile);
+    medplum.getProject = vi
+      .fn()
+      .mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
     medplum.searchResources = vi.fn().mockResolvedValue([]);
     medplum.readReference = vi.fn().mockResolvedValue(mockTopic);
   });
@@ -59,6 +62,37 @@ describe('SpacesPage', () => {
       </MemoryRouter>
     );
   };
+
+  test('shows disabled message when bots and ai features are not enabled', async () => {
+    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: [] });
+
+    await act(async () => {
+      setup(['/Spaces']);
+    });
+
+    expect(screen.getByText('Spaces is not available')).toBeInTheDocument();
+    expect(screen.getByText(/requires both/i)).toBeInTheDocument();
+  });
+
+  test('shows disabled message when only bots feature is enabled', async () => {
+    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots'] });
+
+    await act(async () => {
+      setup(['/Spaces']);
+    });
+
+    expect(screen.getByText('Spaces is not available')).toBeInTheDocument();
+  });
+
+  test('shows disabled message when only ai feature is enabled', async () => {
+    medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['ai'] });
+
+    await act(async () => {
+      setup(['/Spaces']);
+    });
+
+    expect(screen.getByText('Spaces is not available')).toBeInTheDocument();
+  });
 
   test('renders SpaceInbox with no topicId when at root', async () => {
     await act(async () => {

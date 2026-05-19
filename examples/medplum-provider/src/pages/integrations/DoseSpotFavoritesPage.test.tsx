@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { showNotification } from '@mantine/notifications';
+import { useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import type { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { showNotification } from '@mantine/notifications';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { DoseSpotFavoritesPage } from './DoseSpotFavoritesPage';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
-import { useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import * as notifications from '../../utils/notifications';
+import { DoseSpotFavoritesPage } from './DoseSpotFavoritesPage';
 
 // Mock the hooks and dependencies
 vi.mock('@medplum/dosespot-react', async () => {

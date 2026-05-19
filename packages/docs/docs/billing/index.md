@@ -6,7 +6,7 @@ sidebar_position: 1
 
 The FHIR spec supports [many resources](/products/billing#fhir-resources) related to billing and payments. These resources can be created programmatically to support billing and payments. Commonly as part of a billing implementation, FHIR resources are created by applications and synchronized to clearinghouses or billing providers using [subscriptions](/docs/subscriptions) and [bots](/docs/bots/).
 
-For example, after a lab test is completed, a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport.mdx) is created and it and related resources like are automatically sent to a billing system after the report is finalized.
+For example, after a lab test is completed, a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport.mdx) is created, and it and related resources are automatically sent to a billing system after the report is finalized.
 
 For billing insurance, the [Coverage](/docs/api/fhir/resources/diagnosticreport.mdx) resource is critical for representing a patient's insurance. Refer to our [Patient Insurance](/docs/billing/patient-insurance) guide for more information on properly storing patient insurance information.
 

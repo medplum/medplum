@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import React from 'react';
-import { Table, Card, Text, LoadingOverlay } from '@mantine/core';
-import type { MedicationKnowledge } from '@medplum/fhirtypes';
+import { Card, LoadingOverlay, Table, Text } from '@mantine/core';
 import { getCodeBySystem, NDC, RXNORM } from '@medplum/core';
 import { getMedicationName } from '@medplum/dosespot-react';
+import type { MedicationKnowledge } from '@medplum/fhirtypes';
+import React from 'react';
 
 interface FavoriteMedicationsTableProps {
   clinicFavoriteMedications: MedicationKnowledge[] | undefined;

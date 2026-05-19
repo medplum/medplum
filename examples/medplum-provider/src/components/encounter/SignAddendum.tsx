@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Card, Stack, Text, Group, Textarea, Button, Divider } from '@mantine/core';
-import { IconLock, IconPencil, IconSignature } from '@tabler/icons-react';
-import type { Provenance, Encounter } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import type { JSX } from 'react';
-import { ChartNoteStatus } from '../../types/encounter';
+import { Button, Card, Divider, Group, Stack, Text, Textarea } from '@mantine/core';
 import { createReference, formatDate } from '@medplum/core';
+import type { Encounter, Provenance } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconLock, IconPencil, IconSignature } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { ChartNoteStatus } from '../../types/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface SignAddendumProps {

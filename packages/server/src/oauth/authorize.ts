@@ -5,7 +5,7 @@ import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { URL } from 'node:url';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
@@ -119,7 +119,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   if (prompt !== 'login' && existingLogin) {
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     const updatedLogin = await systemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: params.nonce as string,
@@ -178,7 +178,7 @@ function isValidAudience(aud: string | undefined): boolean {
  * @returns True if the launch is valid; false otherwise.
  */
 async function isValidLaunch(launch: string): Promise<boolean> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   try {
     await systemRepo.readResource('SmartAppLaunch', launch);
     return true;
@@ -235,7 +235,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.readResource<Login>('Login', existingLoginId);
 }
 
@@ -252,7 +252,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const bundle = await systemRepo.search<Login>({
     resourceType: 'Login',
     filters: [

@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CreateFunctionRequest } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ListVersionsByFunctionCommand,
   ResourceConflictException,
   ResourceNotFoundException,
   TooManyRequestsException,
@@ -24,7 +25,8 @@ import JSZip from 'jszip';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { globalLogger } from '../../logger';
+import { initTestAuth, waitFor } from '../../test.setup';
 import {
   DEFAULT_LAMBDA_TIMEOUT,
   getLambdaNameForBot,
@@ -122,6 +124,11 @@ describe('Deploy', () => {
 
       throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
+
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .resolves({ Versions: [{ Version: '$LATEST' }, { Version: '1' }] });
+    mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 
   afterEach(() => {
@@ -173,7 +180,7 @@ describe('Deploy', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    } as CreateFunctionRequest);
+    });
 
     // Verify that this was uploaded as a CJS zip file
     const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
@@ -261,7 +268,7 @@ describe('Deploy', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    } as CreateFunctionRequest);
+    });
     mockLambdaClient.resetHistory();
 
     // Step 3: Simulate releasing a new version of the lambda layer
@@ -519,6 +526,154 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(400);
     expect(res2.body).toMatchObject(badRequest('Bot timeout exceeds allowed maximum of 900 seconds'));
+  });
+
+  test('Cleans up old lambda versions, keeping the two newest', async () => {
+    // Step 1: Create a bot
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler() { return null; }`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+    const name = `medplum-bot-lambda-${bot.id}`;
+
+    // Step 2: Initial deploy creates the lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    mockLambdaClient.resetHistory();
+
+    // Simulate paginated list with 5 published versions (plus $LATEST).
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .resolvesOnce({
+        Versions: [{ Version: '$LATEST' }, { Version: '1' }, { Version: '2' }],
+        NextMarker: 'page-2',
+      })
+      .resolves({
+        Versions: [{ Version: '3' }, { Version: '5' }, { Version: '4' }],
+      });
+
+    // Step 3: Redeploy triggers cleanup
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res3.status).toBe(200);
+
+    // Cleanup runs async after the response, so poll until all expected deletes have occurred.
+    // Versions 5 and 4 should be kept; 3, 2, 1 deleted.
+    await waitFor(async () => {
+      expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 3);
+    });
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' });
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' });
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' });
+  });
+
+  test('Cleanup tolerates DeleteFunction errors', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler() { return null; }`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Initial deploy creates the lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    mockLambdaClient.resetHistory();
+
+    mockLambdaClient.on(ListVersionsByFunctionCommand).resolves({
+      Versions: [{ Version: '$LATEST' }, { Version: '1' }, { Version: '2' }, { Version: '3' }],
+    });
+    mockLambdaClient
+      .on(DeleteFunctionCommand)
+      .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    // Deploy should still succeed even though cleanup deletion failed.
+    expect(res3.status).toBe(200);
+    await waitFor(async () => {
+      expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
+    });
+  });
+
+  test('Cleanup logs uncaught errors without failing deploy', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler() { return null; }`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+    const name = `medplum-bot-lambda-${bot.id}`;
+
+    // Initial deploy creates the lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    expect(res2.status).toBe(200);
+
+    mockLambdaClient.resetHistory();
+
+    // Cause cleanup itself to throw (ListVersions failure is not caught inside the loop).
+    mockLambdaClient
+      .on(ListVersionsByFunctionCommand)
+      .rejects(new TooManyRequestsException({ $metadata: {}, message: 'Too many requests' }));
+
+    const errorSpy = jest.spyOn(globalLogger, 'error').mockReturnValue();
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `export async function handler() { return null; }` });
+    // Deploy should still succeed even though the async cleanup throws.
+    expect(res3.status).toBe(200);
+
+    await waitFor(async () => {
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error occurred while deleting old Lambdas',
+        expect.objectContaining({ name, err: expect.stringContaining('Too many requests') })
+      );
+    });
+
+    errorSpy.mockRestore();
   });
 
   test('Exists check throws error', async () => {

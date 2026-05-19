@@ -3,7 +3,16 @@
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
-import type { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
+import type {
+  ClientBase,
+  Pool,
+  PoolClient,
+  PoolConfig,
+  QueryArrayResult,
+  QueryConfig,
+  QueryResult,
+  QueryResultRow,
+} from 'pg';
 import pg from 'pg';
 import { Readable, Writable } from 'stream';
 import { loadConfig, loadTestConfig } from './config/loader';
@@ -39,7 +48,9 @@ describe('Database config', () => {
     poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
       class MockPoolClient extends Duplex implements PoolClient {
         release(): void {}
-        async connect(): Promise<void> {}
+        async connect(): Promise<ClientBase> {
+          return this;
+        }
         async query<R extends QueryResultRow = any, I = any[]>(sql: string | QueryConfig<I>): Promise<QueryResult<R>> {
           const result: QueryResult<R> = {
             command: '',
@@ -205,6 +216,41 @@ describe('Database config', () => {
     jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
+  });
+
+  test('Default connection settings', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = false;
+    await initDatabase(config);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: `-c statement_timeout=60000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
+      })
+    );
+  });
+
+  test('Custom query timeout', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = false;
+    config.database.queryTimeout = 5000;
+    await initDatabase(config);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: `-c statement_timeout=5000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
+      })
+    );
+  });
+
+  test('Disabled connection configuration', async () => {
+    const config = await loadTestConfig();
+    config.database.queryTimeout = 12345;
+    config.database.disableConnectionConfiguration = true;
+    await initDatabase(config);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: undefined,
+      })
+    );
   });
 
   test('getDefaultStatementTimeout', async () => {

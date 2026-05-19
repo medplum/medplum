@@ -188,6 +188,12 @@ Medplum provides templates and playbooks for common medical integrations.
       <td><a href="/docs/integration/smart-app-launch">SMART App Launch</a></td>
     </tr>
     <tr>
+      <td>CDS Hooks</td>
+      <td>EHR</td>
+      <td>Contextual CDS service discovery and invocation</td>
+      <td><a href="/docs/integration/cds-hooks">CDS Hooks</a></td>
+    </tr>
+    <tr>
       <td>FHIRcast</td>
       <td>Radiology</td>
       <td>Event driven workflow for workstations</td>
@@ -291,6 +297,12 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td>Prescribe and check medications</td>
       <td><a href="https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb">Medication related integration</a></td>
     </tr>
+    <tr>
+      <td><a href="https://npiregistry.cms.hhs.gov/api-page">NPPES NPI Registry</a></td>
+      <td>Bot API</td>
+      <td>Look up National Provider Identifier (NPI) records from the public CMS registry</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/nppes-lookup.ts">NPPES Lookup Bot</a></td>
+    </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Documents and Forms (Bot PDF)</strong></td>
     </tr>
@@ -311,7 +323,7 @@ Medplum provides building blocks for custom integrations. Some examples are belo
 
 ## Integration Building Blocks and Testing
 
-Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions/index.md), [authentication and authorization](/docs/auth/index.md) and the [TypeScript SDK](/docs/sdk/).
+Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions), [authentication and authorization](/docs/auth) and the [TypeScript SDK](/docs/sdk/).
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers

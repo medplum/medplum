@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { MantineProvider } from '@mantine/core';
+import type { Task } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { SimpleTask } from './SimpleTask';
-import type { Task } from '@medplum/fhirtypes';
-import { MantineProvider } from '@mantine/core';
 
 describe('SimpleTask', () => {
   const mockTask: Task = {

@@ -1,28 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import React, { useEffect, useState } from 'react';
 import {
-  Container,
-  Title,
-  Paper,
-  Button,
-  Modal,
-  Group,
   Box,
-  TextInput,
-  Stack,
+  Button,
+  Container,
   Divider,
+  Group,
   Group as MantineGroup,
+  Modal,
+  Paper,
+  Stack,
+  TextInput,
+  Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import { formatSearchQuery, generateId, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import type { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
-import { IconPlus } from '@tabler/icons-react';
-import { formatSearchQuery, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { AsyncAutocomplete, useMedplum } from '@medplum/react';
-import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
+import { IconPlus } from '@tabler/icons-react';
+import React, { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-import { v4 as uuidv4 } from 'uuid';
+import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
 
 /**
  * This is a demo component for how you could display your favorite Medications
@@ -88,7 +87,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
     } catch (error) {
       showErrorNotification({
         title: 'Error adding medication to favorites',
-        message: normalizeErrorString(error as Error),
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {
@@ -98,7 +97,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   };
 
   const toOption = (medication: CodeableConcept): { value: string; label: string; resource: CodeableConcept } => ({
-    value: uuidv4(),
+    value: generateId(),
     label: medication.text || 'Unknown Medication',
     resource: medication,
   });

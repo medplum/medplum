@@ -75,11 +75,13 @@ describe('EncounterChart', () => {
     );
   };
 
-  test('renders loading spinner initially', () => {
+  test('renders loading spinner initially', async () => {
     setup();
     // The Loading component renders a spinner, not text
     const loader = document.querySelector('.mantine-Loader-root');
     expect(loader).toBeInTheDocument();
+    // Drain pending async state updates so they don't escape the test
+    await act(async () => {});
   });
 
   test('renders encounter header after loading', async () => {
@@ -310,7 +312,7 @@ describe('EncounterChart', () => {
 
     const getSignButton = (): HTMLElement | null => {
       const buttons = screen.getAllByRole('button');
-      return buttons.find((btn) => btn.querySelector('svg')) || null;
+      return buttons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim()) || null;
     };
 
     test('signs without locking - textarea remains enabled', async () => {

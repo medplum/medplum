@@ -20,7 +20,7 @@ export interface SearchFilterValueDialogProps {
 }
 
 export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JSX.Element | null {
-  const [value, setValue] = useState<string>(props.defaultValue ?? '');
+  const [value, setValue] = useState(props.defaultValue ?? '');
 
   if (!props.searchParam || !props.filter) {
     return null;

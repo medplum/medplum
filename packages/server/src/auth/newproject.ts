@@ -1,13 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, createReference } from '@medplum/core';
-import type { Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { badRequest } from '@medplum/core';
+import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
+import { getConfig } from '../config/loader';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
+import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendLoginResult } from './utils';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -27,7 +30,7 @@ export const newProjectValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
@@ -35,18 +38,15 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const projectName = req.body.projectName;
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+  if (getConfig().requireVerifiedEmailForProjectCreation && !user.emailVerified) {
+    sendOutcome(res, badRequest('Email verification is required to create a project'));
+    return;
+  }
+
+  const projectName = req.body.projectName;
   const { membership } = await createProject(projectName, user);
-
-  // Set the membership on the login
-  const updatedLogin = await systemRepo.updateResource<Login>({
-    ...login,
-    membership: createReference(membership as ProjectMembership),
-  });
-
-  res.status(200).json({
-    login: updatedLogin.id,
-    code: updatedLogin.code,
-  });
+  const updatedLogin = await setLoginMembership(login, membership);
+  await sendLoginResult(res, updatedLogin);
 }

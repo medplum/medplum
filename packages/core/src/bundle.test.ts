@@ -9,6 +9,10 @@ import type {
   Resource,
   Specimen,
 } from '@medplum/fhirtypes';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { vi } from 'vitest';
 import {
   convertContainedResourcesToBundle,
   convertToTransactionBundle,
@@ -16,7 +20,7 @@ import {
   reorderBundle,
 } from './bundle';
 import { getDataType } from './typeschema/types';
-import { deepClone, isUUID } from './utils';
+import { deepClone, EMPTY, isUUID } from './utils';
 
 let jsonFile: any;
 
@@ -39,8 +43,7 @@ function createResourceWithReference<T extends Resource>(
 
 describe('Bundle tests', () => {
   beforeEach(() => {
-    jest
-      .spyOn(global.Math, 'random')
+    vi.spyOn(global.Math, 'random')
       .mockReturnValueOnce(0.1)
       .mockReturnValueOnce(0.2)
       .mockReturnValueOnce(0.3)
@@ -54,7 +57,7 @@ describe('Bundle tests', () => {
   });
 
   afterEach(() => {
-    jest.spyOn(global.Math, 'random').mockRestore();
+    vi.spyOn(global.Math, 'random').mockRestore();
   });
 
   describe('FHIR Bundle Download', () => {
@@ -308,7 +311,7 @@ describe('Bundle tests', () => {
       const expected = deepClone(patient);
       const meta = expected.meta;
       if (meta === undefined) {
-        fail('Expected meta to be defined');
+        throw new Error('Expected meta to be defined');
       }
 
       const removedKeys = ['project', 'versionId', 'lastUpdated', 'compartment', 'author'];
@@ -334,6 +337,66 @@ describe('Bundle tests', () => {
 
       const result = convertToTransactionBundle(inputBundle);
       expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
+    });
+
+    test('rewrites attachment.url Binary references', () => {
+      const binaryId = '11111111-1111-1111-1111-111111111111';
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Binary',
+              id: binaryId,
+              contentType: 'text/html',
+            },
+          },
+          {
+            resource: {
+              resourceType: 'DocumentReference',
+              id: '22222222-2222-2222-2222-222222222222',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'text/html',
+                    url: `Binary/${binaryId}`,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      const docRefEntry = result.entry?.find((e) => e.resource?.resourceType === 'DocumentReference');
+      const binaryEntry = result.entry?.find((e) => e.resource?.resourceType === 'Binary');
+
+      const attachmentUrl = (docRefEntry?.resource as any)?.content?.[0]?.attachment?.url;
+      expect(attachmentUrl).toBe(binaryEntry?.fullUrl);
+      expect(attachmentUrl).toMatch(/^urn:uuid:/);
+    });
+
+    test('Synthea collection bundle (Abbott509) should not fail topological sort', () => {
+      // given
+      const syntheaPath = join(
+        dirname(fileURLToPath(import.meta.url)),
+        '__fixtures__',
+        'Abbott509_Aaron203_44-subset.json'
+      );
+      let bundle = JSON.parse(readFileSync(syntheaPath, 'utf8')) as Bundle;
+      expect(bundle.type).toStrictEqual('collection');
+      // when
+      bundle = convertToTransactionBundle(bundle);
+      // then
+      expect(bundle.resourceType).toBe('Bundle');
+      expect(bundle.type).toBe('transaction');
+      expect(bundle.entry?.length).toBeGreaterThan(0);
+      for (const entry of bundle.entry ?? EMPTY) {
+        expect(entry.request?.method).toBe('POST');
+      }
     });
   });
 

@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
@@ -50,7 +50,7 @@ describe('AsyncJob/$cancel', () => {
       .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res2.body).toMatchObject(allOk);
 
     const res3 = await request(app)
       .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
@@ -87,7 +87,7 @@ describe('AsyncJob/$cancel', () => {
       .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res2.body).toMatchObject(allOk);
 
     const res3 = await request(app)
       .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
@@ -126,7 +126,7 @@ describe('AsyncJob/$cancel', () => {
     expect(res2.status).toStrictEqual(400);
 
     const outcome = res2.body as OperationOutcome;
-    expect(outcome).toMatchObject<OperationOutcome>(
+    expect(outcome).toMatchObject(
       badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${status}'`)
     );
   });
@@ -149,7 +149,7 @@ describe('AsyncJob/$cancel', () => {
   test('Cancelled job does not get added to super admin project', () =>
     withTestContext(async () => {
       // We create the resource with system repo so that it is like how system AsyncJobs get created
-      const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+      const asyncJob = await getGlobalSystemRepo().createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),

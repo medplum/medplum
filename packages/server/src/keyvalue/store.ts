@@ -3,7 +3,7 @@
 import { OperationOutcomeError, badRequest, notFound } from '@medplum/core';
 import type { AuthenticatedRequestContext } from '../context';
 import { getAuthenticatedContext } from '../context';
-import { getRedis } from '../redis';
+import { getCacheRedis } from '../redis';
 
 export const MAX_KEY_LENGTH = 255;
 export const MAX_VALUE_LENGTH = 8192;
@@ -17,7 +17,7 @@ export const MAX_ITEMS = 10;
 export async function getValue(key: string): Promise<string> {
   validateKey(key);
   const ctx = getAuthenticatedContext();
-  const value = await getRedis().hget(getCacheKey(ctx), key);
+  const value = await getCacheRedis().hget(getCacheKey(ctx), key);
   if (value === null) {
     throw new OperationOutcomeError(notFound);
   }
@@ -39,7 +39,7 @@ export async function setValue(key: string, value: string): Promise<void> {
   }
   const ctx = getAuthenticatedContext();
   const cacheKey = getCacheKey(ctx);
-  const redis = getRedis();
+  const redis = getCacheRedis();
   const exists = await redis.hexists(cacheKey, key);
   if (!exists) {
     const length = await redis.hlen(cacheKey);
@@ -57,7 +57,7 @@ export async function setValue(key: string, value: string): Promise<void> {
 export async function deleteValue(key: string): Promise<void> {
   validateKey(key);
   const ctx = getAuthenticatedContext();
-  await getRedis().hdel(getCacheKey(ctx), key);
+  await getCacheRedis().hdel(getCacheKey(ctx), key);
 }
 
 /**

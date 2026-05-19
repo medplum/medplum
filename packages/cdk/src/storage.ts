@@ -13,6 +13,7 @@ import {
 } from 'aws-cdk-lib';
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
+import { addGuardDutyMalwareProtectionReadGate, buildGuardDutyMalwareProtection } from './guardduty';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
 import { buildWaf } from './waf';
 
@@ -42,6 +43,12 @@ export class Storage extends Construct {
         enforceSSL: true,
         versioned: true,
       });
+
+      if (config.guardDutyMalwareProtectionEnabled) {
+        buildGuardDutyMalwareProtection(this, 'StorageGuardDuty', {
+          bucket: this.storageBucket,
+        });
+      }
 
       if (config.clamscanEnabled) {
         // ClamAV serverless scan
@@ -143,6 +150,10 @@ export class Storage extends Construct {
         this.storageBucket,
         this.originAccessIdentity
       );
+
+      if (config.guardDutyMalwareProtectionEnabled) {
+        addGuardDutyMalwareProtectionReadGate(this.storageBucket, [this.originAccessIdentity.grantPrincipal]);
+      }
 
       // CloudFront distribution
       this.distribution = new cloudfront.Distribution(this, 'StorageDistribution', {

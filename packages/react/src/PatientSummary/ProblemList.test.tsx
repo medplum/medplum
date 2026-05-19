@@ -141,6 +141,115 @@ describe('PatientSummary - ProblemList', () => {
     });
   });
 
+  test('Collapses duplicate conditions by code', async () => {
+    await setup(
+      <ProblemList
+        patient={HomerSimpson}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'diabetes-1',
+            subject: createReference(HomerSimpson),
+            code: {
+              coding: [{ system: 'http://snomed.info/sct', code: '73211009', display: 'Diabetes mellitus' }],
+            },
+            onsetDateTime: '2020-01-01',
+          },
+          {
+            resourceType: 'Condition',
+            id: 'diabetes-2',
+            subject: createReference(HomerSimpson),
+            code: {
+              coding: [{ system: 'http://snomed.info/sct', code: '73211009', display: 'Diabetes mellitus' }],
+            },
+            onsetDateTime: '2021-06-15',
+          },
+          {
+            resourceType: 'Condition',
+            id: 'diabetes-3',
+            subject: createReference(HomerSimpson),
+            code: {
+              coding: [{ system: 'http://snomed.info/sct', code: '73211009', display: 'Diabetes mellitus' }],
+            },
+            onsetDateTime: '2022-03-10',
+          },
+        ]}
+      />
+    );
+
+    // Only one row rendered in collapsed state
+    expect(screen.getAllByText('Diabetes mellitus')).toHaveLength(1);
+    // Count badge shows +2 hidden entries
+    expect(screen.getByText('+2')).toBeInTheDocument();
+    // Expand link shown
+    expect(screen.getByText('Show all 3 entries')).toBeInTheDocument();
+  });
+
+  test('Expands and collapses duplicate group', async () => {
+    await setup(
+      <ProblemList
+        patient={HomerSimpson}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'hyp-1',
+            subject: createReference(HomerSimpson),
+            code: { coding: [{ system: 'http://snomed.info/sct', code: '38341003', display: 'Hypertension' }] },
+            onsetDateTime: '2019-05-01',
+          },
+          {
+            resourceType: 'Condition',
+            id: 'hyp-2',
+            subject: createReference(HomerSimpson),
+            code: { coding: [{ system: 'http://snomed.info/sct', code: '38341003', display: 'Hypertension' }] },
+            onsetDateTime: '2021-09-20',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getAllByText('Hypertension')).toHaveLength(1);
+    expect(screen.getByText('+1')).toBeInTheDocument();
+
+    // Expand the group
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show all 2 entries'));
+    });
+
+    // Both entries now visible
+    expect(screen.getAllByText('Hypertension')).toHaveLength(2);
+    expect(screen.queryByText('+1')).not.toBeInTheDocument();
+    expect(screen.getByText('Show less')).toBeInTheDocument();
+
+    // Collapse again
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show less'));
+    });
+
+    expect(screen.getAllByText('Hypertension')).toHaveLength(1);
+    expect(screen.getByText('+1')).toBeInTheDocument();
+  });
+
+  test('Does not show expand button for unique conditions', async () => {
+    await setup(
+      <ProblemList
+        patient={HomerSimpson}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'unique-1',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Unique Problem' },
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Unique Problem')).toBeInTheDocument();
+    expect(screen.queryByText(/Show all/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
+  });
+
   test('Problem status colors', async () => {
     await setup(
       <ProblemList

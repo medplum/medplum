@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Group, Radio, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
-import type { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -33,7 +33,7 @@ const statusValues: MedicationRequest['status'][] = [
 export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
   const me = useMedplumProfile();
   const { patient, encounter, medication, onSubmit } = props;
-  const [code, setCode] = useState<CodeableConcept | undefined>(medication?.medicationCodeableConcept);
+  const [code, setCode] = useState(medication?.medicationCodeableConcept);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {

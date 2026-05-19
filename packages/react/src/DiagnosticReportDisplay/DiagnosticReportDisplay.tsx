@@ -77,6 +77,14 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
       {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
+      {diagnosticReport.conclusion && (
+        <Stack mt="md">
+          <Text fw={500} size="sm" c="dimmed">
+            Conclusion
+          </Text>
+          <Text>{diagnosticReport.conclusion}</Text>
+        </Stack>
+      )}
     </Stack>
   );
 }

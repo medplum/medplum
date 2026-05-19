@@ -97,14 +97,16 @@
         ],
         "qualification": [
           {
-            "coding": [
-              {
-                "system": "http://nucc.org/provider-taxonomy",
-                "code": "207Q00000X",
-                "display": "Allopathic & Osteopathic Physicians; Family Medicine"
-              }
-            ],
-            "text": "Allopathic & Osteopathic Physicians; Family Medicine"
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "207Q00000X",
+                  "display": "Allopathic & Osteopathic Physicians; Family Medicine"
+                }
+              ],
+              "text": "Allopathic & Osteopathic Physicians; Family Medicine"
+            }
           }
         ]
       }
@@ -135,14 +137,16 @@
         ],
         "qualification": [
           {
-            "coding": [
-              {
-                "system": "http://nucc.org/provider-taxonomy",
-                "code": "207Q00000X",
-                "display": "Allopathic & Osteopathic Physicians; Family Medicine"
-              }
-            ],
-            "text": "Allopathic & Osteopathic Physicians; Family Medicine"
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "207Q00000X",
+                  "display": "Allopathic & Osteopathic Physicians; Family Medicine"
+                }
+              ],
+              "text": "Allopathic & Osteopathic Physicians; Family Medicine"
+            }
           }
         ]
       }

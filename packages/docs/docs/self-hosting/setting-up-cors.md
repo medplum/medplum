@@ -4,6 +4,6 @@ When self-hosting, you may run into a [CORS](https://developer.mozilla.org/en-US
 
 To do so, you will need to add it to the `allowedOrigins` field on your server config settings. By default, the only allowed origin is `[apiBaseUrl].com`, but you can add more in a comma-separated list. For more details, see the [Config Settings docs](/docs/self-hosting/server-config).
 
-:::tip Allow All Origins
+:::tip[Allow All Origins]
 To give all origins access to make [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) requests, you can use the special allow all case by setting: `allowedOrigins: '*'`.
 :::

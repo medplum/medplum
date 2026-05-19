@@ -162,6 +162,12 @@ https://socket.dev/npm/package/@medplum/core
 
 https://hub.docker.com/r/medplum/medplum-server
 
+### Docker Hardened Images (DHI)
+
+Medplum builds server images on Docker Hardened Images (DHI), a minimal, security-focused base image designed to reduce attack surface and unnecessary packages. Moving to DHI significantly reduces downstream CVE noise in customer security scans without changing application behavior.
+
+Read more in [Docker’s case study on our adoption of DHI](https://www.docker.com/blog/medplum-healthcare-docker-hardened-images/).
+
 ### Security Scorecard
 
 [Security Scorecard](https://securityscorecard.com/) is an information security company that rates cybersecurity postures of corporate entities through completing scored analysis of cyber threat intelligence signals for the purposes of third party management and IT risk management.
@@ -207,3 +213,14 @@ Medplum tracks and reports status on the [Medplum Status Page](https://status.me
 Found a potential issue? Please help us by reporting it so we can fix it quickly.
 
 Contact us at security@medplum.com
+
+For encrypted vulnerability reports, you may use our PGP key:
+
+```
+pub   ed25519 2026-02-28 [SC] [expires: 2027-02-28]
+      85A1 FB97 A38F 277C 43C8  AD5C 5D93 6917 2E41 F38D
+uid           [ultimate] Medplum Security <security@medplum.com>
+sub   cv25519 2026-02-28 [E] [expires: 2027-02-28]
+```
+
+[Download Public Key](/medplum-security-public.asc)

@@ -4,8 +4,10 @@ import type { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import type { OutputAction } from './fhir/operations/db-configure-indexes';
+import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
+import type { SystemRepository } from './fhir/repo';
+import { getGlobalSystemRepo } from './fhir/repo';
 import { SelectQuery } from './fhir/sql';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -17,7 +19,7 @@ import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrati
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
 
-async function synchronouslyRunAllPendingPostDeployMigrations(): Promise<void> {
+async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
 
   const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
@@ -34,11 +36,11 @@ async function synchronouslyRunAllPendingPostDeployMigrations(): Promise<void> {
   );
 
   for (let i = pendingMigration; i <= lastVersion; i++) {
-    await synchronouslyRunPostDeployMigration(getSystemRepo(), i);
+    await synchronouslyRunPostDeployMigration(systemRepo, i);
   }
 }
 
-async function synchronouslyRunPostDeployMigration(systemRepo: Repository, version: number): Promise<void> {
+async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
@@ -63,8 +65,24 @@ describe('Seed', () => {
     console.log(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
     await withTestContext(async () => {
+      const repo = getGlobalSystemRepo();
       // Run post-deploy migrations synchronously
-      await synchronouslyRunAllPendingPostDeployMigrations();
+      await synchronouslyRunAllPendingPostDeployMigrations(repo);
+
+      // Scheduling features use serializable transactions that touch these
+      // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
+      // to append to the same "pending list", which can cause transaction
+      // failures.
+      //
+      // Here we update the indexes on Appointment and Slot tables to disable `fastUpdate`,
+      // and then vacuum the tables to clear any existing pending list entries.
+      const actions: OutputAction[] = [];
+      const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
+      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      await configureGinIndexes(client, actions, tables, { fastUpdate: false });
+      for (const table of tables) {
+        await vacuumTable(client, actions, table);
+      }
     });
   });
 

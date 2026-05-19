@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, getStatus, isOperationOutcome, singularize } from '@medplum/core';
-import type { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { isOperationOutcome, singularize } from '@medplum/core';
+import type { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
+import { sendBotResponse } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
-import { sendBinaryResponse } from '../fhir/response';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 
 /**
  * Handles HTTP requests for anonymous webhooks.
@@ -16,9 +15,9 @@ import { sendBinaryResponse } from '../fhir/response';
  * @param res - The response object
  */
 export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
-  const systemRepo = getSystemRepo();
-  const id = singularize(req.params.id) ?? '';
-  const runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const membershipId = singularize(req.params.id) ?? '';
+  const runAs = await globalSystemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
 
   // The ProjectMembership must be for a Bot resource
   if (!runAs.profile.reference?.startsWith('Bot/')) {
@@ -32,6 +31,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  const systemRepo = await getProjectSystemRepo(runAs.project);
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
 
   // The Bot must have a publicWebhook flag set to true
@@ -58,14 +58,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  const responseBody = getResponseBodyFromResult(result);
-  const outcome = result.success ? allOk : badRequest(result.logResult);
-
-  if (result.returnValue?.resourceType === 'Binary') {
-    await sendBinaryResponse(res, result.returnValue as Binary);
-  } else {
-    res.status(getStatus(outcome)).contentType(getResponseContentType(req)).send(responseBody);
-  }
+  await sendBotResponse(req, res, result);
 };
 
 export const webhookRouter = Router();

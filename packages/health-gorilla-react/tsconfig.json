@@ -1,10 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "types": ["node", "jest"],
     "lib": ["esnext", "dom", "dom.iterable"],
-    "paths": {
-      "@medplum/health-gorilla-core": ["../health-gorilla-core/src"]
-    }
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist/types"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

@@ -1,18 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Observation, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import type { Observation, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { lookupTables } from '../searchparameter';
 import type { ReferenceTableRow } from './reference';
 import { ReferenceTable } from './reference';
 
 describe('ReferenceTable', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let refTable: ReferenceTable;
 
   beforeAll(async () => {
@@ -240,7 +240,7 @@ describe('ReferenceTable', () => {
             resourceType: 'Practitioner',
             id: containedPractitionerId,
             name: [{ text: 'Dr. Test' }],
-          } as Practitioner,
+          },
         ],
         requester: { reference: '#' + containedPractitionerId },
       });

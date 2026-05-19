@@ -8,12 +8,12 @@ import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import type { HumanNameTableRow } from './humanname';
 import { getHumanNameSortValue, HumanNameTable } from './humanname';
 
 describe('HumanName Lookup Table', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -42,6 +42,27 @@ describe('HumanName Lookup Table', () => {
             value: name,
           },
         ],
+      });
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+    }));
+
+  test('Long given name exceeding btree index limit', () =>
+    withTestContext(async () => {
+      // Given names totaling more than 2704 bytes would previously cause:
+      // "index row size exceeds btree version 4 maximum 2704 for index Patient___givenSort_idx"
+      const longGiven = 'a'.repeat(3000);
+      const family = randomUUID();
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: [longGiven], family }],
+      });
+      expect(patient.id).toBeDefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: 'family', operator: Operator.EQUALS, value: family }],
       });
       expect(searchResult.entry?.length).toStrictEqual(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);

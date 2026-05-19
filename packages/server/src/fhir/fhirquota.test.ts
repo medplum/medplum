@@ -10,30 +10,31 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getRedis } from '../redis';
+import { getRateLimitRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
+import { getActiveRateLimitKey } from './fhirquota';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;
   let config: MedplumServerConfig;
-  let redisConfig: TestRedisConfig;
+  let rateLimitRedisConfig: TestRedisConfig;
   let accessToken: string;
 
   beforeAll(async () => {
     config = await loadTestConfig();
-    redisConfig = config.redis as TestRedisConfig;
+    rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    expect(rateLimitRedisConfig).toBeDefined();
   });
 
   beforeEach(async () => {
     app = express();
     config.defaultRateLimit = -1;
-    redisConfig.db = 6; // Use different temp Redis instance for these tests
-    redisConfig.keyPrefix = 'fhir-quota:';
+    rateLimitRedisConfig.keyPrefix = 'fhir-quota:';
   });
 
   afterEach(async () => {
-    await deleteRedisKeys(getRedis(), redisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 
@@ -42,13 +43,20 @@ describe('FHIR Rate Limits', () => {
     await initApp(app, config);
     ({ accessToken } = await createTestProject({ withAccessToken: true }));
 
+    // Allow first request
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
     expect(res.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
 
+    // Block next request
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res2.status).toBe(429);
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
+
+    // Block subsequent request
+    const res3 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
+    expect(res3.status).toBe(429);
+    expect(res3.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
   test('Blocks single too-expensive request', async () => {
@@ -75,7 +83,7 @@ describe('FHIR Rate Limits', () => {
         resourceType: 'Bundle',
         type: 'batch',
         entry: [{ request: { method: 'GET', url: 'Patient' } }],
-      } as Bundle);
+      });
     expect(res.status).toBe(200);
   });
 
@@ -137,6 +145,7 @@ describe('FHIR Rate Limits', () => {
     await initApp(app, config);
 
     const { accessToken, repo, membership } = await createTestProject({
+      membership: { admin: true },
       withAccessToken: true,
       withRepo: true,
       withClient: true,
@@ -176,7 +185,7 @@ describe('FHIR Rate Limits', () => {
     const loginRes = await request(app).post('/auth/login').type('json').send({
       email,
       password,
-      scope: 'openid offline',
+      scope: 'openid offline_access',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
@@ -202,5 +211,101 @@ describe('FHIR Rate Limits', () => {
       .auth(otherToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
     expect(res2.status).toBe(429);
+  });
+
+  test('Tracks active consumer in sorted set after FHIR activity', async () => {
+    config.defaultFhirQuota = 500;
+    await initApp(app, config);
+    const { accessToken, project, membership } = await createTestProject({ withAccessToken: true, withClient: true });
+
+    // Make a FHIR request to trigger rate limit consumption
+    const res = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
+    expect(res.status).toBe(200);
+
+    // Check the active consumer sorted set for the current minute bucket
+    const redis = getRateLimitRedis();
+    const activeKey = getActiveRateLimitKey(project.id);
+    const members = await redis.zrevrange(activeKey, 0, -1, 'WITHSCORES');
+
+    // The membership should appear in the sorted set with a score > 0
+    expect(members.length).toBeGreaterThanOrEqual(2); // [member, score] pairs
+    expect(members).toContain(membership.id);
+    const score = parseInt(members[members.indexOf(membership.id) + 1], 10);
+    expect(score).toBeGreaterThan(0);
+  });
+
+  test('Tracks active consumer in next minute bucket for overlap', async () => {
+    config.defaultFhirQuota = 500;
+    await initApp(app, config);
+    const { accessToken, project, membership } = await createTestProject({ withAccessToken: true, withClient: true });
+
+    const res = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
+    expect(res.status).toBe(200);
+
+    // Check that the next minute bucket also has the membership
+    const redis = getRateLimitRedis();
+    const nextBucket = Math.floor(Date.now() / 60_000) + 1;
+    const nextKey = getActiveRateLimitKey(project.id, nextBucket);
+    const members = await redis.zrevrange(nextKey, 0, -1, 'WITHSCORES');
+
+    expect(members).toContain(membership.id);
+  });
+
+  test('Updates score when consumer makes additional requests', async () => {
+    config.defaultFhirQuota = 500;
+    await initApp(app, config);
+    const { accessToken, project, membership } = await createTestProject({ withAccessToken: true, withClient: true });
+
+    // First request
+    await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
+
+    const redis = getRateLimitRedis();
+    const activeKey = getActiveRateLimitKey(project.id);
+    const firstMembers = await redis.zrevrange(activeKey, 0, -1, 'WITHSCORES');
+    const firstScore = parseInt(firstMembers[firstMembers.indexOf(membership.id) + 1], 10);
+
+    // Second request should increase the score
+    await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
+
+    const secondMembers = await redis.zrevrange(activeKey, 0, -1, 'WITHSCORES');
+    const secondScore = parseInt(secondMembers[secondMembers.indexOf(membership.id) + 1], 10);
+
+    expect(secondScore).toBeGreaterThan(firstScore);
+  });
+
+  test('Active consumer set has TTL', async () => {
+    config.defaultFhirQuota = 500;
+    await initApp(app, config);
+    const { accessToken, project } = await createTestProject({ withAccessToken: true });
+
+    await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
+
+    const redis = getRateLimitRedis();
+    const activeKey = getActiveRateLimitKey(project.id);
+    const ttl = await redis.ttl(activeKey);
+
+    // TTL should be set and <= 120 seconds
+    expect(ttl).toBeGreaterThan(0);
+    expect(ttl).toBeLessThanOrEqual(120);
+  });
+
+  test('Tracks rate-limited user as active consumer', async () => {
+    config.defaultFhirQuota = 20;
+    await initApp(app, config);
+    const { accessToken, project, membership } = await createTestProject({ withAccessToken: true, withClient: true });
+
+    // Make a request that consumes the entire quota
+    const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
+    expect(res.status).toBe(200);
+
+    // Make another request that gets rate limited
+    const res2 = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
+    expect(res2.status).toBe(429);
+
+    // The membership should still appear in the active set
+    const redis = getRateLimitRedis();
+    const activeKey = getActiveRateLimitKey(project.id);
+    const members = await redis.zrevrange(activeKey, 0, -1);
+    expect(members).toContain(membership.id);
   });
 });

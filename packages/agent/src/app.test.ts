@@ -33,9 +33,11 @@ import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
+import { AgentByteStreamChannel } from './bytestream';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
+import { createEndpointWithRandomPort, getFreePort } from './test-utils';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 jest.mock('./constants', () => ({
@@ -65,6 +67,28 @@ jest.mock('node:process', () => {
     });
   })();
 });
+
+const HL7_ENDPOINT = {
+  resourceType: 'Endpoint',
+  status: 'active',
+  address: 'mllp://0.0.0.0:9001',
+  connectionType: { code: ContentType.HL7_V2 },
+  payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+} satisfies Endpoint;
+const DICOM_ENDPOINT = {
+  resourceType: 'Endpoint',
+  status: 'active',
+  address: 'dicom://0.0.0.0:10001',
+  connectionType: { code: ContentType.DICOM },
+  payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
+} satisfies Endpoint;
+const BYTESTREAM_ENDPOINT = {
+  resourceType: 'Endpoint',
+  status: 'active',
+  address: 'tcp://0.0.0.0:9005?startChar=a&endChar=b',
+  connectionType: { code: ContentType.OCTET_STREAM },
+  payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+} satisfies Endpoint;
 
 describe('App', () => {
   let medplum: MockClient;
@@ -120,7 +144,7 @@ describe('App', () => {
     }
 
     // Send a heartbeat request
-    const wsClient = state.mySocket as unknown as Client;
+    const wsClient = state.mySocket;
     wsClient.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:request' })));
 
     // Wait for heartbeat response
@@ -483,51 +507,12 @@ describe('App', () => {
     // 2 of the 3 for each will be for one named channel which changes ports, one channel will be the same both times
 
     // Create the initial endpoints for all channels
-    const hl7TestEndpoint1 = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9001',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
-    const hl7ProdEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9002',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
-
-    const dicomTestEndpoint1 = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'dicom://0.0.0.0:10001',
-      connectionType: { code: ContentType.DICOM },
-      payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
-    });
-    const dicomProdEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'dicom://0.0.0.0:10002',
-      connectionType: { code: ContentType.DICOM },
-      payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
-    });
-
-    const hl7StagingEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9004',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
-
-    let bytestreamProdEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'tcp://0.0.0.0:9005?startChar=a&endChar=b',
-      connectionType: { code: ContentType.OCTET_STREAM },
-      payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-    });
+    const [hl7TestEndpoint1] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
+    const [hl7ProdEndpoint, hl7ProdPort] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
+    const [dicomTestEndpoint1] = await createEndpointWithRandomPort(medplum, DICOM_ENDPOINT);
+    const [dicomProdEndpoint] = await createEndpointWithRandomPort(medplum, DICOM_ENDPOINT);
+    const [hl7StagingEndpoint] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
+    let [bytestreamProdEndpoint] = await createEndpointWithRandomPort(medplum, BYTESTREAM_ENDPOINT);
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
@@ -595,7 +580,7 @@ describe('App', () => {
     // Create a connection to the prod channel
     const hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9002,
+      port: hl7ProdPort,
     });
 
     await hl7Client.connect();
@@ -614,20 +599,8 @@ describe('App', () => {
     const stagingChannel = app.channels.get('hl7-staging') as AgentHl7Channel;
 
     // Create a new endpoint for both hl7-test and dicom-test
-    const hl7TestEndpoint2 = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9003',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
-    const dicomTestEndpoint2 = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      connectionType: { code: ContentType.DICOM },
-      address: 'dicom://0.0.0.0:10003',
-      payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
-    });
+    const [hl7TestEndpoint2] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
+    const [dicomTestEndpoint2] = await createEndpointWithRandomPort(medplum, DICOM_ENDPOINT);
 
     // Update endpoint to have enhanced mode on, which should trigger a reload without making a new socket
     const enhancedProdAddress = new URL(hl7ProdEndpoint.address);
@@ -642,7 +615,7 @@ describe('App', () => {
     // Test rebinding to port for byte stream channel
     const oldPortBytestreamAddress = bytestreamProdEndpoint.address;
     const changedPortEndpointAddress = new URL(bytestreamProdEndpoint.address);
-    changedPortEndpointAddress.port = '9010';
+    changedPortEndpointAddress.port = (await getFreePort()).toString();
 
     // Update the new address
     bytestreamProdEndpoint = await medplum.updateResource<Endpoint>({
@@ -760,20 +733,119 @@ describe('App', () => {
     clearTimeout(timeout);
     expect(stagingChannel.server.server).not.toBeDefined();
 
+    // Verify protocol changes replace the channel instance instead of no-op reloading it.
+
+    const hl7TestChannelBefore = app.channels.get('hl7-test') as AgentHl7Channel;
+    expect(hl7TestChannelBefore).toBeDefined();
+
+    const protocolSwapAddress = new URL(hl7TestEndpoint2.address);
+    protocolSwapAddress.protocol = 'tcp:';
+    protocolSwapAddress.searchParams.set('startChar', 'a');
+    protocolSwapAddress.searchParams.set('endChar', 'b');
+
+    const hl7TestEndpoint3 = await medplum.updateResource<Endpoint>({
+      ...hl7TestEndpoint2,
+      address: protocolSwapAddress.toString(),
+      connectionType: { code: ContentType.OCTET_STREAM },
+      payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+    });
+
+    await medplum.updateResource({
+      ...agent,
+      channel: [
+        {
+          name: 'hl7-test',
+          endpoint: createReference(hl7TestEndpoint3),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'hl7-prod',
+          endpoint: createReference(hl7ProdEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'dicom-test',
+          endpoint: createReference(dicomTestEndpoint2),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'dicom-prod',
+          endpoint: createReference(dicomProdEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'hl7-dev',
+          endpoint: createReference(hl7StagingEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    state.gotAgentReloadResponse = false;
+    state.gotAgentError = false;
+    state.agentError = undefined;
+
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentReloadResponse && !state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotAgentReloadResponse).toStrictEqual(true);
+    expect(state.gotAgentError).toStrictEqual(false);
+
+    const hl7TestChannelAfter = app.channels.get('hl7-test');
+    expect(hl7TestChannelAfter).toBeInstanceOf(AgentByteStreamChannel);
+    expect(hl7TestChannelAfter).not.toBe(hl7TestChannelBefore);
+
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2000);
+
+    while (hl7TestChannelBefore.server.server) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(hl7TestChannelBefore.server.server).not.toBeDefined();
+
     // Now we should test accidentally adding endpoints with conflicting ports
 
     // Endpoints with conflicting ports
     const hl7ConflictingEndpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       status: 'active',
-      address: 'mllp://0.0.0.0:9002',
+      address: hl7ProdEndpoint.address,
       connectionType: { code: ContentType.HL7_V2 },
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
     const dicomConflictingEndpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       status: 'active',
-      address: 'dicom://0.0.0.0:10002',
+      address: dicomProdEndpoint.address,
       connectionType: { code: ContentType.DICOM },
       payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
     });
@@ -785,7 +857,7 @@ describe('App', () => {
         // No changes
         {
           name: 'hl7-test',
-          endpoint: createReference(hl7TestEndpoint2),
+          endpoint: createReference(hl7TestEndpoint3),
           targetReference: createReference(bot),
         },
         // No changes
@@ -868,11 +940,11 @@ describe('App', () => {
 
     // Fix bad conflicting ports
     const fixedHl7ConflictingUrl = new URL(hl7ConflictingEndpoint.address);
-    fixedHl7ConflictingUrl.port = '9006';
+    fixedHl7ConflictingUrl.port = (await getFreePort()).toString();
     await medplum.updateResource<Endpoint>({ ...hl7ConflictingEndpoint, address: fixedHl7ConflictingUrl.toString() });
 
     const fixedDicomConflictingUrl = new URL(dicomConflictingEndpoint.address);
-    fixedDicomConflictingUrl.port = '10006';
+    fixedDicomConflictingUrl.port = (await getFreePort()).toString();
     await medplum.updateResource<Endpoint>({
       ...dicomConflictingEndpoint,
       address: fixedDicomConflictingUrl.toString(),
@@ -1021,13 +1093,7 @@ describe('App', () => {
     mockServer.on('connection', mockConnectionHandler);
 
     // Create the initial endpoints for all channels
-    const hl7ProdEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9001',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
+    const [hl7ProdEndpoint] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
@@ -1141,13 +1207,7 @@ describe('App', () => {
       });
     });
 
-    const endpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9010',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -1171,7 +1231,7 @@ describe('App', () => {
     // Try to send HL7 message -- should fail
     let hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9010,
+      port,
     });
 
     let error: Error | AggregateError | undefined = undefined;
@@ -1214,6 +1274,8 @@ describe('App', () => {
     }
     clearTimeout(timeout);
 
+    const listenerPort = await getFreePort();
+
     // Try to send agent:transmit:request -- should return error
     // Start an HL7 listener
     let hl7Messages = [];
@@ -1223,7 +1285,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57099);
+    await hl7Server.start(listenerPort);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1241,7 +1303,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57099',
+          remote: `mllp://localhost:${listenerPort}`,
         } satisfies AgentTransmitRequest)
       )
     );
@@ -1269,7 +1331,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57099',
+          remote: `mllp://localhost:${listenerPort}`,
         } satisfies AgentTransmitRequest)
       )
     );
@@ -1284,7 +1346,7 @@ describe('App', () => {
     // Should be empty
     expect(hl7Messages.length).toBe(0);
 
-    await hl7Server.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
 
     // Set agent status back to 'active'
     await medplum.updateResource<Agent>({
@@ -1320,7 +1382,7 @@ describe('App', () => {
     // Try to send HL7 message -- should succeed
     hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9010,
+      port,
     });
 
     const response = await hl7Client.sendAndWait(
@@ -1348,7 +1410,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57099);
+    await hl7Server.start(listenerPort);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1363,7 +1425,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57099',
+          remote: `mllp://localhost:${listenerPort}`,
           callback: getReferenceString(agent) + '-' + randomUUID(),
         })
       )
@@ -1375,7 +1437,7 @@ describe('App', () => {
     }
     expect(hl7Messages.length).toBe(1);
 
-    await hl7Server.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
@@ -1436,21 +1498,8 @@ describe('App', () => {
       });
     });
 
-    const testEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'off',
-      address: 'mllp://0.0.0.0:9010',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
-
-    const prodEndpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9011',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
+    const [testEndpoint, testPort] = await createEndpointWithRandomPort(medplum, { ...HL7_ENDPOINT, status: 'off' });
+    const [prodEndpoint, prodPort] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -1480,7 +1529,7 @@ describe('App', () => {
     // Try to send HL7 message -- should fail
     let hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9010,
+      port: testPort,
     });
 
     let error: AggregateError | undefined = undefined;
@@ -1512,7 +1561,7 @@ describe('App', () => {
     // This one should succeed
     hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9011,
+      port: prodPort,
     });
 
     let response = await hl7Client.sendAndWait(
@@ -1583,7 +1632,7 @@ describe('App', () => {
     // Try to send HL7 message -- should succeed
     hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9010,
+      port: testPort,
     });
 
     response = await hl7Client.sendAndWait(
@@ -1605,7 +1654,7 @@ describe('App', () => {
     // This one should succeed
     hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9011,
+      port: prodPort,
     });
 
     response = await hl7Client.sendAndWait(
@@ -1674,13 +1723,7 @@ describe('App', () => {
       });
     });
 
-    const endpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9020',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, HL7_ENDPOINT);
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -1710,7 +1753,7 @@ describe('App', () => {
 
     const hl7Client = new Hl7Client({
       host: 'localhost',
-      port: 9020,
+      port,
     });
 
     await hl7Client.sendAndWait(
@@ -3086,6 +3129,102 @@ describe('App', () => {
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
+
+    test('Upgrade -- Missing artifact for platform', async () => {
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+
+      // Manifest only has a Linux asset, no Windows asset
+      const manifest = {
+        tag_name: 'v4.2.5',
+        assets: [
+          {
+            name: 'medplum-agent-4.2.5-linux',
+            browser_download_url: 'https://example.com/linux',
+          },
+        ],
+      };
+
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+        jest.fn(async () => {
+          return new Response(JSON.stringify(manifest), {
+            headers: { 'content-type': 'application/json' },
+            status: 200,
+          });
+        })
+      );
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          version: '4.2.5',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(state.agentError.body).toContain("No download URL found for release 'v4.2.5' for win32");
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      platformSpy.mockRestore();
+      fetchSpy.mockRestore();
+    });
   });
 
   test('Upgrading -- Upgrade in progress, should error', async () => {
@@ -3384,20 +3523,23 @@ describe('App', () => {
       await sleep(100);
     }
 
+    const port1 = await getFreePort();
+    const port2 = await getFreePort();
+
     // Start multiple HL7 servers to create multiple persistent clients
     const hl7Server1 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server1.start(57100);
+    await hl7Server1.start(port1);
 
     const hl7Server2 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server2.start(57101);
+    await hl7Server2.start(port2);
 
     // Wait for servers to start listening
     while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
@@ -3417,7 +3559,7 @@ describe('App', () => {
           type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body: hl7MessageBody,
-          remote: 'mllp://localhost:57100',
+          remote: `mllp://localhost:${port1}`,
           callback: getReferenceString(agent) + '-' + randomUUID(),
         } satisfies AgentTransmitRequest)
       )
@@ -3429,7 +3571,7 @@ describe('App', () => {
           type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body: hl7MessageBody,
-          remote: 'mllp://localhost:57101',
+          remote: `mllp://localhost:${port2}`,
           callback: getReferenceString(agent) + '-' + randomUUID(),
         } satisfies AgentTransmitRequest)
       )
@@ -3456,7 +3598,134 @@ describe('App', () => {
     }
 
     // Clean up
-    await hl7Server1.stop();
+    await hl7Server1.stop({ forceDrainTimeoutMs: 100 });
+    await hl7Server2.stop({ forceDrainTimeoutMs: 100 });
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    console.log = originalConsoleLog;
+  });
+
+  test('Pool persists in hl7Clients after client error — only cleared on keepAlive change', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitResponses: [] as AgentTransmitResponse[],
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:transmit:response') {
+          state.transmitResponses.push(command);
+        }
+      });
+    });
+
+    // Create agent with keepAlive enabled
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      setting: [{ name: 'keepAlive', valueBoolean: true }],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Start an HL7 server that ACKs messages
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server.start(57110);
+
+    const hl7MessageBody =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+    // Send a transmit request to create a pool
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody,
+          remote: 'mllp://localhost:57110',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the response
+    while (state.transmitResponses.length < 1) {
+      await sleep(100);
+    }
+
+    // Pool should exist
+    expect(app.hl7Clients.size).toBe(1);
+    expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
+
+    // Stop the HL7 server — this closes connections from the server side
+    await hl7Server.stop();
+
+    // Wait for the close to propagate (client removed from pool, but pool stays)
+    await sleep(200);
+
+    // Pool should STILL be in hl7Clients — it is never removed by client errors
+    expect(app.hl7Clients.size).toBe(1);
+    expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
+
+    // The pool should have no clients (they were removed when the connection closed)
+    const pool = app.hl7Clients.get('mllp://localhost:57110') as Hl7ClientPool;
+    expect(pool.size()).toBe(0);
+
+    // Restart the HL7 server
+    const hl7Server2 = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server2.start(57110);
+
+    // Send another transmit request — should succeed using the same pool
+    state.transmitResponses = [];
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody.replace('MSG00001', 'MSG00002'),
+          remote: 'mllp://localhost:57110',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    while (state.transmitResponses.length < 1) {
+      await sleep(100);
+    }
+
+    // Pool should still be the same one — not recreated
+    expect(app.hl7Clients.size).toBe(1);
+    expect(app.hl7Clients.get('mllp://localhost:57110')).toBe(pool);
+
+    // The second transmit should have succeeded
+    expect(state.transmitResponses[0].statusCode).toBe(200);
+
+    await app.stop();
     await hl7Server2.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
@@ -3507,25 +3776,27 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58100);
+      await hl7Server.start(port);
 
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58100`,
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'my-callback-id',
@@ -3538,7 +3809,7 @@ describe('App', () => {
         await sleep(100);
       }
 
-      const pool = app.hl7Clients.get('mllp://localhost:58100') as Hl7ClientPool;
+      const pool = app.hl7Clients.get(`mllp://localhost:${port}`) as Hl7ClientPool;
 
       // Run client GC manually
       pool.runClientGc();
@@ -3547,7 +3818,7 @@ describe('App', () => {
       expect(pool.size()).toStrictEqual(0);
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -3596,25 +3867,27 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58101);
+      await hl7Server.start(port);
 
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58101`,
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'my-callback-id',
@@ -3629,9 +3902,8 @@ describe('App', () => {
 
       // Pool should be in the hl7Clients map and should have stats tracking
       expect(app.hl7Clients.size).toBe(1);
-      const pool = app.hl7Clients.get('mllp://localhost:58101');
+      const pool = app.hl7Clients.get(`mllp://localhost:${port}`);
       expect(pool).toBeDefined();
-      expect(pool?.isTrackingStats()).toBe(true);
       const client = pool?.getClients()[0];
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
@@ -3640,7 +3912,7 @@ describe('App', () => {
       await sleep(1000);
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -3693,20 +3965,23 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port1 = await getFreePort();
+      const port2 = await getFreePort();
+
       // Start HL7 servers
       const hl7Server1 = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server1.start(58102);
+      await hl7Server1.start(port1);
 
       const hl7Server2 = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server2.start(58103);
+      await hl7Server2.start(port2);
 
       // Wait for servers to start listening
       while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
@@ -3718,12 +3993,12 @@ describe('App', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58102`,
+            remote: `mllp://localhost:${port1}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'callback-1',
@@ -3735,7 +4010,7 @@ describe('App', () => {
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58103`,
+            remote: `mllp://localhost:${port2}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'callback-2',
@@ -3748,12 +4023,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Should have 2 pools with stats tracking enabled
+      // Should have 2 pools
       expect(app.hl7Clients.size).toBe(2);
-      const pool1 = app.hl7Clients.get('mllp://localhost:58102');
-      const pool2 = app.hl7Clients.get('mllp://localhost:58103');
-      expect(pool1?.isTrackingStats()).toBe(true);
-      expect(pool2?.isTrackingStats()).toBe(true);
 
       // Update agent to disable keepAlive
       await medplum.updateResource<Agent>({
@@ -3782,8 +4053,8 @@ describe('App', () => {
       expect(app.hl7Clients.size).toBe(0);
 
       await app.stop();
-      await hl7Server1.stop();
-      await hl7Server2.stop();
+      await hl7Server1.stop({ forceDrainTimeoutMs: 100 });
+      await hl7Server2.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -3791,7 +4062,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test('When logStatsFreqSecs goes from on to off, cleanup all stats', async () => {
+    test('When logStatsFreqSecs goes from on to off, pool keeps tracking stats (default-on)', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -3835,25 +4106,27 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58104);
+      await hl7Server.start(port);
 
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58104`,
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'my-callback-id',
@@ -3866,10 +4139,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should have stats tracking enabled
+      // Pool should exist
       expect(app.hl7Clients.size).toBe(1);
-      const pool = app.hl7Clients.get('mllp://localhost:58104');
-      expect(pool?.isTrackingStats()).toBe(true);
 
       // Update agent to disable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -3891,13 +4162,11 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should still exist but stats tracking should be disabled
+      // Pool should still exist (stats are collected by default)
       expect(app.hl7Clients.size).toBe(1);
-      const poolAfterReload = app.hl7Clients.get('mllp://localhost:58104');
-      expect(poolAfterReload?.isTrackingStats()).toBe(false);
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -3905,7 +4174,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test('When logStatsFreqSecs goes from off to on, start tracking stats', async () => {
+    test('Pool tracks stats by default when keepAlive is on, regardless of logStatsFreqSecs', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -3946,25 +4215,27 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58105);
+      await hl7Server.start(port);
 
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58105`,
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'my-callback-id',
@@ -3977,10 +4248,9 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Pool should exist but not have stats tracking enabled
+      // Pool should exist and have stats tracking enabled by default
       expect(app.hl7Clients.size).toBe(1);
-      let pool = app.hl7Clients.get('mllp://localhost:58105');
-      expect(pool?.isTrackingStats()).toBe(false);
+      let pool = app.hl7Clients.get(`mllp://localhost:${port}`);
 
       // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4007,8 +4277,7 @@ describe('App', () => {
 
       // Pool should now have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      pool = app.hl7Clients.get('mllp://localhost:58105');
-      expect(pool?.isTrackingStats()).toBe(true);
+      pool = app.hl7Clients.get(`mllp://localhost:${port}`);
 
       // Send another message to verify stats tracking works
       state.transmitResponses = [];
@@ -4020,7 +4289,7 @@ describe('App', () => {
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: `mllp://localhost:58105`,
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody2,
             callback: 'my-callback-id-2',
@@ -4033,12 +4302,12 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Stats should have recorded the new message
+      // Stats should have recorded both messages (tracking is on from the start)
       const client = pool?.getClients()[0];
-      expect(client?.stats?.getSampleCount()).toBe(1);
+      expect(client?.stats?.getSampleCount()).toBe(2);
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4083,6 +4352,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA (commit ack) first, then AA (application ack)
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4096,18 +4367,18 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58200);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58200',
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4127,7 +4398,7 @@ describe('App', () => {
       expect(ackCode).toBe('CA');
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4170,6 +4441,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA first, then AA
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4183,18 +4456,18 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58201);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58201',
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4215,7 +4488,7 @@ describe('App', () => {
       expect(ackCode).toBe('AA');
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4258,6 +4531,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA first, then AA
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4269,19 +4544,19 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58202);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Include defaultReturnAck=application in the Device URL
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58202?defaultReturnAck=application',
+            remote: `mllp://localhost:${port}?defaultReturnAck=application`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4302,7 +4577,7 @@ describe('App', () => {
       expect(ackCode).toBe('AA');
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4345,6 +4620,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA first, then AA
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4356,19 +4633,19 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58203);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Device URL has defaultReturnAck=application, but message specifies returnAck=first
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58203?defaultReturnAck=application',
+            remote: `mllp://localhost:${port}?defaultReturnAck=application`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4389,7 +4666,7 @@ describe('App', () => {
       expect(ackCode).toBe('CA');
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4432,6 +4709,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA first, then AA
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4443,19 +4722,19 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58204);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Device URL has an invalid defaultReturnAck value
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58204?defaultReturnAck=invalid_value',
+            remote: `mllp://localhost:${port}?defaultReturnAck=invalid_value`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4485,7 +4764,7 @@ describe('App', () => {
       );
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4528,6 +4807,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server - should NOT receive any messages for this test
       let messageReceived = false;
       const hl7Server = new Hl7Server((conn) => {
@@ -4535,19 +4816,19 @@ describe('App', () => {
           messageReceived = true;
         });
       });
-      await hl7Server.start(58207);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Per-message returnAck has an invalid value
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58207',
+            remote: `mllp://localhost:${port}`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4574,7 +4855,7 @@ describe('App', () => {
       expect(messageReceived).toBe(false);
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4617,6 +4898,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA first, then AA
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4628,19 +4911,19 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58205);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Use uppercase APPLICATION in the URL
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58205?defaultReturnAck=APPLICATION',
+            remote: `mllp://localhost:${port}?defaultReturnAck=APPLICATION`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4660,7 +4943,7 @@ describe('App', () => {
       expect(ackCode).toBe('AA');
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -4703,6 +4986,8 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const port = await getFreePort();
+
       // Start HL7 server that sends CA first, then AA
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
@@ -4714,19 +4999,19 @@ describe('App', () => {
           }, 50);
         });
       });
-      await hl7Server.start(58206);
+      await hl7Server.start(port);
 
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
         'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
-      const wsClient = state.mySocket as unknown as Client;
+      const wsClient = state.mySocket;
       // Use uppercase FIRST in the URL - should return CA (first ACK received)
       wsClient.send(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
-            remote: 'mllp://localhost:58206?defaultReturnAck=FIRST',
+            remote: `mllp://localhost:${port}?defaultReturnAck=FIRST`,
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
@@ -4746,12 +5031,253 @@ describe('App', () => {
       expect(ackCode).toBe('CA');
 
       await app.stop();
-      await hl7Server.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
 
       console.log = originalConsoleLog;
+    });
+  });
+
+  describe('Error responses for unhandled or silently-failing messages', () => {
+    test('Unknown message type returns agent:error to server', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(Buffer.from(JSON.stringify({ type: 'totally:unknown:type', callback })));
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: expect.stringContaining('Unknown message type: totally:unknown:type'),
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Invalid JSON payload returns agent:error to server', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const str = (data as Buffer).toString('utf8');
+          let command: AgentMessage;
+          try {
+            command = JSON.parse(str) as AgentMessage;
+          } catch {
+            return;
+          }
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Send malformed JSON
+      state.mySocket.send(Buffer.from('this is not valid json {'));
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: expect.stringContaining('WebSocket error on incoming message'),
+      });
+      // No callback could be parsed from malformed JSON
+      expect(state.agentError?.callback).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Transmit request with missing remote returns agent:error', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:error') {
+            state.agentError = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            // remote intentionally missing
+            remote: '',
+            contentType: ContentType.HL7_V2,
+            body: 'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2',
+            callback,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      while (!state.agentError) {
+        await sleep(50);
+      }
+
+      expect(state.agentError).toMatchObject<AgentError>({
+        type: 'agent:error',
+        body: 'Missing remote address',
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Transmit request with HL7 body missing MSH.10 returns 400 transmit response', async () => {
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponse: undefined as AgentTransmitResponse | undefined,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponse = command;
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const port = await getFreePort();
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      // MSH segment without field 10 (only 9 fields after MSH)
+      const hl7BodyMissingMsh10 = 'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01';
+
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:${port}`,
+            contentType: ContentType.HL7_V2,
+            body: hl7BodyMissingMsh10,
+            callback,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      while (!state.transmitResponse) {
+        await sleep(50);
+      }
+
+      expect(state.transmitResponse).toMatchObject<AgentTransmitResponse>({
+        type: 'agent:transmit:response',
+        remote: `mllp://localhost:${port}`,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: 'MSH.10 is missing but required',
+        callback,
+      });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
     });
   });
 });

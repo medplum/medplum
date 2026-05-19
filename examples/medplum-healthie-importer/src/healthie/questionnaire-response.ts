@@ -304,8 +304,13 @@ function convertHealthieAnswerValueToFhir(answer: HealthieFormAnswer): Questionn
     case 'dob':
       return [{ valueDate: answerValue }];
 
-    case 'time':
-      return [{ valueTime: answerValue }];
+    case 'time': {
+      const sanitized = sanitizeTimeValue(answerValue);
+      if (sanitized) {
+        return [{ valueTime: sanitized }];
+      }
+      return [{ valueString: answerValue }];
+    }
 
     case 'number':
     case 'Body Fat %':
@@ -436,4 +441,37 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
     console.log('Failed to parse matrix answer:', error);
     return undefined;
   }
+}
+
+function sanitizeTimeValue(value: string): string | null {
+  const trimmed = value.trim();
+
+  const match24 = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (match24) {
+    const h = parseInt(match24[1], 10);
+    const m = parseInt(match24[2], 10);
+    const s = match24[3] ? parseInt(match24[3], 10) : 0;
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59 && s >= 0 && s <= 59) {
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+  }
+
+  const match12 = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)$/i);
+  if (match12) {
+    let h = parseInt(match12[1], 10);
+    const m = parseInt(match12[2], 10);
+    const s = match12[3] ? parseInt(match12[3], 10) : 0;
+    const isPM = match12[4].toLowerCase() === 'pm';
+    if (h < 1 || h > 12 || m > 59 || s > 59) {
+      return null;
+    }
+    if (isPM && h !== 12) {
+      h += 12;
+    } else if (!isPM && h === 12) {
+      h = 0;
+    }
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  return null;
 }

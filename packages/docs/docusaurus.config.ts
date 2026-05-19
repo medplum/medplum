@@ -21,7 +21,7 @@ const config: Config = {
   // https://github.com/facebook/docusaurus/issues/10556
   future: {
     v4: true,
-    experimental_faster: true,
+    faster: true,
   },
 
   // Even if you don't use internationalization, you can use this field to set
@@ -31,6 +31,60 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          {
+            from: '/docs/communications/organizing-communications',
+            to: '/docs/communications/messaging-data-model',
+          },
+          {
+            from: '/docs/communications/task-based-message-response-tracking-and-routing',
+            to: '/docs/communications/message-response-tracking-and-routing',
+          },
+          {
+            from: '/docs/charting/ordering-labs-imaging',
+            to: '/docs/labs-imaging/ordering-labs-imaging',
+          },
+          {
+            from: '/docs/charting/soap-notes',
+            to: '/docs/charting/visit-templates',
+          },
+          {
+            from: '/docs/charting/capturing-vital-signs',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/representing-diagnoses',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/allergy-intolerances',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/patient-demographics',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/implantable-devices',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/external-documents',
+            to: '/docs/fhir-datastore/external-documents',
+          },
+          {
+            from: '/docs/questionnaires/structured-data-capture',
+            to: '/docs/questionnaires/parsing-questionnaire-responses',
+          },
+        ],
+      },
+    ],
+  ],
 
   presets: [
     [
@@ -111,14 +165,16 @@ const config: Config = {
           position: 'left',
         },
         {
-          to: 'https://app.medplum.com/',
+          to: 'https://app.medplum.com/signin',
           label: 'Sign In',
           position: 'right',
+          className: 'button button--outline button--primary navbar-btn navbar-btn-outlined',
         },
         {
-          to: 'https://github.com/medplum/medplum',
-          label: 'GitHub',
+          to: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a',
+          label: 'Book a Demo',
           position: 'right',
+          className: 'button button--primary navbar-btn navbar-btn-filled',
         },
       ],
     },
@@ -134,6 +190,10 @@ const config: Config = {
             {
               label: 'Documentation',
               to: '/docs',
+            },
+            {
+              label: 'Why Open Source',
+              to: '/open-source',
             },
             {
               label: 'Search',
@@ -168,6 +228,10 @@ const config: Config = {
               label: 'Contributing',
               to: '/docs/contributing',
             },
+            {
+              label: 'Events',
+              to: '/blog/events-calendar',
+            },
           ],
         },
         {
@@ -197,10 +261,14 @@ const config: Config = {
               label: 'Brand',
               to: '/brand',
             },
+            {
+              label: 'Book a Demo',
+              to: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a',
+            },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Orangebot, Inc.`,
+      copyright: `© ${new Date().getFullYear()} Orangebot, Inc.`,
     },
     prism: {
       theme: prismThemes.github,
@@ -235,6 +303,15 @@ const config: Config = {
     },
   },
   themes: ['@docusaurus/theme-mermaid'],
+  scripts: [
+    {
+      src: 'https://cdn-cookieyes.com/client_data/11362a9d5311bc6aa21c5f47d05599c6/script.js',
+    },
+    {
+      src: 'https://ddwl4m2hdecbv.cloudfront.net/b/LNKLDHEYLZOJ/LNKLDHEYLZOJ.js.gz',
+      async: true,
+    },
+  ],
 };
 
 export default config;

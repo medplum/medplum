@@ -16,6 +16,7 @@ import type {
   Binary,
   ClientApplication,
   Condition,
+  Device,
   Login,
   Observation,
   Organization,
@@ -26,6 +27,7 @@ import type {
   Quantity,
   Questionnaire,
   ServiceRequest,
+  SmartAppLaunch,
   StructureDefinition,
   Subscription,
   Task,
@@ -37,9 +39,10 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository } from './repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
@@ -52,7 +55,7 @@ describe('AccessPolicy', () => {
 
   beforeEach(async () => {
     testProject = (await createTestProject()).project;
-    systemRepo = getSystemRepo();
+    systemRepo = await getProjectSystemRepo(testProject);
   });
 
   afterAll(async () => {
@@ -1901,6 +1904,40 @@ describe('AccessPolicy', () => {
       await expect(repo2.readResource<Task>('Task', task.id)).rejects.toThrow('Forbidden');
     }));
 
+  test('Project admin cannot delete project', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test Project',
+        systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
+      });
+
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/' + project.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: true,
+      });
+
+      const repo2 = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
+
+      const check1 = await repo2.readResource<Project>('Project', project.id);
+      expect(check1.id).toStrictEqual(project.id);
+
+      // Try to delete the project
+      // This should fail - even though the user is an admin, they should not be able to delete the project
+      try {
+        await repo2.deleteResource('Project', project.id);
+        throw new Error('Should not be able to delete project');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
+      }
+    }));
+
   test('Project admin cannot modify protected fields', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({
@@ -2924,4 +2961,239 @@ describe('AccessPolicy', () => {
       await expect(buildAccessPolicy(membership)).rejects.toThrow(/Invalid access policy configuration/);
       await expect(buildAccessPolicy(membership)).rejects.toThrow(/contact your administrator/);
     }));
+
+  test('Combined access policies with overlapping entries', () =>
+    withTestContext(async () => {
+      const adminRepo = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [testProject],
+        strictMode: true,
+        extendedMode: true,
+      });
+
+      const identifier = `http://example.com/device-id`;
+
+      // Create 3 patients
+      const globalDevice = await adminRepo.createResource<Device>({ resourceType: 'Device' });
+      const scopedDevice = await adminRepo.createResource<Device>({
+        resourceType: 'Device',
+        identifier: [{ system: identifier, value: 'foo' }],
+      });
+
+      // Create access policy for a patient resource
+      // Create access policy for a patient resource
+      const globalPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Device',
+            interaction: ['read'],
+          },
+        ],
+      });
+
+      const orgPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Device',
+            criteria: 'Device?identifier=%identifier',
+            interaction: ['search', 'read'],
+          },
+        ],
+      });
+
+      // Create project membership parameterized with 2 instances of the access policy
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/' + testProject.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        access: [
+          {
+            policy: createReference(globalPolicy),
+          },
+          {
+            policy: createReference(orgPolicy),
+            parameter: [{ name: 'identifier', valueString: identifier + '|' }],
+          },
+        ],
+      });
+
+      const repo2 = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+        userConfig: {} as UserConfiguration,
+      });
+
+      await expect(repo2.readResource<Device>('Device', globalDevice.id)).resolves.toBeDefined();
+      await expect(repo2.readResource<Device>('Device', scopedDevice.id)).resolves.toBeDefined();
+
+      const results = await repo2.searchResources<Device>({ resourceType: 'Device' });
+      expect(results).toHaveLength(1);
+    }));
+
+  test('Protected resource types in linked projects', async () =>
+    withTestContext(async () => {
+      const systemRepo = getGlobalSystemRepo();
+
+      const { project: projectA, repo: repoA } = await createTestProject({
+        membership: { admin: true },
+        withRepo: true,
+      });
+      const userA = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        meta: { project: projectA.id },
+        project: createReference(projectA),
+        email: randomUUID() + '@example.com',
+        firstName: 'User',
+        lastName: 'A',
+      });
+
+      const projectsA = await repoA.searchResources<Project>({ resourceType: 'Project' });
+      expect(projectsA).toHaveLength(2);
+      expect(projectsA.find((p) => p.name === 'FHIR R4')).toBeDefined();
+      expect(projectsA.find((p) => p.id === projectA.id)).toBeDefined();
+
+      const usersA = await repoA.searchResources<User>({ resourceType: 'User' });
+      expect(usersA).toHaveLength(1);
+      expect(usersA[0].id).toStrictEqual(userA.id);
+
+      const membershipsA = await repoA.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
+      expect(membershipsA).toHaveLength(1);
+
+      const { project: projectB, repo: repoB } = await createTestProject({
+        project: { link: [{ project: createReference(projectA) }] },
+        membership: { admin: true },
+        withRepo: true,
+      });
+      const userB = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        meta: { project: projectB.id },
+        project: createReference(projectB),
+        email: randomUUID() + '@example.com',
+        firstName: 'User',
+        lastName: 'B',
+      });
+
+      const projectsB = await repoB.searchResources<Project>({ resourceType: 'Project' });
+      expect(projectsB).toHaveLength(3);
+      expect(projectsB.find((p) => p.name === 'FHIR R4')).toBeDefined();
+      expect(projectsB.find((p) => p.id === projectA.id)).toBeDefined();
+      expect(projectsB.find((p) => p.id === projectB.id)).toBeDefined();
+
+      const usersB = await repoB.searchResources<User>({ resourceType: 'User' });
+      expect(usersB).toHaveLength(1);
+      expect(usersB[0].id).toStrictEqual(userB.id);
+
+      const membershipsB = await repoB.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
+      expect(membershipsB).toHaveLength(1);
+    }));
+
+  describe('Patient scoped access token', () => {
+    let repo: Repository;
+    let project: WithId<Project>;
+    let membership: WithId<ProjectMembership>;
+    let patient: WithId<Patient>;
+    let email: string;
+    let password: string;
+
+    let compartmentCondition: WithId<Condition>;
+    let otherCondition: WithId<Condition>;
+
+    beforeAll(async () => {
+      ({ repo, project } = await createTestProject({ withRepo: true, membership: { admin: true } }));
+      password = randomUUID();
+      const {
+        membership: _membership,
+        profile,
+        user,
+      } = await inviteUser({
+        project,
+        resourceType: 'Patient',
+        firstName: 'Test',
+        lastName: 'Patient',
+        email: `patient+${randomUUID()}@example.com`,
+        password,
+      });
+      patient = profile as WithId<Patient>;
+      email = user.email as string;
+      membership = _membership;
+
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Condition',
+            interaction: ['create', 'read'],
+          },
+        ],
+      });
+      await repo.updateResource<ProjectMembership>({ ...membership, accessPolicy: createReference(accessPolicy) });
+
+      compartmentCondition = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(patient),
+      });
+      otherCondition = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: { reference: `Patient/${randomUUID()}` },
+      });
+    });
+
+    test('Patient scoped token access policy with explicit launch context', async () =>
+      withTestContext(async () => {
+        const launch = await repo.createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          patient: createReference(patient),
+        });
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          launchId: launch.id,
+          scope: 'openid launch/patient patient/*.crud',
+          nonce: randomUUID(),
+        });
+
+        expect(login.scope).toContain('patient/*.crud');
+
+        const patientRepo = await getRepoForLogin({
+          login,
+          smartAppLaunch: launch,
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
+
+    test('Patient scoped token access policy with implicit Patient context', async () =>
+      withTestContext(async () => {
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          scope: 'openid launch/patient patient/*.crud',
+          nonce: randomUUID(),
+        });
+
+        expect(login.scope).toContain('patient/*.crud');
+
+        const patientRepo = await getRepoForLogin({
+          login,
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
+  });
 });

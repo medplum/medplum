@@ -26,7 +26,7 @@ Or host your logo elsewhere and use the full URL:
 https://cdn.example.com/your-logo.svg
 ```
 
-:::tip
+:::tip[]
 Use SVG format when possible — they scale perfectly and have smaller file sizes.
 :::
 
@@ -41,7 +41,7 @@ MEDPLUM_LOGO_URL=/img/your-logo.svg
 MEDPLUM_APP_NAME=Your Health Platform
 ```
 
-:::note
+:::note[]
 These are **build-time** variables. You must rebuild the app after any changes.
 :::
 

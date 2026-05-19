@@ -38,6 +38,10 @@ export interface MedplumSourceInfraConfig {
   storageBucketName: ValueOrExternalSecret<string>;
   storageDomainName: ValueOrExternalSecret<string>;
   storageSslCertArn: ValueOrExternalSecret<string>;
+  mtlsDomainName?: ValueOrExternalSecret<string>;
+  mtlsSslCertArn?: ValueOrExternalSecret<string>;
+  mtlsInternetFacing?: ValueOrExternalSecret<boolean>;
+  mtlsWafIpSetArn?: ValueOrExternalSecret<string>;
   signingKeyId: ValueOrExternalSecret<string>;
   storagePublicKey: ValueOrExternalSecret<string>;
   storageWafIpSetArn: ValueOrExternalSecret<string>;
@@ -52,9 +56,36 @@ export interface MedplumSourceInfraConfig {
   rdsReaderInstanceType?: ValueOrExternalSecret<string>;
   rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   rdsClusterParameters?: StringMap;
+  rdsForceRetain?: ValueOrExternalSecret<boolean>;
   rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
+  cacheEngine?: ValueOrExternalSecret<string>;
+  cacheEngineVersion?: ValueOrExternalSecret<string>;
+  cacheRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  rateLimitRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  pubSubRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  backgroundJobsRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
   serverMemory: ValueOrExternalSecret<number>;
@@ -62,9 +93,14 @@ export interface MedplumSourceInfraConfig {
   loadBalancerSecurityGroupId?: ValueOrExternalSecret<string>;
   loadBalancerLoggingBucket?: ValueOrExternalSecret<string>;
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
-  clamscanEnabled: ValueOrExternalSecret<boolean>;
-  clamscanLoggingBucket: ValueOrExternalSecret<string>;
-  clamscanLoggingPrefix: ValueOrExternalSecret<string>;
+  loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
+  guardDutyMalwareProtectionEnabled?: ValueOrExternalSecret<boolean>;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
+  clamscanEnabled?: ValueOrExternalSecret<boolean>;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
+  clamscanLoggingBucket?: ValueOrExternalSecret<string>;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
+  clamscanLoggingPrefix?: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
   hostedZoneName?: ValueOrExternalSecret<string>;
   wafLogGroupName?: ValueOrExternalSecret<string>;
@@ -96,6 +132,40 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
+  workerServices?: {
+    id: ValueOrExternalSecret<string>;
+    serverImage?: ValueOrExternalSecret<string>;
+    serverMemory?: ValueOrExternalSecret<number>;
+    serverCpu?: ValueOrExternalSecret<number>;
+    desiredCount: ValueOrExternalSecret<number>;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: ValueOrExternalSecret<number>;
+      maxCapacity: ValueOrExternalSecret<number>;
+      targetUtilizationPercent: ValueOrExternalSecret<number>;
+      scaleInCooldown: ValueOrExternalSecret<number>;
+      scaleOutCooldown: ValueOrExternalSecret<number>;
+    };
+    additionalContainers?: {
+      name: ValueOrExternalSecret<string>;
+      image: ValueOrExternalSecret<string>;
+      cpu?: ValueOrExternalSecret<number>;
+      memory?: ValueOrExternalSecret<number>;
+      essential?: ValueOrExternalSecret<boolean>;
+      command?: ValueOrExternalSecret<string>[];
+      environment?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
   rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
@@ -146,6 +216,10 @@ export interface MedplumInfraConfig {
   storageWafIpSetArn?: string;
   storageLoggingBucket?: string;
   storageLoggingPrefix?: string;
+  mtlsDomainName?: string;
+  mtlsSslCertArn?: string;
+  mtlsInternetFacing?: boolean;
+  mtlsWafIpSetArn?: string;
   baseUrl: string;
   maxAzs: number;
   rdsInstances: number;
@@ -156,8 +230,35 @@ export interface MedplumInfraConfig {
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
+  rdsForceRetain?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
+  cacheEngine?: string;
+  cacheEngineVersion?: string;
+  cacheRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  rateLimitRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  pubSubRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  backgroundJobsRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;
@@ -165,8 +266,13 @@ export interface MedplumInfraConfig {
   loadBalancerSecurityGroupId?: string;
   loadBalancerLoggingBucket?: string;
   loadBalancerLoggingPrefix?: string;
+  loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
+  guardDutyMalwareProtectionEnabled?: boolean;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled: boolean;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanLoggingBucket: string;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
   hostedZoneName?: string;
@@ -199,6 +305,40 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
+  workerServices?: {
+    id: string;
+    serverImage?: string;
+    serverMemory?: number;
+    serverCpu?: number;
+    desiredCount: number;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: number;
+      maxCapacity: number;
+      targetUtilizationPercent: number;
+      scaleInCooldown: number;
+      scaleOutCooldown: number;
+    };
+    additionalContainers?: {
+      name: string;
+      image: string;
+      cpu?: number;
+      memory?: number;
+      essential?: boolean;
+      command?: string[];
+      environment?: {
+        [key: string]: string;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;

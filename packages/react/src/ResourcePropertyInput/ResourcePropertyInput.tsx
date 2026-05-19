@@ -119,7 +119,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   const propertyTypes = props.elementDefinitionTypes;
   let initialPropertyType: ElementDefinitionType | undefined = undefined;
   if (props.defaultPropertyType) {
-    initialPropertyType = propertyTypes.find((t) => t.code === props.defaultPropertyType) as ElementDefinitionType;
+    initialPropertyType = propertyTypes.find((t) => t.code === props.defaultPropertyType);
   }
   if (!initialPropertyType) {
     initialPropertyType = propertyTypes[0];
@@ -241,7 +241,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.string:
     case PropertyType.uri:
     case PropertyType.url:
-      if (props.path === 'Project.secret.value[x]') {
+      if (props.path === 'Project.secret.value[x]' || props.path === 'ClientApplication.certificateTrustStore') {
         return (
           <SensitiveTextarea
             {...getPrimitiveInputProps()}

@@ -26,34 +26,37 @@ export function getConfig(): ServerConfig {
 }
 
 /**
- * Loads configuration settings from a config identifier.
- * The identifier must start with one of the following prefixes:
+ * Loads configuration settings from one or more config identifiers.
+ * Multiple sources can be combined by separating them with commas.
+ * Sources are loaded left-to-right and deep-merged, so later sources override earlier ones.
+ *
+ * Each identifier must start with one of the following prefixes:
  *   1) "file:" string followed by relative path.
  *   2) "aws:" followed by AWS SSM path prefix.
- * @param configName - The medplum config identifier.
+ *   3) "gcp:" followed by GCP project.
+ *   4) "azure:" followed by Azure vault.
+ *   5) "env" to load from environment variables.
+ *
+ * Examples:
+ *   - "file:medplum.config.json" — single file source
+ *   - "aws:/medplum/prod/,env" — AWS SSM config with env var overrides
+ *
+ * @param configName - The medplum config identifier (comma-separated for multiple sources).
  * @returns The loaded configuration.
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
-  const [configType, configPath] = splitN(configName, ':', 2);
-  let config: MedplumServerConfig;
-  switch (configType) {
-    case 'env':
-      config = loadEnvConfig();
-      break;
-    case 'file':
-      config = await loadFileConfig(configPath);
-      break;
-    case 'aws':
-      config = await loadAwsConfig(configPath);
-      break;
-    case 'gcp':
-      config = await loadGcpConfig(configPath);
-      break;
-    case 'azure':
-      config = await loadAzureConfig(configPath);
-      break;
-    default:
-      throw new Error('Unrecognized config type: ' + configType);
+  const segments = configName.split(',').filter((s) => s.length > 0);
+  if (segments.length === 0) {
+    throw new Error('Empty config name');
+  }
+
+  let config = await loadSingleConfig(segments[0]);
+  for (let i = 1; i < segments.length; i++) {
+    const overlay = await loadSingleConfig(segments[i]);
+    config = deepMerge(
+      config as unknown as Record<string, unknown>,
+      overlay as unknown as Record<string, unknown>
+    ) as unknown as MedplumServerConfig;
   }
 
   if (!config.baseUrl || typeof config.baseUrl !== 'string' || config.baseUrl.trim() === '') {
@@ -62,6 +65,56 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
 
   cachedConfig = addDefaults(config);
   return cachedConfig;
+}
+
+/**
+ * Loads configuration settings from a single config identifier.
+ * @param configName - The config identifier (e.g. "file:path", "aws:path", "env").
+ * @returns The loaded configuration.
+ */
+async function loadSingleConfig(configName: string): Promise<MedplumServerConfig> {
+  const [configType, configPath] = splitN(configName, ':', 2);
+  switch (configType) {
+    case 'env':
+      return loadEnvConfig();
+    case 'file':
+      return loadFileConfig(configPath);
+    case 'aws':
+      return loadAwsConfig(configPath);
+    case 'gcp':
+      return loadGcpConfig(configPath);
+    case 'azure':
+      return loadAzureConfig(configPath);
+    default:
+      throw new Error('Unrecognized config type: ' + configType);
+  }
+}
+
+/**
+ * Deep-merges two objects. Objects merge recursively, arrays replace wholesale, primitives overwrite.
+ * @param base - The base object.
+ * @param overlay - The overlay object whose values take precedence.
+ * @returns A new merged object.
+ */
+function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...base };
+  for (const key of Object.keys(overlay)) {
+    const baseVal = base[key];
+    const overlayVal = overlay[key];
+    if (
+      overlayVal !== null &&
+      typeof overlayVal === 'object' &&
+      !Array.isArray(overlayVal) &&
+      baseVal !== null &&
+      typeof baseVal === 'object' &&
+      !Array.isArray(baseVal)
+    ) {
+      result[key] = deepMerge(baseVal as Record<string, unknown>, overlayVal as Record<string, unknown>);
+    } else {
+      result[key] = overlayVal;
+    }
+  }
+  return result;
 }
 
 /**
@@ -84,12 +137,26 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   };
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+  // leave cacheRedis on the default DB
+  config.rateLimitRedis = {
+    ...config.redis,
+    db: 8,
+  };
+  config.pubSubRedis = {
+    ...config.redis,
+    db: 9,
+  };
+  config.backgroundJobsRedis = {
+    ...config.redis,
+    db: 10,
+  };
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
+  config.mtlsCertHeader = 'x-mtls-cert';
   return config;
 }
 
@@ -109,34 +176,64 @@ function loadEnvConfig(): MedplumServerConfig {
 
     let key = name.substring('MEDPLUM_'.length);
     let currConfig = config;
+    let section = '';
 
     if (key.startsWith('DATABASE_')) {
       key = key.substring('DATABASE_'.length);
-      currConfig = config.database = config.database ?? {};
+      currConfig = config.database ??= {};
+      section = 'database';
+    } else if (key.startsWith('CACHE_REDIS_')) {
+      key = key.substring('CACHE_REDIS_'.length);
+      currConfig = config.cacheRedis ??= {};
+      section = 'cacheRedis';
+    } else if (key.startsWith('RATE_LIMIT_REDIS_')) {
+      key = key.substring('RATE_LIMIT_REDIS_'.length);
+      currConfig = config.rateLimitRedis ??= {};
+      section = 'rateLimitRedis';
+    } else if (key.startsWith('PUBSUB_REDIS_')) {
+      key = key.substring('PUBSUB_REDIS_'.length);
+      currConfig = config.pubSubRedis ??= {};
+      section = 'pubSubRedis';
+    } else if (key.startsWith('BACKGROUND_JOBS_REDIS_')) {
+      key = key.substring('BACKGROUND_JOBS_REDIS_'.length);
+      currConfig = config.backgroundJobsRedis ??= {};
+      section = 'backgroundJobsRedis';
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
-      currConfig = config.redis = config.redis ?? {};
+      currConfig = config.redis ??= {};
+      section = 'redis';
     } else if (key.startsWith('SMTP_')) {
       key = key.substring('SMTP_'.length);
-      currConfig = config.smtp = config.smtp ?? {};
+      currConfig = config.smtp ??= {};
+      section = 'smtp';
     } else if (key.startsWith('BULLMQ_')) {
       key = key.substring('BULLMQ_'.length);
-      currConfig = config.bullmq = config.bullmq ?? {};
+      currConfig = config.bullmq ??= {};
+      section = 'bullmq';
     } else if (key.startsWith('FISSION_')) {
       key = key.substring('FISSION_'.length);
-      currConfig = config.fission = config.fission ?? {};
+      currConfig = config.fission ??= {};
+      section = 'fission';
+    } else if (key.startsWith('WORKERS_')) {
+      key = key.substring('WORKERS_'.length);
+      currConfig = config.workers ??= {};
+      section = 'workers';
     }
 
     // Convert key from CAPITAL_CASE to camelCase
     key = key.toLowerCase().replaceAll(/_([a-z])/g, (g) => g[1].toUpperCase());
 
-    if (isIntegerConfig(key)) {
+    // Check both the dotted path (e.g. 'redis.db') and the leaf key (e.g. 'port')
+    // so that nested keys registered with dotted paths and leaf-only keys both work
+    const lookupKey = section ? `${section}.${key}` : key;
+
+    if (isIntegerConfig(lookupKey) || isIntegerConfig(key)) {
       currConfig[key] = Number.parseInt(value ?? '', 10);
-    } else if (isFloatConfig(key)) {
+    } else if (isFloatConfig(lookupKey) || isFloatConfig(key)) {
       currConfig[key] = Number.parseFloat(value ?? '');
-    } else if (isBooleanConfig(key)) {
+    } else if (isBooleanConfig(lookupKey) || isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
-    } else if (isObjectConfig(key)) {
+    } else if (isObjectConfig(lookupKey) || isObjectConfig(key)) {
       currConfig[key] = JSON.parse(value ?? '');
     } else {
       currConfig[key] = value;

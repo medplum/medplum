@@ -33,6 +33,7 @@ export interface HealthiePatient {
   sex: string;
   sexual_orientation: string;
   locations: HealthieLocation[];
+  dietitian_id?: string;
 }
 
 /**
@@ -200,6 +201,7 @@ export async function fetchHealthiePatients(
         gender_identity
         sex
         sexual_orientation
+        dietitian_id
         locations {
           zip
           line1

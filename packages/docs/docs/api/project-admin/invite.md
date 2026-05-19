@@ -254,6 +254,6 @@ When `mfaRequired: true` is set, the user will be required to enroll in Multi-Fa
 ## See Also
 
 - [User Admin Guide](/docs/user-management)
-- [Invite a new user](https://www.medplum.com/docs/app/invite)
-- [Custom Emails](https://www.medplum.com/docs/user-management/custom-emails)
+- [Invite a new user](/docs/app/invite)
+- [Custom Emails](/docs/user-management/custom-emails)
 - [Multi-Factor Authentication (MFA)](/docs/auth/mfa) - For details on MFA enrollment and usage

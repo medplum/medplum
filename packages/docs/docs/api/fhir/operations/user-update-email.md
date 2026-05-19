@@ -17,13 +17,13 @@ This operation updates both the [`User`](/docs/api/fhir/medplum/user) resource (
 POST [base]/User/[id]/$update-email
 ```
 
-:::warning Privileged Operation
+:::warning[Privileged Operation]
 
 This operation requires **Project Admin** privileges
 
 :::
 
-:::caution User vs Profile Email
+:::caution[User vs Profile Email]
 
 In Medplum, the `User.email` field controls authentication and login, while the profile resource's `telecom` field displays contact information. If you update only the profile resource email, users will not be able to log in with the new email address. Use this operation to update both atomically.
 

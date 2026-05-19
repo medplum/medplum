@@ -15,16 +15,16 @@ import type { AsyncJob, Bundle } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
-import { getAuthenticatedContext, runInAsyncContext } from '../context';
+import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { reconnectOnError } from '../redis';
-import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -42,9 +42,9 @@ export interface BatchJobData {
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
 
-export const initBatchWorker: WorkerInitializer = (config) => {
+export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<BatchJobData>(queueName, {
@@ -52,17 +52,22 @@ export const initBatchWorker: WorkerInitializer = (config) => {
     defaultJobOptions: { attempts: 1 },
   });
 
-  const worker = new Worker<BatchJobData>(
-    queueName,
-    (job) => {
-      const { authState, requestId, traceId } = job.data;
-      return runInAsyncContext(authState, requestId, traceId, () => execBatchJob(job));
-    },
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
+  let worker: Worker<BatchJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'batch');
+    worker = new Worker<BatchJobData>(
+      queueName,
+      (job) => {
+        const { authState, requestId, traceId } = job.data;
+        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJob(job));
+      },
+      {
+        ...defaultOptions,
+        concurrency: 1,
+        ...workerBullmq,
+      }
+    );
+  }
 
   return { queue, worker, name: queueName };
 };
@@ -102,9 +107,10 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
   const { login, project, membership } = job.data.authState;
   const logger = getLogger();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
 
   // Prepare the original submitting user's repo
-  const userConfig = await getUserConfiguration(getSystemRepo(), project, membership);
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
   const router = new FhirRouter();
   const req: FhirRequest = {
@@ -116,7 +122,6 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
     body: bundle,
   };
 
-  const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
 
   // Intentionally swallow all errors thrown during or after execution of the batch request, since we do NOT want to
@@ -149,7 +154,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
         entries: bundle.entry.length,
         errors,
       });
-      await exec.completeJob(systemRepo, {
+      await exec.completeJob({
         resourceType: 'Parameters',
         parameter: [{ name: 'results', valueReference: createReference(binary) }],
       });
@@ -159,11 +164,11 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
         asyncJob: job.data.asyncJob.id,
         outcome,
       });
-      await exec.failJob(systemRepo, new OperationOutcomeError(outcome));
+      await exec.failJob(new OperationOutcomeError(outcome));
     }
   } catch (err: any) {
     logger.error(`Async batch unhandled exception`, err);
     // Try to mark AsyncJob as failed, best effort
-    await exec.failJob(systemRepo, new OperationOutcomeError(serverError(err))).catch(() => {});
+    await exec.failJob(new OperationOutcomeError(serverError(err))).catch(() => {});
   }
 }

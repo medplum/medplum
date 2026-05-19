@@ -9,11 +9,11 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
-import { Repository, getSystemRepo } from './repo';
+import { Repository, getGlobalSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 
 describe('URL rewrite', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let config: MedplumServerConfig;
   let binary: WithId<Binary>;
 

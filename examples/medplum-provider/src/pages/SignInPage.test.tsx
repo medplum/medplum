@@ -6,7 +6,7 @@ import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
-import { describe, expect, test, beforeAll, vi } from 'vitest';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
 import { App } from '../App';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 

@@ -4,7 +4,7 @@ The Medplum CLI (Command Line Interface) is a set of command line tools to quick
 
 ## Prerequisites
 
-The Medplum CLI requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 20+
+The Medplum CLI requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 22+
 
 ## Installation
 
@@ -243,7 +243,7 @@ medplum project invite <firstName> <lastName> <email>
 
 The AWS commands require [AWS authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html). Please make sure your credentials are configured before using the `aws` commands.
 
-:::caution
+:::caution[]
 
 The `aws` commands are in beta, and likely to change.
 

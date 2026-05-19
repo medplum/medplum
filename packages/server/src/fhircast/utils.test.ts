@@ -3,13 +3,13 @@
 import { OperationOutcomeError, generateId } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { loadTestConfig } from '../config/loader';
-import { closeRedis, getRedis, initRedis } from '../redis';
+import { closeRedis, getCacheRedis, initRedis } from '../redis';
 import { getTopicForUser } from './utils';
 
 describe('FHIRcast Utils', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
+    initRedis(config);
   });
 
   afterAll(async () => {
@@ -25,7 +25,7 @@ describe('FHIRcast Utils', () => {
     test('User has existing topic', async () => {
       const userId = generateId();
       const topic = generateId();
-      await getRedis().set(`medplum:fhircast:topic:${userId}`, topic);
+      await getCacheRedis().set(`medplum:fhircast:topic:${userId}`, topic);
 
       await expect(getTopicForUser(userId)).resolves.toBe(topic);
     });
@@ -38,11 +38,14 @@ describe('FHIRcast Utils', () => {
         get(_key: string): this {
           return this;
         }
+        expire(_key: string, _seconds: number): this {
+          return this;
+        }
         async exec(): Promise<null> {
           return null;
         }
       }
-      const redis = getRedis();
+      const redis = getCacheRedis();
       const originalMulti = redis.multi;
       const mockMulti = jest.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
@@ -79,11 +82,14 @@ describe('FHIRcast Utils', () => {
         get(_key: string): this {
           return this;
         }
+        expire(_key: string, _seconds: number): this {
+          return this;
+        }
         async exec(): Promise<(null | [Error, string | null])[]> {
           return [null, [new Error('Something went wrong!'), null]];
         }
       }
-      const redis = getRedis();
+      const redis = getCacheRedis();
       const originalMulti = redis.multi;
       const mockMulti = jest.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation

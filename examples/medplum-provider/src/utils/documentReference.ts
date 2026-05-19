@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { DocumentReference, ServiceRequest } from '@medplum/fhirtypes';
 import type { MedplumClient } from '@medplum/core';
+import type { DocumentReference, ServiceRequest } from '@medplum/fhirtypes';
 
 const HEALTH_GORILLA_REQUEST_SYSTEM = 'https://www.healthgorilla.com';
 

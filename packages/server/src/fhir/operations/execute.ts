@@ -2,12 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BotResponseStream, WithId } from '@medplum/core';
 import {
-  allOk,
   badRequest,
-  getStatus,
   isOk,
   isOperationOutcome,
-  isResource,
   notFound,
   OperationOutcomeError,
   Operator,
@@ -21,13 +18,9 @@ import {
   getBotDefaultHeaders,
   getBotProjectMembership,
   getOutParametersFromResult,
-  getResponseBodyFromResult,
-  getResponseContentType,
+  sendBotResponse,
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
-import { sendFhirResponse } from '../response';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
@@ -60,29 +53,7 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    if (isOperationOutcome(result)) {
-      sendOutcome(res, result);
-      return;
-    }
-
-    const responseBody = getResponseBodyFromResult(result);
-
-    // If the bot returned an error OperationOutcome, send it with proper HTTP status
-    if (isOperationOutcome(responseBody) && !isOk(responseBody)) {
-      sendOutcome(res, responseBody);
-      return;
-    }
-
-    const outcome = result.success ? allOk : badRequest(result.logResult);
-
-    if (isResource(responseBody, 'Binary')) {
-      await sendFhirResponse(req, res, outcome, responseBody);
-      return;
-    }
-
-    // Send the response
-    // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
-    res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
+    await sendBotResponse(req, res, result);
   }
 };
 
@@ -96,11 +67,10 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   }
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
 
-  // Check if client accepts streaming
-  const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
+  // Check if client accepts streaming and bot supports it
+  const acceptsStreaming = bot.streamingEnabled && req.header('Accept')?.includes('text/event-stream');
   let responseStream: BotResponseStream | undefined = undefined;
   if (acceptsStreaming) {
     // Create a BotResponseStream that wraps the Express response.

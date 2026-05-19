@@ -113,14 +113,16 @@
         ],
         "qualification": [
           {
-            "coding": [
-              {
-                "system": "http://nucc.org/provider-taxonomy",
-                "code": "207RC0000X",
-                "display": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
-              }
-            ],
-            "text": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "207RC0000X",
+                  "display": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+                }
+              ],
+              "text": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+            }
           }
         ]
       }
@@ -165,14 +167,16 @@
         ],
         "qualification": [
           {
-            "coding": [
-              {
-                "system": "http://nucc.org/provider-taxonomy",
-                "code": "207RC0000X",
-                "display": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
-              }
-            ],
-            "text": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "207RC0000X",
+                  "display": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+                }
+              ],
+              "text": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+            }
           }
         ]
       }

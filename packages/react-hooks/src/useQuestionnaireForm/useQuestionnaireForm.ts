@@ -19,6 +19,7 @@ import {
   evaluateCalculatedExpressionsInQuestionnaire,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
   QUESTIONNAIRE_SIGNATURE_RESPONSE_URL,
+  removeDisabledItems,
 } from './utils';
 
 // React Hook for Questionnaire Form
@@ -257,19 +258,20 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
 
   function emitChange(): void {
     const currentResponse = state.current.questionnaireResponse;
-    if (!currentResponse) {
+    const currentQuestionnaire = state.current.questionnaire;
+    if (!currentResponse || !currentQuestionnaire) {
       return;
     }
     updateCalculatedExpressions();
     forceUpdate();
-    props.onChange?.(currentResponse);
+    props.onChange?.(removeDisabledItems(currentQuestionnaire, currentResponse));
   }
 
   return {
     loading: false,
     pagination: !!state.current.pages,
     questionnaire: state.current.questionnaire,
-    questionnaireResponse: state.current.questionnaireResponse,
+    questionnaireResponse: removeDisabledItems(state.current.questionnaire, state.current.questionnaireResponse),
     subject: props.subject,
     encounter: props.encounter,
     activePage: state.current.activePage,

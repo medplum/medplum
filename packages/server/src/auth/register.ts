@@ -5,7 +5,7 @@ import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createProject } from '../fhir/operations/projectinit';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { bcryptHashPassword } from './utils';
 
@@ -38,6 +38,7 @@ export interface RegisterResponse {
 
 /**
  * Registers a new user and/or new project.
+ * This method is now only used in tests! Do not use this method in production code!
  * @param request - The register request.
  * @returns The registration response.
  */
@@ -48,7 +49,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   let user = await getUserByEmailWithoutProject(email);
   if (!user) {
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     user = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName,
@@ -60,7 +61,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: request.scope ?? 'openid offline',
+    scope: request.scope ?? 'openid offline_access',
     nonce: randomUUID(),
     email: email,
     password: password,
@@ -75,7 +76,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     {
       ...login,
-      membership: createReference(membership as WithId<ProjectMembership>),
+      membership: createReference(membership),
     },
     createReference(profile as ProfileResource),
     { accessLifetime: client.accessTokenLifetime, refreshLifetime: client.refreshTokenLifetime }
@@ -86,8 +87,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership: membership as WithId<ProjectMembership>,
-    profile: profile as WithId<ProfileResource>,
+    membership: membership,
+    profile: profile,
     client,
   };
 }

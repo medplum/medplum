@@ -16,55 +16,51 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
-import type { Repository } from '../repo';
-import { getSystemRepo } from '../repo';
+import type { Repository, SystemRepository } from '../repo';
+import { makeOperationDefinition } from './definitions';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'set-accounts',
-  name: 'SetAccounts',
-  status: 'active',
-  kind: 'operation',
-  code: 'set-accounts',
-  description: `Updates account references for the target resource, and optionally any resources in the target's FHIR compartment`,
-  resource: ['Resource' as ResourceType],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    {
-      use: 'in',
-      name: 'accounts',
-      documentation: 'List of account references to set',
-      type: 'Reference',
-      min: 0,
-      max: '*',
-    },
-    {
-      use: 'in',
-      name: 'propagate',
-      documentation: 'If set, also push changes to other resources in the compartment of the target resource',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'resourcesUpdated',
-      documentation: 'Number of resources that were updated',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Resource' as ResourceType },
+  {
+    id: 'set-accounts',
+    name: 'SetAccounts',
+    code: 'set-accounts',
+    description: `Updates account references for the target resource, and optionally any resources in the target's FHIR compartment`,
+    parameter: [
+      {
+        use: 'in',
+        name: 'accounts',
+        documentation: 'List of account references to set',
+        type: 'Reference',
+        min: 0,
+        max: '*',
+      },
+      {
+        use: 'in',
+        name: 'propagate',
+        documentation: 'If set, also push changes to other resources in the compartment of the target resource',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'resourcesUpdated',
+        documentation: 'Number of resources that were updated',
+        type: 'integer',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export interface SetAccountsParameters {
   accounts: Reference[];
@@ -134,7 +130,7 @@ export async function setResourceAccounts(
   }
 
   // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
-  const systemRepo = getSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const target = await systemRepo.readResource(resourceType, id);
   // Ensure user's repo can read this resource as well
   if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {
@@ -188,7 +184,7 @@ export async function setResourceAccounts(
 }
 
 async function updateCompartmentResource<T extends Resource>(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   resource: T,
   additions: Reference[],
   removals: Reference[]

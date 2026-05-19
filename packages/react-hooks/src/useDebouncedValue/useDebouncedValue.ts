@@ -65,6 +65,10 @@ export function useDebouncedValue<T = any>(
       if (!cooldownRef.current && options.leading) {
         cooldownRef.current = true;
         setDebouncedValue(value);
+        // After waitMs, reset the cooldown
+        timeoutRef.current = setTimeout(() => {
+          cooldownRef.current = false;
+        }, waitMs);
       } else {
         cancel();
         timeoutRef.current = setTimeout(() => {

@@ -155,7 +155,7 @@ To clone a project and exclude specific resource ids, you can use the excludeIds
 medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone' '{"excludeIds": ["bca80725-ea6a-4fb4-8eac-41b8ee51f09e"]}'
 ```
 
-:::tip
+:::tip[]
 
 Note that "$" is a special character in Bash for variable interpolation. Wrap the full string in single quotes to avoid interpolation, or escape the $ with a backslash.
 
@@ -175,7 +175,7 @@ The result of the clone operation will be the new Project JSON:
 }
 ```
 
-:::caution Note
+:::caution[Note]
 
 The $clone operation to clone a project has a limit of cloning `1000` resources per resource type.
 
@@ -194,7 +194,7 @@ medplum post admin/projects/cabd683a-dc09-492f-a513-416c6f3c16bd/invite '{ \
 
 Expunge a project completely:
 
-:::danger
+:::danger[]
 
 This command permanently deletes all data in the project. This is irreversible. This is the equivalent of `sudo rm -rf`, so please use extreme caution.
 

@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  AgentDurableQueueStats,
   AgentError,
   AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
+  AgentStats,
+  AgentStatsRequest,
   AgentTransmitRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
@@ -23,12 +26,12 @@ import {
   TypedEventTarget,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
+  fetchVersionManifest,
   isValidHostname,
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue } from '@medplum/fhirtypes';
-import type { Hl7Connection } from '@medplum/hl7';
 import { DEFAULT_ENCODING, Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
@@ -43,7 +46,6 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
-import type { ChannelStats } from './channel-stats-tracker';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
   DEFAULT_PING_TIMEOUT,
@@ -60,7 +62,7 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { AgentHl7DurableQueue, waitForQueueRelease } from './queue';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
-import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
+import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
 
 // Handoff coordination files for zero-downtime upgrades
 const HANDOFF_READY_PATH = join(__dirname, '.handoff-ready');
@@ -175,8 +177,7 @@ export class App {
       // Check if the target version supports the handoff protocol
       // When downgrading to a pre-handoff version, the target binary won't participate in handoff
       const targetVersionSupportsHandoff =
-        semver.valid(strippedTargetVersion) !== null &&
-        semver.gte(strippedTargetVersion, MIN_HANDOFF_PROTOCOL_VERSION);
+        semver.valid(strippedTargetVersion) !== null && semver.gte(strippedTargetVersion, MIN_HANDOFF_PROTOCOL_VERSION);
 
       // Legacy zero-downtime upgrade: downgrading to a version that supports zero-downtime
       // upgrades (>= 4.2.4) but not the handoff protocol (< MIN_HANDOFF_PROTOCOL_VERSION).
@@ -768,11 +769,12 @@ export class App {
     });
 
     this.webSocket.addEventListener('message', async (e) => {
+      let command: AgentMessage | undefined;
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
         this.log.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
-        const command = JSON.parse(str) as AgentMessage;
+        command = JSON.parse(str) as AgentMessage;
         switch (command.type) {
           // @ts-expect-error - Deprecated message type
           case 'connected':
@@ -859,14 +861,34 @@ export class App {
           case 'agent:logs:request':
             await this.handleLogRequest(command);
             break;
+          case 'agent:stats:request':
+            await this.handleStatsRequest(command);
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
-          default:
-            this.log.error(`Unknown message type: ${command.type}`);
+          default: {
+            const errMsg = `Unknown message type: ${command.type}`;
+            this.log.error(errMsg);
+            await this.sendToWebSocket({
+              type: 'agent:error',
+              body: errMsg,
+              callback: (command as { callback?: string }).callback,
+            } satisfies AgentError);
+          }
         }
       } catch (err) {
-        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
+        const errMsg = `WebSocket error on incoming message: ${normalizeErrorString(err)}`;
+        this.log.error(errMsg);
+        try {
+          await this.sendToWebSocket({
+            type: 'agent:error',
+            body: errMsg,
+            callback: command?.callback,
+          } satisfies AgentError);
+        } catch (sendErr) {
+          this.log.error(`Failed to send agent:error response: ${normalizeErrorString(sendErr)}`);
+        }
       }
     });
 
@@ -892,11 +914,6 @@ export class App {
         if (result.status === 'rejected') {
           this.log.error(normalizeErrorString(result.reason));
         }
-      }
-      // We need to stop tracking stats for each client so that the heartbeat listener is removed
-      // Before clearing the clients
-      for (const pool of this.hl7Clients.values()) {
-        pool.stopTrackingStats();
       }
       this.hl7Clients.clear();
     }
@@ -928,24 +945,13 @@ export class App {
 
     if (this.logStatsFreqSecs > 0) {
       this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
-      if (this.keepAlive) {
-        for (const pool of this.hl7Clients.values()) {
-          pool.startTrackingStats();
-        }
-      }
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
-    } else {
-      for (const pool of this.hl7Clients.values()) {
-        pool.stopTrackingStats();
-      }
     }
 
     await this.hydrateListeners();
   }
 
-  private logStats(): void {
-    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
-
+  getStats(): AgentStats {
     const stats = getCurrentStats();
     let totalHl7Clients = 0;
     for (const pool of this.hl7Clients.values()) {
@@ -954,30 +960,46 @@ export class App {
 
     const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
     const channelStats = Object.fromEntries(
-      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats.getStats()])
     );
 
     const pools = Array.from(this.hl7Clients.values());
     const clientStats = Object.fromEntries(
       pools.map((pool) => [
         `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
-        pool.getPoolStats() as ChannelStats,
+        pool.getPoolStats(),
       ])
     );
 
-    this.log.info('Agent stats', {
-      stats: {
-        ...stats,
-        durableQueueReceived: this.hl7DurableQueue.countByStatus('received'),
-        durableQueueSent: this.hl7DurableQueue.countByStatus('sent'),
-        durableQueueResponseQueued: this.hl7DurableQueue.countByStatus('response_queued'),
-        hl7ClientCount: totalHl7Clients,
-        live: this.live,
-        outstandingHeartbeats: this.outstandingHeartbeats,
-        channelStats,
-        clientStats,
-      },
-    });
+    const durableQueue: AgentDurableQueueStats = {
+      received: this.hl7DurableQueue.countByStatus('received'),
+      sent: this.hl7DurableQueue.countByStatus('sent'),
+      timedOut: this.hl7DurableQueue.countByStatus('timed_out'),
+      error: this.hl7DurableQueue.countByStatus('error'),
+      commitAcked: this.hl7DurableQueue.countByStatus('commit_acked'),
+      appAcked: this.hl7DurableQueue.countByStatus('app_acked'),
+      responseQueued: this.hl7DurableQueue.countByStatus('response_queued'),
+      responseSent: this.hl7DurableQueue.countByStatus('response_sent'),
+      responseTimedOut: this.hl7DurableQueue.countByStatus('response_timed_out'),
+      responseError: this.hl7DurableQueue.countByStatus('response_error'),
+    };
+
+    return {
+      ...stats,
+      webSocketQueueDepth: durableQueue.received,
+      hl7QueueDepth: durableQueue.responseQueued,
+      hl7ClientCount: totalHl7Clients,
+      live: this.live,
+      outstandingHeartbeats: this.outstandingHeartbeats,
+      channelStats,
+      clientStats,
+      durableQueue,
+    };
+  }
+
+  private logStats(): void {
+    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
+    this.log.info('Agent stats', { stats: this.getStats() });
   }
 
   /**
@@ -1120,28 +1142,26 @@ export class App {
   }
 
   private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    let channel: Channel | undefined = this.channels.get(definition.name);
+    const existingChannel = this.channels.get(definition.name);
 
-    if (channel) {
-      await channel.reloadConfig(definition, endpoint);
-      return;
+    if (existingChannel) {
+      const previousType = getChannelType(existingChannel.getEndpoint());
+      const nextType = getChannelType(endpoint);
+
+      if (previousType === nextType) {
+        await existingChannel.reloadConfig(definition, endpoint);
+        return;
+      }
+
+      await existingChannel.stop();
+      this.channels.delete(definition.name);
     }
+
+    let channel: Channel;
 
     try {
       const channelType = getChannelType(endpoint);
-      switch (channelType) {
-        case ChannelType.DICOM:
-          channel = new AgentDicomChannel(this, definition, endpoint);
-          break;
-        case ChannelType.HL7_V2:
-          channel = new AgentHl7Channel(this, definition, endpoint);
-          break;
-        case ChannelType.BYTE_STREAM:
-          channel = new AgentByteStreamChannel(this, definition, endpoint);
-          break;
-        default:
-          throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
-      }
+      channel = this.createChannel(channelType, definition, endpoint);
     } catch (err) {
       this.log.error(normalizeErrorString(err));
       return;
@@ -1149,6 +1169,19 @@ export class App {
 
     await channel.start();
     this.channels.set(definition.name, channel);
+  }
+
+  private createChannel(channelType: ChannelType, definition: AgentChannel, endpoint: Endpoint): Channel {
+    switch (channelType) {
+      case ChannelType.DICOM:
+        return new AgentDicomChannel(this, definition, endpoint);
+      case ChannelType.HL7_V2:
+        return new AgentHl7Channel(this, definition, endpoint);
+      case ChannelType.BYTE_STREAM:
+        return new AgentByteStreamChannel(this, definition, endpoint);
+      default:
+        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    }
   }
 
   async stop(): Promise<void> {
@@ -1567,6 +1600,22 @@ export class App {
       unlinkSync(UPGRADE_MANIFEST_PATH);
     }
 
+    // Pre-check: verify artifact exists for this OS before spawning upgrader
+    try {
+      const release = await fetchVersionManifest('agent-upgrader', targetVersion);
+      parseDownloadUrl(release, platform());
+    } catch (err) {
+      const versionTag = message.version ? `v${message.version}` : 'latest';
+      const errMsg = `Error during upgrading to version '${versionTag}': ${normalizeErrorString(err)}`;
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
@@ -1582,12 +1631,15 @@ export class App {
           () => reject(new Error('Timed out while waiting for message from child')),
           15000
         );
-        child.on('message', (msg: { type: string }) => {
+        child.on('message', (msg: { type: 'STARTED' } | { type: 'ERROR'; err: string }) => {
           clearTimeout(childTimeout);
+          if (!['STARTED', 'ERROR'].includes(msg.type)) {
+            reject(new Error(`Received unexpected message type ${msg.type}, expected 'STARTED' or 'ERROR'`));
+          }
           if (msg.type === 'STARTED') {
             resolve();
-          } else {
-            reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
+          } else if (msg.type === 'ERROR') {
+            reject(new Error(msg.err));
           }
         });
 
@@ -1634,6 +1686,24 @@ export class App {
     }
   }
 
+  private async handleStatsRequest(command: AgentStatsRequest): Promise<void> {
+    try {
+      await this.sendToWebSocket({
+        type: 'agent:stats:response',
+        statusCode: 200,
+        stats: this.getStats(),
+        callback: command.callback,
+      });
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: normalizeErrorString(err),
+        callback: command.callback,
+      });
+    }
+  }
+
   private async handleLogRequest(command: AgentLogsRequest): Promise<void> {
     if (!isWinstonWrapperLogger(this.log)) {
       const errMsg = 'Unable to fetch logs since current logger instance does not support fetching';
@@ -1672,7 +1742,7 @@ export class App {
       // Use the latest access token
       // This can be necessary if the message was queued before the access token was refreshed
       await this.medplum.refreshIfExpired();
-      message.accessToken = this.medplum.getAccessToken() as string;
+      message.accessToken = this.medplum.getAccessToken();
     }
     this.webSocket.send(JSON.stringify(message));
   }
@@ -1689,7 +1759,13 @@ export class App {
 
   private pushMessage(message: AgentTransmitRequest): void {
     if (!message.remote) {
-      this.log.error('Missing remote address');
+      const errMsg = 'Missing remote address';
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
       return;
     }
 
@@ -1731,7 +1807,6 @@ export class App {
     if (this.hl7Clients.has(message.remote)) {
       pool = this.hl7Clients.get(message.remote) as Hl7ClientPool;
     } else {
-      const keepAlive = this.keepAlive;
       pool = new Hl7ClientPool({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
@@ -1742,21 +1817,27 @@ export class App {
         heartbeatEmitter: this.heartbeatEmitter,
       });
       this.hl7Clients.set(message.remote, pool);
-      if (keepAlive && this.logStatsFreqSecs > 0) {
-        pool.startTrackingStats();
-      }
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         encoding,
-        trackingStats: this.logStatsFreqSecs > 0,
       });
     }
 
     const requestMsg = Hl7Message.parse(message.body);
     const msh10 = requestMsg.getSegment('MSH')?.getField(10);
     if (!msh10) {
-      this.log.error('MSH.10 is missing but required');
+      const errMsg = 'MSH.10 is missing but required';
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        remote: message.remote,
+        callback: message.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: errMsg,
+      } satisfies AgentTransmitResponse);
       return;
     }
 

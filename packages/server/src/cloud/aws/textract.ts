@@ -141,7 +141,7 @@ async function createBinaryAndMedia(
 
   await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(content));
 
-  const media = await repo.createResource<Media>({
+  const media = await repo.createResource({
     resourceType: 'Media',
     status: 'completed',
     content: {

@@ -6,7 +6,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '@testing-library/react';
 import type { JSX } from 'react';
 import { vi } from 'vitest';
-import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT } from './common';
+import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotIFrameOptions } from './useDoseSpotIFrame';
 import { useDoseSpotIFrame } from './useDoseSpotIFrame';
 
@@ -86,5 +86,105 @@ describe('useDoseSpotIFrame', () => {
     });
 
     expect(onError).toHaveBeenCalledWith(mockError);
+  });
+
+  test('selfEnroll: true with no existing identifier runs self-enroll bot first', async () => {
+    const medplum = new MockClient();
+    const onSelfEnrollSuccess = vi.fn();
+    const onIframeSuccess = vi.fn();
+
+    const mockEnrollResult = {
+      status: 'created',
+      doseSpotClinicianId: 999,
+      registrationStatus: 'Pending',
+      epcsEnabled: false,
+      nextSteps: ['Sign agreement'],
+    };
+
+    medplum.executeBot = vi
+      .fn()
+      .mockResolvedValueOnce(mockEnrollResult) // self-enroll bot
+      .mockResolvedValueOnce({ url: mockIframeUrl }); // iframe bot (no patientId, so no sync)
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent
+            options={{
+              selfEnroll: true,
+              onSelfEnrollSuccess,
+              onIframeSuccess,
+            }}
+          />
+        </MedplumProvider>
+      );
+    });
+
+    expect(medplum.executeBot).toHaveBeenCalledTimes(2);
+    expect(medplum.executeBot).toHaveBeenNthCalledWith(1, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT, {});
+    expect(medplum.executeBot).toHaveBeenNthCalledWith(2, DOSESPOT_IFRAME_BOT, { patientId: undefined });
+    expect(onSelfEnrollSuccess).toHaveBeenCalledWith(mockEnrollResult);
+    expect(onIframeSuccess).toHaveBeenCalledWith(mockIframeUrl);
+  });
+
+  test('selfEnroll: true with existing identifier skips self-enroll bot', async () => {
+    const medplum = new MockClient();
+    const onSelfEnrollSuccess = vi.fn();
+    const onIframeSuccess = vi.fn();
+
+    // Simulate an existing DoseSpot identifier on the membership
+    const originalGetProjectMembership = medplum.getProjectMembership.bind(medplum);
+    medplum.getProjectMembership = () => {
+      const membership = originalGetProjectMembership();
+      return {
+        ...membership,
+        identifier: [{ system: 'https://my.dosespot.com/webapi/v2/', value: '888' }],
+      } as any;
+    };
+
+    medplum.executeBot = vi.fn().mockResolvedValueOnce({ url: mockIframeUrl });
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent
+            options={{
+              selfEnroll: true,
+              onSelfEnrollSuccess,
+              onIframeSuccess,
+            }}
+          />
+        </MedplumProvider>
+      );
+    });
+
+    // Only iframe bot should be called (no self-enroll, no patient sync)
+    expect(medplum.executeBot).toHaveBeenCalledTimes(1);
+    expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_IFRAME_BOT, { patientId: undefined });
+    expect(onSelfEnrollSuccess).not.toHaveBeenCalled();
+    expect(onIframeSuccess).toHaveBeenCalledWith(mockIframeUrl);
+  });
+
+  test('selfEnroll: false (default) does not run self-enroll bot', async () => {
+    const medplum = new MockClient();
+    const onIframeSuccess = vi.fn();
+
+    medplum.executeBot = vi.fn().mockResolvedValueOnce({ url: mockIframeUrl });
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent
+            options={{
+              onIframeSuccess,
+            }}
+          />
+        </MedplumProvider>
+      );
+    });
+
+    expect(medplum.executeBot).toHaveBeenCalledTimes(1);
+    expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_IFRAME_BOT, { patientId: undefined });
+    expect(onIframeSuccess).toHaveBeenCalledWith(mockIframeUrl);
   });
 });

@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Component, useState } from 'react';
-import type { JSX, ReactNode } from 'react';
-import { Tabs, Code, ScrollArea, Box, Alert } from '@mantine/core';
-import { LiveProvider, LivePreview, LiveError } from 'react-live';
-import * as Recharts from 'recharts';
 import * as Mantine from '@mantine/core';
+import { Alert, Box, Code, ScrollArea, Stack, Tabs } from '@mantine/core';
+import type { JSX, ReactNode } from 'react';
+import { Component, useState } from 'react';
+import { LiveError, LivePreview, LiveProvider } from 'react-live';
+import * as Recharts from 'recharts';
+import { ResourceBox } from './ResourceBox';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -28,11 +29,14 @@ class ComponentErrorBoundary extends Component<{ children: ReactNode }, ErrorBou
 
 interface ComponentPreviewProps {
   code: string;
+  resources?: string[];
+  onResourceClick?: (ref: string) => void;
 }
 
 const scope = {
   ...Recharts,
   ...Mantine,
+  ChartTooltip: Recharts.Tooltip,
 };
 
 function transformCode(code: string): string {
@@ -62,7 +66,7 @@ function transformCode(code: string): string {
   return transformed;
 }
 
-export function ComponentPreview({ code }: ComponentPreviewProps): JSX.Element {
+export function ComponentPreview({ code, resources, onResourceClick }: ComponentPreviewProps): JSX.Element {
   const [activeTab, setActiveTab] = useState<string | null>('preview');
 
   const transformedCode = transformCode(code);
@@ -72,6 +76,7 @@ export function ComponentPreview({ code }: ComponentPreviewProps): JSX.Element {
       <Tabs.List>
         <Tabs.Tab value="preview">Preview</Tabs.Tab>
         <Tabs.Tab value="code">Code</Tabs.Tab>
+        {resources && resources.length > 0 && <Tabs.Tab value="resources">Resources</Tabs.Tab>}
       </Tabs.List>
 
       <Tabs.Panel value="preview" pt="md">
@@ -92,6 +97,16 @@ export function ComponentPreview({ code }: ComponentPreviewProps): JSX.Element {
           </Code>
         </ScrollArea>
       </Tabs.Panel>
+
+      {resources && resources.length > 0 && (
+        <Tabs.Panel value="resources" pt="md">
+          <Stack gap="xs">
+            {resources.map((ref) => (
+              <ResourceBox key={ref} resourceReference={ref} onClick={onResourceClick ?? (() => undefined)} />
+            ))}
+          </Stack>
+        </Tabs.Panel>
+      )}
     </Tabs>
   );
 }

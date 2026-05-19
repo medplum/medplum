@@ -15,18 +15,18 @@ export function LogoScroller(): JSX.Element {
 function Logos(): JSX.Element {
   return (
     <>
-      <img src="/img/logos/kit.webp" width={71} height={36} alt="Kit" />
-      <img src="/img/logos/miga.webp" width={145} height={55} alt="Miga Health" />
-      <img src="/img/logos/ro.webp" width={57} height={56} alt="Ro" />
-      <img src="/img/logos/human-first.webp" width={219} height={30} alt="Human First" />
-      <img src="/img/logos/cdc.webp" width={65} height={48} alt="CDC" />
-      <img src="/img/logos/thirty-madison.webp" width={92} height={55} alt="Thirty Madison" />
-      <img src="/img/logos/summer-health.webp" width={527} height={55} alt="Summer Health" />
-      <img src="/img/logos/alley-corp.webp" width={45} height={51} alt="Alley Corp" />
-      <img src="/img/logos/helpful.webp" width={133} height={36} alt="Helpful" />
-      <img src="/img/logos/flexpa.webp" width={133} height={51} alt="Flexpa" />
-      <img src="/img/logos/imagine.webp" width={96} height={51} alt="Imagine" />
-      <img src="/img/logos/tia.webp" width={68} height={36} alt="Tia" />
+      <img src="/img/logos/ro.svg" width={49} height={28} alt="Ro" />
+      <img src="/img/logos/rad-ai.svg" width={128} height={38} alt="Rad AI" />
+      <img src="/img/logos/summer-health.svg" width={208} height={22} alt="Summer Health" />
+      <img src="/img/logos/flexpa.svg" width={120} height={40} alt="Flexpa" />
+      <img src="/img/logos/thirty-madison.webp" width={81} height={48} alt="Thirty Madison" />
+      <img src="/img/logos/tia.svg" width={146} height={28} alt="Tia" />
+      <img src="/img/logos/color.svg" width={89} height={29} alt="Color" />
+      <img src="/img/logos/seen-health.svg" width={116} height={38} alt="Seen Health" />
+      <img src="/img/logos/quilted-health.svg" width={75} height={86} alt="Quilted Health" />
+      <img src="/img/logos/cdc.svg" width={65} height={51} alt="CDC" />
+      <img src="/img/logos/remo.svg" width={87} height={24} alt="Remo" />
+      <img src="/img/logos/imagine.svg" width={119} height={51} alt="Imagine Pediatrics" />
     </>
   );
 }

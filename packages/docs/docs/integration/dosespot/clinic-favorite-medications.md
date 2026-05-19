@@ -41,7 +41,7 @@ This Medplum Provider App DoseSpot page is an **unopinionated example of a favor
 
 The Provider App example implementation can be found [here](https://github.com/medplum/medplum/tree/main/examples/medplum-provider/src/pages/integrations/DoseSpotFavoritesPage.tsx).
 
-:::info
+:::info[]
 This feature requires your Medplum User to be configured as a DoseSpot `ClinicianAdmin`. Contact [Medplum support](mailto:support@medplum.com) for help with this.
 :::
 

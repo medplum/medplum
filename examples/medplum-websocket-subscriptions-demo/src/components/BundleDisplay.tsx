@@ -1,22 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Accordion, ActionIcon, Chip, Group } from '@mantine/core';
-import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import { parseReference } from '@medplum/core';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconArrowNarrowRight, IconCheck } from '@tabler/icons-react';
-import { useCallback } from 'react';
 import type { JSX, SyntheticEvent } from 'react';
+import { useCallback } from 'react';
 
 export interface BundleDisplayProps {
   readonly bundle: Bundle;
 }
 
-export function BundleDisplay(props: BundleDisplayProps): JSX.Element {
+export function BundleDisplay(props: BundleDisplayProps): JSX.Element | undefined {
   const medplum = useMedplum();
   const { bundle } = props;
-  const communication = bundle?.entry?.[1].resource as Communication;
-  const [senderType, senderId] = ((communication.sender as Reference).reference as string).split('/');
-  const [recipientType, recipientId] = ((communication.recipient?.[0] as Reference).reference as string).split('/');
+  const communication = bundle?.entry?.find((e) => e.resource?.resourceType === 'Communication')
+    ?.resource as Communication;
 
   const markAsCompleted = useCallback(
     (e: SyntheticEvent) => {
@@ -27,13 +27,20 @@ export function BundleDisplay(props: BundleDisplayProps): JSX.Element {
           ...communication,
           received: new Date().toISOString(), // Mark as received
           status: 'completed', // Mark as read
-          // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+          // See: https://www.medplum.com/docs/communications/messaging-data-model#communication-lifecycle
           // for more info about recommended `Communication` lifecycle
         })
         .catch(console.error);
     },
     [medplum, communication]
   );
+
+  if (!communication) {
+    return undefined;
+  }
+
+  const [senderType, senderId] = parseReference(communication.sender);
+  const [recipientType, recipientId] = parseReference(communication.recipient?.[0]);
 
   return (
     <Accordion.Item value={`${bundle?.timestamp ?? 'Unknown time'}: Chat Notification`}>

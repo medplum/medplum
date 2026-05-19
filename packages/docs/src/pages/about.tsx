@@ -186,11 +186,25 @@ export default function AboutPage(): JSX.Element {
           </CardContainer>
           <CardContainer>
             <ProfileCard
-              name="Aditya Suri"
+              name="Alex Lin"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/aditya-suri.webp"
-              linkedInUrl="https://www.linkedin.com/in/adityasuri1/"
-              githubUrl="https://github.com/Ljeytl"
+              imgUrl="/img/people/alexlin.webp"
+              linkedInUrl="https://www.linkedin.com/in/alexanderxlin/"
+              githubUrl="https://github.com/alexanderxlin"
+            />
+            <ProfileCard
+              name="Oleg Rocklin"
+              title="Integration Engineer"
+              imgUrl="/img/people/oleg.webp"
+              linkedInUrl="https://www.linkedin.com/in/olegrocklin/"
+              githubUrl="https://github.com/oleg-mp"
+            />
+            <ProfileCard
+              name="Andy Stoneman"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/andy.webp"
+              linkedInUrl="https://www.linkedin.com/in/andy-stoneman/"
+              githubUrl="https://github.com/AndyStoneman"
             />
           </CardContainer>
         </Section>

@@ -13,6 +13,7 @@ PACKAGES=(
   "core"
   "create-medplum"
   "definitions"
+  "dosespot-core"
   "dosespot-react"
   "eslint-config"
   "fhir-router"
@@ -23,6 +24,7 @@ PACKAGES=(
   "mock"
   "react"
   "react-hooks"
+  "scriptsure-react"
 )
 
 for package in ${PACKAGES[@]}; do

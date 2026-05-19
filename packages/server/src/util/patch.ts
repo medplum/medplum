@@ -4,6 +4,8 @@ import { badRequest, normalizeOperationOutcome, OperationOutcomeError } from '@m
 import type { Operation } from 'rfc6902';
 import { applyPatch } from 'rfc6902';
 
+const patchOptions = { implicitArrayCreation: true };
+
 /**
  * Applies a JSON patch to an object in-place.
  * Throws an error if the patch is invalid.
@@ -13,7 +15,7 @@ import { applyPatch } from 'rfc6902';
  */
 export function patchObject(obj: any, patch: Operation[]): void {
   try {
-    const patchErrors = applyPatch(obj, patch).filter(Boolean);
+    const patchErrors = applyPatch(obj, patch, patchOptions).filter(Boolean);
     if (patchErrors.length) {
       throw new OperationOutcomeError(badRequest(patchErrors.map((e) => (e as Error).message).join('\n')));
     }
