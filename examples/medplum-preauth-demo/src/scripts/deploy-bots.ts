@@ -75,7 +75,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
     bot = (await medplum.post(`admin/projects/${projectId}/bot`, {
       name: botDescription.name,
       description: botDescription.description,
-    })) as Bot & { id: string };
+    }));
     console.log(`  Created ${getReferenceString(bot)}`);
   } else {
     console.log(`  Found existing ${getReferenceString(bot)}`);
@@ -112,7 +112,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
   // Deploy (compile and activate) the bot
   console.log(`  Deploying...`);
   try {
-    await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+    await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
       code: readFileSync(botDescription.dist, 'utf8'),
       filename: path.basename(botDescription.dist),
     });
@@ -123,9 +123,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
   }
 
   // Grant the bot Project Admin so it can call /auth/preauthorize
-  const membershipBundle = await medplum.get(
-    medplum.fhirUrl('ProjectMembership') + `?profile=Bot/${bot.id}`
-  ) as { entry?: { resource?: { id?: string; admin?: boolean; [key: string]: unknown } }[] };
+  const membershipBundle = (await medplum.get(medplum.fhirUrl('ProjectMembership') + `?profile=Bot/${bot.id}`));
   const membership = membershipBundle.entry?.[0]?.resource;
   if (membership?.id) {
     if (!membership.admin) {
@@ -138,7 +136,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
     console.warn(`  Warning: could not find ProjectMembership for bot — grant admin manually in the Medplum app`);
   }
 
-  return bot.id as string;
+  return bot.id;
 }
 
 main().catch((err) => {
