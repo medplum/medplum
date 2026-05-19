@@ -57,6 +57,10 @@ describe('isMedicationArray', () => {
   test('rejects non-array', () => {
     expect(isMedicationArray({})).toBe(false);
   });
+
+  test('rejects non-Medication entries', () => {
+    expect(isMedicationArray([{ resourceType: 'Patient', id: '1' }])).toBe(false);
+  });
 });
 
 describe('MedicationOrder getters', () => {
@@ -92,6 +96,36 @@ describe('MedicationOrder getters', () => {
     } satisfies MedicationRequest;
     expect(getMedicationOrderIframeUrl(mr, TEST_EXT)).toBe('https://iframe.example/');
   });
+
+  test('getPendingMedicationOrderId returns undefined when identifier is absent', () => {
+    const mr = {
+      resourceType: 'MedicationRequest' as const,
+      status: 'draft' as const,
+      intent: 'order' as const,
+      subject: { reference: 'Patient/1' },
+    } satisfies MedicationRequest;
+    expect(getPendingMedicationOrderId(mr, TEST_EXT)).toBeUndefined();
+  });
+
+  test('getPendingMedicationOrderStatus returns undefined when extension is absent', () => {
+    const mr = {
+      resourceType: 'MedicationRequest' as const,
+      status: 'draft' as const,
+      intent: 'order' as const,
+      subject: { reference: 'Patient/1' },
+    } satisfies MedicationRequest;
+    expect(getPendingMedicationOrderStatus(mr, TEST_EXT)).toBeUndefined();
+  });
+
+  test('getMedicationOrderIframeUrl returns undefined when extension is absent', () => {
+    const mr = {
+      resourceType: 'MedicationRequest' as const,
+      status: 'draft' as const,
+      intent: 'order' as const,
+      subject: { reference: 'Patient/1' },
+    } satisfies MedicationRequest;
+    expect(getMedicationOrderIframeUrl(mr, TEST_EXT)).toBeUndefined();
+  });
 });
 
 describe('Custom FHIR operation Parameters helpers', () => {
@@ -108,6 +142,31 @@ describe('Custom FHIR operation Parameters helpers', () => {
   test('medicationSearchParamsToParameters supports quantityQualifiers flag', () => {
     const result = medicationSearchParamsToParameters({ quantityQualifiers: true });
     expect(result.parameter).toEqual([{ name: 'quantityQualifiers', valueBoolean: true }]);
+  });
+
+  test('medicationSearchParamsToParameters encodes all optional search fields', () => {
+    const result = medicationSearchParamsToParameters({
+      term: 'lipitor',
+      ndc: '00310075190',
+      rxNorm: '859747',
+      routedMedId: 6876,
+      searchOtc: true,
+      searchSupply: false,
+      searchBrand: true,
+      searchGeneric: false,
+      includeCode: true,
+    });
+    expect(result.parameter).toEqual([
+      { name: 'term', valueString: 'lipitor' },
+      { name: 'ndc', valueString: '00310075190' },
+      { name: 'rxNorm', valueString: '859747' },
+      { name: 'routedMedId', valueInteger: 6876 },
+      { name: 'searchOtc', valueBoolean: true },
+      { name: 'searchSupply', valueBoolean: false },
+      { name: 'searchBrand', valueBoolean: true },
+      { name: 'searchGeneric', valueBoolean: false },
+      { name: 'includeCode', valueBoolean: true },
+    ]);
   });
 
   test('medicationOrderRequestToParameters emits one drugs entry per line', () => {
@@ -140,6 +199,60 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(result.parameter).toContainEqual({ name: 'patientId', valueId: 'pat-1' });
     expect(result.parameter).toContainEqual({ name: 'combinationMed', valueBoolean: true });
     expect(result.parameter).toContainEqual({ name: 'compoundTitle', valueString: 'Test compound' });
+  });
+
+  test('medicationOrderRequestToParameters encodes optional order fields and drug line details', () => {
+    const req: MedicationOrderRequest = {
+      patientId: 'pat-1',
+      medicationRequestId: 'mr-1',
+      drugs: [
+        {
+          ndc: '00310075190',
+          rxNorm: '859747',
+          routedMedId: 6876,
+          quantity: 30,
+          quantityQualifier: 'C48542',
+          refill: 2,
+          drugOrder: 1,
+          sigLine3: 'Take daily',
+          useSubstitution: true,
+        },
+      ],
+      compoundSigs: [{ sigOrder: 1, line3: 'Swish', drugId: 42 }],
+      coverageId: 'cov-1',
+      payerOrganizationId: 'org-payer',
+      pharmacyOrganizationId: 'org-pharm',
+      pharmacyNcpdpId: '1234567',
+      pharmacyName: 'CVS',
+      writtenDate: '2026-05-18',
+      fillDate: '2026-05-19',
+      durationDays: 30,
+      pharmacyNote: 'Call patient first',
+      patientInstruction: 'With food',
+      appId: 'provider-app',
+    };
+    const result = medicationOrderRequestToParameters(req);
+    expect(result.parameter).toContainEqual({ name: 'medicationRequestId', valueId: 'mr-1' });
+    expect(result.parameter).toContainEqual({ name: 'coverageId', valueId: 'cov-1' });
+    expect(result.parameter).toContainEqual({ name: 'payerOrganizationId', valueId: 'org-payer' });
+    expect(result.parameter).toContainEqual({ name: 'pharmacyOrganizationId', valueId: 'org-pharm' });
+    expect(result.parameter).toContainEqual({ name: 'pharmacyNcpdpId', valueString: '1234567' });
+    expect(result.parameter).toContainEqual({ name: 'pharmacyName', valueString: 'CVS' });
+    expect(result.parameter).toContainEqual({ name: 'writtenDate', valueDate: '2026-05-18' });
+    expect(result.parameter).toContainEqual({ name: 'fillDate', valueDate: '2026-05-19' });
+    expect(result.parameter).toContainEqual({ name: 'durationDays', valueInteger: 30 });
+    expect(result.parameter).toContainEqual({ name: 'pharmacyNote', valueString: 'Call patient first' });
+    expect(result.parameter).toContainEqual({ name: 'patientInstruction', valueString: 'With food' });
+    expect(result.parameter).toContainEqual({ name: 'appId', valueString: 'provider-app' });
+
+    const drugs = result.parameter?.find((p) => p.name === 'drugs');
+    expect(drugs?.part).toContainEqual({ name: 'routedMedId', valueInteger: 6876 });
+    expect(drugs?.part).toContainEqual({ name: 'quantityQualifier', valueString: 'C48542' });
+    expect(drugs?.part).toContainEqual({ name: 'drugOrder', valueInteger: 1 });
+    expect(drugs?.part).toContainEqual({ name: 'useSubstitution', valueBoolean: true });
+
+    const compoundSig = result.parameter?.find((p) => p.name === 'compoundSigs');
+    expect(compoundSig?.part).toContainEqual({ name: 'drugId', valueInteger: 42 });
   });
 
   test('parametersToMedicationOrderResponse round-trips the order response shape', () => {
@@ -183,5 +296,18 @@ describe('Custom FHIR operation Parameters helpers', () => {
     };
     const result = parametersToMedicationOrderResponse(params);
     expect(result.pendingOrderStatus).toBeUndefined();
+  });
+
+  test('parametersToMedicationOrderResponse accepts reused pendingOrderStatus', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'orderId', valueInteger: 1 },
+        { name: 'vendorPatientId', valueInteger: 2 },
+        { name: 'launchUrl', valueUri: 'https://example.com/widget' },
+        { name: 'pendingOrderStatus', valueCode: 'reused' },
+      ],
+    };
+    expect(parametersToMedicationOrderResponse(params).pendingOrderStatus).toBe('reused');
   });
 });

@@ -202,7 +202,7 @@ export function getMedicationOrderIframeUrl(
  * @returns A `ParametersParameter` ready to push into `Parameters.parameter`.
  */
 function param(name: string, key: string, value: unknown): ParametersParameter {
-  return { name, [key]: value } as ParametersParameter;
+  return { name, [key]: value };
 }
 
 /**

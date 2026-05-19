@@ -8,10 +8,11 @@ import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { applyDarkmode } from '../../components/meds/applyDarkmode';
 import { ScriptSureTab } from './ScriptSureTab';
 
 const mockIframeUrl = 'https://scriptsure.example.com/chart/123/prescriptions';
-const mockRenderedIframeUrl = `${mockIframeUrl}?darkmode=off`;
+const mockRenderedIframeUrl = applyDarkmode(mockIframeUrl, 'light');
 
 vi.mock('@medplum/scriptsure-react', () => ({
   useScriptSureIFrame: vi.fn(() => mockIframeUrl),
