@@ -4,6 +4,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "lib": ["esnext", "dom"],
+    "types": ["vite/client"],
     "jsx": "react-jsx",
     "strict": true,
     "erasableSyntaxOnly": true,
@@ -18,5 +19,6 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/scripts"]
 }

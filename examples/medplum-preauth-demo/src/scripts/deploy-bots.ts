@@ -112,7 +112,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
   // Deploy (compile and activate) the bot
   console.log(`  Deploying...`);
   try {
-    await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+    await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
       code: readFileSync(botDescription.dist, 'utf8'),
       filename: path.basename(botDescription.dist),
     });
@@ -138,7 +138,7 @@ async function deployBot(medplum: MedplumClient, projectId: string, botDescripti
     console.warn(`  Warning: could not find ProjectMembership for bot — grant admin manually in the Medplum app`);
   }
 
-  return bot.id as string;
+  return bot.id;
 }
 
 main().catch((err) => {
