@@ -70,7 +70,7 @@ async function runWarehouseTableSync(
     const count = Number((countReader.getRowObjectsJson() as { count: number }[])[0]?.count ?? 0);
 
     if (count > 0) {
-      logSyncProgress(options, `Syncing ${icebergTable}: ${count} rows`, {
+      logSyncProgress(options, `Syncing ${icebergTable}: ${count} row(s)`, {
         table: resultTableName,
         icebergTable,
         count,

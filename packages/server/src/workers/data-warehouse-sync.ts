@@ -12,7 +12,12 @@ import type { SyncOptions } from '../data-warehouse/sync';
 import { syncData } from '../data-warehouse/sync';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
+  queueRegistry,
+} from './utils';
 
 export interface DataWarehouseSyncJobData {
   trigger: 'scheduler';
@@ -56,6 +61,9 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
       concurrency: 1,
     }
   );
+  addVerboseQueueLogging<DataWarehouseSyncJobData>(queue, worker, (job) => ({
+    trigger: job.data.trigger,
+  }));
 
   refreshDataWarehouseSyncScheduler(config, queue).catch((err) => {
     globalLogger.error('Failed to refresh data warehouse sync scheduler', { err });
@@ -97,20 +105,32 @@ export async function refreshDataWarehouseSyncScheduler(
 
 export async function processDataWarehouseSyncJob(
   config: MedplumServerConfig,
-  _job: Job<DataWarehouseSyncJobData>
+  job: Job<DataWarehouseSyncJobData>
 ): Promise<void> {
-  const syncOptions = getDataWarehouseSyncOptions(config);
+  const syncConfig = config.dataWarehouse;
+  try {
+    const syncOptions = getDataWarehouseSyncOptions(config);
 
-  const result = await syncData({
-    ...syncOptions,
-    onProgress: (message, metadata) => {
-      globalLogger.info(message, metadata);
-    },
-  });
+    const result = await syncData({
+      ...syncOptions,
+      onProgress: (message, metadata) => {
+        globalLogger.info(message, metadata);
+      },
+    });
 
-  const inserted = result.resources.filter((resource) => resource.count > 0).length;
-  const skipped = result.resources.length - inserted;
-  globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
+    const inserted = result.resources.filter((resource) => resource.count > 0).length;
+    const skipped = result.resources.length - inserted;
+    globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
+  } catch (err) {
+    globalLogger.error('Data warehouse sync failed', {
+      jobId: job.id,
+      trigger: job.data.trigger,
+      sink: syncConfig?.sink,
+      namespace: syncConfig?.namespace,
+      err,
+    });
+    throw err;
+  }
 }
 
 export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOptions {

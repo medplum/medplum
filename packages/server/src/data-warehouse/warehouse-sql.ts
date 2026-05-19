@@ -220,14 +220,15 @@ export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): s
 }
 
 /**
- * DuckDB setup for managed Iceberg (extensions, optional S3 secret, Postgres attach, S3 Tables attach).
+ * DuckDB setup for managed Iceberg (extensions, S3 secret, Postgres attach, S3 Tables attach).
  *
- * @param options - Attach options; requires `awsS3TableArn`.
+ * @param options - Attach options; requires `awsS3TableArn` and `s3Region`.
  * @returns SQL strings to run in order before per-table mutations.
  */
 export function buildManagedIcebergSetupQueries(options: ManagedIcebergAttachOptions): string[] {
   const queries: string[] = [...buildManagedIcebergExtensionQueries()];
 
+  queries.push(buildManagedS3CredentialSecretQuery(options.s3Region));
   queries.push(buildDuckdbPostgresAttachQuery(options.connectionString));
   queries.push(buildManagedS3TablesIcebergAttachQuery(options.awsS3TableArn));
 

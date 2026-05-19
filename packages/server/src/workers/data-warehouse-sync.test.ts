@@ -185,7 +185,7 @@ describe('data-warehouse sync worker', () => {
   });
 
   test('processDataWarehouseSyncJob calls syncData with resolved database config', async () => {
-    await processDataWarehouseSyncJob(config, { data: { trigger: 'scheduler' } } as any);
+    await processDataWarehouseSyncJob(config, { id: 'job-1', data: { trigger: 'scheduler' } } as any);
 
     expect(mockedSyncData).toHaveBeenCalledTimes(1);
     const callArg = mockedSyncData.mock.calls[0][0];
