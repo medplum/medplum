@@ -50,9 +50,29 @@ curl -X POST 'https://api.medplum.com/fhir/R4' \
 A successful enqueue returns:
 
 - **HTTP `202 Accepted`**
-- A small **`OperationOutcome`** body whose first issue’s **`diagnostics`** field is the absolute URL of the status endpoint (mirrors the **`Content-Location`** response header)
+- Response header **`Content-Location`** set to the status URL
+- A small **`OperationOutcome`** body whose first issue’s **`diagnostics`** field is the same absolute URL
 
-Save that URL: it is the polling location for the rest of the workflow.
+Example response body:
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "id": "accepted",
+  "issue": [
+    {
+      "severity": "information",
+      "code": "informational",
+      "details": {
+        "text": "Accepted"
+      },
+      "diagnostics": "https://api.medplum.com/fhir/R4/job/0192a3b4-c5d6-7890-abcd-ef1234567890/status"
+    }
+  ]
+}
+```
+
+Save that URL (from **`diagnostics`** or **`Content-Location`**): it is the polling location for the rest of the workflow.
 
 ### 4. Poll `GET …/fhir/R4/job/{id}/status`
 
@@ -67,33 +87,57 @@ Behavior:
 | HTTP status | `AsyncJob.status` (typical) | Meaning |
 | --- | --- | --- |
 | `202` | `accepted` (or still in progress) | Keep polling after a short backoff. |
-| `200` | `completed` | Job finished successfully; inspect `AsyncJob.output` for the results pointer. |
+| `200` | `completed` | Job finished successfully; see below for `output`. |
 | `200` | `error` | Job failed; `output` usually contains an `outcome` or error details. |
 
-**FHIR quota:** These status reads are intentionally inexpensive and **do not count against FHIR interaction quota**, so you can poll while a large job runs without burning your per-minute interaction budget.
+When the job finishes successfully, the **`200`** response body is an **`AsyncJob`** with `status: "completed"`. Its **`output`** is a **`Parameters`** resource with a parameter named **`results`** whose value is a **`Reference`** to a **`Binary`** (for example `Binary/abc`). That `Binary` stores the full **`batch-response`** `Bundle` as FHIR JSON—the same shape you would have received from a synchronous batch.
+
+```json
+{
+  "resourceType": "AsyncJob",
+  "id": "0192a3b4-c5d6-7890-abcd-ef1234567890",
+  "status": "completed",
+  "output": {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "results",
+        "valueReference": {
+          "reference": "Binary/abc"
+        }
+      }
+    ]
+  }
+}
+```
+
+Each status `GET` counts as a **Read** (1 FHIR interaction point) against your [per-minute FHIR quota](/docs/rate-limits#fhir-interaction-load-rate-limit). The work performed inside the background batch does not consume quota, but polling does—use backoff so you do not exhaust quota on status checks alone.
 
 **Cancellation:** While the job is still `accepted`, you can cancel with `DELETE` on the same status URL (FHIR async pattern). You can also use [`AsyncJob/$cancel`](/docs/api/fhir/operations/asyncjob-cancel) on the underlying `AsyncJob` id if you prefer the operation endpoint.
 
-### 5. Load the completed `AsyncJob`
+### 5. `GET` the `Binary` and parse the response bundle
 
-On success, `GET` the status URL returns **`200`** with an **`AsyncJob`** whose `status` is `completed`. The interesting data is in `output`:
+`GET` the `results` reference from `output` (for example `Binary/abc`). Medplum follows the [Binary read rules](https://hl7.org/fhir/R4/binary.html#rest): the **`Accept`** header chooses the response shape.
 
-- A **`Parameters`** resource
-- A parameter named **`results`** whose value is a **`Reference`** to a **`Binary`**
+| `Accept` header | Response |
+| --- | --- |
+| **`application/fhir+json`** (or starts with that value) | The **`Binary` resource** as FHIR JSON, including base64-encoded `data`. Base64-decode `data` and parse the JSON as a `Bundle` with `type: "batch-response"`. |
+| **Omitted**, or any value that does not start with `application/fhir+json` | The **stored file bytes** directly. For async batch results, the stored content is FHIR JSON, so the body is the **`batch-response`** `Bundle`—parse it as JSON with no base64 step. |
 
-That `Binary` holds the full **`batch-response`** `Bundle` as FHIR JSON (the same shape you would have received from a synchronous batch).
-
-### 6. `GET` the `Binary` and parse the response bundle
-
-Use the `reference` from `output` (for example `Binary/abc`). Depending on `Accept`, Medplum may return either the **`Binary` resource** as JSON (with base64 `data`) or the **decoded file bytes** (for FHIR JSON results, that payload is the `batch-response` document).
+Omitting `Accept` is fine and is often simpler for async batches: you receive the `batch-response` document directly. Use `Accept: application/fhir+json` only when you need the full `Binary` resource (for example to read `contentType` or other metadata).
 
 ```bash
+# Recommended for async batch results: raw batch-response JSON
+curl 'https://api.medplum.com/fhir/R4/Binary/abc' \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+```bash
+# Optional: Binary resource wrapper (base64 data field)
 curl 'https://api.medplum.com/fhir/R4/Binary/abc' \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Accept: application/fhir+json"
 ```
-
-If you receive a `Binary` resource, base64-decode `data` and parse the JSON as a `Bundle` with `type: "batch-response"`. If the server returns raw bytes, parse them directly as that bundle.
 
 Inspect each `entry.response` as documented under [Response structure](/docs/fhir-datastore/fhir-batch-requests#response-structure).
 
@@ -105,7 +149,7 @@ Inspect each `entry.response` as documented under [Response structure](/docs/fhi
 
 ## Rate limits and quotas
 
-- **FHIR interaction load (quota points)** — Asynchronous batch processing is the recommended way to run **large** batches without consuming your normal per-minute FHIR interaction quota. See the overview in [Rate limits — Avoiding quota with async batch requests](/docs/rate-limits#avoiding-quota-with-async-batch-requests).
+- **FHIR interaction load (quota points)** — Operations inside the background batch **do not** count toward FHIR quota; each status poll and result `Binary` read **does** (1 point per Read). Asynchronous batches are still the recommended way to run **large** writes that would exhaust quota synchronously. See [Rate limits — Avoiding quota with async batch requests](/docs/rate-limits#avoiding-quota-with-async-batch-requests).
 - **HTTP request rate limits** — Global per-IP [request rate limits](/docs/rate-limits#total-requests-rate-limit) still apply to each HTTP call (the initial `POST`, every poll, and the `Binary` read). Plan backoff on polls to stay well under those caps.
 
 ## Access control
