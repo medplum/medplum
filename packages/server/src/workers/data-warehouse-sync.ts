@@ -108,7 +108,7 @@ export async function processDataWarehouseSyncJob(
     },
   });
 
-  const inserted = result.resources.filter((resource) => resource.action === 'insert').length;
+  const inserted = result.resources.filter((resource) => resource.count > 0).length;
   const skipped = result.resources.length - inserted;
   globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
 }
