@@ -94,7 +94,7 @@ describe('Server', () => {
 });
 
 describe('uncaughtException handler', () => {
-  let handler: NodeJS.UncaughtExceptionListener;
+  let handler: (err: Error, origin: NodeJS.UncaughtExceptionOrigin) => Promise<void>;
   let baselineUncaught: NodeJS.UncaughtExceptionListener[];
   let baselineRejection: NodeJS.UnhandledRejectionListener[];
 
@@ -104,7 +104,7 @@ describe('uncaughtException handler', () => {
     await main('file:test.config.json');
     const installed = process.listeners('uncaughtException').filter((l) => !baselineUncaught.includes(l));
     expect(installed).toHaveLength(1);
-    handler = installed[0];
+    handler = installed[0] as (err: Error, origin: NodeJS.UncaughtExceptionOrigin) => Promise<void>;
   });
 
   afterAll(async () => {
@@ -123,7 +123,7 @@ describe('uncaughtException handler', () => {
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
     const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
 
-    handler(new Error('kaboom'), 'uncaughtException');
+    await handler(new Error('kaboom'), 'uncaughtException');
 
     expect(drainSpy).toHaveBeenCalledTimes(1);
     expect(exitSpy).toHaveBeenCalledWith(1);
@@ -138,7 +138,7 @@ describe('uncaughtException handler', () => {
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
     const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
 
-    handler(new Error('Connection terminated unexpectedly'), 'uncaughtException');
+    await handler(new Error('Connection terminated unexpectedly'), 'uncaughtException');
 
     expect(exitSpy).not.toHaveBeenCalled();
     expect(drainSpy).not.toHaveBeenCalled();
@@ -151,7 +151,7 @@ describe('uncaughtException handler', () => {
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
     const drainSpy = jest.spyOn(loggerModule, 'drainStdout').mockResolvedValue();
 
-    handler(new Error('Unexpected end of input'), 'uncaughtException');
+    await handler(new Error('Unexpected end of input'), 'uncaughtException');
 
     expect(exitSpy).not.toHaveBeenCalled();
     expect(drainSpy).not.toHaveBeenCalled();
