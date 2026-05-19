@@ -230,7 +230,16 @@ describe('Deploy', () => {
     expect(res2.body.issue[0].details.text).toStrictEqual('Bot missing executable code');
   });
 
-  test('Deploy bot without ProjectMembership', async () => {
+  test('Deploy bot without ProjectMembership returns warning', async () => {
+    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
+
+    const code = `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `;
+
     // Step 1: Create a bot without a ProjectMembership
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -240,32 +249,28 @@ describe('Deploy', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
+        code,
       });
     expect(res1.status).toBe(201);
 
     const bot = res1.body as Bot;
 
-    // Step 2: Deploy the bot — should fail because there is no ProjectMembership
+    // Step 2: Deploy the bot — should succeed but include a warning about missing ProjectMembership
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-      });
-    expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toStrictEqual('Could not find ProjectMembership for Bot');
+      .send({ code });
+    expect(res2.status).toBe(200);
+    expect(deployLambdaSpy).toHaveBeenCalled();
+
+    // Verify the response includes both the OK status and the warning
+    expect(res2.body.issue).toHaveLength(2);
+    expect(res2.body.issue[0].severity).toBe('information');
+    expect(res2.body.issue[0].details.text).toBe('All OK');
+    expect(res2.body.issue[1].severity).toBe('warning');
+    expect(res2.body.issue[1].code).toBe('business-rule');
+    expect(res2.body.issue[1].details.text).toBe('Could not find ProjectMembership for Bot');
   });
 
   test('Deploy bot with runAsUser skips ProjectMembership check', async () => {
