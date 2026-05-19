@@ -117,7 +117,7 @@ export type AgentStatValue =
 /**
  * Counts of messages in the agent's durable queue by status.
  */
-export interface AgentDurableQueueStats {
+export type AgentDurableQueueStats = {
   received: number;
   sent: number;
   timedOut: number;
@@ -128,7 +128,7 @@ export interface AgentDurableQueueStats {
   responseSent: number;
   responseTimedOut: number;
   responseError: number;
-}
+};
 
 /**
  * Statistics about the running agent. Known fields are typed; additional
@@ -144,6 +144,7 @@ export interface AgentStats {
   outstandingHeartbeats: number;
   channelStats: Record<string, AgentChannelStats>;
   clientStats: Record<string, AgentChannelStats>;
+  durableQueue: AgentDurableQueueStats;
   [key: string]: AgentStatValue;
 }
 

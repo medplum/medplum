@@ -15,7 +15,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import type { AgentChannelStats, AgentStats } from '@medplum/core';
+import type { AgentChannelStats, AgentDurableQueueStats, AgentStats } from '@medplum/core';
 import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
@@ -158,16 +158,40 @@ function AgentChannelStatsTable(props: {
   );
 }
 
+function AgentDurableQueueStatsTable(props: { readonly stats: AgentDurableQueueStats }): JSX.Element {
+  return (
+    <>
+      <Title order={3} mt="md">
+        Durable Queue
+      </Title>
+      <Table>
+        <Table.Tbody>
+          {Object.entries(props.stats).map(([key, value]) => (
+            <Table.Tr key={key}>
+              <Table.Td>{key}</Table.Td>
+              <Table.Td>{formatStatValue(value)}</Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </>
+  );
+}
+
 function AgentStatsTables(props: { readonly stats: AgentStats }): JSX.Element {
   const { stats } = props;
-  const knownKeys = new Set<string>([...SUMMARY_STAT_KEYS, 'channelStats', 'clientStats']);
+  const hasDurableQueue = Boolean(stats.durableQueue);
+  const summaryKeys = hasDurableQueue
+    ? SUMMARY_STAT_KEYS.filter((key) => key !== 'webSocketQueueDepth')
+    : SUMMARY_STAT_KEYS;
+  const knownKeys = new Set<string>([...SUMMARY_STAT_KEYS, 'channelStats', 'clientStats', 'durableQueue']);
   const extraEntries = Object.entries(stats).filter(([key]) => !knownKeys.has(key));
 
   return (
     <>
       <Table mt="sm">
         <Table.Tbody>
-          {SUMMARY_STAT_KEYS.map((key) => (
+          {summaryKeys.map((key) => (
             <Table.Tr key={key}>
               <Table.Td>{key}</Table.Td>
               <Table.Td>{formatStatValue(stats[key])}</Table.Td>
@@ -181,6 +205,7 @@ function AgentStatsTables(props: { readonly stats: AgentStats }): JSX.Element {
           ))}
         </Table.Tbody>
       </Table>
+      {stats.durableQueue && <AgentDurableQueueStatsTable stats={stats.durableQueue} />}
       <AgentChannelStatsTable title="Channel Stats" entries={stats.channelStats} />
       <AgentChannelStatsTable title="Client Stats" entries={stats.clientStats} />
     </>

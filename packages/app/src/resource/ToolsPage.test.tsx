@@ -764,6 +764,118 @@ describe('ToolsPage', () => {
     expect(screen.queryByRole('heading', { name: 'Client Stats' })).not.toBeInTheDocument();
   });
 
+  test('Get stats -- Durable queue stats rendered and hide webSocketQueueDepth', async () => {
+    medplum = new MockClient();
+    const durableQueue = {
+      received: 100,
+      sent: 95,
+      timedOut: 1,
+      error: 2,
+      retry: 3,
+      duplicate: 0,
+      responseReceived: 90,
+      responseSent: 88,
+      responseTimedOut: 1,
+      responseError: 2,
+    };
+    medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify({
+              hl7ConnectionsOpen: 1,
+              ping: 5,
+              webSocketQueueDepth: 42,
+              hl7QueueDepth: 0,
+              hl7ClientCount: 0,
+              live: true,
+              outstandingHeartbeats: 0,
+              channelStats: {},
+              clientStats: {},
+              durableQueue,
+            }),
+          },
+        ],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Stats durable queue',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /get stats/i }));
+    });
+
+    // Durable Queue table is rendered with every key and value present
+    expect(await screen.findByRole('heading', { name: 'Durable Queue' })).toBeInTheDocument();
+    for (const [key, value] of Object.entries(durableQueue)) {
+      expect(screen.getByText(key)).toBeInTheDocument();
+      expect(screen.getAllByText(value.toString()).length).toBeGreaterThan(0);
+    }
+
+    // webSocketQueueDepth is hidden when durableQueue is present
+    expect(screen.queryByText('webSocketQueueDepth')).not.toBeInTheDocument();
+    expect(screen.queryByText('42')).not.toBeInTheDocument();
+
+    // Other summary fields still rendered
+    expect(screen.getByText('hl7ConnectionsOpen')).toBeInTheDocument();
+
+    // durableQueue is not dumped into the extra-entries section as a raw key
+    expect(screen.queryByText('durableQueue')).not.toBeInTheDocument();
+  });
+
+  test('Get stats -- webSocketQueueDepth shown when durableQueue absent', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'stats',
+            valueString: JSON.stringify({
+              hl7ConnectionsOpen: 0,
+              ping: 1,
+              webSocketQueueDepth: 7,
+              hl7QueueDepth: 0,
+              hl7ClientCount: 0,
+              live: true,
+              outstandingHeartbeats: 0,
+              channelStats: {},
+              clientStats: {},
+            }),
+          },
+        ],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Stats no durable queue',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /get stats/i }));
+    });
+
+    expect(await screen.findByText('webSocketQueueDepth')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Durable Queue' })).not.toBeInTheDocument();
+  });
+
   test('Get stats -- Error', async () => {
     medplum = new MockClient();
     medplum.router.router.add('GET', 'Agent/:id/$stats', async () => [serverError(new Error('Something is broken'))]);

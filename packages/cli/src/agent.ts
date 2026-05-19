@@ -339,17 +339,26 @@ function renderAgentStats(row: { id: string; name?: string; stats: AgentStats | 
     return;
   }
 
+  const hasDurableQueue = Boolean(row.stats.durableQueue);
   const summary: Record<string, string> = {};
   for (const key of SUMMARY_STAT_KEYS) {
+    if (hasDurableQueue && key === 'webSocketQueueDepth') {
+      continue;
+    }
     summary[key] = formatStatValue(row.stats[key]);
   }
-  const knownKeys = new Set<string>([...SUMMARY_STAT_KEYS, 'channelStats', 'clientStats']);
+  const knownKeys = new Set<string>([...SUMMARY_STAT_KEYS, 'channelStats', 'clientStats', 'durableQueue']);
   for (const [key, value] of Object.entries(row.stats)) {
     if (!knownKeys.has(key)) {
       summary[key] = formatStatValue(value);
     }
   }
   console.table(summary);
+
+  if (row.stats.durableQueue) {
+    console.info('Durable Queue:');
+    console.table(row.stats.durableQueue);
+  }
 
   const channelRows = buildChannelStatsRows(row.stats.channelStats);
   if (channelRows.length) {
