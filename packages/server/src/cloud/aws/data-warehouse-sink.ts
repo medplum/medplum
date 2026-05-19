@@ -3,11 +3,7 @@
 
 import type { S3TablesClient } from '@aws-sdk/client-s3tables';
 import type { WarehouseSourceTable } from '../../data-warehouse/config';
-import type {
-  DataWarehouseSink,
-  DataWarehouseSinkType,
-  SinkQueryContext,
-} from '../../data-warehouse/sink';
+import type { DataWarehouseSink, DataWarehouseSinkType, SinkQueryContext } from '../../data-warehouse/sink';
 import type { DuckdbConnection } from '../../data-warehouse/warehouse-sql';
 import {
   buildInsertIntoSelectQuery,

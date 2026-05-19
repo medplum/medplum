@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
+import { globalLogger } from '../logger';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseSink } from './sink';
@@ -15,7 +16,6 @@ import {
   DEFAULT_NAMESPACE,
   runParameterizedWarehouseSqlReadAll,
 } from './warehouse-sql';
-import { globalLogger } from '../logger';
 
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
