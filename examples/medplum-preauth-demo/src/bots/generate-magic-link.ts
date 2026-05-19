@@ -26,7 +26,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<MagicLinkI
   // If Patient resource exists, but no auth identity, create a User and ProjectMembership on demand.
   const membershipBundle = (await medplum.get(
     medplum.fhirUrl('ProjectMembership') + `?profile=Patient/${patientId}`
-  )) as { entry?: unknown[] };
+  ));
 
   if (!membershipBundle.entry?.length) {
     const patient = (await medplum.readResource('Patient', patientId)) as Patient;
@@ -53,7 +53,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<MagicLinkI
     { clientId, scope: 'openid', expiresIn: 3600 },
     'application/json',
     { headers: { 'X-Medplum-On-Behalf-Of': `Patient/${patientId}` } }
-  )) as { preAuthorizedCode: string; expiresAt: string };
+  ));
 
   return {
     preAuthorizedCode: result.preAuthorizedCode,
