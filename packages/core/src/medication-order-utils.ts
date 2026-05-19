@@ -433,9 +433,7 @@ export function parametersToMedicationOrderResponse(params: Parameters): Medicat
     launchUrl: typeof map.launchUrl === 'string' ? map.launchUrl : '',
     medicationRequestId: typeof map.medicationRequestId === 'string' ? map.medicationRequestId : undefined,
     pendingOrderStatus:
-      map.pendingOrderStatus === 'queued' || map.pendingOrderStatus === 'reused'
-        ? map.pendingOrderStatus
-        : undefined,
+      map.pendingOrderStatus === 'queued' || map.pendingOrderStatus === 'reused' ? map.pendingOrderStatus : undefined,
   };
   if (!isMedicationOrderResponse(candidate)) {
     throw new Error(INVALID_MEDICATION_ORDER_RESPONSE);

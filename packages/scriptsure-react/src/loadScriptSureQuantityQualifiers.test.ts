@@ -62,8 +62,6 @@ describe('loadScriptSureQuantityQualifiers', () => {
     };
     vi.spyOn(medplum, 'post').mockResolvedValueOnce(response);
 
-    await expect(loadScriptSureQuantityQualifiers(medplum)).resolves.toEqual([
-      { code: 'C48480', label: 'mL' },
-    ]);
+    await expect(loadScriptSureQuantityQualifiers(medplum)).resolves.toEqual([{ code: 'C48480', label: 'mL' }]);
   });
 });
