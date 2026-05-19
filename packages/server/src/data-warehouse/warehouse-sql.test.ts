@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { SelectQuery, SqlBuilder } from '../fhir/sql';
+import { SqlBuilder } from '../fhir/sql';
 import {
   buildCountFromHistoryTableQuery,
-  buildCreateTableIfNotExistsAsQuery,
   buildInsertIntoSelectQuery,
   buildMaxLastUpdatedWatermarkPredicate,
   buildProjectedSelectFromHistoryTable,
@@ -30,23 +29,6 @@ describe('warehouse SQL query builders', () => {
   test('buildCountFromHistoryTableQuery builds count query with guarded content filter', () => {
     expect(buildCountFromHistoryTableQuery('Patient_history', `TRUE`)).toBe(
       `SELECT COUNT(*) AS count FROM "pg_db"."Patient_history" WHERE ("pg_db"."Patient_history"."content" IS NOT NULL AND "pg_db"."Patient_history"."content" != '' AND (TRUE));`
-    );
-  });
-
-  test('buildCreateTableIfNotExistsAsQuery supports SQL string selects', () => {
-    expect(buildCreateTableIfNotExistsAsQuery('s3_tables_db.default.patient_history', 'SELECT 1')).toBe(
-      'CREATE TABLE IF NOT EXISTS "s3_tables_db"."default"."patient_history" AS SELECT 1;'
-    );
-  });
-
-  test('buildCreateTableIfNotExistsAsQuery supports SelectQuery expressions', () => {
-    expect(
-      buildCreateTableIfNotExistsAsQuery(
-        's3_tables_db.default.patient_history',
-        new SelectQuery('pg_db"."Patient_history').column('id')
-      )
-    ).toBe(
-      'CREATE TABLE IF NOT EXISTS "s3_tables_db"."default"."patient_history" AS SELECT "pg_db"."Patient_history"."id" FROM "pg_db"."Patient_history";'
     );
   });
 

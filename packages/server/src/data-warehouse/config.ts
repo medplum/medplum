@@ -104,29 +104,3 @@ export function getWarehouseSyncPostgresTableNames(): string[] {
 export function toIcebergTableName(tableIdentifier: string): string {
   return tableIdentifier.toLowerCase();
 }
-
-/**
- * Map CLI `--table` to warehouse sources. Postgres names are used verbatim; Iceberg names are {@link toIcebergTableName}(postgres).
- * The `migrate` command checks these exist in Postgres before provisioning S3 Tables.
- *
- * @param tableNames - Raw CLI tokens (trimmed per entry); each non-empty Postgres identifier must be `[A-Za-z][A-Za-z0-9_]*`.
- * @returns Deduplicated sources in first-seen order (by {@link WarehouseSourceTable.postgresTable}).
- */
-export function resolveWarehouseSourcesFromPostgresTableNames(tableNames: string[]): WarehouseSourceTable[] {
-  const resolved: WarehouseSourceTable[] = [];
-  for (const raw of tableNames) {
-    const postgresTable = raw.trim();
-    if (!postgresTable) {
-      continue;
-    }
-
-    const icebergTable = toIcebergTableName(postgresTable);
-    resolved.push({ postgresTable, icebergTable });
-  }
-
-  if (resolved.length === 0) {
-    throw new Error('At least one Postgres table name is required when using --table');
-  }
-
-  return [...new Map(resolved.map((s) => [s.postgresTable, s])).values()];
-}

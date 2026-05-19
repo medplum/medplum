@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Expression } from '../fhir/sql';
 import { Column, Constant, InsertQuery, SelectQuery, SqlBuilder } from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
@@ -52,16 +51,6 @@ function buildQualifiedTableIdentifier(qualifiedTable: string, minParts = 1): st
   return getQualifiedTableIdentifierParts(qualifiedTable, minParts).join('"."');
 }
 
-function appendQualifiedTableIdentifier(sql: SqlBuilder, qualifiedTable: string, minParts = 1): void {
-  const parts = getQualifiedTableIdentifierParts(qualifiedTable, minParts);
-  for (let i = 0; i < parts.length; i++) {
-    if (i > 0) {
-      sql.append('.');
-    }
-    sql.appendIdentifier(parts[i]);
-  }
-}
-
 /**
  * DuckDB `ATTACH` for a PostgreSQL server (postgres extension), using the same alias as other data-warehouse DuckDB flows (`pg_db`).
  *
@@ -72,20 +61,6 @@ function appendQualifiedTableIdentifier(sql: SqlBuilder, qualifiedTable: string,
 export function buildDuckdbPostgresAttachQuery(connectionString: string, alias = POSTGRES_CATALOG): string {
   const escapedConnectionString = connectionString.replaceAll("'", "''");
   return `ATTACH '${escapedConnectionString}' AS "${alias}" (TYPE postgres, READ_ONLY);`;
-}
-
-export function buildCreateTableIfNotExistsAsQuery(qualifiedTable: string, selectQuery: string | Expression): string {
-  return buildSql((sql) => {
-    sql.append('CREATE TABLE IF NOT EXISTS ');
-    appendQualifiedTableIdentifier(sql, qualifiedTable);
-    sql.append(' AS ');
-    if (typeof selectQuery === 'string') {
-      sql.append(selectQuery);
-    } else {
-      sql.appendExpression(selectQuery);
-    }
-    sql.append(';');
-  });
 }
 
 export function buildManagedIcebergQualifiedTable(namespace: string, icebergTable: string): string {
@@ -197,7 +172,9 @@ export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string): s
 }
 
 export function buildCopySelectToParquetQuery(selectQuery: string, parquetPath: string): string {
-  return `COPY (${selectQuery}) TO '${parquetPath}' (FORMAT ${DEFAULT_FILE_FORMAT}, COMPRESSION ${DEFAULT_COMPRESSION_TYPE});`;
+  // escape path so it can contain single quotes
+  const escapedParquetPath = parquetPath.replaceAll("'", "''");
+  return `COPY (${selectQuery}) TO '${escapedParquetPath}' (FORMAT ${DEFAULT_FILE_FORMAT}, COMPRESSION ${DEFAULT_COMPRESSION_TYPE});`;
 }
 
 /**

@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
-import { resolveWarehouseSourcesFromPostgresTableNames } from './config';
+import { toIcebergTableName } from './config';
 import { LocalParquetWarehouseSink } from './sink';
 import { syncData } from './sync';
 
@@ -117,20 +117,23 @@ describe('syncData local sink (integration)', () => {
 
   test('exports projected history rows to a Parquet file via local sink', async () => {
     // Given: an isolated warehouse source and local parquet sink
-    const sources = resolveWarehouseSourcesFromPostgresTableNames([HISTORY_TABLE]);
+    const warehouseSources = [HISTORY_TABLE].map((postgresTable) => ({
+      postgresTable,
+      icebergTable: toIcebergTableName(postgresTable),
+    }));
     const sink = new LocalParquetWarehouseSink(outDir as string);
 
     // When: we run data warehouse sync against the seeded history table
     const result = await syncData({
       database: { host, port, dbname: database, username, password },
-      warehouseSources: sources,
+      warehouseSources,
       sink,
     });
 
     // Then: sync reports an inserted parquet artifact for the expected table
     expect(result.resources).toHaveLength(1);
-    expect(result.resources[0]?.action).toBe('insert');
-    expect(result.resources[0]?.table).toContain(`${sources[0]?.icebergTable}.parquet`);
+    expect(result.resources[0]?.count).toBe(1);
+    expect(result.resources[0]?.table).toContain(`${warehouseSources[0]?.icebergTable}.parquet`);
 
     // Then: the written file is a valid parquet payload
     const parquetPath = result.resources[0]?.table;

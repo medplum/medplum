@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Queue } from 'bullmq';
-import { Worker } from 'bullmq';
+import { Queue as BullmqQueue, Worker } from 'bullmq';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as DataWarehouseConfigModule from '../data-warehouse/config';
@@ -16,17 +16,13 @@ import {
   refreshDataWarehouseSyncScheduler,
 } from './data-warehouse-sync';
 
+const TABLE_NAMES = ['Patient_history', 'Observation_history'];
+
 jest.mock('../data-warehouse/config', () => {
   const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
   return {
     ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn(() => ['Patient_history', 'Observation_history']),
-    resolveWarehouseSourcesFromPostgresTableNames: jest.fn((tableNames: string[]) =>
-      tableNames.map((tableName) => ({
-        postgresTable: tableName,
-        icebergTable: tableName.toLowerCase(),
-      }))
-    ),
+    getWarehouseSyncPostgresTableNames: jest.fn(() => TABLE_NAMES),
   };
 });
 jest.mock('../data-warehouse/sync', () => ({
@@ -35,6 +31,7 @@ jest.mock('../data-warehouse/sync', () => ({
 jest.mock('bullmq');
 
 const mockedSyncData = jest.mocked(syncData);
+const mockedQueue = jest.mocked(BullmqQueue);
 const mockedWorker = jest.mocked(Worker);
 
 const enabledDataWarehouse: NonNullable<MedplumServerConfig['dataWarehouse']> = {
@@ -168,9 +165,19 @@ describe('data-warehouse sync worker', () => {
     expect((queue as any).removeJobScheduler).not.toHaveBeenCalled();
   });
 
+  test('initDataWarehouseSyncWorker skips queue and worker when disabled', () => {
+    const result = initDataWarehouseSyncWorker(config, { workerEnabled: false });
+
+    expect(result.queue).toBeUndefined();
+    expect(result.worker).toBeUndefined();
+    expect(mockedQueue).not.toHaveBeenCalled();
+    expect(mockedWorker).not.toHaveBeenCalled();
+  });
+
   test('initDataWarehouseSyncWorker defaults concurrency to 1', () => {
     initDataWarehouseSyncWorker(config, { workerEnabled: true });
 
+    expect(mockedQueue).toHaveBeenCalled();
     expect(mockedWorker).toHaveBeenCalled();
     const lastCall = mockedWorker.mock.calls[mockedWorker.mock.calls.length - 1];
     expect(lastCall[0]).toStrictEqual(DataWarehouseSyncQueueName);

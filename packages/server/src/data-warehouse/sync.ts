@@ -111,7 +111,7 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
     }
 
     if (!options.warehouseSources.length) {
-      throw new Error('warehouseSources is required: use --table with at least one Postgres table name.');
+      throw new Error('warehouseSources must include at least one table.');
     }
 
     const resources = await runWarehouseTableSync(connection, options, namespace);

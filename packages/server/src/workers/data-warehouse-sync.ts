@@ -6,10 +6,7 @@ import { Queue, Worker } from 'bullmq';
 import { S3TablesWarehouseSink } from '../cloud/aws/data-warehouse-sink';
 import type { MedplumServerConfig } from '../config/types';
 import { validateDataWarehouseConfig } from '../config/validate-config';
-import {
-  getWarehouseSyncPostgresTableNames,
-  resolveWarehouseSourcesFromPostgresTableNames,
-} from '../data-warehouse/config';
+import { getWarehouseSyncPostgresTableNames, toIcebergTableName } from '../data-warehouse/config';
 import { LocalParquetWarehouseSink } from '../data-warehouse/sink';
 import type { SyncOptions } from '../data-warehouse/sync';
 import { syncData } from '../data-warehouse/sync';
@@ -25,6 +22,14 @@ export const DataWarehouseSyncQueueName = 'DataWarehouseSyncQueue';
 export const DataWarehouseSyncSchedulerId = 'data-warehouse-sync';
 
 export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
+  /*
+   Only initialize the worker if it is enabled.
+   otherwise, quit fast
+  */
+  if (options?.workerEnabled === false) {
+    return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
+  }
+
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -40,26 +45,21 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     },
   });
 
-  let worker: Worker<DataWarehouseSyncJobData> | undefined;
-  if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
-    worker = new Worker<DataWarehouseSyncJobData>(
-      DataWarehouseSyncQueueName,
-      async (job) => processDataWarehouseSyncJob(config, job),
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-        // Data warehouse sync is intentionally serialized.
-        concurrency: 1,
-      }
-    );
-  }
+  const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
+  const worker = new Worker<DataWarehouseSyncJobData>(
+    DataWarehouseSyncQueueName,
+    async (job) => processDataWarehouseSyncJob(config, job),
+    {
+      ...defaultOptions,
+      ...workerBullmq,
+      // Data warehouse sync is intentionally serialized.
+      concurrency: 1,
+    }
+  );
 
-  if (options?.workerEnabled !== false) {
-    refreshDataWarehouseSyncScheduler(config, queue).catch((err) => {
-      globalLogger.error('Failed to refresh data warehouse sync scheduler', { err });
-    });
-  }
+  refreshDataWarehouseSyncScheduler(config, queue).catch((err) => {
+    globalLogger.error('Failed to refresh data warehouse sync scheduler', { err });
+  });
 
   return { queue, worker, name: DataWarehouseSyncQueueName };
 };
@@ -131,11 +131,14 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
       ? new LocalParquetWarehouseSink(syncConfig.localBasePath as string)
       : new S3TablesWarehouseSink(config.awsRegion, syncConfig.awsS3TableArn as string);
 
-  const sources = resolveWarehouseSourcesFromPostgresTableNames(getWarehouseSyncPostgresTableNames());
+  const warehouseSources = getWarehouseSyncPostgresTableNames().map((postgresTable) => ({
+    postgresTable,
+    icebergTable: toIcebergTableName(postgresTable),
+  }));
   return {
     database,
     sink,
     namespace,
-    warehouseSources: sources,
+    warehouseSources,
   };
 }

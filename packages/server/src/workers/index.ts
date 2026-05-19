@@ -42,7 +42,10 @@ export function initWorkers(config: MedplumServerConfig): void {
   for (const { name, init } of workerDefs) {
     const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);
     const { name: queueName, queue, worker } = init(config, { workerEnabled });
-    queueRegistry.add(queueName, queue, worker);
+    // a queue can be disabled, in which case, don't register it
+    if (queue) {
+      queueRegistry.add(queueName, queue, worker);
+    }
   }
   globalLogger.debug('Workers initialized');
 }

@@ -104,7 +104,6 @@ describe('toIcebergTableName', () => {
     ['serviceRequest_history', 'servicerequest_history'],
     ['AuditEvent_History', 'auditevent_history'],
     ['NotAType_history', 'notatype_history'],
-    ['Resource-Event.V2', 'resource-event.v2'],
     ['already_snake_case', 'already_snake_case'],
   ])('normalizes "%s" to "%s"', (input, expected) => {
     expect(toIcebergTableName(input)).toBe(expected);
