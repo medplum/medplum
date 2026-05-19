@@ -24,9 +24,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<MagicLinkI
 
   // Ensure the patient has a ProjectMembership so the pre-authorized code can be issued on their behalf.
   // If Patient resource exists, but no auth identity, create a User and ProjectMembership on demand.
-  const membershipBundle = (await medplum.get(
-    medplum.fhirUrl('ProjectMembership') + `?profile=Patient/${patientId}`
-  ));
+  const membershipBundle = await medplum.get(medplum.fhirUrl('ProjectMembership') + `?profile=Patient/${patientId}`);
 
   if (!membershipBundle.entry?.length) {
     const patient = (await medplum.readResource('Patient', patientId)) as Patient;
@@ -48,12 +46,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<MagicLinkI
     });
   }
 
-  const result = (await medplum.post(
+  const result = await medplum.post(
     'auth/preauthorize',
     { clientId, scope: 'openid', expiresIn: 3600 },
     'application/json',
     { headers: { 'X-Medplum-On-Behalf-Of': `Patient/${patientId}` } }
-  ));
+  );
 
   return {
     preAuthorizedCode: result.preAuthorizedCode,
