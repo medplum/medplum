@@ -21,8 +21,8 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
-import type { Repository } from '../repo';
 import { findProjectMembership } from '../../workers/utils';
+import type { Repository } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
