@@ -34,9 +34,8 @@
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
   },
+  "shutdownTimeoutMilliseconds": 30000,
   "dataWarehouse": {
     "enabled": false
-  },
-  "shutdownTimeoutMilliseconds": 30000,
-  "workers": {}
+  }
 }
