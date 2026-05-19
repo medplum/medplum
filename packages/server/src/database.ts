@@ -101,7 +101,10 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
  * @returns The escaped value.
  */
 export function escapePgOptionsArg(value: string): string {
-  return value.replaceAll(/\\/, '\\\\').replaceAll(/ /, '\\ ');
+  // Correctly escape *all* backslashes and spaces using string replaceAll
+  // - replace all '\' with '\\'
+  // - then replace all ' ' with '\ '
+  return value.replaceAll('\\', '\\\\').replaceAll(' ', '\\ ');
 }
 
 const DEFAULT_MAX_CONNECTIONS = 100;
