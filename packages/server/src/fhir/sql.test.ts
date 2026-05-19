@@ -6,6 +6,7 @@ import {
   Column,
   Condition,
   Constant,
+  Disjunction,
   InsertQuery,
   isValidColumnName,
   isValidTableName,
@@ -16,6 +17,7 @@ import {
   SelectQuery,
   setSqlDebug,
   SqlBuilder,
+  Subquery,
   truncateTextColumn,
   UnionAllBuilder,
   UpdateQuery,
@@ -122,6 +124,60 @@ describe('SqlBuilder', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', '!=', null).buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
+    });
+
+    test('Select where is null expression', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .whereExpr(new Condition(new Subquery(maxSubquery), '=', null))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE (SELECT MAX(name) FROM "MyTable") IS NULL'
+      );
+    });
+
+    test('Select where is not null expression', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').whereExpr(new Condition(new Column('MyTable', 'name'), '!=', null)).buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
+    });
+
+    test('Select where is null expression in disjunction', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .whereExpr(new Disjunction([new Condition(new Subquery(maxSubquery), '=', null), new Condition('name', '>', 'x')]))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE ((SELECT MAX(name) FROM "MyTable") IS NULL OR "name" > $1)'
+      );
+    });
+
+    test('Select where greater than subquery', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .where('name', '>', new Subquery(maxSubquery))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "MyOtherTable"."name" > (SELECT MAX(name) FROM "MyTable")'
+      );
+    });
+
+    test('Select where greater than subquery expression', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .whereExpr(new Condition('name', '>', new Subquery(maxSubquery)))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "name" > (SELECT MAX(name) FROM "MyTable")'
+      );
     });
 
     test('Select value in subquery with type', () => {
@@ -245,11 +301,18 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
     });
 
-    test('Select whereExpr not equals empty string', () => {
+    test('Select where not equals empty string', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').whereExpr(new Constant(`"MyTable"."name" <> ''`)).buildSql(sql);
-      expect(sql.toString()).toBe(`SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> ''`);
-      expect(sql.getValues()).toStrictEqual([]);
+      new SelectQuery('MyTable').column('id').where('name', '!=', '').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
+      expect(sql.getValues()).toStrictEqual(['']);
+    });
+
+    test('Select where not equals empty string w/ typed column', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').where(new Column('MyTable', 'name'), '!=', '').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
+      expect(sql.getValues()).toStrictEqual(['']);
     });
 
     test('Select where lower like', () => {

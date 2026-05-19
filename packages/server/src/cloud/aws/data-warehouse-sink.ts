@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { S3TablesClient } from '@aws-sdk/client-s3tables';
+import type { Expression } from '../../fhir/sql';
 import type { WarehouseSourceTable } from '../../data-warehouse/config';
 import type {
   DataWarehouseSink,
@@ -15,6 +16,7 @@ import {
   buildManagedIcebergSetupQueries,
   buildMaxLastUpdatedWatermarkPredicate,
   buildProjectedSelectFromHistoryTableQuery,
+  runParameterizedWarehouseSql,
 } from '../../data-warehouse/warehouse-sql';
 import { createS3TablesClient, tableExists } from './data-warehouse-client';
 
@@ -48,7 +50,7 @@ export class S3TablesWarehouseSink implements DataWarehouseSink {
     }
   }
 
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): string {
+  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(namespace, tableSpec.icebergTable);
     // Incremental sync: only Postgres rows newer than the latest row already in Iceberg.
     // When the Iceberg table is empty (or MAX is NULL), `lastUpdated > NULL` would be unknown for every row,
@@ -63,7 +65,7 @@ export class S3TablesWarehouseSink implements DataWarehouseSink {
       context.sourcePredicate
     );
     const insertQuery = buildInsertIntoSelectQuery(qualifiedIceberg, projectedSelectQuery);
-    await connection.run(insertQuery);
+    await runParameterizedWarehouseSql(connection, insertQuery);
   }
 
   getDestinationName(tableSpec: WarehouseSourceTable): string {

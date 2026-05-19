@@ -9,7 +9,11 @@ import type { MedplumDatabaseConfig } from '../config/types';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseSink, DuckdbConnectionForSink } from './sink';
-import { buildCountFromHistoryTableQuery, DEFAULT_NAMESPACE } from './warehouse-sql';
+import {
+  buildCountFromHistoryTableQuery,
+  DEFAULT_NAMESPACE,
+  runParameterizedWarehouseSqlReadAll,
+} from './warehouse-sql';
 
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
@@ -49,7 +53,6 @@ function getSyncSourceConnectionString(options: SyncOptions): string {
 }
 
 type WarehouseSyncDuckdbConnection = DuckdbConnectionForSink & {
-  runAndReadAll(query: string): Promise<{ getRowObjectsJson(): unknown[] }>;
   closeSync(): void;
 };
 
@@ -66,7 +69,10 @@ async function runWarehouseTableSync(
     const resultTableName = options.sink.getDestinationName(spec);
     await options.sink.ensureTargetExists(spec, namespace);
 
-    const countReader = await connection.runAndReadAll(buildCountFromHistoryTableQuery(postgresTable, sourcePredicate));
+    const countReader = await runParameterizedWarehouseSqlReadAll(
+      connection,
+      buildCountFromHistoryTableQuery(postgresTable, sourcePredicate)
+    );
     const count = Number((countReader.getRowObjectsJson() as { count: number }[])[0]?.count ?? 0);
 
     if (count > 0) {

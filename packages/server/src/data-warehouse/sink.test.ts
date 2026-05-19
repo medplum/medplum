@@ -4,6 +4,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { SqlBuilder } from '../fhir/sql';
 import { LocalParquetWarehouseSink } from './sink';
 
 describe('data warehouse sinks', () => {
@@ -16,7 +17,9 @@ describe('data warehouse sinks', () => {
         icebergTable: 'patient_history',
       });
       expect(table).toContain('patient_history.parquet');
-      expect(sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')).toBe('TRUE');
+      const sourcePredicateSql = new SqlBuilder();
+      sourcePredicateSql.appendExpression(sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default'));
+      expect(sourcePredicateSql.toString()).toBe('TRUE');
     } finally {
       rmSync(basePath, { recursive: true, force: true });
     }

@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
-import { Column, Constant, InsertQuery, SelectQuery, SqlBuilder } from '../fhir/sql';
+import type { Expression } from '../fhir/sql';
+import {
+  Column,
+  Condition,
+  Constant,
+  Disjunction,
+  InsertQuery,
+  SelectQuery,
+  SqlBuilder,
+  Subquery,
+} from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -29,10 +38,49 @@ export interface ManagedIcebergAttachOptions {
   namespace?: string;
 }
 
-function buildSql(buildFn: (sql: SqlBuilder) => void): string {
+export interface DuckdbPreparedStatement {
+  bindValue(index: number, value: unknown): void;
+  run(): Promise<unknown>;
+  runAndReadAll(): Promise<{ getRowObjectsJson(): unknown[] }>;
+}
+
+export interface DuckdbConnection {
+  run(query: string): Promise<unknown>;
+  prepare(sql: string): Promise<DuckdbPreparedStatement>;
+}
+
+function buildSqlBuilder(buildFn: (sql: SqlBuilder) => void): SqlBuilder {
   const sql = new SqlBuilder();
   buildFn(sql);
-  return sql.toString();
+  return sql;
+}
+
+export function buildTrueSourcePredicate(): Expression {
+  return new Constant('TRUE');
+}
+
+export async function runParameterizedWarehouseSql(
+  connection: Pick<DuckdbConnection, 'prepare'>,
+  query: SqlBuilder
+): Promise<unknown> {
+  const statement = await connection.prepare(query.toString());
+  const values = query.getValues();
+  for (let i = 0; i < values.length; i++) {
+    statement.bindValue(i + 1, values[i]);
+  }
+  return statement.run();
+}
+
+export async function runParameterizedWarehouseSqlReadAll(
+  connection: Pick<DuckdbConnection, 'prepare'>,
+  query: SqlBuilder
+): Promise<{ getRowObjectsJson(): unknown[] }> {
+  const statement = await connection.prepare(query.toString());
+  const values = query.getValues();
+  for (let i = 0; i < values.length; i++) {
+    statement.bindValue(i + 1, values[i]);
+  }
+  return statement.runAndReadAll();
 }
 
 function buildCatalogQualifiedTableIdentifier(catalog: string, table: string): string {
@@ -56,11 +104,11 @@ function buildQualifiedTableIdentifier(qualifiedTable: string, minParts = 1): st
  *
  * @param connectionString - PostgreSQL connection URI or libpq keyword/value string (including `options` for session GUCs such as `statement_timeout`).
  * @param alias - Unquoted DuckDB catalog name (default `pg_db`).
- * @returns SQL to run after `INSTALL postgres; LOAD postgres;`
+ * @returns SQL to run after `INSTALL postgres` and `LOAD postgres`.
  */
 export function buildDuckdbPostgresAttachQuery(connectionString: string, alias = POSTGRES_CATALOG): string {
   const escapedConnectionString = connectionString.replaceAll("'", "''");
-  return `ATTACH '${escapedConnectionString}' AS "${alias}" (TYPE postgres, READ_ONLY);`;
+  return `ATTACH '${escapedConnectionString}' AS "${alias}" (TYPE postgres, READ_ONLY)`;
 }
 
 export function buildManagedIcebergQualifiedTable(namespace: string, icebergTable: string): string {
@@ -71,12 +119,11 @@ export function buildInsertIntoSelectQuery(
   qualifiedTable: string,
   selectQuery: SelectQuery,
   insertColumns: string[] = [...WAREHOUSE_HISTORY_COLUMN_NAMES]
-): string {
+): SqlBuilder {
   const safeQualifiedTableName = buildQualifiedTableIdentifier(qualifiedTable);
   const query = new InsertQuery(safeQualifiedTableName, selectQuery, insertColumns);
-  return buildSql((sql) => {
+  return buildSqlBuilder((sql) => {
     sql.appendExpression(query);
-    sql.append(';');
   });
 }
 
@@ -87,16 +134,15 @@ export function buildInsertIntoSelectQuery(
  * physically sorted data for time-range locality within files.
  *
  * @param sourceHistoryTable - Postgres table identifier exactly as stored (e.g. `Patient_history` or `Patient_History`).
- * @param whereClause - SQL boolean expression (joined with `AND` after non-empty content filter).
+ * @param sourcePredicate - SQL boolean expression (joined with `AND` after non-empty content filter).
  * @returns DuckDB `SELECT` statement text (no trailing semicolon).
  */
 export function buildProjectedSelectFromHistoryTableQuery(
   sourceHistoryTable: string,
-  whereClause: string
+  sourcePredicate: Expression
 ): SelectQuery {
   const qualifiedTableName = buildCatalogQualifiedTableIdentifier(POSTGRES_CATALOG, sourceHistoryTable);
   const escapedProjectIdPath = PROJECT_ID_JSON_PATH;
-  const contentColumn = `"${qualifiedTableName}"."content"`;
   const query = new SelectQuery(qualifiedTableName);
   query
     .column('id')
@@ -106,31 +152,35 @@ export function buildProjectedSelectFromHistoryTableQuery(
     // duckdb only allows json_extract_string() on JSON content
     .raw(`json_extract_string(content, '${escapedProjectIdPath}') AS project_id`)
     // ...and you can't call json_extract_string() on non-JSON content
-    .where('content', '!=', null)
-    .whereExpr(new Constant(`${contentColumn} != ''`))
-    .whereExpr(new Constant(`(${whereClause})`))
+    .where(new Column(qualifiedTableName, 'content'), '!=', null)
+    .where(new Column(qualifiedTableName, 'content'), '!=', '')
+    .whereExpr(sourcePredicate)
     .orderBy('lastUpdated');
   return query;
 }
 
-export function buildProjectedSelectFromHistoryTable(sourceHistoryTable: string, whereClause: string): string {
-  return buildSql((sql) =>
-    sql.appendExpression(buildProjectedSelectFromHistoryTableQuery(sourceHistoryTable, whereClause))
+export function buildProjectedSelectFromHistoryTable(
+  sourceHistoryTable: string,
+  sourcePredicate: Expression
+): SqlBuilder {
+  return buildSqlBuilder((sql) =>
+    sql.appendExpression(buildProjectedSelectFromHistoryTableQuery(sourceHistoryTable, sourcePredicate))
   );
 }
 
-export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, whereClause: string): string {
+export function buildCountFromHistoryTableQuery(
+  sourceHistoryTable: string,
+  sourcePredicate: Expression
+): SqlBuilder {
   const qualifiedTableName = buildCatalogQualifiedTableIdentifier(POSTGRES_CATALOG, sourceHistoryTable);
-  const contentColumn = `"${qualifiedTableName}"."content"`;
   const query = new SelectQuery(qualifiedTableName)
     .raw('COUNT(*) AS count')
-    .where('content', '!=', null)
-    // can't use .where() here because it would be treated as a bind value and generate $1, etc.
-    .whereExpr(new Constant(`${contentColumn} != ''`))
-    .whereExpr(new Constant(`(${whereClause})`));
-  return buildSql((sql) => {
+    .where(new Column(qualifiedTableName, 'content'), '!=', null)
+    .where(new Column(qualifiedTableName, 'content'), '!=', '')
+    .whereExpr(sourcePredicate);
+
+  return buildSqlBuilder((sql) => {
     sql.appendExpression(query);
-    sql.append(';');
   });
 }
 
@@ -154,27 +204,24 @@ export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, wher
  * @param qualifiedTable - Fully qualified table name (may include schema, etc.)
  * @returns SQL boolean expression for use in WHERE clauses to filter records for incremental sync based on lastUpdated.
  */
-export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string): string {
+export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string): Expression {
   const safeQualifiedTableName = buildQualifiedTableIdentifier(qualifiedTable, 2);
-  const maxLastUpdatedSubquery = buildSql((sql) =>
-    sql.appendExpression(new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated)'))
-  );
+  const maxLastUpdatedSubquery = new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated)');
 
-  return buildSql((sql) => {
-    sql.append('((');
-    sql.append(maxLastUpdatedSubquery);
-    sql.append(') IS NULL OR ');
-    sql.appendIdentifier('lastUpdated');
-    sql.append(' > (');
-    sql.append(maxLastUpdatedSubquery);
-    sql.append('))');
-  });
+  return new Disjunction([
+    new Condition(new Subquery(maxLastUpdatedSubquery), '=', null),
+    new Condition('lastUpdated', '>', new Subquery(maxLastUpdatedSubquery)),
+  ]);
 }
 
-export function buildCopySelectToParquetQuery(selectQuery: string, parquetPath: string): string {
+export function buildCopySelectToParquetQuery(selectQuery: SqlBuilder, parquetPath: string): SqlBuilder {
   // escape path so it can contain single quotes
   const escapedParquetPath = parquetPath.replaceAll("'", "''");
-  return `COPY (${selectQuery}) TO '${escapedParquetPath}' (FORMAT ${DEFAULT_FILE_FORMAT}, COMPRESSION ${DEFAULT_COMPRESSION_TYPE});`;
+  const sql = new SqlBuilder();
+  sql.append('COPY (');
+  sql.appendSql(selectQuery);
+  sql.append(`) TO '${escapedParquetPath}' (FORMAT ${DEFAULT_FILE_FORMAT}, COMPRESSION ${DEFAULT_COMPRESSION_TYPE})`);
+  return sql;
 }
 
 /**
@@ -185,14 +232,14 @@ export function buildCopySelectToParquetQuery(selectQuery: string, parquetPath: 
  */
 export function buildManagedIcebergExtensionQueries(): string[] {
   return [
-    `INSTALL aws;`,
-    `LOAD aws;`,
-    `INSTALL postgres;`,
-    `LOAD postgres;`,
-    `INSTALL httpfs;`,
-    `LOAD httpfs;`,
-    `INSTALL iceberg;`,
-    `LOAD iceberg;`,
+    `INSTALL aws`,
+    `LOAD aws`,
+    `INSTALL postgres`,
+    `LOAD postgres`,
+    `INSTALL httpfs`,
+    `LOAD httpfs`,
+    `INSTALL iceberg`,
+    `LOAD iceberg`,
   ];
 }
 
@@ -205,7 +252,7 @@ export function buildManagedIcebergExtensionQueries(): string[] {
  * @returns Single `CREATE SECRET` statement.
  */
 export function buildManagedS3CredentialSecretQuery(s3Region: string): string {
-  return `CREATE SECRET ( TYPE S3, PROVIDER CREDENTIAL_CHAIN, REGION '${s3Region}' );`;
+  return `CREATE SECRET ( TYPE S3, PROVIDER CREDENTIAL_CHAIN, REGION '${s3Region}' )`;
 }
 
 /**
@@ -216,7 +263,7 @@ export function buildManagedS3CredentialSecretQuery(s3Region: string): string {
  * @returns Single `ATTACH` statement.
  */
 export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): string {
-  return `ATTACH '${awsS3TableArn}' AS "${S3_TABLES_CATALOG}" ( TYPE iceberg, ENDPOINT_TYPE s3_tables );`;
+  return `ATTACH '${awsS3TableArn}' AS "${S3_TABLES_CATALOG}" ( TYPE iceberg, ENDPOINT_TYPE s3_tables )`;
 }
 
 /**

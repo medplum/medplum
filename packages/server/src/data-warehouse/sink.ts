@@ -3,30 +3,32 @@
 
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Expression } from '../fhir/sql';
 import type { WarehouseSourceTable } from './config';
+import type { DuckdbConnection } from './warehouse-sql';
 import {
   buildCopySelectToParquetQuery,
   buildDuckdbPostgresAttachQuery,
   buildProjectedSelectFromHistoryTable,
+  buildTrueSourcePredicate,
+  runParameterizedWarehouseSql,
 } from './warehouse-sql';
 
 export type DataWarehouseSinkType = 's3tables' | 'local';
 
-export interface DuckdbConnectionForSink {
-  run(query: string): Promise<unknown>;
-}
+export type DuckdbConnectionForSink = DuckdbConnection;
 
 export interface SinkQueryContext {
   tableSpec: WarehouseSourceTable;
   namespace: string;
-  sourcePredicate: string;
+  sourcePredicate: Expression;
 }
 
 export interface DataWarehouseSink {
   readonly type: DataWarehouseSinkType;
   getSetupQueries(connectionString: string): string[];
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): string;
+  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression;
   writeRows(connection: DuckdbConnectionForSink, context: SinkQueryContext): Promise<void>;
   /**
    * For local sinks, use the path to the Parquet file
@@ -44,18 +46,18 @@ export class LocalParquetWarehouseSink implements DataWarehouseSink {
   }
 
   getSetupQueries(connectionString: string): string[] {
-    return ['INSTALL postgres;', 'LOAD postgres;', buildDuckdbPostgresAttachQuery(connectionString)];
+    return ['INSTALL postgres', 'LOAD postgres', buildDuckdbPostgresAttachQuery(connectionString)];
   }
 
   async ensureTargetExists(_tableSpec: WarehouseSourceTable, _namespace: string): Promise<void> {
     mkdirSync(this.basePath, { recursive: true });
   }
 
-  buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): string {
+  buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): Expression {
     /* TODO: Support incremental local sync by deriving a watermark from existing parquet output.
      * For now we always export all source rows because the local sink does not yet read prior parquet state.
      */
-    return 'TRUE';
+    return buildTrueSourcePredicate();
   }
 
   async writeRows(connection: DuckdbConnectionForSink, context: SinkQueryContext): Promise<void> {
@@ -64,7 +66,7 @@ export class LocalParquetWarehouseSink implements DataWarehouseSink {
       context.tableSpec.postgresTable,
       context.sourcePredicate
     );
-    await connection.run(buildCopySelectToParquetQuery(projectedSelect, parquetPath));
+    await runParameterizedWarehouseSql(connection, buildCopySelectToParquetQuery(projectedSelect, parquetPath));
   }
 
   getDestinationName(tableSpec: WarehouseSourceTable): string {
