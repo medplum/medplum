@@ -1,0 +1,101 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--mantine-color-body);
+}
+
+.shell,
+.detailBorder {
+  border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+}
+
+.item {
+  display: block;
+  transition: background 0.2s;
+  cursor: pointer;
+  padding: calc(0.5rem * var(--mantine-scale)) var(--mantine-spacing-xs);
+  border-radius: 0.5rem;
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
+  text-decoration: none;
+}
+
+/* Normalize the line-height of every text child so a mix of `<Text size="md">`
+   (e.g. the bold first line) and `<Text size="sm">` (secondary/tertiary lines)
+   share the same vertical rhythm. Without this, default Mantine line-heights
+   (1.55 vs 1.45) cause uneven gaps between lines in a list item. */
+.item :global(.mantine-Text-root) {
+  line-height: var(--mantine-line-height-sm);
+}
+
+.item:hover {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.item.selected {
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-inline: var(--mantine-spacing-md);
+  padding-block: 15px;
+}
+
+/* Header text style for `ListShell` headers that show a plain title (no pill
+   tabs). Matches the pill-tab text style (14px / weight 450) so a header that
+   reads "Recent" or "Patients" sits at the same optical weight as a header
+   that reads "My Tasks" / "All Tasks" pill-tab pair.
+
+   `padding-inline-start` matches the internal horizontal padding of a pill
+   tab, so when this element lives in a `pl="xs"` header bar it lines up
+   horizontally with the text of an adjacent pill tab (and with the "Recent"
+   sidebar title in the Spaces inbox). */
+.headerText {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 450;
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+  line-height: 1.2;
+  padding-inline-start: var(--mantine-spacing-xs);
+}
+
+/* Pill-style Tabs used in list headers. CSS-module-scoped — the `:global()`
+   wrappers keep Mantine's `.mantine-Tabs-*` class names global so the
+   descendant selectors continue to target them. */
+.pillTabs :global(.mantine-Tabs-list) {
+  display: flex;
+  gap: 2px;
+}
+
+.pillTabs :global(.mantine-Tabs-tab) {
+  height: 32px;
+  padding-inline: calc(0.875rem \* var(--mantine-scale));
+  padding-block: 0;
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 450;
+  background-color: transparent;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.pillTabs :global(.mantine-Tabs-tab):hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-8));
+}
+
+.pillTabs :global(.mantine-Tabs-tab[data-active]) {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}
+
+.pillTabs :global(.mantine-Tabs-tab[data-active]):hover {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}

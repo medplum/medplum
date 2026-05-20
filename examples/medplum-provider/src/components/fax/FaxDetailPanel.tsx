@@ -3,14 +3,13 @@
 import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import { formatDateTime, getDisplayString } from '@medplum/core';
 import type { Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
-import { MedplumLink, useResource } from '@medplum/react';
+import { listClasses, MedplumLink, useResource } from '@medplum/react';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
 import { IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { AssignPatientModal } from './AssignPatientModal';
 import { formatFaxNumber } from './fax.utils';
-import classes from './FaxBoard.module.css';
 import { SendFaxModal } from './SendFaxModal';
 
 interface FaxDetailPanelProps {
@@ -44,7 +43,7 @@ export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.E
 
   return (
     <>
-      <Box h="100%" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }} className={classes.borderRight}>
+      <Box h="100%" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }} className={listClasses.detailBorder}>
         <Paper h="100%">
           <Flex direction="column" h="100%">
             <Box p="md">

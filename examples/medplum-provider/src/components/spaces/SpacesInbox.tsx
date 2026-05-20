@@ -7,20 +7,22 @@ import {
   CloseButton,
   Code,
   Collapse,
+  Divider,
+  Flex,
   Group,
   Paper,
   ScrollArea,
   Stack,
   Text,
   ThemeIcon,
+  Tooltip,
 } from '@mantine/core';
 import type { Communication, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react';
+import { listClasses, useMedplum, useResource } from '@medplum/react';
 import {
   IconArrowLeft,
   IconCode,
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
+  IconHistory,
   IconList,
   IconPlus,
   IconRobot,
@@ -59,6 +61,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [recentSpacesTooltipSuppressed, setRecentSpacesTooltipSuppressed] = useState(false);
+  const recentSpacesTooltipSuppressionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const [selectedResources, setSelectedResources] = useState<string[] | undefined>();
@@ -118,6 +122,14 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   }, [topic, medplum]);
 
   useEffect(() => {
+    return () => {
+      if (recentSpacesTooltipSuppressionTimeoutRef.current) {
+        clearTimeout(recentSpacesTooltipSuppressionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const viewport = scrollViewportRef.current;
     if (viewport && hasStarted) {
       viewport.scrollTo({
@@ -141,32 +153,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
     return undefined;
   }, [loading, hasStarted]);
-
-  const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
-    loadVersionRef.current++;
-    const myVersion = loadVersionRef.current;
-    try {
-      setLoading(true);
-      const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
-      if (myVersion !== loadVersionRef.current) {
-        return;
-      }
-      setMessages([...loadedMessages]);
-      setCurrentTopicId(selectedTopicId);
-      setHasStarted(true);
-      setSelectedResource(undefined);
-      setSelectedResources(undefined);
-      setComponentPreview(undefined);
-      setStreamingComponentCode(undefined);
-      setComponentPanelOpen(false);
-    } catch (error) {
-      showErrorNotification(error);
-    } finally {
-      if (myVersion === loadVersionRef.current) {
-        setLoading(false);
-      }
-    }
-  };
 
   const handleSend = async (overrideInput?: string): Promise<void> => {
     if (isSendingRef.current) {
@@ -264,44 +250,83 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     });
   };
 
+  const handleToggleRecentSidebar = (): void => {
+    if (sidebarOpen) {
+      setRecentSpacesTooltipSuppressed(true);
+      if (recentSpacesTooltipSuppressionTimeoutRef.current) {
+        clearTimeout(recentSpacesTooltipSuppressionTimeoutRef.current);
+      }
+      recentSpacesTooltipSuppressionTimeoutRef.current = setTimeout(() => {
+        setRecentSpacesTooltipSuppressed(false);
+        recentSpacesTooltipSuppressionTimeoutRef.current = null;
+      }, 600);
+    }
+    setSidebarOpen((open) => !open);
+  };
+
   const visibleMessages = messages.filter((m) => m.role !== 'system');
 
   return (
     <>
-      {/* Sidebar */}
-      <Box className={classes.sidebar} style={{ width: sidebarOpen ? 280 : 0, opacity: sidebarOpen ? 1 : 0 }}>
-        <div className={classes.sidebarHeader}>
-          <Text className={classes.sidebarTitle}>Conversations</Text>
-          <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(false)}>
-            <IconLayoutSidebarLeftCollapse size={18} />
-          </ActionIcon>
-        </div>
-        <div className={classes.sidebarContent}>
-          <HistoryList
-            key={refreshKey}
-            currentTopicId={currentTopicId}
-            onSelectTopic={handleSelectTopic}
-            onSelectedItem={onSelectedItem}
-          />
-        </div>
-      </Box>
+      <Flex className={classes.mainWorkspace} direction="row" align="stretch">
+        {/* Sidebar */}
+        <Box
+          className={cx(classes.sidebar, sidebarOpen && classes.sidebarDividerVisible)}
+          style={{
+            width: sidebarOpen ? 380 : 0,
+            pointerEvents: sidebarOpen ? undefined : 'none',
+          }}
+        >
+          <Flex direction="column" h="100%" className={classes.sidebarInner} data-visible={sidebarOpen || undefined}>
+            <Paper>
+              <Flex h={64} align="center" justify="flex-start" pl="xs" pr="lg" py="md">
+                <Text className={listClasses.headerText}>Recent</Text>
+              </Flex>
+            </Paper>
+
+            <Divider mx="xs" color="gray.2" />
+
+            <Paper className={classes.sidebarListPaper} p={0}>
+              <HistoryList
+                key={refreshKey}
+                currentTopicId={currentTopicId}
+                onSelectedItem={onSelectedItem}
+              />
+            </Paper>
+          </Flex>
+        </Box>
 
       {/* Main Chat Area */}
       <div className={classes.chatContainer}>
-        <div className={classes.chatHeader}>
-          <div>
-            {!sidebarOpen && (
-              <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(true)} mr="md">
-                <IconLayoutSidebarLeftExpand size={16} />
+        <Paper className={classes.chatHeaderPaper} radius={0}>
+          <Flex h={64} align="center" justify="space-between" px="md">
+            <Tooltip
+              label="Recent Spaces"
+              position="bottom"
+              openDelay={500}
+              disabled={sidebarOpen || recentSpacesTooltipSuppressed}
+            >
+              <ActionIcon
+                variant="transparent"
+                radius="xl"
+                size={32}
+                className="outline-icon-button"
+                data-opened={sidebarOpen || undefined}
+                aria-label={sidebarOpen ? 'Hide recent spaces' : 'Show recent spaces'}
+                onClick={handleToggleRecentSidebar}
+              >
+                <IconHistory size={16} />
               </ActionIcon>
+            </Tooltip>
+            {onAdd && (
+              <Tooltip label="New Space" position="bottom" openDelay={500}>
+                <ActionIcon radius="xl" variant="filled" color="blue" size={32} aria-label="New Space" onClick={onAdd}>
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Tooltip>
             )}
-          </div>
-          {onAdd && (
-            <ActionIcon variant="subtle" color="gray" size="sm" onClick={onAdd} aria-label="New conversation">
-              <IconPlus size={16} />
-            </ActionIcon>
-          )}
-        </div>
+          </Flex>
+        </Paper>
 
         <div className={classes.messagesArea}>
           {!hasStarted ? (
@@ -545,6 +570,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           </div>
         </div>
       </div>
+      </Flex>
 
       {/* Resource List Panel */}
       {selectedResources && !selectedResource && (

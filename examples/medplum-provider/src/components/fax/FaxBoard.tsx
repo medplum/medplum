@@ -1,28 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Divider,
-  Flex,
-  Group,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Group, Stack, Tabs, Tooltip } from '@mantine/core';
 import { isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import {
+  ListDetailLayout,
+  ListEmptyState,
+  ListScrollArea,
+  ListShell,
+  ListSkeleton,
+  listClasses,
+  useMedplum,
+} from '@medplum/react';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
-import classes from './FaxBoard.module.css';
 import { FaxDetailPanel } from './FaxDetailPanel';
 import type { FaxTab } from './FaxListItem';
 import { FaxListItem } from './FaxListItem';
@@ -155,115 +149,66 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
     refreshList();
   };
 
+  const faxEmptyMessage = activeTab === 'sent' ? 'No sent faxes.' : 'No faxes in your inbox.';
+
   return (
-    <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Tabs value={activeTab} onChange={handleTabChange} variant="unstyled" className="pill-tabs">
-                  <Tabs.List>
-                    <Tabs.Tab value="inbox">Received</Tabs.Tab>
-                    <Tabs.Tab value="sent">Sent</Tabs.Tab>
-                  </Tabs.List>
-                </Tabs>
-
-                <Group gap="xs">
-                  <Tooltip label="Send Fax" position="bottom" openDelay={500}>
-                    <ActionIcon
-                      radius="xl"
-                      variant="filled"
-                      color="blue"
-                      size={32}
-                      onClick={() => setSendModalOpened(true)}
-                    >
-                      <IconSend size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
-              </Flex>
-            </Paper>
-
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <ScrollArea style={{ flex: 1 }} id="fax-list-scrollarea">
-                <Box p={10}>
-                  {loading && faxes.length === 0 && <FaxListSkeleton />}
-                  {!loading && faxes.length === 0 && <EmptyFaxState activeTab={activeTab} />}
-                  {faxes.length > 0 &&
-                    faxes.map((fax, index) => {
-                      const isSelected = selectedFax?.id === fax.id;
-                      const nextIsSelected = index < faxes.length - 1 && selectedFax?.id === faxes[index + 1]?.id;
-
-                      return (
-                        <FaxListItem
-                          key={fax.id}
-                          fax={fax}
-                          selectedFax={selectedFax}
-                          activeTab={activeTab}
-                          getFaxUri={getFaxUri}
-                          hideDivider={isSelected || nextIsSelected}
-                        />
-                      );
-                    })}
-                </Box>
-              </ScrollArea>
-            </Paper>
-          </Flex>
-        </Box>
+    <>
+      <ListDetailLayout>
+        <ListShell
+          header={
+            <>
+              <Tabs value={activeTab} onChange={handleTabChange} variant="unstyled" className={listClasses.pillTabs}>
+                <Tabs.List>
+                  <Tabs.Tab value="inbox">Received</Tabs.Tab>
+                  <Tabs.Tab value="sent">Sent</Tabs.Tab>
+                </Tabs.List>
+              </Tabs>
+              <Group gap="xs">
+                <Tooltip label="Send Fax" position="bottom" openDelay={500}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="filled"
+                    color="blue"
+                    size={32}
+                    onClick={() => setSendModalOpened(true)}
+                  >
+                    <IconSend size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            </>
+          }
+        >
+          <ListScrollArea id="fax-list-scrollarea">
+            {loading && faxes.length === 0 && <ListSkeleton />}
+            {!loading && faxes.length === 0 && <ListEmptyState message={faxEmptyMessage} />}
+            {faxes.length > 0 && (
+              <Stack gap={2}>
+                {faxes.map((fax) => (
+                  <FaxListItem
+                    key={fax.id}
+                    fax={fax}
+                    selectedFax={selectedFax}
+                    activeTab={activeTab}
+                    getFaxUri={getFaxUri}
+                  />
+                ))}
+              </Stack>
+            )}
+          </ListScrollArea>
+        </ListShell>
 
         {selectedFax ? (
           <FaxDetailPanel fax={selectedFax} onFaxChange={refreshList} />
         ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
+          <ListDetailLayout.Column>
             <FaxSelectEmpty />
-          </Flex>
+          </ListDetailLayout.Column>
         )}
-      </Flex>
+      </ListDetailLayout>
 
       <SendFaxModal opened={sendModalOpened} onClose={() => setSendModalOpened(false)} onFaxSent={handleFaxSent} />
-    </Box>
+    </>
   );
 }
 
-function EmptyFaxState({ activeTab }: { activeTab: FaxTab }): JSX.Element {
-  const labels: Record<FaxTab, string> = {
-    inbox: 'No faxes in your inbox.',
-    sent: 'No sent faxes.',
-  };
-
-  return (
-    <Flex direction="column" h="100%" justify="center" align="center" pt="xl">
-      <Text c="dimmed" fw={500}>
-        {labels[activeTab]}
-      </Text>
-    </Flex>
-  );
-}
-
-const SKELETON_WIDTHS = [
-  ['85%', '60%', '72%'],
-  ['70%', '80%', '55%'],
-  ['92%', '50%', '65%'],
-  ['78%', '68%', '58%'],
-  ['88%', '45%', '75%'],
-  ['74%', '70%', '62%'],
-];
-
-function FaxListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {SKELETON_WIDTHS.map((widths, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={widths[0]} />
-            <Skeleton height={14} width={widths[1]} />
-            <Skeleton height={14} width={widths[2]} />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
-  );
-}

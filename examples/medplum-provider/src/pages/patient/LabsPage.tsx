@@ -1,26 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Divider,
-  Flex,
-  Group,
-  Modal,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Group, Modal, Stack, Tabs, Tooltip } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import {
+  ListDetailLayout,
+  ListEmptyState,
+  ListScrollArea,
+  ListShell,
+  ListSkeleton,
+  listClasses,
+  useMedplum,
+} from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
@@ -28,7 +22,6 @@ import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
-import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';
 
@@ -131,95 +124,64 @@ export function LabsPage(): JSX.Element {
   };
 
   const currentItems = activeTab === 'completed' ? completedOrders : openOrders;
+  const emptyMessage = activeTab === 'completed' ? 'No completed labs to display.' : 'No open labs to display.';
 
   return (
-    <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Group gap="xs">
-                  <Tabs
-                    value={activeTab}
-                    onChange={(value) => handleTabChange(value as string)}
-                    variant="unstyled"
-                    className="pill-tabs"
-                  >
-                    <Tabs.List>
-                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
-                      <Tabs.Tab value="open">Open</Tabs.Tab>
-                    </Tabs.List>
-                  </Tabs>
-                </Group>
+    <>
+      <ListDetailLayout>
+        <ListShell
+          width={350}
+          header={
+            <>
+              <Group gap="xs">
+                <Tabs
+                  value={activeTab}
+                  onChange={(value) => handleTabChange(value as string)}
+                  variant="unstyled"
+                  className={listClasses.pillTabs}
+                >
+                  <Tabs.List>
+                    <Tabs.Tab value="completed">Completed</Tabs.Tab>
+                    <Tabs.Tab value="open">Open</Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
+              </Group>
+              <Tooltip label="Order Labs" position="bottom" openDelay={500}>
+                <ActionIcon
+                  radius="xl"
+                  variant="filled"
+                  color="blue"
+                  size={32}
+                  onClick={() => setNewOrderModalOpened(true)}
+                >
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </>
+          }
+        >
+          <ListScrollArea id="lab-list-scrollarea">
+            {loading && <ListSkeleton />}
+            {!loading && currentItems.length === 0 && <ListEmptyState message={emptyMessage} />}
+            {!loading && currentItems.length > 0 && (
+              <Stack gap={2}>
+                {currentItems.map((item) => (
+                  <LabListItem
+                    key={item.id}
+                    item={item}
+                    selectedItem={currentOrder}
+                    activeTab={activeTab}
+                    onItemSelect={handleOrderSelect}
+                  />
+                ))}
+              </Stack>
+            )}
+          </ListScrollArea>
+        </ListShell>
 
-                <Tooltip label="Order Labs" position="bottom" openDelay={500}>
-                  <ActionIcon
-                    radius="xl"
-                    variant="filled"
-                    color="blue"
-                    size={32}
-                    onClick={() => setNewOrderModalOpened(true)}
-                  >
-                    <IconPlus size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              </Flex>
-            </Paper>
+        <ListDetailLayout.Column>{renderDetail(currentItems, currentOrder, activeTab)}</ListDetailLayout.Column>
+      </ListDetailLayout>
 
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" id="lab-list-scrollarea" p="0.5rem">
-                {loading && <LabListSkeleton />}
-                {!loading && currentItems.length === 0 && <EmptyLabsState activeTab={activeTab} />}
-                {!loading &&
-                  currentItems.length > 0 &&
-                  currentItems.map((item, index) => {
-                    return (
-                      <React.Fragment key={item.id}>
-                        <LabListItem
-                          item={item}
-                          selectedItem={currentOrder}
-                          activeTab={activeTab}
-                          onItemSelect={handleOrderSelect}
-                        />
-                        {index < currentItems.length - 1 && (
-                          <Box px="0.5rem">
-                            <Divider />
-                          </Box>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-              </ScrollArea>
-            </Paper>
-          </Flex>
-        </Box>
-
-        {currentItems.length > 0 ? (
-          <>
-            <Box
-              h="100%"
-              style={{
-                flex: 1,
-              }}
-              className={classes.borderRight}
-            >
-              {currentOrder ? (
-                <LabOrderDetails key={currentOrder.id} order={currentOrder} />
-              ) : (
-                <LabSelectEmpty activeTab={'open'} />
-              )}
-            </Box>
-          </>
-        ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
-            <LabSelectEmpty activeTab={activeTab} />
-          </Flex>
-        )}
-      </Flex>
-
-      {/* New Order Modal */}
       <Modal
         opened={newOrderModalOpened}
         onClose={() => setNewOrderModalOpened(false)}
@@ -229,8 +191,22 @@ export function LabsPage(): JSX.Element {
       >
         <OrderLabsPage onSubmitLabOrder={handleNewOrderCreated} />
       </Modal>
-    </Box>
+    </>
   );
+}
+
+function renderDetail(
+  currentItems: ServiceRequest[],
+  currentOrder: ServiceRequest | undefined,
+  activeTab: LabTab
+): JSX.Element {
+  if (currentItems.length === 0) {
+    return <LabSelectEmpty activeTab={activeTab} />;
+  }
+  if (currentOrder) {
+    return <LabOrderDetails key={currentOrder.id} order={currentOrder} />;
+  }
+  return <LabSelectEmpty activeTab={'open'} />;
 }
 
 function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
@@ -304,33 +280,4 @@ function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
     const bDate = b.meta?.lastUpdated || b.authoredOn;
     return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
   });
-}
-
-function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
-  return (
-    <Flex direction="column" h="100%" justify="center" align="center">
-      <Stack align="center" gap="md" pt="xl">
-        <Text size="md" c="dimmed" fw={400}>
-          No {activeTab} labs to display.
-        </Text>
-      </Stack>
-    </Flex>
-  );
-}
-
-function LabListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
-  );
 }

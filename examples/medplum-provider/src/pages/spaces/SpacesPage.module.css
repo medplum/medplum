@@ -9,11 +9,15 @@
 .fill {
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .blurred {
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   filter: blur(4px);
   pointer-events: none;
   user-select: none;

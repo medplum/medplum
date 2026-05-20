@@ -6,6 +6,7 @@ import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes'
 import {
   createPharmaciesSection,
   getDefaultSections,
+  listClasses,
   PatientSummary,
   ResourceTimeline,
   useMedplum,
@@ -89,7 +90,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
         style={{
           flex: 1,
         }}
-        className={classes.borderRight}
+        className={listClasses.detailBorder}
       >
         <TaskInputNote
           task={task}

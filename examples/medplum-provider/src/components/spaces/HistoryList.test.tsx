@@ -40,7 +40,6 @@ describe('HistoryList', () => {
           <MantineProvider>
             <HistoryList
               currentTopicId={currentTopicId}
-              onSelectTopic={vi.fn()}
               onSelectedItem={(topic) => `/Spaces/Communication/${topic.id}`}
             />
           </MantineProvider>
@@ -52,8 +51,9 @@ describe('HistoryList', () => {
   test('renders loading state initially', async () => {
     vi.spyOn(spacePersistence, 'loadRecentTopics').mockImplementation(() => new Promise(() => {}));
 
-    setup();
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    const { container } = setup();
+    // Loading renders a ListSkeleton (Mantine Skeleton components)
+    expect(container.querySelector('[class*="mantine-Skeleton"]')).toBeInTheDocument();
   });
 
   test('renders empty state when no topics', async () => {
@@ -71,7 +71,6 @@ describe('HistoryList', () => {
       setup();
     });
 
-    expect(screen.getByText('Recent Conversations')).toBeInTheDocument();
     expect(screen.getByText('Topic 1')).toBeInTheDocument();
     expect(screen.getByText('Topic 2')).toBeInTheDocument();
   });

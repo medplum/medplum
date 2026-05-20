@@ -3,11 +3,9 @@
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, getDisplayString } from '@medplum/core';
 import type { Communication, Organization } from '@medplum/fhirtypes';
-import { MedplumLink, useResource } from '@medplum/react';
-import cx from 'clsx';
+import { ListItem, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { formatFaxNumber } from './fax.utils';
-import classes from './FaxListItem.module.css';
 
 export type FaxTab = 'inbox' | 'sent';
 
@@ -16,7 +14,6 @@ interface FaxListItemProps {
   selectedFax: Communication | undefined;
   activeTab: FaxTab;
   getFaxUri: (fax: Communication) => string;
-  hideDivider?: boolean;
 }
 
 function getRecipientDisplay(fax: Communication, recipient: Organization | undefined): string {
@@ -32,7 +29,7 @@ function getRecipientDisplay(fax: Communication, recipient: Organization | undef
   return display && /^\d[\d\s\-+()]*$/.test(display.replace(/\s/g, '')) ? formatFaxNumber(display) : display;
 }
 
-export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivider }: FaxListItemProps): JSX.Element {
+export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri }: FaxListItemProps): JSX.Element {
   const isSelected = selectedFax?.id === fax.id;
   const patient = useResource(fax.subject);
   const recipient = useResource(activeTab === 'sent' ? fax.recipient?.[0] : undefined);
@@ -48,33 +45,23 @@ export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivide
   const datePatientLine = datePatientParts.length > 0 ? datePatientParts.join(' · ') : null;
 
   return (
-    <div className={cx(classes.itemWrapper, { [classes.hideDivider]: hideDivider })}>
-      <MedplumLink to={faxUrl} underline="never">
-        <Group
-          align="center"
-          wrap="nowrap"
-          className={cx(classes.contentContainer, {
-            [classes.selected]: isSelected,
-          })}
-        >
-          <Stack gap={0} flex={1}>
-            <Group justify="space-between" align="flex-start" wrap="nowrap">
-              <Text fw={700} className={classes.title} flex={1}>
-                {firstLine}
-              </Text>
-            </Group>
-            <Text size="sm" c="dimmed">
-              {subjectLine}
-            </Text>
-            {datePatientLine && (
-              <Text size="sm" c="dimmed">
-                {datePatientLine}
-              </Text>
-            )}
-          </Stack>
+    <ListItem to={faxUrl} selected={isSelected}>
+      <Stack gap={0} miw={0}>
+        <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+          <Text fw={700} truncate="end" flex={1} miw={0}>
+            {firstLine}
+          </Text>
         </Group>
-      </MedplumLink>
-    </div>
+        <Text size="sm" c="dimmed" truncate="end">
+          {subjectLine}
+        </Text>
+        {datePatientLine && (
+          <Text size="sm" c="dimmed">
+            {datePatientLine}
+          </Text>
+        )}
+      </Stack>
+    </ListItem>
   );
 }
 

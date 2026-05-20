@@ -3,10 +3,8 @@
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Task } from '@medplum/fhirtypes';
-import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
-import cx from 'clsx';
+import { ListItem, StatusBadge, useResource } from '@medplum/react';
 import type { JSX } from 'react';
-import classes from './TaskListItem.module.css';
 
 interface TaskListItemProps {
   task: Task;
@@ -23,31 +21,22 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
   const taskUrl = getTaskUri(task);
 
   return (
-    <MedplumLink to={taskUrl} underline="never">
-      <Group
-        p="xs"
-        align="center"
-        wrap="nowrap"
-        className={cx(classes.contentContainer, {
-          [classes.selected]: isSelected,
-        })}
-      >
-        <Stack gap={0} flex={1}>
-          <Group justify="space-between" align="flex-start" wrap="nowrap">
-            <Text fw={700} className={classes.content}>
-              {task.code?.text ?? `Task ${taskFrom}`}
-            </Text>
-            <StatusBadge status={task.status} variant="light" />
-          </Group>
-          <Stack gap={0} c="dimmed">
-            {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
-            {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0])}</Text>}
-            {owner?.resourceType === 'Practitioner' && (
-              <Text size="sm">Assigned to {formatHumanName(owner.name?.[0])}</Text>
-            )}
-          </Stack>
+    <ListItem to={taskUrl} selected={isSelected}>
+      <Stack gap={0} miw={0}>
+        <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+          <Text fw={700} truncate="end" flex={1} miw={0}>
+            {task.code?.text ?? `Task ${taskFrom}`}
+          </Text>
+          <StatusBadge status={task.status} variant="light" />
+        </Group>
+        <Stack gap={0} c="dimmed">
+          {task.restriction?.period && <Text>Due {formatDate(task.restriction?.period?.end)}</Text>}
+          {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0])}</Text>}
+          {owner?.resourceType === 'Practitioner' && (
+            <Text size="sm">Assigned to {formatHumanName(owner.name?.[0])}</Text>
+          )}
         </Stack>
-      </Group>
-    </MedplumLink>
+      </Stack>
+    </ListItem>
   );
 }

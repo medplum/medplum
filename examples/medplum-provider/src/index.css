@@ -14,12 +14,13 @@
 /* Pill-style tabs used across Tasks, Messages, Labs, and Patient tabs */
 .pill-tabs .mantine-Tabs-list {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
 .pill-tabs .mantine-Tabs-tab {
   height: 32px;
-  padding: 0 12px;
+  padding-inline: calc(0.875rem * var(--mantine-scale));
+  padding-block: 0;
   border-radius: var(--mantine-radius-xl);
   font-size: var(--mantine-font-size-sm);
   font-weight: 450;

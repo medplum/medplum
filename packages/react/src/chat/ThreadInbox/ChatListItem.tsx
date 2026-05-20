@@ -4,11 +4,9 @@ import { Group, Stack, Text } from '@mantine/core';
 import { formatDateTime, formatHumanName } from '@medplum/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import cx from 'clsx';
 import type { JSX } from 'react';
-import { MedplumLink } from '../../MedplumLink/MedplumLink';
+import { ListItem } from '../../List/ListItem';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
-import classes from './ChatListItem.module.css';
 
 export interface ChatListItemProps {
   topic: Communication;
@@ -28,28 +26,21 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const topicName = topic.topic?.text ?? content;
 
   return (
-    <MedplumLink to={getThreadUri(topic)} underline="never">
-      <Group
-        p="xs"
-        align="center"
-        wrap="nowrap"
-        className={cx(classes.contentContainer, {
-          [classes.selected]: isSelected,
-        })}
-      >
+    <ListItem to={getThreadUri(topic)} selected={isSelected}>
+      <Group align="center" wrap="nowrap" gap="sm">
         <ResourceAvatar value={topic.subject} radius="xl" size={36} />
-        <Stack gap={0}>
+        <Stack gap={0} flex={1} miw={0}>
           <Text size="sm" fw={700} truncate="end">
             {patientName}
           </Text>
-          <Text size="sm" fw={400} lineClamp={2} className={classes.content}>
+          <Text size="sm" fw={400} truncate="end">
             {topicName}
           </Text>
-          <Text size="xs" style={{ marginTop: 2 }}>
+          <Text size="xs" c="dimmed" fw={500}>
             {lastCommunication ? formatDateTime(lastCommunication.sent) : ''}
           </Text>
         </Stack>
       </Group>
-    </MedplumLink>
+    </ListItem>
   );
 };

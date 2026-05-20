@@ -1,32 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Center,
-  Divider,
-  Flex,
-  Group,
-  Pagination,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Group, Stack, Tabs, Tooltip } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { Operator, parseSearchRequest } from '@medplum/core';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import {
+  ListDetailLayout,
+  ListEmptyState,
+  ListPagination,
+  ListScrollArea,
+  ListShell,
+  ListSkeleton,
+  listClasses,
+  useMedplum,
+} from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { NewTaskModal } from './NewTaskModal';
-import classes from './TaskBoard.module.css';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { TaskFilterMenu } from './TaskFilterMenu';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
@@ -90,7 +83,6 @@ export function TaskBoard({
   const searchParams = useMemo(() => new URLSearchParams(query), [query]);
   const itemsPerPage = Number.parseInt(searchParams.get('_count') || '20', 10);
   const currentOffset = Number.parseInt(searchParams.get('_offset') || '0', 10);
-  const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
   const isMyTasks = searchParams.has('owner');
 
   // Parse current search from query string
@@ -235,139 +227,86 @@ export function TaskBoard({
   };
 
   return (
-    <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Tabs
-                  value={isMyTasks ? 'my' : 'all'}
-                  onChange={(value) => {
-                    navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
-                  }}
-                  variant="unstyled"
-                  className="pill-tabs"
-                >
-                  <Tabs.List>
-                    <Tabs.Tab value="my">My Tasks</Tabs.Tab>
-                    <Tabs.Tab value="all">All Tasks</Tabs.Tab>
-                  </Tabs.List>
-                </Tabs>
-
-                <Group gap="xs">
-                  <TaskFilterMenu
-                    statuses={selectedStatuses}
-                    priorities={selectedPriorities}
-                    performerType={filters.performerType}
-                    performerTypes={performerTypes}
-                    onFilterChange={handleFilterChange}
-                    onClearAllFilters={handleClearAllFilters}
-                  />
-                  <Tooltip label="New Task" position="bottom" openDelay={500}>
-                    <ActionIcon
-                      radius="xl"
-                      variant="filled"
-                      color="blue"
-                      size={32}
-                      onClick={() => setNewTaskModalOpened(true)}
-                    >
-                      <IconPlus size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
-              </Flex>
-            </Paper>
-
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <ScrollArea style={{ flex: 1 }} id="task-list-scrollarea">
-                {loading && <TaskListSkeleton />}
-                {!loading && tasks.length === 0 && <EmptyTasksState />}
-                {!loading &&
-                  tasks.length > 0 &&
-                  tasks.map((task, index) => (
-                    <React.Fragment key={task.id}>
-                      <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri} />
-                      {index < tasks.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-              </ScrollArea>
-              {!loading && total !== undefined && total > itemsPerPage && (
-                <Box p="md">
-                  <Center>
-                    <Pagination
-                      value={currentPage}
-                      total={Math.ceil(total / itemsPerPage)}
-                      onChange={(page) => {
-                        const offset = (page - 1) * itemsPerPage;
-                        onChange({
-                          ...currentSearch,
-                          offset,
-                        });
-                      }}
-                      size="sm"
-                      siblings={1}
-                      boundaries={1}
-                    />
-                  </Center>
-                </Box>
-              )}
-            </Paper>
-          </Flex>
-        </Box>
+    <>
+      <ListDetailLayout>
+        <ListShell
+          header={
+            <>
+              <Tabs
+                value={isMyTasks ? 'my' : 'all'}
+                onChange={(value) => {
+                  navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
+                }}
+                variant="unstyled"
+                className={listClasses.pillTabs}
+              >
+                <Tabs.List>
+                  <Tabs.Tab value="my">My Tasks</Tabs.Tab>
+                  <Tabs.Tab value="all">All Tasks</Tabs.Tab>
+                </Tabs.List>
+              </Tabs>
+              <Group gap="xs">
+                <TaskFilterMenu
+                  statuses={selectedStatuses}
+                  priorities={selectedPriorities}
+                  performerType={filters.performerType}
+                  performerTypes={performerTypes}
+                  onFilterChange={handleFilterChange}
+                  onClearAllFilters={handleClearAllFilters}
+                />
+                <Tooltip label="New Task" position="bottom" openDelay={500}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="filled"
+                    color="blue"
+                    size={32}
+                    onClick={() => setNewTaskModalOpened(true)}
+                  >
+                    <IconPlus size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            </>
+          }
+          footer={
+            loading ? null : (
+              <ListPagination
+                total={total}
+                offset={currentOffset}
+                pageSize={itemsPerPage}
+                onOffsetChange={(offset) => onChange({ ...currentSearch, offset })}
+              />
+            )
+          }
+        >
+          <ListScrollArea id="task-list-scrollarea">
+            {loading && <ListSkeleton />}
+            {!loading && tasks.length === 0 && <ListEmptyState message="No tasks available." />}
+            {!loading && tasks.length > 0 && (
+              <Stack gap={2}>
+                {tasks.map((task) => (
+                  <TaskListItem key={task.id} task={task} selectedTask={selectedTask} getTaskUri={getTaskUri} />
+                ))}
+              </Stack>
+            )}
+          </ListScrollArea>
+        </ListShell>
 
         {selectedTask ? (
           <TaskDetailPanel task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
         ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
+          <ListDetailLayout.Column>
             <TaskSelectEmpty />
-          </Flex>
+          </ListDetailLayout.Column>
         )}
-      </Flex>
+      </ListDetailLayout>
 
       <NewTaskModal
         opened={newTaskModalOpened}
         onClose={() => setNewTaskModalOpened(false)}
         onTaskCreated={handleNewTaskCreated}
       />
-    </Box>
-  );
-}
-
-function EmptyTasksState(): JSX.Element {
-  return (
-    <Flex direction="column" h="100%" justify="center" align="center" pt="xl">
-      <Text c="dimmed" fw={500}>
-        No tasks available.
-      </Text>
-    </Flex>
-  );
-}
-
-const SKELETON_WIDTHS = [
-  ['85%', '60%', '72%'],
-  ['70%', '80%', '55%'],
-  ['92%', '50%', '65%'],
-  ['78%', '68%', '58%'],
-  ['88%', '45%', '75%'],
-  ['74%', '70%', '62%'],
-];
-
-function TaskListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {SKELETON_WIDTHS.map((widths, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={widths[0]} />
-            <Skeleton height={14} width={widths[1]} />
-            <Skeleton height={14} width={widths[2]} />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
+    </>
   );
 }
 

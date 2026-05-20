@@ -1,18 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Center, Divider, Flex, Pagination, Paper, ScrollArea, Skeleton, Stack, Text } from '@mantine/core';
+import { Box, Divider, Flex, Paper, Skeleton, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
 import type { Coverage, CoverageEligibilityRequest, Organization, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, useSearchOne } from '@medplum/react';
+import {
+  ListDetailLayout,
+  ListEmptyState,
+  ListPagination,
+  ListScrollArea,
+  ListSkeleton,
+  useMedplum,
+  useMedplumProfile,
+  useSearchOne,
+} from '@medplum/react';
 import { IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { CoverageDetailPanel } from './CoverageDetailPanel';
-import classes from './CoverageDetailPanel.module.css';
 import { CoverageSummary } from './CoverageSummary';
 import { EligibilityListItem } from './EligibilityListItem';
 
@@ -35,7 +43,6 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
   const searchParams = useMemo(() => new URLSearchParams(query), [query]);
   const itemsPerPage = Number.parseInt(searchParams.get('_count') ?? '20', 10);
   const currentOffset = Number.parseInt(searchParams.get('_offset') ?? '0', 10);
-  const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
   const currentSearch = useMemo(() => parseSearchRequest(`CoverageEligibilityRequest?${query}`), [query]);
 
   const [eligibilityBot] = useSearchOne('Bot', { identifier: 'https://www.medplum.com/bots|eligibility' });
@@ -95,11 +102,6 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
     fetchRequests().catch(showErrorNotification);
   }, [fetchRequests]);
 
-  const handlePageChange = (page: number): void => {
-    const offset = (page - 1) * itemsPerPage;
-    onChange({ ...currentSearch, offset });
-  };
-
   const handleCheckEligibility = async (): Promise<void> => {
     if (!eligibilityBot) {
       showErrorNotification(new Error('To enable Insurance Eligibility please contact support.'));
@@ -152,9 +154,13 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
   const selectedRequest = requestId ? requests.find((r) => r.id === requestId) : undefined;
 
   return (
-    <Flex h="100%" style={{ flex: 1 }}>
-      {/* Left panel — coverage summary + eligibility request list */}
-      <Box w={350} h="100%" className={classes.borderRight}>
+    <ListDetailLayout>
+      {/*
+       * CoverageSummary has variable height, so the left column composes the
+       * summary panel on top with the eligibility-checks list below. ListShell
+       * isn't a good fit here because its header is sized to a single 64px row.
+       */}
+      <ListDetailLayout.Column width={350} bordered>
         <Flex direction="column" h="100%">
           <Paper>
             <Box p="md">
@@ -172,81 +178,55 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
             </Box>
           </Paper>
           <Divider />
-          <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <ScrollArea flex={1} p="0.5rem">
-              {requestsLoading && <ListSkeleton />}
+          <Flex direction="column" style={{ flex: 1, minHeight: 0 }}>
+            <ListScrollArea>
+              {requestsLoading && <ListSkeleton rows={4} linesPerRow={2} />}
               {!requestsLoading && requests.length === 0 && (
-                <Flex direction="column" justify="center" align="center" pt="xl">
-                  <Text size="sm" c="dimmed">
-                    No eligibility checks found for this coverage.
-                  </Text>
-                </Flex>
+                <ListEmptyState message="No eligibility checks found for this coverage." />
               )}
-              {!requestsLoading &&
-                coverage &&
-                requests.map((req, index) => (
-                  <React.Fragment key={req.id}>
+              {!requestsLoading && coverage && requests.length > 0 && (
+                <Stack gap={2}>
+                  {requests.map((req) => (
                     <EligibilityListItem
+                      key={req.id}
                       request={req}
                       isSelected={req.id === requestId}
                       href={getRequestHref(coverage, req)}
                     />
-                    {index < requests.length - 1 && (
-                      <Box px="0.5rem">
-                        <Divider />
-                      </Box>
-                    )}
-                  </React.Fragment>
-                ))}
-            </ScrollArea>
-            {!requestsLoading && total !== undefined && total > itemsPerPage && (
-              <Box p="md">
-                <Center>
-                  <Pagination
-                    value={currentPage}
-                    total={Math.ceil(total / itemsPerPage)}
-                    onChange={handlePageChange}
-                    size="sm"
-                    siblings={1}
-                    boundaries={1}
-                  />
-                </Center>
-              </Box>
+                  ))}
+                </Stack>
+              )}
+            </ListScrollArea>
+            {!requestsLoading && (
+              <ListPagination
+                total={total}
+                offset={currentOffset}
+                pageSize={itemsPerPage}
+                onOffsetChange={(offset) => onChange({ ...currentSearch, offset })}
+              />
             )}
-          </Paper>
+          </Flex>
         </Flex>
-      </Box>
+      </ListDetailLayout.Column>
 
-      {/* Right panel — eligibility request + response detail */}
-      <Box h="100%" style={{ flex: 1 }}>
+      <ListDetailLayout.Column>
         {selectedRequest ? (
           <CoverageDetailPanel key={selectedRequest.id} request={selectedRequest} />
         ) : (
-          <Flex h="100%" justify="center" align="center">
-            <Stack align="center" gap="xs">
-              <Text size="md" c="dimmed">
-                Select an eligibility check to view details.
-              </Text>
-            </Stack>
-          </Flex>
+          <ListEmptyState message="Select an eligibility check to view details." />
         )}
-      </Box>
-    </Flex>
+      </ListDetailLayout.Column>
+    </ListDetailLayout>
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
-
 function NoCoverageSelected(): JSX.Element {
   return (
-    <Flex direction="column" style={{ flex: 1 }} h="100%" justify="center" align="center">
-      <Stack align="center" gap="md">
-        <IconShieldCheck size={64} color="var(--mantine-color-gray-4)" />
-        <Text size="sm" c="dimmed" ta="center">
-          Select a coverage to view details.
-        </Text>
-      </Stack>
-    </Flex>
+    <ListEmptyState
+      icon={<IconShieldCheck size={32} />}
+      message="No coverage selected"
+      description="Select a coverage to view details."
+    />
   );
 }
 
@@ -258,20 +238,6 @@ function CoverageSkeleton(): JSX.Element {
       <Skeleton height={16} width="70%" />
       <Skeleton height={14} width="50%" />
       <Skeleton height={14} width="40%" />
-    </Stack>
-  );
-}
-
-function ListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Stack key={i} gap="xs">
-          <Skeleton height={14} width="80%" />
-          <Skeleton height={12} width="50%" />
-          <Divider />
-        </Stack>
-      ))}
     </Stack>
   );
 }
