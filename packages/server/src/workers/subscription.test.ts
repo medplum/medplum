@@ -671,9 +671,7 @@ describe('Subscription Worker', () => {
         resourceType: 'Subscription',
         reason: 'test',
         // Subscription should only apply to resources in the same account
-        meta: {
-          account: org1,
-        },
+        meta: { account: org1 },
         status: 'active',
         criteria: 'Patient',
         channel: {
@@ -681,11 +679,11 @@ describe('Subscription Worker', () => {
           endpoint: 'https://example.com/subscription',
         },
       });
-      expect(subscription).toBeDefined();
+      expect(subscription.meta?.compartment).toContainEqual(org1);
 
       // Patient created outside of the Subscription's account
-      const patient = await repo.createResource({ resourceType: 'Patient' });
-      expect(patient).toBeDefined();
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      expect(patient.meta?.compartment).not.toContainEqual(org1);
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 

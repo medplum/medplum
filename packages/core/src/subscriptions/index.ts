@@ -757,8 +757,8 @@ export async function resourceMatchesSubscriptionCriteria({
   }
 
   // Check if there is any common compartment between the subscription and the resource
-  const sub = subscription.meta?.compartment;
-  const res = resource.meta?.compartment;
+  const sub = subscription.meta?.compartment?.filter((c) => !c.reference?.startsWith('Project/'));
+  const res = resource.meta?.compartment?.filter((c) => !c.reference?.startsWith('Project/'));
   if (sub?.length && !sub.some((s) => res?.some((r) => r.reference === s.reference))) {
     logger?.debug('Subscription suppressed due to mismatched accounts', {
       subscriptionId: subscription.id,
