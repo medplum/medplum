@@ -5,7 +5,10 @@ import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import type { MedplumServerConfig } from '../config/types';
-import { validateDataWarehouseConfig } from '../config/validate-config';
+import {
+  getDataWarehouseConfigErrors,
+  isDataWarehouseSyncOperational,
+} from '../config/validate-config';
 import { getWarehouseSyncPostgresTableNames, toIcebergTableName } from '../data-warehouse/config';
 import { LocalParquetWarehouseDestination } from '../data-warehouse/destination';
 import type { SyncOptions } from '../data-warehouse/sync';
@@ -22,11 +25,15 @@ export const DataWarehouseSyncQueueName = 'DataWarehouseSyncQueue';
 export const DataWarehouseSyncSchedulerId = 'data-warehouse-sync';
 
 export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  /*
-   Only initialize the worker if it is enabled.
-   otherwise, quit fast
-  */
   if (options?.workerEnabled === false) {
+    return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
+  }
+
+  if (!isDataWarehouseSyncOperational(config)) {
+    const errors = getDataWarehouseConfigErrors(config);
+    if (errors.length > 0) {
+      globalLogger.warn('Skipping data warehouse sync worker due to invalid configuration', { errors });
+    }
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
 
@@ -79,7 +86,16 @@ export async function refreshDataWarehouseSyncScheduler(
     return;
   }
 
-  validateDataWarehouseConfig(config);
+  const errors = getDataWarehouseConfigErrors(config);
+  if (errors.length > 0) {
+    globalLogger.warn('Skipping data warehouse sync scheduler due to invalid configuration', { errors });
+    try {
+      await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
+    } catch (err) {
+      globalLogger.warn('Failed removing invalid data warehouse sync scheduler', { err });
+    }
+    return;
+  }
 
   await queue.upsertJobScheduler(
     DataWarehouseSyncSchedulerId,
@@ -128,7 +144,11 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     throw new Error('dataWarehouse.enabled must be true to run scheduled sync');
   }
 
-  validateDataWarehouseConfig(config);
+  const errors = getDataWarehouseConfigErrors(config);
+  if (errors.length > 0) {
+    throw new Error(errors.join('; '));
+  }
+
   const { namespace } = syncConfig;
 
   // Fallback to the writer database when readonly is not configured.

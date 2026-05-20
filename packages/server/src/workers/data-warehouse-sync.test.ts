@@ -132,8 +132,17 @@ describe('data-warehouse sync worker', () => {
       });
     });
 
-    test('getDataWarehouseSyncOptions validates enabled config', () => {
+    test('getDataWarehouseSyncOptions throws when sync is disabled', () => {
       expect(() => getDataWarehouseSyncOptions(config)).toThrow('dataWarehouse.enabled must be true');
+    });
+
+    test('initDataWarehouseSyncWorker skips queue and worker when sync is disabled', () => {
+      const result = initDataWarehouseSyncWorker(config, { workerEnabled: true });
+
+      expect(result.queue).toBeUndefined();
+      expect(result.worker).toBeUndefined();
+      expect(mockedQueue).not.toHaveBeenCalled();
+      expect(mockedWorker).not.toHaveBeenCalled();
     });
 
     test('refreshDataWarehouseSyncScheduler removes scheduler when disabled', async () => {
@@ -172,6 +181,47 @@ describe('data-warehouse sync worker', () => {
     expect(result.worker).toBeUndefined();
     expect(mockedQueue).not.toHaveBeenCalled();
     expect(mockedWorker).not.toHaveBeenCalled();
+  });
+
+  describe('with invalid enabled configuration', () => {
+    beforeEach(async () => {
+      const base = await loadTestConfig();
+      config = {
+        ...base,
+        dataWarehouse: {
+          enabled: true,
+          cron: '0 * * * *',
+          destination: 's3tables',
+        },
+      };
+    });
+
+    test('getDataWarehouseSyncOptions throws configuration errors', () => {
+      expect(() => getDataWarehouseSyncOptions(config)).toThrow(
+        'dataWarehouse.awsS3TableArn is required when dataWarehouse.destination is "s3tables"'
+      );
+    });
+
+    test('initDataWarehouseSyncWorker skips queue and worker', () => {
+      const result = initDataWarehouseSyncWorker(config, { workerEnabled: true });
+
+      expect(result.queue).toBeUndefined();
+      expect(result.worker).toBeUndefined();
+      expect(mockedQueue).not.toHaveBeenCalled();
+      expect(mockedWorker).not.toHaveBeenCalled();
+    });
+
+    test('refreshDataWarehouseSyncScheduler removes scheduler and does not upsert', async () => {
+      const queue = {
+        upsertJobScheduler: jest.fn(),
+        removeJobScheduler: jest.fn(),
+      } as unknown as Queue;
+
+      await refreshDataWarehouseSyncScheduler(config, queue);
+
+      expect((queue as any).removeJobScheduler).toHaveBeenCalledWith(DataWarehouseSyncSchedulerId);
+      expect((queue as any).upsertJobScheduler).not.toHaveBeenCalled();
+    });
   });
 
   test('initDataWarehouseSyncWorker defaults concurrency to 1', () => {

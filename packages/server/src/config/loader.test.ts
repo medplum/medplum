@@ -368,7 +368,7 @@ describe('Config', () => {
     expect(config.dataWarehouse?.namespace).toStrictEqual('test');
   });
 
-  test('loadConfig throws when dataWarehouse is enabled for s3tables but awsS3TableArn is missing', async () => {
+  test('loadConfig succeeds when dataWarehouse is enabled but configuration is incomplete', async () => {
     // given
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
@@ -376,10 +376,12 @@ describe('Config', () => {
     setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
 
     // when
-    await expect(loadConfig('env')).rejects.toThrow(
-      // then
-      'dataWarehouse.awsS3TableArn is required when dataWarehouse.destination is "s3tables"'
-    );
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse?.enabled).toBe(true);
+    expect(config.dataWarehouse?.destination).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.awsS3TableArn).toBeUndefined();
   });
 
   test('Env config dataWarehouse local destination fields', async () => {
@@ -452,7 +454,7 @@ describe('Config', () => {
     expect(config.defaultRateLimit).toStrictEqual(-1);
     expect(config.defaultSuperAdminClientId).toBeDefined();
     expect(config.defaultSuperAdminClientSecret).toBeDefined();
-    expect(config.dataWarehouse?.enabled).toStrictEqual(false);
+    expect(config.dataWarehouse?.enabled).not.toBe(true);
     expect(config.dataWarehouse?.cron).toBeUndefined();
   });
 });
