@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
-import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import type { Bundle, Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -729,52 +729,29 @@ describe('FHIR Routes', () => {
     }));
 
   test('Set accounts on create', async () => {
-    const { project, accessToken } = await createTestProject({ withAccessToken: true });
-
-    const res1 = await request(app)
-      .post('/fhir/R4/Organization')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Organization' });
-    expect(res1.status).toBe(201);
-
-    const account = res1.body as Organization;
+    const { project, accessToken } = await createTestProject({
+      withAccessToken: true,
+      // Only admins can write to meta.accounts
+      membership: { admin: true },
+    });
+    const org1 = { reference: `Organization/${randomUUID()}` };
+    const projectRef = { reference: getReferenceString(project) };
 
     const res2 = await request(app)
-      .post('/fhir/R4/Questionnaire')
+      .post('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended')
       .send({
-        resourceType: 'Questionnaire',
-        meta: { accounts: [{ reference: getReferenceString(account) }] },
-        title: 'Questionnaire A.1',
-        status: 'active',
-        item: [
-          {
-            linkId: '1',
-            text: 'How would you rate your overall experience?',
-            type: 'choice',
-            answerOption: [
-              {
-                valueCoding: {
-                  system: 'http://example.org/rating',
-                  code: '5',
-                  display: 'Excellent',
-                },
-              },
-            ],
-          },
-        ],
+        resourceType: 'Patient',
+        meta: { accounts: [org1] },
       });
     expect(res2.status).toBe(201);
-    expect(res2.body.meta?.accounts?.length).toBe(1);
-    expect(res2.body.meta?.accounts?.[0].reference).toBe(getReferenceString(account));
+    const patient = res2.body as Patient;
+    const patientRef = { reference: getReferenceString(patient) };
 
-    // There should be 2 compartments:
-    // 1: the project
-    // 2: the account organization
-    const compartments = res2.body.meta?.compartment as Reference[];
-    expect(compartments.length).toBe(2);
-    expect(compartments.find((c) => c.reference === getReferenceString(project))).toBeDefined();
-    expect(compartments.find((c) => c.reference === getReferenceString(account))).toBeDefined();
+    expect(patient.meta?.account).toStrictEqual(org1);
+    expect(patient.meta?.accounts).toStrictEqual([org1]);
+    expect(patient.meta?.compartment).toStrictEqual(expect.arrayContaining([org1, projectRef, patientRef]));
+    expect(patient.meta?.compartment).toHaveLength(3);
   });
 });

@@ -1679,20 +1679,22 @@ describe('FHIR Repo', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
+      const practitionerRef = { reference: getReferenceString(practitioner) };
+
       const conditionalReference = {
         reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
       };
-
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: { account: conditionalReference },
         generalPractitioner: [conditionalReference],
       });
-      const expectedPractitioner = getReferenceString(practitioner);
-      expect(patient.generalPractitioner?.[0]?.reference).toStrictEqual(expectedPractitioner);
-      expect(patient.meta?.account?.reference).toStrictEqual(expectedPractitioner);
-      expect(patient.meta?.accounts).toHaveLength(1);
-      expect(patient.meta?.accounts).toContainEqual({ reference: expectedPractitioner });
+      const patientRef = { reference: getReferenceString(patient) };
+      expect(patient.generalPractitioner?.[0]).toStrictEqual(practitionerRef);
+      expect(patient.meta?.account).toStrictEqual(practitionerRef);
+      expect(patient.meta?.accounts).toStrictEqual([practitionerRef]);
+      expect(patient.meta?.compartment).toStrictEqual(expect.arrayContaining([practitionerRef, patientRef]));
+      expect(patient.meta?.compartment).toHaveLength(2);
     }));
 
   test('Conditional reference resolution failure', async () =>

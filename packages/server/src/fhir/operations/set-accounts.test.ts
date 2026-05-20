@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
   AsyncJob,
   Bundle,
@@ -487,7 +487,7 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test('Accounts applied to resource with no default profile', async () => {
-    const { accessToken, repo } = await createTestProject({
+    const { accessToken, repo, project } = await createTestProject({
       withAccessToken: true,
       withRepo: true,
       project: {
@@ -497,6 +497,7 @@ describe('Patient Set Accounts Operation', () => {
       },
       membership: { admin: true },
     });
+    const projectRef = { reference: getReferenceString(project) };
 
     const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
     const orgRef = createReference(organization);
@@ -530,6 +531,7 @@ describe('Patient Set Accounts Operation', () => {
     expect(reportRes.status).toBe(201);
     const diagnosticReport = reportRes.body as DiagnosticReport;
     expect(diagnosticReport.subject).toStrictEqual(patientRef);
-    expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef]));
+    expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef, projectRef]));
+    expect(diagnosticReport.meta?.compartment).toHaveLength(3);
   });
 });
