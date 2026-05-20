@@ -359,9 +359,7 @@ describe('EncounterCoverageEligibilityModal', () => {
       payor: [{ display: 'Self' }],
       beneficiary: { reference: `Patient/${HomerSimpson.id}` },
       type: {
-        coding: [
-          { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'SELFPAY', display: 'Self Pay' },
-        ],
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'SELFPAY', display: 'Self Pay' }],
         text: 'Self Pay',
       },
     };
