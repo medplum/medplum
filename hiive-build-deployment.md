@@ -126,6 +126,14 @@ On first boot, Medplum seeds a default super-admin account unless overridden in 
 
 Change this password immediately after first login.
 
+Addtional Login
+| Item | Value |
+| --- | --- |
+| Initial email | `admin-ubix@example.com` |
+| Initial password | `medplum_admin` |
+| Super admin project | `Super Admin` |
+
+
 ## SSM Parameter Store
 
 Deployment parameters are stored under `/medplum/build/`.
