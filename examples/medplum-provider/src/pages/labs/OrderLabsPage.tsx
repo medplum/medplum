@@ -179,7 +179,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
               error={createError?.validation?.performingLab}
             />
             <TextInput
-              label="Account number"
+              label="Lab account number"
               onChange={(e) => setPerformingLabAccountNumber(e.currentTarget.value || undefined)}
             />
             <div>
