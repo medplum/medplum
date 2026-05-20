@@ -2,55 +2,51 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import type { Client, Pool } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { isValidTableName } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
 
-const LookupOperation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'db-column-statistics',
-  status: 'active',
-  kind: 'operation',
-  code: 'db-column-statistics',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    param('in', 'tableName', 'string', 0, '1'),
-    param('out', 'defaultStatisticsTarget', 'integer', 1, '1'),
-    param('out', 'table', undefined, 0, '1', [
-      param('out', 'tableName', 'string', 1, '1'),
-      param('out', 'column', undefined, 1, '*', [
-        param('out', 'name', 'string', 1, '1'),
-        param('out', 'statisticsTarget', 'integer', 1, '1'),
-        param('out', 'schemaName', 'string', 1, '1'),
+const LookupOperation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-column-statistics',
+    code: 'db-column-statistics',
+    parameter: [
+      param('in', 'tableName', 'string', 0, '1'),
+      param('out', 'defaultStatisticsTarget', 'integer', 1, '1'),
+      param('out', 'table', undefined, 0, '1', [
         param('out', 'tableName', 'string', 1, '1'),
-        param('out', 'type', 'string', 1, '1'),
-        param('out', 'notNull', 'boolean', 1, '1'),
-        param('out', 'defaultValue', 'string', 0, '1'),
-        param('out', 'nullFraction', 'decimal', 0, '1'),
-        param('out', 'avgWidth', 'integer', 0, '1'),
-        param('out', 'nDistinct', 'decimal', 0, '1'),
-        param('out', 'mostCommonValues', 'string', 0, '1'),
-        param('out', 'mostCommonFreqs', 'string', 0, '1'),
-        param('out', 'histogramBounds', 'string', 0, '1'),
-        param('out', 'correlation', 'decimal', 0, '1'),
-        param('out', 'mostCommonElems', 'string', 0, '1'),
-        param('out', 'mostCommonElemFreqs', 'string', 0, '1'),
-        param('out', 'elemCountHistogram', 'string', 0, '1'),
+        param('out', 'column', undefined, 1, '*', [
+          param('out', 'name', 'string', 1, '1'),
+          param('out', 'statisticsTarget', 'integer', 1, '1'),
+          param('out', 'schemaName', 'string', 1, '1'),
+          param('out', 'tableName', 'string', 1, '1'),
+          param('out', 'type', 'string', 1, '1'),
+          param('out', 'notNull', 'boolean', 1, '1'),
+          param('out', 'defaultValue', 'string', 0, '1'),
+          param('out', 'nullFraction', 'decimal', 0, '1'),
+          param('out', 'avgWidth', 'integer', 0, '1'),
+          param('out', 'nDistinct', 'decimal', 0, '1'),
+          param('out', 'mostCommonValues', 'string', 0, '1'),
+          param('out', 'mostCommonFreqs', 'string', 0, '1'),
+          param('out', 'histogramBounds', 'string', 0, '1'),
+          param('out', 'correlation', 'decimal', 0, '1'),
+          param('out', 'mostCommonElems', 'string', 0, '1'),
+          param('out', 'mostCommonElemFreqs', 'string', 0, '1'),
+          param('out', 'elemCountHistogram', 'string', 0, '1'),
+        ]),
       ]),
-    ]),
-  ],
-};
+    ],
+  }
+);
 
 export async function getColumnStatisticsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

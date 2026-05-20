@@ -5,6 +5,8 @@ import type {
   AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
+  AgentStats,
+  AgentStatsRequest,
   AgentTransmitRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
@@ -42,7 +44,6 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
-import type { ChannelStats } from './channel-stats-tracker';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
   DEFAULT_PING_TIMEOUT,
@@ -338,6 +339,9 @@ export class App {
           case 'agent:logs:request':
             await this.handleLogRequest(command);
             break;
+          case 'agent:stats:request':
+            await this.handleStatsRequest(command);
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
@@ -389,11 +393,6 @@ export class App {
           this.log.error(normalizeErrorString(result.reason));
         }
       }
-      // We need to stop tracking stats for each client so that the heartbeat listener is removed
-      // Before clearing the clients
-      for (const pool of this.hl7Clients.values()) {
-        pool.stopTrackingStats();
-      }
       this.hl7Clients.clear();
     }
 
@@ -424,24 +423,13 @@ export class App {
 
     if (this.logStatsFreqSecs > 0) {
       this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
-      if (this.keepAlive) {
-        for (const pool of this.hl7Clients.values()) {
-          pool.startTrackingStats();
-        }
-      }
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
-    } else {
-      for (const pool of this.hl7Clients.values()) {
-        pool.stopTrackingStats();
-      }
     }
 
     await this.hydrateListeners();
   }
 
-  private logStats(): void {
-    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
-
+  getStats(): AgentStats {
     const stats = getCurrentStats();
     let totalHl7Clients = 0;
     for (const pool of this.hl7Clients.values()) {
@@ -450,29 +438,32 @@ export class App {
 
     const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
     const channelStats = Object.fromEntries(
-      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats.getStats()])
     );
 
     const pools = Array.from(this.hl7Clients.values());
     const clientStats = Object.fromEntries(
       pools.map((pool) => [
         `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
-        pool.getPoolStats() as ChannelStats,
+        pool.getPoolStats(),
       ])
     );
 
-    this.log.info('Agent stats', {
-      stats: {
-        ...stats,
-        webSocketQueueDepth: this.webSocketQueue.length,
-        hl7QueueDepth: this.hl7Queue.length,
-        hl7ClientCount: totalHl7Clients,
-        live: this.live,
-        outstandingHeartbeats: this.outstandingHeartbeats,
-        channelStats,
-        clientStats,
-      },
-    });
+    return {
+      ...stats,
+      webSocketQueueDepth: this.webSocketQueue.length,
+      hl7QueueDepth: this.hl7Queue.length,
+      hl7ClientCount: totalHl7Clients,
+      live: this.live,
+      outstandingHeartbeats: this.outstandingHeartbeats,
+      channelStats,
+      clientStats,
+    };
+  }
+
+  private logStats(): void {
+    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
+    this.log.info('Agent stats', { stats: this.getStats() });
   }
 
   /**
@@ -1002,6 +993,24 @@ export class App {
     }
   }
 
+  private async handleStatsRequest(command: AgentStatsRequest): Promise<void> {
+    try {
+      await this.sendToWebSocket({
+        type: 'agent:stats:response',
+        statusCode: 200,
+        stats: this.getStats(),
+        callback: command.callback,
+      });
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: normalizeErrorString(err),
+        callback: command.callback,
+      });
+    }
+  }
+
   private async handleLogRequest(command: AgentLogsRequest): Promise<void> {
     if (!isWinstonWrapperLogger(this.log)) {
       const errMsg = 'Unable to fetch logs since current logger instance does not support fetching';
@@ -1105,7 +1114,6 @@ export class App {
     if (this.hl7Clients.has(message.remote)) {
       pool = this.hl7Clients.get(message.remote) as Hl7ClientPool;
     } else {
-      const keepAlive = this.keepAlive;
       pool = new Hl7ClientPool({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
@@ -1116,14 +1124,10 @@ export class App {
         heartbeatEmitter: this.heartbeatEmitter,
       });
       this.hl7Clients.set(message.remote, pool);
-      if (keepAlive && this.logStatsFreqSecs > 0) {
-        pool.startTrackingStats();
-      }
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         encoding,
-        trackingStats: this.logStatsFreqSecs > 0,
       });
     }
 

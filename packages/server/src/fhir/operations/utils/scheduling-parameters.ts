@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { EMPTY, createReference, isDefined } from '@medplum/core';
+import { badRequest, createReference, EMPTY, isDefined, OperationOutcomeError } from '@medplum/core';
 import type {
-  Duration,
+  Extension,
   HealthcareService,
   HealthcareServiceAvailableTime,
   Period,
@@ -11,6 +11,16 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import {
+  assertExtensionBoolean,
+  assertExtensionCode,
+  assertExtensionDuration,
+  assertExtensionReference,
+  assertExtensionTime,
+  getExtensions,
+} from '../../../util/extension';
+import type { WithPath } from '../../../util/withpath';
+import { getPath, withPath } from '../../../util/withpath';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -96,10 +106,16 @@ function isReferenceTo<T extends Resource>(reference: Reference<T>, resource: Wi
   return refType === resource.resourceType && id === resource.id;
 }
 
-function durationToMinutes(duration: Duration): number {
-  const { value, unit } = duration;
+function isDayOfWeek(s: string): s is DayOfWeek {
+  return s === 'mon' || s === 'tue' || s === 'wed' || s === 'thu' || s === 'fri' || s === 'sat' || s === 'sun';
+}
+
+function durationToMinutes(extension: WithPath<Extension>): number {
+  assertExtensionDuration(extension);
+
+  const { value, unit } = extension.valueDuration;
   if (value === undefined) {
-    throw new Error('Got duration without value');
+    throw new OperationOutcomeError(badRequest('Got duration without value', getPath(extension)));
   }
   switch (unit) {
     case 'wk':
@@ -111,54 +127,88 @@ function durationToMinutes(duration: Duration): number {
     case 'min':
       return value;
     default:
-      throw new Error(`Got unhandled unit "${unit}"`);
+      throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
   }
 }
 
-function atMostOne<T>(arr: T[], attribute: string, _resourceType: string): T | undefined {
+function atMostOne<T extends object>(arr: WithPath<T>[], attribute: string): WithPath<T> | undefined {
   if (arr.length > 1) {
-    throw new Error(`Scheduling parameter attribute '${attribute}' has too many values`);
+    throw new OperationOutcomeError(
+      badRequest(
+        `Scheduling parameter attribute '${attribute}' has too many values`,
+        arr.map((obj) => getPath(obj))
+      )
+    );
   }
   return arr[0];
 }
 
-function atLeastOne<T>(arr: T[], attribute: string, _resourceType: string): T[] {
+function atLeastOne<T>(arr: T[], attribute: string, options: { path?: string }): T[] {
   if (arr.length < 1) {
-    throw new Error(`Required scheduling parameter attribute '${attribute}' is missing`);
+    throw new OperationOutcomeError(
+      badRequest(`Required scheduling parameter attribute '${attribute}' is missing`, options.path)
+    );
   }
   return arr;
 }
 
-function exactlyOne<T>(arr: T[], attribute: string, _resourceType: string): T {
+function exactlyOne<T extends object>(arr: WithPath<T>[], attribute: string, options: { path?: string }): WithPath<T> {
   if (arr.length < 1) {
-    throw new Error(`Required scheduling parameter attribute '${attribute}' is missing`);
+    throw new OperationOutcomeError(
+      badRequest(`Required scheduling parameter attribute '${attribute}' is missing`, options.path)
+    );
   }
   if (arr.length > 1) {
-    throw new Error(`Scheduling parameter attribute '${attribute}' has too many values`);
+    throw new OperationOutcomeError(
+      badRequest(
+        `Scheduling parameter attribute '${attribute}' has too many values`,
+        arr.map((obj) => getPath(obj))
+      )
+    );
   }
   return arr[0];
 }
 
-function exactlyZero(arr: unknown[], attribute: string, resourceType: string): void {
+function exactlyZero(arr: WithPath<object>[], attribute: string, resourceType: string): void {
   if (arr.length > 0) {
-    throw new Error(`Scheduling parameter attribute '${attribute}' is not allowed on ${resourceType}`);
+    throw new OperationOutcomeError(
+      badRequest(
+        `Scheduling parameter attribute '${attribute}' is not allowed on ${resourceType}`,
+        arr.map((obj) => getPath(obj))
+      )
+    );
   }
 }
 
-function allMatch<T>(values: T[]): boolean {
+// slightly tricky: we test values by strict equality (`===`), so this doesn't
+// work on complex types like `Availability`. We restrict this to a subset of
+// keys from SchedulingParameters that we know contain primitive types.
+function assertAllMatch(
+  values: WithPath<SchedulingParameters>[],
+  attribute: 'duration' | 'alignmentInterval' | 'alignmentOffset'
+): void {
   if (values.length <= 1) {
-    return true;
+    return;
   }
-  const first = values[0];
-  return values.every((value) => value === first);
+  const mismatched = values.find((value) => value[attribute] !== values[0][attribute]);
+  if (mismatched) {
+    throw new OperationOutcomeError(
+      badRequest(`Scheduling parameters attribute '${attribute}' does not match`, [
+        // We special case these a little bit - SchedulingParameters
+        // attributes come from nested extensions, not direct attribute access
+        `${getPath(values[0])}.extension('${attribute}')`,
+        `${getPath(mismatched)}.extension('${attribute}')`,
+      ])
+    );
+  }
 }
 
 export function chooseSchedulingParameterGroup(
-  schedules: Schedule[],
-  healthcareService: WithId<HealthcareService>
-): Map<Schedule, SchedulingParameters | undefined> {
+  schedules: WithPath<WithId<Schedule>>[],
+  healthcareService: WithPath<WithId<HealthcareService>>
+): Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters>> {
   const serviceParams = parseSchedulingParametersExtensions(healthcareService).at(0);
-  const result = new Map<Schedule, SchedulingParameters | undefined>();
+  const result = new Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters>>();
 
   for (const schedule of schedules) {
     const params = parseSchedulingParametersExtensions(schedule).find((parameters) =>
@@ -167,24 +217,28 @@ export function chooseSchedulingParameterGroup(
 
     // prefer schedule-specific overrides matching the requested service type,
     // fall back to service-defined parameters otherwise.
-    result.set(schedule, params ?? serviceParams);
+    const value = params ?? serviceParams;
+    if (!value) {
+      throw new OperationOutcomeError(
+        badRequest('No SchedulingParameters found on Schedule or HealthcareService', [
+          getPath(schedule),
+          getPath(healthcareService),
+        ])
+      );
+    }
+
+    result.set(schedule, value);
   }
 
   return result;
 }
 
 export function extractCommonParameters(
-  schedulingParameters: SchedulingParameters[]
+  schedulingParameters: WithPath<SchedulingParameters>[]
 ): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset'> {
-  if (!allMatch(schedulingParameters.map((x) => x.duration))) {
-    throw new Error('Scheduling parameters `duration` does not match');
-  }
-  if (!allMatch(schedulingParameters.map((x) => x.alignmentInterval))) {
-    throw new Error('Scheduling parameters `alignmentInterval` does not match');
-  }
-  if (!allMatch(schedulingParameters.map((x) => x.alignmentOffset))) {
-    throw new Error('Scheduling parameters `alignmentOffset` does not match');
-  }
+  assertAllMatch(schedulingParameters, 'duration');
+  assertAllMatch(schedulingParameters, 'alignmentInterval');
+  assertAllMatch(schedulingParameters, 'alignmentOffset');
 
   return {
     duration: schedulingParameters[0].duration,
@@ -206,9 +260,9 @@ export function extractCommonParameters(
  * @returns SchedulingParameters
  */
 export function chooseSchedulingParameters(
-  schedule: Schedule,
-  healthcareService: WithId<HealthcareService>
-): SchedulingParameters | undefined {
+  schedule: WithPath<Schedule>,
+  healthcareService: WithPath<WithId<HealthcareService>>
+): WithPath<SchedulingParameters> | undefined {
   const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 
   // Top priority: entries on the schedule pointing at this service
@@ -231,34 +285,73 @@ export function chooseSchedulingParameters(
 
 // Convert a single availability extension into SchedulingParametersAvailability entries.
 // notAvailableTime sub-extensions are ignored for now.
-function extractAvailabilityR4(ext: {
-  url: 'availability';
-  extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
-}): SchedulingParametersAvailability[] {
-  return ext.extension
-    .filter((sub) => sub.url === 'availableTime')
+function extractAvailabilityR4(ext: WithPath<Extension>): SchedulingParametersAvailability[] {
+  // Intentionally ignored for now: any subextensions with URL `notAvailableTime`
+  return getExtensions(ext, 'availableTime')
     .map((availTime) => {
-      const dayOfWeek = availTime.extension.filter((e) => e.url === 'daysOfWeek').map((e) => e.valueCode);
+      const dayOfWeek = getExtensions(availTime, 'daysOfWeek').map((e) => {
+        assertExtensionCode(e);
+        if (!isDayOfWeek(e.valueCode)) {
+          throw new OperationOutcomeError(
+            badRequest('Invalid SchedulingParameters.availability.availableTime.daysOfWeek entry', getPath(e))
+          );
+        }
+        return e.valueCode;
+      });
 
-      const allDay = availTime.extension.find((e) => e.url === 'allDay')?.valueBoolean;
+      const allDay = atMostOne(getExtensions(availTime, 'allDay'), 'availability.availableTime.allDay');
       if (allDay) {
-        // FHIR doesn't allow representing end-of-day as `24:00:00` in a time
-        //
-        // We follow a convention where when end <= start, we treat it as
-        // belonging to the next day. In other words, this availability is from
-        // the start of the given weekdays to the start of the subsequent day.
-        //
-        // Note that we don't use a sentinel value like `23:59:59`, as we don't
-        // want to introduce a 1sec gap in availability; some events are
-        // scheduled to cross that boundary.
-        return { dayOfWeek, availableStartTime: '00:00:00' as const, availableEndTime: '00:00:00' as const };
+        assertExtensionBoolean(allDay);
+        if (allDay.valueBoolean) {
+          // FHIR doesn't allow representing end-of-day as `24:00:00` in a time
+          //
+          // We follow a convention where when end <= start, we treat it as
+          // belonging to the next day. In other words, this availability is
+          // from the start of the given weekdays to the start of the
+          // subsequent day.
+          //
+          // Note that we don't use a sentinel value like `23:59:59`, as we
+          // don't want to introduce a 1sec gap in availability; some events
+          // are scheduled to cross that boundary.
+          return { dayOfWeek, availableStartTime: '00:00:00' as const, availableEndTime: '00:00:00' as const };
+        }
       }
 
-      const start = availTime.extension.find((e) => e.url === 'availableStartTime')?.valueTime;
-      const end = availTime.extension.find((e) => e.url === 'availableEndTime')?.valueTime;
-      if (start && end) {
-        return { dayOfWeek, availableStartTime: start, availableEndTime: end };
+      const start = atMostOne(
+        getExtensions(availTime, 'availableStartTime'),
+        'availability.availableTime.availableStartTime'
+      );
+      const end = atMostOne(
+        getExtensions(availTime, 'availableEndTime'),
+        'availability.availableTime.availableEndTime'
+      );
+      if (start) {
+        assertExtensionTime(start);
       }
+      if (end) {
+        assertExtensionTime(end);
+      }
+
+      if (start && end) {
+        return {
+          dayOfWeek,
+          availableStartTime: start.valueTime as WallClockTime,
+          availableEndTime: end.valueTime as WallClockTime,
+        };
+      }
+
+      if (start) {
+        throw new OperationOutcomeError(
+          badRequest('availableTime has availableStartTime without availableEndTime', getPath(availTime))
+        );
+      }
+
+      if (end) {
+        throw new OperationOutcomeError(
+          badRequest('availableTime has availableEndTime without availableStartTime', getPath(availTime))
+        );
+      }
+
       return undefined;
     })
     .filter(isDefined);
@@ -292,88 +385,75 @@ function extractAvailability(
  * @param resource - A Schedule or HealthcareService to extract scheduling information from
  * @returns SchedulingParameters[] - An array of objects describing scheduling configuration
  */
-export function parseSchedulingParametersExtensions(resource: Schedule | HealthcareService): SchedulingParameters[] {
-  const extensions = (resource.extension ?? []).filter(
-    (ext) => ext.url === SchedulingParametersURI
-  ) as SchedulingParametersExtension[];
+export function parseSchedulingParametersExtensions(
+  resource: WithPath<Schedule> | WithPath<HealthcareService>
+): WithPath<SchedulingParameters>[] {
+  const extensions = getExtensions(resource, SchedulingParametersURI);
 
   // Holds scheduling parameters extracted from attributes of the resource, to be merged into
   // each extension on the resource
   const resourceParameters: Partial<SchedulingParameters> = {};
   if (resource.resourceType === 'HealthcareService') {
-    resourceParameters.service = createReference(resource);
     resourceParameters.availability = (resource.availableTime ?? EMPTY).map(extractAvailability).filter(isDefined);
   }
 
   return extensions.map((extension) => {
-    const duration = exactlyOne(
-      extension.extension.filter((ext) => ext.url === 'duration'),
-      'duration',
-      resource.resourceType
-    );
+    const path = getPath(extension);
+    const duration = exactlyOne(getExtensions(extension, 'duration'), 'duration', { path });
 
     // `availability` is required in Schedule, and not allowed in
     // HealthcareService (where we read from availableTime instead).
-    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
+    const rawAvailability = getExtensions(extension, 'availability');
     if (resource.resourceType === 'Schedule') {
-      atLeastOne(rawAvailability, 'availability', resource.resourceType);
+      atLeastOne(rawAvailability, 'availability', { path });
     } else {
       exactlyZero(rawAvailability, 'availability', resource.resourceType);
     }
 
     const availability = resourceParameters.availability ?? rawAvailability.flatMap(extractAvailabilityR4);
 
-    const bufferBefore = atMostOne(
-      extension.extension.filter((ext) => ext.url === 'bufferBefore'),
-      'bufferBefore',
-      resource.resourceType
-    );
-    const bufferAfter = atMostOne(
-      extension.extension.filter((ext) => ext.url === 'bufferAfter'),
-      'bufferAfter',
-      resource.resourceType
-    );
-    const alignmentOffset = atMostOne(
-      extension.extension.filter((ext) => ext.url === 'alignmentOffset'),
-      'alignmentOffset',
-      resource.resourceType
-    );
-    const rawAlignmentInterval = atMostOne(
-      extension.extension.filter((ext) => ext.url === 'alignmentInterval'),
-      'alignmentInterval',
-      resource.resourceType
-    );
-    const timezone = atMostOne(
-      extension.extension.filter((ext) => ext.url === 'timezone'),
-      'timezone',
-      resource.resourceType
-    );
+    const bufferBefore = atMostOne(getExtensions(extension, 'bufferBefore'), 'bufferBefore');
+    const bufferAfter = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
+    const alignmentOffset = atMostOne(getExtensions(extension, 'alignmentOffset'), 'alignmentOffset');
+    const rawAlignmentInterval = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
+
+    const timezone = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
+    if (timezone) {
+      assertExtensionCode(timezone);
+    }
 
     // `service` is expected in Schedule, not allowed in HealthcareService
-    const rawService = extension.extension.filter((ext) => ext.url === 'service');
+    let service: Reference<HealthcareService> & { reference: string };
+    const rawService = getExtensions(extension, 'service');
     if (resource.resourceType === 'HealthcareService') {
       exactlyZero(rawService, 'service', resource.resourceType);
+      service = createReference(resource);
+    } else {
+      const serviceExt = exactlyOne(rawService, 'service', { path });
+      assertExtensionReference<HealthcareService>(serviceExt, 'HealthcareService');
+      service = serviceExt.valueReference;
     }
-    const service =
-      resourceParameters.service ?? exactlyOne(rawService, 'service', resource.resourceType).valueReference;
 
     // default alignmentInterval is "on the hour" (0)
-    let alignmentInterval = rawAlignmentInterval ? durationToMinutes(rawAlignmentInterval.valueDuration) : 0;
+    let alignmentInterval = rawAlignmentInterval ? durationToMinutes(rawAlignmentInterval) : 0;
 
     // Convert "on the hour" alignment from the structure (0) to one usable as a modulus (60)
     alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
 
-    return {
-      service, // Reference to a HealthcareService these parameters are used for
-      availability, // HealthcareService.availableTime or `availability` extension parameter
+    return withPath(
+      {
+        service, // Reference to a HealthcareService these parameters are used for
+        availability, // HealthcareService.availableTime or `availability` extension parameter
 
-      // These attributes always come from the extension
-      bufferBefore: bufferBefore ? durationToMinutes(bufferBefore.valueDuration) : 0,
-      bufferAfter: bufferAfter ? durationToMinutes(bufferAfter.valueDuration) : 0,
-      alignmentInterval,
-      alignmentOffset: alignmentOffset ? durationToMinutes(alignmentOffset.valueDuration) : 0,
-      duration: durationToMinutes(duration.valueDuration),
-      timezone: timezone?.valueCode,
-    };
+        // These attributes always come from the extension
+        bufferBefore: bufferBefore ? durationToMinutes(bufferBefore) : 0,
+        bufferAfter: bufferAfter ? durationToMinutes(bufferAfter) : 0,
+        alignmentInterval,
+        alignmentOffset: alignmentOffset ? durationToMinutes(alignmentOffset) : 0,
+        duration: durationToMinutes(duration),
+        timezone: timezone?.valueCode,
+      },
+      getPath(extension)
+    );
   });
 }

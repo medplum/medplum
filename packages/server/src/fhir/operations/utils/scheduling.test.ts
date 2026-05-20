@@ -1,10 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, generateId } from '@medplum/core';
+import { createReference, DEFAULT_MAX_SEARCH_COUNT, generateId } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule, Slot } from '@medplum/fhirtypes';
 import type { Interval } from '../../../util/date';
-import { applyExistingSlots, normalizeIntervals, removeAvailability, resolveAvailability } from './scheduling';
+import type { Repository } from '../../repo';
+import {
+  applyExistingSlots,
+  normalizeIntervals,
+  removeAvailability,
+  resolveAvailability,
+  slotsOverlappingInterval,
+} from './scheduling';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 const project: Project = {
@@ -480,6 +487,29 @@ describe('removeAvailability', () => {
     ];
     const blocks = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
     expect(removeAvailability(availability, blocks)).toEqual([]);
+  });
+});
+
+describe('slotsOverlappingInterval', () => {
+  test('throws when a full page of DEFAULT_MAX_SEARCH_COUNT slots is returned', async () => {
+    const mockSlot: Slot = {
+      resourceType: 'Slot',
+      status: 'busy',
+      start: '2025-12-01T10:00:00Z',
+      end: '2025-12-01T11:00:00Z',
+      schedule: { reference: `Schedule/${schedule.id}` },
+    };
+    const fullPage = Array.from({ length: DEFAULT_MAX_SEARCH_COUNT }, () => mockSlot);
+    const mockRepo = {
+      searchResources: async () => fullPage,
+    } as unknown as Repository;
+
+    await expect(
+      slotsOverlappingInterval(mockRepo, [schedule as WithId<Schedule>], {
+        start: new Date('2025-12-01'),
+        end: new Date('2025-12-31'),
+      })
+    ).rejects.toThrow('Too many slots found in range');
   });
 });
 

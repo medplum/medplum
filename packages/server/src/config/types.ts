@@ -183,11 +183,18 @@ export interface MedplumServerConfig {
    */
   mtlsCertHeader?: string;
 
+  rangeSearch?: boolean;
+
   /**
    * Optional URL for AI real-time transcription service.
    * Default is `wss://api.openai.com/v1/realtime?intent=transcription`.
    */
   aiRealtimeTranscriptionUrl?: string;
+
+  /**
+   * Optional flag to require email verification before allowing users to create projects.
+   */
+  requireVerifiedEmailForProjectCreation?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -282,7 +289,8 @@ export type WorkerName =
   | 'reindex'
   | 'batch'
   | 'post-deploy-migration'
-  | 'set-accounts';
+  | 'set-accounts'
+  | 'lambda-cleaner';
 
 export interface MedplumWorkersConfig {
   /**

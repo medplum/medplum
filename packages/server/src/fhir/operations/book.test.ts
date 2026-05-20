@@ -69,6 +69,8 @@ describe('Appointment/$book', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
@@ -172,6 +174,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
+    expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
   });
 
@@ -336,6 +339,7 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot start times',
         },
+        expression: ['Parameters.slot[0].start', 'Parameters.slot[1].start'],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -382,6 +386,7 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot end times',
         },
+        expression: ['Parameters.slot[0].end', 'Parameters.slot[1].end'],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -428,6 +433,10 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched service types',
         },
+        expression: [
+          'Parameters.slot[0].serviceType[0].extension[0].valueReference.reference',
+          'Parameters.slot[1].serviceType[0].extension[0].valueReference.reference',
+        ],
       },
     ]);
     expect(response.status).toEqual(400);
@@ -636,6 +645,7 @@ describe('Appointment/$book', () => {
       });
 
     if (succeeds) {
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
     } else {
       expect(response.status).toEqual(400);
@@ -819,6 +829,7 @@ describe('Appointment/$book', () => {
             },
           ],
         });
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
     }
   );
@@ -1223,13 +1234,13 @@ describe('Appointment/$book', () => {
           ],
         });
 
-      expect(response.status).toEqual(400);
       expect(response.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
           { severity: 'error', code: 'invalid', details: { text: 'Multiple matching HealthcareServices found' } },
         ],
       });
+      expect(response.status).toEqual(400);
     });
 
     test('fails when booking outside HealthcareService availability', async () => {
@@ -1389,7 +1400,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.status).toEqual(400);
     expect(response.body).toHaveProperty('issue', [
       {
         severity: 'error',
@@ -1399,6 +1409,7 @@ describe('Appointment/$book', () => {
         },
       },
     ]);
+    expect(response.status).toEqual(400);
   });
 
   test('when the service type has no system attribute', async () => {
@@ -1455,6 +1466,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
+    expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
   });
 });
@@ -1464,6 +1476,8 @@ describe('scheduling flow integration test', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // try to be more resilient to concurrent tests touching the same tables
+    config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
   });

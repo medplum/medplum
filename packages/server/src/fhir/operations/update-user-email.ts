@@ -12,60 +12,56 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
 import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
 import { getProjectSystemRepo } from '../repo';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const op: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'update-user-email',
-  status: 'active',
-  kind: 'operation',
-  code: 'update-email',
-  experimental: true,
-  system: false,
-  type: false,
-  instance: true,
-  resource: ['User'],
-  parameter: [
-    {
-      use: 'in',
-      name: 'email',
-      type: 'string',
-      min: 1,
-      max: '1',
-      documentation: 'The new email to be set on the User',
-    },
-    {
-      use: 'in',
-      name: 'updateProfileTelecom',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-      documentation: 'If true, add the new email to the associated profile resource',
-    },
-    {
-      use: 'in',
-      name: 'skipEmailVerification',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-      documentation: 'If true, do not send the verification email and mark the email as non-verified',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'User',
-      min: 1,
-      max: '1',
-      documentation: 'The updated User resource',
-    },
-  ],
-};
+const op = makeOperationDefinition(
+  { scope: 'instance', resource: 'User' },
+  {
+    name: 'update-user-email',
+    code: 'update-email',
+    parameter: [
+      {
+        use: 'in',
+        name: 'email',
+        type: 'string',
+        min: 1,
+        max: '1',
+        documentation: 'The new email to be set on the User',
+      },
+      {
+        use: 'in',
+        name: 'updateProfileTelecom',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+        documentation: 'If true, add the new email to the associated profile resource',
+      },
+      {
+        use: 'in',
+        name: 'skipEmailVerification',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+        documentation: 'If true, do not send the verification email and mark the email as non-verified',
+      },
+      {
+        use: 'out',
+        name: 'return',
+        type: 'User',
+        min: 1,
+        max: '1',
+        documentation: 'The updated User resource',
+      },
+    ],
+  }
+);
 
 type InputParams = {
   email: string;
@@ -112,7 +108,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         to: params.email,
         subject: 'Medplum Email Address Updated',
         text: [
-          'A request to update the email address associated with your Medplum account.',
+          'We received a request to update the email address associated with your Medplum account.',
           '',
           'Please click on the following link to verify your ability to receive emails:',
           '',
