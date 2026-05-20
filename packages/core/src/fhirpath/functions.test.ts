@@ -5,7 +5,7 @@ import type { Atom, AtomContext } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
 import { createReference, getReferenceString } from '../utils';
-import { LiteralAtom } from './atoms';
+import { LiteralAtom, SymbolAtom } from './atoms';
 import type { FhirPathFunction } from './functions';
 import { functions } from './functions';
 import { booleanToTypedValue, toTypedValue } from './utils';
@@ -732,7 +732,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('as', () => {
-    expect(functions.as(context, [toTypedValue({ resourceType: 'Patient', id: '123' })])).toStrictEqual([
+    const typeAtom = new SymbolAtom('Patient');
+    expect(functions.as(context, [toTypedValue({ resourceType: 'Patient', id: '123' })], typeAtom)).toStrictEqual([
       toTypedValue({ resourceType: 'Patient', id: '123' }),
     ]);
   });

@@ -125,7 +125,7 @@ describe('OrderLabsPage', () => {
     );
   }
 
-  test('Renders form fields', () => {
+  test('Renders form fields', async () => {
     setup();
 
     expect(screen.getByText('Requester')).toBeInTheDocument();
@@ -136,6 +136,8 @@ describe('OrderLabsPage', () => {
     expect(screen.getByText('Order notes')).toBeInTheDocument();
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+    // Drain pending async state updates (e.g. ResourceInput defaultValue resolution)
+    await act(async () => {});
   });
 
   test('Loads patient when patientId is provided', async () => {
@@ -156,7 +158,7 @@ describe('OrderLabsPage', () => {
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
-  test('Shows test metadata cards when tests are selected', () => {
+  test('Shows test metadata cards when tests are selected', async () => {
     const mockTest: TestCoding = {
       code: 'TEST001',
       display: 'Complete Blood Count',
@@ -173,6 +175,8 @@ describe('OrderLabsPage', () => {
 
     // Test metadata cards should be rendered (component will render them)
     expect(screen.getByText('Selected tests')).toBeInTheDocument();
+    // Drain pending async state updates (e.g. ResourceInput defaultValue resolution)
+    await act(async () => {});
   });
 
   test('Shows coverage input when patient is set', async () => {
@@ -357,10 +361,12 @@ describe('OrderLabsPage', () => {
     );
   });
 
-  test('Renders specimen collection date time input', () => {
+  test('Renders specimen collection date time input', async () => {
     setup();
 
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
+    // Drain pending async state updates (e.g. ResourceInput defaultValue resolution)
+    await act(async () => {});
   });
 });

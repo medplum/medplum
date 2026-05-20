@@ -533,7 +533,7 @@
       "name": "patient",
       "type": "reference",
       "description": " The subject of the set of documents\r",
-      "expression": "DocumentManifest.subject.where(resolve() is Patient)"
+      "expression": "DocumentManifest.subject.where((resolve() is Patient))"
     },
     {
       "name": "type",

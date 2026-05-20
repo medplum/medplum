@@ -1050,6 +1050,36 @@
             }
           },
           {
+            "id" : "ClientApplication.grantType",
+            "path" : "ClientApplication.grantType",
+            "definition" : "Optional OAuth grant type for the client application. This specifies the allowed grant types for the client application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.grantType",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ClientApplication.responseType",
+            "path" : "ClientApplication.responseType",
+            "definition" : "Optional OAuth response type for the client application. This specifies the allowed response types for the client application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.responseType",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "ClientApplication.defaultScope",
             "path" : "ClientApplication.defaultScope",
             "definition" : "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
@@ -2683,6 +2713,21 @@
             }
           },
           {
+            "id" : "Login.preAuthorizedCodeHash",
+            "path" : "Login.preAuthorizedCodeHash",
+            "definition" : "The hash of the pre-authorized code used to obtain OAuth Pre-Authorized Code Grant.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "Login.preAuthorizedCodeHash",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Login.authTime",
             "path" : "Login.authTime",
             "definition" : "Time when the End-User authentication occurred.",
@@ -2802,6 +2847,21 @@
             }],
             "base" : {
               "path" : "Login.mfaVerified",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.expiresAt",
+            "path" : "Login.expiresAt",
+            "definition" : "The time at which a token will expire for this login.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }],
+            "base" : {
+              "path" : "Login.expiresAt",
               "min" : 0,
               "max" : "1"
             }

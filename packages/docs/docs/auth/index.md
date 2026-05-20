@@ -19,11 +19,11 @@ For applications running in a **trusted, back-end environment**, use [_server-si
 
 This category is for user-facing applications that connect directly to Medplum. These applications run in untrusted environments (browsers, native apps) and use **identity providers** to authenticate a user.
 
-| Method                                                         | **Choose to...**                                                                               |
-| :------------------------------------------------------------- | :--------------------------------------------------------------------------------------------- |
-| [Medplum as IDP](/docs/auth/medplum-as-idp)                    | (default) **Get going fast**, and don't have external compliance requirements.                 |
-| [External IDP](/docs/auth/external-identity-providers.mdx)     | Connect to an external IDP, like [Google Auth](/docs/auth/google-auth), Auth0, or AWS Cognito. |
-| [Domain-level IDP](/docs/auth/domain-level-identity-providers) | Use your enterprise, domain-level **corporate identity solution.**                             |
+| Method                                                         | **Choose to...**                                                                                    |
+| :------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| [Medplum as IDP](/docs/auth/medplum-as-idp)                    | (default) **Get going fast**, and don't have external compliance requirements.                      |
+| [External IDP](/docs/auth/external-identity-providers.mdx)     | Connect to an external IDP, like [Google Auth](/docs/auth/google-auth), Auth0, or AWS Cognito.      |
+| [Domain-level IDP](/docs/auth/domain-level-identity-providers) | Use your enterprise, domain-level **corporate identity solution.**                                  |
 | [Direct External Auth](/docs/auth/direct-external-auth)        | Authenticate directly with an external IDP token, without a token exchange flow (self-hosted only). |
 
 ## Server-side Authentication
@@ -36,6 +36,8 @@ This category is for back-end services. These applications do not directly authe
 - connect to a CI/CD pipeline
 
 Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow your application to use its own client key and secret to obtain a token. When working through proxy API layers, you can [enable on-behalf-of authentication](/docs/auth/on-behalf-of) with client credentials to act on behalf of other entities.
+
+For issuer-initiated workflows such as wallet handoff or magic links, use [**Pre-Authorized Code**](/docs/auth/pre-authorized-code) to mint a one-time code and redeem it at the token endpoint without an authorization redirect.
 
 ---
 

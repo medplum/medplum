@@ -118,11 +118,11 @@ The `externalId` must be unique across all project memberships. If multiple memb
 Once configured, make requests to the Medplum FHIR API using the external IDP token directly:
 
 ```bash
-curl 'https://${baseUrl}/oauth2/userinfo' \
+curl 'https://${baseUrl}/fhir/R4/Patient' \
   -H 'Authorization: Bearer ${externalAccessToken}'
 ```
 
-A successful response returns the user's profile information and Medplum login credentials. Subsequent requests to the FHIR API can use the returned Medplum access token.
+A successful response means that the authentication with the external IDP was successful.
 
 Medplum caches external auth results in Redis for 1 hour to minimize calls to the IDP's userinfo endpoint.
 

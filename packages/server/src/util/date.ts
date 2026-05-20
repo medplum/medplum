@@ -39,3 +39,23 @@ export function clamp(date: Date, interval: Interval): Date {
   }
   return date;
 }
+
+export function earliest(dates: Date[]): Date | undefined {
+  let min: Date | undefined;
+  for (const date of dates) {
+    if (!min || date < min) {
+      min = date;
+    }
+  }
+  return min;
+}
+
+export function latest(dates: Date[]): Date | undefined {
+  let max: Date | undefined;
+  for (const date of dates) {
+    if (!max || date > max) {
+      max = date;
+    }
+  }
+  return max;
+}
