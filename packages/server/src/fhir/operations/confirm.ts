@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, conflict, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -36,7 +36,9 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
     async () => {
       const appointment = await ctx.repo.readResource<Appointment>('Appointment', appointmentId);
       if (appointment.status !== 'pending' && appointment.status !== 'proposed') {
-        throw new OperationOutcomeError(conflict(`Appointment cannot be confirmed in '${appointment.status}' status`));
+        throw new OperationOutcomeError(
+          badRequest(`Appointment cannot be confirmed in '${appointment.status}' status`)
+        );
       }
 
       // Fetch slots
@@ -47,12 +49,9 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
 
       // Mark `busy-tentative` slots as `busy`
       const updatedSlots = await Promise.all(
-        slots.map(async (slot) => {
-          if (slot.status === 'busy-tentative') {
-            return ctx.repo.updateResource<Slot>({ ...slot, status: 'busy' });
-          }
-          return slot;
-        })
+        slots.map(async (slot) =>
+          slot.status === 'busy-tentative' ? ctx.repo.updateResource<Slot>({ ...slot, status: 'busy' }) : slot
+        )
       );
 
       // Set appointment.status to `booked`

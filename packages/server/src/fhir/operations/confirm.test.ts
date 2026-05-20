@@ -120,18 +120,6 @@ describe('Appointment/:id/$confirm', () => {
     expect(appointments[0]).toMatchObject({ id: appointment.id, status: 'booked' });
   });
 
-  test('Sets appointment status to booked', async () => {
-    const slot = await makeSlot('busy-tentative');
-    const appointment = await makeAppointment('pending', [slot]);
-
-    await request
-      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
-      .set('Authorization', `Bearer ${project.accessToken}`);
-
-    const updated = await systemRepo.readResource<Appointment>('Appointment', appointment.id);
-    expect(updated.status).toEqual('booked');
-  });
-
   test('Updates busy-tentative slots to busy', async () => {
     const slot = await makeSlot('busy-tentative');
     const appointment = await makeAppointment('pending', [slot]);
@@ -193,7 +181,7 @@ describe('Appointment/:id/$confirm', () => {
   });
 
   test.each(['booked', 'cancelled', 'fulfilled', 'noshow', 'entered-in-error'] as Appointment['status'][])(
-    'Returns 409 for non-confirmable status: %s',
+    'Returns 400 for non-confirmable status: %s',
     async (status) => {
       const appointment = await makeAppointment(status);
 
@@ -210,7 +198,7 @@ describe('Appointment/:id/$confirm', () => {
           },
         ],
       });
-      expect(response.status).toEqual(409);
+      expect(response.status).toEqual(400);
     }
   );
 
