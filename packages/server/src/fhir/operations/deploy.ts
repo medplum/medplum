@@ -87,11 +87,16 @@ export async function deployBot(
 
   let warning: string | undefined;
   if (!bot.runAsUser) {
-    const project = bot.meta?.project as string;
-    const membership = await findProjectMembership(project, createReference(bot));
-    if (!membership) {
+    const project = bot.meta?.project;
+    if (!project) {
       warning = MISSING_MEMBERSHIP_WARNING;
-      getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, project });
+      getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id });
+    } else {
+      const membership = await findProjectMembership(project, createReference(bot));
+      if (!membership) {
+        warning = MISSING_MEMBERSHIP_WARNING;
+        getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, project });
+      }
     }
   }
 
