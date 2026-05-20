@@ -278,6 +278,11 @@ export interface MedplumBullmqConfig {
    * @see {@link https://docs.bullmq.io/guide/workers/concurrency}
    */
   concurrency?: number;
+  /**
+   * Duration of the job lock in milliseconds while a worker is processing.
+   * @see {@link https://docs.bullmq.io/guide/workers/stalled-jobs}
+   */
+  lockDuration?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
 }

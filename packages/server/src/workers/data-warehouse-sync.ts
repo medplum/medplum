@@ -21,6 +21,15 @@ export interface DataWarehouseSyncJobData {
 export const DataWarehouseSyncQueueName = 'DataWarehouseSyncQueue';
 export const DataWarehouseSyncSchedulerId = 'data-warehouse-sync';
 
+/**
+ * Default BullMQ lock duration for long-running warehouse sync jobs.
+ * 
+ * This is useful because we want a high-frequency sync, but if it takes a long time,
+ * BullMQ will assume the job is dead.  We alleviate this by job.updateProgress and this
+ * increased default lock duration.
+ */
+export const DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS = 5 * 60 * 1000;
+
 export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   if (options?.workerEnabled === false) {
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
@@ -50,6 +59,7 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     {
       ...defaultOptions,
       ...workerBullmq,
+      lockDuration: workerBullmq.lockDuration ?? DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
       // Data warehouse sync is intentionally serialized.
       concurrency: 1,
     }
@@ -115,8 +125,9 @@ export async function processDataWarehouseSyncJob(
 
     const result = await syncData({
       ...syncOptions,
-      onProgress: (message, metadata) => {
+      onProgress: async (message, metadata) => {
         globalLogger.info(message, metadata);
+        await job.updateProgress({ message, ...metadata });
       },
     });
 

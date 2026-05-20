@@ -8,6 +8,7 @@ import type * as DataWarehouseConfigModule from '../data-warehouse/config';
 import { buildPgConnectionURI } from '../data-warehouse/config';
 import { syncData } from '../data-warehouse/sync';
 import {
+  DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
   DataWarehouseSyncQueueName,
   DataWarehouseSyncSchedulerId,
   getDataWarehouseSyncOptions,
@@ -224,18 +225,26 @@ describe('data-warehouse sync worker', () => {
     });
   });
 
-  test('initDataWarehouseSyncWorker defaults concurrency to 1', () => {
+  test('initDataWarehouseSyncWorker defaults concurrency to 1 and lockDuration to 5 minutes', () => {
     initDataWarehouseSyncWorker(config, { workerEnabled: true });
 
     expect(mockedQueue).toHaveBeenCalled();
     expect(mockedWorker).toHaveBeenCalled();
     const lastCall = mockedWorker.mock.calls[mockedWorker.mock.calls.length - 1];
     expect(lastCall[0]).toStrictEqual(DataWarehouseSyncQueueName);
-    expect(lastCall[2]).toMatchObject({ concurrency: 1 });
+    expect(lastCall[2]).toMatchObject({
+      concurrency: 1,
+      lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
+    });
   });
 
   test('processDataWarehouseSyncJob calls syncData with resolved database config', async () => {
-    await processDataWarehouseSyncJob(config, { id: 'job-1', data: { trigger: 'scheduler' } } as any);
+    const updateProgress = jest.fn().mockResolvedValue(undefined);
+    await processDataWarehouseSyncJob(config, {
+      id: 'job-1',
+      data: { trigger: 'scheduler' },
+      updateProgress,
+    } as any);
 
     expect(mockedSyncData).toHaveBeenCalledTimes(1);
     const callArg = mockedSyncData.mock.calls[0][0];
@@ -248,5 +257,30 @@ describe('data-warehouse sync worker', () => {
       destination: { type: 's3tables' },
     });
     expect(typeof callArg?.onProgress).toStrictEqual('function');
+  });
+
+  test('processDataWarehouseSyncJob onProgress updates job progress', async () => {
+    const updateProgress = jest.fn().mockResolvedValue(undefined);
+    mockedSyncData.mockImplementationOnce(async (options) => {
+      await options?.onProgress?.('Syncing Patient_history: 1 row(s)', {
+        table: 'patient_history',
+        icebergTable: 'patient_history',
+        count: 1,
+      });
+      return { resources: [] };
+    });
+
+    await processDataWarehouseSyncJob(config, {
+      id: 'job-1',
+      data: { trigger: 'scheduler' },
+      updateProgress,
+    } as any);
+
+    expect(updateProgress).toHaveBeenCalledWith({
+      message: 'Syncing Patient_history: 1 row(s)',
+      table: 'patient_history',
+      icebergTable: 'patient_history',
+      count: 1,
+    });
   });
 });

@@ -22,7 +22,7 @@ export interface SyncOptions {
   warehouseSources: WarehouseSourceTable[];
   destination: DataWarehouseDestination;
   namespace?: string;
-  onProgress?: (message: string, metadata?: Record<string, string | number>) => void;
+  onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
 export interface SyncResourceResult {
@@ -37,13 +37,13 @@ export interface SyncResult {
 
 export type SyncAction = 'skip-empty' | 'insert';
 
-function logSyncProgress(
+async function logSyncProgress(
   options: SyncOptions,
   message: string,
   metadata: Record<string, string | number> | undefined
-): void {
+): Promise<void> {
   if (options.onProgress) {
-    options.onProgress(message, metadata);
+    await options.onProgress(message, metadata);
     return;
   }
 
@@ -78,14 +78,14 @@ async function runWarehouseTableSync(
     const count = Number((countReader.getRowObjectsJson() as { count: number }[])[0]?.count ?? 0);
 
     if (count > 0) {
-      logSyncProgress(options, `Syncing ${icebergTable}: ${count} row(s)`, {
+      await logSyncProgress(options, `Syncing ${icebergTable}: ${count} row(s)`, {
         table: resultTableName,
         icebergTable,
         count,
       });
       await options.destination.writeRows(connection, { tableSpec: spec, namespace, sourcePredicate });
     } else {
-      logSyncProgress(options, `Skipping ${icebergTable}: no new rows`, {
+      await logSyncProgress(options, `Skipping ${icebergTable}: no new rows`, {
         table: resultTableName,
         icebergTable,
         count,
