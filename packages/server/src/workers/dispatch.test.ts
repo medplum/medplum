@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  DeleteFunctionCommand,
-  GetFunctionCommand,
-  LambdaClient,
-  ResourceNotFoundException,
-} from '@aws-sdk/client-lambda';
+import { DeleteFunctionCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import { createReference } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -39,24 +34,8 @@ describe('Dispatch Worker', () => {
   });
 
   beforeEach(() => {
-    const lambdaMap = new Map<string, Record<string, any>>();
-
     mockLambdaClient = mockClient(LambdaClient);
-
-    mockLambdaClient.on(GetFunctionCommand).callsFake(({ FunctionName }) => {
-      if (lambdaMap.has(FunctionName)) {
-        return { Configuration: lambdaMap.get(FunctionName) };
-      }
-      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
-    });
-
-    mockLambdaClient.on(DeleteFunctionCommand).callsFake(({ FunctionName }) => {
-      lambdaMap.delete(FunctionName);
-      return {};
-    });
-
-    // Seed map via a side channel: tests that need a Lambda to exist will use mockLambdaClient.on(...) overrides.
-    (mockLambdaClient as any).lambdaMap = lambdaMap;
+    mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 
   afterEach(() => {
@@ -72,33 +51,12 @@ describe('Dispatch Worker', () => {
       })
     );
 
-    // Make the Lambda "exist" for this bot
-    const expectedName = `medplum-bot-lambda-${bot.id}`;
-    (mockLambdaClient as any).lambdaMap.set(expectedName, { FunctionName: expectedName });
-
     await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
     await findAndExecDispatchJob(bot, 'delete');
 
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, { FunctionName: expectedName });
+    const expectedName = `medplum-bot-lambda-${bot.id}`;
     expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: expectedName });
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
-  });
-
-  test('does not call DeleteFunction when Lambda does not exist', async () => {
-    const bot = await withTestContext(() =>
-      botRepo.createResource<Bot>({
-        resourceType: 'Bot',
-        name: 'lambda-bot-missing',
-        runtimeVersion: 'awslambda',
-      })
-    );
-
-    await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
-    await findAndExecDispatchJob(bot, 'delete');
-
-    const expectedName = `medplum-bot-lambda-${bot.id}`;
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, { FunctionName: expectedName });
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
   });
 
   test('does not interact with Lambda when Bot runtimeVersion is not awslambda', async () => {
@@ -113,7 +71,6 @@ describe('Dispatch Worker', () => {
     await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
     await findAndExecDispatchJob(bot, 'delete');
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
   });
 
@@ -128,7 +85,6 @@ describe('Dispatch Worker', () => {
     await withTestContext(() => botRepo.deleteResource('Patient', patient.id));
     await findAndExecDispatchJob(patient, 'delete');
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
   });
 
@@ -143,8 +99,33 @@ describe('Dispatch Worker', () => {
 
     await findAndExecDispatchJob(bot, 'create');
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
+  });
+
+  test('does not log error when Lambda does not exist (DeleteFunction throws ResourceNotFoundException)', async () => {
+    const bot = await withTestContext(() =>
+      botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'lambda-bot-missing',
+        runtimeVersion: 'awslambda',
+      })
+    );
+
+    const expectedName = `medplum-bot-lambda-${bot.id}`;
+
+    mockLambdaClient
+      .on(DeleteFunctionCommand)
+      .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
+
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
+
+    await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
+    await expect(findAndExecDispatchJob(bot, 'delete')).resolves.toBeUndefined();
+
+    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: expectedName });
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    errorSpy.mockRestore();
   });
 
   test('logs but does not throw when DeleteFunction fails', async () => {
@@ -157,7 +138,6 @@ describe('Dispatch Worker', () => {
     );
 
     const expectedName = `medplum-bot-lambda-${bot.id}`;
-    (mockLambdaClient as any).lambdaMap.set(expectedName, { FunctionName: expectedName });
 
     mockLambdaClient.on(DeleteFunctionCommand).rejects(new Error('Lambda blew up'));
 

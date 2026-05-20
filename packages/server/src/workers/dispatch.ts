@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
 import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { deleteLambda, getLambdaNameForBot, lambdaExists } from '../cloud/aws/deploy';
+import { deleteLambda, getLambdaNameForBot } from '../cloud/aws/deploy';
 import { getBotManagementLambdaClient } from '../cloud/aws/lambda';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
@@ -138,10 +139,13 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     const name = getLambdaNameForBot(resource);
     try {
       const client = getBotManagementLambdaClient();
-      if (await lambdaExists(client, name)) {
-        await deleteLambda(client, name);
-      }
+      await deleteLambda(client, name);
+      getLogger().info('Lambda for Bot deleted', { botId: resource.id, lambdaName: name });
     } catch (err) {
+      if (err instanceof ResourceNotFoundException) {
+        getLogger().info('Lambda for Bot does not exist. Skipping delete', { botId: resource.id, lambdaName: name });
+        return;
+      }
       getLogger().error('Error deleting Lambda for Bot', {
         botId: resource.id,
         lambdaName: name,
