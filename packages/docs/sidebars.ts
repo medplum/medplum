@@ -424,6 +424,10 @@ const sidebars: SidebarsConfig = {
       id: 'integration/c-cda',
     },
     {
+      type: 'doc',
+      id: 'integration/electronic-prior-auth',
+    },
+    {
       type: 'html',
       value: '<strong>Deploy & Operate</strong>',
       className: 'sidebar-title',
@@ -585,6 +589,7 @@ const sidebars: SidebarsConfig = {
                 { type: 'doc', id: 'api/fhir/operations/asyncjob-cancel' },
                 { type: 'doc', id: 'api/fhir/operations/project-clone' },
                 { type: 'doc', id: 'api/fhir/operations/project-init' },
+                { type: 'doc', id: 'api/fhir/operations/project-rate-limits' },
                 { type: 'doc', id: 'api/fhir/operations/expunge' },
                 { type: 'doc', id: 'api/fhir/operations/resend' },
                 { type: 'doc', id: 'api/fhir/operations/set-accounts' },

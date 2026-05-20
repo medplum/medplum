@@ -454,6 +454,7 @@ describe('$find/$book component integration tests', () => {
             status: 'booked',
             start: slotStart,
             end: slotEnd,
+            slot: [{ reference: 'Slot/slot-123' }, { reference: 'Slot/slot-124' }],
             participant: [
               { actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' },
               { actor: createReference(HomerSimpson), status: 'accepted' },
