@@ -10,7 +10,7 @@ const DEFAULT_FILE_FORMAT = 'PARQUET';
 export const DEFAULT_NAMESPACE = 'default';
 
 /** DuckDB catalog alias for attached S3 Tables Iceberg; not a Postgres schema/catalog name. */
-export const S3_TABLES_CATALOG = 's3_tables_db';
+export const DEFAULT_ICEBERG_CATALOG_ALIAS = 'iceberg_catalog';
 
 /** DuckDB catalog alias for attached Postgres source tables. */
 export const POSTGRES_CATALOG = 'pg_db';
@@ -99,7 +99,7 @@ export function buildDuckdbPostgresAttachQuery(connectionString: string, alias =
 }
 
 export function buildManagedIcebergQualifiedTable(namespace: string, icebergTable: string): string {
-  return `${S3_TABLES_CATALOG}.${namespace}.${icebergTable}`;
+  return `${DEFAULT_ICEBERG_CATALOG_ALIAS}.${namespace}.${icebergTable}`;
 }
 
 export function buildInsertIntoSelectQuery(
@@ -248,7 +248,7 @@ export function buildManagedS3CredentialSecretQuery(s3Region: string): string {
  * @returns Single `ATTACH` statement.
  */
 export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): string {
-  return `ATTACH '${awsS3TableArn}' AS "${S3_TABLES_CATALOG}" ( TYPE iceberg, ENDPOINT_TYPE s3_tables )`;
+  return `ATTACH '${awsS3TableArn}' AS "${DEFAULT_ICEBERG_CATALOG_ALIAS}" ( TYPE iceberg, ENDPOINT_TYPE s3_tables )`;
 }
 
 /**
