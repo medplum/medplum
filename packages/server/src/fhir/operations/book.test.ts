@@ -1306,6 +1306,49 @@ describe('Appointment/$book', () => {
         issue: [{ details: { text: 'Proposed appointment must not have Slot references' } }],
       });
     });
+
+    test('rejects when the proposed appointment is outside of any availability window', async () => {
+      const schedule = await makeSchedule({ actor: practitioner1 });
+      const start = '2026-01-16T14:00:00Z';
+      const end = '2026-01-16T15:00:00Z';
+
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send(appointmentParam({ schedule, start, end }));
+
+      expect(response.status).toEqual(400);
+      expect(response.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'Requested time slot is not available' } }],
+      });
+    });
+
+    test('rejects when the proposed appointment conflicts with an existing slot', async () => {
+      const schedule = await makeSchedule({ actor: practitioner1 });
+      const start = '2026-01-15T14:00:00Z';
+      const end = '2026-01-15T15:00:00Z';
+
+      await systemRepo.createResource<Slot>({
+        resourceType: 'Slot',
+        start,
+        end,
+        status: 'busy',
+        schedule: createReference(schedule),
+        meta: { project: project.project.id },
+      });
+
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send(appointmentParam({ schedule, start, end }));
+
+      expect(response.status).toEqual(400);
+      expect(response.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'Requested time slot is not available' } }],
+      });
+    });
   });
 
   describe('Loading schedulingParameters from HealthcareService', () => {

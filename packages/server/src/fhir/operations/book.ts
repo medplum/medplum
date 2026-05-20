@@ -24,8 +24,8 @@ import {
   applyExistingSlots,
   assertAllLoaded,
   assertAllMatch,
+  createProposedAppointment,
   getSchedulingParametersGroup,
-  persistProposedAppointment,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
@@ -64,7 +64,7 @@ function serviceTypeTokens(slots: Slot[]): string[] {
 
 async function bookFromProposedAppointmentHandler(proposedAppointment: Appointment): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const bundle = await persistProposedAppointment(
+  const bundle = await createProposedAppointment(
     ctx.repo,
     withPath(proposedAppointment, 'Parameters.appointment'),
     (appointment, _slots) => {
