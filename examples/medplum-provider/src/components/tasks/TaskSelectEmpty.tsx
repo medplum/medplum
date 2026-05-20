@@ -14,7 +14,9 @@ export function TaskSelectEmpty(props: TaskSelectEmptyProps): JSX.Element {
     <ListEmptyState
       icon={<IconClipboardList size={32} />}
       message={notFound ? 'Task not found' : 'No task selected'}
-      description={notFound ? undefined : 'Select a task from the list to view details, add notes, and manage properties'}
+      description={
+        notFound ? undefined : 'Select a task from the list to view details, add notes, and manage properties'
+      }
     />
   );
 }

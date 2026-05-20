@@ -59,7 +59,7 @@ export function ListDetailColumn(props: ListDetailColumnProps): JSX.Element {
       className={cx(bordered && classes.detailBorder, className)}
       style={{
         flex: isFixed ? `0 0 ${typeof width === 'number' ? `${width}px` : width}` : 1,
-        minWidth: allowShrink ?? !isFixed ? 0 : undefined,
+        minWidth: (allowShrink ?? !isFixed) ? 0 : undefined,
         minHeight: 0,
         overflow: 'hidden',
       }}

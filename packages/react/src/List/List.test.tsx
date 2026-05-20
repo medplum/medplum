@@ -139,12 +139,7 @@ describe('ListEmptyState', () => {
   });
 
   test('Renders icon inside a ThemeIcon when provided', () => {
-    const { container } = setup(
-      <ListEmptyState
-        message="Empty"
-        icon={<svg data-testid="empty-icon" />}
-      />
-    );
+    const { container } = setup(<ListEmptyState message="Empty" icon={<svg data-testid="empty-icon" />} />);
     expect(screen.getByTestId('empty-icon')).toBeDefined();
     expect(container.querySelector('[class*="mantine-ThemeIcon"]')).not.toBeNull();
   });

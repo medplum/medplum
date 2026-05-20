@@ -215,11 +215,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               <ListSkeleton rows={10} linesPerRow={2} withAvatar />
             ) : (
               threadMessages.length > 0 && (
-                <ChatList
-                  threads={threadMessages}
-                  selectedCommunication={selectedThread}
-                  getThreadUri={getThreadUri}
-                />
+                <ChatList threads={threadMessages} selectedCommunication={selectedThread} getThreadUri={getThreadUri} />
               )
             )}
             {threadMessages.length === 0 && !loading && <ListEmptyState message="No messages found" />}

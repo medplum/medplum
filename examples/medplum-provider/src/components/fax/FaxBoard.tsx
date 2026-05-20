@@ -4,12 +4,12 @@ import { ActionIcon, Group, Stack, Tabs, Tooltip } from '@mantine/core';
 import { isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import {
+  listClasses,
   ListDetailLayout,
   ListEmptyState,
   ListScrollArea,
   ListShell,
   ListSkeleton,
-  listClasses,
   useMedplum,
 } from '@medplum/react';
 import { IconSend } from '@tabler/icons-react';
@@ -211,4 +211,3 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
     </>
   );
 }
-
