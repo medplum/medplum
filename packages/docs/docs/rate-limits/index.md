@@ -64,6 +64,8 @@ To view or update the Project-level limits:
 
 If those values are not set, the server defaults will be used.
 
+To monitor live FHIR quota usage, use the **Rate Limits** dashboard in Medplum App (at [/admin/rate-limits](https://app.medplum.com/admin/rate-limits)) or the [Project `$rate-limits`](/docs/api/fhir/operations/project-rate-limits) operation.
+
 :::info[]
 There are some scenarios where you may want to **set a custom quota for a User, Bot, or ClientApplication**. For example, say you expect higher traffic for a specific User, Bot, or ClientApplication than the default user quota in your project, you can set a custom quota for that User, Bot, or ClientApplication. See [how to set user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits) for more information about how to do this.
 

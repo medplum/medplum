@@ -73,6 +73,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-link",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-link",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-link",
+        "version": "4.0.1",
+        "name": "link",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The linked projects of the project",
+        "code": "link",
+        "base": ["Project"],
+        "type": "reference",
+        "expression": "Project.link.project",
+        "target": ["Project"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-google-client-id",
       "resource": {
         "resourceType": "SearchParameter",
