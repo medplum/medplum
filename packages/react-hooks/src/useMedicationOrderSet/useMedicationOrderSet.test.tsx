@@ -14,11 +14,18 @@ const URL_A = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377
 const URL_B = 'https://ssu.scriptsure.com/widgets/prescription/order-set/100/377?sessiontoken=tokB';
 const OPERATION_URL = 'fhir/R4/PlanDefinition/$order-set-url';
 
-function paramsResponse(launchUrl: string, extras?: { vendorPatientId?: number; vendorOrderSetId?: number }): Parameters {
+function paramsResponse(
+  launchUrl: string,
+  extras?: { vendorPatientId?: number; vendorOrderSetId?: number }
+): Parameters {
   const parameter = [
     { name: 'launchUrl', valueUri: launchUrl },
-    ...(extras?.vendorPatientId !== undefined ? [{ name: 'vendorPatientId', valueInteger: extras.vendorPatientId }] : []),
-    ...(extras?.vendorOrderSetId !== undefined ? [{ name: 'vendorOrderSetId', valueInteger: extras.vendorOrderSetId }] : []),
+    ...(extras?.vendorPatientId !== undefined
+      ? [{ name: 'vendorPatientId', valueInteger: extras.vendorPatientId }]
+      : []),
+    ...(extras?.vendorOrderSetId !== undefined
+      ? [{ name: 'vendorOrderSetId', valueInteger: extras.vendorOrderSetId }]
+      : []),
   ];
   return { resourceType: 'Parameters', parameter };
 }
@@ -42,7 +49,9 @@ function renderOrderSetHook(
 describe('useMedicationOrderSet', () => {
   test('happy path — POSTs to $order-set-url and exposes launchUrl', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post').mockResolvedValue(paramsResponse(URL_A, { vendorPatientId: 100, vendorOrderSetId: 377 }));
+    const post = jest
+      .spyOn(medplum, 'post')
+      .mockResolvedValue(paramsResponse(URL_A, { vendorPatientId: 100, vendorOrderSetId: 377 }));
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -146,10 +155,7 @@ describe('useMedicationOrderSet', () => {
       resolveFirst = r;
     });
 
-    jest
-      .spyOn(medplum, 'post')
-      .mockReturnValueOnce(firstPromise)
-      .mockResolvedValueOnce(paramsResponse(URL_B));
+    jest.spyOn(medplum, 'post').mockReturnValueOnce(firstPromise).mockResolvedValueOnce(paramsResponse(URL_B));
 
     const { result, rerender } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,

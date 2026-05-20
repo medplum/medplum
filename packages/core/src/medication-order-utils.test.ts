@@ -391,7 +391,10 @@ describe('Custom FHIR operation Parameters helpers', () => {
     const params: Parameters = {
       resourceType: 'Parameters',
       parameter: [
-        { name: 'launchUrl', valueUri: 'https://ui.example.com/widgets/prescription/order-set/24057/377?sessiontoken=tok' },
+        {
+          name: 'launchUrl',
+          valueUri: 'https://ui.example.com/widgets/prescription/order-set/24057/377?sessiontoken=tok',
+        },
         { name: 'vendorPatientId', valueInteger: 24057 },
         { name: 'vendorOrderSetId', valueInteger: 377 },
         { name: 'planDefinitionId', valueId: 'pd-1' },
