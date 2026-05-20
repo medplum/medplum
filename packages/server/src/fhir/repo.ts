@@ -784,17 +784,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
-    let validatedResource = this.checkResourcePermissions(resource, interaction);
+    const validatedResource = this.checkResourcePermissions(resource, interaction);
     const { resourceType, id } = validatedResource;
-
-    const preCommitResult = await preCommitValidation(this, validatedResource, 'update');
-
-    if (
-      isResourceWithId(preCommitResult, validatedResource.resourceType) &&
-      preCommitResult.id === validatedResource.id
-    ) {
-      validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
-    }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
@@ -816,7 +807,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const projectId = this.getProjectId(existing, updated);
     const accounts = await this.getAccounts(existing, updated);
 
-    const result = {
+    let result = {
       ...updated,
       meta: {
         ...updated.meta,
@@ -834,6 +825,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // Validate resource after all modifications and touchups above are done
     await validateRepositoryResource(this, result);
+    const preCommitResult = await preCommitValidation(this, result, 'update');
+    if (isResourceWithId<T>(preCommitResult, validatedResource.resourceType) && preCommitResult.id === result.id) {
+      // Pre-commit returned an updated copy of the resource to use
+      // It should be at least minimally re-validated to ensure that the new version is still okay to write
+      result = this.checkResourcePermissions(preCommitResult, interaction);
+      await validateRepositoryResource(this, result);
+    }
+
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       const projectId = result.meta?.project;
