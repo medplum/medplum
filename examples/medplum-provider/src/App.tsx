@@ -24,7 +24,7 @@ import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
-const HIDE_GET_STARTED_SETTING = 'hideGetStarted';
+const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
@@ -67,7 +67,7 @@ export function App(): JSX.Element | null {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const project = medplum.getProject();
-  const setupDisabledByProject = project?.setting?.find((s) => s.name === HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
+  const setupDisabledByProject = project?.setting?.find((s) => s.name === PROVIDER_HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
   const [setupDismissedByUser, setSetupDismissedByUser] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
   const setupDismissed = setupDisabledByProject || setupDismissedByUser;
   const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
