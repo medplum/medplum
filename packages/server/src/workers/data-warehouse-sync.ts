@@ -36,13 +36,7 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
 
   const queue = new Queue<DataWarehouseSyncJobData>(DataWarehouseSyncQueueName, {
     ...defaultOptions,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
+    defaultJobOptions: { attempts: 1 },
   });
 
   const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
