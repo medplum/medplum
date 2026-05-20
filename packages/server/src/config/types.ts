@@ -289,7 +289,8 @@ export type WorkerName =
   | 'reindex'
   | 'batch'
   | 'post-deploy-migration'
-  | 'set-accounts';
+  | 'set-accounts'
+  | 'lambda-cleaner';
 
 export interface MedplumWorkersConfig {
   /**

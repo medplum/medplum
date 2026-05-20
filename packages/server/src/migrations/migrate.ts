@@ -437,13 +437,21 @@ function getSearchParameterIndexes(
           indexType: 'gin',
         },
       ];
-    case 'range-column':
-      return [
+    case 'range-column': {
+      const indexes: IndexDefinition[] = [
+        // legacy index prior to range-column search strategy
+        { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
         {
-          columns: [impl.rangeColumnName, { expression: escapeIdentifier(impl.sortColumnName), name: 'sorted' }],
+          columns: [impl.rangeColumnName, { expression: impl.sortColumnName, name: 'sorted' }],
           indexType: 'gist',
         },
       ];
+      // legacy index prior to range-column search strategy
+      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
+        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
+      }
+      return indexes;
+    }
     case 'column': {
       const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
       if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {

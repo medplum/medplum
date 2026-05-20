@@ -167,6 +167,8 @@ jobs:
         node-version: [22, 24]
         pg-version: [14, 18]
         redis-version: [7]
+    permissions:
+      pull-requests: write # for coveralls to create coverage comments
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -254,7 +256,7 @@ jobs:
       - name: Coveralls GitHub Action
         if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
-        uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
+        uses: coverallsapp/github-action@0a51d2e0b5417d06e4ecceb534aec87defc53926 # master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan

@@ -259,9 +259,7 @@ describe('CreateVisit', () => {
       });
 
       const classInput = await screen.findByLabelText(/Class/i);
-      await act(async () => {
-        await user.click(classInput);
-      });
+      await user.click(classInput);
 
       expect(classInput).toBeInTheDocument();
     });

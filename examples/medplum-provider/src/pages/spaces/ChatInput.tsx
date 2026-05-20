@@ -1,26 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Paper, Select, Stack, Textarea } from '@mantine/core';
-import { IconSend } from '@tabler/icons-react';
+import { ActionIcon, Button, Group, Paper, Select, Stack, Textarea, Tooltip } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
+import { useMedplum, useWhisper } from '@medplum/react';
+import { IconMicrophone, IconPlayerStopFilled, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { useEffect, useRef } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 
 const MODEL_GPT_5_MINI = 'gpt-5-mini';
-const MODEL_GPT_5_2 = 'gpt-5.2';
 const MODEL_GPT_5_4 = 'gpt-5.4';
+const MODEL_GPT_5_5 = 'gpt-5.5';
 
-export const DEFAULT_MODEL = MODEL_GPT_5_4;
+export const DEFAULT_MODEL = MODEL_GPT_5_5;
+
+const SILENCE_AUTO_SEND_MS = 1000;
 
 const MODELS = [
   { value: MODEL_GPT_5_MINI, label: 'GPT-5 Mini' },
-  { value: MODEL_GPT_5_2, label: 'GPT-5.2' },
   { value: MODEL_GPT_5_4, label: 'GPT-5.4' },
+  { value: MODEL_GPT_5_5, label: 'GPT-5.5' },
 ];
 
 interface ChatInputProps {
   input: string;
   onInputChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onSend: () => void;
+  onSend: (overrideInput?: string) => void;
   loading: boolean;
   selectedModel: string;
   onModelChange: (value: string) => void;
@@ -37,6 +43,73 @@ export function ChatInput({
   onModelChange,
   backgroundColor = '#fff',
 }: ChatInputProps): JSX.Element {
+  const medplum = useMedplum();
+  const isVoiceEnabled = medplum.getProject()?.features?.includes('ai-realtime') ?? false;
+
+  const inputRef = useRef(input);
+  useEffect(() => {
+    inputRef.current = input;
+  }, [input]);
+
+  const onSendRef = useRef(onSend);
+  useEffect(() => {
+    onSendRef.current = onSend;
+  }, [onSend]);
+
+  const { start, stop, status } = useWhisper({
+    model: 'gpt-4o-transcribe',
+    onTranscript: (text) => {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        return;
+      }
+      const previous = inputRef.current.trim();
+      const next = previous ? `${previous} ${trimmed}` : trimmed;
+      inputRef.current = next;
+      onInputChange(next);
+    },
+  });
+
+  const autoSend = useDebouncedCallback(() => {
+    const pending = inputRef.current.trim();
+    stop();
+    if (pending) {
+      onSendRef.current(pending);
+    }
+  }, SILENCE_AUTO_SEND_MS);
+
+  useEffect(() => {
+    if (status === 'speech_stopped') {
+      autoSend();
+    } else {
+      autoSend.cancel();
+    }
+  }, [status, autoSend]);
+
+  const isConnecting = status === 'requesting_microphone' || status === 'connecting' || status === 'connected';
+  const isRecording = status === 'listening' || status === 'speech_started' || status === 'speech_stopped';
+  const isActive = isConnecting || isRecording;
+
+  const handleVoiceToggle = (): void => {
+    if (isActive) {
+      autoSend.cancel();
+      const pending = inputRef.current.trim();
+      stop();
+      if (pending) {
+        onSend(pending);
+      }
+    } else {
+      start().catch(showErrorNotification);
+    }
+  };
+
+  let voiceTooltip = 'Start voice input';
+  if (!isVoiceEnabled) {
+    voiceTooltip = 'Voice input is not enabled in this project. Add the "ai-realtime" feature to enable it.';
+  } else if (isActive) {
+    voiceTooltip = `Stop voice input (${status})`;
+  }
+
   return (
     <Paper p="md" radius="lg" withBorder style={{ backgroundColor }}>
       <Stack gap="sm">
@@ -61,11 +134,28 @@ export function ChatInput({
               },
             }}
           />
+          <Tooltip label={voiceTooltip}>
+            <ActionIcon
+              aria-label={isActive ? 'Stop voice input' : 'Start voice input'}
+              radius="xl"
+              size="lg"
+              variant="filled"
+              color={isRecording ? 'red' : undefined}
+              onClick={handleVoiceToggle}
+              disabled={loading || isConnecting || !isVoiceEnabled}
+              loading={isConnecting}
+              data-disabled={!isVoiceEnabled || undefined}
+              bg="#7c3aed"
+              style={!isVoiceEnabled ? { pointerEvents: 'auto' } : undefined}
+            >
+              {isRecording ? <IconPlayerStopFilled size={18} /> : <IconMicrophone size={18} />}
+            </ActionIcon>
+          </Tooltip>
           <Button
             aria-label="Send message"
             radius="xl"
             size="sm"
-            onClick={onSend}
+            onClick={() => onSend()}
             disabled={loading || !input.trim()}
             w="36px"
             h="36px"

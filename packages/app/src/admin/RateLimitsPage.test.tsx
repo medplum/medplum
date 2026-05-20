@@ -82,6 +82,13 @@ describe('RateLimitsPage', () => {
     expect(screen.getByText('Click Refresh to load current rate limit data.')).toBeInTheDocument();
   });
 
+  test('Links to $rate-limits documentation', async () => {
+    await setup();
+    const link = await screen.findByRole('link', { name: '$rate-limits documentation' });
+    expect(link).toHaveAttribute('href', 'https://www.medplum.com/docs/api/fhir/operations/project-rate-limits');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
   test('Fetches and displays data on refresh click', async () => {
     await setup();
     expect(await screen.findByText('Refresh')).toBeInTheDocument();

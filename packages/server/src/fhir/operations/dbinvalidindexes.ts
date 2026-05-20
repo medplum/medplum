@@ -2,31 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'db-invalid-indexes',
-  status: 'active',
-  kind: 'operation',
-  code: 'db-invalid-indexes',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    {
-      use: 'out',
-      name: 'invalidIndex',
-      type: 'string',
-      min: 0,
-      max: '*',
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-invalid-indexes',
+    code: 'db-invalid-indexes',
+    parameter: [
+      {
+        use: 'out',
+        name: 'invalidIndex',
+        type: 'string',
+        min: 0,
+        max: '*',
+      },
+    ],
+  }
+);
 
 export async function dbInvalidIndexesHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
