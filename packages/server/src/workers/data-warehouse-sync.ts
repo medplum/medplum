@@ -5,10 +5,7 @@ import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import type { MedplumServerConfig } from '../config/types';
-import {
-  getDataWarehouseConfigErrors,
-  isDataWarehouseSyncOperational,
-} from '../config/validate-config';
+import { getDataWarehouseConfigErrors, isDataWarehouseSyncOperational } from '../config/validate-config';
 import { getWarehouseSyncPostgresTableNames, toIcebergTableName } from '../data-warehouse/config';
 import { LocalParquetWarehouseDestination } from '../data-warehouse/destination';
 import type { SyncOptions } from '../data-warehouse/sync';
