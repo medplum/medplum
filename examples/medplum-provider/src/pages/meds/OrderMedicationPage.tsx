@@ -76,7 +76,9 @@ export interface OrderMedicationPageProps {
 }
 
 function getRoutedMedIdFromMedication(m: Medication): number | undefined {
-  const v = getIdentifier(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM) ?? (m.code && getCodeBySystem(m.code, SCRIPTSURE_ROUTED_MED_ID_SYSTEM));
+  const v =
+    getIdentifier(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM) ??
+    (m.code && getCodeBySystem(m.code, SCRIPTSURE_ROUTED_MED_ID_SYSTEM));
   if (!v) {
     return undefined;
   }
