@@ -352,7 +352,7 @@ describe('Config', () => {
     setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
     setEnv('MEDPLUM_AWS_REGION', 'us-west-2');
     setEnv('MEDPLUM_DATA_WAREHOUSE_AWS_S3_TABLE_ARN', 'arn:aws:s3tables:us-east-1:123456789012:bucket/test');
-    setEnv('MEDPLUM_DATA_WAREHOUSE_SINK', 's3tables');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
     setEnv('MEDPLUM_DATA_WAREHOUSE_NAMESPACE', 'test');
 
     // when
@@ -364,7 +364,7 @@ describe('Config', () => {
     expect(config.dataWarehouse?.cron).toStrictEqual('0 * * * *');
     expect(config.awsRegion).toStrictEqual('us-west-2');
     expect(config.dataWarehouse?.awsS3TableArn).toStrictEqual('arn:aws:s3tables:us-east-1:123456789012:bucket/test');
-    expect(config.dataWarehouse?.sink).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.destination).toStrictEqual('s3tables');
     expect(config.dataWarehouse?.namespace).toStrictEqual('test');
   });
 
@@ -373,21 +373,21 @@ describe('Config', () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
     setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
-    setEnv('MEDPLUM_DATA_WAREHOUSE_SINK', 's3tables');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
 
     // when
     await expect(loadConfig('env')).rejects.toThrow(
       // then
-      'dataWarehouse.awsS3TableArn is required when dataWarehouse.sink is "s3tables"'
+      'dataWarehouse.awsS3TableArn is required when dataWarehouse.destination is "s3tables"'
     );
   });
 
-  test('Env config dataWarehouse local sink fields', async () => {
+  test('Env config dataWarehouse local destination fields', async () => {
     // given
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
     setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
-    setEnv('MEDPLUM_DATA_WAREHOUSE_SINK', 'local');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 'local');
     setEnv('MEDPLUM_DATA_WAREHOUSE_LOCAL_BASE_PATH', '/tmp/warehouse');
 
     // when
@@ -395,7 +395,7 @@ describe('Config', () => {
 
     // then
     expect(config.dataWarehouse).toBeDefined();
-    expect(config.dataWarehouse?.sink).toStrictEqual('local');
+    expect(config.dataWarehouse?.destination).toStrictEqual('local');
     expect(config.dataWarehouse?.localBasePath).toStrictEqual('/tmp/warehouse');
   });
 

@@ -314,7 +314,7 @@ export interface MedplumWorkersConfig {
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
 }
 
-export type MedplumDataWarehouseSinkType = 's3tables' | 'local';
+export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
 
 export interface MedplumDataWarehouseConfig {
   /**
@@ -325,11 +325,11 @@ export interface MedplumDataWarehouseConfig {
    * BullMQ cron pattern used to schedule sync runs.
    */
   cron?: string;
-  /** Warehouse destination sink type. */
-  sink?: MedplumDataWarehouseSinkType;
-  /** Required when sink is `s3tables`. */
+  /** Warehouse export destination type. */
+  destination?: MedplumDataWarehouseDestinationType;
+  /** Required when destination is `s3tables`. */
   awsS3TableArn?: string;
-  /** Required when sink is `local`. */
+  /** Required when destination is `local`. */
   localBasePath?: string;
   /** Optional Iceberg namespace used by sync. */
   namespace?: string;

@@ -37,7 +37,7 @@ const mockedWorker = jest.mocked(Worker);
 const enabledDataWarehouse: NonNullable<MedplumServerConfig['dataWarehouse']> = {
   enabled: true,
   cron: '0 * * * *',
-  sink: 's3tables',
+  destination: 's3tables',
   awsS3TableArn: 'arn:aws:s3tables:us-east-1:123456789012:bucket/test',
   namespace: 'default',
 };
@@ -72,7 +72,7 @@ describe('data-warehouse sync worker', () => {
       password: 'medplum_test_readonly',
     });
     expect(result.database).not.toBe(config);
-    expect(result.sink.type).toStrictEqual('s3tables');
+    expect(result.destination.type).toStrictEqual('s3tables');
     expect(result.warehouseSources).toHaveLength(2);
   });
 
@@ -88,21 +88,21 @@ describe('data-warehouse sync worker', () => {
     expect(parsed.password).toBe('medplum_test_readonly');
   });
 
-  describe('with local sink', () => {
+  describe('with local destination', () => {
     beforeEach(async () => {
       await initConfig({
         dataWarehouse: {
           enabled: true,
           cron: '0 * * * *',
-          sink: 'local',
+          destination: 'local',
           localBasePath: '/tmp/warehouse-out',
         },
       });
     });
 
-    test('getDataWarehouseSyncOptions creates local sink', () => {
+    test('getDataWarehouseSyncOptions creates local destination', () => {
       const result = getDataWarehouseSyncOptions(config);
-      expect(result.sink.type).toStrictEqual('local');
+      expect(result.destination.type).toStrictEqual('local');
     });
   });
 
@@ -195,7 +195,7 @@ describe('data-warehouse sync worker', () => {
     });
     expect(callArg?.database).not.toBe(config);
     expect(callArg).toMatchObject({
-      sink: { type: 's3tables' },
+      destination: { type: 's3tables' },
     });
     expect(typeof callArg?.onProgress).toStrictEqual('function');
   });

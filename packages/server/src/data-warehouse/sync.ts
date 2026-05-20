@@ -9,7 +9,7 @@ import type { MedplumDatabaseConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
-import type { DataWarehouseSink } from './sink';
+import type { DataWarehouseDestination } from './destination';
 import type { DuckdbConnection } from './warehouse-sql';
 import {
   buildCountFromHistoryTableQuery,
@@ -20,7 +20,7 @@ import {
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
   warehouseSources: WarehouseSourceTable[];
-  sink: DataWarehouseSink;
+  destination: DataWarehouseDestination;
   namespace?: string;
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void;
 }
@@ -67,9 +67,9 @@ async function runWarehouseTableSync(
 
   for (const spec of options.warehouseSources) {
     const { postgresTable, icebergTable } = spec;
-    const sourcePredicate = options.sink.buildSourcePredicate(spec, namespace);
-    const resultTableName = options.sink.getDestinationName(spec);
-    await options.sink.ensureTargetExists(spec, namespace);
+    const sourcePredicate = options.destination.buildSourcePredicate(spec, namespace);
+    const resultTableName = options.destination.getDestinationName(spec);
+    await options.destination.ensureTargetExists(spec, namespace);
 
     const countReader = await runParameterizedWarehouseSqlReadAll(
       connection,
@@ -83,7 +83,7 @@ async function runWarehouseTableSync(
         icebergTable,
         count,
       });
-      await options.sink.writeRows(connection, { tableSpec: spec, namespace, sourcePredicate });
+      await options.destination.writeRows(connection, { tableSpec: spec, namespace, sourcePredicate });
     } else {
       logSyncProgress(options, `Skipping ${icebergTable}: no new rows`, {
         table: resultTableName,
@@ -114,7 +114,7 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
     const instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
-    for (const q of options.sink.getSetupQueries(sourceConnectionString)) {
+    for (const q of options.destination.getSetupQueries(sourceConnectionString)) {
       await connection.run(q);
     }
 

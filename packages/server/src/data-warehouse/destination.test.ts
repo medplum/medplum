@@ -5,21 +5,21 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SqlBuilder } from '../fhir/sql';
-import { LocalParquetWarehouseSink } from './sink';
+import { LocalParquetWarehouseDestination } from './destination';
 
-describe('data warehouse sinks', () => {
-  test('local sink returns parquet file result path', async () => {
-    const basePath = mkdtempSync(join(tmpdir(), 'dw-local-sink-'));
+describe('data warehouse destinations', () => {
+  test('local destination returns parquet file result path', async () => {
+    const basePath = mkdtempSync(join(tmpdir(), 'dw-local-destination-'));
     try {
-      const sink = new LocalParquetWarehouseSink(basePath);
-      const table = sink.getDestinationName({
+      const destination = new LocalParquetWarehouseDestination(basePath);
+      const table = destination.getDestinationName({
         postgresTable: 'Patient_history',
         icebergTable: 'patient_history',
       });
       expect(table).toContain('patient_history.parquet');
       const sourcePredicateSql = new SqlBuilder();
       sourcePredicateSql.appendExpression(
-        sink.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')
+        destination.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')
       );
       expect(sourcePredicateSql.toString()).toBe('TRUE');
     } finally {

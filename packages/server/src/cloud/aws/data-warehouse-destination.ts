@@ -3,7 +3,11 @@
 
 import type { S3TablesClient } from '@aws-sdk/client-s3tables';
 import type { WarehouseSourceTable } from '../../data-warehouse/config';
-import type { DataWarehouseSink, DataWarehouseSinkType, SinkQueryContext } from '../../data-warehouse/sink';
+import type {
+  DataWarehouseDestination,
+  DataWarehouseDestinationType,
+  DestinationQueryContext,
+} from '../../data-warehouse/destination';
 import type { DuckdbConnection } from '../../data-warehouse/warehouse-sql';
 import {
   buildInsertIntoSelectQuery,
@@ -16,8 +20,8 @@ import {
 import type { Expression } from '../../fhir/sql';
 import { createS3TablesClient, tableExists } from './data-warehouse-client';
 
-export class S3TablesWarehouseSink implements DataWarehouseSink {
-  readonly type: DataWarehouseSinkType = 's3tables';
+export class S3TablesWarehouseDestination implements DataWarehouseDestination {
+  readonly type: DataWarehouseDestinationType = 's3tables';
 
   private readonly s3TablesClient: S3TablesClient;
   private readonly s3Region: string;
@@ -54,7 +58,7 @@ export class S3TablesWarehouseSink implements DataWarehouseSink {
     return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg);
   }
 
-  async writeRows(connection: DuckdbConnection, context: SinkQueryContext): Promise<void> {
+  async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<void> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(context.namespace, context.tableSpec.icebergTable);
     const projectedSelectQuery = buildProjectedSelectFromHistoryTableQuery(
       context.tableSpec.postgresTable,

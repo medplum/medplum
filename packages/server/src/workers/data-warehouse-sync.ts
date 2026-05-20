@@ -3,11 +3,11 @@
 
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { S3TablesWarehouseSink } from '../cloud/aws/data-warehouse-sink';
+import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import type { MedplumServerConfig } from '../config/types';
 import { validateDataWarehouseConfig } from '../config/validate-config';
 import { getWarehouseSyncPostgresTableNames, toIcebergTableName } from '../data-warehouse/config';
-import { LocalParquetWarehouseSink } from '../data-warehouse/sink';
+import { LocalParquetWarehouseDestination } from '../data-warehouse/destination';
 import type { SyncOptions } from '../data-warehouse/sync';
 import { syncData } from '../data-warehouse/sync';
 import { globalLogger } from '../logger';
@@ -120,7 +120,7 @@ export async function processDataWarehouseSyncJob(
     globalLogger.error('Data warehouse sync failed', {
       jobId: job.id,
       trigger: job.data.trigger,
-      sink: syncConfig?.sink,
+      destination: syncConfig?.destination,
       namespace: syncConfig?.namespace,
       err,
     });
@@ -141,10 +141,10 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
   // For RDS Proxy, set host and ssl.require on the database config directly.
   const database = config.readonlyDatabase ?? config.database;
 
-  const sink =
-    (syncConfig.sink ?? 'local') === 'local'
-      ? new LocalParquetWarehouseSink(syncConfig.localBasePath as string)
-      : new S3TablesWarehouseSink(config.awsRegion, syncConfig.awsS3TableArn as string);
+  const destination =
+    (syncConfig.destination ?? 'local') === 'local'
+      ? new LocalParquetWarehouseDestination(syncConfig.localBasePath as string)
+      : new S3TablesWarehouseDestination(config.awsRegion, syncConfig.awsS3TableArn as string);
 
   const warehouseSources = getWarehouseSyncPostgresTableNames().map((postgresTable) => ({
     postgresTable,
@@ -152,7 +152,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
   }));
   return {
     database,
-    sink,
+    destination,
     namespace,
     warehouseSources,
   };

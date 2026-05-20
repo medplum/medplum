@@ -14,29 +14,29 @@ import {
   runParameterizedWarehouseSql,
 } from './warehouse-sql';
 
-export type DataWarehouseSinkType = 's3tables' | 'local';
+export type DataWarehouseDestinationType = 's3tables' | 'local';
 
-export interface SinkQueryContext {
+export interface DestinationQueryContext {
   tableSpec: WarehouseSourceTable;
   namespace: string;
   sourcePredicate: Expression;
 }
 
-export interface DataWarehouseSink {
-  readonly type: DataWarehouseSinkType;
+export interface DataWarehouseDestination {
+  readonly type: DataWarehouseDestinationType;
   getSetupQueries(connectionString: string): string[];
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
   buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression;
-  writeRows(connection: DuckdbConnection, context: SinkQueryContext): Promise<void>;
+  writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<void>;
   /**
-   * For local sinks, use the path to the Parquet file
+   * For local destinations, use the path to the Parquet file
    * For Iceberg, you'll use the Iceberg table name
    */
   getDestinationName(tableSpec: WarehouseSourceTable): string;
 }
 
-export class LocalParquetWarehouseSink implements DataWarehouseSink {
-  readonly type: DataWarehouseSinkType = 'local';
+export class LocalParquetWarehouseDestination implements DataWarehouseDestination {
+  readonly type: DataWarehouseDestinationType = 'local';
   private readonly basePath: string;
 
   constructor(basePath: string) {
@@ -53,12 +53,12 @@ export class LocalParquetWarehouseSink implements DataWarehouseSink {
 
   buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): Expression {
     /* TODO: Support incremental local sync by deriving a watermark from existing parquet output.
-     * For now we always export all source rows because the local sink does not yet read prior parquet state.
+     * For now we always export all source rows because the local destination does not yet read prior parquet state.
      */
     return buildTrueSourcePredicate();
   }
 
-  async writeRows(connection: DuckdbConnection, context: SinkQueryContext): Promise<void> {
+  async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<void> {
     const parquetPath = this.getParquetPathForTable(context.tableSpec);
     const projectedSelect = buildProjectedSelectFromHistoryTable(
       context.tableSpec.postgresTable,

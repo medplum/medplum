@@ -22,17 +22,17 @@ describe('validateDataWarehouseConfig', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: false, sink: 's3tables' },
+          dataWarehouse: { enabled: false, destination: 's3tables' },
         })
       )
     ).not.toThrow();
   });
 
-  test('no-ops when enabled is false even if sink fields are missing', () => {
+  test('no-ops when enabled is false even if destination fields are missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: false, sink: 's3tables' },
+          dataWarehouse: { enabled: false, destination: 's3tables' },
         })
       )
     ).not.toThrow();
@@ -42,7 +42,7 @@ describe('validateDataWarehouseConfig', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: true, sink: 's3tables', awsS3TableArn: 'arn:aws:s3tables:us-east-1:1:bucket/x' },
+          dataWarehouse: { enabled: true, destination: 's3tables', awsS3TableArn: 'arn:aws:s3tables:us-east-1:1:bucket/x' },
         })
       )
     ).toThrow('dataWarehouse.cron is required when dataWarehouse.enabled is true');
@@ -55,7 +55,7 @@ describe('validateDataWarehouseConfig', () => {
           dataWarehouse: {
             enabled: true,
             cron: '   ',
-            sink: 's3tables',
+            destination: 's3tables',
             awsS3TableArn: 'arn:aws:s3tables:us-east-1:1:bucket/x',
           },
         })
@@ -63,34 +63,34 @@ describe('validateDataWarehouseConfig', () => {
     ).toThrow('dataWarehouse.cron is required when dataWarehouse.enabled is true');
   });
 
-  test('throws when sink is s3tables (default) and awsS3TableArn is missing', () => {
+  test('throws when destination is s3tables (default) and awsS3TableArn is missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
           dataWarehouse: { enabled: true, cron: '0 * * * *' },
         })
       )
-    ).toThrow('dataWarehouse.sink must be "s3tables" or "local"');
+    ).toThrow('dataWarehouse.destination must be "s3tables" or "local"');
   });
 
-  test('throws when sink is s3tables and awsS3TableArn is whitespace only', () => {
+  test('throws when destination is s3tables and awsS3TableArn is whitespace only', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: true, cron: '0 * * * *', sink: 's3tables', awsS3TableArn: '  ' },
+          dataWarehouse: { enabled: true, cron: '0 * * * *', destination: 's3tables', awsS3TableArn: '  ' },
         })
       )
-    ).toThrow('dataWarehouse.awsS3TableArn is required when dataWarehouse.sink is "s3tables"');
+    ).toThrow('dataWarehouse.awsS3TableArn is required when dataWarehouse.destination is "s3tables"');
   });
 
-  test('passes when sink is s3tables and awsS3TableArn is set', () => {
+  test('passes when destination is s3tables and awsS3TableArn is set', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
           dataWarehouse: {
             enabled: true,
             cron: '0 * * * *',
-            sink: 's3tables',
+            destination: 's3tables',
             awsS3TableArn: 'arn:aws:s3tables:us-east-1:123456789012:bucket/test',
             namespace: 'default',
           },
@@ -99,21 +99,21 @@ describe('validateDataWarehouseConfig', () => {
     ).not.toThrow();
   });
 
-  test('throws when sink is local and localBasePath is missing', () => {
+  test('throws when destination is local and localBasePath is missing', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: true, cron: '0 * * * *', sink: 'local' },
+          dataWarehouse: { enabled: true, cron: '0 * * * *', destination: 'local' },
         })
       )
-    ).toThrow('dataWarehouse.localBasePath is required when dataWarehouse.sink is "local"');
+    ).toThrow('dataWarehouse.localBasePath is required when dataWarehouse.destination is "local"');
   });
 
-  test('passes when sink is local and localBasePath is set', () => {
+  test('passes when destination is local and localBasePath is set', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: true, cron: '0 * * * *', sink: 'local', localBasePath: '/tmp/out' },
+          dataWarehouse: { enabled: true, cron: '0 * * * *', destination: 'local', localBasePath: '/tmp/out' },
         })
       )
     ).not.toThrow();

@@ -13,19 +13,19 @@ export function validateDataWarehouseConfig(config: MedplumServerConfig): void {
     throw new Error('dataWarehouse.cron is required when dataWarehouse.enabled is true');
   }
 
-  const sink = dw.sink;
-  if (sink === 'local') {
+  const destination = dw.destination;
+  if (destination === 'local') {
     if (!dw.localBasePath?.trim()) {
-      throw new Error('dataWarehouse.localBasePath is required when dataWarehouse.sink is "local"');
+      throw new Error('dataWarehouse.localBasePath is required when dataWarehouse.destination is "local"');
     }
-  } else if (sink === 's3tables') {
+  } else if (destination === 's3tables') {
     if (!dw.awsS3TableArn?.trim()) {
-      throw new Error('dataWarehouse.awsS3TableArn is required when dataWarehouse.sink is "s3tables"');
+      throw new Error('dataWarehouse.awsS3TableArn is required when dataWarehouse.destination is "s3tables"');
     }
     if (!dw.namespace?.trim()) {
-      throw new Error('dataWarehouse.namespace is required when dataWarehouse.sink is "s3tables"');
+      throw new Error('dataWarehouse.namespace is required when dataWarehouse.destination is "s3tables"');
     }
   } else {
-    throw new Error('dataWarehouse.sink must be "s3tables" or "local"');
+    throw new Error('dataWarehouse.destination must be "s3tables" or "local"');
   }
 }

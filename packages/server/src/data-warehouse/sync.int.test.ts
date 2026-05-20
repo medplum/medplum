@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/** Integration: Postgres (medplum_test) → syncData (sink: local) → Parquet on disk. */
+/** Integration: Postgres (medplum_test) → syncData (destination: local) → Parquet on disk. */
 
 import { DuckDBInstance } from '@duckdb/node-api';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { toIcebergTableName } from './config';
-import { LocalParquetWarehouseSink } from './sink';
+import { LocalParquetWarehouseDestination } from './destination';
 import { syncData } from './sync';
 
 /** Isolated history table in medplum_test so we do not collide with real FHIR history tables. */
@@ -27,10 +27,10 @@ function buildReadParquetFirstRowProjectionQuery(parquetPath: string): string {
 }
 
 /**
- * Exercises the local Parquet sink by writing a single row to a dedicated Postgres history table,
+ * Exercises the local Parquet destination by writing a single row to a dedicated Postgres history table,
  * then syncing it to a local Parquet file.
  */
-describe('syncData local sink (integration)', () => {
+describe('syncData local destination (integration)', () => {
   let host: string;
   let port: number;
   let database: string;
@@ -106,7 +106,7 @@ describe('syncData local sink (integration)', () => {
   }, 10_000); // DROP TABLE shouldn't take this long, but on CI it might
 
   beforeEach(() => {
-    outDir = mkdtempSync(join(tmpdir(), 'medplum-dw-parquet-'));
+    outDir = mkdtempSync(join(tmpdir(), 'medplum-dw-destination-'));
   });
 
   afterEach(() => {
@@ -115,19 +115,19 @@ describe('syncData local sink (integration)', () => {
     }
   });
 
-  test('exports projected history rows to a Parquet file via local sink', async () => {
-    // Given: an isolated warehouse source and local parquet sink
+  test('exports projected history rows to a Parquet file via local destination', async () => {
+    // Given: an isolated warehouse source and local parquet destination
     const warehouseSources = [HISTORY_TABLE].map((postgresTable) => ({
       postgresTable,
       icebergTable: toIcebergTableName(postgresTable),
     }));
-    const sink = new LocalParquetWarehouseSink(outDir as string);
+    const destination = new LocalParquetWarehouseDestination(outDir as string);
 
     // When: we run data warehouse sync against the seeded history table
     const result = await syncData({
       database: { host, port, dbname: database, username, password },
       warehouseSources,
-      sink,
+      destination,
     });
 
     // Then: sync reports an inserted parquet artifact for the expected table
