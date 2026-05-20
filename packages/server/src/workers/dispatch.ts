@@ -4,7 +4,8 @@ import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@me
 import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { createLambdaClient, deleteLambda, getLambdaNameForBot, lambdaExists } from '../cloud/aws/deploy';
+import { deleteLambda, getLambdaNameForBot, lambdaExists } from '../cloud/aws/deploy';
+import { getBotManagementLambdaClient } from '../cloud/aws/lambda';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
@@ -136,7 +137,7 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
   if (resource.resourceType === 'Bot' && resource.runtimeVersion === 'awslambda' && interaction === 'delete') {
     const name = getLambdaNameForBot(resource);
     try {
-      const client = createLambdaClient();
+      const client = getBotManagementLambdaClient();
       if (await lambdaExists(client, name)) {
         await deleteLambda(client, name);
       }
