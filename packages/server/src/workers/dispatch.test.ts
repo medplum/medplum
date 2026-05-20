@@ -173,5 +173,4 @@ describe('Dispatch Worker', () => {
 
     errorSpy.mockRestore();
   });
-
 });
