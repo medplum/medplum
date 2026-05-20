@@ -389,6 +389,14 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
         }),
 
+        // Lambda: List functions
+        // https://docs.aws.amazon.com/lambda/latest/dg/permissions-user-function.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:ListFunctions'],
+          resources: ['*'],
+        }),
+
         // Lambda layers: List layer versions
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,

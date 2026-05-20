@@ -185,6 +185,7 @@ export function isBooleanConfig(key: string): boolean {
 const objectKeys = new Set([
   'tls',
   'ssl',
+  'defaultProjectFeatures',
   'defaultProjectSystemSetting',
   'defaultOAuthClients',
   'externalAuthProviders',

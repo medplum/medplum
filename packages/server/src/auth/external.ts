@@ -111,7 +111,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     externalId,
     projectId,
     clientId: body.clientId,
-    scope: body.scope ?? 'openid offline',
+    scope: body.scope ?? 'openid offline_access',
     nonce: body.nonce ?? randomUUID(),
     launchId: body.launch,
     codeChallenge: body.codeChallenge,

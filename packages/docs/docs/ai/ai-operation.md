@@ -447,3 +447,4 @@ if (toolCallsParam?.valueString) {
 - [OpenAI Function Calling](https://platform.openai.com/docs/guides/function-calling)
 - [Medplum Project Features](/docs/access/projects)
 - [AI and Medplum](/docs/ai)
+- [Spaces in Medplum Provider](/docs/provider/spaces) — a worked example of `$ai` plus tool calling driving an in-app assistant

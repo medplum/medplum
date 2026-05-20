@@ -130,6 +130,11 @@
             "definition": "AI"
           },
           {
+            "code": "ai-realtime",
+            "display": "AI Realtime",
+            "definition": "Enable the OpenAI realtime transcription proxy at /ws/ai-realtime"
+          },
+          {
             "code": "aws-comprehend",
             "display": "AWS Comprehend",
             "definition": "AWS Comprehend"
@@ -188,6 +193,11 @@
             "code": "range-search",
             "display": "Range Search",
             "definition": "Precision-aware range search for datetime and number values"
+          },
+          {
+            "code": "log-streaming",
+            "display": "Log Streaming",
+            "definition": "Real-time streaming of log data for monitoring and analysis"
           }
         ]
       }
@@ -379,6 +389,11 @@
             "code": "password",
             "display": "Password",
             "definition": "Password"
+          },
+          {
+            "code": "pre-authorized",
+            "display": "Pre-authorized",
+            "definition": "Pre-authorized"
           }
         ]
       }

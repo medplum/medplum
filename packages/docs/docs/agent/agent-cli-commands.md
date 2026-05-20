@@ -143,6 +143,33 @@ medplum agent upgrade --criteria "Agent?name=Test Agent"
 medplum agent upgrade --criteria "Agent?name=Test Agent" --version 1.2.3
 ```
 
+## Stats Command
+
+Get runtime statistics for one or more agents.
+
+```bash
+medplum agent stats [agentIds...] [options]
+```
+
+### Arguments
+- `[agentIds...]`: List of agent IDs to get stats for. Either this or `--criteria` must be provided.
+
+### Options
+- `--criteria <criteria>`: FHIR search criteria to find agents (mutually exclusive with agentIds)
+- `--output <format>`: Output format (table or json, defaults to table)
+
+### Example
+```bash
+# Get stats for specific agents
+medplum agent stats 123e4567-e89b-12d3-a456-426614174000 123e4567-e89b-12d3-a456-426614174001
+
+# Get stats using search criteria
+medplum agent stats --criteria "Agent?name=Test Agent"
+
+# Get stats in JSON format
+medplum agent stats --criteria "Agent?name=Test Agent" --output json
+```
+
 ## Common Options
 
 All commands support the following common options:

@@ -7,7 +7,7 @@ set -e
 : ${MEDPLUM_BASE_URL:="http://localhost:8103/"}
 : ${MEDPLUM_CLIENT_ID:=""}
 : ${GOOGLE_CLIENT_ID:=""}
-: ${RECAPTCHA_SITE_KEY:="6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq"}
+: ${RECAPTCHA_SITE_KEY="6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq"}
 : ${MEDPLUM_REGISTER_ENABLED:="true"}
 : ${MEDPLUM_AWS_TEXTRACT_ENABLED:="true"}
 
