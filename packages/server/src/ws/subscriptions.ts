@@ -476,7 +476,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       user: userRef,
       projectId: socketProjectId,
     });
-    onDisconnect?.().catch(console.error);
+    onDisconnect?.().catch((err) => globalLogger.error('[WS] onDisconnect failed', err));
   });
 }
 
