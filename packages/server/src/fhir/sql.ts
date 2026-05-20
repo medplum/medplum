@@ -35,23 +35,13 @@ export const ColumnType = {
 } as const;
 export type ColumnType = (typeof ColumnType)[keyof typeof ColumnType];
 
-export type ConditionOperand = Column | Subquery;
-
-export type OperatorFunc = (sql: SqlBuilder, operand: ConditionOperand, parameter: any, paramType?: string) => void;
-
-function appendConditionOperand(sql: SqlBuilder, operand: ConditionOperand): void {
-  if (operand instanceof Subquery) {
-    sql.appendExpression(operand);
-  } else {
-    sql.appendColumn(operand);
-  }
-}
+export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
 
 export type TransactionIsolationLevel = 'REPEATABLE READ' | 'SERIALIZABLE';
 
 export const Operator = {
-  '=': (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
     if (parameter === null) {
       sql.append(' IS NULL');
     } else {
@@ -59,8 +49,8 @@ export const Operator = {
       sql.appendParameters(parameter, true);
     }
   },
-  '!=': (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  '!=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
     if (parameter === null) {
       sql.append(' IS NOT NULL');
     } else {
@@ -68,15 +58,15 @@ export const Operator = {
       sql.appendParameters(parameter, true);
     }
   },
-  LOWER_LIKE: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
+  LOWER_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append('LOWER(');
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     sql.append(')');
     sql.append(' LIKE ');
     sql.param((parameter as string).toLowerCase());
   },
-  ILIKE: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
     sql.append(' ILIKE ');
     sql.param(parameter as string);
   },
@@ -91,8 +81,8 @@ export const Operator = {
     Negating ARRAY_OVERLAPS_AND_IS_NOT_NULL includes records where the column is NULL.
     Negating ARRAY_OVERLAPS does NOT include records where the column is NULL.
   */
-  ARRAY_OVERLAPS: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  ARRAY_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
     // && is the overlap operator, @> is the contains operator
     // When `parameter` is a single value, @> is functionally equivalent to && and
     // can lead to better query plans
@@ -107,11 +97,11 @@ export const Operator = {
       sql.append('::' + paramType);
     }
   },
-  ARRAY_OVERLAPS_AND_IS_NOT_NULL: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, paramType?: string) => {
+  ARRAY_OVERLAPS_AND_IS_NOT_NULL: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.append('(');
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     sql.append(' IS NOT NULL AND ');
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     // && is the overlap operator, @> is the contains operator
     // When `parameter` is a single value, @> is functionally equivalent to && and
     // can lead to better query plans
@@ -127,26 +117,26 @@ export const Operator = {
     }
     sql.append(')');
   },
-  TOKEN_ARRAY_IREGEX: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
+  TOKEN_ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append(`${TokenArrayToTextFn.name}(`);
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     sql.append(')');
     sql.append(' ~* ');
     sql.appendParameters(parameter, false);
   },
-  ARRAY_EMPTY: (sql: SqlBuilder, operand: ConditionOperand, _parameter: any, paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  ARRAY_EMPTY: (sql: SqlBuilder, column: Column, _parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
     sql.append(' = ARRAY[]');
     if (paramType) {
       sql.append('::' + paramType);
     }
   },
-  ARRAY_NOT_EMPTY: (sql: SqlBuilder, operand: ConditionOperand, _parameter: any, _paramType?: string) => {
+  ARRAY_NOT_EMPTY: (sql: SqlBuilder, column: Column, _parameter: any, _paramType?: string) => {
     sql.append('array_length(');
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     sql.append(', 1) > 0');
   },
-  TSVECTOR_SIMPLE: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
+  TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
     if (!query) {
       sql.append('true');
@@ -154,12 +144,12 @@ export const Operator = {
     }
 
     sql.append(`to_tsvector('simple',`);
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     sql.append(`) @@ to_tsquery('simple',`);
     sql.param(query);
     sql.append(')');
   },
-  TSVECTOR_ENGLISH: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
+  TSVECTOR_ENGLISH: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
     if (!query) {
       sql.append('true');
@@ -167,13 +157,13 @@ export const Operator = {
     }
 
     sql.append(`to_tsvector('english',`);
-    appendConditionOperand(sql, operand);
+    sql.appendColumn(column);
     sql.append(`) @@ to_tsquery('english',`);
     sql.param(query);
     sql.append(')');
   },
-  IN_SUBQUERY: (sql: SqlBuilder, operand: ConditionOperand, expression: Expression, expressionType?: string) => {
-    appendConditionOperand(sql, operand);
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
+    sql.appendColumn(column);
     sql.append('=ANY(');
     if (expressionType) {
       sql.append('(');
@@ -184,24 +174,24 @@ export const Operator = {
     }
     sql.append(')');
   },
-  RANGE_OVERLAPS: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
     sql.append(' && ');
     sql.param(parameter);
     if (paramType) {
       sql.append('::' + paramType);
     }
   },
-  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
     sql.append(' >> ');
     sql.param(parameter);
     if (paramType) {
       sql.append('::' + paramType);
     }
   },
-  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, operand: ConditionOperand, parameter: any, paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
     sql.append(' << ');
     sql.param(parameter);
     if (paramType) {
@@ -211,8 +201,8 @@ export const Operator = {
 };
 
 function simpleBinaryOperator(operator: string): OperatorFunc {
-  return (sql: SqlBuilder, operand: ConditionOperand, parameter: any, _paramType?: string) => {
-    appendConditionOperand(sql, operand);
+  return (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
     sql.append(` ${operator} `);
     sql.appendParameters(parameter, true);
   };
@@ -332,14 +322,27 @@ export class Negation implements Expression {
   }
 }
 
+export class IsNull implements Expression {
+  readonly expression: Expression;
+
+  constructor(expression: Expression) {
+    this.expression = expression;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.appendExpression(this.expression);
+    sql.append(' IS NULL');
+  }
+}
+
 export class Condition implements Expression {
-  readonly column: ConditionOperand;
+  readonly column: Column;
   readonly operator: keyof typeof Operator;
   parameter: any;
   readonly parameterType?: string;
 
   constructor(
-    column: Column | string | Subquery,
+    column: Column | string,
     operator: keyof typeof Operator,
     parameter: any,
     parameterType?: string
@@ -351,7 +354,7 @@ export class Condition implements Expression {
       throw new Error(`${operator} requires paramType`);
     }
 
-    this.column = column instanceof Subquery ? column : getColumn(column);
+    this.column = getColumn(column);
     this.operator = operator;
     this.parameter = parameter;
     this.parameterType = parameterType;
@@ -368,7 +371,7 @@ export class TypedCondition<T extends keyof typeof Operator> extends Condition {
   readonly parameter: Parameters<(typeof Operator)[T]>[2];
   readonly parameterType?: string;
   constructor(
-    column: Column | string | Subquery,
+    column: Column | string,
     operator: T,
     parameter: Parameters<(typeof Operator)[T]>[2],
     parameterType?: string

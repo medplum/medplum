@@ -7,6 +7,7 @@ import {
   Condition,
   Constant,
   Disjunction,
+  IsNull,
   InsertQuery,
   isValidColumnName,
   isValidTableName,
@@ -131,7 +132,7 @@ describe('SqlBuilder', () => {
       const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
       new SelectQuery('MyOtherTable')
         .column('id')
-        .whereExpr(new Condition(new Subquery(maxSubquery), '=', null))
+        .whereExpr(new IsNull(new Subquery(maxSubquery)))
         .buildSql(sql);
       expect(sql.toString()).toBe(
         'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE (SELECT MAX(name) FROM "MyTable") IS NULL'
@@ -149,15 +150,13 @@ describe('SqlBuilder', () => {
 
     test('Select where is null expression in disjunction', () => {
       const sql = new SqlBuilder();
-      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(ts)');
       new SelectQuery('MyOtherTable')
         .column('id')
-        .whereExpr(
-          new Disjunction([new Condition(new Subquery(maxSubquery), '=', null), new Condition('name', '>', 'x')])
-        )
+        .whereExpr(new Disjunction([new IsNull(new Subquery(maxSubquery)), new Condition('ts', '>', 'x')]))
         .buildSql(sql);
       expect(sql.toString()).toBe(
-        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE ((SELECT MAX(name) FROM "MyTable") IS NULL OR "name" > $1)'
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE ((SELECT MAX(ts) FROM "MyTable") IS NULL OR "ts" > $1)'
       );
     });
 

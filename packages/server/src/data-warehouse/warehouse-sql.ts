@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Expression } from '../fhir/sql';
-import { Column, Condition, Constant, Disjunction, InsertQuery, SelectQuery, SqlBuilder, Subquery } from '../fhir/sql';
+import { Column, Condition, Constant, Disjunction, InsertQuery, IsNull, SelectQuery, SqlBuilder, Subquery } from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -194,7 +194,7 @@ export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string): E
   const maxLastUpdatedSubquery = new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated)');
 
   return new Disjunction([
-    new Condition(new Subquery(maxLastUpdatedSubquery), '=', null),
+    new IsNull(new Subquery(maxLastUpdatedSubquery)),
     new Condition('lastUpdated', '>', new Subquery(maxLastUpdatedSubquery)),
   ]);
 }
