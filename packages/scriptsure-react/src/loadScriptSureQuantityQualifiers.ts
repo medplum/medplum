@@ -7,10 +7,15 @@ import type { Parameters } from '@medplum/fhirtypes';
 
 /**
  * Reads `{ code, label }` rows from a `Parameters` resource produced by the
- * `$drug-quantity-qualifiers` custom operation. Tolerates either flat parts
- * (`code` + `label` as sibling primitives — current bot output) or grouped
- * `quantityQualifier` part-bearing entries (defensive against a future shape
- * change).
+ * `$drug-quantity-qualifiers` custom operation.
+ *
+ * The OperationDefinition (see `scriptsure-drug-search-bot` registration in
+ * `medplum-ee/packages/scriptsure/src/scripts/deploy.ts`) declares a single
+ * repeating output parameter named `quantityQualifier`, each entry bearing
+ * `part: [{ name: 'code', valueString }, { name: 'label', valueString }]`.
+ * The server's `buildOutputParameters` wraps the bot return value into that
+ * shape, so the parser only needs to handle this one canonical layout.
+ * Entries missing either inner part are skipped defensively.
  *
  * @param params - `Parameters` resource returned by the operation.
  * @returns `{ code, label }` rows for UI selects.

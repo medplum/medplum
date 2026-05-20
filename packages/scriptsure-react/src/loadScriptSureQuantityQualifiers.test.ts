@@ -64,4 +64,33 @@ describe('loadScriptSureQuantityQualifiers', () => {
 
     await expect(loadScriptSureQuantityQualifiers(medplum)).resolves.toEqual([{ code: 'C48480', label: 'mL' }]);
   });
+
+  test('returns empty array when Parameters has no entries', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce({
+      resourceType: 'Parameters',
+    } satisfies Parameters);
+
+    await expect(loadScriptSureQuantityQualifiers(medplum)).resolves.toEqual([]);
+  });
+
+  test('ignores entries with a non-quantityQualifier name or missing part', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'unrelated', valueString: 'noise' },
+        { name: 'quantityQualifier', valueString: 'no-part' },
+        {
+          name: 'quantityQualifier',
+          part: [
+            { name: 'code', valueString: 'C48542' },
+            { name: 'label', valueString: 'Tablet' },
+          ],
+        },
+      ],
+    } satisfies Parameters);
+
+    await expect(loadScriptSureQuantityQualifiers(medplum)).resolves.toEqual([{ code: 'C48542', label: 'Tablet' }]);
+  });
 });

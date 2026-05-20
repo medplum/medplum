@@ -110,22 +110,47 @@ export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): Us
     [medplum]
   );
 
+  // `refresh()` and the input-driven effect share a monotonically-incrementing
+  // run id (`runIdRef`). Every fetch — whether kicked off by the effect or by
+  // a `refresh()` call — captures its own `myRunId` at start, and only writes
+  // state if `runIdRef.current === myRunId` when the fetch resolves. The
+  // effect's per-run `cancelled` flag also short-circuits on unmount / deps
+  // change. This gives `refresh()` the same cancellation semantics as the
+  // effect without the act+await deadlock that a resolver-queue approach
+  // creates (a refresh promise that depends on a nonce-triggered effect
+  // re-render cannot resolve while React's `act` is awaiting the refresh).
+  // (PR https://github.com/medplum/medplum/pull/8999#discussion_r3277116116)
+  const runIdRef = useRef(0);
+
   const refresh = useCallback(async (): Promise<string | undefined> => {
     const req = buildRequest();
     if (!req) {
       return undefined;
     }
+    runIdRef.current += 1;
+    const myRunId = runIdRef.current;
     setLoading(true);
     setError(undefined);
     try {
       const next = await callOperation(req);
+      if (runIdRef.current !== myRunId) {
+        // A newer run started while we were in flight — drop the result so
+        // neither the state nor the returned promise can clobber the newer
+        // fetch's URL.
+        return undefined;
+      }
       setUrl(next);
       return next;
     } catch (err: unknown) {
-      setError(err);
+      if (runIdRef.current === myRunId) {
+        setError(err);
+        setUrl(undefined);
+      }
       return undefined;
     } finally {
-      setLoading(false);
+      if (runIdRef.current === myRunId) {
+        setLoading(false);
+      }
     }
   }, [callOperation]);
 
@@ -135,29 +160,34 @@ export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): Us
     if (!req) {
       // Inputs incomplete — clear any stale URL so the consumer doesn't
       // keep showing a URL that no longer matches the current selection.
+      runIdRef.current += 1;
       setUrl(undefined);
       setLoading(false);
       setError(undefined);
       return undefined;
     }
 
+    runIdRef.current += 1;
+    const myRunId = runIdRef.current;
     setLoading(true);
     setError(undefined);
 
     callOperation(req)
       .then((next) => {
-        if (!cancelled) {
-          setUrl(next);
+        if (cancelled || runIdRef.current !== myRunId) {
+          return;
         }
+        setUrl(next);
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err);
-          setUrl(undefined);
+        if (cancelled || runIdRef.current !== myRunId) {
+          return;
         }
+        setError(err);
+        setUrl(undefined);
       })
       .finally(() => {
-        if (!cancelled) {
+        if (!cancelled && runIdRef.current === myRunId) {
           setLoading(false);
         }
       });

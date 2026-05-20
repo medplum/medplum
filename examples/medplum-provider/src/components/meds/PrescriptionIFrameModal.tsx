@@ -150,7 +150,10 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
         if (skipPollRef.current) {
           return;
         }
-        const mr = await medplum.readResource('MedicationRequest', medicationRequestIdToWatch);
+        // The poll exists to observe a webhook-driven update, so a cached
+        // read would defeat the purpose: bypass MedplumClient's request
+        // cache here.
+        const mr = await medplum.readResource('MedicationRequest', medicationRequestIdToWatch, { cache: 'reload' });
         if (cancelled) {
           return;
         }

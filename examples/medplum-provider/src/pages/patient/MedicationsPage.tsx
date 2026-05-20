@@ -200,7 +200,7 @@ export function MedicationsPage(): JSX.Element {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const handleOrderSelect = useCallback(
+  const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
       return `/Patient/${patientId}/MedicationRequest/${order.id}`;
     },
@@ -368,7 +368,7 @@ export function MedicationsPage(): JSX.Element {
                         item={item}
                         selectedItem={currentOrder}
                         activeTab={activeTab}
-                        onItemSelect={handleOrderSelect}
+                        getItemUrl={getOrderUrl}
                         medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
                       />
                       {index < orders.length - 1 && (

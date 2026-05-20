@@ -51,7 +51,9 @@ export function useMedicationOrder(): UseMedicationOrderReturn {
       if (!isResource<Bundle<Medication>>(response, 'Bundle')) {
         throw new Error(INVALID_MEDICATION_SEARCH_RESPONSE);
       }
-      return (response.entry ?? []).map((e) => e.resource).filter((r): r is Medication => Boolean(r));
+      return (response.entry ?? [])
+        .map((e) => e.resource)
+        .filter((r): r is Medication => isResource<Medication>(r, 'Medication'));
     },
     [medplum]
   );

@@ -15,18 +15,22 @@ interface MedListItemProps {
   item: MedicationRequest;
   selectedItem: MedicationRequest | undefined;
   activeTab: MedTab;
-  onItemSelect: (item: MedicationRequest) => string;
+  /**
+   * Returns the URL the row should link to. Invoked during render, so callers
+   * must keep it pure (memoize with `useCallback` to avoid extra renders).
+   */
+  getItemUrl: (item: MedicationRequest) => string;
   medicationOrderExtensions: MedicationOrderExtensions;
 }
 
 export function MedListItem(props: MedListItemProps): JSX.Element {
-  const { item, selectedItem, activeTab, onItemSelect, medicationOrderExtensions } = props;
+  const { item, selectedItem, activeTab, getItemUrl, medicationOrderExtensions } = props;
   const isSelected = selectedItem?.id === item.id;
   const requester = useResource(item.requester) as Practitioner | undefined;
   const pendingStatus = getPendingMedicationOrderStatus(item, medicationOrderExtensions);
 
   return (
-    <MedplumLink to={onItemSelect(item)} underline="never">
+    <MedplumLink to={getItemUrl(item)} underline="never">
       <Group
         align="center"
         wrap="nowrap"
@@ -62,11 +66,7 @@ export function MedListItem(props: MedListItemProps): JSX.Element {
 }
 
 function getMedicationDisplay(mr: MedicationRequest): string {
-  const mc = mr.medicationCodeableConcept;
-  if (mc?.text) {
-    return mc.text;
-  }
-  return formatCodeableConcept(mc) || 'Medication order';
+  return formatCodeableConcept(mr.medicationCodeableConcept) || 'Medication order';
 }
 
 const getStatusColor = (status: string | undefined): string => {

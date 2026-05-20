@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Medication, MedicationRequest, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { getIdentifier } from './utils';
+import { isResource } from './types';
+import { getExtensionValue, getIdentifier } from './utils';
 
 /** Re-export common coding systems used with medication-order drug search. */
 export { NDC, RXNORM } from './constants';
@@ -179,18 +180,20 @@ export function isMedicationOrderSetResponse(value: unknown): value is Medicatio
 
 /**
  * Type guard: validates an array of Medication resources (drug search bot output).
+ *
+ * Walks every entry rather than spot-checking the first so a tuple-shaped
+ * payload like `[Medication, MedicationRequest]` is rejected (see PR
+ * [#8999](https://github.com/medplum/medplum/pull/8999#discussion_r3276251617)).
+ *
  * @param value - Unknown bot JSON payload.
- * @returns True when the value is a non-empty or empty array of Medication resources.
+ * @returns True when the value is an array (possibly empty) where every entry
+ *   passes `isResource<Medication>`.
  */
 export function isMedicationArray(value: unknown): value is Medication[] {
   if (!Array.isArray(value)) {
     return false;
   }
-  if (value.length > 0) {
-    const first = value[0];
-    return typeof first === 'object' && first !== null && first.resourceType === 'Medication';
-  }
-  return true;
+  return value.every((entry) => isResource<Medication>(entry, 'Medication'));
 }
 
 /**
@@ -216,8 +219,8 @@ export function getPendingMedicationOrderStatus(
   medicationRequest: MedicationRequest,
   ext: MedicationOrderExtensions
 ): string | undefined {
-  const e = medicationRequest.extension?.find((x) => x.url === ext.pendingOrderStatusUrl);
-  return e?.valueCode;
+  const v = getExtensionValue(medicationRequest, ext.pendingOrderStatusUrl);
+  return typeof v === 'string' ? v : undefined;
 }
 
 /**
@@ -230,8 +233,8 @@ export function getMedicationOrderIframeUrl(
   medicationRequest: MedicationRequest,
   ext: MedicationOrderExtensions
 ): string | undefined {
-  const e = medicationRequest.extension?.find((x) => x.url === ext.iframeUrlExtension);
-  return e?.valueUrl;
+  const v = getExtensionValue(medicationRequest, ext.iframeUrlExtension);
+  return typeof v === 'string' ? v : undefined;
 }
 
 // ============================================================================

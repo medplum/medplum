@@ -205,6 +205,43 @@ describe('useMedicationOrderSet', () => {
     expect(result.current.url).toBe(URL_B);
   });
 
+  test('refresh() in-flight is cancelled by an input change and resolves to undefined without clobbering newer URL', async () => {
+    const medplum = new MockClient();
+    let resolveRefreshFetch: (value: Parameters) => void = () => undefined;
+    const refreshFetchPromise = new Promise<Parameters>((r) => {
+      resolveRefreshFetch = r;
+    });
+
+    jest
+      .spyOn(medplum, 'post')
+      .mockResolvedValueOnce(paramsResponse(URL_A))
+      .mockReturnValueOnce(refreshFetchPromise)
+      .mockResolvedValueOnce(paramsResponse(URL_B));
+
+    const { result, rerender } = renderOrderSetHook(medplum, {
+      patientId: PATIENT_ID,
+      vendorOrderSetId: 1,
+    });
+    await waitFor(() => expect(result.current.url).toBe(URL_A));
+
+    let refreshed: string | undefined = 'sentinel';
+    let refreshPromise: Promise<string | undefined> = Promise.resolve(undefined);
+    act(() => {
+      refreshPromise = result.current.refresh();
+    });
+
+    rerender({ patientId: PATIENT_ID, vendorOrderSetId: 2 });
+    await waitFor(() => expect(result.current.url).toBe(URL_B));
+
+    await act(async () => {
+      resolveRefreshFetch(paramsResponse('https://stale.example/should-not-win'));
+      refreshed = await refreshPromise;
+    });
+
+    expect(refreshed).toBeUndefined();
+    expect(result.current.url).toBe(URL_B);
+  });
+
   test('refresh() returns undefined when inputs are incomplete', async () => {
     const medplum = new MockClient();
     const post = jest.spyOn(medplum, 'post');

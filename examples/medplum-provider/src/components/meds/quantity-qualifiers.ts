@@ -123,8 +123,6 @@ const QUALIFIER_SYNONYMS_BY_NAME: Readonly<Record<string, SynonymGroup | null>> 
   'international unit': null,
 };
 
-const REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
-
 /**
  * A function that returns the best NCI potency-unit code for a free-text
  * fragment (sig line, formulation label, …) or `undefined` when no candidate
@@ -183,7 +181,7 @@ export function buildQualifierMatcher(catalog: readonly { potencyUnit: string; n
       }
       continue;
     }
-    const escaped = name.replaceAll(REGEX_ESCAPE, String.raw`\$&`);
+    const escaped = RegExp.escape(name);
     compiled.push({
       code,
       pattern: new RegExp(String.raw`\b${escaped}s?\b`, 'i'),

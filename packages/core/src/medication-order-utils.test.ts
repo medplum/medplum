@@ -71,6 +71,20 @@ describe('isMedicationArray', () => {
   test('rejects non-Medication entries', () => {
     expect(isMedicationArray([{ resourceType: 'Patient', id: '1' }])).toBe(false);
   });
+
+  test('rejects tuple-shaped arrays where any entry is not a Medication', () => {
+    expect(
+      isMedicationArray([
+        { resourceType: 'Medication', id: '1' },
+        { resourceType: 'MedicationRequest', id: '2', status: 'draft', intent: 'order' },
+      ])
+    ).toBe(false);
+  });
+
+  test('rejects arrays containing null or non-object entries', () => {
+    expect(isMedicationArray([{ resourceType: 'Medication', id: '1' }, null])).toBe(false);
+    expect(isMedicationArray([{ resourceType: 'Medication', id: '1' }, 'not-a-resource'])).toBe(false);
+  });
 });
 
 describe('MedicationOrder getters', () => {

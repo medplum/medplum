@@ -19,7 +19,17 @@ import {
   TextInput,
 } from '@mantine/core';
 import type { MedicationOrderDrugInput, MedplumClient, WithId } from '@medplum/core';
-import { createReference, getPreferredPharmaciesFromPatient, getReferenceString, NDC, RXNORM } from '@medplum/core';
+import {
+  createReference,
+  getCodeBySystem,
+  getExtensionValue,
+  getIdentifier,
+  getPreferredPharmaciesFromPatient,
+  getReferenceString,
+  isDefined,
+  NDC,
+  RXNORM,
+} from '@medplum/core';
 import type {
   Condition,
   Coverage,
@@ -66,9 +76,7 @@ export interface OrderMedicationPageProps {
 }
 
 function getRoutedMedIdFromMedication(m: Medication): number | undefined {
-  const v =
-    m.identifier?.find((i) => i.system === SCRIPTSURE_ROUTED_MED_ID_SYSTEM)?.value ??
-    m.code?.coding?.find((c) => c.system === SCRIPTSURE_ROUTED_MED_ID_SYSTEM)?.code;
+  const v = getIdentifier(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM) ?? (m.code && getCodeBySystem(m.code, SCRIPTSURE_ROUTED_MED_ID_SYSTEM));
   if (!v) {
     return undefined;
   }
@@ -96,13 +104,12 @@ function normalizeNdcDigits(ndc: string | undefined): string | undefined {
  * @returns Dedupe key (NDC, RxNorm, routed id, or text/json fallback).
  */
 function medicationDedupeKey(m: Medication): string {
-  const ndc = m.code?.coding?.find((c) => c.system === NDC)?.code ?? m.identifier?.find((i) => i.system === NDC)?.value;
+  const ndc = (m.code && getCodeBySystem(m.code, NDC)) ?? getIdentifier(m, NDC);
   const nd = normalizeNdcDigits(ndc);
   if (nd) {
     return `ndc:${nd}`;
   }
-  const rx =
-    m.code?.coding?.find((c) => c.system === RXNORM)?.code ?? m.identifier?.find((i) => i.system === RXNORM)?.value;
+  const rx = (m.code && getCodeBySystem(m.code, RXNORM)) ?? getIdentifier(m, RXNORM);
   if (rx) {
     return `rx:${rx.trim()}`;
   }
@@ -187,7 +194,10 @@ const SIG_NUMBER_WORDS_RE = new RegExp(String.raw`\b(?:${SIG_NUMBER_WORDS_ALTERN
  * Replaces spelled-out English numbers with digits in `text` so the interval
  * regexes can capture them. Idempotent on text that already uses digits.
  *
- * @param text - Lowercased sig line.
+ * `SIG_NUMBER_WORDS_RE` carries the `i` flag and every match is lowercased
+ * before lookup, so input casing does not matter.
+ *
+ * @param text - Sig line text (any case).
  * @returns Same line with word-form numbers swapped for digit form.
  */
 function digitizeSigNumberWords(text: string): string {
@@ -397,7 +407,7 @@ type BrandOrGeneric = 'brand' | 'generic' | undefined;
  * @returns `'brand'` for `'1'`, `'generic'` for `'2'`, otherwise undefined.
  */
 function getBrandOrGeneric(m: Medication): BrandOrGeneric {
-  const v = m.extension?.find((e) => e.url === SCRIPTSURE_NAME_TYPE_EXTENSION)?.valueString;
+  const v = getExtensionValue(m, SCRIPTSURE_NAME_TYPE_EXTENSION);
   if (v === '1') {
     return 'brand';
   }
@@ -413,7 +423,8 @@ function getBrandOrGeneric(m: Medication): BrandOrGeneric {
  * @returns Generic name string, or undefined.
  */
 function getGenericName(m: Medication): string | undefined {
-  return m.extension?.find((e) => e.url === SCRIPTSURE_GENERIC_NAME_EXTENSION)?.valueString;
+  const v = getExtensionValue(m, SCRIPTSURE_GENERIC_NAME_EXTENSION);
+  return typeof v === 'string' ? v : undefined;
 }
 
 function medicationToOrderDrugInput(
@@ -426,9 +437,8 @@ function medicationToOrderDrugInput(
     quantityQualifier?: string;
   }
 ): MedicationOrderDrugInput {
-  const ndc = m.code?.coding?.find((c) => c.system === NDC)?.code ?? m.identifier?.find((i) => i.system === NDC)?.value;
-  const rxNorm =
-    m.code?.coding?.find((c) => c.system === RXNORM)?.code ?? m.identifier?.find((i) => i.system === RXNORM)?.value;
+  const ndc = (m.code && getCodeBySystem(m.code, NDC)) ?? getIdentifier(m, NDC);
+  const rxNorm = (m.code && getCodeBySystem(m.code, RXNORM)) ?? getIdentifier(m, RXNORM);
   const routedMedId = getRoutedMedIdFromMedication(m);
   return {
     ...(ndc ? { ndc } : {}),
@@ -1366,12 +1376,7 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
         if (cancelled) {
           return;
         }
-        const filtered: { org: WithId<Organization>; isPrimary: boolean }[] = [];
-        for (const row of rows) {
-          if (row) {
-            filtered.push(row);
-          }
-        }
+        const filtered = rows.filter(isDefined);
         // Surface the primary pharmacy first.
         filtered.sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
         setPreferredPharmacies(filtered);
