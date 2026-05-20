@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, SegmentedControl, Title } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
@@ -187,7 +187,7 @@ export function Calendar(props: {
 
   const backgroundEvents = useMemo(() => {
     const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
-      (appointment.slot ?? []).forEach((slotRef) => {
+      (appointment.slot ?? EMPTY).forEach((slotRef) => {
         const key = getReferenceString(slotRef);
         if (key) {
           acc[key] = appointment;
