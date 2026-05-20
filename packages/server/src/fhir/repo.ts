@@ -2078,7 +2078,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
-      this.updateResourceImpl(auditEvent, true).catch(console.error);
+      this.updateResourceImpl(auditEvent, true).catch((err) => getLogger().error('Failed to save AuditEvent', err));
     }
   }
 
