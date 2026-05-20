@@ -603,7 +603,7 @@ export async function validateAllAvailability(
   }
 }
 
-export async function persistProposedAppointment(
+export async function createProposedAppointment(
   repo: Repository,
   proposedAppointment: WithPath<Appointment>,
   customizer: (appointment: Appointment, slots: Slot[]) => void
