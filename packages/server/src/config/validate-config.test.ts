@@ -42,7 +42,11 @@ describe('validateDataWarehouseConfig', () => {
     expect(() =>
       validateDataWarehouseConfig(
         baseServerConfig({
-          dataWarehouse: { enabled: true, destination: 's3tables', awsS3TableArn: 'arn:aws:s3tables:us-east-1:1:bucket/x' },
+          dataWarehouse: {
+            enabled: true,
+            destination: 's3tables',
+            awsS3TableArn: 'arn:aws:s3tables:us-east-1:1:bucket/x',
+          },
         })
       )
     ).toThrow('dataWarehouse.cron is required when dataWarehouse.enabled is true');
