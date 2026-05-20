@@ -4,11 +4,12 @@
 }
 
 .link {
-  color: var(--mantine-color-text);
+  color: inherit;
   line-height: 1;
   text-decoration: none;
 
   &:hover {
+    color: inherit;
     text-decoration: none;
   }
 }

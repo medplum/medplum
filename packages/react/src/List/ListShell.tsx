@@ -48,7 +48,7 @@ export function ListShell(props: ListShellProps): JSX.Element {
           <Flex h={64} align="center" justify="space-between" pl="xs" pr="lg" py="md">
             {header}
           </Flex>
-          <Divider mx="xs" color="gray.2" />
+          <Divider mx="xs" />
         </>
       )}
       <Flex direction="column" style={{ flex: 1, overflow: 'hidden' }}>

@@ -33,16 +33,16 @@
 }
 
 .pill-tabs .mantine-Tabs-tab:hover {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-8));
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
 .pill-tabs .mantine-Tabs-tab[data-active] {
-  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
   color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
 }
 
 .pill-tabs .mantine-Tabs-tab[data-active]:hover {
-  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
   color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
 }
 
@@ -66,8 +66,9 @@
   border-radius: var(--mantine-radius-sm);
 }
 
-.mantine-Menu-item:hover {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-8));
+.mantine-Menu-item:hover,
+.mantine-Menu-item[data-hovered] {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
 .filter-submenu-dropdown {

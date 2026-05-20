@@ -39,7 +39,7 @@ export function ListPagination(props: ListPaginationProps): JSX.Element | null {
 
   return (
     <>
-      <Divider mx="xs" color="gray.2" />
+      <Divider mx="xs" />
       <div className={classes.footer}>
         <Pagination
           value={currentPage}
