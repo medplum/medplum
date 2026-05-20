@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Group, Stack, Tabs, Text, Tooltip } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
 import type { Meta } from '@storybook/react';
+import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Document } from '../Document/Document';
@@ -38,9 +38,7 @@ export const SelectableRows = (): JSX.Element => {
   return (
     <Document>
       <div style={{ height: 500, display: 'flex' }}>
-        <ListShell
-          header={<Text className={listClasses.headerText}>Patients</Text>}
-        >
+        <ListShell header={<Text className={listClasses.headerText}>Patients</Text>}>
           <ListScrollArea>
             <Stack gap={ROW_GAP}>
               {SAMPLE_ITEMS.map((item) => (
@@ -199,11 +197,7 @@ export const FullLayout = (): JSX.Element => {
             <ListScrollArea>
               <Stack gap={ROW_GAP}>
                 {SAMPLE_ITEMS.map((item) => (
-                  <ListItem
-                    key={item.id}
-                    selected={selectedId === item.id}
-                    onClick={() => setSelectedId(item.id)}
-                  >
+                  <ListItem key={item.id} selected={selectedId === item.id} onClick={() => setSelectedId(item.id)}>
                     <Text size="sm" fw={700}>
                       {item.title}
                     </Text>
