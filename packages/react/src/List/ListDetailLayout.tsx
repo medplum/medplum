@@ -52,13 +52,14 @@ export interface ListDetailColumnProps {
 export function ListDetailColumn(props: ListDetailColumnProps): JSX.Element {
   const { children, bordered, className, width, allowShrink } = props;
   const isFixed = width !== undefined;
+  const flex = getColumnFlex(width);
   return (
     <Box
       h="100%"
       w={isFixed ? width : undefined}
       className={cx(bordered && classes.detailBorder, className)}
       style={{
-        flex: isFixed ? `0 0 ${typeof width === 'number' ? `${width}px` : width}` : 1,
+        flex,
         minWidth: (allowShrink ?? !isFixed) ? 0 : undefined,
         minHeight: 0,
         overflow: 'hidden',
@@ -67,6 +68,20 @@ export function ListDetailColumn(props: ListDetailColumnProps): JSX.Element {
       {children}
     </Box>
   );
+}
+
+function formatColumnWidth(width: number | string): string {
+  if (typeof width === 'number') {
+    return `${width}px`;
+  }
+  return width;
+}
+
+function getColumnFlex(width: number | string | undefined): number | string {
+  if (width === undefined) {
+    return 1;
+  }
+  return `0 0 ${formatColumnWidth(width)}`;
 }
 
 ListDetailLayout.Column = ListDetailColumn;

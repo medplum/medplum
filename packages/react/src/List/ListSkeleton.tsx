@@ -3,13 +3,18 @@
 import { Box, Flex, Skeleton, Stack } from '@mantine/core';
 import type { JSX } from 'react';
 
-const DEFAULT_SKELETON_WIDTHS = [
-  ['85%', '60%', '72%'],
-  ['70%', '80%', '55%'],
-  ['92%', '50%', '65%'],
-  ['78%', '68%', '58%'],
-  ['88%', '45%', '75%'],
-  ['74%', '70%', '62%'],
+interface SkeletonRow {
+  readonly id: string;
+  readonly widths: readonly string[];
+}
+
+const DEFAULT_SKELETON_ROWS: readonly SkeletonRow[] = [
+  { id: 'row-1', widths: ['85%', '60%', '72%'] },
+  { id: 'row-2', widths: ['70%', '80%', '55%'] },
+  { id: 'row-3', widths: ['92%', '50%', '65%'] },
+  { id: 'row-4', widths: ['78%', '68%', '58%'] },
+  { id: 'row-5', widths: ['88%', '45%', '75%'] },
+  { id: 'row-6', widths: ['74%', '70%', '62%'] },
 ];
 
 export interface ListSkeletonProps {
@@ -31,28 +36,28 @@ export interface ListSkeletonProps {
  * @returns The skeleton element.
  */
 export function ListSkeleton(props: ListSkeletonProps): JSX.Element {
-  const { rows = DEFAULT_SKELETON_WIDTHS.length, linesPerRow = 3, withAvatar = false, avatarSize = 40 } = props;
-  const widths = takeRows(rows);
+  const { rows = DEFAULT_SKELETON_ROWS.length, linesPerRow = 3, withAvatar = false, avatarSize = 40 } = props;
+  const skeletonRows = takeRows(rows);
 
   return (
     <Stack gap={2}>
-      {widths.map((rowWidths, index) => (
-        <Box key={index} px="xs" py="sm">
+      {skeletonRows.map((row) => (
+        <Box key={row.id} px="xs" py="sm">
           {withAvatar ? (
             <Flex gap="sm" align="flex-start">
               <Skeleton height={avatarSize} width={avatarSize} radius="50%" />
               <Box style={{ flex: 1 }}>
                 <Flex direction="column" gap="xs">
-                  {rowWidths.slice(0, linesPerRow).map((w, i) => (
-                    <Skeleton key={i} height={i === 0 ? 16 : 14} width={w} />
+                  {row.widths.slice(0, linesPerRow).map((w) => (
+                    <Skeleton key={w} height={w === row.widths[0] ? 16 : 14} width={w} />
                   ))}
                 </Flex>
               </Box>
             </Flex>
           ) : (
             <Flex direction="column" gap="xs" align="flex-start">
-              {rowWidths.slice(0, linesPerRow).map((w, i) => (
-                <Skeleton key={i} height={i === 0 ? 16 : 14} width={w} />
+              {row.widths.slice(0, linesPerRow).map((w) => (
+                <Skeleton key={w} height={w === row.widths[0] ? 16 : 14} width={w} />
               ))}
             </Flex>
           )}
@@ -62,14 +67,19 @@ export function ListSkeleton(props: ListSkeletonProps): JSX.Element {
   );
 }
 
-function takeRows(rows: number): string[][] {
-  if (rows <= DEFAULT_SKELETON_WIDTHS.length) {
-    return DEFAULT_SKELETON_WIDTHS.slice(0, rows);
+function takeRows(rows: number): SkeletonRow[] {
+  if (rows <= DEFAULT_SKELETON_ROWS.length) {
+    return DEFAULT_SKELETON_ROWS.slice(0, rows);
   }
   // Repeat the pattern when callers ask for more rows than the seed array.
-  const out: string[][] = [];
+  const out: SkeletonRow[] = [];
   for (let i = 0; i < rows; i++) {
-    out.push(DEFAULT_SKELETON_WIDTHS[i % DEFAULT_SKELETON_WIDTHS.length]);
+    const template = DEFAULT_SKELETON_ROWS[i % DEFAULT_SKELETON_ROWS.length];
+    const repeat = Math.floor(i / DEFAULT_SKELETON_ROWS.length);
+    out.push({
+      id: repeat === 0 ? template.id : `${template.id}-repeat-${repeat}`,
+      widths: template.widths,
+    });
   }
   return out;
 }

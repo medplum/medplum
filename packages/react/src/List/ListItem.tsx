@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import cx from 'clsx';
-import type { JSX, KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import type { JSX, MouseEvent, ReactNode } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './List.module.css';
 
@@ -13,7 +13,7 @@ export interface ListItemProps {
    * `onClick` is forwarded to the underlying link).
    */
   readonly to?: Resource | Reference | string;
-  /** Click handler. When no `to` is provided, the item renders as a button-like div. */
+  /** Click handler. When no `to` is provided, the item renders as a `<button>`. */
   readonly onClick?: (event: MouseEvent<HTMLElement>) => void;
   readonly selected?: boolean;
   readonly className?: string;
@@ -22,7 +22,7 @@ export interface ListItemProps {
 
 /**
  * Selectable list row. Renders as a navigation link when `to` is supplied, or
- * as a button-like, keyboard-accessible `div` when `onClick` is supplied. The
+ * as a native `<button>` when `onClick` is supplied. The
  * shared `.item`/`.selected` styles produce a consistent hover and selected
  * state across all list-based screens.
  * @param props - Item content and behavior (to, onClick, selected, className, children).
@@ -40,26 +40,13 @@ export function ListItem(props: ListItemProps): JSX.Element {
     );
   }
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (!onClick) {
-      return;
-    }
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onClick(event as unknown as MouseEvent<HTMLElement>);
-    }
-  };
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} aria-pressed={selected} className={itemClass}>
+        {children}
+      </button>
+    );
+  }
 
-  return (
-    <div
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={onClick ? handleKeyDown : undefined}
-      aria-pressed={onClick ? selected : undefined}
-      className={itemClass}
-    >
-      {children}
-    </div>
-  );
+  return <div className={itemClass}>{children}</div>;
 }

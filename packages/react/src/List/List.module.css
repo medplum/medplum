@@ -20,6 +20,17 @@
   text-decoration: none;
 }
 
+/* Reset native `<button>` defaults so clickable rows match link rows. */
+button.item {
+  width: 100%;
+  border: none;
+  margin: 0;
+  background: transparent;
+  text-align: inherit;
+  font: inherit;
+  appearance: none;
+}
+
 /* Normalize the line-height of every text child so a mix of `<Text size="md">`
    (e.g. the bold first line) and `<Text size="sm">` (secondary/tertiary lines)
    share the same vertical rhythm. Without this, default Mantine line-heights
@@ -71,7 +82,7 @@
 
 .pillTabs :global(.mantine-Tabs-tab) {
   height: 32px;
-  padding-inline: calc(0.875rem \* var(--mantine-scale));
+  padding-inline: calc(0.875rem * var(--mantine-scale));
   padding-block: 0;
   border-radius: var(--mantine-radius-xl);
   font-size: var(--mantine-font-size-sm);
