@@ -126,12 +126,24 @@ On first boot, Medplum seeds a default super-admin account unless overridden in 
 
 Change this password immediately after first login.
 
-Addtional Login
+Additional admin login:
+
 | Item | Value |
 | --- | --- |
 | Initial email | `admin-ubix@example.com` |
 | Initial password | `medplum_admin` |
 | Super admin project | `Super Admin` |
+
+Patient and provider demo app logins:
+
+These accounts are project-scoped users in the `Ubix Data` Medplum project, not super-admin accounts. They were created without email invites because outbound invite email is not configured yet.
+
+For local development, the patient and provider Vite servers proxy Medplum API paths through their own origins to avoid browser CORS preflight failures. For deployed browser apps, the Medplum server config must include `MEDPLUM_ALLOWED_ORIGINS` for `https://patient.ehr.hiivehealth.net` and `https://provider.ehr.hiivehealth.net`.
+
+| App | URL | Username | Password | Profile | Membership |
+| --- | --- | --- | --- | --- | --- |
+| Patient | `http://127.0.0.1:5173/` | `ubix.patient.riley@example.com` | `Hiive-2pQe87kFXKzlRcC8wmx0GBeo!6` | `Patient/5506b4b2-6557-4876-8367-7e398914bce4` | `ProjectMembership/48db19de-54cc-4233-8376-3739dcf3733d` |
+| Provider | `http://127.0.0.1:5172/` | `ubix.provider.alex@example.com` | `Hiive-7jhSWuhQA83-dGrUYkqZrtNE!6` | `Practitioner/55ac370f-8572-42d1-93a5-5d5535cda9f4` | `ProjectMembership/4e9c0e27-9cfa-4d6b-ac9a-275ae863b9da` |
 
 
 ## SSM Parameter Store
@@ -173,3 +185,7 @@ AWS_PROFILE=hiive-build AWS_SDK_LOAD_CONFIG=1 npx cdk deploy -c config=medplum.b
 AWS_PROFILE=hiive-build AWS_SDK_LOAD_CONFIG=1 node packages/cli/dist/cjs/index.cjs aws describe build
 AWS_PROFILE=hiive-build AWS_SDK_LOAD_CONFIG=1 node packages/cli/dist/cjs/index.cjs aws update-app build
 ```
+
+## Related Docs
+
+- `hiive-build-patient-provider-app-plan.md`

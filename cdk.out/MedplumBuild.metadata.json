@@ -58,6 +58,18 @@
       "data": "FrontEndFrontEndWAFDBDCA924"
     }
   ],
+  "/MedplumBuild/PatientApp/StaticAppWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppStaticAppWAF392B8715"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/StaticAppWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppStaticAppWAF00F9B5EE"
+    }
+  ],
   "/MedplumBuild/Storage/StorageWAF": [
     {
       "type": "aws:cdk:logicalId",
@@ -260,6 +272,78 @@
     {
       "type": "aws:cdk:logicalId",
       "data": "FrontEndAppAliasRecord7997AB24"
+    }
+  ],
+  "/MedplumBuild/PatientApp/AppBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppAppBucketA2305569"
+    }
+  ],
+  "/MedplumBuild/PatientApp/Certificate/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppCertificate04FCAA87"
+    }
+  ],
+  "/MedplumBuild/PatientApp/ResponseHeadersPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppResponseHeadersPolicy1A29FF91"
+    }
+  ],
+  "/MedplumBuild/PatientApp/OriginAccessIdentity/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppOriginAccessIdentityAEBF44E0"
+    }
+  ],
+  "/MedplumBuild/PatientApp/Distribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppDistributionB36C5F54"
+    }
+  ],
+  "/MedplumBuild/PatientApp/AliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppAliasRecordE89C4845"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/AppBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppAppBucket039A8227"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/Certificate/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppCertificateDBD906E6"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/ResponseHeadersPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppResponseHeadersPolicy5AE4FCFC"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/OriginAccessIdentity/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppOriginAccessIdentity7C056D69"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/Distribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppDistributionC515100B"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/AliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppAliasRecord3855BBA5"
     }
   ],
   "/MedplumBuild/Storage/StorageBucket/Resource": [
@@ -476,6 +560,18 @@
     {
       "type": "aws:cdk:logicalId",
       "data": "FrontEndAppBucketPolicyBAED1B9B"
+    }
+  ],
+  "/MedplumBuild/PatientApp/AppBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppAppBucketPolicy42272538"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/AppBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppAppBucketPolicyA7701362"
     }
   ],
   "/MedplumBuild/Storage/StorageBucket/Policy/Resource": [

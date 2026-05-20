@@ -62,6 +62,16 @@ export class Storage extends Construct {
     }
 
     if (region === 'us-east-1') {
+      const storageAllowedOrigins = Array.from(
+        new Set([
+          config.appDomainName,
+          `https://${config.appDomainName}`,
+          config.patientAppDomainName ? `https://${config.patientAppDomainName}` : undefined,
+          config.providerAppDomainName ? `https://${config.providerAppDomainName}` : undefined,
+          'https://ccda.medplum.com',
+        ].filter((origin): origin is string => !!origin))
+      );
+
       // Public key in PEM format
       let publicKey: cloudfront.IPublicKey;
       if (config.signingKeyId) {
@@ -91,7 +101,7 @@ export class Storage extends Construct {
         },
         corsBehavior: {
           accessControlAllowCredentials: false,
-          accessControlAllowOrigins: [config.appDomainName, 'https://ccda.medplum.com'],
+          accessControlAllowOrigins: storageAllowedOrigins,
           accessControlAllowHeaders: ['*'],
           accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS'],
           accessControlMaxAge: Duration.seconds(600),

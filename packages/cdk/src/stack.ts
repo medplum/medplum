@@ -6,6 +6,7 @@ import { Stack, Tags } from 'aws-cdk-lib';
 import { BackEnd } from './backend';
 import { CloudTrailAlarms } from './cloudtrail';
 import { FrontEnd } from './frontend';
+import { StaticApp } from './staticapp';
 import { Storage } from './storage';
 
 export class MedplumStack {
@@ -28,6 +29,8 @@ export class MedplumStack {
 export class MedplumPrimaryStack extends Stack {
   backEnd: BackEnd;
   frontEnd: FrontEnd;
+  patientApp?: StaticApp;
+  providerApp?: StaticApp;
   storage: Storage;
   cloudTrail: CloudTrailAlarms;
 
@@ -42,6 +45,26 @@ export class MedplumPrimaryStack extends Stack {
 
     this.backEnd = new BackEnd(this, config);
     this.frontEnd = new FrontEnd(this, config, config.region);
+    if (config.patientAppDomainName) {
+      this.patientApp = new StaticApp(this, 'PatientApp', config, config.region, {
+        appName: 'PatientApp',
+        domainName: config.patientAppDomainName,
+        sslCertArn: config.patientAppSslCertArn,
+        wafIpSetArn: config.patientAppWafIpSetArn,
+        loggingBucket: config.patientAppLoggingBucket,
+        loggingPrefix: config.patientAppLoggingPrefix,
+      });
+    }
+    if (config.providerAppDomainName) {
+      this.providerApp = new StaticApp(this, 'ProviderApp', config, config.region, {
+        appName: 'ProviderApp',
+        domainName: config.providerAppDomainName,
+        sslCertArn: config.providerAppSslCertArn,
+        wafIpSetArn: config.providerAppWafIpSetArn,
+        loggingBucket: config.providerAppLoggingBucket,
+        loggingPrefix: config.providerAppLoggingPrefix,
+      });
+    }
     this.storage = new Storage(this, config, config.region);
     this.cloudTrail = new CloudTrailAlarms(this, config);
   }
@@ -49,6 +72,8 @@ export class MedplumPrimaryStack extends Stack {
 
 export class MedplumGlobalStack extends Stack {
   frontEnd: FrontEnd;
+  patientApp?: StaticApp;
+  providerApp?: StaticApp;
   storage: Storage;
   cloudTrail: CloudTrailAlarms;
 
@@ -62,6 +87,26 @@ export class MedplumGlobalStack extends Stack {
     Tags.of(this).add('medplum:environment', config.name);
 
     this.frontEnd = new FrontEnd(this, config, 'us-east-1');
+    if (config.patientAppDomainName) {
+      this.patientApp = new StaticApp(this, 'PatientApp', config, 'us-east-1', {
+        appName: 'PatientApp',
+        domainName: config.patientAppDomainName,
+        sslCertArn: config.patientAppSslCertArn,
+        wafIpSetArn: config.patientAppWafIpSetArn,
+        loggingBucket: config.patientAppLoggingBucket,
+        loggingPrefix: config.patientAppLoggingPrefix,
+      });
+    }
+    if (config.providerAppDomainName) {
+      this.providerApp = new StaticApp(this, 'ProviderApp', config, 'us-east-1', {
+        appName: 'ProviderApp',
+        domainName: config.providerAppDomainName,
+        sslCertArn: config.providerAppSslCertArn,
+        wafIpSetArn: config.providerAppWafIpSetArn,
+        loggingBucket: config.providerAppLoggingBucket,
+        loggingPrefix: config.providerAppLoggingPrefix,
+      });
+    }
     this.storage = new Storage(this, config, 'us-east-1');
     this.cloudTrail = new CloudTrailAlarms(this, config);
   }

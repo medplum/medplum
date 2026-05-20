@@ -1250,6 +1250,12 @@
       "Command": [
        "aws:/medplum/build/"
       ],
+      "Environment": [
+       {
+        "Name": "MEDPLUM_ALLOWED_ORIGINS",
+        "Value": "https://app.ehr.hiivehealth.net,https://patient.ehr.hiivehealth.net,https://provider.ehr.hiivehealth.net,http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5172,http://localhost:5172,http://127.0.0.1:3001,http://localhost:3001"
+       }
+      ],
       "Essential": true,
       "Image": "medplum/medplum-server:5.1.10",
       "LogConfiguration": {
@@ -2545,6 +2551,1102 @@
     "aws:cdk:path": "MedplumBuild/FrontEnd/AppAliasRecord/Resource"
    }
   },
+  "PatientAppAppBucketA2305569": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "patient.ehr.hiivehealth.net",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/AppBucket/Resource"
+   }
+  },
+  "PatientAppAppBucketPolicy42272538": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "PatientAppAppBucketA2305569"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PatientAppAppBucketA2305569",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PatientAppAppBucketA2305569",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "PatientAppOriginAccessIdentityAEBF44E0",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PatientAppAppBucketA2305569",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PatientAppAppBucketA2305569",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "PatientAppOriginAccessIdentityAEBF44E0",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "PatientAppAppBucketA2305569",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/AppBucket/Policy/Resource"
+   }
+  },
+  "PatientAppCertificate04FCAA87": {
+   "Type": "AWS::CertificateManager::Certificate",
+   "Properties": {
+    "DomainName": "patient.ehr.hiivehealth.net",
+    "DomainValidationOptions": [
+     {
+      "DomainName": "patient.ehr.hiivehealth.net",
+      "HostedZoneId": "Z10230423D7NKJNVQRX7O"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/PatientApp/Certificate"
+     }
+    ],
+    "ValidationMethod": "DNS"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/Certificate/Resource"
+   }
+  },
+  "PatientAppResponseHeadersPolicy1A29FF91": {
+   "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+   "Properties": {
+    "ResponseHeadersPolicyConfig": {
+     "CustomHeadersConfig": {
+      "Items": [
+       {
+        "Header": "Permissions-Policy",
+        "Override": true,
+        "Value": "accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+       }
+      ]
+     },
+     "Name": "MedplumBuildPatientAppResponseHeadersPolicy38C9EC3E",
+     "SecurityHeadersConfig": {
+      "ContentSecurityPolicy": {
+       "ContentSecurityPolicy": "default-src 'self'; base-uri 'self'; child-src 'self'; connect-src 'self' https://api.ehr.hiivehealth.net https://storage.ehr.hiivehealth.net *.medplum.com *.google.com; font-src 'self' fonts.gstatic.com; form-action 'self' *.gstatic.com *.google.com; frame-ancestors 'none'; frame-src 'self' https://storage.ehr.hiivehealth.net *.medplum.com *.gstatic.com *.google.com; img-src 'self' data: https://storage.ehr.hiivehealth.net *.gstatic.com *.google.com *.googleapis.com; manifest-src 'self'; media-src 'self' https://storage.ehr.hiivehealth.net; script-src 'self' *.medplum.com *.gstatic.com *.google.com; style-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com; worker-src 'self' blob: *.gstatic.com *.google.com; upgrade-insecure-requests",
+       "Override": true
+      },
+      "ContentTypeOptions": {
+       "Override": true
+      },
+      "FrameOptions": {
+       "FrameOption": "DENY",
+       "Override": true
+      },
+      "ReferrerPolicy": {
+       "Override": true,
+       "ReferrerPolicy": "strict-origin-when-cross-origin"
+      },
+      "StrictTransportSecurity": {
+       "AccessControlMaxAgeSec": 63072000,
+       "IncludeSubdomains": true,
+       "Override": true,
+       "Preload": true
+      },
+      "XSSProtection": {
+       "ModeBlock": true,
+       "Override": true,
+       "Protection": true
+      }
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/ResponseHeadersPolicy/Resource"
+   }
+  },
+  "PatientAppStaticAppWAF392B8715": {
+   "Type": "AWS::WAFv2::WebACL",
+   "Properties": {
+    "DefaultAction": {
+     "Allow": {}
+    },
+    "Name": "MedplumBuild-PatientAppWAF",
+    "Rules": [
+     {
+      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 10,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "NoUserAgent_HEADER"
+         },
+         {
+          "Name": "UserAgent_BadBots_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_QUERYSTRING"
+         },
+         {
+          "Name": "SizeRestrictions_Cookie_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_BODY"
+         },
+         {
+          "Name": "SizeRestrictions_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_BODY"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_COOKIE"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_URIPATH"
+         },
+         {
+          "Name": "GenericLFI_BODY"
+         },
+         {
+          "Name": "RestrictedExtensions_URIPATH"
+         },
+         {
+          "Name": "RestrictedExtensions_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_BODY"
+         },
+         {
+          "Name": "GenericRFI_URIPATH"
+         },
+         {
+          "Name": "CrossSiteScripting_COOKIE"
+         },
+         {
+          "Name": "CrossSiteScripting_QUERYARGUMENTS"
+         },
+         {
+          "Name": "CrossSiteScripting_BODY"
+         },
+         {
+          "Name": "CrossSiteScripting_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesCommonRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWS-AWSManagedRulesCommonRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWS-AWSManagedRulesAmazonIpReputationList",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 20,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "AWSManagedIPReputationList"
+         },
+         {
+          "Name": "AWSManagedReconnaissanceList"
+         }
+        ],
+        "Name": "AWSManagedRulesAmazonIpReputationList",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesAmazonIpReputationList",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRulesSQLiRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 30,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "SQLi_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLi_BODY"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_BODY"
+         },
+         {
+          "Name": "SQLi_COOKIE"
+         },
+         {
+          "Name": "SQLi_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesSQLiRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesSQLiRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRuleLinux",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 40,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "LFI_URIPATH"
+         },
+         {
+          "Name": "LFI_QUERYSTRING"
+         },
+         {
+          "Name": "LFI_COOKIE"
+         }
+        ],
+        "Name": "AWSManagedRulesLinuxRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRuleLinux",
+       "SampledRequestsEnabled": true
+      }
+     }
+    ],
+    "Scope": "CLOUDFRONT",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VisibilityConfig": {
+     "CloudWatchMetricsEnabled": true,
+     "MetricName": "MedplumBuild-PatientAppWAF-Metric",
+     "SampledRequestsEnabled": false
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/StaticAppWAF"
+   }
+  },
+  "PatientAppOriginAccessIdentityAEBF44E0": {
+   "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+   "Properties": {
+    "CloudFrontOriginAccessIdentityConfig": {
+     "Comment": "Allows CloudFront to reach the bucket"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/OriginAccessIdentity/Resource"
+   }
+  },
+  "PatientAppDistributionB36C5F54": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "patient.ehr.hiivehealth.net"
+     ],
+     "CustomErrorResponses": [
+      {
+       "ErrorCode": 403,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      },
+      {
+       "ErrorCode": 404,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      }
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "ResponseHeadersPolicyId": {
+       "Ref": "PatientAppResponseHeadersPolicy1A29FF91"
+      },
+      "TargetOriginId": "MedplumBuildPatientAppDistributionOrigin1DD6D613A",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "PatientAppAppBucketA2305569",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "MedplumBuildPatientAppDistributionOrigin1DD6D613A",
+       "S3OriginConfig": {
+        "OriginAccessIdentity": {
+         "Fn::Join": [
+          "",
+          [
+           "origin-access-identity/cloudfront/",
+           {
+            "Ref": "PatientAppOriginAccessIdentityAEBF44E0"
+           }
+          ]
+         ]
+        }
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": {
+       "Ref": "PatientAppCertificate04FCAA87"
+      },
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     },
+     "WebACLId": {
+      "Fn::GetAtt": [
+       "PatientAppStaticAppWAF392B8715",
+       "Arn"
+      ]
+     }
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/Distribution/Resource"
+   }
+  },
+  "PatientAppAliasRecordE89C4845": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "PatientAppDistributionB36C5F54",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z10230423D7NKJNVQRX7O",
+    "Name": "patient.ehr.hiivehealth.net.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/PatientApp/AliasRecord/Resource"
+   }
+  },
+  "ProviderAppAppBucket039A8227": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "provider.ehr.hiivehealth.net",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/AppBucket/Resource"
+   }
+  },
+  "ProviderAppAppBucketPolicyA7701362": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "ProviderAppAppBucket039A8227"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ProviderAppAppBucket039A8227",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ProviderAppAppBucket039A8227",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "ProviderAppOriginAccessIdentity7C056D69",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ProviderAppAppBucket039A8227",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ProviderAppAppBucket039A8227",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "ProviderAppOriginAccessIdentity7C056D69",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "ProviderAppAppBucket039A8227",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/AppBucket/Policy/Resource"
+   }
+  },
+  "ProviderAppCertificateDBD906E6": {
+   "Type": "AWS::CertificateManager::Certificate",
+   "Properties": {
+    "DomainName": "provider.ehr.hiivehealth.net",
+    "DomainValidationOptions": [
+     {
+      "DomainName": "provider.ehr.hiivehealth.net",
+      "HostedZoneId": "Z10230423D7NKJNVQRX7O"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     },
+     {
+      "Key": "Name",
+      "Value": "MedplumBuild/ProviderApp/Certificate"
+     }
+    ],
+    "ValidationMethod": "DNS"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/Certificate/Resource"
+   }
+  },
+  "ProviderAppResponseHeadersPolicy5AE4FCFC": {
+   "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+   "Properties": {
+    "ResponseHeadersPolicyConfig": {
+     "CustomHeadersConfig": {
+      "Items": [
+       {
+        "Header": "Permissions-Policy",
+        "Override": true,
+        "Value": "accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+       }
+      ]
+     },
+     "Name": "MedplumBuildProviderAppResponseHeadersPolicy5DD306E7",
+     "SecurityHeadersConfig": {
+      "ContentSecurityPolicy": {
+       "ContentSecurityPolicy": "default-src 'self'; base-uri 'self'; child-src 'self'; connect-src 'self' https://api.ehr.hiivehealth.net https://storage.ehr.hiivehealth.net *.medplum.com *.google.com; font-src 'self' fonts.gstatic.com; form-action 'self' *.gstatic.com *.google.com; frame-ancestors 'none'; frame-src 'self' https://storage.ehr.hiivehealth.net *.medplum.com *.gstatic.com *.google.com; img-src 'self' data: https://storage.ehr.hiivehealth.net *.gstatic.com *.google.com *.googleapis.com; manifest-src 'self'; media-src 'self' https://storage.ehr.hiivehealth.net; script-src 'self' *.medplum.com *.gstatic.com *.google.com; style-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com; worker-src 'self' blob: *.gstatic.com *.google.com; upgrade-insecure-requests",
+       "Override": true
+      },
+      "ContentTypeOptions": {
+       "Override": true
+      },
+      "FrameOptions": {
+       "FrameOption": "DENY",
+       "Override": true
+      },
+      "ReferrerPolicy": {
+       "Override": true,
+       "ReferrerPolicy": "strict-origin-when-cross-origin"
+      },
+      "StrictTransportSecurity": {
+       "AccessControlMaxAgeSec": 63072000,
+       "IncludeSubdomains": true,
+       "Override": true,
+       "Preload": true
+      },
+      "XSSProtection": {
+       "ModeBlock": true,
+       "Override": true,
+       "Protection": true
+      }
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/ResponseHeadersPolicy/Resource"
+   }
+  },
+  "ProviderAppStaticAppWAF00F9B5EE": {
+   "Type": "AWS::WAFv2::WebACL",
+   "Properties": {
+    "DefaultAction": {
+     "Allow": {}
+    },
+    "Name": "MedplumBuild-ProviderAppWAF",
+    "Rules": [
+     {
+      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 10,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "NoUserAgent_HEADER"
+         },
+         {
+          "Name": "UserAgent_BadBots_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_QUERYSTRING"
+         },
+         {
+          "Name": "SizeRestrictions_Cookie_HEADER"
+         },
+         {
+          "Name": "SizeRestrictions_BODY"
+         },
+         {
+          "Name": "SizeRestrictions_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_BODY"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_COOKIE"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_URIPATH"
+         },
+         {
+          "Name": "EC2MetaDataSSRF_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericLFI_URIPATH"
+         },
+         {
+          "Name": "GenericLFI_BODY"
+         },
+         {
+          "Name": "RestrictedExtensions_URIPATH"
+         },
+         {
+          "Name": "RestrictedExtensions_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_QUERYARGUMENTS"
+         },
+         {
+          "Name": "GenericRFI_BODY"
+         },
+         {
+          "Name": "GenericRFI_URIPATH"
+         },
+         {
+          "Name": "CrossSiteScripting_COOKIE"
+         },
+         {
+          "Name": "CrossSiteScripting_QUERYARGUMENTS"
+         },
+         {
+          "Name": "CrossSiteScripting_BODY"
+         },
+         {
+          "Name": "CrossSiteScripting_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesCommonRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWS-AWSManagedRulesCommonRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWS-AWSManagedRulesAmazonIpReputationList",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 20,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "AWSManagedIPReputationList"
+         },
+         {
+          "Name": "AWSManagedReconnaissanceList"
+         }
+        ],
+        "Name": "AWSManagedRulesAmazonIpReputationList",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesAmazonIpReputationList",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRulesSQLiRuleSet",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 30,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "SQLi_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_QUERYARGUMENTS"
+         },
+         {
+          "Name": "SQLi_BODY"
+         },
+         {
+          "Name": "SQLiExtendedPatterns_BODY"
+         },
+         {
+          "Name": "SQLi_COOKIE"
+         },
+         {
+          "Name": "SQLi_URIPATH"
+         }
+        ],
+        "Name": "AWSManagedRulesSQLiRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRulesSQLiRuleSet",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "AWSManagedRuleLinux",
+      "OverrideAction": {
+       "Count": {}
+      },
+      "Priority": 40,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "ExcludedRules": [
+         {
+          "Name": "LFI_URIPATH"
+         },
+         {
+          "Name": "LFI_QUERYSTRING"
+         },
+         {
+          "Name": "LFI_COOKIE"
+         }
+        ],
+        "Name": "AWSManagedRulesLinuxRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AWSManagedRuleLinux",
+       "SampledRequestsEnabled": true
+      }
+     }
+    ],
+    "Scope": "CLOUDFRONT",
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ],
+    "VisibilityConfig": {
+     "CloudWatchMetricsEnabled": true,
+     "MetricName": "MedplumBuild-ProviderAppWAF-Metric",
+     "SampledRequestsEnabled": false
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/StaticAppWAF"
+   }
+  },
+  "ProviderAppOriginAccessIdentity7C056D69": {
+   "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+   "Properties": {
+    "CloudFrontOriginAccessIdentityConfig": {
+     "Comment": "Allows CloudFront to reach the bucket"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/OriginAccessIdentity/Resource"
+   }
+  },
+  "ProviderAppDistributionC515100B": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "provider.ehr.hiivehealth.net"
+     ],
+     "CustomErrorResponses": [
+      {
+       "ErrorCode": 403,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      },
+      {
+       "ErrorCode": 404,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      }
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "ResponseHeadersPolicyId": {
+       "Ref": "ProviderAppResponseHeadersPolicy5AE4FCFC"
+      },
+      "TargetOriginId": "MedplumBuildProviderAppDistributionOrigin1B5E3B771",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "ProviderAppAppBucket039A8227",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "MedplumBuildProviderAppDistributionOrigin1B5E3B771",
+       "S3OriginConfig": {
+        "OriginAccessIdentity": {
+         "Fn::Join": [
+          "",
+          [
+           "origin-access-identity/cloudfront/",
+           {
+            "Ref": "ProviderAppOriginAccessIdentity7C056D69"
+           }
+          ]
+         ]
+        }
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": {
+       "Ref": "ProviderAppCertificateDBD906E6"
+      },
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     },
+     "WebACLId": {
+      "Fn::GetAtt": [
+       "ProviderAppStaticAppWAF00F9B5EE",
+       "Arn"
+      ]
+     }
+    },
+    "Tags": [
+     {
+      "Key": "medplum:environment",
+      "Value": "build"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/Distribution/Resource"
+   }
+  },
+  "ProviderAppAliasRecord3855BBA5": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "ProviderAppDistributionC515100B",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z10230423D7NKJNVQRX7O",
+    "Name": "provider.ehr.hiivehealth.net.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MedplumBuild/ProviderApp/AliasRecord/Resource"
+   }
+  },
   "StorageStorageBucketDC877B11": {
    "Type": "AWS::S3::Bucket",
    "Properties": {
@@ -2729,6 +3831,9 @@
       "AccessControlAllowOrigins": {
        "Items": [
         "app.ehr.hiivehealth.net",
+        "https://app.ehr.hiivehealth.net",
+        "https://patient.ehr.hiivehealth.net",
+        "https://provider.ehr.hiivehealth.net",
         "https://ccda.medplum.com"
        ]
       },
@@ -3097,7 +4202,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U23LbIBD9lr5jNXEmH+BLnHritho7kz52VmitEEug4WJPRqN/7yJ0wUnbJ84eFji7HJgn8/ub5OYLXMyM56dZKbKkOVjgJ0bU76ZUhUmanSoetXI1Wx3lgFuGfJ40LzX37Eu6YqnLSsEPLpNoPTehvXIWnyErceInbmGM4gKsUHJM9uBhm/rhB9hHsHiBd5ZqcSY4bbyVFjXhISEo6aOFpTpeK5SWbUp1IeF+foAH5E4L+z4W9n9iKwuNxnziHzq6ZQKqpNmrUGE3poq60UkKqGU6p16moKFCkj2es16uSmeI+TC1BgsZGOxnWSg7WhYTQzKJ06E347Yh2EpjQXJsmelSTAUSCtRJE0ryq8LwDLpAG3VvTPg0E2iyQgnGCk40hv2upe6xpg50Nzx6h1oR6Rvghk4A7wtzWuNRSDG44iOjpAUhUUdcv/aA+ix4cFqAo75SQZ5BSW0QsjiTexf1KCzUNkqOwyhrRzssux2C7qs4zhNUjuxzetyyCxz9qcT9wmyx2rERRW+AfOJfwP0dydsjVzoPLfTo4JttTOXfqKYaRsd0NhsCSqHFS8dPwQk9CsNkyzhuGTXH5UdNfSUfo6mVNPgNIUdtpiX/mPD3PiXF4U8tCiEXnNMj2eZkGXo34b7ptI0/7a8Za2qZFpkbbv8qfsLpjQ64bRlpU06Hi/8OdU3taZlUOSZv5ut5fpfc3tJH92aEmGlHx1SY7MP4B3n2MksFBQAA"
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U23KbMBD9lr7LNHXrD/AlTj11W8bOpI+ZRaypYpAYXezJMPx7VwgETto+6ezRSnt2OWKezBd3yd0HuJoZz8+zUmRJc7TAz4yo56ZUhUmavSoetHI1W5/kgFuGfJ40TzX37FO6ZqnLSsGPLpNoPTeig3IWHyErceRHbmmM4gKsUDIme3C/S/3yA+wDWLzCK0u1uBAcL95Ji5rwkBCU9NHSUh+/K5SWbUt1JeF+f4BH5E4L+xob+z+xk4VGY97x9x3dMgFV0hxU6LBbU0XT6CQF1DKd0yxT0FAhyY51Nqt16Qwxb7Y2YCEDg/0uC21Pjk2JIZnE6TCbeG0IdtJYkBxbZroUU4GEAnXShJb8qbA8gi7QTqYXE97tBJqsUIKxghON4b5bqQesaQLdF47eoVFM9A1wSxXA+8KcN3gSUgyueMsoaUFI1BOuP3tEfRE8OC3AqK9UkGdQ0hiELC7k3mUdhYXeouRpOMna0w2r7oag+yae5glqR/Y5PW7ZFU6+KnG/MFuu9yyiyRsgn/gXsPhM8g7Ilc7DCD06+mEbU/k3qqmH6JjOZkNAKXR45fg5OKFHYRltOY1bRsNx+UnTXMnHaGolDX5FyFGb8cg/Nvx3H5Om4U8tCiGXnNMj2eVkGXo34XtTta2v9teMDY1Mi8wNX/8m/objGx0w6UdtxcmPH0dnj1xXdAzbllEvyulglO9Q1zTOlkmVY/JiPl7mX5JPC/oxvhghZtqRrAqTQ1j/AF8faVM1BQAA"
    },
    "Metadata": {
     "aws:cdk:path": "MedplumBuild/CDKMetadata/Default"
