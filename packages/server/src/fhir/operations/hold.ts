@@ -6,7 +6,7 @@ import type { Appointment, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { withPath } from '../../util/withpath';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { createProposedAppointment } from './utils/scheduling';
+import { createProposedAppointment, validateProposedAppointment } from './utils/scheduling';
 
 const holdOperation = {
   resourceType: 'OperationDefinition',
@@ -40,20 +40,27 @@ type HoldParameters = {
 export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<HoldParameters>(holdOperation, req);
+  const [appointment, slots, healthcareService, schedulingParameterGroup] = await validateProposedAppointment(
+    ctx.repo,
+    withPath(params.appointment, 'Parameters.appointment')
+  );
+
+  // Create appointment with "pending" status
+  appointment.status = 'pending';
+
+  // $hold creates slots with "busy-tentative" status
+  for (const slot of slots) {
+    if (slot.status === 'busy') {
+      slot.status = 'busy-tentative';
+    }
+  }
+
   const bundle = await createProposedAppointment(
     ctx.repo,
-    withPath(params.appointment, 'Parameters.appointment'),
-    (appointment, slots) => {
-      // Create appointment with "pending" status
-      appointment.status = 'pending';
-
-      // $hold creates slots with "busy-tentative" status
-      for (const slot of slots) {
-        if (slot.status === 'busy') {
-          slot.status = 'busy-tentative';
-        }
-      }
-    }
+    appointment,
+    slots,
+    healthcareService,
+    schedulingParameterGroup
   );
 
   return [created, buildOutputParameters(holdOperation, bundle)];

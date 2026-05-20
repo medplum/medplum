@@ -28,6 +28,7 @@ import {
   getSchedulingParametersGroup,
   resolveAvailability,
   slotsOverlappingInterval,
+  validateProposedAppointment,
 } from './utils/scheduling';
 
 const bookOperation = makeOperationDefinition(
@@ -64,13 +65,19 @@ function serviceTypeTokens(slots: Slot[]): string[] {
 
 async function bookFromProposedAppointmentHandler(proposedAppointment: Appointment): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
+  const [appointment, slots, healthcareService, schedulingParameterGroup] = await validateProposedAppointment(
+    ctx.repo,
+    withPath(proposedAppointment, 'Parameters.appointment')
+  );
+
+  appointment.status = 'booked';
+
   const bundle = await createProposedAppointment(
     ctx.repo,
-    withPath(proposedAppointment, 'Parameters.appointment'),
-    (appointment, _slots) => {
-      // Create appointment with "booked" status
-      appointment.status = 'booked';
-    }
+    appointment,
+    slots,
+    healthcareService,
+    schedulingParameterGroup
   );
 
   return [created, buildOutputParameters(bookOperation, bundle)];

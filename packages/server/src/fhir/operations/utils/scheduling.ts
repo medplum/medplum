@@ -527,6 +527,13 @@ export async function validateProposedAppointment(
     );
   }
 
+  // We will write this attribute later, check that we aren't clobbering something that was submitted
+  if (appointment.slot) {
+    throw new OperationOutcomeError(
+      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
+    );
+  }
+
   const proposedSlots = filterWithPaths(
     contained,
     (r) => isResource<Slot>(r, 'Slot'),
@@ -605,26 +612,14 @@ export async function validateAllAvailability(
 
 export async function createProposedAppointment(
   repo: Repository,
-  proposedAppointment: WithPath<Appointment>,
-  customizer: (appointment: Appointment, slots: Slot[]) => void
+  appointment: Appointment,
+  slots: WithPath<Slot>[],
+  healthcareService: HealthcareService,
+  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>
 ): Promise<Bundle<Appointment | Slot>> {
-  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
-    repo,
-    proposedAppointment
-  );
-
-  // We will write this attribute later, check that we aren't clobbering something that was submitted
-  if (appointment.slot) {
-    throw new OperationOutcomeError(
-      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
-    );
-  }
-
-  customizer(appointment, slots);
-
   const createdResources = await repo.withTransaction(
     async () => {
-      await validateAllAvailability(repo, slots, healthcareService, schedulingParametersGroup);
+      await validateAllAvailability(repo, slots, healthcareService, schedulingParameterGroup);
       const createdSlots = await Promise.all(slots.map((slot) => repo.createResource<Slot>(slot)));
       const createdAppointment = await repo.createResource<Appointment>({
         ...appointment,
