@@ -74,6 +74,12 @@ describe('quantity-qualifiers', () => {
     expect(matcher('Dissolve 1 lozenge in mouth every 4 hours')).toBe('C99999');
   });
 
+  test('buildQualifierMatcher treats regex metacharacters in catalog names as literals', () => {
+    const matcher = buildQualifierMatcher([{ potencyUnit: 'C88888', name: 'dose.form' }]);
+    expect(matcher('Apply 1 dose.form topically')).toBe('C88888');
+    expect(matcher('Apply 1 doseXform topically')).toBeUndefined();
+  });
+
   test('inferQuantityQualifierCodeWith uses caller-supplied matcher', () => {
     const liveOnlyMatcher = buildQualifierMatcher([{ potencyUnit: 'C48486', name: 'Suppository' }]);
     expect(inferQuantityQualifierCodeWith(liveOnlyMatcher, 'Insert 1 suppository rectally daily')).toBe('C48486');
