@@ -3,14 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { badRequest, createReference, created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  AccessPolicy,
-  ClientApplication,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import type { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';

@@ -76,7 +76,9 @@ describe('Project $init', () => {
     expect(project.owner).toStrictEqual(createReference(owner));
 
     // Verify default patient access policy was created and set on the project
-    const updatedProject = await withTestContext(() => getGlobalSystemRepo().readResource<Project>('Project', project.id));
+    const updatedProject = await withTestContext(() =>
+      getGlobalSystemRepo().readResource<Project>('Project', project.id)
+    );
     expect(updatedProject.defaultPatientAccessPolicy).toBeDefined();
     expect(updatedProject.defaultPatientAccessPolicy?.reference).toMatch(/^AccessPolicy\//);
   });
