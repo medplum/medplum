@@ -21,8 +21,8 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
-import { toCodeableReferenceLike } from '../../util/servicetype';
 import { addTestUser, createTestProject } from '../../test.setup';
+import { toCodeableReferenceLike } from '../../util/servicetype';
 
 import type {
   SchedulingParametersExtension,
@@ -1475,6 +1475,11 @@ describe('Appointment/$book', () => {
 
 describe('scheduling flow integration test', () => {
   let project: TestProjectResult<{ withAccessToken: true }>;
+  let service: WithId<HealthcareService>;
+
+  const officeVisitConcept: CodeableConcept = {
+    coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
+  };
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -1482,24 +1487,19 @@ describe('scheduling flow integration test', () => {
     config.transactionAttempts = 5;
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
+    service = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Office Visit',
+      type: [officeVisitConcept],
+      meta: { project: project.project.id },
+    });
   });
 
   afterAll(async () => {
     await shutdownApp();
   });
 
-  const officeVisit: CodeableConcept = {
-    coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
-  };
-
   test('a slot from $find can be used as input to $book', async () => {
-    const service = await systemRepo.createResource<HealthcareService>({
-      resourceType: 'HealthcareService',
-      name: 'Office Visit',
-      type: [officeVisit],
-      meta: { project: project.project.id },
-    });
-
     const practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.project.id },
@@ -1598,13 +1598,14 @@ describe('scheduling flow integration test', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(practitioner)],
+      serviceType: toCodeableReferenceLike(service),
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
             {
-              url: 'serviceType',
-              valueCodeableConcept: officeVisit,
+              url: 'service',
+              valueReference: createReference(service),
             },
             {
               url: 'availability',
@@ -1684,7 +1685,7 @@ describe('scheduling flow integration test', () => {
               start,
               end,
               status: 'free',
-              serviceType: [officeVisit],
+              serviceType: [officeVisitConcept],
             } satisfies Slot,
           },
           {
