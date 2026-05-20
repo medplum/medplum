@@ -23,7 +23,7 @@ export const DataWarehouseSyncSchedulerId = 'data-warehouse-sync';
 
 /**
  * Default BullMQ lock duration for long-running warehouse sync jobs.
- * 
+ *
  * This is useful because we want a high-frequency sync, but if it takes a long time,
  * BullMQ will assume the job is dead.  We alleviate this by job.updateProgress and this
  * increased default lock duration.
