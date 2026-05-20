@@ -3,7 +3,14 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { badRequest, createReference, created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  ClientApplication,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
@@ -12,6 +19,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
+import type { SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
@@ -141,6 +149,12 @@ export async function createProject(
     description: 'Default client for ' + project.name,
   });
 
+  const accessPolicy = await createDefaultPatientAccessPolicy(systemRepo, project);
+  await systemRepo.updateResource<Project>({
+    ...project,
+    defaultPatientAccessPolicy: createReference(accessPolicy),
+  });
+
   if (admin) {
     const profile = await createProfile(
       systemRepo,
@@ -154,4 +168,40 @@ export async function createProject(
     return { project, profile, membership, client };
   }
   return { project, client };
+}
+
+async function createDefaultPatientAccessPolicy(
+  systemRepo: SystemRepository,
+  project: WithId<Project>
+): Promise<WithId<AccessPolicy>> {
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: project.id },
+    name: 'Default Patient Access Policy',
+    compartment: { reference: '%patient' },
+    resource: [
+      { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
+      { resourceType: 'AllergyIntolerance', criteria: 'AllergyIntolerance?patient=%patient' },
+      { resourceType: 'Appointment', criteria: 'Appointment?actor=%patient' },
+      { resourceType: 'CarePlan', criteria: 'CarePlan?subject=%patient' },
+      { resourceType: 'CareTeam', criteria: 'CareTeam?subject=%patient' },
+      { resourceType: 'Communication', criteria: 'Communication?sender=%patient' },
+      { resourceType: 'Communication', criteria: 'Communication?recipient=%patient' },
+      { resourceType: 'Condition', criteria: 'Condition?subject=%patient' },
+      { resourceType: 'Coverage', criteria: 'Coverage?beneficiary=%patient' },
+      { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?subject=%patient' },
+      { resourceType: 'DocumentReference', criteria: 'DocumentReference?subject=%patient' },
+      { resourceType: 'Encounter', criteria: 'Encounter?subject=%patient' },
+      { resourceType: 'Goal', criteria: 'Goal?subject=%patient' },
+      { resourceType: 'Immunization', criteria: 'Immunization?patient=%patient' },
+      { resourceType: 'MedicationRequest', criteria: 'MedicationRequest?subject=%patient' },
+      { resourceType: 'MedicationStatement', criteria: 'MedicationStatement?subject=%patient' },
+      { resourceType: 'Observation', criteria: 'Observation?subject=%patient' },
+      { resourceType: 'Procedure', criteria: 'Procedure?subject=%patient' },
+      { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?subject=%patient' },
+      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' },
+      { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?subject=%patient' },
+      { resourceType: 'Task', criteria: 'Task?owner=%patient' },
+    ],
+  });
 }
