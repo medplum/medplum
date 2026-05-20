@@ -141,5 +141,8 @@
   },
   "v37": {
     "serverVersion": "5.1.12"
+  },
+  "v38": {
+    "serverVersion": "5.1.13"
   }
 }
