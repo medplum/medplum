@@ -20,6 +20,7 @@ import type { ColumnSearchParameterImplementation, SearchParameterImplementation
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
 import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
+import { globalLogger } from '../logger';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -1244,9 +1245,8 @@ function generateIndexesActions(
 
   for (const startIndex of startTable.indexes) {
     if (!matchedIndexes.has(startIndex)) {
-      console.log(
-        `[${startTable.name}] Existing index should not exist:`,
-        startIndex.indexdef || JSON.stringify(startIndex)
+      globalLogger.info(
+        `[${startTable.name}] Existing index should not exist: ${startIndex.indexdef || JSON.stringify(startIndex)}`
       );
       if (options?.dropUnmatchedIndexes) {
         const indexName = parseIndexName(startIndex.indexdef ?? '');
@@ -1258,7 +1258,7 @@ function generateIndexesActions(
   return actions;
 }
 
-function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
+export function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
   const actions: PhasalMigration = {
     preDeploy: [],
     postDeploy: [],
@@ -1289,9 +1289,8 @@ function generateConstraintsActions(startTable: TableDefinition, targetTable: Ta
 
   for (const startConstraint of startTable.constraints ?? EMPTY) {
     if (!matchedConstraints.has(startConstraint)) {
-      console.log(
-        `[${startTable.name}] Existing constraint should not exist:`,
-        startConstraint.expression || JSON.stringify(startConstraint)
+      globalLogger.info(
+        `[${startTable.name}] Existing constraint should not exist: ${startConstraint.expression || JSON.stringify(startConstraint)}`
       );
     }
   }

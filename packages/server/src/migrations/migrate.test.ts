@@ -4,12 +4,14 @@ import { FileBuilder, loadDataType } from '@medplum/core';
 import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { globalLogger } from '../logger';
 import {
   buildCreateTables,
   buildSchema,
   columnDefinitionsEqual,
   combine,
   executeMigrationActions,
+  generateConstraintsActions,
   generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
@@ -406,6 +408,33 @@ describe('Generator', () => {
           'Cannot set default value on identity column IdentityColumns.id'
         );
       });
+    });
+  });
+
+  describe('generateConstraintsActions', () => {
+    test('logs when start has an unmatched constraint', () => {
+      const loggerSpy = jest.spyOn(globalLogger, 'info').mockImplementation(() => {});
+
+      const startTable: TableDefinition = {
+        name: 'TestTable',
+        columns: [{ name: 'id', type: 'UUID', primaryKey: true, notNull: true }],
+        indexes: [],
+        constraints: [{ type: 'check', name: 'leftover_check', expression: 'id IS NOT NULL' }],
+      };
+      const targetTable: TableDefinition = {
+        name: 'TestTable',
+        columns: [{ name: 'id', type: 'UUID', primaryKey: true, notNull: true }],
+        indexes: [],
+        constraints: [],
+      };
+
+      const result = generateConstraintsActions(startTable, targetTable);
+
+      expect(result.preDeploy).toEqual([]);
+      expect(result.postDeploy).toEqual([]);
+      expect(loggerSpy).toHaveBeenCalledWith('[TestTable] Existing constraint should not exist: id IS NOT NULL');
+
+      loggerSpy.mockRestore();
     });
   });
 

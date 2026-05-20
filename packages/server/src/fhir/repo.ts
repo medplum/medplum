@@ -1551,9 +1551,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    */
   private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
-    await new InsertQuery(resource.resourceType, [buildResourceRow(resource, Repository.VERSION)])
-      .mergeOnConflict()
-      .execute(client);
+    const row = buildResourceRow(resource, Repository.VERSION);
+    await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
   }
 
   private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
@@ -2071,7 +2070,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
-      this.updateResourceImpl(auditEvent, true).catch(console.error);
+      this.updateResourceImpl(auditEvent, true).catch((err) => getLogger().error('Failed to save AuditEvent', err));
     }
   }
 

@@ -59,7 +59,7 @@ describe('WebSocket Subscription', () => {
   let patientSubscription: WithId<Subscription>;
 
   beforeAll(async () => {
-    console.log = jest.fn();
+    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
@@ -338,10 +338,17 @@ describe('WebSocket Subscription', () => {
         // Call unbind again to test that it doesn't break anything
         .sendJson({ type: 'unbind-from-token', payload: { token } })
         .exec(async () => {
-          await sleep(150);
-          expect(console.log).toHaveBeenCalledWith(
-            expect.stringContaining('[WS] Failed to retrieve subscription cache entry when unbinding from token')
-          );
+          const expectedMsg =
+            /"level":"WARN".*\[WS\] Failed to retrieve subscription cache entry when unbinding from token/;
+          const writeMock = globalLogger.write as unknown as jest.Mock;
+          const deadline = Date.now() + 5000;
+          while (
+            Date.now() < deadline &&
+            !writeMock.mock.calls.some((args) => typeof args[0] === 'string' && expectedMsg.test(args[0]))
+          ) {
+            await sleep(10);
+          }
+          expect(globalLogger.write).toHaveBeenCalledWith(expect.stringMatching(expectedMsg));
         })
         .close()
         .expectClosed();
