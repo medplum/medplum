@@ -13,7 +13,7 @@ Need help? This is an advanced integration. [Contact our team](mailto:info+healt
 
 This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering.
 
-For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
+For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). To backfill or recover results that were not delivered by webhook, see [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
 
 ## Prerequisites
 

@@ -806,6 +806,7 @@ interface RequestState {
  * Standard identifiers: {@link https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types}
  * JWT bearer extension: {@link https://datatracker.ietf.org/doc/html/rfc7523}
  * Token exchange extension: {@link https://datatracker.ietf.org/doc/html/rfc8693}
+ * Pre-authorized code: {@link https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-urnietfparamsoauthgrant-typ}
  */
 export const OAuthGrantType = {
   ClientCredentials: 'client_credentials',
@@ -813,6 +814,7 @@ export const OAuthGrantType = {
   RefreshToken: 'refresh_token',
   JwtBearer: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
   TokenExchange: 'urn:ietf:params:oauth:grant-type:token-exchange',
+  PreAuthorizedCode: 'urn:ietf:params:oauth:grant-type:pre-authorized_code',
 } as const;
 export type OAuthGrantType = (typeof OAuthGrantType)[keyof typeof OAuthGrantType];
 

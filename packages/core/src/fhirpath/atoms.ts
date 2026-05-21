@@ -155,15 +155,11 @@ export class AsAtom extends InfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    return functions.ofType(context, this.left.eval(context, input), this.right);
+    return functions.as(context, this.left.eval(context, input), this.right);
   }
 }
 
-export abstract class BooleanInfixOperatorAtom extends InfixOperatorAtom {
-  abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
-}
-
-export class ArithemticOperatorAtom extends BooleanInfixOperatorAtom {
+export class ArithmeticOperatorAtom extends InfixOperatorAtom {
   readonly impl: (x: number, y: number) => number | boolean;
 
   constructor(operator: string, left: Atom, right: Atom, impl: (x: number, y: number) => number | boolean) {
@@ -173,15 +169,14 @@ export class ArithemticOperatorAtom extends BooleanInfixOperatorAtom {
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const leftEvalResult = this.left.eval(context, input);
-    if (leftEvalResult.length !== 1) {
-      return [];
-    }
     const rightEvalResult = this.right.eval(context, input);
-    if (rightEvalResult.length !== 1) {
+    if (leftEvalResult.length < 1 || rightEvalResult.length < 1) {
       return [];
     }
-    const leftValue = leftEvalResult[0].value;
-    const rightValue = rightEvalResult[0].value;
+
+    const leftValue = singleton(leftEvalResult)?.value;
+    const rightValue = singleton(rightEvalResult)?.value;
+
     const leftNumber = isQuantity(leftValue) ? leftValue.value : leftValue;
     const rightNumber = isQuantity(rightValue) ? rightValue.value : rightValue;
     const result = this.impl(leftNumber, rightNumber);
@@ -195,23 +190,28 @@ export class ArithemticOperatorAtom extends BooleanInfixOperatorAtom {
   }
 }
 
+const EMPTY_STRING: TypedValue = Object.freeze({ type: 'string', value: '' });
+
 export class ConcatAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('&', left, right);
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context, input);
-    const rightValue = this.right.eval(context, input);
-    const result = [...leftValue, ...rightValue];
-    if (result.length > 0 && result.every((e) => typeof e.value === 'string')) {
-      return [{ type: PropertyType.string, value: result.map((e) => e.value as string).join('') }];
+    const left = singleton(this.left.eval(context, input)) ?? EMPTY_STRING;
+    const right = singleton(this.right.eval(context, input)) ?? EMPTY_STRING;
+
+    if (typeof left.value !== 'string') {
+      throw new Error(`Expected string operand for &, but got ${left.type}`);
+    } else if (typeof right.value !== 'string') {
+      throw new Error(`Expected string operand for &, but got ${right.type}`);
     }
-    return result;
+
+    return [{ type: PropertyType.string, value: left.value + right.value }];
   }
 }
 
-export class ContainsAtom extends BooleanInfixOperatorAtom {
+export class ContainsAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('contains', left, right);
   }
@@ -223,7 +223,7 @@ export class ContainsAtom extends BooleanInfixOperatorAtom {
   }
 }
 
-export class InAtom extends BooleanInfixOperatorAtom {
+export class InAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('in', left, right);
   }
@@ -264,7 +264,7 @@ export class UnionAtom extends InfixOperatorAtom {
   }
 }
 
-export class EqualsAtom extends BooleanInfixOperatorAtom {
+export class EqualsAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('=', left, right);
   }
@@ -276,7 +276,7 @@ export class EqualsAtom extends BooleanInfixOperatorAtom {
   }
 }
 
-export class NotEqualsAtom extends BooleanInfixOperatorAtom {
+export class NotEqualsAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('!=', left, right);
   }
@@ -288,7 +288,7 @@ export class NotEqualsAtom extends BooleanInfixOperatorAtom {
   }
 }
 
-export class EquivalentAtom extends BooleanInfixOperatorAtom {
+export class EquivalentAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('~', left, right);
   }
@@ -300,7 +300,7 @@ export class EquivalentAtom extends BooleanInfixOperatorAtom {
   }
 }
 
-export class NotEquivalentAtom extends BooleanInfixOperatorAtom {
+export class NotEquivalentAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('!~', left, right);
   }
@@ -312,7 +312,7 @@ export class NotEquivalentAtom extends BooleanInfixOperatorAtom {
   }
 }
 
-export class IsAtom extends BooleanInfixOperatorAtom {
+export class IsAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('is', left, right);
   }
@@ -333,7 +333,7 @@ export class IsAtom extends BooleanInfixOperatorAtom {
  * false if either operand evaluates to false,
  * and the empty collection otherwise.
  */
-export class AndAtom extends BooleanInfixOperatorAtom {
+export class AndAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('and', left, right);
   }
@@ -357,7 +357,7 @@ export class AndAtom extends BooleanInfixOperatorAtom {
  * true if either operand evaluates to true,
  * and empty (`{ }`) otherwise:
  */
-export class OrAtom extends BooleanInfixOperatorAtom {
+export class OrAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('or', left, right);
   }
@@ -381,7 +381,7 @@ export class OrAtom extends BooleanInfixOperatorAtom {
  * false if either both operands evaluate to true or both operands evaluate to false,
  * and the empty collection otherwise.
  */
-export class XorAtom extends BooleanInfixOperatorAtom {
+export class XorAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('xor', left, right);
   }
@@ -402,7 +402,7 @@ export class XorAtom extends BooleanInfixOperatorAtom {
  * true left is false and right true, false or empty
  * true left is empty
  */
-export class ImpliesAtom extends BooleanInfixOperatorAtom {
+export class ImpliesAtom extends InfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('implies', left, right);
   }

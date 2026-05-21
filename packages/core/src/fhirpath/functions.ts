@@ -7,7 +7,15 @@ import { PropertyType, isResource } from '../types';
 import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
-import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
+import {
+  booleanToTypedValue,
+  fhirPathIs,
+  isQuantity,
+  removeDuplicates,
+  singleton,
+  toJsBoolean,
+  toTypedValue,
+} from './utils';
 
 /*
  * Collection of FHIRPath
@@ -446,9 +454,6 @@ export const functions: Record<string, FhirPathFunction> = {
     const numValue = num.eval(context, input)[0]?.value;
     if (typeof numValue !== 'number') {
       throw new TypeError('Expected a number for take(num)');
-    }
-    if (numValue >= input.length) {
-      return input;
     }
     if (numValue <= 0) {
       return [];
@@ -1757,12 +1762,15 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * The as operator can be used to treat a value as a specific type.
-   * @param _context - The evaluation context.
+   * @param context - The evaluation context.
    * @param input - The input value.
+   * @param specifier - The type specifier.
    * @returns The value as the specific type.
    */
-  as: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return input;
+  as: (context: AtomContext, input: TypedValue[], specifier: Atom): TypedValue[] => {
+    const dataType = (specifier as SymbolAtom).name;
+    const value = singleton(input, dataType);
+    return value ? [value] : [];
   },
 
   /*

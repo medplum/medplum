@@ -89,7 +89,7 @@ export function SchedulePage(): JSX.Element | null {
         ['schedule', getReferenceString(schedule)],
         ['start', `ge${range.start.toISOString()}`],
         ['start', `le${range.end.toISOString()}`],
-        ['status', 'free,busy-unavailable'],
+        ['status:not', 'entered-in-error'],
       ])
       .then((rawSlots) => active && setSlots(mergeOverlappingSlots(rawSlots)))
       .catch((error: unknown) => active && showErrorNotification(error));
@@ -160,15 +160,7 @@ export function SchedulePage(): JSX.Element | null {
       setAppointments((state) => results.appointments.concat(state ?? EMPTY));
       setAppointmentDetails(results.appointments[0]);
       appointmentDetailsHandlers.open();
-      setSlots((state) =>
-        results.slots
-          .filter(
-            // We don't show "busy" slots, assuming that they are duplicative of
-            // more descriptive Appointment resources.
-            (slot) => slot.status !== 'busy'
-          )
-          .concat(state ?? EMPTY)
-      );
+      setSlots((state) => results.slots.concat(state ?? EMPTY));
     },
     [appointmentDetailsHandlers]
   );

@@ -50,7 +50,7 @@ export class CodingTable extends LookupTable {
     for (const resource of resources) {
       if (
         resource.resourceType === 'CodeSystem' &&
-        (resource.content === 'complete' || resource.content === 'example')
+        (resource.content === 'complete' || resource.content === 'example' || resource.content === 'fragment')
       ) {
         if (!create) {
           await this.deleteValuesForResource(client, resource);

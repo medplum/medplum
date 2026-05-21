@@ -2,16 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchParameter } from '@medplum/fhirtypes';
 import type { Atom } from '../fhirlexer/parse';
-import {
-  AsAtom,
-  BooleanInfixOperatorAtom,
-  DotAtom,
-  FhirPathAtom,
-  FunctionAtom,
-  IndexerAtom,
-  IsAtom,
-  UnionAtom,
-} from '../fhirpath/atoms';
+import { InfixOperatorAtom } from '../fhirlexer/parse';
+import { AsAtom, DotAtom, FhirPathAtom, FunctionAtom, IndexerAtom, IsAtom, UnionAtom } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
@@ -92,7 +84,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     const atomArray = flattenAtom(expression);
     const flattenedExpression = lazy(() => atomArray.join('.'));
 
-    if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
+    if (atomArray.length === 1 && atomArray[0] instanceof InfixOperatorAtom && atomArray[0].operator !== '.') {
       builder.propertyTypes.add('boolean');
     } else if (searchParam.code.endsWith(':identifier')) {
       // This is a derived "identifier" search parameter
@@ -333,7 +325,7 @@ function flattenAtom(atom: Atom): Atom[] {
   if (atom instanceof AsAtom || atom instanceof IndexerAtom) {
     return [flattenAtom(atom.left), atom].flat();
   }
-  if (atom instanceof BooleanInfixOperatorAtom) {
+  if (atom instanceof InfixOperatorAtom && atom.operator !== '.') {
     return [atom];
   }
   if (atom instanceof DotAtom) {
