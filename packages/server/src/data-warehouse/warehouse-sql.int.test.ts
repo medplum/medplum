@@ -5,8 +5,8 @@
 
 import { DuckDBInstance } from '@duckdb/node-api';
 import pg from 'pg';
-import { SqlBuilder } from '../fhir/sql';
 import { loadTestConfig } from '../config/loader';
+import { SqlBuilder } from '../fhir/sql';
 import { buildPgConnectionURI } from './config';
 import {
   buildDuckdbPostgresAttachQuery,
@@ -78,10 +78,7 @@ describe('warehouse SQL (integration)', () => {
 
   test('INSERT INTO with subquery projection extracts project_id via DuckDB json_extract_string', async () => {
     const connStr = buildPgConnectionURI({ host, port, dbname: database, username, password });
-    const projectedSelect = buildSelectFromHistoryTableQuery(
-      HISTORY_TABLE,
-      buildTrueSourcePredicate()
-    );
+    const projectedSelect = buildSelectFromHistoryTableQuery(HISTORY_TABLE, buildTrueSourcePredicate());
     const insertQuery = buildInsertIntoSelectQuery(`main.${DEST_TABLE}`, projectedSelect);
 
     const instance = await DuckDBInstance.create(':memory:');

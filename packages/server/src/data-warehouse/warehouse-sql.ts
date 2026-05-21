@@ -129,7 +129,6 @@ export function buildInsertIntoSelectQuery(
   });
 }
 
-
 /**
  * Constructs a SQL `SELECT` query from a Medplum history Postgres table and extracts the project_id.
  * using the DuckDB's JSON functionality.  This minimizes the load on the source database.
@@ -138,10 +137,7 @@ export function buildInsertIntoSelectQuery(
  * @param sourcePredicate - SQL boolean expression (joined with `AND` after non-empty content filter).
  * @returns `SELECT` with a subquery and outer `json_extract_string` projection.
  */
-export function buildSelectFromHistoryTableQuery(
-  sourceHistoryTable: string,
-  sourcePredicate: Expression
-): SelectQuery {
+export function buildSelectFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate: Expression): SelectQuery {
   const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
   const col = (name: string, alias?: string): Column => new Column(table, name, false, alias);
 
