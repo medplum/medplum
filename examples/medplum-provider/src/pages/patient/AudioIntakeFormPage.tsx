@@ -20,8 +20,8 @@ const voiceInstructions = (
       add or update answers.
     </li>
     <li>
-      Try saying something like: “My name is Sarah Johnson and I'm 28 years old” or “I live at 123 Main Street in
-      Boston Massachusetts”
+      Try saying something like: “My name is Sarah Johnson and I'm 28 years old” or “I live at 123 Main Street in Boston
+      Massachusetts”
     </li>
   </ul>
 );
