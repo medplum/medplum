@@ -3,6 +3,7 @@
 import type { GetFunctionConfigurationCommandOutput, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
+  DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   ListLayerVersionsCommand,
@@ -214,6 +215,18 @@ export async function lambdaExists(client: LambdaClient, name: string): Promise<
     }
     throw err;
   }
+}
+
+/**
+ * Deletes the AWS Lambda for the bot name.
+ *
+ * Because no `Qualifier` is passed, AWS deletes the entire function — all versions and aliases.
+ *
+ * @param client - The AWS Lambda client.
+ * @param name - The bot name.
+ */
+export async function deleteLambda(client: LambdaClient, name: string): Promise<void> {
+  await client.send(new DeleteFunctionCommand({ FunctionName: name }));
 }
 
 /**

@@ -12,7 +12,7 @@ import {
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
@@ -598,8 +598,8 @@ export class SqlBuilder {
     const sql = this.toString();
     let startTime = 0;
     if (this.debug) {
-      console.log('sql', sql);
-      console.log('values', this.values);
+      globalLogger.write(`sql ${sql}`);
+      globalLogger.write(`values ${JSON.stringify(this.values)}`);
       startTime = Date.now();
     }
     try {
@@ -607,7 +607,7 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
+        globalLogger.write(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
