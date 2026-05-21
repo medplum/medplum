@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Medication, MedicationRequest, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { CodeableConcept, Medication, MedicationRequest, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { isResource } from './types';
 import { getExtensionValue, getIdentifier } from './utils';
 
@@ -22,6 +22,53 @@ export const INVALID_MEDICATION_SEARCH_RESPONSE = 'Invalid response from medicat
  * Stable error when an order-set widget-url response is missing `launchUrl`.
  */
 export const INVALID_MEDICATION_ORDER_SET_RESPONSE = 'Invalid response from order-set bot';
+
+/**
+ * Canonical CodeSystem URL for `MedicationRequest.statusReason` values stamped
+ * by Medplum-managed order flows when a draft MR has to be retired without a
+ * confirmed vendor outcome.
+ *
+ * Downstream reconciliation (vendor webhook bots, audit reports) should match
+ * `statusReason.coding[?(@.system==MEDICATION_REQUEST_STATUS_REASON_SYSTEM)]`
+ * to recognize records that originated from this soft-delete path rather than
+ * a clinician decision.
+ */
+export const MEDICATION_REQUEST_STATUS_REASON_SYSTEM =
+  'https://medplum.com/fhir/CodeSystem/medication-request-status-reason';
+
+/**
+ * Code stamped on `MedicationRequest.statusReason` when an order-medication
+ * operation never returned a verifiable response — the vendor side may have
+ * created (and sent) the prescription, or it may have rejected the request, and
+ * we cannot tell from the client. Used in place of a hard `DELETE` so the
+ * record stays addressable for later reconciliation against vendor webhooks.
+ */
+export const MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED = 'response-not-received';
+
+/**
+ * Builds the `statusReason` CodeableConcept used when soft-deleting a draft
+ * `MedicationRequest` whose vendor-side outcome is unknown (see
+ * {@link MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED}).
+ *
+ * Paired with `status: 'unknown'` (a valid FHIR R4 MedicationRequest status),
+ * this is the standard shape every order-medication caller should write when
+ * `orderMedication(...)` throws after the draft MR has been created.
+ *
+ * @returns A `CodeableConcept` carrying our canonical system + code and a
+ *   human-readable `text` summary.
+ */
+export function buildMedicationRequestResponseLostStatusReason(): CodeableConcept {
+  return {
+    coding: [
+      {
+        system: MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+        code: MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
+        display: 'Order-medication response not received',
+      },
+    ],
+    text: 'The order-medication operation did not return a verifiable response; vendor-side state is unknown.',
+  };
+}
 
 /**
  * Vendor-neutral drug line for {@link MedicationOrderRequest}.
