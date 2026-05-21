@@ -168,10 +168,12 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
       ? new LocalParquetWarehouseDestination(syncConfig.localBasePath as string)
       : new S3TablesWarehouseDestination(config.awsRegion, syncConfig.awsS3TableArn as string);
 
-  const warehouseSources = getWarehouseSyncPostgresTableNames().map((postgresTable) => ({
-    postgresTable,
-    icebergTable: toIcebergTableName(postgresTable),
-  }));
+  const warehouseSources = getWarehouseSyncPostgresTableNames()
+    .map((postgresTable) => ({
+      postgresTable,
+      icebergTable: toIcebergTableName(postgresTable),
+    }))
+    .toSorted((a, b) => a.icebergTable.localeCompare(b.icebergTable));
   return {
     database,
     destination,
