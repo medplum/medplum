@@ -151,7 +151,7 @@ export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.E
             )}
 
             <Box px="md">
-              <Divider color="gray.1" />
+              <Divider />
             </Box>
 
             <Box p="md">

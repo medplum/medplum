@@ -50,7 +50,7 @@
   right: 0;
   bottom: 0;
   width: 1px;
-  background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+  background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   opacity: 0;
   transition: opacity 150ms ease;
   pointer-events: none;
@@ -103,7 +103,7 @@
 
 .chatHeaderPaper {
   flex-shrink: 0;
-  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
 .messagesArea {

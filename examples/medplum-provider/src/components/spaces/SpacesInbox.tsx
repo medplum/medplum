@@ -277,7 +277,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               </Flex>
             </Paper>
 
-            <Divider mx="xs" color="gray.2" />
+            <Divider mx="xs" />
 
             <Paper className={classes.sidebarListPaper} p={0}>
               <HistoryList key={refreshKey} currentTopicId={currentTopicId} onSelectedItem={onSelectedItem} />

@@ -1,7 +1,7 @@
 .container {
   position: relative;
   height: calc(100vh - var(--app-shell-header-height, 0));
-  background-color: var(--mantine-color-gray-0);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
   display: flex;
   overflow: hidden;
 }
@@ -29,7 +29,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: light-dark(rgba(255, 255, 255, 0.4), rgba(0, 0, 0, 0.4));
   backdrop-filter: blur(2px);
   z-index: 10;
 }
