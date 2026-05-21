@@ -1,20 +1,35 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Code, ScrollArea, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { AIRealTimeQuestionnaireForm, Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
+
+const voiceInstructions = (
+  <ul>
+    <li>
+      To fill out the form, just speak naturally and the dictation tool will automatically map your spoken answers to
+      the appropriate form fields.
+    </li>
+    <li>
+      Pause briefly between thoughts to allow the tool to process and fill in the fields. You can continue speaking to
+      add or update answers.
+    </li>
+    <li>
+      Try saying something like: “My name is Sarah Johnson and I'm 28 years old” or “I live at 123 Main Street in
+      Boston Massachusetts”
+    </li>
+  </ul>
+);
 
 export function AudioIntakeFormPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const [transcript, setTranscript] = useState('');
 
   const handleOnSubmit = useCallback(
     async (response: QuestionnaireResponse) => {
@@ -37,40 +52,11 @@ export function AudioIntakeFormPage(): JSX.Element {
 
   return (
     <Document width={800}>
-      <Stack gap="md" mb="xl">
-        <Title order={2}>Voice-Enabled Patient Intake Demo</Title>
-        <Alert color="blue" title="How to use">
-          <Text size="sm">
-            Click the microphone button to start recording your answers. Speak naturally to fill out the form. For
-            example, you can say:
-          </Text>
-          <ul style={{ marginTop: '8px', marginBottom: '8px' }}>
-            <li>"My name is Sarah Johnson and I'm 28 years old"</li>
-            <li>"I live at 123 Main Street in Boston Massachusetts"</li>
-            <li>"I have allergies to penicillin and peanuts"</li>
-            <li>"I'm currently taking metformin for diabetes"</li>
-          </ul>
-          <Text size="sm">
-            The AI will automatically map your spoken answers to the appropriate form fields. You can continue speaking
-            to add or update answers.
-          </Text>
-        </Alert>
-      </Stack>
-
       <AIRealTimeQuestionnaireForm
         questionnaire={simpleIntakeQuestionnaire}
         onSubmit={handleOnSubmit}
-        onTranscript={(full) => setTranscript(full)}
+        voiceInstructions={voiceInstructions}
       />
-
-      <Stack gap="xs" mt="xl">
-        <Title order={5}>Debug: Realtime Transcript</Title>
-        <ScrollArea h={160} type="auto">
-          <Code block style={{ whiteSpace: 'pre-wrap', minHeight: 120 }}>
-            {transcript || '(no transcript yet — press the mic and speak)'}
-          </Code>
-        </ScrollArea>
-      </Stack>
     </Document>
   );
 }

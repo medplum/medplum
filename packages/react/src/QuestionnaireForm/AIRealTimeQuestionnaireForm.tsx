@@ -1,16 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Group, Loader, Text, Tooltip } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { useMedplum, useWhisper } from '@medplum/react-hooks';
-import { IconMicrophone, IconPlayerStopFilled } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireForm } from './QuestionnaireForm';
+import { VoiceInputBanner } from './VoiceInputBanner';
 
 const DEFAULT_AI_MODEL = 'gpt-5.4-nano';
 const SILENCE_DEBOUNCE_MS = 3000;
@@ -163,6 +162,8 @@ export interface AIRealTimeQuestionnaireFormProps extends QuestionnaireFormProps
   readonly systemPrompt?: string;
   /** Optional callback invoked whenever a new transcript chunk arrives from the realtime API */
   readonly onTranscript?: (fullTranscript: string, chunk: string) => void;
+  /** Optional custom how-to instructions content shown in the listening banner. */
+  readonly voiceInstructions?: ReactNode;
 }
 
 export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element | null {
@@ -170,6 +171,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     aiModel = DEFAULT_AI_MODEL,
     systemPrompt = DEFAULT_SYSTEM_PROMPT,
     onTranscript,
+    voiceInstructions,
     ...questionnaireFormProps
   } = props;
   const medplum = useMedplum();
@@ -177,6 +179,9 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     props.questionnaireResponse as QuestionnaireResponse | undefined
   );
   const [isProcessing, setIsProcessing] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [bannerExpanded, setBannerExpanded] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   // Bumped only when the AI replaces the response, so QuestionnaireForm remounts
   // and picks up the new defaultValue (the inner hook ignores later prop changes).
   const [responseVersion, setResponseVersion] = useState(0);
@@ -193,10 +198,6 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
 
   const isVoiceEnabled = medplum.getProject()?.features?.includes('ai-realtime') ?? false;
 
-  useEffect(() => {
-    inputRef.current = '';
-  }, []);
-
   const { start, stop, status } = useWhisper({
     model: 'gpt-4o-transcribe',
     onTranscript: (text) => {
@@ -207,6 +208,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
       const previous = inputRef.current.trim();
       const next = previous ? `${previous} ${trimmed}` : trimmed;
       inputRef.current = next;
+      setTranscript(next);
       onTranscript?.(next, trimmed);
     },
   });
@@ -305,6 +307,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
       }
       // Snapshot + clear so further utterances queue cleanly into a fresh buffer.
       inputRef.current = '';
+      setTranscript('');
       onTranscript?.('', '');
       inFlightRef.current = true;
       try {
@@ -342,29 +345,21 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
 
   const isConnecting = status === 'requesting_microphone' || status === 'connecting' || status === 'connected';
   const isRecording = status === 'listening' || status === 'speech_started' || status === 'speech_stopped';
-  const isActive = isConnecting || isRecording;
 
-  const handleVoiceToggle = (): void => {
-    if (isActive) {
-      stop();
-    } else {
-      start().catch((err) => console.error('Error starting voice input:', err));
+  const handleStartDictation = useCallback((): void => {
+    start().catch((err) => console.error('Error starting voice input:', err));
+  }, [start]);
+
+  const handleStopDictation = useCallback((): void => {
+    setIsStopping(true);
+    stop();
+  }, [stop]);
+
+  useEffect(() => {
+    if (isStopping && !isProcessing && !isConnecting && !isRecording) {
+      setIsStopping(false);
     }
-  };
-
-  let voiceTooltip = 'Start voice input to answer questionnaire';
-  if (!isVoiceEnabled) {
-    voiceTooltip = 'Voice input is not enabled in this project. Add the "ai-realtime" feature to enable it.';
-  } else if (isActive) {
-    voiceTooltip = 'Listening — speak naturally, pauses send to AI. Click to stop.';
-  }
-
-  let voiceBackground: string | undefined;
-  if (!isVoiceEnabled) {
-    voiceBackground = 'gray';
-  } else if (!isRecording && !isConnecting) {
-    voiceBackground = '#7c3aed';
-  }
+  }, [isStopping, isProcessing, isConnecting, isRecording]);
 
   // Track the questionnaire prop
   useEffect(() => {
@@ -373,44 +368,32 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     }
   }, [props.questionnaire]);
 
+  const afterHeader = (
+    <VoiceInputBanner
+      isVoiceEnabled={isVoiceEnabled}
+      isConnecting={isConnecting}
+      isRecording={isRecording}
+      isProcessing={isProcessing}
+      isStopping={isStopping}
+      transcript={transcript}
+      instructions={voiceInstructions}
+      expanded={bannerExpanded}
+      onExpandedChange={setBannerExpanded}
+      onStartDictation={handleStartDictation}
+      onStopDictation={handleStopDictation}
+    />
+  );
+
   return (
-    <>
-      <Group justify="flex-end" mb="md" gap="sm">
-        {isProcessing && (
-          <Group gap={6} aria-live="polite">
-            <Loader size="xs" color="violet" />
-            <Text size="sm" c="dimmed">
-              Processing…
-            </Text>
-          </Group>
-        )}
-        <Tooltip label={voiceTooltip}>
-          <ActionIcon
-            aria-label={isActive ? 'Stop voice input' : 'Start voice input'}
-            radius="xl"
-            size="lg"
-            variant="filled"
-            color={isRecording ? 'red' : undefined}
-            bg={voiceBackground}
-            onClick={handleVoiceToggle}
-            disabled={isConnecting || !isVoiceEnabled}
-            loading={isConnecting}
-            data-disabled={!isVoiceEnabled || undefined}
-            style={!isVoiceEnabled ? { pointerEvents: 'auto' } : undefined}
-          >
-            {isRecording ? <IconPlayerStopFilled size={18} /> : <IconMicrophone size={18} />}
-          </ActionIcon>
-        </Tooltip>
-      </Group>
-      <QuestionnaireForm
-        key={responseVersion}
-        {...questionnaireFormProps}
-        questionnaireResponse={questionnaireResponse}
-        onChange={(response) => {
-          setQuestionnaireResponse(response);
-          props.onChange?.(response);
-        }}
-      />
-    </>
+    <QuestionnaireForm
+      key={responseVersion}
+      {...questionnaireFormProps}
+      questionnaireResponse={questionnaireResponse}
+      afterHeader={afterHeader}
+      onChange={(response) => {
+        setQuestionnaireResponse(response);
+        props.onChange?.(response);
+      }}
+    />
   );
 }

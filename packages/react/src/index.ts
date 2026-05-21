@@ -108,6 +108,7 @@ export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';
 export * from './QuestionnaireForm/AIRealTimeQuestionnaireForm';
 export * from './QuestionnaireForm/QuestionnaireForm';
+export * from './QuestionnaireForm/VoiceInputBanner';
 export * from './QuestionnaireResponseDisplay/QuestionnaireResponseDisplay';
 export * from './RangeDisplay/RangeDisplay';
 export * from './RangeInput/RangeInput';

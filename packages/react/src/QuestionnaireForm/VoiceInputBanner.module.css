@@ -1,0 +1,185 @@
+.banner {
+  background-color: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: var(--mantine-radius-md);
+}
+
+.headerRow {
+  min-height: 56px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.iconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.statusRow :global(.tabler-icon) {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  color: var(--mantine-color-gray-6);
+}
+
+.statusRow[data-state='recording'] :global(.tabler-icon) {
+  width: 16px;
+  height: 16px;
+  color: var(--mantine-color-red-6);
+  fill: var(--mantine-color-red-6);
+}
+
+.statusRow[data-state='recording'] .iconWrapper {
+  animation: recordingPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes recordingPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.statusLabel {
+  margin-left: var(--mantine-spacing-xs);
+  font-size: 14px;
+  font-weight: 450;
+  color: var(--mantine-color-gray-7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusLabelPrimary {
+  font-size: 14px;
+  font-weight: 450;
+  color: var(--mantine-color-red-6);
+}
+
+.dictationButton {
+  width: 10rem;
+  flex-shrink: 0;
+}
+
+.dictationButton :global(.mantine-Button-label) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.dictationButtonLoading:global(.mantine-Button-root),
+.dictationButtonLoading:global(.mantine-Button-root):hover {
+  background-color: var(--mantine-color-gray-2);
+  border-color: var(--mantine-color-gray-2);
+  color: var(--mantine-color-dimmed);
+}
+
+.dictationButtonLoading :global(.mantine-Button-label) {
+  color: var(--mantine-color-dimmed);
+}
+
+.instructions {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  color: var(--mantine-color-gray-7);
+}
+
+.instructions :global(.mantine-Text-root) {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.instructions ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.instructions > ul > li + li {
+  margin-top: var(--mantine-spacing-sm);
+}
+
+.panelGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xl);
+}
+
+@media (min-width: 48em) {
+  .panelGrid {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.panelColumn {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+
+/*
+ * On desktop, the transcript box is sized to match the "How to Use" column via
+ * align-items: stretch on .panelGrid. To prevent the transcript text from
+ * pushing the column taller, the scrollable area is absolutely positioned
+ * inside a flex-grow wrapper so its content does not contribute to the
+ * column's intrinsic height. On mobile (stacked columns), we fall back to a
+ * fixed height since there's no sibling column to match.
+ */
+.transcriptWrapper {
+  flex: 1;
+  min-height: 12rem;
+}
+
+.transcriptArea {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--mantine-spacing-sm);
+  background-color: var(--mantine-color-gray-0);
+  border-radius: var(--mantine-radius-sm);
+}
+
+@media (min-width: 48em) {
+  .transcriptWrapper {
+    position: relative;
+    min-height: 0;
+  }
+
+  .transcriptArea {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+}
+
+.transcriptText {
+  display: block;
+  margin: 0;
+  padding: 0;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+  line-height: var(--mantine-line-height-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--mantine-color-text);
+}
