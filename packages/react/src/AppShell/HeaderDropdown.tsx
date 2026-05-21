@@ -99,10 +99,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
               onClick={() => switchLogin(login)}
             >
               <Box className={classes.projectOption}>
-                <ProjectLoginOption
-                  projectDisplay={login.project.display}
-                  profileDisplay={login.profile.display}
-                />
+                <ProjectLoginOption projectDisplay={login.project.display} profileDisplay={login.profile.display} />
               </Box>
             </Menu.Item>
           ))}
