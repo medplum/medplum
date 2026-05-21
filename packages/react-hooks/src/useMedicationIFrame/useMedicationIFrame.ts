@@ -4,7 +4,7 @@ import type { Identifier } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
-export interface EPrescribingIFrameOptions {
+export interface MedicationIFrameOptions {
   readonly patientId?: string;
   readonly onPatientSyncSuccess?: () => void;
   readonly onIframeSuccess?: (url: string) => void;
@@ -12,8 +12,8 @@ export interface EPrescribingIFrameOptions {
 }
 
 /**
- * Generic React hook that syncs a patient to an e-prescribing system and
- * returns the iframe URL.
+ * Generic React hook that syncs a patient to a medication-order vendor and
+ * returns the chart iframe URL.
  *
  * Executes the patient-sync bot first (if patientId is provided), then
  * the iframe bot to obtain the prescribing UI URL.
@@ -24,12 +24,12 @@ export interface EPrescribingIFrameOptions {
  * @param syncBotIdentifier - Bot identifier for the patient sync bot.
  * @param iframeBotIdentifier - Bot identifier for the iframe URL bot.
  * @param options - Configuration and callback options.
- * @returns The e-prescribing iframe URL, or undefined while loading.
+ * @returns The medication-order iframe URL, or undefined while loading.
  */
-export function useEPrescribingIFrame(
+export function useMedicationIFrame(
   syncBotIdentifier: Identifier,
   iframeBotIdentifier: Identifier,
-  options: EPrescribingIFrameOptions
+  options: MedicationIFrameOptions
 ): string | undefined {
   const medplum = useMedplum();
   const { patientId, onPatientSyncSuccess, onIframeSuccess, onError } = options;

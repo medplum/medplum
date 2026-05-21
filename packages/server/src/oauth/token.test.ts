@@ -2263,12 +2263,14 @@ describe('OAuth2 Token', () => {
 
   test('Pre-authorized code IP address restriction', async () => {
     const testAccount = await addTestUser(project, {
-      resourceType: 'AccessPolicy',
-      resource: [{ resourceType: '*' }],
-      ipAccessRule: [
-        { name: 'Block test', value: '6.6.6.6', action: 'block' },
-        { name: 'Allow by default', value: '*', action: 'allow' },
-      ],
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: '*' }],
+        ipAccessRule: [
+          { name: 'Block test', value: '6.6.6.6', action: 'block' },
+          { name: 'Allow by default', value: '*', action: 'allow' },
+        ],
+      },
     });
 
     const res = await request(app)
