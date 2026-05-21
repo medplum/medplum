@@ -6,7 +6,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import type { PatientSummaryParameters } from './patientsummary';
-import { getPatientSummary, operation as patientSummaryOperation } from './patientsummary';
+import { getPatientSummary, patientSummaryOperation } from './patientsummary';
 import { parseInputParameters } from './utils/parameters';
 
 export const operation = {

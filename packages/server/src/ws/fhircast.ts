@@ -39,7 +39,7 @@ export function initFhircastHeartbeat(): void {
             ...baseHeartbeatPayload,
             event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
           })
-        ).catch(console.error);
+        ).catch((err) => globalLogger.error('[FHIRcast]: Failed to publish heartbeat', err));
       }
 
       const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;

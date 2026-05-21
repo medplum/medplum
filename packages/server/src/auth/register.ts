@@ -61,7 +61,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: request.scope ?? 'openid offline',
+    scope: request.scope ?? 'openid offline_access',
     nonce: randomUUID(),
     email: email,
     password: password,

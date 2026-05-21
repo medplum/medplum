@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Progress, Table, Text, Title, UnstyledButton } from '@mantine/core';
+import { Anchor, Button, Group, Progress, Table, Text, Title, UnstyledButton } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
@@ -117,6 +117,8 @@ function formatUtilization(quota: QuotaInfo): string {
 
 type SortDirection = 'asc' | 'desc';
 
+const RATE_LIMITS_DOCS_URL = 'https://www.medplum.com/docs/api/fhir/operations/project-rate-limits';
+
 export function RateLimitsPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
@@ -158,9 +160,14 @@ export function RateLimitsPage(): JSX.Element {
     <>
       <Group justify="space-between" mb="md">
         <Title>Rate Limits</Title>
-        <Button leftSection={<IconRefresh size={14} />} loading={loading} onClick={handleRefresh}>
-          Refresh
-        </Button>
+        <Group>
+          <Anchor href={RATE_LIMITS_DOCS_URL} target="_blank" rel="noopener noreferrer" size="sm">
+            $rate-limits documentation
+          </Anchor>
+          <Button leftSection={<IconRefresh size={14} />} loading={loading} onClick={handleRefresh}>
+            Refresh
+          </Button>
+        </Group>
       </Group>
 
       {!data && !loading && <Text c="dimmed">Click Refresh to load current rate limit data.</Text>}

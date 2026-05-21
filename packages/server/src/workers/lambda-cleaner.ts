@@ -7,8 +7,13 @@ import { EMPTY } from '@medplum/core';
 import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import type { DeleteOldLambdaVersionStats } from '../cloud/aws/lambda';
-import { createLambdaClient, deleteOldLambdaVersions } from '../cloud/aws/lambda';
+import type { DeleteLambdaVersionOptions, DeleteOldLambdaVersionStats } from '../cloud/aws/lambda';
+import {
+  DeleteLambdaVersionOptionsDefaults,
+  deleteOldLambdaVersions,
+  getBotManagementLambdaClient,
+} from '../cloud/aws/lambda';
+import { tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
@@ -23,23 +28,19 @@ export interface LambdaCleanerOptions {
   readonly dryRun?: boolean;
 }
 
-interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions {
-  readonly keepLatest: number;
-  readonly deleteConcurrency: number;
+interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions, DeleteLambdaVersionOptions {
   readonly dryRun: boolean;
 }
-
-const DEFAULT_KEEP_LATEST = 1;
-const DEFAULT_DELETE_CONCURRENCY = 5;
-const DEFAULT_DRY_RUN = true;
 
 export interface LambdaCleanerJobData {
   readonly asyncJob: WithId<AsyncJob>;
   readonly options: LambdaCleanerOptions;
+  readonly requestId?: string;
+  readonly traceId?: string;
 }
 
 export interface LambdaCleanerSummary extends DeleteOldLambdaVersionStats {
-  readonly options: LambdaCleanerOptions;
+  readonly options: ResolvedLambdaCleanerOptions;
   functionsScanned: number;
   functionsMatched: number;
   durationMs: number;
@@ -60,11 +61,11 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
   let worker: Worker<LambdaCleanerJobData> | undefined;
   if (options?.workerEnabled !== false) {
     const workerConfig = getWorkerBullmqConfig(config, 'lambda-cleaner');
-    worker = new Worker<LambdaCleanerJobData>(LambdaCleanerQueueName, (job) => lambdaCleanerJobProcessor(job), {
-      ...defaultOptions,
-      concurrency: 1,
-      ...workerConfig,
-    });
+    worker = new Worker<LambdaCleanerJobData>(
+      LambdaCleanerQueueName,
+      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job)),
+      { ...defaultOptions, concurrency: 1, ...workerConfig }
+    );
     addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({
       asyncJob: `AsyncJob/${job.data.asyncJob.id}`,
       nameRegex: job.data.options.nameRegex,
@@ -101,12 +102,12 @@ export async function execLambdaCleanerJob(
   client?: LambdaClient
 ): Promise<LambdaCleanerSummary> {
   const options: ResolvedLambdaCleanerOptions = {
-    nameRegex: inputOptions.nameRegex,
-    keepLatest: inputOptions.keepLatest ?? DEFAULT_KEEP_LATEST,
-    deleteConcurrency: inputOptions.deleteConcurrency ?? DEFAULT_DELETE_CONCURRENCY,
-    dryRun: inputOptions.dryRun ?? DEFAULT_DRY_RUN,
+    ...inputOptions,
+    keepLatest: inputOptions.keepLatest ?? DeleteLambdaVersionOptionsDefaults.keepLatest,
+    deleteConcurrency: inputOptions.deleteConcurrency ?? DeleteLambdaVersionOptionsDefaults.deleteConcurrency,
+    dryRun: inputOptions.dryRun ?? true,
   };
-  const lambdaClient = client ?? createLambdaClient();
+  const lambdaClient = client ?? getBotManagementLambdaClient();
   const startTime = Date.now();
   const summary: LambdaCleanerSummary = {
     options,

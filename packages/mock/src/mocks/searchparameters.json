@@ -60,7 +60,7 @@
     "code": "value-quantity",
     "base": ["Observation"],
     "type": "quantity",
-    "expression": "(Observation.value as Quantity) | (Observation.value as SampledData)"
+    "expression": "(Observation.value.ofType(Quantity)) | (Observation.value.ofType(SampledData))"
   },
   {
     "resourceType": "SearchParameter",
@@ -69,7 +69,7 @@
     "code": "value-string",
     "base": ["Observation"],
     "type": "string",
-    "expression": "(Observation.value as string) | (Observation.value as CodeableConcept).text"
+    "expression": "(Observation.value.ofType(string)) | (Observation.value.ofType(CodeableConcept)).text"
   },
   {
     "resourceType": "SearchParameter",

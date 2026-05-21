@@ -124,6 +124,8 @@ Because async batches are processed in the background, data is not immediately a
 | Data must be available immediately | Sync (ensure quota headroom or raise [`userFhirQuota`](/docs/rate-limits#how-to-view-and-configure-fhir-quota-rate-limits)) |
 | High-volume import where quota is the bottleneck | Async |
 
+For a full, step-by-step guide detailing how to submit and poll for the results of asynchronous operations, see **[Processing asynchronous bundles](/docs/fhir-datastore/processing-async-bundles)**.
+
 To opt into asynchronous handling of the batch request, add the `Prefer: respond-async` header to the HTTP request for
 the batch:
 

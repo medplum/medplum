@@ -59,7 +59,10 @@ describe('Project $rate-limits operation', () => {
     setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
-  test('Returns rate limit status for all project members', async () => {
+  test('Returns only active consumers when no membershipId specified', async () => {
+    // Generate FHIR activity so the admin membership is tracked as active
+    await request(app).get('/fhir/R4/Patient').set('Authorization', `Bearer ${admin.accessToken}`);
+
     const res = await request(app)
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
@@ -79,6 +82,29 @@ describe('Project $rate-limits operation', () => {
 
     const profiles = membershipParams.map((p) => p.part?.find((part) => part.name === 'profile')?.valueReference);
     expect(profiles.every((profile) => profile?.reference && profile?.display)).toBe(true);
+  });
+
+  test('Returns only the caller when no other active consumers', async () => {
+    // Create a fresh project — the only FHIR activity will be the $rate-limits call itself
+    const fresh = await withTestContext(() =>
+      registerNew({
+        firstName: 'Fresh',
+        lastName: 'Admin',
+        projectName: 'No Activity Project',
+        email: `fresh${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .get(`/fhir/R4/Project/${fresh.project.id}/$rate-limits`)
+      .set('Authorization', `Bearer ${fresh.accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as Parameters;
+    const membershipParams = getParametersByName(body, 'membership');
+    // The $rate-limits call itself consumes quota (recordSearch), so the caller appears as an active consumer
+    expect(membershipParams).toHaveLength(1);
   });
 
   test('Returns rate limit status for specific membership IDs', async () => {
@@ -150,6 +176,24 @@ describe('Project $rate-limits operation', () => {
       .set('Authorization', `Bearer ${nonAdmin.accessToken}`);
 
     expect(res.status).toBe(403);
+  });
+
+  test('Returns badRequest when a membership ID cannot be read', async () => {
+    const membershipsRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .set('X-Medplum', 'extended');
+    expect(membershipsRes.status).toBe(200);
+    const validId = (membershipsRes.body.entry[0].resource as ProjectMembership).id;
+
+    const missingId = randomUUID();
+    const res = await request(app)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${validId}&membershipId=${missingId}`)
+      .set('Authorization', `Bearer ${admin.accessToken}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue?.[0]?.details?.text).toContain(missingId);
+    expect(res.body.issue?.[0]?.details?.text).toContain('1 memberships');
   });
 
   test('Rejects membership from different project', async () => {

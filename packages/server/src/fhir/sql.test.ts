@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Client, PoolClient } from 'pg';
+import { globalLogger } from '../logger';
 import type { CTE, Operator } from './sql';
 import {
   Column,
@@ -271,7 +272,7 @@ describe('SqlBuilder', () => {
     });
 
     test('Debug mode', async () => {
-      console.log = jest.fn();
+      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const sql = new SqlBuilder();
       sql.debug = 'true';
@@ -283,7 +284,8 @@ describe('SqlBuilder', () => {
       } as unknown as Client;
 
       await sql.execute(conn);
-      expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+      expect(writeSpy).toHaveBeenCalledWith('sql SELECT "MyTable"."id" FROM "MyTable"');
+      writeSpy.mockRestore();
     });
 
     test('Empty insert is no-op', async () => {
@@ -398,7 +400,7 @@ test('isValidColumnName', () => {
 });
 
 test('debug', async () => {
-  const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
   const conn = {
     query: jest.fn(() => ({ rows: [] })),
@@ -414,17 +416,18 @@ test('debug', async () => {
 
   setSqlDebug('literally anything');
 
-  consoleLogSpy.mockClear();
+  writeSpy.mockClear();
   await executeQuery();
-  expect(consoleLogSpy).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+  expect(writeSpy).toHaveBeenCalledWith('sql SELECT "MyTable"."id" FROM "MyTable"');
 
   setSqlDebug(undefined);
 
-  consoleLogSpy.mockClear();
+  writeSpy.mockClear();
   await executeQuery();
-  expect(consoleLogSpy).not.toHaveBeenCalled();
+  expect(writeSpy).not.toHaveBeenCalled();
 
   resetSqlDebug();
+  writeSpy.mockRestore();
 });
 
 describe('truncateTextColumn', () => {

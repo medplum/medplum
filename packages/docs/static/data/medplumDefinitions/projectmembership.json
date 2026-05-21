@@ -226,6 +226,14 @@
       ],
       "referenceTypes": [
         {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
+        },
+        {
           "datatype": "User",
           "documentLocation": "medplum"
         }
@@ -543,6 +551,12 @@
       "type": "token",
       "description": "The identifier of the project membership",
       "expression": "ProjectMembership.identifier"
+    },
+    {
+      "name": "admin",
+      "type": "token",
+      "description": "The admin status of the project membership",
+      "expression": "ProjectMembership.admin"
     },
     {
       "name": "active",

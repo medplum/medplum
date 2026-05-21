@@ -1,25 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger } from '@medplum/core';
+import type { AgentChannelStats, AgentRttStats, ILogger } from '@medplum/core';
 import type { HeartbeatEmitter } from './types';
-
-/**
- * Interface for statistical data about message RTT (round-trip time).
- */
-export type RttStats = {
-  count: number;
-  min: number;
-  max: number;
-  average: number;
-  p50: number;
-  p95: number;
-  p99: number;
-  pendingCount: number;
-};
-
-export interface ChannelStats {
-  rtt: RttStats;
-}
 
 export interface ChannelStatsTrackerOptions {
   /** Maximum number of RTT samples to keep (default: 1000). */
@@ -35,7 +17,7 @@ export interface ChannelStatsTrackerOptions {
 }
 
 /**
- * ChannelStats tracks message round-trip time (RTT) statistics.
+ * ChannelStatsTracker tracks message round-trip time (RTT) statistics.
  * It correlates outgoing messages with their acknowledgements to calculate RTT,
  * and provides percentile-based statistics (p99, p95, average, min, max).
  * Messages are only kept in memory as long as needed for correlation.
@@ -137,9 +119,9 @@ export class ChannelStatsTracker {
 
   /**
    * Gets current statistics about message RTT.
-   * @returns RttStats object containing all statistics.
+   * @returns AgentRttStats object containing all statistics.
    */
-  getRttStats(): RttStats {
+  getRttStats(): AgentRttStats {
     return calculateRttStats(this.completedRtts, this.pendingMessages.size);
   }
 
@@ -147,7 +129,7 @@ export class ChannelStatsTracker {
    * Gets all current channel statistics.
    * @returns All current channel statistics.
    */
-  getStats(): ChannelStats {
+  getStats(): AgentChannelStats {
     return { rtt: this.getRttStats() };
   }
 
@@ -184,7 +166,7 @@ export class ChannelStatsTracker {
   }
 
   /**
-   * Cleans up the ChannelStats instance.
+   * Cleans up the ChannelStatsTracker instance.
    */
   cleanup(): void {
     this.heartbeatEmitter.removeEventListener('heartbeat', this.heartbeatListener);
@@ -211,9 +193,9 @@ export function calculatePercentile(rttSamples: number[], percentile: number): n
  * Gets current statistics about message RTT.
  * @param rttSamples - The samples to calculate the RTT stats for.
  * @param pendingCount - The current pending count for related messages.
- * @returns RttStats object containing all statistics.
+ * @returns AgentRttStats object containing all statistics.
  */
-export function calculateRttStats(rttSamples: number[], pendingCount: number): RttStats {
+export function calculateRttStats(rttSamples: number[], pendingCount: number): AgentRttStats {
   const count = rttSamples.length;
 
   if (count === 0) {

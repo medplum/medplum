@@ -57,9 +57,17 @@ tsconfig.build.tsbuildinfo
 *.p12
 
 # Agent artifacts
+packages/agent/agent.properties
+packages/agent/src/.*-audit.json
 packages/agent/*agent-*-linux*
 packages/agent/sea-prep.blob
 packages/agent/src/upgrader-logs-*.txt
+packages/agent/src/medplum-agent-main-*.log
+packages/agent/src/medplum-agent-channels-*.log
+packages/agent/src/stop-service-logs-*.txt
+
+# CLI bulk-export downloads (default cwd when targetDirectory is omitted)
+packages/cli/*.ndjson
 
 # Local .terraform directories
 **/.terraform/*
