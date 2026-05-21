@@ -9,7 +9,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, SegmentedControl, Title } from '@mantine/core';
+import { Button, Group, SegmentedControl, Title, useMantineColorScheme } from '@mantine/core';
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
@@ -68,6 +68,7 @@ export function Calendar(props: {
   onSelectAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: Range) => void;
 }): JSX.Element {
+  const { colorScheme } = useMantineColorScheme();
   const controller = useCalendarController();
   const { onSelectAppointment, onSelectSlot } = props;
 
@@ -160,6 +161,7 @@ export function Calendar(props: {
         }
         slotMinHeight={35}
         eventClass={(evt) => (evt.isInteractive ? classes.interactiveEvent : undefined)}
+        colorScheme={colorScheme}
         nowIndicator
       />
     </div>
