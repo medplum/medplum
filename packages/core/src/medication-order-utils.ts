@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { CodeableConcept, Medication, MedicationRequest, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type {
+  CodeableConcept,
+  Medication,
+  MedicationRequest,
+  Parameters,
+  ParametersParameter,
+} from '@medplum/fhirtypes';
 import { isResource } from './types';
 import { getExtensionValue, getIdentifier } from './utils';
 
