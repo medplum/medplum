@@ -12,7 +12,7 @@ import {
   IconMoon,
   IconPalette,
   IconSettings,
-  IconSun,
+  IconSunHigh,
   IconSwitchHorizontal,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -24,9 +24,9 @@ import classes from './HeaderDropdown.module.css';
 const MENU_ICON_COLOR = 'var(--mantine-color-dimmed)';
 
 const THEME_OPTIONS: { value: string; label: JSX.Element }[] = [
+  { value: 'light', label: <ThemeOptionLabel Icon={IconSunHigh} label="Light" /> },
+  { value: 'auto', label: <ThemeOptionLabel Icon={IconDeviceDesktop} label="System" /> },
   { value: 'dark', label: <ThemeOptionLabel Icon={IconMoon} label="Dark" /> },
-  { value: 'light', label: <ThemeOptionLabel Icon={IconSun} label="Light" /> },
-  { value: 'auto', label: <ThemeOptionLabel Icon={IconDeviceDesktop} label="Auto" /> },
 ];
 
 function ThemeOptionLabel({ Icon, label }: { Icon: TablerIcon; label: string }): JSX.Element {
