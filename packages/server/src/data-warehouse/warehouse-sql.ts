@@ -129,37 +129,38 @@ export function buildInsertIntoSelectQuery(
   });
 }
 
+
 /**
- * Projects a Medplum history Postgres table into the warehouse column layout.
- *
- * Rows are ordered by source `"lastUpdated"` so writers (Iceberg INSERT, Parquet COPY) emit
- * physically sorted data for time-range locality within files.
+ * Constructs a SQL `SELECT` query from a Medplum history Postgres table and extracts the project_id.
+ * using the DuckDB's JSON functionality.  This minimizes the load on the source database.
  *
  * @param sourceHistoryTable - Postgres table identifier exactly as stored (e.g. `Patient_history` or `Patient_History`).
  * @param sourcePredicate - SQL boolean expression (joined with `AND` after non-empty content filter).
- * @returns DuckDB `SELECT` statement text (no trailing semicolon).
+ * @returns `SELECT` with a subquery and outer `json_extract_string` projection.
  */
-export function buildProjectedSelectFromHistoryTableQuery(
+export function buildSelectFromHistoryTableQuery(
   sourceHistoryTable: string,
   sourcePredicate: Expression
 ): SelectQuery {
   const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
   const col = (name: string, alias?: string): Column => new Column(table, name, false, alias);
-  const escapedProjectIdPath = PROJECT_ID_JSON_PATH;
-  const query = new SelectQuery(table);
-  query
+
+  const inner = new SelectQuery(table)
     .column('id')
     .column(col('versionId', 'version_id'))
     .column('content')
     .column(col('lastUpdated', 'last_updated'))
-    // duckdb only allows json_extract_string() on JSON content
-    .raw(`json_extract_string(content, '${escapedProjectIdPath}') AS project_id`)
-    // ...and you can't call json_extract_string() on non-JSON content
     .where('content', '!=', null)
     .where('content', '!=', '')
     .whereExpr(sourcePredicate)
     .orderBy('lastUpdated');
-  return query;
+
+  return new SelectQuery('src', inner)
+    .column('id')
+    .column('version_id')
+    .column('content')
+    .column('last_updated')
+    .raw(`json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') AS project_id`);
 }
 
 export function buildProjectedSelectFromHistoryTable(
@@ -167,7 +168,7 @@ export function buildProjectedSelectFromHistoryTable(
   sourcePredicate: Expression
 ): SqlBuilder {
   return buildSqlBuilder((sql) =>
-    sql.appendExpression(buildProjectedSelectFromHistoryTableQuery(sourceHistoryTable, sourcePredicate))
+    sql.appendExpression(buildSelectFromHistoryTableQuery(sourceHistoryTable, sourcePredicate))
   );
 }
 

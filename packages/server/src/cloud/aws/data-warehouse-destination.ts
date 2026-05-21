@@ -14,7 +14,7 @@ import {
   buildManagedIcebergQualifiedTable,
   buildManagedIcebergSetupQueries,
   buildMaxLastUpdatedWatermarkPredicate,
-  buildProjectedSelectFromHistoryTableQuery,
+  buildSelectFromHistoryTableQuery,
   runParameterizedWarehouseSql,
 } from '../../data-warehouse/warehouse-sql';
 import type { Expression } from '../../fhir/sql';
@@ -60,7 +60,7 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
 
   async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(context.namespace, context.tableSpec.icebergTable);
-    const projectedSelectQuery = buildProjectedSelectFromHistoryTableQuery(
+    const projectedSelectQuery = buildSelectFromHistoryTableQuery(
       context.tableSpec.postgresTable,
       context.sourcePredicate
     );

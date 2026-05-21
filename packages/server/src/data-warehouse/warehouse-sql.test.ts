@@ -7,21 +7,34 @@ import {
   buildInsertIntoSelectQuery,
   buildMaxLastUpdatedWatermarkPredicate,
   buildProjectedSelectFromHistoryTable,
-  buildProjectedSelectFromHistoryTableQuery,
+  buildSelectFromHistoryTableQuery,
   buildTrueSourcePredicate,
 } from './warehouse-sql';
 
 describe('warehouse SQL query builders', () => {
-  test('buildProjectedSelectFromHistoryTableQuery uses SelectQuery to build projected history SQL', () => {
+
+  test('buildProjectedSelectFromHistoryTableQueryWithSubquery keeps json_extract_string in outer DuckDB layer', () => {
     const sourcePredicate = new Constant(`"lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z'`);
-    const query = buildProjectedSelectFromHistoryTableQuery('Patient_history', sourcePredicate);
+    const query = buildSelectFromHistoryTableQuery('Patient_history', sourcePredicate);
     const sql = new SqlBuilder();
     sql.appendExpression(query);
 
     expect(sql.toString()).toBe(
-      `SELECT "pg_db"."Patient_history"."id", "pg_db"."Patient_history"."versionId" AS "version_id", "pg_db"."Patient_history"."content", "pg_db"."Patient_history"."lastUpdated" AS "last_updated", json_extract_string(content, '$.meta.project') AS project_id FROM "pg_db"."Patient_history" WHERE ("pg_db"."Patient_history"."content" IS NOT NULL AND "pg_db"."Patient_history"."content" <> $1 AND "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') ORDER BY "pg_db"."Patient_history"."lastUpdated"`
+      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_history"."id", "pg_db"."Patient_history"."versionId" AS "version_id", "pg_db"."Patient_history"."content", "pg_db"."Patient_history"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_history" WHERE ("pg_db"."Patient_history"."content" IS NOT NULL AND "pg_db"."Patient_history"."content" <> $1 AND "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') ORDER BY "pg_db"."Patient_history"."lastUpdated") AS "src"`
     );
     expect(sql.getValues()).toStrictEqual(['']);
+  });
+
+  test('buildInsertIntoSelectQuery with subquery projection builds insert-select SQL', () => {
+    const projectedSelectQuery = buildSelectFromHistoryTableQuery(
+      'Patient_history',
+      buildTrueSourcePredicate()
+    );
+    const insertQuery = buildInsertIntoSelectQuery('iceberg_catalog.default.patient_history', projectedSelectQuery);
+    expect(insertQuery.toString()).toBe(
+      `INSERT INTO "iceberg_catalog"."default"."patient_history" ("id", "version_id", "content", "last_updated", "project_id") SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_history"."id", "pg_db"."Patient_history"."versionId" AS "version_id", "pg_db"."Patient_history"."content", "pg_db"."Patient_history"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_history" WHERE ("pg_db"."Patient_history"."content" IS NOT NULL AND "pg_db"."Patient_history"."content" <> $1 AND TRUE) ORDER BY "pg_db"."Patient_history"."lastUpdated") AS "src"`
+    );
+    expect(insertQuery.getValues()).toStrictEqual(['']);
   });
 
   test('buildProjectedSelectFromHistoryTable accepts source table strings directly', () => {
@@ -36,18 +49,6 @@ describe('warehouse SQL query builders', () => {
       `SELECT COUNT(*) AS count FROM "pg_db"."Patient_history" WHERE ("pg_db"."Patient_history"."content" IS NOT NULL AND "pg_db"."Patient_history"."content" <> $1 AND TRUE)`
     );
     expect(countQuery.getValues()).toStrictEqual(['']);
-  });
-
-  test('buildInsertIntoSelectQuery uses InsertQuery for insert-select SQL', () => {
-    const projectedSelectQuery = buildProjectedSelectFromHistoryTableQuery(
-      'Patient_history',
-      buildTrueSourcePredicate()
-    );
-    const insertQuery = buildInsertIntoSelectQuery('s3_tables_db.default.patient_history', projectedSelectQuery);
-    expect(insertQuery.toString()).toBe(
-      `INSERT INTO "s3_tables_db"."default"."patient_history" ("id", "version_id", "content", "last_updated", "project_id") SELECT "pg_db"."Patient_history"."id", "pg_db"."Patient_history"."versionId" AS "version_id", "pg_db"."Patient_history"."content", "pg_db"."Patient_history"."lastUpdated" AS "last_updated", json_extract_string(content, '$.meta.project') AS project_id FROM "pg_db"."Patient_history" WHERE ("pg_db"."Patient_history"."content" IS NOT NULL AND "pg_db"."Patient_history"."content" <> $1 AND TRUE) ORDER BY "pg_db"."Patient_history"."lastUpdated"`
-    );
-    expect(insertQuery.getValues()).toStrictEqual(['']);
   });
 
   test('buildMaxLastUpdatedWatermarkPredicate builds predicate from ORM subquery', () => {
