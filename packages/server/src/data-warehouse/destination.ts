@@ -27,7 +27,7 @@ export interface DataWarehouseDestination {
   getSetupQueries(connectionString: string): string[];
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
   buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression;
-  writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<void>;
+  writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number>;
   /**
    * For local destinations, use the path to the Parquet file
    * For Iceberg, you'll use the Iceberg table name
@@ -58,13 +58,13 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
     return buildTrueSourcePredicate();
   }
 
-  async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<void> {
+  async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {
     const parquetPath = this.getParquetPathForTable(context.tableSpec);
     const projectedSelect = buildProjectedSelectFromHistoryTable(
       context.tableSpec.postgresTable,
       context.sourcePredicate
     );
-    await runParameterizedWarehouseSql(connection, buildCopySelectToParquetQuery(projectedSelect, parquetPath));
+    return runParameterizedWarehouseSql(connection, buildCopySelectToParquetQuery(projectedSelect, parquetPath));
   }
 
   getDestinationName(tableSpec: WarehouseSourceTable): string {

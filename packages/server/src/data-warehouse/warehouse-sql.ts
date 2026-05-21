@@ -39,9 +39,13 @@ export interface ManagedIcebergAttachOptions {
   namespace?: string;
 }
 
+export interface DuckdbMaterializedResult {
+  rowCount: number;
+}
+
 export interface DuckdbPreparedStatement {
   bindValue(index: number, value: unknown): void;
-  run(): Promise<unknown>;
+  run(): Promise<DuckdbMaterializedResult>;
   runAndReadAll(): Promise<{ getRowObjectsJson(): unknown[] }>;
 }
 
@@ -63,13 +67,14 @@ export function buildTrueSourcePredicate(): Expression {
 export async function runParameterizedWarehouseSql(
   connection: Pick<DuckdbConnection, 'prepare'>,
   query: SqlBuilder
-): Promise<unknown> {
+): Promise<number> {
   const statement = await connection.prepare(query.toString());
   const values = query.getValues();
   for (let i = 0; i < values.length; i++) {
     statement.bindValue(i + 1, values[i]);
   }
-  return statement.run();
+  const result = await statement.run();
+  return result.rowCount;
 }
 
 export async function runParameterizedWarehouseSqlReadAll(

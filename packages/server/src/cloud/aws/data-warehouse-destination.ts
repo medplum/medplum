@@ -58,14 +58,14 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg);
   }
 
-  async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<void> {
+  async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(context.namespace, context.tableSpec.icebergTable);
     const projectedSelectQuery = buildProjectedSelectFromHistoryTableQuery(
       context.tableSpec.postgresTable,
       context.sourcePredicate
     );
     const insertQuery = buildInsertIntoSelectQuery(qualifiedIceberg, projectedSelectQuery);
-    await runParameterizedWarehouseSql(connection, insertQuery);
+    return runParameterizedWarehouseSql(connection, insertQuery);
   }
 
   getDestinationName(tableSpec: WarehouseSourceTable): string {
