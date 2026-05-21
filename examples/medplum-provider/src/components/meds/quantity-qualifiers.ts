@@ -123,7 +123,11 @@ const QUALIFIER_SYNONYMS_BY_NAME: Readonly<Record<string, SynonymGroup | null>> 
   'international unit': null,
 };
 
-/** Escape a string for use as a literal inside a RegExp pattern. */
+/**
+ * Escape a string for use as a literal inside a RegExp pattern.
+ * @param text - Raw catalog name or other user-supplied substring.
+ * @returns The same string with regex metacharacters escaped.
+ */
 function escapeRegexLiteral(text: string): string {
   // RegExp.escape (ES2025) lands in Node 23+; CI still runs Node 22.
   if (typeof RegExp.escape === 'function') {
