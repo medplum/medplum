@@ -198,7 +198,7 @@ export abstract class FhirRepository {
    * @param callback - The callback function to be run within a transaction.
    */
   abstract withTransaction<TResult>(
-    callback: () => Promise<TResult>,
+    callback: (txRepo: this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult>;
 
@@ -264,8 +264,8 @@ export abstract class FhirRepository {
     search.sortRules = undefined;
 
     return this.withTransaction(
-      async () => {
-        const matches = await this.searchResources(search);
+      async (txRepo) => {
+        const matches = await txRepo.searchResources(search);
         if (matches.length === 1) {
           const existing = matches[0];
           if (!options?.assignedId && resource.id && resource.id !== existing.id) {
@@ -278,7 +278,7 @@ export abstract class FhirRepository {
           throw new OperationOutcomeError(multipleMatches);
         }
 
-        const createdResource = await this.createResource(resource, options);
+        const createdResource = await txRepo.createResource(resource, options);
         return { resource: createdResource, outcome: created };
       },
       { serializable: true } // Requires strong transactional guarantees to ensure unique resource creation
@@ -317,15 +317,15 @@ export abstract class FhirRepository {
     search.sortRules = undefined;
 
     return this.withTransaction(
-      async () => {
-        const matches = await this.searchResources(search);
+      async (txRepo) => {
+        const matches = await txRepo.searchResources(search);
         if (matches.length === 0) {
           if (resource.id && !options?.assignedId) {
             throw new OperationOutcomeError(
               badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
             );
           }
-          const createdResource = await this.createResource(resource, options);
+          const createdResource = await txRepo.createResource(resource, options);
           return { resource: createdResource, outcome: created };
         } else if (matches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
@@ -338,7 +338,7 @@ export abstract class FhirRepository {
           );
         }
 
-        const updated = await this.updateResource({ ...resource, id: existing.id }, options);
+        const updated = await txRepo.updateResource({ ...resource, id: existing.id }, options);
         return { resource: updated, outcome: allOk };
       },
       { serializable: true }
@@ -364,8 +364,8 @@ export abstract class FhirRepository {
     search.sortRules = undefined;
 
     await this.withTransaction(
-      async () => {
-        const matches = await this.searchResources(search);
+      async (txRepo) => {
+        const matches = await txRepo.searchResources(search);
         if (matches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
         } else if (!matches.length) {
@@ -373,7 +373,7 @@ export abstract class FhirRepository {
         }
 
         const resource = matches[0];
-        await this.deleteResource(resource.resourceType, resource.id);
+        await txRepo.deleteResource(resource.resourceType, resource.id);
       },
       { serializable: true }
     );
@@ -385,8 +385,8 @@ export abstract class FhirRepository {
     search.sortRules = undefined;
 
     return this.withTransaction(
-      async () => {
-        const matches = await this.searchResources(search);
+      async (txRepo) => {
+        const matches = await txRepo.searchResources(search);
         if (matches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
         } else if (!matches.length) {
@@ -394,7 +394,7 @@ export abstract class FhirRepository {
         }
 
         const resource = matches[0];
-        return this.patchResource(resource.resourceType, resource.id, patch);
+        return txRepo.patchResource(resource.resourceType, resource.id, patch);
       },
       { serializable: true }
     );
@@ -644,9 +644,9 @@ export class MemoryRepository extends FhirRepository {
     this.resources.get(resourceType)?.delete(id);
   }
 
-  withTransaction<TResult>(callback: () => Promise<TResult>): Promise<TResult> {
+  withTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
     // MockRepository currently does not support transactions
-    return callback();
+    return callback(this);
   }
 }
 

@@ -86,8 +86,8 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
 
 async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
   const systemRepo = await getProjectSystemRepo(project);
-  return systemRepo.withTransaction(async () => {
-    let user = await systemRepo.readResource<User>('User', userId);
+  return systemRepo.withTransaction(async (txRepo) => {
+    let user = await txRepo.readResource<User>('User', userId);
     if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -98,13 +98,13 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
     const oldEmail = user.email;
     user.email = params.email;
     user.emailVerified = false;
-    user = await systemRepo.updateResource(user);
+    user = await txRepo.updateResource(user);
 
     if (!params.skipEmailVerification) {
-      const { id, secret } = await verifyEmail(user);
+      const { id, secret } = await verifyEmail(txRepo, user, undefined);
       const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 
-      await sendEmail(systemRepo, {
+      await sendEmail(txRepo, {
         to: params.email,
         subject: 'Medplum Email Address Updated',
         text: [
@@ -125,7 +125,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
 
     if (params.updateProfileTelecom && user.project?.reference) {
       // Get membership for Project-scoped User
-      const membership = await systemRepo.searchOne<ProjectMembership>({
+      const membership = await txRepo.searchOne<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
           { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
@@ -134,7 +134,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       });
 
       if (membership) {
-        const profile = await systemRepo.readReference(membership.profile);
+        const profile = await txRepo.readReference(membership.profile);
         if (profileTypesWithTelecom.includes(profile.resourceType)) {
           let telecom = (profile as ProfileResource).telecom;
           // Add new email if not already present
@@ -149,7 +149,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
           }
           (profile as ProfileResource).telecom = telecom;
 
-          await systemRepo.updateResource(profile);
+          await txRepo.updateResource(profile);
         }
       }
     }

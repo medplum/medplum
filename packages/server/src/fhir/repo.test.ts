@@ -1550,8 +1550,8 @@ describe('FHIR Repo', () => {
     await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
       releaseSpy = jest.spyOn(client, 'release');
 
-      await repo.withTransaction(async (txClient) => {
-        expect(txClient).toBe(client);
+      await repo.withTransaction(async (txRepo) => {
+        expect(txRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
       });
 
       expect(releaseSpy).not.toHaveBeenCalled();
@@ -2070,7 +2070,7 @@ describe('FHIR Repo', () => {
       await repo.withTransaction(async (txRepo) => {
         const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
         const querySpy = jest.spyOn(client, 'query');
-        await repo.createResource(patient);
+        await txRepo.createResource(patient);
         const calls = querySpy.mock.calls;
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
@@ -2255,11 +2255,12 @@ describe('FHIR Repo', () => {
       const { repo } = await createTestProject({ withRepo: true });
 
       let checked = false;
-      await repo.withTransaction(async (client) => {
-        // starting a transaction will have pinned a connection to `repo`.
+      await repo.withTransaction(async (txRepo) => {
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+        // starting a transaction will have pinned a connection to `txRepo`.
         // so ensure that cloning after that pinning does not propagate the pinned connection
         // to the cloned repository.
-        const clonedRepo1 = repo.clone();
+        const clonedRepo1 = txRepo.clone();
         expect(clonedRepo1.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(client);
         checked = true;
       });
