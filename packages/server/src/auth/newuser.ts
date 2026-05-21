@@ -130,9 +130,9 @@ export async function createUser(request: NewUserRequest): Promise<WithId<User>>
 
 async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
   const redirectUri = concatUrls(getConfig().appBaseUrl, `register?login=${login.id}`);
-  const { id, secret } = await verifyEmail(user, redirectUri);
-  const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
   const systemRepo = getGlobalSystemRepo();
+  const { id, secret } = await verifyEmail(systemRepo, user, redirectUri);
+  const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
   await sendEmail(systemRepo, {
     to: user.email,
     subject: 'Medplum Email Verification',
