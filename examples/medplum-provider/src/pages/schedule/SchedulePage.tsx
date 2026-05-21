@@ -230,7 +230,7 @@ export function SchedulePage(): JSX.Element | null {
   const schedulingEnabled = project?.features?.includes('scheduling');
 
   return (
-    <Box pos="relative" bg="white" p="md" style={{ height }}>
+    <Box pos="relative" className={classes.page} p="md" style={{ height }}>
       <div className={classes.wrapper}>
         <Group justify="space-between">
           <Box mb="sm" w={320}>
