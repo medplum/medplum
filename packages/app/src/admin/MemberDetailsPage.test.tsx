@@ -77,9 +77,7 @@ describe('MemberDetailsPage', () => {
     renderAppRoutes(medplum, `/admin/users/${membership.id}`);
 
     expect(await screen.findByText('User Details')).toBeInTheDocument();
-    expect(
-      screen.getByText('This User is server-scoped and cannot be viewed in this project.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('This User is server-scoped and cannot be viewed in this project.')).toBeInTheDocument();
   });
 
   test('Does not show User Details for Bot membership', async () => {
