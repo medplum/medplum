@@ -11,11 +11,7 @@ import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseDestination } from './destination';
 import type { DuckdbConnection } from './warehouse-sql';
-import {
-  buildCountFromHistoryTableQuery,
-  DEFAULT_NAMESPACE,
-  runParameterizedWarehouseSqlReadAll,
-} from './warehouse-sql';
+import { DEFAULT_NAMESPACE } from './warehouse-sql';
 
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
@@ -65,27 +61,47 @@ async function runWarehouseTableSync(
 ): Promise<SyncResourceResult[]> {
   const results: SyncResourceResult[] = [];
 
-  for (const spec of options.warehouseSources) {
-    const { postgresTable, icebergTable } = spec;
+  const total = options.warehouseSources.length;
+
+  // general logging of the sync start
+  globalLogger.info('Starting warehouse sync', {
+    tableCount: total,
+    warehouseSources: options.warehouseSources.map((spec) => ({
+      icebergTable: spec.icebergTable,
+      postgresTable: spec.postgresTable,
+    })),
+  });
+
+  // now looping through each table (alphabetically)
+  for (const [index, spec] of options.warehouseSources.entries()) {
+    const { icebergTable, postgresTable } = spec;
+    const tableNumber = index + 1;
     const sourcePredicate = options.destination.buildSourcePredicate(spec, namespace);
     const resultTableName = options.destination.getDestinationName(spec);
     await options.destination.ensureTargetExists(spec, namespace);
 
-    const countReader = await runParameterizedWarehouseSqlReadAll(
-      connection,
-      buildCountFromHistoryTableQuery(postgresTable, sourcePredicate)
-    );
-    const count = Number((countReader.getRowObjectsJson() as { count: number }[])[0]?.count ?? 0);
+    await logSyncProgress(options, `Syncing warehouse table ${tableNumber} of ${total}: ${icebergTable}`, {
+      tableNumber,
+      total,
+      icebergTable,
+      postgresTable,
+      table: resultTableName,
+    });
+
+    const count = await options.destination.writeRows(connection, {
+      tableSpec: spec,
+      namespace,
+      sourcePredicate,
+    });
 
     if (count > 0) {
-      await logSyncProgress(options, `Syncing ${icebergTable}: ${count} row(s)`, {
+      await logSyncProgress(options, `Synced ${icebergTable}: ${count} row(s)`, {
         table: resultTableName,
         icebergTable,
         count,
       });
-      await options.destination.writeRows(connection, { tableSpec: spec, namespace, sourcePredicate });
     } else {
-      await logSyncProgress(options, `Skipping ${icebergTable}: no new rows`, {
+      await logSyncProgress(options, `Skipped ${icebergTable}: no new rows`, {
         table: resultTableName,
         icebergTable,
         count,
