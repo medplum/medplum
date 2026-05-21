@@ -95,14 +95,10 @@ interface ClaimReviewPanelProps {
   patient: WithId<Patient>;
   conditions: Condition[];
   practitioner: WithId<Practitioner> | undefined;
-  submitting: boolean;
   insuranceCoverages: WithId<Coverage>[];
   selectedCoverage: WithId<Coverage> | undefined;
   selfPayCoverage: WithId<Coverage> | undefined;
   initialBillingType: BillingType;
-  showCandidButton?: boolean;
-  showStediButton?: boolean;
-  stediSubmitting?: boolean;
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
@@ -114,14 +110,10 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
     patient,
     conditions,
     practitioner,
-    submitting,
     insuranceCoverages,
     selectedCoverage,
     selfPayCoverage,
     initialBillingType,
-    showCandidButton,
-    showStediButton,
-    stediSubmitting,
     onClose,
     onSubmitClaim,
     onSubmitToStedi,
@@ -272,28 +264,24 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
       </Grid>
 
       <Group justify="flex-end">
-        {showStediButton && (
+       
           <Button
             size="md"
             variant="outline"
             rightSection={<IconArrowUpRight size={16} />}
-            disabled={submitting || !canSubmit}
+            disabled={!canSubmit}
             onClick={handleSubmitToStedi}
           >
             Submit to Stedi
           </Button>
-        )}
-        {showCandidButton !== false && (
           <Button
             size="md"
             rightSection={<IconArrowUpRight size={16} />}
-            loading={submitting}
-            disabled={!canSubmit || !!stediSubmitting}
+            disabled={!canSubmit}
             onClick={handleConfirm}
           >
             Submit to Candid
           </Button>
-        )}
       </Group>
     </Stack>
   );
@@ -301,7 +289,6 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
 
 export interface SubmitClaimModalProps {
   opened: boolean;
-  submitting: boolean;
   coverages: WithId<Coverage>[];
   selectedCoverage: WithId<Coverage> | undefined;
   patient: WithId<Patient>;
@@ -309,7 +296,6 @@ export interface SubmitClaimModalProps {
   practitioner: WithId<Practitioner> | undefined;
   showCandidButton?: boolean;
   showStediButton?: boolean;
-  stediSubmitting?: boolean;
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
@@ -319,15 +305,11 @@ export interface SubmitClaimModalProps {
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
   const {
     opened,
-    submitting,
     coverages,
     selectedCoverage,
     patient,
     conditions,
     practitioner,
-    showCandidButton = true,
-    showStediButton,
-    stediSubmitting,
     onClose,
     onSubmitClaim,
     onSubmitToStedi,
@@ -347,14 +329,10 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
           patient={patient}
           conditions={conditions}
           practitioner={practitioner}
-          submitting={submitting}
           insuranceCoverages={insuranceCoverages}
           selectedCoverage={selectedCoverage}
           selfPayCoverage={selfPayCoverage}
           initialBillingType={initialBillingType}
-          showCandidButton={showCandidButton}
-          showStediButton={showStediButton}
-          stediSubmitting={stediSubmitting}
           onClose={onClose}
           onSubmitClaim={onSubmitClaim}
           onSubmitToStedi={onSubmitToStedi}
