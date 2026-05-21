@@ -123,7 +123,7 @@ export async function createProject(
   const config = getConfig();
 
   log.info('Project creation request received', { name: projectName });
-  const project = await systemRepo.createResource<Project>({
+  let project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
     owner: admin ? createReference(admin) : undefined,
@@ -143,7 +143,7 @@ export async function createProject(
   });
 
   const accessPolicy = await createDefaultPatientAccessPolicy(systemRepo, project);
-  await systemRepo.updateResource<Project>({
+  project = await systemRepo.updateResource<Project>({
     ...project,
     defaultPatientAccessPolicy: createReference(accessPolicy),
   });
