@@ -260,7 +260,7 @@ const unguardedRepositoryMethods = new Set<PropertyKey>([
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends FhirRepository<PoolClient> implements Disposable {
+export class Repository extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly ownsConnection: boolean;
@@ -757,7 +757,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
-        result = await this.withTransaction((_client, txRepo) => txRepo.updateResourceImpl(resource, false, options));
+        result = await this.withTransaction((txRepo) => txRepo.updateResourceImpl(resource, false, options));
       } else {
         result = await this.updateResourceImpl(resource, false, options);
       }
@@ -989,7 +989,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
-    await this.ensureInTransaction(async (client, txRepo) => {
+    await this.ensureInTransaction(async (txRepo) => {
+      const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
       await txRepo.writeResource(client, resource);
       await txRepo.writeResourceVersion(client, resource);
       await txRepo.writeLookupTables(client, resource, create);
@@ -1061,9 +1062,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.withTransaction(async (conn, txRepo) => {
+    await this.withTransaction(async (txRepo) => {
       const resource = await txRepo.readResourceImpl<T>(resourceType, id);
-      return txRepo.reindexResources(conn, [resource]);
+      return txRepo.reindexResources([resource]);
     });
   }
 
@@ -1071,10 +1072,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Internal implementation of reindexing a resource.
    * This accepts a resource as a parameter, rather than a resource type and ID.
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
-   * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+  async reindexResources<T extends Resource>(resources: WithId<T>[]): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1092,8 +1092,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    await this.batchWriteLookupTables(conn, resources, false);
-    await this.batchWriteResources(conn, resources);
+    await this.batchWriteLookupTables(resources, false);
+    await this.batchWriteResources(resources);
   }
 
   /**
@@ -1185,10 +1185,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       if (!this.isCacheOnly(resource)) {
-        await this.ensureInTransaction(async (conn, txRepo) => {
+        await this.ensureInTransaction(async (txRepo) => {
           const columns = buildDeletedResourceRow(resourceType, id, resource.meta?.project);
 
-          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+          const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
 
           await new InsertQuery(resourceType + '_History', [
             {
@@ -1197,9 +1198,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
               lastUpdated: columns.lastUpdated,
               content: columns.content,
             },
-          ]).execute(conn);
+          ]).execute(client);
 
-          await txRepo.deleteFromLookupTables(conn, resource);
+          await txRepo.deleteFromLookupTables(client, resource);
           const durationMs = Date.now() - startTime;
 
           await txRepo.postCommit(async () => {
@@ -1234,7 +1235,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const startTime = Date.now();
     try {
-      return await this.ensureInTransaction(async (_client, txRepo) => {
+      return await this.ensureInTransaction(async (txRepo) => {
         const resource = await txRepo.readResourceFromDatabase<T>(resourceType, id);
 
         if (resource.resourceType !== resourceType) {
@@ -1293,11 +1294,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
     const deletedIds = await this.withTransaction<string[]>(
-      async (client, txRepo) => {
+      async (txRepo) => {
         const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
         if (projectId) {
           deleteQuery.where('projectId', '=', projectId);
         }
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
         const deleteResult = await deleteQuery.execute<{ id: string }>(client);
         if (deleteResult.length === 0) {
           return [];
@@ -1572,16 +1574,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+  private async writeResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
     const row = buildResourceRow(resource, Repository.VERSION);
     await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
   }
 
-  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  private async batchWriteResources(resources: Resource[]): Promise<void> {
     if (!resources.length) {
       return;
     }
 
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     await new InsertQuery(
       resources[0].resourceType,
       resources.map((r) => buildResourceRow(r, Repository.VERSION))
@@ -1595,7 +1598,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
+  private async writeResourceVersion(client: Pool | PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
@@ -1670,17 +1673,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+  private async writeLookupTables(
+    client: Pool | PoolClient,
+    resource: WithId<Resource>,
+    create: boolean
+  ): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
     }
   }
 
-  private async batchWriteLookupTables<T extends Resource>(
-    client: PoolClient,
-    resources: WithId<T>[],
-    create: boolean
-  ): Promise<void> {
+  private async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     for (const lookupTable of lookupTables) {
       await lookupTable.batchIndexResources(client, resources, create);
     }
@@ -2116,13 +2120,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async withTransaction<TResult>(
-    callback: (client: PoolClient, repo: this) => Promise<TResult>,
+    callback: (repo: this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     const transactionRepo = this.createTransactionScopedRepo();
     this.transactionChildRepo = transactionRepo;
     try {
-      return await this.connection.withTransaction((client) => callback(client, transactionRepo), options);
+      return await this.connection.withTransaction(() => callback(transactionRepo), options);
     } finally {
       this.transactionChildRepo = undefined;
     }
@@ -2224,18 +2228,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await deleteResourceCacheEntries(resourceType, ids);
   }
 
-  async ensureInTransaction<TResult>(callback: (client: PoolClient, repo: this) => Promise<TResult>): Promise<TResult> {
+  async ensureInTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
     if (this.connection.isInTransaction()) {
-      return this.connection.ensureInTransaction((client) => callback(client, this));
+      return callback(this);
     }
 
-    const transactionRepo = this.createTransactionScopedRepo();
-    this.transactionChildRepo = transactionRepo;
-    try {
-      return await this.connection.ensureInTransaction((client) => callback(client, transactionRepo));
-    } finally {
-      this.transactionChildRepo = undefined;
-    }
+    return this.withTransaction(callback);
   }
 
   getConfig(): RepositoryContext {

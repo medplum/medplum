@@ -459,15 +459,6 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
-    if (this.transactionDepth) {
-      const client = await this.getConnection(DatabaseMode.WRITER);
-      return callback(client);
-    } else {
-      return this.withTransaction(callback);
-    }
-  }
-
   async preCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
       this.preCommitCallbacks.push(fn);
