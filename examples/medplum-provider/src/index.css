@@ -65,8 +65,9 @@
   border-radius: var(--mantine-radius-sm);
 }
 
-.mantine-Menu-item:hover {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-8));
+.mantine-Menu-item:hover,
+.mantine-Menu-item[data-hovered] {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
 .filter-submenu-dropdown {
