@@ -177,8 +177,14 @@ export async function initTestAuth(options?: TestProjectOptions): Promise<string
 
 export async function addTestUser(
   project: WithId<Project>,
-  accessPolicy?: AccessPolicy
+  options?: {
+    accessPolicy?: AccessPolicy;
+    resourceType?: 'Practitioner' | 'Patient';
+  }
 ): Promise<ServerInviteResponse & { accessToken: string }> {
+  let accessPolicy = options?.accessPolicy;
+  const resourceType = options?.resourceType ?? 'Practitioner';
+
   if (accessPolicy) {
     const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -193,7 +199,7 @@ export async function addTestUser(
     project,
     email,
     password,
-    resourceType: 'Practitioner',
+    resourceType,
     firstName: 'Bob',
     lastName: 'Jones',
     sendEmail: false,
@@ -210,6 +216,7 @@ export async function addTestUser(
     password,
     scope: 'openid',
     nonce: 'nonce',
+    projectId: project.id,
   });
 
   const accessToken = await generateAccessToken({
