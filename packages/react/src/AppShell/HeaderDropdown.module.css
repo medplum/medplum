@@ -13,7 +13,7 @@
 
 .dropdown :global(.mantine-Menu-item).recentProjectItem:hover,
 .dropdown :global(.mantine-Menu-item).recentProjectItem[data-hovered] {
-  --project-login-icon-color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+  --project-login-icon-color: var(--mantine-color-text);
 }
 
 .dropdown {
