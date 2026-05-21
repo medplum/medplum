@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
+import type { ReadablePromise, WithId } from '@medplum/core';
 import type {
-  Bot,
   ChargeItem,
   ChargeItemDefinition,
   Claim,
@@ -263,49 +262,7 @@ describe('BillingTab', () => {
     windowOpenSpy.mockRestore();
   });
 
-  test('renders request billing service button when bot is not found', async () => {
-    await setup({ claim: mockClaim });
-
-    await waitFor(() => {
-      expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
-    });
-    expect(screen.queryByText('Submit Claim')).not.toBeInTheDocument();
-  });
-
-  test('renders submit claim button when billing bot exists', async () => {
-    const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
-    vi.spyOn(medplum, 'searchOne').mockImplementation(async (resourceType: any) =>
-      resourceType === 'Bot' ? (mockBot as any) : undefined
-    );
-
-    await setup({ claim: mockClaim });
-
-    await waitFor(() => {
-      expect(screen.getByText('Submit Claim')).toBeInTheDocument();
-    });
-    expect(screen.queryByText('Request to connect a billing service')).not.toBeInTheDocument();
-  });
-
-  test('request billing service button opens contact page', async () => {
-    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-    const user = userEvent.setup();
-
-    await setup({ claim: mockClaim });
-
-    await waitFor(() => {
-      expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Request to connect a billing service'));
-
-    expect(windowOpenSpy).toHaveBeenCalledWith('https://www.medplum.com/contact', '_blank');
-    windowOpenSpy.mockRestore();
-  });
-
   test('shows missing diagnosis notification when submitting without conditions', async () => {
-    const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
-    vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(mockBot as WithId<Bot>);
-
     const user = userEvent.setup();
 
     await setup({ claim: mockClaim });
@@ -325,11 +282,7 @@ describe('BillingTab', () => {
     });
   });
 
-  test('submits claim successfully when bot and conditions exist', async () => {
-    const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
-    vi.spyOn(medplum, 'searchOne').mockImplementation(async (resourceType: any) =>
-      resourceType === 'Bot' ? (mockBot as WithId<Bot>) : undefined
-    );
+  test('submits claim when conditions exist', async () => {
 
     const mockCondition = {
       resourceType: 'Condition' as const,
@@ -350,9 +303,9 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
     const postSpy = vi.spyOn(medplum, 'post').mockImplementation(async (url: any) => {
       if (url?.toString().includes('$candid-submit-claim')) {
-        return { resourceType: 'ClaimResponse', id: 'cr-1' } as any;
+        return { resourceType: 'ClaimResponse', id: 'cr-1' };
       }
-      return { resourceType: 'Coverage', id: 'new-coverage' } as any;
+      return { resourceType: 'Coverage', id: 'new-coverage' };
     });
 
     const user = userEvent.setup();
@@ -1095,7 +1048,6 @@ describe('BillingTab', () => {
   describe('claim submission with coverage references', () => {
     test('sends claimToSubmit with updated insurance references to the bot', async () => {
       const user = userEvent.setup();
-      const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
       const mockCondition = {
         resourceType: 'Condition' as const,
         id: 'condition-1',
@@ -1109,18 +1061,16 @@ describe('BillingTab', () => {
         insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/coverage-123' } }],
       };
 
-      vi.spyOn(medplum, 'searchOne').mockImplementation(async (resourceType: any) =>
-        resourceType === 'Bot' ? (mockBot as WithId<Bot>) : undefined
-      );
+
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim);
       vi.spyOn(medplum, 'readResource').mockResolvedValue(updatedClaim);
       const postSpy = vi.spyOn(medplum, 'post').mockImplementation(async (url: any) => {
         if (url?.toString().includes('$candid-submit-claim')) {
-          return { resourceType: 'ClaimResponse', id: 'cr-1' } as any;
+          return { resourceType: 'ClaimResponse', id: 'cr-1' };
         }
-        return { resourceType: 'Coverage', id: 'new-coverage' } as any;
+        return { resourceType: 'Coverage', id: 'new-coverage' };
       });
 
       await setup({
@@ -1158,16 +1108,12 @@ describe('BillingTab', () => {
 
     test('creates self-pay coverage before opening modal when patient has only insurance', async () => {
       const user = userEvent.setup();
-      const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
       const mockCondition = {
         resourceType: 'Condition' as const,
         id: 'condition-1',
         code: { text: 'Headache' },
       };
 
-      vi.spyOn(medplum, 'searchOne')
-        .mockResolvedValueOnce(mockBot as WithId<Bot>)
-        .mockResolvedValue(undefined);
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({
@@ -1217,8 +1163,9 @@ describe('BillingTab', () => {
     };
 
     const mockSearchOneWithClaimResponse = (claimResponse: WithId<ClaimResponse>): void => {
-      vi.spyOn(medplum, 'searchOne').mockImplementation(async (resourceType: any) =>
-        resourceType === 'ClaimResponse' ? (claimResponse as any) : undefined
+      vi.spyOn(medplum, 'searchOne').mockImplementation(
+        ((resourceType: string) =>
+          resourceType === 'ClaimResponse' ? Promise.resolve(claimResponse) : Promise.resolve(undefined)) as (resourceType: string) => ReadablePromise<WithId<ClaimResponse> | undefined>
       );
     };
 
