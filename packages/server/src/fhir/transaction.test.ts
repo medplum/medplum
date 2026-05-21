@@ -30,8 +30,8 @@ describe('FHIR Repo Transactions', () => {
   test('Transaction commit', () =>
     withTestContext(async () => {
       let patient: Patient | undefined;
-      await repo.withTransaction(async () => {
-        patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      await repo.withTransaction(async (_client, txRepo) => {
+        patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
         expect(patient).toBeDefined();
       });
       expect(patient).toBeDefined();
@@ -50,25 +50,67 @@ describe('FHIR Repo Transactions', () => {
       expect(searchCheck1.entry).toHaveLength(1);
     }));
 
+  test('Transaction callback must use the scoped repository', () =>
+    withTestContext(async () => {
+      let patient: Patient | undefined;
+
+      await repo.withTransaction(async (_client, txRepo) => {
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          'transaction-scoped repository'
+        );
+        await expect(repo.searchResources(parseSearchRequest('Patient'))).rejects.toThrow('transaction-scoped repository');
+
+        patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+      });
+
+      expect(patient).toBeDefined();
+    }));
+
+  test('ensureInTransaction callback must use the scoped repository when starting transaction', () =>
+    withTestContext(async () => {
+      const patient = await repo.ensureInTransaction(async (_client, txRepo) => {
+        expect(txRepo).not.toBe(repo);
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          'transaction-scoped repository'
+        );
+
+        return txRepo.createResource<Patient>({ resourceType: 'Patient' });
+      });
+
+      expect(patient).toBeDefined();
+    }));
+
+  test('ensureInTransaction passes the current repository inside transaction', () =>
+    withTestContext(async () => {
+      await repo.withTransaction(async (_client, txRepo) => {
+        const patient = await txRepo.ensureInTransaction(async (_innerClient, ensuredRepo) => {
+          expect(ensuredRepo).toBe(txRepo);
+          return ensuredRepo.createResource<Patient>({ resourceType: 'Patient' });
+        });
+
+        expect(patient).toBeDefined();
+      });
+    }));
+
   test('Transaction rollback', () =>
     withTestContext(async () => {
       let patient: WithId<Patient> | undefined;
 
       await expect(
-        repo.withTransaction(async () => {
+        repo.withTransaction(async (_client, txRepo) => {
           // Create one patient
           // This will initially succeed, but should then be rolled back
-          patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+          patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
           expect(patient).toBeDefined();
 
           // Read the patient by ID
           // This should succeed within the transaction
-          const readCheck1 = await repo.readResource('Patient', patient.id);
+          const readCheck1 = await txRepo.readResource('Patient', patient.id);
           expect(readCheck1).toBeDefined();
 
           // Search for patient by ID
           // This should succeed within the transaction
-          const searchCheck1 = await repo.search<Patient>({
+          const searchCheck1 = await txRepo.search<Patient>({
             resourceType: 'Patient',
             filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
           });
@@ -76,7 +118,7 @@ describe('FHIR Repo Transactions', () => {
 
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
-          await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+          await txRepo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
         })
       ).rejects.toMatchObject(
         new OperationOutcomeError({
@@ -112,12 +154,12 @@ describe('FHIR Repo Transactions', () => {
       let patient1: Patient | undefined;
       let patient2: Patient | undefined;
 
-      await repo.withTransaction(async () => {
-        patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      await repo.withTransaction(async (_client, txRepo) => {
+        patient1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
         expect(patient1).toBeDefined();
 
-        await repo.withTransaction(async () => {
-          patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        await txRepo.withTransaction(async (_client, nestedRepo) => {
+          patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
           expect(patient2).toBeDefined();
         });
       });
@@ -157,26 +199,26 @@ describe('FHIR Repo Transactions', () => {
       let patient2: Patient | undefined;
 
       // Start an outer transaction - this should succeed
-      await repo.withTransaction(async () => {
+      await repo.withTransaction(async (_client, txRepo) => {
         // Create one patient
         // This will initially succeed, and should not be rolled back
-        patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        patient1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
         expect(patient1).toBeDefined();
 
         // Start an inner transaction - this will be rolled back
         await expect(
-          repo.withTransaction(async () => {
-            patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+          txRepo.withTransaction(async (_client, nestedRepo) => {
+            patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
             expect(patient2).toBeDefined();
 
             // Read the patient by ID
             // This should succeed within the transaction
-            const readCheck1 = await repo.readResource('Patient', patient1?.id as string);
+            const readCheck1 = await nestedRepo.readResource('Patient', patient1?.id as string);
             expect(readCheck1).toBeDefined();
 
             // Search for patient by ID
             // This should succeed within the transaction
-            const searchCheck1 = await repo.search<Patient>({
+            const searchCheck1 = await nestedRepo.search<Patient>({
               resourceType: 'Patient',
               filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
             });
@@ -185,12 +227,12 @@ describe('FHIR Repo Transactions', () => {
 
             // Read the patient by ID
             // This should succeed within the transaction
-            const readCheck2 = await repo.readResource('Patient', patient2?.id as string);
+            const readCheck2 = await nestedRepo.readResource('Patient', patient2?.id as string);
             expect(readCheck2).toBeDefined();
 
             // Search for patient by ID
             // This should succeed within the transaction
-            const searchCheck2 = await repo.search<Patient>({
+            const searchCheck2 = await nestedRepo.search<Patient>({
               resourceType: 'Patient',
               filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
             });
@@ -199,7 +241,7 @@ describe('FHIR Repo Transactions', () => {
 
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
-            await repo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+            await nestedRepo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
           })
         ).rejects.toMatchObject(
           new OperationOutcomeError({
@@ -219,12 +261,12 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should succeed within the transaction
-        const readCheck3 = await repo.readResource('Patient', patient1?.id as string);
+        const readCheck3 = await txRepo.readResource('Patient', patient1?.id as string);
         expect(readCheck3).toBeDefined();
 
         // Search for patient by ID
         // This should succeed within the transaction
-        const searchCheck3 = await repo.search<Patient>({
+        const searchCheck3 = await txRepo.search<Patient>({
           resourceType: 'Patient',
           filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
         });
@@ -233,11 +275,11 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
-        await expect(repo.readResource('Patient', patient2?.id as string)).rejects.toThrow('Not found');
+        await expect(txRepo.readResource('Patient', patient2?.id as string)).rejects.toThrow('Not found');
 
         // Search for patient by ID
         // This should succeed within the transaction
-        const searchCheck4 = await repo.search<Patient>({
+        const searchCheck4 = await txRepo.search<Patient>({
           resourceType: 'Patient',
           filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
         });
@@ -252,26 +294,26 @@ describe('FHIR Repo Transactions', () => {
       let patient2: Patient | undefined;
 
       // Start an outer transaction - this should succeed
-      await repo.withTransaction(async () => {
+      await repo.withTransaction(async (_client, txRepo) => {
         // Create one patient
         // This will initially succeed, and should not be rolled back
-        patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        patient1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
         expect(patient1).toBeDefined();
 
         // Start an inner transaction - this will be rolled back
         await expect(
-          repo.withTransaction(async (db) => {
-            patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+          txRepo.withTransaction(async (db, nestedRepo) => {
+            patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
             expect(patient2).toBeDefined();
 
             // Read the patient by ID
             // This should succeed within the transaction
-            const readCheck1 = await repo.readResource('Patient', patient1?.id as string);
+            const readCheck1 = await nestedRepo.readResource('Patient', patient1?.id as string);
             expect(readCheck1).toBeDefined();
 
             // Search for patient by ID
             // This should succeed within the transaction
-            const searchCheck1 = await repo.search<Patient>({
+            const searchCheck1 = await nestedRepo.search<Patient>({
               resourceType: 'Patient',
               filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
             });
@@ -280,12 +322,12 @@ describe('FHIR Repo Transactions', () => {
 
             // Read the patient by ID
             // This should succeed within the transaction
-            const readCheck2 = await repo.readResource('Patient', patient2?.id as string);
+            const readCheck2 = await nestedRepo.readResource('Patient', patient2?.id as string);
             expect(readCheck2).toBeDefined();
 
             // Search for patient by ID
             // This should succeed within the transaction
-            const searchPreCheck = await repo.search<Patient>({
+            const searchPreCheck = await nestedRepo.search<Patient>({
               resourceType: 'Patient',
               filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
             });
@@ -300,12 +342,12 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should succeed within the transaction
-        const readCheck3 = await repo.readResource('Patient', patient1?.id as string);
+        const readCheck3 = await txRepo.readResource('Patient', patient1?.id as string);
         expect(readCheck3).toBeDefined();
 
         // Search for patient by ID
         // This should succeed within the transaction
-        const searchCheck3 = await repo.search<Patient>({
+        const searchCheck3 = await txRepo.search<Patient>({
           resourceType: 'Patient',
           filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
         });
@@ -314,13 +356,13 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
-        await expect(repo.readResource('Patient', patient2?.id as string)).rejects.toMatchObject({
+        await expect(txRepo.readResource('Patient', patient2?.id as string)).rejects.toMatchObject({
           outcome: notFound,
         });
 
         // Search for patient by ID
         // This should return no results, because the transaction was rolled back
-        const searchCheck4 = await repo.search<Patient>({
+        const searchCheck4 = await txRepo.search<Patient>({
           resourceType: 'Patient',
           filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
         });
@@ -350,8 +392,8 @@ describe('FHIR Repo Transactions', () => {
   test('Post-commit callback', () =>
     withTestContext(async () => {
       const callback = jest.fn();
-      await repo.withTransaction(async () => {
-        await repo.postCommit(async () => {
+      await repo.withTransaction(async (_client, txRepo) => {
+        await txRepo.postCommit(async () => {
           callback();
         });
         expect(callback).not.toHaveBeenCalled();
@@ -363,8 +405,8 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const callback = jest.fn();
       try {
-        await repo.withTransaction(async () => {
-          await repo.postCommit(async () => {
+        await repo.withTransaction(async (_client, txRepo) => {
+          await txRepo.postCommit(async () => {
             callback();
           });
           expect(callback).not.toHaveBeenCalled();
@@ -381,12 +423,12 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const cb1 = jest.fn();
       const cb2 = jest.fn();
-      await repo.withTransaction(async () => {
-        await repo.postCommit(async () => {
+      await repo.withTransaction(async (_client, txRepo) => {
+        await txRepo.postCommit(async () => {
           cb1();
         });
-        await repo.withTransaction(async () => {
-          await repo.postCommit(async () => {
+        await txRepo.withTransaction(async (_client, nestedRepo) => {
+          await nestedRepo.postCommit(async () => {
             cb2();
           });
           expect(cb1).not.toHaveBeenCalled();
@@ -403,8 +445,8 @@ describe('FHIR Repo Transactions', () => {
       const callback = jest.fn();
       let calledBeforeCommit = false;
 
-      await repo.withTransaction(async () => {
-        await repo.getSystemRepo().postCommit(callback);
+      await repo.withTransaction(async (_client, txRepo) => {
+        await txRepo.getSystemRepo().postCommit(callback);
         calledBeforeCommit = callback.mock.calls.length > 0;
       });
 
@@ -416,10 +458,10 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       let queries: string[] = [];
 
-      await repo.withTransaction(async (client) => {
+      await repo.withTransaction(async (client, txRepo) => {
         const querySpy = jest.spyOn(client, 'query');
         try {
-          await repo.getSystemRepo().withTransaction(async () => undefined);
+          await txRepo.getSystemRepo().withTransaction(async () => undefined);
         } finally {
           queries = querySpy.mock.calls.map(([query]) =>
             typeof query === 'string' ? query : (query as { text: string }).text
@@ -439,8 +481,8 @@ describe('FHIR Repo Transactions', () => {
       let patient: WithId<Patient> | undefined;
       let cacheReadDuringTransaction = false;
 
-      await repo.withTransaction(async () => {
-        patient = await repo.getSystemRepo().createResource<Patient>({ resourceType: 'Patient' });
+      await repo.withTransaction(async (_client, txRepo) => {
+        patient = await txRepo.getSystemRepo().createResource<Patient>({ resourceType: 'Patient' });
         try {
           await systemRepo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
           cacheReadDuringTransaction = true;
@@ -461,8 +503,8 @@ describe('FHIR Repo Transactions', () => {
       const callbackFn = jest.fn();
       let patient: WithId<Patient> | undefined;
       await expect(
-        repo.withTransaction(async () => {
-          const clonedRepo = repo.clone();
+        repo.withTransaction(async (_client, txRepo) => {
+          const clonedRepo = txRepo.clone();
           patient = await clonedRepo.createResource<Patient>({ resourceType: 'Patient' });
           await clonedRepo.postCommit(callbackFn);
           expect(callbackFn).toHaveBeenCalledTimes(1);
@@ -479,15 +521,15 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
-      const tx1 = repo.withTransaction(async () => {
-        await repo.updateResource({ ...existing, gender: 'unknown' });
+      const tx1 = repo.withTransaction(async (_client, txRepo) => {
+        await txRepo.updateResource({ ...existing, gender: 'unknown' });
         await sleep(500);
       });
 
       await sleep(250);
 
-      const tx2 = systemRepo.withTransaction(async () => {
-        await systemRepo.updateResource({ ...existing, deceasedBoolean: false });
+      const tx2 = systemRepo.withTransaction(async (_client, txRepo) => {
+        await txRepo.updateResource({ ...existing, deceasedBoolean: false });
       });
 
       const results = await Promise.allSettled([tx1, tx2]);
@@ -503,10 +545,10 @@ describe('FHIR Repo Transactions', () => {
         identifier: [{ system: 'http://example.com/mrn', value: identifier }],
       };
       const tx1 = repo.withTransaction(
-        async () => {
-          const existing = await repo.searchResources(parseSearchRequest(criteria));
+        async (_client, txRepo) => {
+          const existing = await txRepo.searchResources(parseSearchRequest(criteria));
           if (!existing.length) {
-            await repo.createResource(resource);
+            await txRepo.createResource(resource);
           }
           await sleep(500);
         },
@@ -514,11 +556,11 @@ describe('FHIR Repo Transactions', () => {
       );
 
       const tx2 = systemRepo.withTransaction(
-        async () => {
+        async (_client, txRepo) => {
           await sleep(250);
-          const existing = await systemRepo.searchResources(parseSearchRequest(criteria));
+          const existing = await txRepo.searchResources(parseSearchRequest(criteria));
           if (!existing.length) {
-            await systemRepo.createResource(resource);
+            await txRepo.createResource(resource);
           }
         },
         { serializable: true }
@@ -536,19 +578,19 @@ describe('FHIR Repo Transactions', () => {
         resourceType: 'Patient',
         identifier: [{ system: 'http://example.com/mrn', value: identifier }],
       };
-      const tx1 = repo.withTransaction(async () => {
-        const existing = await repo.searchResources(parseSearchRequest(criteria));
+      const tx1 = repo.withTransaction(async (_client, txRepo) => {
+        const existing = await txRepo.searchResources(parseSearchRequest(criteria));
         if (!existing.length) {
-          await repo.createResource(resource);
+          await txRepo.createResource(resource);
         }
         await sleep(500);
       });
 
-      const tx2 = systemRepo.withTransaction(async () => {
+      const tx2 = systemRepo.withTransaction(async (_client, txRepo) => {
         await sleep(250);
-        const existing = await systemRepo.searchResources(parseSearchRequest(criteria));
+        const existing = await txRepo.searchResources(parseSearchRequest(criteria));
         if (!existing.length) {
-          await systemRepo.createResource(resource);
+          await txRepo.createResource(resource);
         }
       });
 
@@ -561,10 +603,10 @@ describe('FHIR Repo Transactions', () => {
       const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
       // Simulate patch operation with long delay in the middle to ensure conflict
-      const tx1 = repo.withTransaction(async () => {
-        await repo.searchResources(parseSearchRequest('Patient?_id=' + existing.id)); // Ensure request hits the DB
+      const tx1 = repo.withTransaction(async (_client, txRepo) => {
+        await txRepo.searchResources(parseSearchRequest('Patient?_id=' + existing.id)); // Ensure request hits the DB
         await sleep(500);
-        return repo.updateResource({ ...existing, gender: 'other' });
+        return txRepo.updateResource({ ...existing, gender: 'other' });
       });
 
       await sleep(200);
@@ -652,7 +694,7 @@ describe('FHIR Repo Transactions', () => {
           throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
         }
       });
-      const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
+      const outerTx = jest.fn(async (_client, txRepo): Promise<boolean> => txRepo.withTransaction(txFn));
 
       await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(true);
       expect(txFn).toHaveBeenCalledTimes(2);
@@ -665,7 +707,7 @@ describe('FHIR Repo Transactions', () => {
         // Emit transaction conflict (Postgres error code 40001)
         throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
-      const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
+      const outerTx = jest.fn(async (_client, txRepo): Promise<boolean> => txRepo.withTransaction(txFn));
 
       await expect(repo.withTransaction(outerTx)).rejects.toThrow('transaction conflict');
       expect(txFn).toHaveBeenCalledTimes(2);
@@ -678,9 +720,9 @@ describe('FHIR Repo Transactions', () => {
         // Emit transaction conflict (Postgres error code 40001)
         throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
-      const outerTx = jest.fn(async (): Promise<boolean> => {
+      const outerTx = jest.fn(async (_client, txRepo): Promise<boolean> => {
         try {
-          await repo.withTransaction(txFn);
+          await txRepo.withTransaction(txFn);
           return true;
         } catch (_) {
           // Swallow the error
