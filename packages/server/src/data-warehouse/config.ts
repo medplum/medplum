@@ -5,7 +5,7 @@ import { getResourceTypes } from '@medplum/core';
 import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from '../config/types';
 
 /** Default Postgres `statement_timeout` applied to DuckDB-attached connections (milliseconds). */
-export const DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT = 60000;
+export const DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT = 60_000 * 5; // 5 minutes
 
 /**
  * Appends libpq-compatible SSL query parameters for DuckDB `ATTACH (TYPE postgres)`.
