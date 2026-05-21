@@ -259,6 +259,7 @@ Provider access policy:
 - Purpose: provider portal access for clinical users.
 - Permit search/read for patient charts and supporting resources.
 - Permit create/update for workflow resources the app uses, such as `Encounter`, `Condition`, `Observation`, `MedicationRequest`, `ServiceRequest`, `DiagnosticReport`, `Task`, `Communication`, `Appointment`, `Schedule`, and `Slot`.
+- Permit read/search/history/vread for `ClientApplication` so timeline cards can resolve `meta.author` references from the `ubix-data` importer instead of rendering `[Forbidden]`.
 - Do not grant admin-only resources unless a workflow explicitly requires them.
 
 Live access policy IDs:
@@ -266,7 +267,7 @@ Live access policy IDs:
 | Purpose | AccessPolicy ID | Notes |
 | --- | --- | --- |
 | Patient portal template | `ca3a5687-5a1a-4301-95b4-15a977ad29e4` | Uses Medplum's parameterized patient policy pattern with `%patient` and patient-compartment criteria. |
-| Provider portal clinical access | `05fa99c3-6400-4d8c-af38-8b00b890315d` | Grants provider clinical workflow access without project/server administration resources. |
+| Provider portal clinical access | `05fa99c3-6400-4d8c-af38-8b00b890315d` | Grants provider clinical workflow access without project/server administration resources. Includes read/search/history/vread for `ClientApplication` to display importer authors such as `ubix-data` in timelines. |
 | Browser client credentials guardrail | `eabeb0e2-56c3-4d3d-8cea-41e6ec331b42` | Assigned to the patient/provider `ClientApplication` memberships so client-credentials tokens cannot inherit broad project access. |
 
 ### Users And Memberships
@@ -282,7 +283,7 @@ Live demo login inventory:
 | App | Email | Profile | Membership | Notes |
 | --- | --- | --- | --- | --- |
 | Patient | `ubix.patient.riley@example.com` | `Patient/5506b4b2-6557-4876-8367-7e398914bce4` | `ProjectMembership/48db19de-54cc-4233-8376-3739dcf3733d` | Riley Rivera; password verified; local app `http://127.0.0.1:5173/`. |
-| Provider | `ubix.provider.alex@example.com` | `Practitioner/55ac370f-8572-42d1-93a5-5d5535cda9f4` | `ProjectMembership/4e9c0e27-9cfa-4d6b-ac9a-275ae863b9da` | Alex Demo; password verified; local app `http://127.0.0.1:5172/`. |
+| Provider | `ubix.provider.alex@example.com` | `Practitioner/59ea2d1d-f436-437c-a785-74850bddbfd3` | `ProjectMembership/4e9c0e27-9cfa-4d6b-ac9a-275ae863b9da` | Alex Demo; password verified; imported practitioner profile has 44 assigned Tasks; local app `http://127.0.0.1:5172/`. |
 
 Patient demo users:
 

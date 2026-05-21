@@ -1,7 +1,7 @@
-# Occupational Health EHR/MIS Demo - Agent-First Medplum Delivery Plan
+# DHS OHS Industry Day Occupational Health EHR/MIS Demo Plan
 
 **Based on**: DHS Office of Health Security - Statement of Objectives (April 14, 2026)  
-**Purpose**: Build a configurable Medplum demo for Occupational Health EHR/MIS using AI agents as the primary execution engine, with humans focused on direction, policy, validation, and acceptance.
+**Purpose**: Configure the current Medplum/Ubix demo environment into a credible DHS OHS Industry Day demonstration for occupational injury, illness, return-to-work, duty-location association, and exposure tracking workflows.
 
 ---
 
@@ -20,6 +20,318 @@ The objective is to produce a credible DHS occupational health demo in Medplum t
 - Occupational surveillance and case management can be driven through configuration-first workflows
 - Privacy, segmentation, and minimum-necessary disclosure rules can be enforced
 - AI agents can accelerate delivery without weakening validation, auditability, or security discipline
+
+## Industry Day Demo Focus
+
+The Industry Day demonstration should focus on two DHS OHS scenarios that map directly to the SOO language and to the synthetic data already transferred into Medplum.
+
+### Focus Area 1: Injury, Illness, and Return-to-Work Workflows
+
+Hiive will demonstrate an end-to-end occupational injury and illness workflow: incident capture, OEM templates for common injuries, restriction management, follow-up scheduling, stakeholder notification, and return-to-work tracking. The demo should show clinicians documenting a work-related event, applying duty restrictions, scheduling reevaluation, generating or attaching required forms, and tracking recovery through tasks, dashboards, and patient timeline events.
+
+### Focus Area 2: Employee Duty Locations and Exposure Tracking
+
+Hiive will demonstrate how employees are associated with duty locations over time and how those associations support exposure tracking, incident response, duty-status management, targeted notifications, and follow-up activities. The demo should show component, location, job-role, exposure-event, and occupational-health workflow data linked inside the employee record with privacy-aware access.
+
+## Current Live Demo Baseline
+
+The current Medplum environment already contains enough generated data to anchor the story, but it needs a small amount of Medplum configuration and UI polish before it is ready for the DHS Industry Day audience.
+
+| Item | Current value |
+| --- | --- |
+| Medplum project | `Ubix Data` / `Project/7e472dfd-3ab9-4b75-adac-38e0c5c5d6c8` |
+| Provider app | Local: `http://127.0.0.1:5172/`; planned hosted app: `https://provider.ehr.hiivehealth.net/` |
+| Patient app | Local: `http://127.0.0.1:5173/`; planned hosted app: `https://patient.ehr.hiivehealth.net/` |
+| Provider demo profile | `Practitioner/59ea2d1d-f436-437c-a785-74850bddbfd3` / Dr Alex Demo |
+| Provider membership | `ProjectMembership/4e9c0e27-9cfa-4d6b-ac9a-275ae863b9da` |
+| Provider access policy | `AccessPolicy/05fa99c3-6400-4d8c-af38-8b00b890315d` |
+| Import author | `ClientApplication/69a636e6-b110-4de7-ac73-4c2b642b48a2` / `ubix-data` |
+| Workflow tasks loaded | 1,437 `Task` resources authored by `ubix-data` |
+| Patients with tasks | 598 distinct patients |
+| Demo provider tasks | 44 tasks assigned to Dr Alex Demo after linking the provider membership to the imported practitioner profile |
+| RTW sample patient | `Patient/a3562d64-680b-4802-bc78-4b1d0d487080` / Avery Rivera |
+| RTW sample task | `Task/6b0849f7-bd0e-42f0-a835-b441c2dccade` / RTW case follow-up |
+| RTW sample case | `EpisodeOfCare/e2cf8f66-b22b-4577-b858-b0481d24f0b8` / Exposure Incident |
+
+Current baseline behavior:
+
+- The provider demo user can sign into the `Ubix Data` project and view patient charts.
+- The provider navigation shows `Tasks 44` for Dr Alex Demo.
+- Patient charts expose generated workflow tasks through the `Tasks` tab and the timeline.
+- RTW appears today as `RTW case follow-up` workflow tasks focused on `EpisodeOfCare` resources.
+- Occupational events such as `Exposure Incident` appear in the patient summary/problem list for generated patients.
+- Timeline card authors now resolve to `ubix-data` instead of `[Forbidden]` because the provider policy can read `ClientApplication` author references.
+
+Current gaps to close before Industry Day:
+
+- RTW status is not yet modeled as a first-class field such as `full duty`, `modified duty`, `off work`, or `cleared`.
+- Work restrictions are not yet visible as structured restrictions such as lifting limits, PPE requirements, schedule limits, or reevaluation date.
+- The sample RTW tasks are visible from the patient chart, but representative RTW tasks should also be assigned to the demo provider so they appear in `My Tasks`.
+- `EpisodeOfCare` should be added to the provider access policy for read/search/history/vread so clinicians can inspect RTW case containers directly.
+- Duty-location and exposure associations exist in the generated data strategy, but the provider app needs a dedicated occupational summary card or tab so the audience does not have to interpret raw FHIR lists.
+- Supervisor and HR views should be configured as minimum-necessary views, not as full clinical chart access.
+
+## Medplum Configuration Plan for the Demo
+
+The demo should stay Medplum-native: use Medplum projects, project memberships, access policies, ClientApplication resources, FHIR R4 resources, provider/patient apps, Bots or Subscriptions where useful, and FHIR search/history APIs. Do not bypass Medplum with direct database reads or custom side channels.
+
+### 1. Project, Apps, and Login Configuration
+
+1. Use the `Ubix Data` project as the system of record for the demo.
+2. Keep the `ubix-data` client as machine-to-machine import infrastructure only.
+3. Use human `User` plus `ProjectMembership` records for demo personas.
+4. Keep the provider demo membership linked to the imported Dr Alex Demo practitioner so assigned tasks appear in the Provider app.
+5. Create two additional non-admin demo personas if the script needs role switching:
+	- Occ health clinician: full clinical and occupational workflow access.
+	- Supervisor or HR reviewer: minimum-necessary duty status, restriction summary, clearance status, and notification status only.
+6. Use the existing patient and provider `ClientApplication` resources for browser sign-in.
+7. Do not demonstrate with bootstrap admin credentials.
+
+### 2. Access Policy Configuration
+
+The provider access policy must support clinical chart review, occupational case review, and timeline attribution without granting project administration.
+
+Provider policy additions required for Industry Day:
+
+| Resource | Interactions | Why it is needed |
+| --- | --- | --- |
+| `EpisodeOfCare` | read, search, history, vread | RTW and exposure cases are represented as occupational case containers. |
+| `Task` | read, search, create, update, history, vread | Follow-up scheduling, task assignment, and RTW workflow tracking. |
+| `Observation` | read, search, create, update, history, vread | Work status, restriction status, vitals, screening, and exposure measurements. |
+| `DetectedIssue` | read, search, create, update, history, vread | Exposure incidents, care gaps, and safety signals. |
+| `ServiceRequest` | read, search, create, update, history, vread | Surveillance orders, follow-up requests, and occupational program requirements. |
+| `DocumentReference` | read, search, create, update, history, vread | Injury forms, RTW forms, external documents, and privacy-aware attachments. |
+| `Questionnaire` and `QuestionnaireResponse` | read, search, create, update, history, vread | Incident intake, OEM templates, restriction forms, and clearance questionnaires. |
+| `Communication` | read, search, create, update, history, vread | Privacy-aware stakeholder notifications. |
+| `ClientApplication` | read, search, history, vread | Resolves timeline `meta.author` references such as `ubix-data`. |
+| `Location` and `Organization` | read, search, history, vread | Duty location, DHS component, clinic, lab, and worksite context. |
+
+Supervisor and HR policies should be separate and narrower:
+
+- Permit patient identity, duty location, role/component, active restriction summary, clearance status, next reevaluation date, and notification status.
+- Deny or omit clinical details such as diagnoses, lab results, behavioral health observations, full notes, and sensitive attachments.
+- Demonstrate this with a separate login or a scripted before/after role comparison.
+
+### 3. FHIR Resource Configuration
+
+The generated data should be shaped into a small number of clear Medplum-native resource patterns for the demo.
+
+| Demo concept | FHIR/Medplum representation | Demo behavior |
+| --- | --- | --- |
+| Employee | `Patient` | The employee chart is the longitudinal occupational health record. |
+| DHS component | `Organization` | Component context for assignment, care delivery, and reporting. |
+| Duty location | `Location` | Worksite or operational location used for exposure tracking. |
+| Employee duty assignment | `Observation` or extension-backed occupational assignment record with `effectivePeriod`, `Location`, `Organization`, and job role components | Shows where an employee worked and when. |
+| Incident or exposure event | `DetectedIssue`, `Condition`, `Encounter`, and `EpisodeOfCare` | Captures the event, case container, diagnosis/problem, and care context. |
+| OEM injury template | `Questionnaire` plus `QuestionnaireResponse` | Provides configurable injury/illness documentation forms. |
+| RTW case | `EpisodeOfCare` | Tracks the active case from incident through clearance. |
+| RTW status | `Observation` with a demo code system such as `work-duty-status` | Displays `off work`, `modified duty`, `full duty`, or `cleared`. |
+| Work restrictions | `Observation` or `QuestionnaireResponse` with structured components | Captures restriction type, limit, effective date, expiration, and reevaluation date. |
+| Follow-up schedule | `Task`, `Appointment`, `Schedule`, and `Slot` | Drives clinician work queue and reevaluation scheduling. |
+| Required forms | `DocumentReference` or `Composition` | Shows generated or attached injury, clearance, and RTW forms. |
+| Notifications | `Communication` and optionally `Subscription`/Bot-created tasks | Shows privacy-aware communication to employee, supervisor, HR, or component safety contact. |
+| Exposure cohort | `Group` or `List` | Shows employees associated with a duty location or exposure event. |
+| Audit trail | `AuditEvent` and resource history | Shows who viewed or changed sensitive occupational health data. |
+
+### 4. Data Configuration Work
+
+Use the generated synthetic data as the base, then curate a small number of high-signal demo employees. The live environment should not rely on random search during the presentation.
+
+Required curated cases:
+
+1. **Avery Rivera - RTW/exposure case**
+	- Existing patient: `Patient/a3562d64-680b-4802-bc78-4b1d0d487080`.
+	- Existing RTW task: `Task/6b0849f7-bd0e-42f0-a835-b441c2dccade`.
+	- Existing case container: `EpisodeOfCare/e2cf8f66-b22b-4577-b858-b0481d24f0b8`.
+	- Add or verify structured RTW status and work restriction observations.
+	- Assign one RTW task to Dr Alex Demo or the demo occ health clinician.
+
+2. **Jamie Brown - clean timeline and surveillance example**
+	- Existing patient: `Patient/af7f6287-2dc4-4b2a-89f9-d4437ea17607`.
+	- Use this case to show importer author attribution, surveillance requirements, and timeline readability.
+
+3. **Duty-location exposure cohort**
+	- Pick one generated duty location with enough employees for a credible exposure investigation.
+	- Create or verify a `Group` or `List` of exposed employees.
+	- Link each employee to assignment history and follow-up tasks.
+
+4. **Supervisor/HR minimum-necessary case**
+	- Reuse the RTW case but show only duty status, restrictions, expected reevaluation date, and clearance impact.
+	- Hide clinical diagnosis, notes, and sensitive lab details.
+
+### 5. Provider UI Configuration
+
+The generic Provider app can show the data today, but the Industry Day story needs a purpose-built path. Configure or add the following views:
+
+1. **Occupational Summary card on the patient chart**
+	- Current duty location.
+	- DHS component or operating unit.
+	- Job role or exposure program.
+	- Active RTW status.
+	- Current restrictions.
+	- Next reevaluation or clearance date.
+
+2. **Occupational Health tab**
+	- Incident timeline.
+	- RTW case status.
+	- Restrictions and expiration dates.
+	- Exposure events and linked duty locations.
+	- Related tasks, appointments, forms, and notifications.
+
+3. **RTW dashboard**
+	- Open RTW cases.
+	- Restricted-duty employees.
+	- Reevaluations due in the next 7, 14, and 30 days.
+	- Cases awaiting supervisor/HR notification.
+	- Cases pending clearance.
+
+4. **Exposure tracking dashboard**
+	- Duty locations with active exposure events.
+	- Employees assigned to the location during the exposure window.
+	- Follow-up status by employee.
+	- Surveillance orders, lab status, and outstanding tasks.
+
+5. **Minimum-necessary supervisor view**
+	- Employee name, component, duty location, work status, restrictions, and expected reevaluation date.
+	- No diagnosis, clinical notes, lab values, or behavioral health details.
+
+### 6. Workflow Automation Configuration
+
+Use Medplum Bots or scheduled scripts where automation strengthens the story.
+
+1. When an incident intake `QuestionnaireResponse` is completed, create or update:
+	- `Encounter` for the occupational visit.
+	- `Condition` or `DetectedIssue` for the injury/illness/exposure signal.
+	- `EpisodeOfCare` for the RTW case.
+	- `Task` for clinician follow-up.
+	- `Observation` for initial RTW status and restrictions.
+	- `DocumentReference` for generated or attached forms.
+
+2. When restrictions are added or changed:
+	- Create a reevaluation `Task`.
+	- Optionally create an `Appointment` request.
+	- Create privacy-aware `Communication` records for the employee, supervisor, HR, or safety contact.
+	- Write an audit event or rely on Medplum resource history for change review.
+
+3. When a duty-location exposure event is logged:
+	- Identify employees assigned to the location during the exposure window.
+	- Create a `Group` or `List` cohort.
+	- Create targeted follow-up `Task` resources.
+	- Generate surveillance `ServiceRequest` resources where required.
+	- Notify only the appropriate roles with minimum-necessary content.
+
+### 7. Validation and Demo Readiness Checks
+
+Before the Industry Day demo, verify the following:
+
+- Provider demo login works without admin credentials.
+- Provider app shows `Tasks 44` or another intentional task count for the demo practitioner.
+- At least one `RTW case follow-up` task is visible in `My Tasks`.
+- RTW sample patient has an active RTW status and at least one structured restriction.
+- Patient timeline shows tasks and author names without `[Forbidden]`.
+- Provider can read the RTW `EpisodeOfCare` and linked resources.
+- Duty-location dashboard has a named location, exposed employee cohort, and follow-up tasks.
+- Supervisor/HR view hides clinical details while showing restrictions and duty-status impact.
+- All direct demo URLs are tested in the browser before the presentation.
+
+## Step-by-Step Industry Day Demo Guide
+
+This runbook assumes the provider app is available locally at `http://127.0.0.1:5172/` or deployed at `https://provider.ehr.hiivehealth.net/`. Use the non-admin provider demo login documented in the deployment guide.
+
+### Pre-Demo Setup
+
+1. Confirm the Medplum API is reachable at `https://api.ehr.hiivehealth.net/`.
+2. Start or open the Provider app.
+3. Sign in as the provider demo user.
+4. Confirm the left navigation shows `Tasks 44` or the expected curated task count.
+5. Open the direct RTW patient URL in a separate tab for quick recovery: `http://127.0.0.1:5172/Patient/a3562d64-680b-4802-bc78-4b1d0d487080/Task`.
+6. Open the surveillance/timeline example in another tab: `http://127.0.0.1:5172/Patient/af7f6287-2dc4-4b2a-89f9-d4437ea17607/timeline`.
+7. Have the supervisor or HR demo login ready only if the minimum-necessary role switch is part of the live script.
+
+### Opening Narrative
+
+1. State that the demo is running on a Medplum-native FHIR R4 platform.
+2. Explain that generated data was transferred into the `Ubix Data` project and is accessed through Medplum APIs, not a separate database path.
+3. Point out that the same longitudinal employee chart supports clinical care, occupational workflows, exposure investigations, and role-based views.
+4. Frame the demo around the two DHS OHS focus areas: RTW workflows and duty-location exposure tracking.
+
+### Focus Area 1 Demo: Injury, Illness, and RTW Workflow
+
+1. From the Provider app, open **Tasks**.
+2. Show the clinician work queue and explain that Medplum `Task` resources drive follow-up scheduling and operational work.
+3. Open an RTW task. If curated RTW tasks are assigned to the demo provider, use **My Tasks**. If not, use the direct patient URL for Avery Rivera and the patient **Tasks** tab.
+4. In Avery Rivera's chart, show the patient summary:
+	- Employee demographics.
+	- Occupational problem context such as `Exposure Incident`.
+	- Related surveillance or lab items.
+5. Select **Tasks** and open **RTW case follow-up**.
+6. Show task details:
+	- Status, currently `REQUESTED` until acted on.
+	- Owner or assignee.
+	- Patient reference.
+	- Focus reference to the RTW case container.
+	- Description or reason for follow-up.
+7. Navigate to **Timeline** to show that the RTW task is part of the employee's longitudinal record.
+8. After the RTW-status configuration is added, show the occupational summary card:
+	- RTW status, such as `modified duty`.
+	- Active restrictions.
+	- Effective dates and expiration.
+	- Reevaluation date.
+9. Demonstrate restriction management:
+	- Open the restriction form or questionnaire.
+	- Add a restriction such as limited lifting, no field duty, or PPE requirement.
+	- Save it as structured FHIR data.
+	- Show the new task or appointment generated for reevaluation.
+10. Demonstrate privacy-aware notification:
+	- Show the clinician can see the clinical details.
+	- Show the supervisor or HR view only displays duty status and restrictions.
+	- Emphasize that clinical diagnosis and sensitive results are not disclosed in the minimum-necessary view.
+11. Close the scenario by showing RTW status moving toward clearance or follow-up.
+
+### Focus Area 2 Demo: Duty Locations and Exposure Tracking
+
+1. Open the exposure tracking dashboard.
+2. Select a duty location with an active or historical exposure event.
+3. Show the location profile:
+	- DHS component.
+	- Physical or operational location.
+	- Exposure event or hazard context.
+	- Employees assigned during the relevant time window.
+4. Open the exposed employee cohort.
+5. Select one employee and open the employee chart.
+6. Show the occupational summary card:
+	- Current duty location.
+	- Prior duty location history.
+	- Job role or exposure program.
+	- Related exposure events.
+7. Show how the exposure event is linked to follow-up:
+	- `DetectedIssue` or event resource.
+	- Surveillance `ServiceRequest`.
+	- Follow-up `Task`.
+	- Any generated document or communication.
+8. Demonstrate targeted notification:
+	- Create or show the generated follow-up task for affected employees.
+	- Show the employee, clinician, supervisor, and HR each receive only the information their role permits.
+9. Close with the dashboard view showing follow-up completion, overdue items, and unresolved cases.
+
+### Suggested Talk Track
+
+- "This is not a separate occupational health sidecar. The workflow is built on Medplum's FHIR data model, access policies, tasks, forms, history, and search APIs."
+- "A clinician can move from an incident or exposure signal to a case, restriction, reevaluation task, and clearance workflow without leaving the employee record."
+- "Duty location is not just an address. It becomes a longitudinal association that can drive exposure investigation, notifications, and follow-up."
+- "The same data supports different views: full clinical context for clinicians, and minimum-necessary restriction status for supervisors or HR."
+
+### Fallback Path if a Custom Dashboard Is Not Ready
+
+If the dedicated occupational dashboard is not ready in time, use the built-in Provider views:
+
+1. **Tasks** for workflow queue and RTW follow-up.
+2. **Patient chart -> Tasks** for patient-specific occupational follow-up.
+3. **Patient chart -> Timeline** for the longitudinal record.
+4. **Patient chart -> Documents** for attached forms and external records.
+5. Direct resource views for `EpisodeOfCare`, `DetectedIssue`, `ServiceRequest`, and `Observation` only if the audience is technical.
+
+This fallback is acceptable for an internal dry run, but the Industry Day presentation should use the occupational summary and dashboard views so the demo reads as an occupational health product rather than a generic FHIR resource explorer.
 
 ---
 
@@ -500,11 +812,13 @@ The revised plan should be judged by delivery quality and demo credibility, not 
 
 ## 13. Immediate Next Actions
 
-1. Define the canonical occupational health FHIR profile set and example bundle package
-2. Create the agent work queue as small mergeable slices instead of large epics
-3. Stand up seed data that supports all primary DHS demo personas
-4. Build the first end-to-end vertical slice: pre-placement -> surveillance enrollment -> clearance
-5. Add automated validation gates so agent-generated PRs cannot merge without passing checks
+1. Add `EpisodeOfCare` read/search/history/vread to the provider access policy so RTW case containers are visible to clinicians.
+2. Curate the Avery Rivera RTW case with first-class RTW status and structured work restriction resources.
+3. Assign at least one representative `RTW case follow-up` task to the provider demo practitioner so the story starts from **My Tasks**.
+4. Add an occupational summary card or tab to the Provider patient chart for duty location, exposure context, RTW status, restrictions, and reevaluation date.
+5. Configure an exposure tracking dashboard using generated duty-location and cohort data.
+6. Create or verify supervisor/HR minimum-necessary demo access for restrictions and readiness impact without clinical details.
+7. Dry-run the step-by-step Industry Day guide in the browser and update patient/task IDs if the curated data changes.
 
 ---
 
@@ -535,6 +849,13 @@ The revised plan should be judged by delivery quality and demo credibility, not 
 - [x] Add supervisor and HR minimum-necessary occupational health examples
 - [x] Add surveillance dashboard or readiness-oriented example queries
 - [x] Add injury / exposure / RTW operational examples
+- [ ] Add `EpisodeOfCare` access to the provider demo policy
+- [ ] Add structured RTW status and restriction resources to the curated RTW patient
+- [ ] Assign curated RTW tasks to the provider demo practitioner
+- [ ] Add a Provider occupational summary card or tab
+- [ ] Add a duty-location exposure tracking dashboard
+- [ ] Add a supervisor/HR minimum-necessary demo view
+- [ ] Complete a timed Industry Day browser dry run using the step-by-step guide
 
 ---
 
@@ -543,4 +864,7 @@ The revised plan should be judged by delivery quality and demo credibility, not 
 - DHS OHS Statement of Objectives (April 14, 2026)
 - FHIR R4 Specification (HL7)
 - OSHA 1910.1020 Occupational Record Keeping
+- Medplum/Ubix generated FHIR data elements: `../../hiivecare-dev-data-pipeline/docs/medplum-ubix-demo-fhir-data-elements.md`
+- Medplum/Ubix UI glossary: `../../hiivecare-dev-data-pipeline/docs/medplum-ubix-demo-ui-glossary.md`
+- Medplum/Ubix implementation notes: `../../hiivecare-dev-data-pipeline/docs/medplum-ubix-demo-implementation-notes.md`
 - Medplum Documentation: https://www.medplum.com/docs

@@ -140,10 +140,12 @@ These accounts are project-scoped users in the `Ubix Data` Medplum project, not 
 
 For local development, the patient and provider Vite servers proxy Medplum API paths through their own origins to avoid browser CORS preflight failures. For deployed browser apps, the Medplum server config must include `MEDPLUM_ALLOWED_ORIGINS` for `https://patient.ehr.hiivehealth.net` and `https://provider.ehr.hiivehealth.net`.
 
+The provider access policy also allows read/search/history/vread for `ClientApplication` so timeline cards can display importer authors such as `ubix-data` rather than `[Forbidden]`. The provider demo membership profile points to the imported `Dr Alex Demo` practitioner so the Medplum Provider Tasks view has assigned workflow Tasks.
+
 | App | URL | Username | Password | Profile | Membership |
 | --- | --- | --- | --- | --- | --- |
 | Patient | `http://127.0.0.1:5173/` | `ubix.patient.riley@example.com` | `Hiive-2pQe87kFXKzlRcC8wmx0GBeo!6` | `Patient/5506b4b2-6557-4876-8367-7e398914bce4` | `ProjectMembership/48db19de-54cc-4233-8376-3739dcf3733d` |
-| Provider | `http://127.0.0.1:5172/` | `ubix.provider.alex@example.com` | `Hiive-7jhSWuhQA83-dGrUYkqZrtNE!6` | `Practitioner/55ac370f-8572-42d1-93a5-5d5535cda9f4` | `ProjectMembership/4e9c0e27-9cfa-4d6b-ac9a-275ae863b9da` |
+| Provider | `http://127.0.0.1:5172/` | `ubix.provider.alex@example.com` | `Hiive-7jhSWuhQA83-dGrUYkqZrtNE!6` | `Practitioner/59ea2d1d-f436-437c-a785-74850bddbfd3` | `ProjectMembership/4e9c0e27-9cfa-4d6b-ac9a-275ae863b9da` |
 
 
 ## SSM Parameter Store
