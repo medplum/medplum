@@ -336,7 +336,8 @@ export class RepositoryConnection implements Disposable {
     });
 
     // processPreCommit needs to be invoked outside of the transaction state lock to avoid deadlocks
-    // since it could involve transactions
+    // since it could involve transactions. Repository.withTransaction keeps the caller repo blocked
+    // during this window, so callback code must use the transaction-scoped repo it was given.
     if (shouldProcessPreCommit) {
       await this.processPreCommit();
     }

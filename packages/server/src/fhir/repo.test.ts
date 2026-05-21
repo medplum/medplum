@@ -775,8 +775,8 @@ describe('FHIR Repo', () => {
     });
 
     try {
-      await repo.withTransaction(async (conn) => {
-        await repo.reindexResources(conn, [patient]);
+      await repo.withTransaction(async (conn, txRepo) => {
+        await txRepo.reindexResources(conn, [patient]);
       });
       fail('Expected error');
     } catch (err) {
@@ -1391,8 +1391,8 @@ describe('FHIR Repo', () => {
       const patients: WithId<Patient>[] = [];
       let shouldError = true;
 
-      const createdPatient = await repo.withTransaction(async () => {
-        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const createdPatient = await repo.withTransaction(async (_client, txRepo) => {
+        const patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
         patients.push(patient);
 
         if (shouldError) {
@@ -1456,10 +1456,10 @@ describe('FHIR Repo', () => {
     const postCommit = jest.fn();
     let shouldError = true;
 
-    await repo.withTransaction(async () => {
-      await repo.postCommit(postCommit);
+    await repo.withTransaction(async (_client, txRepo) => {
+      await txRepo.postCommit(postCommit);
 
-      await repo.withTransaction(async () => {
+      await txRepo.withTransaction(async () => {
         if (shouldError) {
           shouldError = false;
           throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
@@ -1474,10 +1474,10 @@ describe('FHIR Repo', () => {
     const repo = systemRepo;
     const postCommit = jest.fn();
 
-    await repo.withTransaction(async () => {
+    await repo.withTransaction(async (_client, txRepo) => {
       try {
-        await repo.withTransaction(async () => {
-          await repo.postCommit(postCommit);
+        await txRepo.withTransaction(async (_client, nestedRepo) => {
+          await nestedRepo.postCommit(postCommit);
           throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
         });
       } catch {
@@ -1561,19 +1561,19 @@ describe('FHIR Repo', () => {
   test('withStatementTimeout rejects borrowed repository connections', async () => {
     const { repo } = await createTestProject({ withRepo: true });
 
-    await repo.withTransaction(async () => {
-      await expect(repo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
-        'borrowed repository connection'
-      );
+    await repo.withTransaction(async (_client, txRepo) => {
+      await expect(
+        txRepo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)
+      ).rejects.toThrow('borrowed repository connection');
     });
   });
 
-  test('withStatementTimeout rejects active transactions', async () => {
+  test('withStatementTimeout rejects parent repository during active transaction callback', async () => {
     const { repo } = await createTestProject({ withRepo: true });
 
     await repo.withTransaction(async () => {
       await expect(repo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
-        'active transaction'
+        'transaction-scoped repository'
       );
     });
   });
@@ -1668,8 +1668,8 @@ describe('FHIR Repo', () => {
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
 
-    await repo.withTransaction(async () => {
-      await expect(repo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
+    await repo.withTransaction(async (_client, txRepo) => {
+      await expect(txRepo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
         'Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction'
       );
     });
@@ -1689,8 +1689,8 @@ describe('FHIR Repo', () => {
     );
 
     await repo.withTransaction(
-      async () => {
-        await repo.withTransaction(async () => undefined);
+      async (_client, txRepo) => {
+        await txRepo.withTransaction(async () => undefined);
       },
       { serializable: true }
     );
@@ -1704,18 +1704,18 @@ describe('FHIR Repo', () => {
   });
 
   test('withTransactionStateLock serializes concurrent transaction begins', async () => {
-    const beginIssued = Promise.withResolvers<undefined>();
-    const allowBegin = Promise.withResolvers<undefined>();
-    const finishFirstTransaction = Promise.withResolvers<undefined>();
+    const savepointIssued = Promise.withResolvers<undefined>();
+    const allowSavepoint = Promise.withResolvers<undefined>();
+    const finishFirstNestedTransaction = Promise.withResolvers<undefined>();
     const secondCallbackStarted = Promise.withResolvers<undefined>();
     const queries: string[] = [];
-    let beginCount = 0;
+    let savepointCount = 0;
     const query = jest.fn(async (sql: string) => {
       queries.push(sql);
-      if (sql === 'BEGIN ISOLATION LEVEL REPEATABLE READ' && ++beginCount === 1) {
-        // Pause the first BEGIN before beginTransaction can publish transactionDepth = 1.
-        beginIssued.resolve(undefined);
-        await allowBegin.promise;
+      if (sql === 'SAVEPOINT sp2' && ++savepointCount === 1) {
+        // Pause the first nested begin before beginTransaction can publish transactionDepth = 2.
+        savepointIssued.resolve(undefined);
+        await allowSavepoint.promise;
       }
       return { rows: [] };
     });
@@ -1728,31 +1728,37 @@ describe('FHIR Repo', () => {
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
 
-    const tx1 = repo.withTransaction(async () => {
-      await finishFirstTransaction.promise;
+    await repo.withTransaction(async (_client, txRepo) => {
+      const txRepo2 = txRepo.getSystemRepo();
+      const tx1 = txRepo.withTransaction(async () => {
+        await finishFirstNestedTransaction.promise;
+      });
+      await savepointIssued.promise;
+
+      // Start a second transaction from another facade sharing the same connection while the first
+      // nested transaction is suspended in SAVEPOINT. Without the state lock, this second call can
+      // observe transactionDepth = 1 and incorrectly issue another SAVEPOINT sp2.
+      const tx2 = txRepo2.withTransaction(async () => {
+        secondCallbackStarted.resolve(undefined);
+      });
+      // Let the second transaction run any queued promise continuations. If it is not blocked by the
+      // lock, it will append its own SQL before this assertion.
+      await allowPendingMicrotasks();
+
+      // The second begin must wait until the first SAVEPOINT has completed and published transactionDepth.
+      expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
+
+      allowSavepoint.resolve(undefined);
+      await secondCallbackStarted.promise;
+      finishFirstNestedTransaction.resolve(undefined);
+      await Promise.all([tx1, tx2]);
     });
-    await beginIssued.promise;
-
-    // Start a second transaction while the first transaction is suspended in BEGIN. Without the state
-    // lock, this second call can observe transactionDepth = 0 and incorrectly issue another BEGIN.
-    const tx2 = repo.withTransaction(async () => {
-      secondCallbackStarted.resolve(undefined);
-    });
-    // Let the second transaction run any queued promise continuations. If it is not blocked by the
-    // lock, it will append its own SQL before this assertion.
-    await allowPendingMicrotasks();
-
-    // The second begin must wait until the first BEGIN has completed and published transactionDepth.
-    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ']);
-
-    allowBegin.resolve(undefined);
-    await secondCallbackStarted.promise;
-    finishFirstTransaction.resolve(undefined);
-    await Promise.all([tx1, tx2]);
 
     expect(queries).toStrictEqual([
       'BEGIN ISOLATION LEVEL REPEATABLE READ',
       'SAVEPOINT sp2',
+      'SAVEPOINT sp3',
+      'RELEASE SAVEPOINT sp3',
       'RELEASE SAVEPOINT sp2',
       'COMMIT',
     ]);
@@ -1768,7 +1774,7 @@ describe('FHIR Repo', () => {
     let releaseSavepointCount = 0;
     const query = jest.fn(async (sql: string) => {
       queries.push(sql);
-      if (sql === 'RELEASE SAVEPOINT sp2' && ++releaseSavepointCount === 1) {
+      if (sql === 'RELEASE SAVEPOINT sp3' && ++releaseSavepointCount === 1) {
         // Hold the inner commit in the database call before transactionDepth is decremented.
         releaseSavepointIssued.resolve(undefined);
         await allowReleaseSavepoint.promise;
@@ -1784,35 +1790,45 @@ describe('FHIR Repo', () => {
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
 
-    const tx1 = repo.withTransaction(async () => {
-      firstStarted.resolve(undefined);
+    await repo.withTransaction(async (_client, txRepo) => {
+      const txRepo2 = txRepo.getSystemRepo();
+      const tx1 = txRepo.withTransaction(async () => {
+        firstStarted.resolve(undefined);
+        await secondStarted.promise;
+        await finishTransactions.promise;
+      });
+      await firstStarted.promise;
+
+      const tx2 = txRepo2.withTransaction(async () => {
+        secondStarted.resolve(undefined);
+        await finishTransactions.promise;
+      });
       await secondStarted.promise;
-      await finishTransactions.promise;
+
+      expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'SAVEPOINT sp3']);
+      finishTransactions.resolve(undefined);
+      await releaseSavepointIssued.promise;
+      // Both scoped transaction callbacks have finished. Yield so the second commit path can attempt to
+      // run; it must not issue another RELEASE SAVEPOINT until the first one decrements transactionDepth.
+      await allowPendingMicrotasks();
+
+      // The other commit path must wait until transactionDepth is decremented after RELEASE SAVEPOINT.
+      expect(queries).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'SAVEPOINT sp3',
+        'RELEASE SAVEPOINT sp3',
+      ]);
+
+      allowReleaseSavepoint.resolve(undefined);
+      await Promise.all([tx1, tx2]);
     });
-    await firstStarted.promise;
-
-    const tx2 = repo.withTransaction(async () => {
-      secondStarted.resolve(undefined);
-      await finishTransactions.promise;
-    });
-    await secondStarted.promise;
-
-    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
-    finishTransactions.resolve(undefined);
-    await releaseSavepointIssued.promise;
-    // Both transaction callbacks have finished. Yield so the second commit path can attempt to run;
-    // it must not issue COMMIT until the first RELEASE SAVEPOINT has decremented transactionDepth.
-    await allowPendingMicrotasks();
-
-    // The other commit path must wait until transactionDepth is decremented after RELEASE SAVEPOINT.
-    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'RELEASE SAVEPOINT sp2']);
-
-    allowReleaseSavepoint.resolve(undefined);
-    await Promise.all([tx1, tx2]);
 
     expect(queries).toStrictEqual([
       'BEGIN ISOLATION LEVEL REPEATABLE READ',
       'SAVEPOINT sp2',
+      'SAVEPOINT sp3',
+      'RELEASE SAVEPOINT sp3',
       'RELEASE SAVEPOINT sp2',
       'COMMIT',
     ]);
@@ -1828,7 +1844,7 @@ describe('FHIR Repo', () => {
     let rollbackSavepointCount = 0;
     const query = jest.fn(async (sql: string) => {
       queries.push(sql);
-      if (sql === 'ROLLBACK TO SAVEPOINT sp2' && ++rollbackSavepointCount === 1) {
+      if (sql === 'ROLLBACK TO SAVEPOINT sp3' && ++rollbackSavepointCount === 1) {
         // Hold the inner rollback in the database call before transactionDepth is decremented.
         rollbackSavepointIssued.resolve(undefined);
         await allowRollbackSavepoint.promise;
@@ -1846,48 +1862,54 @@ describe('FHIR Repo', () => {
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
-      const tx1 = repo
-        .withTransaction(async () => {
-          firstStarted.resolve(undefined);
-          await secondStarted.promise;
-          await failTransactions.promise;
-          throw new Error('first rollback');
-        })
-        .catch((err) => err);
-      await firstStarted.promise;
+      await repo.withTransaction(async (_client, txRepo) => {
+        const txRepo2 = txRepo.getSystemRepo();
+        const tx1 = txRepo
+          .withTransaction(async () => {
+            firstStarted.resolve(undefined);
+            await secondStarted.promise;
+            await failTransactions.promise;
+            throw new Error('first rollback');
+          })
+          .catch((err) => err);
+        await firstStarted.promise;
 
-      const tx2 = repo
-        .withTransaction(async () => {
-          secondStarted.resolve(undefined);
-          await failTransactions.promise;
-          throw new Error('second rollback');
-        })
-        .catch((err) => err);
-      await secondStarted.promise;
+        const tx2 = txRepo2
+          .withTransaction(async () => {
+            secondStarted.resolve(undefined);
+            await failTransactions.promise;
+            throw new Error('second rollback');
+          })
+          .catch((err) => err);
+        await secondStarted.promise;
 
-      expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
-      failTransactions.resolve(undefined);
-      await rollbackSavepointIssued.promise;
-      // Both transaction callbacks have failed. Yield so the second rollback path can attempt to run;
-      // it must not issue ROLLBACK until the savepoint rollback has updated transactionDepth.
-      await allowPendingMicrotasks();
+        expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'SAVEPOINT sp3']);
+        failTransactions.resolve(undefined);
+        await rollbackSavepointIssued.promise;
+        // Both scoped transaction callbacks have failed. Yield so the second rollback path can attempt
+        // to run; it must not issue another ROLLBACK until the first one updates transactionDepth.
+        await allowPendingMicrotasks();
 
-      // The other rollback path must wait until transactionDepth is decremented after ROLLBACK TO SAVEPOINT.
+        // The other rollback path must wait until transactionDepth is decremented after ROLLBACK TO SAVEPOINT.
+        expect(queries).toStrictEqual([
+          'BEGIN ISOLATION LEVEL REPEATABLE READ',
+          'SAVEPOINT sp2',
+          'SAVEPOINT sp3',
+          'ROLLBACK TO SAVEPOINT sp3',
+        ]);
+
+        allowRollbackSavepoint.resolve(undefined);
+        const results = await Promise.all([tx1, tx2]);
+
+        expect(results).toEqual([expect.any(Error), expect.any(Error)]);
+      });
       expect(queries).toStrictEqual([
         'BEGIN ISOLATION LEVEL REPEATABLE READ',
         'SAVEPOINT sp2',
+        'SAVEPOINT sp3',
+        'ROLLBACK TO SAVEPOINT sp3',
         'ROLLBACK TO SAVEPOINT sp2',
-      ]);
-
-      allowRollbackSavepoint.resolve(undefined);
-      const results = await Promise.all([tx1, tx2]);
-
-      expect(results).toEqual([expect.any(Error), expect.any(Error)]);
-      expect(queries).toStrictEqual([
-        'BEGIN ISOLATION LEVEL REPEATABLE READ',
-        'SAVEPOINT sp2',
-        'ROLLBACK TO SAVEPOINT sp2',
-        'ROLLBACK',
+        'COMMIT',
       ]);
     } finally {
       errorSpy.mockRestore();
@@ -1911,12 +1933,12 @@ describe('FHIR Repo', () => {
 
     const result = await Promise.race([
       repo
-        .withTransaction(async () => {
-          await repo.preCommit(async () => {
+        .withTransaction(async (_client, txRepo) => {
+          await txRepo.preCommit(async (commitRepo) => {
             // Pre-commit callbacks are allowed to start their own nested transaction.
             // If the outer commit held transactionStateLock while running callbacks, this nested
             // transaction would wait for the lock while the outer commit waited for the callback.
-            await repo.withTransaction(async () => undefined);
+            await commitRepo.withTransaction(async () => undefined);
           });
         })
         .then(() => 'completed'),
@@ -1935,21 +1957,66 @@ describe('FHIR Repo', () => {
     ]);
   });
 
+  test('parent repository cannot start a transaction during scoped pre-commit', async () => {
+    const queries: string[] = [];
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    let parentTransactionError: unknown;
+    let parentDatabaseClientError: unknown;
+
+    await repo.withTransaction(async (_client, txRepo) => {
+      await txRepo.preCommit(async () => {
+        try {
+          // The parent repo should also be blocked for ordinary repository/database operations, not
+          // only for nested withTransaction calls.
+          repo.getDatabaseClient(DatabaseMode.WRITER);
+        } catch (err) {
+          parentDatabaseClientError = err;
+        }
+
+        try {
+          // A pre-commit callback runs before the outer COMMIT. Starting a transaction through the
+          // original repo here used to create SAVEPOINT sp2 and convert the outer commit into a
+          // savepoint release. Only the transaction-scoped repo is allowed to nest in this window.
+          await repo.withTransaction(async () => undefined);
+        } catch (err) {
+          parentTransactionError = err;
+        }
+      });
+    });
+
+    expect(parentTransactionError).toEqual(expect.any(Error));
+    expect((parentTransactionError as Error).message).toContain('transaction-scoped repository');
+    expect(parentDatabaseClientError).toEqual(expect.any(Error));
+    expect((parentDatabaseClientError as Error).message).toContain('transaction-scoped repository');
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
+  });
+
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
     const finalPostCommit = jest.fn();
 
     const error = new Error('Post-commit hook failed');
-    const promise = repo.withTransaction(async () => {
-      await repo.postCommit(async () => {
+    const promise = repo.withTransaction(async (_client, txRepo) => {
+      await txRepo.postCommit(async () => {
         throw new Error('Post-commit hook failed');
       });
-      await repo.postCommit(async () => {
+      await txRepo.postCommit(async () => {
         // eslint-disable-next-line no-throw-literal
         throw 'Post-commit hook failed with string';
       });
-      await repo.postCommit(finalPostCommit);
+      await txRepo.postCommit(finalPostCommit);
       if (mode === 'rollback') {
         throw new Error('Transaction failed');
       }
