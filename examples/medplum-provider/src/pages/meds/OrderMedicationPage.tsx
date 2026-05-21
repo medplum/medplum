@@ -20,6 +20,7 @@ import {
 } from '@mantine/core';
 import type { MedicationOrderDrugInput, MedplumClient, WithId } from '@medplum/core';
 import {
+  buildMedicationRequestResponseLostStatusReason,
   createReference,
   getCodeBySystem,
   getExtensionValue,
@@ -914,13 +915,22 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
 
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
     } catch (e) {
-      // The bot call (or downstream FHIR write) failed after the draft MR was created.
-      // Clean up the orphan draft so the MedicationsPage doesn't grow stale "draft" rows
-      // for every aborted attempt. We swallow delete failures so the original error
-      // is the one the user sees.
+      // The order-medication operation (or its downstream FHIR write) failed after
+      // the draft MR was created. We *soft*-delete instead of hard-deleting because
+      // the vendor side may have actually accepted (and even transmitted) the
+      // prescription before the response was lost — hard-deleting would leave us
+      // with a real-world Rx and no local record to reconcile against the vendor
+      // webhook. Mark the MR as `unknown` + statusReason so MedicationsPage filters
+      // can hide it from the active list while inbound reconciliation still has a
+      // resource to address. PUT is idempotent on retry. Failures here are
+      // swallowed so the original error is the one the user sees.
       if (createdMr?.id) {
         try {
-          await medplum.deleteResource('MedicationRequest', createdMr.id);
+          await medplum.updateResource<MedicationRequest>({
+            ...createdMr,
+            status: 'unknown',
+            statusReason: buildMedicationRequestResponseLostStatusReason(),
+          });
         } catch {
           // ignore - we still want to surface the original error
         }
