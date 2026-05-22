@@ -1,17 +1,8 @@
 {
   "resourceType": "Bundle",
   "type": "collection",
-  "meta": {
-    "tag": [
-      {
-        "system": "https://medplum.com/scriptsure/demo-export",
-        "code": "orderset-sync-demo",
-        "display": "Shared PlanDefinition + ActivityDefinitions for scriptsure-orderset-sync-bot (no ScriptSure orderset-id yet)"
-      }
-    ]
-  },
   "identifier": {
-    "system": "https://medplum.com/scriptsure/demo-export",
+    "system": "https://medplum.com/demo-export",
     "value": "orderset/geriatric-t2dm-starter/1.0.1"
   },
   "timestamp": "2026-05-22T17:05:00.000Z",
@@ -277,7 +268,7 @@
             }
           }
         ],
-        "description": "Sample **shared** order set for type 2 diabetes in older adults.\n\n- Metformin 500 mg BID with meals (renal gate).\n- Empagliflozin 10 mg each morning (lower SGLT2 dose for age ≥75).\n- Sitagliptin 25 mg daily (DPP-4; low hypoglycemia risk).\n\n**Sync:** POST this bundle to Medplum, then invoke `scriptsure-orderset-sync-bot` with `{ \"planDefinitionId\": \"<id>\" }`. Do not pre-stamp `https://spa.scriptsure.com/orderset-id` — the bot adds it after the first successful sync.",
+        "description": "Sample **shared** order set for type 2 diabetes in older adults.\n\n- Metformin 500 mg BID with meals (renal gate).\n- Empagliflozin 10 mg each morning (lower SGLT2 dose for age ≥75).\n- Sitagliptin 25 mg daily (DPP-4; low hypoglycemia risk).",
         "action": [
           {
             "title": "Metformin 500 mg tablet",
