@@ -1353,10 +1353,7 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
     [patientId, coverageSearchResult]
   );
 
-  const preferredPharmacyRefs = useMemo(
-    () => (patient ? getPreferredPharmaciesFromPatient(patient) : []),
-    [patient]
-  );
+  const preferredPharmacyRefs = useMemo(() => (patient ? getPreferredPharmaciesFromPatient(patient) : []), [patient]);
 
   const preferredPharmacyOrgIds = useMemo(
     () =>
@@ -1378,9 +1375,7 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
       return [];
     }
     const orgById = new Map(
-      (organizations ?? [])
-        .filter((org): org is WithId<Organization> => Boolean(org.id))
-        .map((org) => [org.id, org])
+      (organizations ?? []).filter((org): org is WithId<Organization> => Boolean(org.id)).map((org) => [org.id, org])
     );
     const rows = preferredPharmacyRefs
       .map((pref) => {
