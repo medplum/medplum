@@ -40,7 +40,10 @@ export interface ManagedIcebergAttachOptions {
 }
 
 export interface DuckdbMaterializedResult {
+  /** Rows in the result set (often 1 for INSERT/COPY completion metadata). */
   rowCount: number;
+  /** Rows inserted/updated/deleted by the statement. */
+  rowsChanged: number;
 }
 
 export interface DuckdbPreparedStatement {
@@ -74,7 +77,7 @@ export async function runParameterizedWarehouseSql(
     statement.bindValue(i + 1, values[i]);
   }
   const result = await statement.run();
-  return result.rowCount;
+  return result.rowsChanged;
 }
 
 export async function runParameterizedWarehouseSqlReadAll(
