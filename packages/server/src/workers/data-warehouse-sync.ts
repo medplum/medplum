@@ -30,7 +30,22 @@ export const DataWarehouseSyncSchedulerId = 'data-warehouse-sync';
  */
 export const DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS = 5 * 60 * 1000;
 
+export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
+  const syncConfig = config.dataWarehouse;
+  if (!syncConfig?.enabled) {
+    globalLogger.info('Data warehouse sync is disabled');
+    return;
+  }
+
+  globalLogger.info('Data warehouse sync is enabled', {
+    destination: syncConfig.destination,
+    cron: syncConfig.cron,
+  });
+}
+
 export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
+  logDataWarehouseSyncStatus(config);
+
   if (options?.workerEnabled === false) {
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
