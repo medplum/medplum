@@ -1,7 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
+/**
+ * Unit tests for `data-warehouse-sync.ts` (BullMQ worker wiring only).
+ *
+ * Covers config resolution (`getDataWarehouseSyncOptions`), scheduler upsert/remove,
+ * worker initialization, and `processDataWarehouseSyncJob` delegating to `syncData` with
+ * `onProgress` → `job.updateProgress`. Does not run the sync pipeline: `syncData` and BullMQ
+ * are mocked (`src/__mocks__/bullmq.ts`). Redis is real where `initWorkers` is exercised
+ * (via `initAppServices`), matching other worker tests.
+ *
+ * For Postgres → Parquet export behavior, see `data-warehouse/sync.int.test.ts`.
+ * For the worker job path with a real database and sync, see `data-warehouse-sync.int.test.ts`.
+ */
+
 import type { Queue } from 'bullmq';
 import { Queue as BullmqQueue, Worker } from 'bullmq';
+import { closeWorkers, initWorkers } from '.';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as DataWarehouseConfigModule from '../data-warehouse/config';
@@ -12,6 +28,7 @@ import {
   DataWarehouseSyncQueueName,
   DataWarehouseSyncSchedulerId,
   getDataWarehouseSyncOptions,
+  getDataWarehouseSyncQueue,
   initDataWarehouseSyncWorker,
   processDataWarehouseSyncJob,
   refreshDataWarehouseSyncScheduler,
@@ -27,7 +44,12 @@ jest.mock('../data-warehouse/config', () => {
   };
 });
 jest.mock('../data-warehouse/sync', () => ({
-  syncData: jest.fn(async () => ({ resources: [{ action: 'insert' }, { action: 'skip-empty' }] })),
+  syncData: jest.fn(async () => ({
+    resources: [
+      { icebergTable: 'patient_history', table: 'patient_history.parquet', count: 1 },
+      { icebergTable: 'observation_history', table: 'observation_history.parquet', count: 0 },
+    ],
+  })),
 }));
 jest.mock('bullmq');
 
@@ -259,7 +281,7 @@ describe('data-warehouse sync worker', () => {
     expect(typeof callArg?.onProgress).toStrictEqual('function');
   });
 
-  test('processDataWarehouseSyncJob onProgress updates job progress', async () => {
+  test('processDataWarehouseSyncJob forwards syncData onProgress to job.updateProgress', async () => {
     const updateProgress = jest.fn().mockResolvedValue(undefined);
     mockedSyncData.mockImplementationOnce(async (options) => {
       await options?.onProgress?.('Syncing Patient_history: 1 row(s)', {
@@ -281,6 +303,54 @@ describe('data-warehouse sync worker', () => {
       table: 'patient_history',
       icebergTable: 'patient_history',
       count: 1,
+    });
+  });
+
+  describe('initWorkers', () => {
+    let appConfig: MedplumServerConfig;
+
+    beforeAll(async () => {
+      appConfig = await loadTestConfig();
+      await initAppServices(appConfig);
+      await closeWorkers();
+    });
+
+    afterEach(async () => {
+      await closeWorkers();
+    });
+
+    afterAll(async () => {
+      await shutdownApp();
+    });
+
+    test('registers DataWarehouseSyncQueue when sync is operational', async () => {
+      initWorkers({
+        ...appConfig,
+        workers: { enabled: ['data-warehouse-sync'] },
+        dataWarehouse: {
+          enabled: true,
+          cron: '0 * * * *',
+          destination: 'local',
+          localBasePath: '/tmp/medplum-dw-worker-test',
+        },
+      });
+
+      expect(getDataWarehouseSyncQueue()).toBeDefined();
+      expect(getDataWarehouseSyncQueue()).toBeInstanceOf(BullmqQueue);
+    });
+
+    test('does not register queue when data warehouse config is invalid', async () => {
+      initWorkers({
+        ...appConfig,
+        workers: { enabled: ['data-warehouse-sync'] },
+        dataWarehouse: {
+          enabled: true,
+          cron: '0 * * * *',
+          destination: 'local',
+        },
+      });
+
+      expect(getDataWarehouseSyncQueue()).toBeUndefined();
     });
   });
 });

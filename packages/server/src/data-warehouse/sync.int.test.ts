@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/** Integration: Postgres (medplum_test) → syncData (destination: local) → Parquet on disk. */
+/** Integration tests for sync.ts: Postgres (medplum_test) → syncData → Parquet on disk. Worker wiring is tested in workers/data-warehouse-sync.test.ts. */
 
 import { DuckDBInstance } from '@duckdb/node-api';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
