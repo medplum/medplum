@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Divider, Drawer, Group, Stack } from '@mantine/core';
+import { ActionIcon, Box, Drawer, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString, isReference, isResourceWithId } from '@medplum/core';
@@ -14,11 +14,9 @@ import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
-import { SideDrawer } from '../../components/SideDrawer';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
 import { mergeOverlappingSlots } from '../../utils/slots';
-import { AppointmentCancelButton } from './AppointmentCancelButton';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
 
@@ -198,10 +196,16 @@ export function SchedulePage(): JSX.Element | null {
 
   const height = window.innerHeight - 60;
 
-  const handleAppointmentUpdate = useCallback((updated: WithId<Appointment>) => {
-    setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-    setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
-  }, []);
+  const handleAppointmentUpdate = useCallback(
+    (updated: WithId<Appointment>) => {
+      setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
+      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
+      if (updated.status === 'cancelled') {
+        appointmentDetailsHandlers.close();
+      }
+    },
+    [appointmentDetailsHandlers]
+  );
 
   const handleActorChange = useCallback(
     (ref: Reference | undefined) => {
@@ -218,14 +222,6 @@ export function SchedulePage(): JSX.Element | null {
         .catch(showErrorNotification);
     },
     [medplum, navigate]
-  );
-
-  const handleCancelled = useCallback(
-    async (cancelledAppointment: WithId<Appointment>) => {
-      handleAppointmentUpdate(cancelledAppointment);
-      appointmentDetailsHandlers.close();
-    },
-    [handleAppointmentUpdate, appointmentDetailsHandlers]
   );
 
   const schedulingEnabled = project?.features?.includes('scheduling');
@@ -291,21 +287,21 @@ export function SchedulePage(): JSX.Element | null {
           <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
         </Drawer>
       )}
-      <SideDrawer
+      <Drawer
         opened={appointmentDetailsOpened}
         onClose={appointmentDetailsHandlers.close}
-        title="Appointment Details"
+        title={
+          <Text size="xl" fw={700}>
+            Appointment Details
+          </Text>
+        }
+        position="right"
+        h="100%"
       >
         {appointmentDetails && (
-          <Stack justify="space-between" h="100%">
-            <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
-            <Stack gap="md">
-              <Divider />
-              <AppointmentCancelButton appointment={appointmentDetails} onCancel={handleCancelled} />
-            </Stack>
-          </Stack>
+          <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
         )}
-      </SideDrawer>
+      </Drawer>
     </Box>
   );
 }

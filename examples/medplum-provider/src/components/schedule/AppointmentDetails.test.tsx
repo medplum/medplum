@@ -113,6 +113,14 @@ describe('AppointmentDetails', () => {
 
       expect(screen.getByRole('button', { name: 'Update Appointment' })).toBeInTheDocument();
     });
+
+    test('renders Cancel Visit button', async () => {
+      const appointment = createAppointment();
+
+      await setup({ appointment });
+
+      expect(screen.getByRole('button', { name: 'Cancel Visit' })).toBeInTheDocument();
+    });
   });
 
   describe('Patient Selection', () => {
@@ -447,5 +455,54 @@ describe('AppointmentDetails', () => {
         expect(screen.getByText('Jane Doe')).toBeInTheDocument();
       });
     });
+  });
+
+  test('Cancel Visit button', async () => {
+    const user = userEvent.setup();
+    const appointment = createAppointment();
+    const cancelledAppointment = { ...appointment, status: 'cancelled' as const };
+
+    const postPromise = Promise.withResolvers<Appointment>();
+    const postMock = vi.fn().mockReturnValue(postPromise.promise);
+    const invalidateSearchesMock = vi.fn();
+    medplum.post = postMock;
+    medplum.invalidateSearches = invalidateSearchesMock;
+
+    // click the button
+    await setup({ appointment });
+    const button = screen.getByRole('button', { name: /Cancel Visit/i });
+    await user.click(button);
+
+    // it invokes the $cancel endpoint
+    await waitFor(() => expect(medplum.post).toHaveBeenCalled());
+    const postUrl = postMock.mock.calls[0][0];
+    expect(postUrl.toString()).toContain(`Appointment/${appointment.id}/$cancel`);
+
+    // button goes into loading state
+    await waitFor(() => expect(button).toHaveAttribute('data-loading'));
+
+    // resolve the promise
+    postPromise.resolve(cancelledAppointment);
+
+    // button is no longer loading
+    await waitFor(() => expect(button).not.toHaveAttribute('data-loading'));
+
+    // it invalidated Appointment and Slot searches on success
+    expect(invalidateSearchesMock).toHaveBeenCalledWith('Appointment');
+    expect(invalidateSearchesMock).toHaveBeenCalledWith('Slot');
+  });
+
+  test('Uncancellable appointment status', async () => {
+    const user = userEvent.setup();
+    const appointment = createAppointment();
+    const status = 'arrived' as const;
+    const arrivedAppointment = { ...appointment, status };
+    await setup({ appointment: arrivedAppointment });
+
+    // button is disabled with explanatory tooltip
+    const button = screen.getByRole('button', { name: /Cancel Visit/i });
+    await waitFor(() => expect(button).toHaveAttribute('data-disabled'));
+    await user.hover(button);
+    await waitFor(() => screen.getByText(`Can't cancel appointment with status "${status}"`));
   });
 });

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Button, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName, formatPeriod, isReference } from '@medplum/core';
 import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodingInput, Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
 import { useResource } from '@medplum/react-hooks';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { IconAlertSquareRounded, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -91,6 +91,7 @@ export function AppointmentDetails(props: {
 
   const patient = useResource(patientRef);
   const navigate = useNavigate();
+  const { appointment, onUpdate } = props;
 
   const handleSubmit = useCallback(async () => {
     if (!patient) {
@@ -139,10 +140,29 @@ export function AppointmentDetails(props: {
     }
   }, [medplum, patient, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
 
+  const cancellable = props.appointment.status === 'booked' || props.appointment.status === 'pending';
+  const cancelTooltip = cancellable ? null : `Can't cancel appointment with status "${props.appointment.status}"`;
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const handleCancel = useCallback(async () => {
+    setCancelLoading(true);
+    try {
+      const updated = await medplum.post<WithId<Appointment>>(
+        medplum.fhirUrl('Appointment', appointment.id, '$cancel')
+      );
+      medplum.invalidateSearches('Appointment');
+      medplum.invalidateSearches('Slot');
+      onUpdate(updated);
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setCancelLoading(false);
+    }
+  }, [medplum, appointment, onUpdate]);
+
   return (
     <Stack gap="md">
       <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
-
       {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onUpdate} />}
 
       {!!patient && (
@@ -195,6 +215,19 @@ export function AppointmentDetails(props: {
           </div>
         </>
       )}
+      <Divider my="md" />
+      <Tooltip label={cancelTooltip} disabled={!cancelTooltip}>
+        <Button
+          loading={cancelLoading}
+          onClick={handleCancel}
+          variant="outline"
+          color="red"
+          leftSection={<IconTrash size={16} />}
+          data-disabled={!cancellable}
+        >
+          Cancel Visit
+        </Button>
+      </Tooltip>
     </Stack>
   );
 }
