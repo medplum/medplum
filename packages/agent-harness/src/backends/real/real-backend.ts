@@ -1,64 +1,170 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { AgentHandle, AgentLauncher, SelectLauncherOptions } from '../../agent-process';
+import { createLauncher } from '../../agent-process';
 import type { AgentMaterialization, ScenarioEvent, ScenarioSpec } from '../../types';
 import type { Backend } from '../backend';
 
-/**
- * RealBackend — talks to a running medplum/server.
- *
- * v0 is a stub. The intended shape:
- *   - On `init`, authenticate a MedplumClient against `baseUrl` using a client
- *     credentials grant from RealBackendOptions.
- *   - `registerAgent` upserts the Endpoint, Bot, Agent resources via FHIR.
- *   - `startAgent` spawns @medplum/agent as a child process (or signals an
- *     existing one) with config pointing to the registered Agent.
- *   - `simulateServerUpgrade` is hardest here: we can't actually bounce the
- *     real server from inside the test. Options: (a) talk to an admin endpoint
- *     that drains agent WS connections; (b) restart the server via docker
- *     compose; (c) document this as unsupported on real backend.
- *
- * For now, every method throws so attempting to run a scenario against a real
- * backend is loud rather than silently broken.
- */
 export interface RealBackendOptions {
+  /** Base URL of a running medplum/server, e.g. http://localhost:8103/. */
   baseUrl: string;
   clientId: string;
   clientSecret: string;
+  /**
+   * Optional client credentials per agent. If absent, all agents share the
+   * outer `clientId`/`clientSecret`. v0 uses the outer set; per-agent
+   * credentials is a follow-up.
+   */
+  agentCredentials?: Record<string, { clientId: string; clientSecret: string }>;
+  /** How to launch agent processes. Falls back to platform default. */
+  launcher?: SelectLauncherOptions;
+  /** Default agent version to launch. Defaults to latest. */
+  defaultAgentVersion?: string;
 }
 
+interface RegisteredAgent {
+  materialization: AgentMaterialization;
+  handle?: AgentHandle;
+}
+
+/**
+ * RealBackend — orchestrates real @medplum/agent processes against a running
+ * medplum/server.
+ *
+ * v0 wiring:
+ *   - registerAgent: stored in-memory (FHIR upsert via MedplumClient is a
+ *     follow-up; the harness assumes resources already exist on the server,
+ *     or that the caller upserts them via their own client).
+ *   - startAgent: delegates to AgentLauncher.spawn(). On Linux/macOS dev this
+ *     is SourceAgentLauncher (or BinaryAgentLauncher); on Windows it's
+ *     WindowsInstallerAgentLauncher.
+ *   - upgradeAgent: stop → swap version → start. The Windows installer's
+ *     own upgrade path is used when going through the service.
+ *   - simulateServerUpgrade: not feasible to bounce a real server from inside
+ *     the harness. v0 throws so it's loud rather than silently no-op'd; users
+ *     should run the bounce out-of-band (docker compose restart, etc.) and
+ *     the harness will observe agents reconnecting through scenario events.
+ */
 export class RealBackend implements Backend {
   readonly kind = 'real' as const;
   readonly options: RealBackendOptions;
+  private launcher: AgentLauncher;
+  private agents = new Map<string, RegisteredAgent>();
+  private emit: (e: ScenarioEvent) => void = () => undefined;
+  private startedAtMs = 0;
 
   constructor(options: RealBackendOptions) {
     this.options = options;
+    this.launcher = createLauncher(options.launcher ?? {});
   }
 
-  async init(_scenario: ScenarioSpec, _emit: (e: ScenarioEvent) => void): Promise<void> {
-    throw new Error('RealBackend is not yet implemented; use SimulatedBackend for v0');
+  async init(_scenario: ScenarioSpec, emit: (e: ScenarioEvent) => void): Promise<void> {
+    this.emit = emit;
+    this.startedAtMs = Date.now();
+    await this.launcher.prepare(this.options.defaultAgentVersion);
+    this.recordEvent('backend.ready', { launcher: this.launcher.kind });
   }
+
   async shutdown(): Promise<void> {
-    throw new Error('not implemented');
+    for (const [nodeId, agent] of this.agents) {
+      if (agent.handle) {
+        await agent.handle.stop().catch(() => undefined);
+        this.recordEvent('agent.stopped', { nodeId });
+      }
+    }
+    this.agents.clear();
   }
-  async registerAgent(_nodeId: string, _materialization: AgentMaterialization): Promise<void> {
-    throw new Error('not implemented');
+
+  async registerAgent(nodeId: string, materialization: AgentMaterialization): Promise<void> {
+    this.agents.set(nodeId, { materialization });
+    this.recordEvent('agent.registered', { nodeId });
   }
-  async startAgent(_nodeId: string): Promise<void> {
-    throw new Error('not implemented');
+
+  async startAgent(nodeId: string): Promise<void> {
+    const agent = this.getAgent(nodeId);
+    if (agent.handle) return; // idempotent
+    const creds = this.options.agentCredentials?.[nodeId] ?? {
+      clientId: this.options.clientId,
+      clientSecret: this.options.clientSecret,
+    };
+    const agentResourceId = agent.materialization.agent.id;
+    if (!agentResourceId) {
+      throw new Error(`agent[${nodeId}] materialization has no id`);
+    }
+    agent.handle = await this.launcher.spawn({
+      nodeId,
+      baseUrl: this.options.baseUrl,
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
+      agentId: agentResourceId,
+      version: this.options.defaultAgentVersion,
+    });
+    await agent.handle.waitUntilRunning();
+    this.recordEvent('agent.started', { nodeId, pid: agent.handle.pid, launcher: agent.handle.kind });
   }
-  async stopAgent(_nodeId: string): Promise<void> {
-    throw new Error('not implemented');
+
+  async stopAgent(nodeId: string): Promise<void> {
+    const agent = this.getAgent(nodeId);
+    if (!agent.handle) return;
+    await agent.handle.stop();
+    agent.handle = undefined;
+    this.recordEvent('agent.stopped', { nodeId });
   }
-  async reloadAgentConfig(_nodeId: string): Promise<void> {
-    throw new Error('not implemented');
+
+  async reloadAgentConfig(nodeId: string): Promise<void> {
+    const agent = this.getAgent(nodeId);
+    if (agent.handle?.reload) {
+      await agent.handle.reload();
+    } else {
+      // Fallback: stop + start. Loses any in-memory state but is reliable.
+      await this.stopAgent(nodeId);
+      await this.startAgent(nodeId);
+    }
+    this.recordEvent('agent.reload-config', { nodeId });
   }
-  async upgradeAgent(_nodeId: string, _version: string): Promise<void> {
-    throw new Error('not implemented');
+
+  async upgradeAgent(nodeId: string, version: string): Promise<void> {
+    await this.stopAgent(nodeId);
+    await this.launcher.prepare(version);
+    // Inject the requested version on next spawn by overriding default.
+    const oldDefault = this.options.defaultAgentVersion;
+    this.options.defaultAgentVersion = version;
+    try {
+      await this.startAgent(nodeId);
+    } finally {
+      this.options.defaultAgentVersion = oldDefault;
+    }
+    this.recordEvent('agent.upgrade', { nodeId, version });
   }
+
   async simulateServerUpgrade(_opts: { downtimeMs: number }): Promise<void> {
-    throw new Error('not implemented');
+    throw new Error(
+      'RealBackend.simulateServerUpgrade is not supported — bounce the medplum/server out-of-band (e.g. docker compose restart server) and the harness will observe agent reconnects.'
+    );
   }
-  resolveAgentChannelTarget(_nodeId: string, _channelName: string): { host: string; port: number } {
-    throw new Error('not implemented');
+
+  resolveAgentChannelTarget(nodeId: string, channelName: string): { host: string; port: number } {
+    const agent = this.getAgent(nodeId);
+    const channel = agent.materialization.agent.channel?.find((c) => c.name === channelName);
+    if (!channel) {
+      throw new Error(`agent[${nodeId}] has no channel named '${channelName}'`);
+    }
+    const endpointId = channel.endpoint?.reference?.split('/')[1];
+    const endpoint = agent.materialization.endpoints.find((e) => e.id === endpointId);
+    if (!endpoint?.address) {
+      throw new Error(`agent[${nodeId}] channel '${channelName}' has no resolvable endpoint`);
+    }
+    const url = new URL(endpoint.address.replace(/^mllp:/, 'tcp:'));
+    return { host: url.hostname === '0.0.0.0' ? '127.0.0.1' : url.hostname, port: Number(url.port) };
+  }
+
+  private getAgent(nodeId: string): RegisteredAgent {
+    const a = this.agents.get(nodeId);
+    if (!a) throw new Error(`agent[${nodeId}] not registered with backend`);
+    return a;
+  }
+
+  private recordEvent(type: string, data?: unknown): void {
+    this.emit({ atMs: Date.now() - this.startedAtMs, type, data });
   }
 }

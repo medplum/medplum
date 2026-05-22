@@ -21,10 +21,34 @@ Test scenario harness for the Medplum Agent. v0 — local processes only.
 
 Two implementations behind a `Backend` interface:
 
-| Backend          | Status       | What it does                                                        |
-| ---------------- | ------------ | ------------------------------------------------------------------- |
-| `SimulatedBackend` | ✅ v0 working | Hosts a fake WS server in-process; tracks agents in memory.         |
-| `RealBackend`      | 🚧 stub      | Will talk to a running `medplum/server`, upsert FHIR, spawn agents. |
+| Backend          | Status        | What it does                                                                                  |
+| ---------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| `SimulatedBackend` | ✅ v0 working  | Hosts a fake WS server in-process; tracks agents in memory.                                  |
+| `RealBackend`      | ✅ v0 spawning | Spawns real `@medplum/agent` processes via `AgentLauncher`. FHIR upsert is still a follow-up. |
+
+## Agent launchers
+
+`RealBackend` delegates process lifecycle to an `AgentLauncher`. Pick one based
+on your host:
+
+| Launcher                       | Host                | Notes                                                                                                                          |
+| ------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `SourceAgentLauncher`          | any (dev)           | Runs `@medplum/agent` from monorepo source via `tsx`. Fastest iteration loop; works on macOS where no released binary exists. |
+| `BinaryAgentLauncher`          | Linux               | Downloads `medplum-agent-{version}-linux` from the meta.medplum.com release manifest, chmods, spawns with CLI args.            |
+| `WindowsInstallerAgentLauncher`| Windows / Win container | Downloads `medplum-agent-installer-{version}.exe`, writes `agent.properties`, runs `/S` silent install, manages the Windows service via `sc.exe`. Has an `unpacked-exe` mode for nanoserver-class containers without SCM. |
+
+`pickLauncherKind()` / `createLauncher()` auto-select based on `os.platform()`
+unless you override:
+
+```ts
+import { createLauncher } from '@medplum/agent-harness';
+
+const launcher = createLauncher({
+  // kind: 'source',                  // force a specific impl
+  monorepoRoot: '/path/to/medplum',   // required for 'source'
+  windowsMode: 'unpacked-exe',        // win-only: skip Windows service
+});
+```
 
 ## Run it
 

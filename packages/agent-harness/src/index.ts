@@ -12,3 +12,17 @@ export { SimulatedBackend } from './backends/simulated/simulated-backend';
 export { RealBackend, type RealBackendOptions } from './backends/real/real-backend';
 export type { Backend, BackendKind } from './backends/backend';
 export { HarnessHttpServer } from './server/http-server';
+export {
+  BinaryAgentLauncher,
+  ReleaseCache,
+  SourceAgentLauncher,
+  WindowsInstallerAgentLauncher,
+  createLauncher,
+  pickLauncherKind,
+  type AgentHandle,
+  type AgentLauncher,
+  type AgentRunState,
+  type AgentSpawnOptions,
+  type LauncherKind,
+  type SelectLauncherOptions,
+} from './agent-process';
