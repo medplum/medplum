@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProjectMembership } from '@medplum/fhirtypes';
-import type { EPrescribingIFrameOptions } from '@medplum/react-hooks';
+import type { MedicationIFrameOptions } from '@medplum/react-hooks';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
 import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotSelfEnrollmentResult } from './useDoseSpotSelfEnrollment';
 
-export interface DoseSpotIFrameOptions extends EPrescribingIFrameOptions {
+export interface DoseSpotIFrameOptions extends MedicationIFrameOptions {
   /**
    * When true, automatically runs the self-enrollment bot before loading
    * the iframe if the current user does not have a DoseSpot identifier
@@ -23,7 +23,7 @@ export interface DoseSpotIFrameOptions extends EPrescribingIFrameOptions {
  * React hook that syncs a patient to DoseSpot and returns the iframe URL.
  *
  * Runs optional self-enrollment, then the patient-sync bot (when `patientId`
- * is set), then the iframe bot — aligned with {@link useEPrescribingIFrame}
+ * is set), then the iframe bot — aligned with {@link useMedicationIFrame}
  * behavior plus DoseSpot-specific enrollment.
  *
  * @param options - Configuration and callback options.
