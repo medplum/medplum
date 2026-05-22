@@ -53,7 +53,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
   }
 }
 
-export function initPoolConfig(
+function initPoolConfig(
   config: MedplumDatabaseConfig,
   proxyEndpoint: string | undefined,
   applicationName = 'medplum-server'
