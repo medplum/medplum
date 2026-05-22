@@ -7,8 +7,8 @@ import { DuckDBInstance } from '@duckdb/node-api';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
+import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import { toIcebergTableName } from './config';
 import { LocalParquetWarehouseDestination } from './destination';
 import { syncData } from './sync';
@@ -43,6 +43,7 @@ describe('syncData local destination (integration)', () => {
    */
   beforeAll(async () => {
     const config = await loadTestConfig();
+    await initDatabase(config);
     const db = config.database;
     host = db.host ?? '';
     port = db.port ?? 5432;
@@ -50,56 +51,35 @@ describe('syncData local destination (integration)', () => {
     username = db.username ?? '';
     password = db.password ?? '';
 
-    const client = new pg.Client({
-      host,
-      port,
-      database,
-      user: username,
-      password,
-    });
-    await client.connect();
-    try {
-      await client.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
-      await client.query(`
-        CREATE TABLE "${HISTORY_TABLE}" (
-          id TEXT NOT NULL,
-          "versionId" TEXT NOT NULL,
-          content TEXT NOT NULL,
-          "lastUpdated" TIMESTAMPTZ NOT NULL
-        );
-      `);
-      await client.query(
-        `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
-        [
-          'patient-int-1',
-          '1',
-          JSON.stringify({
-            resourceType: 'Patient',
-            id: 'patient-int-1',
-            meta: { project: 'project-from-json' },
-          }),
-          '2024-06-01T12:00:00.000Z',
-        ]
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    await pool.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+    await pool.query(`
+      CREATE TABLE "${HISTORY_TABLE}" (
+        id TEXT NOT NULL,
+        "versionId" TEXT NOT NULL,
+        content TEXT NOT NULL,
+        "lastUpdated" TIMESTAMPTZ NOT NULL
       );
-    } finally {
-      await client.end();
-    }
+    `);
+    await pool.query(
+      `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      [
+        'patient-int-1',
+        '1',
+        JSON.stringify({
+          resourceType: 'Patient',
+          id: 'patient-int-1',
+          meta: { project: 'project-from-json' },
+        }),
+        '2024-06-01T12:00:00.000Z',
+      ]
+    );
   }, 10_000);
 
   afterAll(async () => {
-    const client = new pg.Client({
-      host,
-      port,
-      database,
-      user: username,
-      password,
-    });
-    await client.connect();
-    try {
-      await client.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
-    } finally {
-      await client.end();
-    }
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    await pool.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+    await closeDatabase();
     if (outDir) {
       rmSync(outDir, { recursive: true, force: true });
     }
