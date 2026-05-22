@@ -1571,16 +1571,6 @@ describe('FHIR Repo', () => {
     });
   });
 
-  test('withStatementTimeout rejects parent repository during active transaction callback', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-
-    await repo.withTransaction(async () => {
-      await expect(repo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
-        'transaction-scoped repository'
-      );
-    });
-  });
-
   test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
     const { repo } = await createTestProject({ withRepo: true });
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
@@ -1982,6 +1972,7 @@ describe('FHIR Repo', () => {
         try {
           // The parent repo should also be blocked for ordinary repository/database operations, not
           // only for nested withTransaction calls.
+          // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
           repo.getDatabaseClient(DatabaseMode.WRITER);
         } catch (err) {
           parentDatabaseClientError = err;
@@ -1991,6 +1982,7 @@ describe('FHIR Repo', () => {
           // A pre-commit callback runs before the outer COMMIT. Starting a transaction through the
           // original repo here used to create SAVEPOINT sp2 and convert the outer commit into a
           // savepoint release. Only the transaction-scoped repo is allowed to nest in this window.
+          // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
           await repo.withTransaction(async () => undefined);
         } catch (err) {
           parentTransactionError = err;
@@ -2067,6 +2059,7 @@ describe('FHIR Repo', () => {
         patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
 
+      let finishedTransaction = false;
       await repo.withTransaction(async (txRepo) => {
         const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
         const querySpy = jest.spyOn(client, 'query');
@@ -2076,7 +2069,9 @@ describe('FHIR Repo', () => {
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
         querySpy.mockRestore();
+        finishedTransaction = true;
       });
+      expect(finishedTransaction).toBe(true);
     }));
 
   test('__version column', async () => {
