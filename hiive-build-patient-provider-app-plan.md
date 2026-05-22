@@ -260,6 +260,7 @@ Provider access policy:
 - Permit search/read for patient charts and supporting resources.
 - Permit create/update for workflow resources the app uses, such as `Encounter`, `Condition`, `Observation`, `MedicationRequest`, `ServiceRequest`, `DiagnosticReport`, `Task`, `Communication`, `Appointment`, `Schedule`, and `Slot`.
 - Permit read/search/history/vread for `ClientApplication` so timeline cards can resolve `meta.author` references from the `ubix-data` importer instead of rendering `[Forbidden]`.
+- Permit read/search/history/vread for `EpisodeOfCare` so RTW and exposure case containers can be inspected from provider workflows.
 - Do not grant admin-only resources unless a workflow explicitly requires them.
 
 Live access policy IDs:
@@ -267,7 +268,7 @@ Live access policy IDs:
 | Purpose | AccessPolicy ID | Notes |
 | --- | --- | --- |
 | Patient portal template | `ca3a5687-5a1a-4301-95b4-15a977ad29e4` | Uses Medplum's parameterized patient policy pattern with `%patient` and patient-compartment criteria. |
-| Provider portal clinical access | `05fa99c3-6400-4d8c-af38-8b00b890315d` | Grants provider clinical workflow access without project/server administration resources. Includes read/search/history/vread for `ClientApplication` to display importer authors such as `ubix-data` in timelines. |
+| Provider portal clinical access | `05fa99c3-6400-4d8c-af38-8b00b890315d` | Grants provider clinical workflow access without project/server administration resources. Includes read/search/history/vread for `ClientApplication` to display importer authors such as `ubix-data` in timelines, and read/search/history/vread for `EpisodeOfCare` to inspect RTW/exposure case containers. |
 | Browser client credentials guardrail | `eabeb0e2-56c3-4d3d-8cea-41e6ec331b42` | Assigned to the patient/provider `ClientApplication` memberships so client-credentials tokens cannot inherit broad project access. |
 
 ### Users And Memberships

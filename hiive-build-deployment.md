@@ -140,7 +140,7 @@ These accounts are project-scoped users in the `Ubix Data` Medplum project, not 
 
 For local development, the patient and provider Vite servers proxy Medplum API paths through their own origins to avoid browser CORS preflight failures. For deployed browser apps, the Medplum server config must include `MEDPLUM_ALLOWED_ORIGINS` for `https://patient.ehr.hiivehealth.net` and `https://provider.ehr.hiivehealth.net`.
 
-The provider access policy also allows read/search/history/vread for `ClientApplication` so timeline cards can display importer authors such as `ubix-data` rather than `[Forbidden]`. The provider demo membership profile points to the imported `Dr Alex Demo` practitioner so the Medplum Provider Tasks view has assigned workflow Tasks.
+The provider access policy also allows read/search/history/vread for `ClientApplication` so timeline cards can display importer authors such as `ubix-data` rather than `[Forbidden]`, and read/search/history/vread for `EpisodeOfCare` so clinicians can inspect RTW case containers. The provider demo membership profile points to the imported `Dr Alex Demo` practitioner so the Medplum Provider Tasks view has assigned workflow Tasks, including the curated RTW follow-up task.
 
 | App | URL | Username | Password | Profile | Membership |
 | --- | --- | --- | --- | --- | --- |

@@ -107,12 +107,12 @@ describe('App', () => {
 });
 
 function isNavOpen(): boolean {
-  return screen.getByTitle('Medplum Logo').closest('button')?.getAttribute('aria-expanded') === 'true';
+  return screen.getByAltText('Hiive Health').closest('button')?.getAttribute('aria-expanded') === 'true';
 }
 
 async function openNav(user: UserEvent): Promise<void> {
   if (!isNavOpen()) {
-    await user.click(screen.getByTitle('Medplum Logo'));
+    await user.click(screen.getByAltText('Hiive Health'));
   }
 }
 

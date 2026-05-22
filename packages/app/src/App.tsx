@@ -3,7 +3,7 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import type { NavbarMenu } from '@medplum/react';
-import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
+import { AppShell, Loading, useMedplum } from '@medplum/react';
 import {
   IconBrandAsana,
   IconBuilding,
@@ -39,7 +39,13 @@ export function App(): JSX.Element {
 
   return (
     <AppShell
-      logo={<Logo size={24} />}
+      logo={
+        <img
+          src="/img/hiive-health-logo.svg"
+          alt="Hiive Health"
+          style={{ display: 'block', width: 172, height: 'auto' }}
+        />
+      }
       pathname={location.pathname}
       searchParams={searchParams}
       version={MEDPLUM_VERSION}
