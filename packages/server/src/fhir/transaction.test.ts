@@ -51,14 +51,18 @@ describe('FHIR Repo Transactions', () => {
       expect(searchCheck1.entry).toHaveLength(1);
     }));
 
-  test('Transaction callback must use the scoped repository', () =>
+  test('invoking repository rejects operations during active transaction callback', () =>
     withTestContext(async () => {
       let patient: Patient | undefined;
 
       await repo.withTransaction(async (txRepo) => {
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        expect(() => repo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('transaction-scoped repository');
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
         await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
           'transaction-scoped repository'
         );
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
         await expect(repo.searchResources(parseSearchRequest('Patient'))).rejects.toThrow(
           'transaction-scoped repository'
         );
@@ -72,7 +76,9 @@ describe('FHIR Repo Transactions', () => {
   test('ensureInTransaction callback must use the scoped repository when starting transaction', () =>
     withTestContext(async () => {
       const patient = await repo.ensureInTransaction(async (txRepo) => {
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
         expect(txRepo).not.toBe(repo);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
         await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
           'transaction-scoped repository'
         );
@@ -87,6 +93,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       await repo.withTransaction(async (txRepo) => {
         const patient = await txRepo.ensureInTransaction(async (ensuredRepo) => {
+          // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
           expect(ensuredRepo).toBe(txRepo);
           return ensuredRepo.createResource<Patient>({ resourceType: 'Patient' });
         });

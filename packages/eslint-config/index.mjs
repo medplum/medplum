@@ -7,12 +7,20 @@ import importPlugin from 'eslint-plugin-import';
 import jsdoc from 'eslint-plugin-jsdoc';
 import noOnlyTestsPlugin from 'eslint-plugin-no-only-tests';
 import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
+import reactRefreshPlugin from 'eslint-plugin-react-refresh';
+// eslint-disable-next-line import/no-unresolved -- Node resolves this package export; eslint-plugin-import does not.
 import tseslint from 'typescript-eslint';
+import noTransactionCallbackInvokingRepo from './rules/no-transaction-callback-invoking-repo.mjs';
 
 // Workaround for eslint-plugin-header ESLint 9 compatibility issue.
 // See: https://github.com/Stuk/eslint-plugin-header/issues/57#issuecomment-2378485611
 headerPlugin.rules.header.meta.schema = false;
+
+const medplumPlugin = {
+  rules: {
+    'no-transaction-callback-invoking-repo': noTransactionCallbackInvokingRepo,
+  },
+};
 
 /**
  * Core config applies to all source files.
@@ -147,7 +155,7 @@ export const tsConfig = {
     },
     tseslint.configs.strict,
     reactHooks.configs.flat.recommended,
-    reactRefresh.configs.recommended,
+    reactRefreshPlugin.configs.recommended,
   ],
   plugins: {
     'no-only-tests': noOnlyTestsPlugin,
@@ -295,6 +303,15 @@ export const medplumEslintConfig = [
   },
   coreConfig,
   tsConfig,
+  {
+    files: ['packages/fhir-router/**/*.ts', 'packages/server/**/*.ts'],
+    plugins: {
+      medplum: medplumPlugin,
+    },
+    rules: {
+      'medplum/no-transaction-callback-invoking-repo': 'error',
+    },
+  },
   /**
    * vite.config.ts is often outside package tsconfig include (e.g. rootDir src); skip type-aware parsing.
    *
