@@ -15,7 +15,18 @@ export type ExternalSecret<T extends ExternalSecretPrimitive = ExternalSecretPri
   type: TypeName<T>;
 };
 export type ValueOrExternalSecret<T extends ExternalSecretPrimitive> = T | ExternalSecret<T>;
+
 export type StringMap = { [key: string]: string };
+export interface DataWarehouseSourceInfraConfig {
+  tableBucketName: ValueOrExternalSecret<string>;
+  namespace?: ValueOrExternalSecret<string>;
+  catalogName?: ValueOrExternalSecret<string>;
+}
+export interface DataWarehouseInfraConfig {
+  tableBucketName: string;
+  namespace?: string;
+  catalogName?: string;
+}
 
 export interface MedplumSourceInfraConfig {
   name: ValueOrExternalSecret<string>;
@@ -188,6 +199,7 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   };
+  dataWarehouse?: DataWarehouseSourceInfraConfig;
 }
 
 export interface MedplumInfraConfig {
@@ -361,4 +373,5 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   };
+  dataWarehouse?: DataWarehouseInfraConfig;
 }
