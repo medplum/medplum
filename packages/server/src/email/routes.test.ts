@@ -6,7 +6,7 @@ import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { initTestAuth } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -52,6 +52,55 @@ describe('Email API Routes', () => {
         text: 'Body',
       });
     expect(res.status).toBe(403);
+    expect(res.body.issue[0].details.text).toBe('Only project administrators can send emails');
+  });
+
+  test('Email feature not enabled for project', async () => {
+    const accessToken = await initTestAuth({
+      project: { features: [] },
+      membership: { admin: true },
+    });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        to: 'alice@example.com',
+        subject: 'Subject',
+        text: 'Body',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Email feature is not enabled for this project');
+  });
+
+  test('Email not configured on server', async () => {
+    // Save original config values
+    const config = getConfig();
+    const originalEmailProvider = config.emailProvider;
+    const originalSmtp = config.smtp;
+
+    // Clear email configuration
+    config.emailProvider = '' as never;
+    config.smtp = undefined;
+
+    try {
+      const accessToken = await initTestAuth({ membership: { admin: true } });
+      const res = await request(app)
+        .post(`/email/v1/send`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          to: 'alice@example.com',
+          subject: 'Subject',
+          text: 'Body',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toBe('Email is not configured on this server. Set up SMTP or AWS SES.');
+    } finally {
+      // Restore config
+      config.emailProvider = originalEmailProvider;
+      config.smtp = originalSmtp;
+    }
   });
 
   test('Wrong content type', async () => {
