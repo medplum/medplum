@@ -22,10 +22,10 @@ describe('toEqualUnordered', () => {
   });
 
   test('supports asymmetric matchers inside expected', () => {
-    expect([{ name: 'a', value: 1 }, { name: 'b', value: 2 }]).toEqualUnordered([
-      expect.objectContaining({ name: 'b' }),
-      expect.objectContaining({ name: 'a' }),
-    ]);
+    expect([
+      { name: 'a', value: 1 },
+      { name: 'b', value: 2 },
+    ]).toEqualUnordered([expect.objectContaining({ name: 'b' }), expect.objectContaining({ name: 'a' })]);
   });
 
   test('passes empty against empty', () => {
@@ -39,8 +39,6 @@ describe('toEqualUnordered', () => {
   });
 
   test('asymmetric matcher fails when length differs', () => {
-    expect(() =>
-      expect({ arr: [1, 2, 3, 4] }).toEqual({ arr: expect.toEqualUnordered([1, 2, 3]) })
-    ).toThrow();
+    expect(() => expect({ arr: [1, 2, 3, 4] }).toEqual({ arr: expect.toEqualUnordered([1, 2, 3]) })).toThrow();
   });
 });
