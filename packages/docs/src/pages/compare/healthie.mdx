@@ -1,0 +1,33 @@
+# Medplum vs Healthie
+
+Medplum and Healthie both help healthcare organizations launch clinical workflows, but they start from different architectural assumptions. Healthie starts with a packaged care delivery application and exposes APIs around that application. Medplum starts with open source, FHIR-native healthcare infrastructure and includes a forkable Provider App for teams that want a working clinical surface without giving up control of the underlying platform.
+
+## Quick Comparison
+
+| Capability | Medplum | Healthie |
+| --- | --- | --- |
+| Primary use case | Build custom healthcare applications, clinical workflows, and infrastructure | Launch and operate care delivery workflows on a packaged application |
+| Hosted SaaS | Yes. Medplum offers a hosted cloud platform for production healthcare workloads | Yes. Healthie is primarily delivered as a hosted application platform |
+| Open source | Yes. Medplum is Apache 2.0 open source | No. Healthie is a commercial SaaS platform |
+| Self-hosting | Yes. Teams can self-host Medplum in their own cloud environment | Not typically offered as the primary deployment model |
+| Clinical application | Includes the Medplum Provider App as a working clinical application and custom EHR starting point | Includes an out-of-the-box care delivery application |
+| API philosophy | API-first from the data layer up: FHIR resources, auth, apps, automation, and integrations are all platform primitives | API-accessible application: APIs extend and integrate with the Healthie product |
+| Customization model | Fork the app, build with React components, extend FHIR resources, automate with Bots, integrate through APIs | Configure the application and extend through supported platform features and APIs |
+| Data model | FHIR-native resource graph | Commercial application data model with healthcare APIs |
+| APIs | FHIR APIs, GraphQL, SDKs, SMART on FHIR, OAuth2, webhooks, and event-driven automation | APIs available for integration with the Healthie platform |
+| Automation | TypeScript Bots, Subscriptions, webhooks, background jobs, and event-driven workflows | Platform workflow features and API-based integrations |
+| Best fit | Teams that want software ownership, deep customization, infrastructure control, or AI-native workflows | Teams that want a faster day-one care delivery application and can accept the constraints of that application model |
+
+For many healthcare startups, Healthie is a sensible place to begin. It offers a fast path to launching care delivery, with scheduling, patient engagement, charting, and operational tooling available out of the box. For teams whose product is the clinical service itself — and whose differentiation lives in operations, brand, and care model rather than software — that's often the right choice for a long time.
+
+The calculus changes when software is the product. As organizations scale, custom workflows that once felt like edge cases become core to the business. Integrations multiply. AI initiatives start running into the limits of fixed data models. Product differentiation begins to depend on shaping the platform itself, not just configuring it.
+
+That is the inflection point where [Medplum](https://www.medplum.com) is built to serve.
+
+Medplum is a FHIR-native healthcare platform designed for organizations that treat healthcare software as a strategic asset. Rather than a fixed application extended through APIs, Medplum exposes the healthcare operating layer directly: a FHIR-compliant data store, subscriptions and event-driven bots, fine-grained access policies, project-level multi-tenancy, and embeddable React components. Every part of the system is composable and extensible by design, and the entire platform is open source under the Apache 2.0 license, with self-hosting fully supported.
+
+This does not mean starting from scratch. Medplum ships a Provider App that covers the common surface area of clinical operations — patient registration, scheduling, charting, labs, e-prescribing through partner integrations, and billing workflows — built directly on the same FHIR resources and primitives that power the platform. Teams can use it as-is, fork it, extend it incrementally, or replace pieces of it. The point is architectural: these are not workflows trapped inside a monolithic application, they are reference implementations on top of an open platform. The same data model and access controls power both the out-of-the-box experience and anything a team builds alongside it.
+
+That architecture matters more in the AI era than it did five years ago. Modern healthcare software increasingly depends on event-driven workflows, agent-based automation, and deep interoperability — patterns that fit naturally on an FHIR resource graph with subscriptions and webhooks, and become increasingly difficult to model on closed schemas and fixed workflow abstractions. As FHIR continues to anchor regulatory direction (USCDI, CMS-0057 prior authorization, TEFCA) and as MCP and similar protocols make agent access to clinical data a first-class concern, teams on programmable FHIR-native infrastructure have a shorter distance to travel.
+
+Healthie and Medplum are aimed at different points on that spectrum. Many organizations are well-served by Healthie for years. But as healthcare software itself becomes a source of differentiation, the underlying platform increasingly matters. For teams whose roadmap calls for custom clinical workflows, deep integrations, AI-native automation, infrastructure ownership, or the option to self-host on their own cloud account — Medplum is built around exactly those requirements rather than treating them as extensions. Open source, FHIR-native, and programmable from the data layer up: that combination is rare, and it's the foundation we think the next generation of healthcare software will be built on.

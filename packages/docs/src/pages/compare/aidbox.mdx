@@ -1,0 +1,13 @@
+# Medplum vs Aidbox
+
+Medplum and Aidbox are often evaluated together. Both are FHIR-native platforms aimed at engineering teams building programmable healthcare infrastructure, both go beyond a bare FHIR server, and both treat extensibility and developer experience as first-class concerns.
+
+The differences worth understanding are concrete: what ships in the box, what the licensing looks like, and where each platform invests.
+
+Licensing. Medplum is fully open source under Apache 2.0. The repository is the product — the same codebase that powers our hosted service is what teams self-host on their own AWS accounts in production. Aidbox is a commercial product with a free development tier and paid licenses for production use. Both models are legitimate; they're different commitments, and the right choice depends on whether infrastructure ownership and license-cost predictability matter to the team adopting it.
+
+Applications, not just APIs. Medplum ships a Provider App as part of the open source platform — patient registration, scheduling, charting, labs, e-prescribing workflows, and billing — built directly on the same FHIR resources and access policies that developers extend. Teams use it as-is, fork it, or replace pieces of it incrementally. Aidbox is positioned as infrastructure; the application layer is something teams build on top. For organizations that want a working clinical surface from day one and a programmable platform underneath it, that distinction matters.
+
+Embeddable UI. Medplum publishes a React component library — search inputs, resource forms generated from StructureDefinitions, questionnaire renderers, timeline views — that drops into custom applications. Building FHIR-aware UI from scratch is a real cost, and the component library is one of the things teams cite most often when explaining why they chose Medplum.
+
+Bots and event-driven workflows. Medplum Bots are TypeScript functions deployed to the platform that run in response to FHIR Subscription events, with secrets, logging, retries, and a test harness handled by the platform. Both platforms support FHIR Subscriptions; the difference is whether the execution environment for event-driven logic is something the team operates separately or something the platform provides.
