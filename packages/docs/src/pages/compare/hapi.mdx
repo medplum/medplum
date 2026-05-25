@@ -1,0 +1,37 @@
+# Medplum vs HAPI FHIR
+
+Medplum and HAPI FHIR are both open source FHIR technologies, but they solve different layers of the healthcare software stack. HAPI FHIR is a FHIR server and Java framework for teams that want to assemble their own healthcare infrastructure. Medplum is an open source, FHIR-native healthcare platform with a hosted cloud offering, self-hosting support, authentication, access control, automation, application components, and a forkable Provider App built on top.
+
+## Quick Comparison
+
+| Capability | Medplum | HAPI FHIR |
+| --- | --- | --- |
+| Primary use case | Build and operate healthcare applications, clinical workflows, APIs, and infrastructure | Build or embed a FHIR server in a Java-based application stack |
+| Open source | Yes. Apache 2.0 open source | Yes. Apache 2.0 open source |
+| Hosted SaaS | Yes. Medplum offers a hosted cloud platform for production healthcare workloads | No first-party hosted SaaS offering from the open source project |
+| Self-hosting | Yes. Teams can self-host Medplum in their own cloud environment | Yes. Teams deploy and operate HAPI FHIR themselves |
+| FHIR server | Included as the core data layer of the platform | Core product |
+| Authentication | OAuth2, OIDC, SMART on FHIR, project membership, service accounts, and application auth patterns | Typically implemented by the adopting team or surrounding application stack |
+| Authorization | Declarative AccessPolicy resources, project isolation, compartment-aware access, and healthcare-specific rules | Typically implemented with interceptors, custom code, or surrounding infrastructure |
+| Application layer | Includes the Medplum Provider App, Admin App, React components, and SDKs | Application layer is built by the adopting team |
+| Automation | TypeScript Bots, Subscriptions, webhooks, secrets, logs, retries, and test tooling | Subscriptions and extension points are available; execution environment is built and operated separately |
+| Integrations | Platform support for healthcare integrations such as labs, e-prescribing partners, identity providers, billing workflows, and HL7/FHIR connectivity | Integration behavior is built by the adopting team using HAPI and surrounding tools |
+| Best fit | Teams that want open source FHIR infrastructure plus the surrounding platform needed to build a healthcare product | Teams whose main requirement is a FHIR server or Java FHIR framework |
+
+For many healthcare engineering teams, HAPI FHIR is the default starting point for FHIR infrastructure. It provides a validating FHIR datastore, a subscription mechanism, an interceptor model for custom logic, and the building blocks to assemble a compliant FHIR API.
+
+The question most teams eventually run into isn't whether HAPI works. It's how much surrounding infrastructure they end up building around it.
+
+A production healthcare application needs more than a FHIR server. It needs an authentication and authorization model that can express clinic-scoped, role-based, sometimes field-level access without writing custom interceptors for each rule. It needs multi-tenancy that doesn't require running a separate server per customer. It needs a way to run code in response to resource changes — not just a webhook endpoint teams have to deploy and operate themselves, but managed execution with secrets, logging, retries, and a deployment story. It needs an admin UI that clinical and operational staff can actually use. It needs SMART-on-FHIR and OAuth. It needs audit logging that satisfies HIPAA. It needs integrations with the systems healthcare actually runs on: e-prescribing networks, lab interfaces, identity providers, billing.
+
+HAPI doesn't attempt to provide most of that. It's a FHIR server, deliberately scoped. The work of turning it into a healthcare application platform is left to the team building the application. For some organizations, that's exactly the right abstraction layer. But for teams building full healthcare products, the surrounding platform quickly becomes the majority of the engineering effort.
+
+[Medplum](https://www.medplum.com) is built to close that gap without giving up the things that drew teams to FHIR infrastructure in the first place: open source, self-hostable, FHIR-native, and engineer-controlled.
+
+Medplum starts with a FHIR-compliant datastore, but the platform around it is where the difference shows up. Access policies are declarative FHIR resources with parameterized queries, so a “clinicians can only see patients in their assigned clinic” rule is a config artifact, not interceptor code. Projects provide tenant isolation in a single deployment. Bots are TypeScript functions deployed to the platform that run in response to FHIR subscription events, with secrets, logging, and a test harness handled for you — turning event-driven workflows from “wire up a webhook receiver and operate it yourself” into a primitive you compose with. The React component library gives engineering teams resource-aware UI building blocks — search, forms generated from StructureDefinitions, questionnaire renderers — that drop into a custom app without rebuilding FHIR-aware UI from scratch. SMART-on-FHIR, OAuth2, OIDC, and audit logging are first-class.
+
+This isn't positioned against open source infrastructure — Medplum is open source infrastructure, Apache 2.0, with self-hosting fully supported and used in production by teams running on their own AWS accounts. The choice isn't framework versus closed SaaS. It's “FHIR server plus everything you build around it” versus “a platform where the things you'd build around a FHIR server are already there, in the same repository, under the same license.”
+
+The calculus is sharper now than it was a few years ago. Healthcare software increasingly depends on event-driven automation, agent-accessible clinical data, and integrations across fragmented systems — patterns that fit naturally on a platform with subscriptions, bots, and a programmable resource graph, and that get expensive to retrofit onto a bare FHIR server.
+
+HAPI remains a strong fit for teams whose product is the FHIR layer itself — interoperability gateways, standards-compliant APIs in front of legacy systems, research infrastructure where the FHIR server is the deliverable. But for teams building complete healthcare products on top of FHIR, the surrounding platform becomes the work. Medplum exists so that work is something teams extend rather than something they assemble from scratch.

@@ -1,0 +1,100 @@
+# Medplum vs. OystEHR
+
+For the past few years, healthcare infrastructure has been converging on a shared thesis: the future of the EHR is API-first, FHIR-native, composable, and developer-centric.
+
+Two platforms frequently evaluated in this space are **Medplum** and **OystEHR**. Both offer modern alternatives to legacy healthcare software, embrace FHIR standards, and position themselves as extensible infrastructure rather than monolithic software suites.
+
+However, a closer look at their underlying architectural philosophies, regulatory alignments, and long-term economic models reveals distinct paths. While both platforms are capable, Medplum is built to provide unique long-term sovereignty and full-stack velocity for scalable health-tech enterprises.
+
+## At a Glance: Architectural Comparison
+
+| Dimension             | OystEHR                                           | Medplum                                                           |
+| --------------------- | ------------------------------------------------- | ----------------------------------------------------------------- |
+| **Core Architecture** | Headless Backend-as-a-Service (BaaS)              | Full-Stack Open Source Infrastructure                             |
+| **License**           | Proprietary Backend (Open-source frontend tools)  | 100% Open Source (Apache 2.0)                                     |
+| **FHIR Strategy**     | Native FHIR R5                                    | FHIR R4 (Targeting US Core alignment to R6)                       |
+| **UI Layer**          | Backend APIs only (UI must be built from scratch) | Pre-built React Component Library & Provider App                  |
+| **Integration Model** | Aggregator/Reseller only                          | Hybrid: Provisioned Reseller or Bring-Your-Own-Credentials (BYOC) |
+| **Compliance**        | Infrastructure compliance                         | ONC-Certified Base EHR                                            |
+
+## Architectural Philosophy: Headless BaaS vs. Full-Stack Infrastructure
+
+At a high level, both platforms solve the same foundational problem: removing the need for software teams to build authentication, FHIR data models, audit logs, and scheduling workflows from scratch. The divergence lies in how they view vendor dependence.
+
+### OystEHR
+
+OystEHR operates primarily as a **headless backend-as-a-service**. It is optimized for teams that want a fully managed cloud database coupled with pre-integrated medical service APIs right out of the box. The trade-off is a higher degree of platform dependence, as the core backend stack is proprietary.
+
+### Medplum
+
+Medplum is an **open-source healthcare infrastructure stack**. It simultaneously serves as an ONC-certified Base EHR, a production-ready Provider Application, and an extensible developer platform. Because the core architecture is entirely transparent, teams retain complete insight into—and ownership over—their data layer.
+
+## The FHIR Roadmap: Navigating R4, R5, and R6
+
+On a standard features sheet, OystEHR’s native support for FHIR R5 looks like a clear upgrade over Medplum’s adherence to FHIR R4. In traditional software development, "newer is better." In the regulated landscape of US healthcare compliance, however, timing is everything.
+
+The United States Regulators Steering Committee (USRSC) signaled a strategic direction for US Core data standards, indicating that future compliance frameworks will largely bypass FHIR R5 in favor of the upcoming FHIR R6.
+
+- **Medplum’s Strategy:** By anchoring firmly to FHIR R4, Medplum ensures absolute alignment with current USCDI and ONC certification requirements. This pragmatic approach allows engineering teams to meet today's regulatory requirements safely while positioning the core architecture to leapfrog directly to R6 when the market demands it.
+- **The R5 Consideration:** Building a production system heavily dependent on FHIR R5 extensions in the US market risks technical isolation if regulatory bodies and major health systems skip R5 adoption entirely.
+
+## Time-to-Market: Serverless Architecture and Frontend Velocity
+
+There is a common perception that backend aggregators offer inherently faster initial deployment times due to serverless execution environments (often referred to as "Zambdas").
+
+To evaluate this accurately, we have to look at both the backend and the frontend:
+
+### 1. Backend Equivalence
+
+From a pure compute perspective, Medplum "Bots" and OystEHR "Zambdas" are architecturally identical. Both utilize sandboxed, event-driven serverless TypeScript/JavaScript functions running on AWS Lambda behind the scenes. Medplum matches this serverless agility step-for-step.
+
+### 2. The Frontend Bottleneck
+
+In digital health, the ultimate bottleneck to shipping a product is rarely the backend APIs—it is building a complex, highly compliant clinical user interface that providers can actually use.
+
+Because OystEHR is strictly headless, teams must design, build, and maintain their own charting, scheduling, and provider dashboards from scratch. Medplum, by contrast, includes a mature library of **pre-built React components** alongside a production-ready Provider App. This full-stack foundation significantly reduces engineering overhead on the frontend, where the majority of deployment delays typically occur.
+
+## Integration Economics: Aggregators vs. Commercial Sovereignty
+
+Another critical point of comparison is how each platform handles third-party medical integrations (such as e-prescribing, labs, and eligibility checks).
+
+```
+OystEHR Model:
+[Your App] ──> [OystEHR Platform (Aggregator)] ──> [Third-Party Vendor] (Markup applied permanently)
+
+Medplum Model:
+[Your App] ──> [Medplum Platform] ──> [Third-Party Vendor via BYOC] (Direct contract, wholesale pricing)
+
+```
+
+OystEHR acts as an API aggregator, bundling these services directly into their platform. While convenient for day-one prototyping, it introduces long-term economic trade-offs.
+
+Medplum supports a hybrid integration ecosystem designed to scale with a company's growth:
+
+- **The Provisioned Model:** For early-stage startups, Medplum can provision credentials out-of-the-box for major networks like DoseSpot, Quest, Labcorp, and Health Gorilla, matching the immediate speed of an aggregator.
+- **The Bring Your Own Credentials (BYOC) Model:** As transaction volumes scale into the tens of thousands, buying through a middleman becomes cost-prohibitive. Medplum allows companies to seamlessly transition to their own direct vendor contracts. This guarantees the freedom to negotiate volume discounts directly with vendors without rewriting a single line of infrastructure code.
+
+## Open Source and the DevOps Reality
+
+Choosing open-source infrastructure sometimes raises concerns about a "DevOps tax"—the assumption that choosing Medplum forces an engineering team to manage complex container orchestration, database scaling, and compliance auditing from day one.
+
+> **Self-hosting is an option, not a requirement.**
+
+Medplum offers a fully managed, hosted SaaS cloud tier (complete with a generous sandbox environment for prototyping). Developers can build, test, and scale applications on Medplum Cloud without touching a Docker container or configuring an AWS cluster.
+
+The true value of Medplum’s Apache 2.0 license is **optionality**. It gives enterprises the operational simplicity of a managed SaaS today, while permanently securing the right to self-host for absolute data sovereignty or custom infrastructure optimization tomorrow. OystEHR's closed backend leaves teams tethered to a single proprietary cloud vendor.
+
+## Future-Proofing for AI-Native Workflows
+
+The next decade of healthcare software will be defined by AI-enabled clinical workflows—automated charting, LLM-assisted triage, and ambient documentation.
+
+These advanced AI systems require deep, unhindered access to clean data architectures. Proprietary or heavily opinionated backends risk becoming data bottlenecks. Because Medplum gives developers raw access to the underlying open-source database layer and native FHIR primitives, feeding clean, secure data into custom LLM pipelines or AI orchestration tools remains a standard engineering task rather than a vendor negotiation.
+
+## Conclusion: Aligning Platform to Purpose
+
+To maintain an objective view, the choice between these two platforms ultimately depends on your organization's stage and long-term goals:
+
+- **OystEHR is a highly reasonable choice for:** Small engineering teams building narrow MVPs who prefer a strictly vendor-managed backend, value single-vendor billing for all medical APIs, and do not anticipate needing UI components or infrastructure self-hosting.
+- **Medplum is the definitive choice for:** High-growth health-tech startups and established enterprises building highly differentiated, scalable software.
+
+By combining an **ONC-certified Base EHR**, a **mature frontend component library**, flexible **BYOC integration models**, and a **fully open-source architecture**, Medplum eliminates vendor lock-in and provides a highly risk-mitigated foundation for the future of digital health.
