@@ -35,7 +35,7 @@
     "jest-worker": "30.4.1",
     "jsdom": "29.1.1",
     "typescript": "6.0.3",
-    "vite": "8.0.13",
+    "vite": "8.0.14",
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {
@@ -72,11 +72,11 @@
     "sort-package-json": "3.6.1",
     "source-map-explorer": "2.5.3",
     "tslib": "2.8.1",
-    "tsx": "4.22.0",
+    "tsx": "4.22.3",
     "turbo": "2.9.14",
     "typescript": "6.0.3",
-    "vite": "8.0.13",
-    "vitest": "4.1.6",
+    "vite": "8.0.14",
+    "vitest": "4.1.7",
     "vitest-websocket-mock": "0.5.0"
   },
   "packageManager": "npm@10.9.8",
