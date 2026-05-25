@@ -68,13 +68,13 @@
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@types/node": "22.19.19",
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "jsdom": "29.1.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "vitest": "4.1.6"
+    "vitest": "4.1.7"
   },
   "peerDependencies": {
     "@medplum/core": "5.1.13",
