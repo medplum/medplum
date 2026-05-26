@@ -22,8 +22,10 @@ build_workspace() {
 }
 
 build_local_cdk() {
-  build_workspace @medplum/core
-  build_workspace @medplum/cdk
+  build_workspace @medplum/definitions || return $?
+  build_workspace @medplum/fhirtypes || return $?
+  build_workspace @medplum/core || return $?
+  build_workspace @medplum/cdk || return $?
 }
 
 case "$action" in
