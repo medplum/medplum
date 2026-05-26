@@ -41,7 +41,7 @@ export function App(): JSX.Element {
     <AppShell
       logo={
         <img
-          src="/img/hiive-health-logo.svg"
+          src="/img/hiivehealth.svg"
           alt="Hiive Health"
           style={{ display: 'block', width: 172, height: 'auto' }}
         />
