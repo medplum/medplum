@@ -454,6 +454,45 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/user-mfa-method",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "user-mfa-method",
+        "url": "https://medplum.com/fhir/CodeSystem/user-mfa-method",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/user-mfa-method",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "totp",
+            "display": "TOTP",
+            "definition": "Time-based one-time password using an authenticator application."
+          },
+          {
+            "code": "email",
+            "display": "Email",
+            "definition": "Magic link sent to the user's email address on login."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/user-mfa-method",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "user-mfa-method",
+        "url": "https://medplum.com/fhir/ValueSet/user-mfa-method",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/user-mfa-method"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action",
       "resource": {
         "resourceType": "CodeSystem",

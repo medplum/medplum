@@ -586,6 +586,8 @@ export class MockFetchClient {
     if (path.startsWith('auth/mfa/status')) {
       return {
         enrolled: false,
+        enrolledMethods: [],
+        allowedMethods: ['totp'],
         enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       };
     }

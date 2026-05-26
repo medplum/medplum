@@ -310,6 +310,18 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
+
+  // Email-based MFA: the token is the 6-digit code that was emailed to the
+  // user. login.emailMfaCodeHash holds a bcrypt hash of that code; clear it on success.
+  if (login.emailMfaCodeHash && (await bcrypt.compare(token, login.emailMfaCodeHash))) {
+    return systemRepo.updateResource<Login>({
+      ...login,
+      mfaVerified: true,
+      emailMfaCodeHash: undefined,
+    });
+  }
+
+  // TOTP authenticator application
   const secret = user.mfaSecret;
   if (!secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));

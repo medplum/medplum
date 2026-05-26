@@ -62067,6 +62067,13 @@
           "description": "Whether the user has completed MFA enrollment.",
           "$ref": "#/definitions/boolean"
         },
+        "mfaMethod": {
+          "description": "The MFA methods the user has enrolled in. 'totp' uses an authenticator application; 'email' sends a magic link to the user's email address on login.",
+          "items": {
+            "$ref": "#/definitions/code"
+          },
+          "type": "array"
+        },
         "project": {
           "description": "Optional project if the user only exists for the project. This is used for the project-specific user database.",
           "$ref": "#/definitions/Reference"
@@ -62201,6 +62208,10 @@
         "mfaVerified": {
           "description": "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
           "$ref": "#/definitions/boolean"
+        },
+        "emailMfaCodeHash": {
+          "description": "Hashed single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
+          "$ref": "#/definitions/string"
         },
         "expiresAt": {
           "description": "The time at which a token will expire for this login.",

@@ -546,6 +546,12 @@ export interface LoginAuthenticationResponse {
   readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
   readonly enrollQrCode?: string;
+  /** MFA enrollment methods the project allows (e.g. 'totp', 'email'). */
+  readonly allowedMfaMethods?: ('totp' | 'email')[];
+  /** MFA methods the user is enrolled in, returned when an MFA challenge is required. */
+  readonly mfaMethods?: ('totp' | 'email')[];
+  /** The user's email address, returned with an MFA challenge so the UI can show where a magic link was sent. */
+  readonly email?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }

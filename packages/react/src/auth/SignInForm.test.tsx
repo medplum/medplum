@@ -74,12 +74,36 @@ function mockFetch(url: string, options: any): Promise<any> {
         login: '1',
         mfaRequired: true,
       };
+    } else if (email === 'mfa-email@medplum.com' && password === 'mfa-email') {
+      status = 200;
+      result = {
+        login: '1',
+        mfaRequired: true,
+        mfaMethods: ['email'],
+        email: 'mfa-email@medplum.com',
+      };
+    } else if (email === 'mfa-both@medplum.com' && password === 'mfa-both') {
+      status = 200;
+      result = {
+        login: '1',
+        mfaRequired: true,
+        mfaMethods: ['totp', 'email'],
+        email: 'mfa-both@medplum.com',
+      };
     } else if (email === 'mfa-enroll@medplum.com' && password === 'mfa-enroll') {
       status = 200;
       result = {
         login: '1',
         mfaEnrollRequired: true,
         enrollQrCode: 'data:image/png;base64,123',
+      };
+    } else if (email === 'mfa-enroll-choice@medplum.com' && password === 'mfa-enroll-choice') {
+      status = 200;
+      result = {
+        login: '1',
+        mfaEnrollRequired: true,
+        enrollQrCode: 'data:image/png;base64,123',
+        allowedMfaMethods: ['totp', 'email'],
       };
     } else {
       status = 400;
@@ -138,10 +162,23 @@ function mockFetch(url: string, options: any): Promise<any> {
     };
   } else if (options.method === 'POST' && url.endsWith('auth/mfa/login-enroll')) {
     status = 200;
-    result = {
-      login: '1',
-      code: '1',
-    };
+    if (JSON.parse(options.body)?.method === 'email') {
+      // Email enrollment: server sends a magic link and asks for MFA verification
+      result = {
+        login: '1',
+        mfaRequired: true,
+        mfaMethods: ['email'],
+        email: 'mfa-enroll-choice@medplum.com',
+      };
+    } else {
+      result = {
+        login: '1',
+        code: '1',
+      };
+    }
+  } else if (options.method === 'POST' && url.endsWith('auth/mfa/send-email')) {
+    status = 200;
+    result = allOk;
   } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
     status = 200;
     result = {
@@ -795,6 +832,68 @@ describe('SignInForm', () => {
     expect(success).toBe(true);
   });
 
+  test('MFA -- Email only shows code entry form', async () => {
+    await setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'mfa-email@medplum.com' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'mfa-email' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    // Skips the TOTP description and shows the emailed-code entry form
+    await expect(screen.findByText('Enter verification code')).resolves.toBeInTheDocument();
+    expect(screen.getByText('mfa-email@medplum.com')).toBeInTheDocument();
+    expect(screen.getByLabelText(/mfa code*/i)).toBeInTheDocument();
+    expect(screen.queryByText('Enter the code from your authenticator app.')).not.toBeInTheDocument();
+  });
+
+  test('MFA -- Switch to email code from authenticator', async () => {
+    await setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'mfa-both@medplum.com' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'mfa-both' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    // Both methods enrolled: default to the TOTP form, with an email fallback link
+    await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
+    expect(screen.getByText('Enter MFA code')).toBeInTheDocument();
+    const emailLink = screen.getByText('Get a code by email instead');
+    expect(emailLink).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(emailLink);
+    });
+
+    // After requesting the code, the code entry form is shown
+    await expect(screen.findByText('Enter verification code')).resolves.toBeInTheDocument();
+    expect(screen.getByText('mfa-both@medplum.com')).toBeInTheDocument();
+  });
+
   test('MFA -- Enroll', async () => {
     let success = false;
 
@@ -836,5 +935,74 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
     expect(success).toBe(true);
+  });
+
+  test('MFA -- Forced enroll offers method choice', async () => {
+    await setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'mfa-enroll-choice@medplum.com' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'mfa-enroll-choice' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    // Choice screen: authenticator listed first (recommended), then email
+    await expect(
+      screen.findByRole('button', { name: 'Use an authenticator app (recommended)' })
+    ).resolves.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue with email-based MFA' })).toBeInTheDocument();
+    // No QR / token form until a method is chosen
+    expect(screen.queryByLabelText(/mfa code*/i)).not.toBeInTheDocument();
+
+    // Choosing the authenticator reveals the QR enrollment form
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Use an authenticator app (recommended)' }));
+    });
+    await expect(screen.findByText('Enroll in MFA')).resolves.toBeInTheDocument();
+    expect(screen.getByLabelText(/mfa code*/i)).toBeInTheDocument();
+  });
+
+  test('MFA -- Forced enroll with email shows check email', async () => {
+    await setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'mfa-enroll-choice@medplum.com' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'mfa-enroll-choice' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    await expect(
+      screen.findByRole('button', { name: 'Continue with email-based MFA' })
+    ).resolves.toBeInTheDocument();
+
+    // Enrolling in email-based MFA sends a code and shows the code entry form
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue with email-based MFA' }));
+    });
+
+    await expect(screen.findByText('Enter verification code')).resolves.toBeInTheDocument();
+    expect(screen.getByText('mfa-enroll-choice@medplum.com')).toBeInTheDocument();
   });
 });

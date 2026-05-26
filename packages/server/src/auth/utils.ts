@@ -14,9 +14,11 @@ import type {
 import bcrypt from 'bcrypt';
 import type { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { randomInt } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
+import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
@@ -24,6 +26,73 @@ import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+
+export type MfaMethod = 'totp' | 'email';
+
+/**
+ * Returns the MFA methods that a project allows users to enroll in.
+ * Controlled by the `allowedMfaMethods` project setting, a comma-delimited
+ * string (e.g. "totp", "email", or "totp,email"). When unset, only TOTP
+ * authenticator enrollment is offered, preserving the historical behavior.
+ * @param project - The project to read the setting from.
+ * @returns The list of allowed MFA methods.
+ */
+export function getAllowedMfaMethods(project: Project | undefined): MfaMethod[] {
+  const value = project?.setting?.find((s) => s.name === 'allowedMfaMethods')?.valueString;
+  if (!value) {
+    return ['totp'];
+  }
+  const methods = value
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s): s is MfaMethod => s === 'totp' || s === 'email');
+  return methods.length > 0 ? methods : ['totp'];
+}
+
+/**
+ * Returns the MFA methods that a user has enrolled in.
+ * Existing users enrolled before the introduction of `User.mfaMethod` are
+ * treated as TOTP, which was the only method at the time.
+ * @param user - The user.
+ * @returns The list of enrolled MFA methods, or an empty array if not enrolled.
+ */
+export function getEnrolledMfaMethods(user: User): MfaMethod[] {
+  if (user.mfaMethod && user.mfaMethod.length > 0) {
+    return user.mfaMethod;
+  }
+  return user.mfaEnrolled ? ['totp'] : [];
+}
+
+/**
+ * Generates a single-use 6-digit code for email-based MFA, stores a hash of it
+ * on the login, and emails the code to the user. The hash is cleared once the
+ * code is verified (see verifyMfaToken).
+ * @param login - The login to attach the hashed code to.
+ * @param user - The user to email.
+ */
+export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promise<void> {
+  const systemRepo = getGlobalSystemRepo();
+  const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+  const emailMfaCodeHash = await bcryptHashPassword(code);
+  await systemRepo.updateResource<Login>({ ...login, emailMfaCodeHash });
+  await sendEmail(systemRepo, {
+    to: user.email,
+    subject: 'Medplum Login Verification Code',
+    text: [
+      'Someone is trying to sign in to your Medplum account.',
+      '',
+      'Enter the following verification code to complete sign in:',
+      '',
+      code,
+      '',
+      'This code will expire shortly. If you did not try to sign in, you can safely ignore this email.',
+      '',
+      'Thank you,',
+      'Medplum',
+      '',
+    ].join('\n'),
+  });
+}
 
 export async function createProfile(
   systemRepo: SystemRepository,
@@ -79,6 +148,23 @@ export async function createProjectMembership(
 }
 
 /**
+ * Reads the project associated with a login, if one is set.
+ * @param login - The login resource.
+ * @returns The project, or undefined if the login has no concrete project.
+ */
+async function getLoginProject(login: Login): Promise<Project | undefined> {
+  const reference = login.project?.reference;
+  if (!reference || reference === 'Project/new') {
+    return undefined;
+  }
+  try {
+    return await getGlobalSystemRepo().readReference<Project>(login.project as Reference<Project>);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Sends a login response to the client.
  * If the user has multiple profiles, sends the list of profiles to choose from.
  * Otherwise, sends the authorization code.
@@ -94,12 +180,26 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     const issuer = 'medplum.com';
     const secret = user.mfaSecret as string;
     const otp = authenticator.keyuri(accountName, issuer, secret);
-    res.json({ login: login.id, mfaEnrollRequired: true, enrollUri: otp, enrollQrCode: await toDataURL(otp) });
+    res.json({
+      login: login.id,
+      mfaEnrollRequired: true,
+      enrollUri: otp,
+      enrollQrCode: await toDataURL(otp),
+      allowedMfaMethods: getAllowedMfaMethods(await getLoginProject(login)),
+    });
     return;
   }
 
   if (user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
-    res.json({ login: login.id, mfaRequired: true });
+    const mfaMethods = getEnrolledMfaMethods(user);
+    // If email is the user's only MFA method, send the verification code
+    // immediately so they can enter it without any further interaction. A set
+    // emailMfaCodeHash means a code has already been issued for this login, so
+    // don't re-send (e.g. when the login status endpoint is queried again).
+    if (mfaMethods.length === 1 && mfaMethods[0] === 'email' && !login.emailMfaCodeHash) {
+      await sendMfaEmailCode(login as WithId<Login>, user);
+    }
+    res.json({ login: login.id, mfaRequired: true, mfaMethods, email: user.email });
     return;
   }
 

@@ -197,6 +197,12 @@ export interface Login {
   mfaVerified?: boolean;
 
   /**
+   * Hashed single-use 6-digit code for email-based MFA. Set when a code
+   * is issued for this login and cleared on verification.
+   */
+  emailMfaCodeHash?: string;
+
+  /**
    * The time at which a token will expire for this login.
    */
   expiresAt?: string;

@@ -3,7 +3,7 @@
 import { Alert, Center, Image, Stack, Text, TextInput, Title } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -13,9 +13,11 @@ export type MfaFormFields = 'token';
 export interface MfaFormProps {
   readonly title: string;
   readonly buttonText: string;
-  readonly description?: string;
+  readonly description?: ReactNode;
   readonly qrCodeUrl?: string;
   readonly onSubmit: (formData: Record<MfaFormFields, string>) => void | Promise<void>;
+  /** Optional content rendered below the submit button (e.g. an alternate MFA method action). */
+  readonly footer?: ReactNode;
 }
 
 export function MfaForm(props: MfaFormProps): JSX.Element {
@@ -69,6 +71,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
       </Stack>
       <Stack gap="xs" pt="md">
         <SubmitButton fullWidth>{props.buttonText}</SubmitButton>
+        {props.footer}
       </Stack>
     </Form>
   );
