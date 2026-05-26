@@ -1,0 +1,165 @@
+{
+  "name": "DHS OHS Industry Day curated RTW case",
+  "lastUpdated": "2026-05-21",
+  "medplum": {
+    "baseUrl": "https://api.ehr.hiivehealth.net/",
+    "projectId": "7e472dfd-3ab9-4b75-adac-38e0c5c5d6c8",
+    "projectName": "Ubix Data"
+  },
+  "codeSystem": "https://hiivecare.example/fhir/CodeSystem/medplum-ubix-demo",
+  "canonicalReturnToWorkStatuses": ["full-duty", "restricted-duty", "not-fit", "pending-reevaluation"],
+  "resources": {
+    "providerAccessPolicy": {
+      "resourceType": "AccessPolicy",
+      "id": "05fa99c3-6400-4d8c-af38-8b00b890315d",
+      "reference": "AccessPolicy/05fa99c3-6400-4d8c-af38-8b00b890315d",
+      "requiredEpisodeOfCareInteractions": ["read", "search", "history", "vread"]
+    },
+    "demoProvider": {
+      "resourceType": "Practitioner",
+      "id": "59ea2d1d-f436-437c-a785-74850bddbfd3",
+      "reference": "Practitioner/59ea2d1d-f436-437c-a785-74850bddbfd3",
+      "display": "Dr Alex Demo"
+    },
+    "curatedPatient": {
+      "resourceType": "Patient",
+      "id": "a3562d64-680b-4802-bc78-4b1d0d487080",
+      "reference": "Patient/a3562d64-680b-4802-bc78-4b1d0d487080",
+      "display": "Avery Rivera"
+    },
+    "returnToWorkEpisode": {
+      "resourceType": "EpisodeOfCare",
+      "id": "e2cf8f66-b22b-4577-b858-b0481d24f0b8",
+      "reference": "EpisodeOfCare/e2cf8f66-b22b-4577-b858-b0481d24f0b8",
+      "display": "Exposure Incident"
+    },
+    "returnToWorkTask": {
+      "resourceType": "Task",
+      "id": "6b0849f7-bd0e-42f0-a835-b441c2dccade",
+      "reference": "Task/6b0849f7-bd0e-42f0-a835-b441c2dccade",
+      "code": "rtw-follow-up",
+      "display": "RTW case follow-up"
+    },
+    "returnToWorkStatusObservation": {
+      "resourceType": "Observation",
+      "id": "6729703e-7f98-462e-9e08-15ed2465dca1",
+      "reference": "Observation/6729703e-7f98-462e-9e08-15ed2465dca1",
+      "code": "return-to-work-status",
+      "valueString": "pending-reevaluation"
+    },
+    "exposureDutyLocation": {
+      "resourceType": "Location",
+      "id": "c8b8e306-1947-4a17-95dd-082cca4fe2ba",
+      "reference": "Location/c8b8e306-1947-4a17-95dd-082cca4fe2ba",
+      "display": "Headquarters"
+    },
+    "exposureComponent": {
+      "resourceType": "Organization",
+      "id": "11d523d6-7c9f-5e18-91d5-24d67c9f1fcb",
+      "reference": "Organization/11d523d6-7c9f-5e18-91d5-24d67c9f1fcb",
+      "display": "Component A"
+    },
+    "exposureCohort": {
+      "display": "Headquarters exposure cohort",
+      "patients": [
+        {
+          "resourceType": "Patient",
+          "id": "371562f4-0fb6-48c3-a939-80b0e37b6087",
+          "reference": "Patient/371562f4-0fb6-48c3-a939-80b0e37b6087",
+          "display": "Morgan Nguyen",
+          "encounter": "Encounter/eddb0ba8-1102-4300-a972-fcec5ff04c36",
+          "episodeOfCare": "EpisodeOfCare/4c14c6b4-4677-4270-9428-4554bcb7f77c",
+          "returnToWorkObservation": "Observation/ddb49e49-914e-4596-851f-1aadc8b5796f",
+          "returnToWorkTask": "Task/e9145aaa-b3e3-46bc-b069-2941ebde111a"
+        },
+        {
+          "resourceType": "Patient",
+          "id": "a3562d64-680b-4802-bc78-4b1d0d487080",
+          "reference": "Patient/a3562d64-680b-4802-bc78-4b1d0d487080",
+          "display": "Avery Rivera",
+          "encounter": "Encounter/808aa900-f645-46aa-a68b-2a82af81d5df",
+          "episodeOfCare": "EpisodeOfCare/e2cf8f66-b22b-4577-b858-b0481d24f0b8",
+          "returnToWorkObservation": "Observation/6729703e-7f98-462e-9e08-15ed2465dca1",
+          "returnToWorkTask": "Task/6b0849f7-bd0e-42f0-a835-b441c2dccade"
+        },
+        {
+          "resourceType": "Patient",
+          "id": "4c4d1245-4cb8-4dcf-af04-7222aa62fe58",
+          "reference": "Patient/4c4d1245-4cb8-4dcf-af04-7222aa62fe58",
+          "display": "Jamie Garcia",
+          "encounter": "Encounter/88746778-0843-4cbb-8130-cb6a496e3508",
+          "episodeOfCare": "EpisodeOfCare/e0bc9ace-6dfc-49e1-a355-3132baf79a22",
+          "returnToWorkObservation": "Observation/6e8486b5-92ac-4834-ab45-5cf79a910c3e",
+          "returnToWorkTask": "Task/5ae0da57-6c85-4349-94b1-e64ba7924af5"
+        },
+        {
+          "resourceType": "Patient",
+          "id": "07a52c6e-149e-4164-ac3e-773483eb1b49",
+          "reference": "Patient/07a52c6e-149e-4164-ac3e-773483eb1b49",
+          "display": "Riley Demo",
+          "encounter": "Encounter/66c0824a-d0b1-43ad-917b-a6f4fe2d73b7",
+          "episodeOfCare": "EpisodeOfCare/d901e625-0b28-425f-9cc4-604dcaabee91",
+          "returnToWorkObservation": "Observation/0a51e055-35e5-420f-92e4-1b642d682040",
+          "returnToWorkTask": "Task/4677e436-0d65-47b3-9ca8-1f58e5ecc86c"
+        },
+        {
+          "resourceType": "Patient",
+          "id": "ab496db0-1a30-4be3-8965-d7b4ec137908",
+          "reference": "Patient/ab496db0-1a30-4be3-8965-d7b4ec137908",
+          "display": "Taylor Nguyen",
+          "encounter": "Encounter/c9654194-fa52-494c-bd89-eb29ad57a826",
+          "episodeOfCare": "EpisodeOfCare/76900664-767f-4483-97b8-d66e7e3af4a4",
+          "returnToWorkObservation": "Observation/28304866-9155-4884-879b-589415c4d8c2",
+          "returnToWorkTask": "Task/625e81ad-ecba-47df-9754-9b2b3f7f3b05"
+        },
+        {
+          "resourceType": "Patient",
+          "id": "8dfba798-352d-42d0-a74c-4e7b5e58225b",
+          "reference": "Patient/8dfba798-352d-42d0-a74c-4e7b5e58225b",
+          "display": "Avery Johnson",
+          "encounter": "Encounter/6fd0947b-63eb-4c32-8d8e-43d258e5ae6d",
+          "episodeOfCare": "EpisodeOfCare/a33d1742-db57-499c-a684-c7d4de4c451c",
+          "returnToWorkObservation": "Observation/dfba0b07-22a4-41e7-b3ce-46d7b19bd1d5",
+          "returnToWorkTask": "Task/368aad74-56be-41b5-8251-6a7be493791e"
+        },
+        {
+          "resourceType": "Patient",
+          "id": "30a5f507-fbca-46ac-aa70-af6b635e3fc7",
+          "reference": "Patient/30a5f507-fbca-46ac-aa70-af6b635e3fc7",
+          "display": "Cameron Rivera",
+          "encounter": "Encounter/f56e825f-9388-4785-9b17-55e9c67d4328",
+          "episodeOfCare": "EpisodeOfCare/61808af4-1f4e-4294-b09f-b3cade1bc32d",
+          "returnToWorkObservation": "Observation/65cc71ef-01b3-40cb-8c07-a77b49821c9e",
+          "returnToWorkTask": "Task/ff779138-a4b5-44d8-86a6-66ac41b0ddb9"
+        }
+      ]
+    }
+  },
+  "expectedState": {
+    "providerOpenTaskCount": 45,
+    "exposureLocation": "Headquarters",
+    "exposureAffectedEmployeeCount": 7,
+    "exposureOpenFollowUpTaskCount": 7,
+    "returnToWorkStatus": "pending-reevaluation",
+    "restrictionComponents": {
+      "restriction-type": "field-duty-restricted",
+      "restriction-summary": "No field deployment; administrative duty only until reevaluation.",
+      "restriction-limit": "Avoid exposure response and prolonged standing over 2 hours.",
+      "restriction-effective-date": "2026-05-12",
+      "restriction-expiration-date": "2026-05-26",
+      "restriction-reevaluation-date": "2026-05-26"
+    }
+  },
+  "directUrls": {
+    "fhirPatient": "https://api.ehr.hiivehealth.net/fhir/R4/Patient/a3562d64-680b-4802-bc78-4b1d0d487080",
+    "fhirEpisodeOfCare": "https://api.ehr.hiivehealth.net/fhir/R4/EpisodeOfCare/e2cf8f66-b22b-4577-b858-b0481d24f0b8",
+    "fhirTask": "https://api.ehr.hiivehealth.net/fhir/R4/Task/6b0849f7-bd0e-42f0-a835-b441c2dccade",
+    "fhirReturnToWorkObservation": "https://api.ehr.hiivehealth.net/fhir/R4/Observation/6729703e-7f98-462e-9e08-15ed2465dca1",
+    "fhirExposureDutyLocation": "https://api.ehr.hiivehealth.net/fhir/R4/Location/c8b8e306-1947-4a17-95dd-082cca4fe2ba",
+    "localProviderPatientTasks": "http://127.0.0.1:5172/Patient/a3562d64-680b-4802-bc78-4b1d0d487080/Task",
+    "localProviderOccupationalSummary": "http://127.0.0.1:5172/Patient/a3562d64-680b-4802-bc78-4b1d0d487080/occupational",
+    "localProviderExposureDashboard": "http://127.0.0.1:5172/Occupational/Exposure",
+    "localProviderSupervisorSummary": "http://127.0.0.1:5172/Occupational/Supervisor"
+  },
+  "resetScript": "scripts/curate-occhealth-demo.mjs"
+}

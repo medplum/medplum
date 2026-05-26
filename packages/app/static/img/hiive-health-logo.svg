@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 400" role="img" aria-labelledby="hiiveHealthTitle">
+  <title id="hiiveHealthTitle">Hiive Health</title>
+  <defs>
+    <style>
+      .orange { fill: #f6a800; }
+      .outline { fill: none; stroke: #003f5c; stroke-width: 18; stroke-linejoin: round; }
+      .word { fill: #003f5c; font-family: Arial, Helvetica, sans-serif; font-weight: 800; }
+      .health { fill: #003f5c; font-family: Arial, Helvetica, sans-serif; font-weight: 700; letter-spacing: 44px; }
+    </style>
+  </defs>
+  <polygon class="outline" points="64 136 118 104 172 136 172 199 118 231 64 199" />
+  <polygon class="outline" points="186 66 240 34 294 66 294 129 240 161 186 129" />
+  <polygon class="orange" points="184 188 238 156 292 188 292 251 238 283 184 251" />
+  <polygon class="orange" points="306 136 360 104 414 136 414 199 360 231 306 199" />
+  <polygon class="outline" points="64 260 118 228 172 260 172 323 118 355 64 323" />
+  <polygon class="orange" points="184 312 238 280 292 312 292 375 238 407 184 375" />
+  <polygon class="outline" points="306 260 360 228 414 260 414 323 360 355 306 323" />
+  <text class="word" x="490" y="245" font-size="260">hiive</text>
+  <text class="health" x="500" y="365" font-size="84">HEALTH</text>
+</svg>
