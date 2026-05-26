@@ -10,6 +10,8 @@ export { Hl7EchoServer } from './peers/hl7-echo-server';
 export { Hl7SourceClient } from './peers/hl7-source-client';
 export { SimulatedBackend } from './backends/simulated/simulated-backend';
 export { RealBackend, type RealBackendOptions } from './backends/real/real-backend';
+export { HybridBackend, type HybridBackendOptions } from './backends/hybrid/hybrid-backend';
+export { FakeMedplumServer, type FakeMedplumServerOptions } from './backends/fake-server/fake-medplum-server';
 export type { Backend, BackendKind } from './backends/backend';
 export { HarnessHttpServer } from './server/http-server';
 export {

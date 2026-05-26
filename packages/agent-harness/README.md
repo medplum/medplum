@@ -19,17 +19,26 @@ Test scenario harness for the Medplum Agent. v0 — local processes only.
 
 ## Backends
 
-Two implementations behind a `Backend` interface:
+Three implementations behind a `Backend` interface:
 
-| Backend          | Status        | What it does                                                                                  |
-| ---------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| `SimulatedBackend` | ✅ v0 working  | Hosts a fake WS server in-process; tracks agents in memory.                                  |
-| `RealBackend`      | ✅ v0 spawning | Spawns real `@medplum/agent` processes via `AgentLauncher`. FHIR upsert is still a follow-up. |
+| Backend            | Status         | What it does                                                                                                                                                                    |
+| ------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SimulatedBackend` | ✅ v0 working  | Hosts a fake WS server in-process; tracks agents in memory. No agent process is spawned — agent presence is in-memory only. Fastest path for dataplane (HL7) testing.            |
+| `HybridBackend`    | ✅ v0 working  | Spawns **real** `@medplum/agent` processes pointed at an in-process `FakeMedplumServer`. The fake server speaks the agent protocol (oauth2, FHIR Agent/Endpoint reads, WS handshake, heartbeat, transmit). Restart / upgrade hooks work end-to-end without an external medplum/server. Bot execution is not yet stubbed — use `FakeMedplumServer.pushTransmit()` from the harness to drive a transmit at a target agent. |
+| `RealBackend`      | ✅ v0 spawning | Spawns real `@medplum/agent` processes against a running `medplum/server`. Server-restart / upgrade simulation requires a `serverControl.restart` (and optional `.upgrade`) callback wired to your runtime (docker compose, systemctl, etc.) — without it, the matching scenario commands throw loudly. FHIR resource upsert is still a follow-up.                                                                                                                                  |
+
+### When to pick which
+
+- Pure dataplane / topology / load tests with no need for real agent code → **`SimulatedBackend`**.
+- Real agent connect / reconnect / heartbeat / HL7 channel code, including
+  realistic server-restart scenarios, but no medplum/server available →
+  **`HybridBackend`**.
+- End-to-end against a real medplum/server (or staging) → **`RealBackend`**.
 
 ## Agent launchers
 
-`RealBackend` delegates process lifecycle to an `AgentLauncher`. Pick one based
-on your host:
+Both `RealBackend` and `HybridBackend` delegate process lifecycle to an
+`AgentLauncher`. Pick one based on your host:
 
 | Launcher                       | Host                | Notes                                                                                                                          |
 | ------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -57,7 +66,7 @@ cd packages/agent-harness
 npm run harness        # starts the HTTP control plane on :7681
 ```
 
-POST a scenario:
+POST a `simulated` scenario (no real agent processes — pure peer-to-peer):
 
 ```sh
 curl -X POST http://127.0.0.1:7681/scenarios \
@@ -67,6 +76,24 @@ curl -X POST http://127.0.0.1:7681/scenarios \
     "nodes": [
       { "id": "sink", "role": "hl7-sink", "port": 0 },
       { "id": "src",  "role": "hl7-source", "targetNodeId": "sink", "mps": 10 }
+    ]
+  }'
+```
+
+POST a `hybrid` scenario — spawns real `@medplum/agent` processes against an
+in-process fake medplum/server. No external server required:
+
+```sh
+curl -X POST http://127.0.0.1:7681/scenarios \
+  -H 'content-type: application/json' \
+  -d '{
+    "name": "push-net",
+    "backend": "hybrid",
+    "nodes": [
+      { "id": "agent_b", "role": "agent", "template": "push-bot",
+        "inputs": { "listenPort": 9402, "forwardToNodeId": "agent_b" } },
+      { "id": "agent_a", "role": "agent", "template": "push-bot",
+        "inputs": { "listenPort": 9401, "forwardToNodeId": "agent_b" } }
     ]
   }'
 ```

@@ -51,7 +51,7 @@ export type NodeSpec = AgentNodeSpec | Hl7SourceNodeSpec | Hl7SinkNodeSpec;
 export interface ScenarioSpec {
   name: string;
   /** Defaults to `simulated` for v0. */
-  backend?: 'simulated' | 'real';
+  backend?: 'simulated' | 'hybrid' | 'real';
   nodes: NodeSpec[];
   /** Initial timeline of commands to play at scenario start. */
   commands?: TimedCommand[];
@@ -61,12 +61,39 @@ export interface ScenarioSpec {
  * Materialized resources produced by an agent template.
  *
  * `agent` contains the channel wiring; `endpoints` are the TCP listeners; `bot`
- * is the optional Push Bot that fires Agent/$push when a message arrives.
+ * is the optional Push Bot that fires Agent/$push when a message arrives;
+ * `forwardingRules` are server-side routing rules the harness's fake server
+ * uses to stand in for Bot execution (see `FakeMedplumServer`).
  */
 export interface AgentMaterialization {
   agent: Agent;
   endpoints: Endpoint[];
   bot?: Bot;
+  forwardingRules?: ForwardingRule[];
+}
+
+/**
+ * Tells the fake server "when agent `fromAgentId` receives a transmit on
+ * channel `fromChannel`, push it to agent `toAgentId` on channel `toChannel`
+ * and use that downstream ACK as the upstream response." Modeled after what
+ * a Bot calling `Agent/$push` does on a real medplum/server, but without
+ * needing to run Bot code in-process.
+ *
+ * The fake server ignores rules whose `fromAgentId` doesn't match the agent
+ * that sent the inbound request — and falls back to a synthesized AA ACK if
+ * no rule matches.
+ */
+export interface ForwardingRule {
+  fromAgentId: string;
+  fromChannel: string;
+  toAgentId: string;
+  toChannel: string;
+  /**
+   * Where the downstream agent should send the message on its outbound side
+   * (mllp://host:port). If omitted, the fake server resolves it from the
+   * downstream agent's channel/Endpoint at forward time.
+   */
+  toRemote?: string;
 }
 
 export interface AgentTemplate {

@@ -3,6 +3,7 @@
 import { singularize } from '@medplum/core';
 import express, { type Express, type Request, type Response } from 'express';
 import type { Server } from 'node:http';
+import { HybridBackend } from '../backends/hybrid/hybrid-backend';
 import { SimulatedBackend } from '../backends/simulated/simulated-backend';
 import type { Backend } from '../backends/backend';
 import { Scenario } from '../scenario/scenario';
@@ -135,7 +136,12 @@ export class HarnessHttpServer {
 
   private makeBackend(spec: ScenarioSpec): Backend {
     if (spec.backend === 'real') {
-      throw new Error('RealBackend is not yet implemented; omit backend or set to "simulated"');
+      throw new Error(
+        'RealBackend cannot be constructed from a ScenarioSpec alone — instantiate it programmatically with credentials and pass it to new Scenario(spec, backend).'
+      );
+    }
+    if (spec.backend === 'hybrid') {
+      return new HybridBackend();
     }
     return new SimulatedBackend();
   }

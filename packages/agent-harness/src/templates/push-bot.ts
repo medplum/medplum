@@ -68,7 +68,19 @@ export const pushBotTemplate: AgentTemplate = {
       ],
     };
 
-    return { agent, endpoints: [endpoint], bot };
+    return {
+      agent,
+      endpoints: [endpoint],
+      bot,
+      forwardingRules: [
+        {
+          fromAgentId: agentId,
+          fromChannel: inputs.channelName,
+          toAgentId: forwardAgentId,
+          toChannel: inputs.forwardToChannelName,
+        },
+      ],
+    };
   },
 };
 
