@@ -173,7 +173,7 @@ function buildSearchParameterImplementation(
   writeable.searchStrategy = 'column';
   writeable.columnName = convertCodeToColumnName(code);
   if (searchParam.type === 'reference' && impl.type !== SearchParameterType.CANONICAL) {
-    const singleTarget = getSingleReferenceTarget(resourceType, searchParam, impl);
+    const singleTarget = getSingleReferenceTarget(searchParam, impl);
     if (singleTarget) {
       writeable.singleTargetType = singleTarget;
     }
@@ -192,9 +192,12 @@ const HL7_FHIR_STRUCTURE_PREFIX = 'http://hl7.org/fhir/StructureDefinition/';
  *
  * Returns the target resource type name if exactly one HL7 target profile is
  * found, otherwise `undefined`.
+ *
+ * @param searchParam - The search parameter definition.
+ * @param impl - The search parameter implementation details.
+ * @returns The single target resource type, or undefined if there are zero or multiple targets.
  */
 function getSingleReferenceTarget(
-  resourceType: string,
   searchParam: SearchParameter,
   impl: SearchParameterDetails
 ): ResourceType | undefined {
