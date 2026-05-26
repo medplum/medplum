@@ -7,9 +7,23 @@ export AWS_PAGER=""
 action="${1:-diff}"
 config_file="${CDK_CONFIG_FILE:-medplum.build.config.json}"
 
+build_workspace() {
+  local workspace="$1"
+
+  echo "::group::Build ${workspace}"
+  if npm --workspace "$workspace" run build; then
+    echo "::endgroup::"
+    return 0
+  fi
+
+  local exit_code=$?
+  echo "::endgroup::"
+  return "$exit_code"
+}
+
 build_local_cdk() {
-  npm --workspace @medplum/core run build >/dev/null
-  npm --workspace @medplum/cdk run build >/dev/null
+  build_workspace @medplum/core
+  build_workspace @medplum/cdk
 }
 
 case "$action" in
