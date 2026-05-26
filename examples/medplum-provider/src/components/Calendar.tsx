@@ -38,7 +38,7 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
         end: appointment.end,
         extendedProps: { type: 'appointment' as const, appointment },
         interactive: true,
-        color: '#228be6', // blue.6
+        className: classes[`appointment-${appointment.status}`],
       };
     });
 }
@@ -51,11 +51,8 @@ function slotsToEvents(slots: Slot[]): EventInput[] {
     title: slot.status === 'free' ? 'Available' : 'Blocked',
     extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
     interactive: false,
-    color:
-      slot.status === 'free'
-        ? '#d3f9d8' // green.1
-        : '#ced4da', // gray.4
-    contrastColor: '#424242', // dark.4
+    className: classes[`slot-${slot.status}`],
+    display: 'background',
   }));
 }
 
@@ -161,6 +158,9 @@ export function Calendar(props: {
         }
         slotMinHeight={35}
         eventClass={(evt) => (evt.isInteractive ? classes.interactiveEvent : undefined)}
+        eventInnerClass={classes.eventInner}
+        backgroundEventClass={classes.backgroundEvent}
+        backgroundEventInnerClass={classes.backgroundEventInner}
         colorScheme={colorScheme}
         nowIndicator
       />
