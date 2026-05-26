@@ -91,7 +91,9 @@ describe('Pre-authorize', () => {
       .type('json')
       .send({ clientId: client.id, expiresIn: 0 });
     expect(res.status).toBe(400);
-    expect(res.body).toMatchObject(badRequest('expiresIn must be a positive integer not exceeding 86400 seconds'));
+    expect(res.body).toMatchObject(
+      badRequest(`expiresIn must be a positive integer not exceeding ${MAX_PRE_AUTH_CODE_TTL} seconds`)
+    );
   });
 
   test('Expire time too long', async () => {
@@ -101,7 +103,9 @@ describe('Pre-authorize', () => {
       .type('json')
       .send({ clientId: client.id, expiresIn: MAX_PRE_AUTH_CODE_TTL + 1 });
     expect(res.status).toBe(400);
-    expect(res.body).toMatchObject(badRequest('expiresIn must be a positive integer not exceeding 86400 seconds'));
+    expect(res.body).toMatchObject(
+      badRequest(`expiresIn must be a positive integer not exceeding ${MAX_PRE_AUTH_CODE_TTL} seconds`)
+    );
   });
 
   test('Success', async () => {
