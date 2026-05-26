@@ -266,9 +266,7 @@ describe('data-warehouse sync worker', () => {
   describe('processDataWarehouseSyncJob', () => {
     beforeEach(() => {
       jest.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
-      jest
-        .spyOn(database, 'withPoolClient')
-        .mockImplementation(async (callback) => callback({} as PoolClient));
+      jest.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({} as PoolClient));
       jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
       jest.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
     });

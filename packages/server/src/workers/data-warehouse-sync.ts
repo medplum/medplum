@@ -188,10 +188,10 @@ export async function processDataWarehouseSyncJob(
         await releaseAdvisoryLock(client, locks.dataWarehouseSync);
       }
     }
-  /*
-   * use the _writer_ database pool for the lock, even though we use the reader for sync,
-   * as we can have many readers
-   */
+    /*
+     * use the _writer_ database pool for the lock, even though we use the reader for sync,
+     * as we can have many readers
+     */
   }, getDatabasePool(DatabaseMode.WRITER));
 }
 
