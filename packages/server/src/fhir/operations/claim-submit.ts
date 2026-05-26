@@ -110,11 +110,7 @@ export async function claimSubmitHandler(req: FhirRequest): Promise<FhirResponse
     } else if (params.resource) {
       claim = params.resource;
     } else {
-      return [
-        badRequest(
-          "Missing Claim payload: pass the 'resource' input parameter, or POST to /Claim/:id/$submit."
-        ),
-      ];
+      return [badRequest("Missing Claim payload: pass the 'resource' input parameter, or POST to /Claim/:id/$submit.")];
     }
 
     const subOpCode = SUB_OPERATION_FOR_PROCESSOR[processor];
