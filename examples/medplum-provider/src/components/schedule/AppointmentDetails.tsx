@@ -140,11 +140,17 @@ export function AppointmentDetails(props: {
     }
   }, [medplum, patient, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
 
-  const cancellable = props.appointment.status === 'booked' || props.appointment.status === 'pending';
-  const cancelTooltip = cancellable ? null : `Can't cancel appointment with status "${props.appointment.status}"`;
+  const cancellable =
+    appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
+  const cancelTooltip = cancellable ? null : `Can't cancel appointment with status "${appointment.status}"`;
   const [cancelLoading, setCancelLoading] = useState(false);
 
   const handleCancel = useCallback(async () => {
+    if (!cancellable) {
+      console.error(new Error(`handleCancel called from non cancellable status '${appointment.status}'`));
+      return;
+    }
+
     setCancelLoading(true);
     try {
       const updated = await medplum.post<WithId<Appointment>>(
@@ -158,7 +164,7 @@ export function AppointmentDetails(props: {
     } finally {
       setCancelLoading(false);
     }
-  }, [medplum, appointment, onUpdate]);
+  }, [medplum, appointment, cancellable, onUpdate]);
 
   return (
     <Stack gap="md">
