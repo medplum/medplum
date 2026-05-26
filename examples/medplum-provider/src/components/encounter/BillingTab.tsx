@@ -255,9 +255,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setSubmitting(true);
       debouncedUpdateClaim.cancel();
       try {
-        const result = await medplum.post(
-          medplum.fhirUrl('Claim', claimToSubmit.id, '$candid-submit-claim')
-        );
+        const result = await medplum.post(medplum.fhirUrl('Claim', claimToSubmit.id, '$candid-submit-claim'));
         showNotification({
           title: 'Claim Submitted',
           message: 'Claim successfully submitted to Candid Health',
@@ -317,9 +315,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           })),
         };
         await medplum.updateResource(claimPayload);
-        const result = await medplum.post(
-          medplum.fhirUrl('Claim', claim.id, '$stedi-submit-claim')
-        );
+        const result = await medplum.post(medplum.fhirUrl('Claim', claim.id, '$stedi-submit-claim'));
         showNotification({
           title: 'Submitted to Stedi',
           message: 'Claim successfully submitted to Stedi',
