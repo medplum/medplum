@@ -29,6 +29,7 @@ import { botInitHandler } from './operations/botinit';
 import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
+import { claimSubmitHandler } from './operations/claim-submit';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
@@ -325,6 +326,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Claim $export operation
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
+
+  // Claim $submit operation (dispatcher → $stedi-submit-claim or $candid-submit-claim)
+  router.add('POST', '/Claim/$submit', claimSubmitHandler);
+  router.add('POST', '/Claim/:id/$submit', claimSubmitHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
