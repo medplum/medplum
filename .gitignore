@@ -8,6 +8,10 @@ node_modules/
 
 # Dotenv
 .env
+.env*.local
+
+# Local demo credentials
+hiive-build-demo-logins.local.md
 
 .failed
 prettier-fmt.err

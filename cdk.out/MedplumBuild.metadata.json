@@ -1,0 +1,607 @@
+{
+  "/MedplumBuild": [
+    {
+      "type": "aws:cdk:stack-tags",
+      "data": [
+        {
+          "key": "medplum:environment",
+          "value": "build"
+        }
+      ]
+    }
+  ],
+  "/MedplumBuild/AWSCloudFrontPartitionHostedZoneIdMap": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AWSCloudFrontPartitionHostedZoneIdMap"
+    }
+  ],
+  "/MedplumBuild/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    }
+  ],
+  "/MedplumBuild/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisSubnetGroup": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisSubnetGroupE46D902C"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisCluster": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisCluster52D28A6F"
+    }
+  ],
+  "/MedplumBuild/BackEnd/BackEndWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndBackEndWAFDE8C8425"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LoadBalancerAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLoadBalancerAssociation8B79ED3F"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/FrontEndWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndFrontEndWAFDBDCA924"
+    }
+  ],
+  "/MedplumBuild/PatientApp/StaticAppWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppStaticAppWAF392B8715"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/StaticAppWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppStaticAppWAF00F9B5EE"
+    }
+  ],
+  "/MedplumBuild/Storage/StorageWAF": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageStorageWAFEC7FCAE6"
+    }
+  ],
+  "/MedplumBuild/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VpcFlowLogs/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVpcFlowLogs8C3147DB"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCF5C5F769"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/IGW": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCIGW0223DDE2"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/VPCGW": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCVPCGW9F01DD98"
+    }
+  ],
+  "/MedplumBuild/BackEnd/BotLambdaRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndBotLambdaRoleBBE7DB26"
+    }
+  ],
+  "/MedplumBuild/BackEnd/MedplumDatabaseClusterParams/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndMedplumDatabaseClusterParamsF04B446D"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseCluster8B2F7305"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/Instance1": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseClusterInstance160DF7384"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisSecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisSecurityGroupB2340867"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisSecurityGroup/from MedplumBuildBackEndServiceSecurityGroup68E47C5F:6379": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisSecurityGroupfromMedplumBuildBackEndServiceSecurityGroup68E47C5F63791E3AA720"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisPassword/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisPassword046FF1F3"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisSecrets/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisSecrets67BDEA91"
+    }
+  ],
+  "/MedplumBuild/BackEnd/Cluster/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndCluster6B6DC4A8"
+    }
+  ],
+  "/MedplumBuild/BackEnd/TaskExecutionRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndTaskExecutionRole763C973A"
+    }
+  ],
+  "/MedplumBuild/BackEnd/TaskDefinition/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndTaskDefinitionAE6A5DEC"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLogGroup2DF5FDDA"
+    }
+  ],
+  "/MedplumBuild/BackEnd/ServiceSecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndServiceSecurityGroupAB991791"
+    }
+  ],
+  "/MedplumBuild/BackEnd/ServiceSecurityGroup/from MedplumBuildBackEndLoadBalancerSecurityGroupFE9A5F62:8103": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndServiceSecurityGroupfromMedplumBuildBackEndLoadBalancerSecurityGroupFE9A5F6281032EA934D6"
+    }
+  ],
+  "/MedplumBuild/BackEnd/FargateService/Service": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndFargateServiceD3B260C0"
+    }
+  ],
+  "/MedplumBuild/BackEnd/TargetGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndTargetGroupA9B89A7D"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LoadBalancer/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLoadBalancerF312BC81"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LoadBalancerAliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLoadBalancerAliasRecordFCF2BBEC"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RegionParameter/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRegionParameter979C390C"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseSecretsParameter/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseSecretsParameter043793F3"
+    }
+  ],
+  "/MedplumBuild/BackEnd/RedisSecretsParameter/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndRedisSecretsParameterA4CFBD05"
+    }
+  ],
+  "/MedplumBuild/BackEnd/BotLambdaRoleParameter/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndBotLambdaRoleParameter9B70D961"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/AppBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndAppBucket92214AC8"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/ResponseHeadersPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndResponseHeadersPolicyA0E80FF4"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/ApiOriginCachePolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndApiOriginCachePolicyCC373C7A"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/OriginAccessIdentity/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndOriginAccessIdentity6D7F5EB8"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/AppDistribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndAppDistributionA2F700A1"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/AppAliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndAppAliasRecord7997AB24"
+    }
+  ],
+  "/MedplumBuild/PatientApp/AppBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppAppBucketA2305569"
+    }
+  ],
+  "/MedplumBuild/PatientApp/Certificate/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppCertificate04FCAA87"
+    }
+  ],
+  "/MedplumBuild/PatientApp/ResponseHeadersPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppResponseHeadersPolicy1A29FF91"
+    }
+  ],
+  "/MedplumBuild/PatientApp/OriginAccessIdentity/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppOriginAccessIdentityAEBF44E0"
+    }
+  ],
+  "/MedplumBuild/PatientApp/Distribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppDistributionB36C5F54"
+    }
+  ],
+  "/MedplumBuild/PatientApp/AliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppAliasRecordE89C4845"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/AppBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppAppBucket039A8227"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/Certificate/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppCertificateDBD906E6"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/ResponseHeadersPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppResponseHeadersPolicy5AE4FCFC"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/OriginAccessIdentity/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppOriginAccessIdentity7C056D69"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/Distribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppDistributionC515100B"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/AliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppAliasRecord3855BBA5"
+    }
+  ],
+  "/MedplumBuild/Storage/StorageBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageStorageBucketDC877B11"
+    }
+  ],
+  "/MedplumBuild/Storage/StorageKeyGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageStorageKeyGroupE5E2A8D0"
+    }
+  ],
+  "/MedplumBuild/Storage/ResponseHeadersPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageResponseHeadersPolicyBE9A863A"
+    }
+  ],
+  "/MedplumBuild/Storage/OriginAccessIdentity/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageOriginAccessIdentity7CB6436A"
+    }
+  ],
+  "/MedplumBuild/Storage/StorageDistribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageStorageDistributionAF8103AC"
+    }
+  ],
+  "/MedplumBuild/Storage/StorageAliasRecord/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageStorageAliasRecord6CE51914"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet1/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet1Subnet4C7F70D8"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet1/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet1RouteTable3EEA4071"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet1/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet1RouteTableAssociation8ED2AF8E"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet1/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet1DefaultRoute370C926C"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet1/EIP": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet1EIPD431B170"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet1/NATGateway": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet1NATGateway4C349CEA"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet2/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet2SubnetB2482B61"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet2/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet2RouteTableDC044BF7"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet2/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet2RouteTableAssociation699E0957"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet2/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet2DefaultRoute6941FB68"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet2/EIP": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet2EIP71028A8E"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PublicSubnet2/NATGateway": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPublicSubnet2NATGateway27C81982"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet1/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet1SubnetD50C9513"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet1/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet1RouteTableCA04C34E"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet1/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet1RouteTableAssociation016A73CD"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet1/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet1DefaultRoute3102191D"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet2/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet2SubnetFF24486C"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet2/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet2RouteTable83BBF543"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet2/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet2RouteTableAssociationF41FDF7E"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/PrivateSubnet2/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCPrivateSubnet2DefaultRoute2FCE066C"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/cloudwatch/FlowLog": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCcloudwatchFlowLog707064B0"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/Subnets/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseClusterSubnetsEE06EF7A"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/SecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseClusterSecurityGroup1EAC9C2D"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/SecurityGroup/from MedplumBuildBackEndServiceSecurityGroup68E47C5F:{IndirectPort}": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseClusterSecurityGroupfromMedplumBuildBackEndServiceSecurityGroup68E47C5FIndirectPort80FEAF59"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/Secret/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "MedplumBuildBackEndDatabaseClusterSecretBA0BEF2E3fdaad7efa858a3daf9490cf0a702aeb"
+    }
+  ],
+  "/MedplumBuild/BackEnd/TaskDefinition/ExecutionRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndTaskDefinitionExecutionRole1C08853D"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LoadBalancer/SecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLoadBalancerSecurityGroup261A40A6"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LoadBalancer/SecurityGroup/to MedplumBuildBackEndServiceSecurityGroup68E47C5F:8103": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLoadBalancerSecurityGrouptoMedplumBuildBackEndServiceSecurityGroup68E47C5F8103841E35B8"
+    }
+  ],
+  "/MedplumBuild/BackEnd/LoadBalancer/HttpsListener/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndLoadBalancerHttpsListener54B76346"
+    }
+  ],
+  "/MedplumBuild/FrontEnd/AppBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FrontEndAppBucketPolicyBAED1B9B"
+    }
+  ],
+  "/MedplumBuild/PatientApp/AppBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "PatientAppAppBucketPolicy42272538"
+    }
+  ],
+  "/MedplumBuild/ProviderApp/AppBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProviderAppAppBucketPolicyA7701362"
+    }
+  ],
+  "/MedplumBuild/Storage/StorageBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageStorageBucketPolicy77CC849A"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/cloudwatch/IAMRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCcloudwatchIAMRole06786F5F"
+    }
+  ],
+  "/MedplumBuild/BackEnd/DatabaseCluster/Secret/Attachment/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndDatabaseClusterSecretAttachment39D8D762"
+    }
+  ],
+  "/MedplumBuild/BackEnd/TaskDefinition/ExecutionRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndTaskDefinitionExecutionRoleDefaultPolicy52E17CF7"
+    }
+  ],
+  "/MedplumBuild/BackEnd/VPC/cloudwatch/IAMRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BackEndVPCcloudwatchIAMRoleDefaultPolicy5B431E61"
+    }
+  ]
+}

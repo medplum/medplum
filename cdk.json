@@ -1,0 +1,3 @@
+{
+  "app": "node node_modules/@medplum/cdk/dist/cjs/index.cjs"
+}

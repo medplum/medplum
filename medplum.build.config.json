@@ -1,0 +1,31 @@
+{
+  "apiPort": 8103,
+  "region": "us-east-1",
+  "name": "build",
+  "accountNumber": "476905305808",
+  "stackName": "MedplumBuild",
+  "domainName": "ehr.hiivehealth.net",
+  "hostedZoneName": "ehr.hiivehealth.net",
+  "apiDomainName": "api.ehr.hiivehealth.net",
+  "baseUrl": "https://api.ehr.hiivehealth.net/",
+  "appDomainName": "app.ehr.hiivehealth.net",
+  "patientAppDomainName": "patient.ehr.hiivehealth.net",
+  "providerAppDomainName": "provider.ehr.hiivehealth.net",
+  "storageDomainName": "storage.ehr.hiivehealth.net",
+  "storageBucketName": "storage.ehr.hiivehealth.net",
+  "maxAzs": 2,
+  "cacheNodeType": "cache.t3.small",
+  "rdsInstances": 1,
+  "desiredServerCount": 1,
+  "serverMemory": 512,
+  "serverCpu": 256,
+  "serverImage": "medplum/medplum-server:5.1.10",
+  "environment": {
+    "MEDPLUM_ALLOWED_ORIGINS": "https://app.ehr.hiivehealth.net,https://patient.ehr.hiivehealth.net,https://provider.ehr.hiivehealth.net,http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5172,http://localhost:5172,http://127.0.0.1:3001,http://localhost:3001"
+  },
+  "signingKeyId": "K1Y1YQ5ZH4N0OG",
+  "storagePublicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8Rqzx7i2VOjAIqJCb+E\nvCK1wEAqBCdGasN05q3eyRqoA1D8Xb2T6soHg4hLU2FuXN2U0UFYfuoFkh4wry0K\nG3GYVqQ5DI+n7CksNAgYZiGBrPpyeTDaxnNMn+JKA9wzkRtJWfmeUGVGi9cSmdh/\ngzR0+usxq3LX3fHSz4osH82Ll61xXYM/3K3AKlFvIqX7eyffpVwbiGO/cuj2hY0t\nhEidrSYNOCPvNQ9sg0mzf2fsh1EX+Hb/MHd5aUkpa+25tApbrP4P0YSSL/bLqc7/\npNvyb4JhKjEshBW5ibGBzchvnrdzSEW6Lnc6pR5mnSQJHfmmZddeLKfyEZBiyM49\nYwIDAQAB\n-----END PUBLIC KEY-----\n",
+  "apiSslCertArn": "arn:aws:acm:us-east-1:476905305808:certificate/40a36aac-d4bb-4318-ae79-244965b224df",
+  "appSslCertArn": "arn:aws:acm:us-east-1:476905305808:certificate/f9dbc656-75a0-43c4-9fbd-2d3f7aeb5e7b",
+  "storageSslCertArn": "arn:aws:acm:us-east-1:476905305808:certificate/e7a868ea-d885-41c3-8fa6-3c6e2cfd354c"
+}
