@@ -259,14 +259,6 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
   }
 }
 
-const unguardedRepositoryMethods = new Set<PropertyKey>([
-  'constructor',
-  'assertAvailable',
-  'assertNotClosed',
-  'guardRepositoryMethods',
-  Symbol.dispose,
-]);
-
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -317,16 +309,10 @@ export class Repository extends FhirRepository implements Disposable {
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
-    this.guardRepositoryMethods();
   }
 
   get mode(): RepositoryMode {
     return this.connection.mode;
-  }
-
-  set mode(mode: RepositoryMode) {
-    this.assertAvailable();
-    this.connection.mode = mode;
   }
 
   /**
@@ -334,6 +320,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns A new repository with the same context but a new connection.
    */
   clone(): Repository {
+    this.assertUsable(); // technically not needed, but the implementation has been a moving target, so keep it locked down
     return new Repository(this.context);
   }
 
@@ -356,6 +343,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
+    this.assertUsable();
     const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
@@ -367,7 +355,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
     if (this.connection.hasConnection()) {
-      this.assertNotClosed();
+      this.assertUsable();
       return new Repository({ ...this.context, ...config }, this.connection);
     } else {
       return new Repository({ ...this.context, ...config });
@@ -375,6 +363,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   setMode(mode: RepositoryMode): void {
+    this.assertUsable();
     this.connection.mode = mode;
   }
 
@@ -412,7 +401,8 @@ export class Repository extends FhirRepository implements Disposable {
     return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
 
-  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+  override async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordWrite();
     await this.resourceCap()?.created();
 
@@ -458,11 +448,12 @@ export class Repository extends FhirRepository implements Disposable {
     return randomUUID();
   }
 
-  async readResource<T extends Resource>(
+  override async readResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordRead();
 
     const startTime = Date.now();
@@ -545,7 +536,8 @@ export class Repository extends FhirRepository implements Disposable {
     return resource;
   }
 
-  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+  override async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+    this.assertUsable();
     await this.rateLimiter()?.recordRead(references.length);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
@@ -610,7 +602,8 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
+  override async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
+    this.assertUsable();
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
@@ -636,6 +629,7 @@ export class Repository extends FhirRepository implements Disposable {
     id: string,
     options?: ReadHistoryOptions
   ): Promise<Bundle<T>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordHistory();
     const startTime = Date.now();
     try {
@@ -729,7 +723,12 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
+  override async readVersion<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    vid: string
+  ): Promise<WithId<T>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
@@ -770,7 +769,8 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+  override async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
@@ -1079,6 +1079,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns Promise to complete.
    */
   async reindexResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1096,6 +1097,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resources - The resource(s) to reindex.
    */
   async reindexResources<T extends Resource>(resources: WithId<T>[]): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1131,6 +1133,7 @@ export class Repository extends FhirRepository implements Disposable {
     id: string,
     options?: ResendSubscriptionsOptions
   ): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1158,7 +1161,11 @@ export class Repository extends FhirRepository implements Disposable {
     );
   }
 
-  async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  override async deleteResource<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string
+  ): Promise<void> {
+    this.assertUsable();
     await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
@@ -1246,12 +1253,13 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async patchResource<T extends Resource>(
+  override async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
@@ -1293,6 +1301,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param id - The resource ID.
    */
   async expungeResource(resourceType: string, id: string): Promise<void> {
+    this.assertUsable();
     await this.expungeResources(resourceType, [id]);
   }
 
@@ -1303,6 +1312,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param ids - The resource IDs.
    */
   async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1354,6 +1364,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param before - The date before which resources should be purged.
    */
   async purgeResources(resourceType: ResourceType, before: string): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1370,10 +1381,11 @@ export class Repository extends FhirRepository implements Disposable {
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
-  async search<T extends Resource>(
+  override async search<T extends Resource>(
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordSearch();
 
     const startTime = Date.now();
@@ -1395,6 +1407,7 @@ export class Repository extends FhirRepository implements Disposable {
     process: (resource: WithId<T>) => Promise<void>,
     options?: ProcessAllResourcesOptions
   ): Promise<void> {
+    this.assertUsable();
     let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
     while (searchRequest) {
       const bundle: Bundle<T> = await this.search<T>(searchRequest);
@@ -1418,11 +1431,12 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async searchByReference<T extends Resource>(
+  override async searchByReference<T extends Resource>(
     searchRequest: SearchRequest<T>,
     referenceField: string,
     references: string[]
   ): Promise<Record<string, WithId<T>[]>> {
+    this.assertUsable();
     await this.rateLimiter()?.recordSearch(references.length);
     const startTime = Date.now();
     try {
@@ -1445,6 +1459,44 @@ export class Repository extends FhirRepository implements Disposable {
       this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
       throw err;
     }
+  }
+
+  override async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
+    this.assertUsable();
+    return super.searchOne(searchRequest);
+  }
+
+  override async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T>[]> {
+    this.assertUsable();
+    return super.searchResources(searchRequest);
+  }
+
+  override async conditionalCreate<T extends Resource>(
+    resource: T,
+    search: SearchRequest<T>,
+    options?: CreateResourceOptions
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
+    this.assertUsable();
+    return super.conditionalCreate(resource, search, options);
+  }
+
+  override async conditionalUpdate<T extends Resource>(
+    resource: T,
+    search: SearchRequest,
+    options?: CreateResourceOptions & UpdateResourceOptions
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
+    this.assertUsable();
+    return super.conditionalUpdate(resource, search, options);
+  }
+
+  override async conditionalDelete(search: SearchRequest): Promise<void> {
+    this.assertUsable();
+    return super.conditionalDelete(search);
+  }
+
+  override async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+    this.assertUsable();
+    return super.conditionalPatch(search, patch);
   }
 
   /**
@@ -2139,13 +2191,15 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns The database client.
    */
   getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
+    this.assertUsable();
     return this.connection.getDatabaseClient(mode);
   }
 
-  async withTransaction<TResult>(
+  override async withTransaction<TResult>(
     callback: (repo: this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
+    this.assertUsable();
     const transactionRepo = this.createTransactionScopedRepo();
     this.transactionChildRepo = transactionRepo;
     try {
@@ -2159,6 +2213,7 @@ export class Repository extends FhirRepository implements Disposable {
     options: StatementTimeoutOptions,
     callback: (client: PoolClient) => Promise<TResult>
   ): Promise<TResult> {
+    this.assertUsable();
     if (!this.ownsConnection) {
       throw new Error('Cannot set statement timeout on a borrowed repository connection');
     }
@@ -2166,10 +2221,12 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async preCommit(fn: (repo: this) => void | Promise<void>): Promise<void> {
+    this.assertUsable();
     return this.connection.preCommit(async () => fn(this));
   }
 
   async postCommit(fn: (repo: this) => void | Promise<void>): Promise<void> {
+    this.assertUsable();
     return this.connection.postCommit(async () => fn(this));
   }
 
@@ -2252,6 +2309,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async ensureInTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
+    this.assertUsable();
     if (this.connection.isInTransaction()) {
       return callback(this);
     }
@@ -2264,64 +2322,21 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   [Symbol.dispose](removeConnection?: boolean): void {
-    this.assertNotClosed();
+    this.assertUsable();
     if (this.ownsConnection) {
       this.connection[Symbol.dispose](removeConnection);
     }
     this.closed = true;
   }
 
-  private assertNotClosed(): void {
+  private assertUsable(): void {
     if (this.closed) {
       throw new Error('Already closed');
     }
-  }
-
-  private assertAvailable(): void {
     if (this.transactionChildRepo) {
       throw new Error(
         'Repository is in an active transaction callback; use the transaction-scoped repository passed to the callback'
       );
-    }
-  }
-
-  private guardRepositoryMethods(): void {
-    const seen = new Set<PropertyKey>();
-    let prototype = Object.getPrototypeOf(this);
-
-    while (prototype && prototype !== Object.prototype) {
-      for (const propertyKey of Reflect.ownKeys(prototype)) {
-        if (seen.has(propertyKey) || unguardedRepositoryMethods.has(propertyKey)) {
-          continue;
-        }
-        seen.add(propertyKey);
-
-        const descriptor = Object.getOwnPropertyDescriptor(prototype, propertyKey);
-        if (typeof descriptor?.value !== 'function') {
-          continue;
-        }
-
-        const original = descriptor.value as (...args: unknown[]) => unknown;
-        const isAsyncFunction = original.constructor.name === 'AsyncFunction';
-        Object.defineProperty(this, propertyKey, {
-          configurable: true,
-          value: function (this: Repository, ...args: unknown[]): unknown {
-            try {
-              this.assertNotClosed();
-              this.assertAvailable();
-            } catch (err) {
-              if (isAsyncFunction) {
-                return Promise.reject(err);
-              }
-              throw err;
-            }
-            return original.apply(this, args);
-          },
-          writable: true,
-        });
-      }
-
-      prototype = Object.getPrototypeOf(prototype);
     }
   }
 }
