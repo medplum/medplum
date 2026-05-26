@@ -20,7 +20,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
-  onSuccess: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
+  onSuccess: (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
   className?: string;
 };
 
@@ -144,7 +144,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, []);
 
   const handleBookSuccess = useCallback(
-    (results: { appointments: Appointment[]; slots: Slot[] }) => {
+    (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => {
       setSelectedHealthcareService(undefined);
       setSlots([]);
       setChosenSlot(undefined);
