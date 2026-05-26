@@ -475,14 +475,4 @@ describe('Calendar', () => {
       expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
     });
   });
-
-  describe('styling', () => {
-    test('applies custom style prop', async () => {
-      const { container } = render(
-        <Calendar slots={[]} appointments={[]} style={{ height: '500px', width: '100%' }} />
-      );
-      const calendar = container.querySelector('[data-testid="calendar"]');
-      expect(calendar).toHaveStyle({ height: '500px', width: '100%' });
-    });
-  });
 });

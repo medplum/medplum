@@ -59,7 +59,6 @@ function slotsToEvents(slots: Slot[]): EventInput[] {
 export function Calendar(props: {
   slots: Slot[];
   appointments: Appointment[];
-  style?: React.CSSProperties;
   onSelectInterval?: (slotInfo: Range) => void;
   onSelectSlot?: (slot: Slot) => void;
   onSelectAppointment?: (appointment: Appointment) => void;
@@ -113,7 +112,7 @@ export function Calendar(props: {
   }, [props.appointments, props.slots]);
 
   return (
-    <div data-testid="calendar" style={props.style} className={classes.wrapper}>
+    <div data-testid="calendar" className={classes.wrapper}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
           <Title order={4}>{controller.view?.title}</Title>
@@ -141,6 +140,7 @@ export function Calendar(props: {
         />
       </Group>
       <FullCalendar
+        className={classes.calendar}
         height="100%"
         plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
         controller={controller}

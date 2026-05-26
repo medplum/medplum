@@ -193,8 +193,6 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, navigate, appointmentDetailsHandlers]
   );
 
-  const height = window.innerHeight - 60;
-
   const handleAppointmentUpdate = useCallback(
     (updated: WithId<Appointment>) => {
       setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
@@ -230,7 +228,7 @@ export function SchedulePage(): JSX.Element | null {
   const schedulingEnabled = project?.features?.includes('scheduling');
 
   return (
-    <Box pos="relative" className={classes.page} p="md" style={{ height }}>
+    <Box pos="relative" className={classes.page} p="md">
       <div className={classes.wrapper}>
         <Group justify="space-between">
           <Box mb="sm" w={320}>
@@ -256,7 +254,6 @@ export function SchedulePage(): JSX.Element | null {
         <div className={classes.container}>
           <div className={classes.calendar}>
             <Calendar
-              style={{ height: '100%' }}
               onSelectInterval={handleSelectInterval}
               onSelectAppointment={handleSelectAppointment}
               onSelectSlot={handleSelectSlot}
