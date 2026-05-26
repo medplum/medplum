@@ -68,7 +68,7 @@ export type CodeChallengeMethod = 'plain' | 'S256';
 export interface LoginRequest {
   readonly email?: string;
   readonly externalId?: string;
-  readonly authMethod: 'password' | 'google' | 'external' | 'exchange';
+  readonly authMethod: Login['authMethod'];
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;

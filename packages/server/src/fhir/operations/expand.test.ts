@@ -612,6 +612,49 @@ describe('Expand', () => {
     expect(coding.display).toStrictEqual('Correct coding');
   });
 
+  test('Expands ValueSet with explicit concepts from fragment CodeSystem', async () => {
+    const csUrl = 'http://example.com/fragment-cs-' + randomUUID();
+
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url: csUrl,
+        content: 'fragment',
+        concept: [
+          { code: 'A', display: 'Concept A' },
+          { code: 'B', display: 'Concept B' },
+        ],
+      });
+    expect(csRes.status).toBe(201);
+
+    const vsUrl = 'http://example.com/vs-fragment-' + randomUUID();
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: vsUrl,
+        compose: {
+          include: [{ system: csUrl, concept: [{ code: 'A', display: 'Concept A' }] }],
+        },
+      });
+    expect(vsRes.status).toBe(201);
+
+    const expandRes = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(vsUrl)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(expandRes.status).toBe(200);
+    expect(expandRes.body.expansion.contains).toHaveLength(1);
+    expect(expandRes.body.expansion.contains[0].code).toBe('A');
+    expect(expandRes.body.expansion.contains[0].display).toBe('Concept A');
+  });
+
   test('Returns error when property filter is invalid for CodeSystem', async () => {
     const res1 = await request(app)
       .post(`/fhir/R4/CodeSystem`)

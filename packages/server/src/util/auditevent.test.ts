@@ -6,6 +6,7 @@ import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'node:crypto';
 import type { BotExecutionRequest } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
+import { globalLogger } from '../logger';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -16,22 +17,26 @@ import {
 } from './auditevent';
 
 describe('AuditEvent utils', () => {
-  test('AuditEvents disabled', async () => {
-    console.info = jest.fn();
-    console.log = jest.fn();
+  let writeSpy: jest.SpyInstance;
 
+  beforeEach(() => {
+    writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    writeSpy.mockRestore();
+  });
+
+  test('AuditEvents disabled', async () => {
     const config = await loadTestConfig();
     config.logAuditEvents = false;
 
     logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
 
-    expect(console.info).not.toHaveBeenCalled();
-    expect(console.log).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
   });
 
-  test('AuditEvent to console.log', async () => {
-    console.log = jest.fn();
-
+  test('AuditEvent to log', async () => {
     const config = await loadTestConfig();
     config.logAuditEvents = true;
 
@@ -39,12 +44,10 @@ describe('AuditEvent utils', () => {
     logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
 
     // It should have been logged
-    expect(console.log).toHaveBeenCalledWith('{"resourceType":"AuditEvent"}');
+    expect(writeSpy).toHaveBeenCalledWith('{"resourceType":"AuditEvent"}');
   });
 
   test('Redacts display text when config flag set', async () => {
-    console.log = jest.fn();
-
     const config = await loadTestConfig();
     config.logAuditEvents = true;
     config.redactAuditEvents = true;
@@ -69,8 +72,8 @@ describe('AuditEvent utils', () => {
     logAuditEvent(auditEvent);
 
     // It should have been logged
-    expect(console.log).toHaveBeenCalledTimes(1);
-    const auditLog = (console.log as jest.Mock).mock.calls[0][0];
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    const auditLog = writeSpy.mock.calls[0][0] as string;
     expect(auditLog).toContain(`{"resourceType":"AuditEvent",`);
     expect(auditLog).not.toContain('HIV');
     expect(auditLog).not.toContain('Test');
@@ -96,9 +99,8 @@ describe('AuditEvent utils', () => {
       const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
 
       // Successful execution with no output won't trigger on-error or on-output
-      console.log = jest.fn();
       await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, '');
-      expect(console.log).not.toHaveBeenCalled();
+      expect(writeSpy).not.toHaveBeenCalled();
     }
   );
 
@@ -118,8 +120,7 @@ describe('AuditEvent utils', () => {
     };
     const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
 
-    console.log = jest.fn();
     await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, 'foo');
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"foo"`));
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"foo"`));
   });
 });

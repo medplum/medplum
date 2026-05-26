@@ -18,7 +18,7 @@ import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
 import type { Repository, SystemRepository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
-import { getLogger, globalLogger } from './logger';
+import { getLogger, globalLogger, writeLineToStdout } from './logger';
 import type { AuthState } from './oauth/middleware';
 import { authenticateTokenImpl } from './oauth/middleware';
 import { getRateLimitRedis } from './redis';
@@ -36,7 +36,11 @@ export class RequestContext implements IRequestContext {
     this.traceId = traceId;
     this.logger =
       logger ??
-      new Logger(write, { ...loggerMetadata, requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
+      new Logger(
+        writeLineToStdout,
+        { ...loggerMetadata, requestId, traceId },
+        parseLogLevel(getConfig().logLevel ?? 'info')
+      );
   }
 
   [Symbol.dispose](): void {
@@ -256,10 +260,6 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
   const traceId = getTraceId(req) ?? randomUUID();
 
   return { requestId, traceId };
-}
-
-function write(msg: string): void {
-  process.stdout.write(msg + '\n');
 }
 
 function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boolean): FhirRateLimiter | undefined {

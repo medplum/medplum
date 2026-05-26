@@ -183,6 +183,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'fhir-datastore/external-documents' },
         { type: 'doc', id: 'fhir-datastore/resource-history' },
         { type: 'doc', id: 'fhir-datastore/fhir-batch-requests' },
+        { type: 'doc', id: 'fhir-datastore/processing-async-bundles' },
         { type: 'doc', id: 'fhir-datastore/working-with-fhir' },
         {
           type: 'html',
@@ -270,6 +271,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'auth/mfa' },
         { type: 'doc', id: 'auth/token-exchange' },
         { type: 'doc', id: 'auth/session-management' },
+        { type: 'doc', id: 'auth/pre-authorized-code' },
       ],
     },
     {
@@ -421,6 +423,10 @@ const sidebars: SidebarsConfig = {
     {
       type: 'doc',
       id: 'integration/c-cda',
+    },
+    {
+      type: 'doc',
+      id: 'integration/electronic-prior-auth',
     },
     {
       type: 'html',
@@ -584,6 +590,7 @@ const sidebars: SidebarsConfig = {
                 { type: 'doc', id: 'api/fhir/operations/asyncjob-cancel' },
                 { type: 'doc', id: 'api/fhir/operations/project-clone' },
                 { type: 'doc', id: 'api/fhir/operations/project-init' },
+                { type: 'doc', id: 'api/fhir/operations/project-rate-limits' },
                 { type: 'doc', id: 'api/fhir/operations/expunge' },
                 { type: 'doc', id: 'api/fhir/operations/resend' },
                 { type: 'doc', id: 'api/fhir/operations/set-accounts' },
