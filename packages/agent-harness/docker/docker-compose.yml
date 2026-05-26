@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Local stack for testing historical Medplum Agent versions against an
+# impersonated meta.medplum.com release server.
+#
+# How the redirect works without modifying any agent code:
+#   - mock-releases service joins the `harness` docker network with the
+#     network alias `meta.medplum.com`, so DNS lookups for that hostname from
+#     containers on the same network resolve to this service.
+#   - cert-init generates an ephemeral root CA + a server cert with SAN
+#     covering meta.medplum.com. mock-releases serves TLS using that cert.
+#   - harness container mounts the CA via NODE_EXTRA_CA_CERTS, which Node
+#     honors at startup even for pkg/sea-packaged agent binaries — so when
+#     BinaryAgentLauncher spawns a downloaded agent binary, the agent's
+#     `fetch('https://meta.medplum.com/releases/...')` validates against the
+#     dev CA and lands at mock-releases.
+#
+# Build from the monorepo root (one directory up from `packages/`):
+#     docker compose -f packages/agent-harness/docker/docker-compose.yml build
+#
+# Run (assumes you've seeded ./releases with at least one binary):
+#     docker compose -f packages/agent-harness/docker/docker-compose.yml up
+#
+# Override host port if 7681 is taken: HARNESS_HOST_PORT=8181 docker compose up
+name: medplum-agent-harness
+
+services:
+  cert-init:
+    image: alpine:3.20
+    command:
+      - sh
+      - -c
+      - 'apk add --no-cache openssl >/dev/null && /scripts/cert-init.sh'
+    volumes:
+      - certs:/certs
+      - ./cert-init.sh:/scripts/cert-init.sh:ro
+    environment:
+      CERT_DIR: /certs
+      CN_HOST: meta.medplum.com
+      ALT_NAMES: 'DNS:meta.medplum.com,DNS:mock-releases,DNS:localhost,IP:127.0.0.1'
+
+  mock-releases:
+    build:
+      # Build context = monorepo root so workspace deps resolve.
+      context: ../../..
+      dockerfile: packages/agent-harness/docker/Dockerfile
+    image: medplum-agent-harness:dev
+    depends_on:
+      cert-init:
+        condition: service_completed_successfully
+    command: ['node', 'dist/docker/mock-releases-entrypoint.js']
+    networks:
+      harness:
+        aliases:
+          - meta.medplum.com
+    volumes:
+      - certs:/certs:ro
+      - ./releases:/releases:ro
+    environment:
+      CERT_DIR: /certs
+      RELEASES_DIR: /releases
+      PORT: '443'
+      BASE_URL: 'https://meta.medplum.com'
+    # 443 needs CAP_NET_BIND_SERVICE; root in the node:22-slim base has it
+    # implicitly. If you switch to a non-root user, add `cap_add:` here.
+
+  harness:
+    image: medplum-agent-harness:dev
+    depends_on:
+      cert-init:
+        condition: service_completed_successfully
+      mock-releases:
+        condition: service_started
+    command: ['node', 'dist/cli.js']
+    networks:
+      - harness
+    ports:
+      - '${HARNESS_HOST_PORT:-7681}:7681'
+    volumes:
+      - certs:/certs:ro
+    environment:
+      # Trust the dev CA for the impersonated meta.medplum.com. Inherited by
+      # every spawned agent child process via `env: process.env`.
+      NODE_EXTRA_CA_CERTS: /certs/ca.crt
+      HARNESS_PORT: '7681'
+      # SourceAgentLauncher (if anyone uses source mode in docker) can find the
+      # monorepo here.
+      MEDPLUM_MONOREPO_ROOT: /app
+
+volumes:
+  certs:
+
+networks:
+  harness:
+    driver: bridge

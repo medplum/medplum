@@ -1,0 +1,24 @@
+# Inherits semantics from the monorepo .dockerignore; tightens the build
+# context to what `npm ci --workspace=@medplum/agent-harness` actually needs.
+**/node_modules
+**/dist
+**/.next
+**/build
+**/coverage
+**/.turbo
+**/.vitest
+**/.cache
+**/.tsbuildinfo
+**/*.tsbuildinfo
+.git
+.github
+.gitignore
+.gitattributes
+.dockerignore
+**/Dockerfile
+**/docker-compose*.yml
+# Local releases dir is mounted at runtime, not baked into the image.
+packages/agent-harness/docker/releases
+# Avoid pulling huge in-tree fixture/data trees into the image.
+**/*.zip
+**/*.tar.gz

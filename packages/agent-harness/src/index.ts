@@ -12,6 +12,12 @@ export { SimulatedBackend } from './backends/simulated/simulated-backend';
 export { RealBackend, type RealBackendOptions } from './backends/real/real-backend';
 export { HybridBackend, type HybridBackendOptions } from './backends/hybrid/hybrid-backend';
 export { FakeMedplumServer, type FakeMedplumServerOptions } from './backends/fake-server/fake-medplum-server';
+export {
+  MockReleasesServer,
+  readTlsMaterial,
+  inferPlatform,
+  type MockReleasesServerOptions,
+} from './backends/mock-releases';
 export type { Backend, BackendKind } from './backends/backend';
 export { HarnessHttpServer } from './server/http-server';
 export {
