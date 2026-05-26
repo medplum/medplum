@@ -6,7 +6,15 @@
    * against that behavior.
    * */
   min-width: 200px;
+
+  display: flex;
+  flex-direction: column;
 }
+
+.calendar {
+  flex-grow: 1;
+}
+
 
 /* Make it clearer that events are clickable */
 .interactiveEvent {
