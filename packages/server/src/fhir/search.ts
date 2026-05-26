@@ -1381,9 +1381,28 @@ function buildReferenceSearchFilter(
   }
   const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
-    values = values.map((v) =>
-      !v.includes('/') && (impl.columnName === 'subject' || impl.columnName === 'patient') ? `Patient/${v}` : v
-    );
+    values = values.map((v) => {
+      if (v.includes('/')) {
+        return v;
+      }
+      // When the search parameter has a single target resource type (the spec's
+      // default for most reference params — see FHIR R4 §3.1.1.4.12), prepend
+      // that type so bare ids match the stored `Type/id` references. Gated on
+      // `isUUID` because Medplum stores its own resource ids as UUIDs; this
+      // avoids rewriting unrelated slashless values (e.g. URNs, identifiers).
+      if (impl.singleTargetType && isUUID(v)) {
+        return `${impl.singleTargetType}/${v}`;
+      }
+      // Back-compat: the `subject` and `patient` columns historically default
+      // to `Patient/` for bare values even when the underlying SearchParameter
+      // is multi-target (e.g. `Observation.subject` -> [Patient, Group,
+      // Device, Location]). Preserved verbatim to avoid breaking callers that
+      // rely on the implicit Patient assumption.
+      if (impl.columnName === 'subject' || impl.columnName === 'patient') {
+        return `Patient/${v}`;
+      }
+      return v;
+    });
   }
   let condition: Condition;
   if (impl.array) {
