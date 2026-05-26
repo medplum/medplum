@@ -257,21 +257,12 @@ The transaction uses serializable isolation to prevent double-booking under conc
 
 ## Error Responses
 
-### Time No Longer Available
+### Time Not Available
 
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "conflict", "details": { "text": "Requested time slot is no longer available" } }]
-}
-```
-
-### No Availability Found
-
-```json
-{
-  "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "No availability found at this time" } }]
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Requested time slot is not available" } }]
 }
 ```
 
@@ -281,15 +272,6 @@ The transaction uses serializable isolation to prevent double-booking under conc
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Mismatched slot start times" } }]
-}
-```
-
-### No Matching Scheduling Parameters
-
-```json
-{
-  "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "No matching scheduling parameters found" } }]
 }
 ```
 
