@@ -99,8 +99,6 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
     }
   }
 
-  const { userLimit, projectLimit } = getFhirQuotaConfig(project);
-
   const limiter = ctx.fhirRateLimiter;
   if (!limiter) {
     return [
@@ -127,6 +125,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   }
 
   const consumedValues = results[0][1] as (string | null)[];
+  const { userLimit, projectLimit } = getFhirQuotaConfig(ctx.authState);
 
   const membershipResults = memberships.map((membership, i) => {
     const consumed = consumedValues[i];
