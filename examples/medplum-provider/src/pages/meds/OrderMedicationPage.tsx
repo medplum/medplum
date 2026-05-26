@@ -28,7 +28,9 @@ import {
   getPreferredPharmaciesFromPatient,
   getReferenceString,
   isDefined,
+  isOk,
   NDC,
+  resolveId,
   RXNORM,
 } from '@medplum/core';
 import type {
@@ -43,6 +45,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete, Panel, ResourceInput, useMedplum } from '@medplum/react';
+import { useSearchResources } from '@medplum/react-hooks';
 import {
   loadScriptSureQuantityQualifiers,
   SCRIPTSURE_GENERIC_NAME_EXTENSION,
@@ -1337,67 +1340,66 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
     setPharmacyOrg,
   } = props;
 
-  const [patientCoverages, setPatientCoverages] = useState<WithId<Coverage>[]>([]);
-  const [preferredPharmacies, setPreferredPharmacies] = useState<{ org: WithId<Organization>; isPrimary: boolean }[]>(
-    []
+  const patientId = patient?.id;
+
+  const [coverageSearchResult, , coveragesOutcome] = useSearchResources(
+    'Coverage',
+    patientId ? { patient: `Patient/${patientId}`, status: 'active', _count: '50' } : undefined,
+    { enabled: Boolean(patientId) }
   );
 
-  useEffect(() => {
-    if (!patient?.id) {
-      setPatientCoverages((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
+  const patientCoverages = useMemo(
+    () => (patientId ? (coverageSearchResult ?? []) : []),
+    [patientId, coverageSearchResult]
+  );
+
+  const preferredPharmacyRefs = useMemo(() => (patient ? getPreferredPharmaciesFromPatient(patient) : []), [patient]);
+
+  const preferredPharmacyOrgIds = useMemo(
+    () =>
+      preferredPharmacyRefs
+        .map((pref) => resolveId(pref.organizationRef))
+        .filter(isDefined)
+        .join(','),
+    [preferredPharmacyRefs]
+  );
+
+  const [organizations, , organizationsOutcome] = useSearchResources(
+    'Organization',
+    { _id: preferredPharmacyOrgIds, _count: String(Math.max(preferredPharmacyRefs.length, 1)) },
+    { enabled: preferredPharmacyOrgIds.length > 0 }
+  );
+
+  const preferredPharmacies = useMemo(() => {
+    if (!patient || preferredPharmacyOrgIds.length === 0) {
+      return [];
     }
-    let cancelled = false;
-    medplum
-      .searchResources('Coverage', `patient=Patient/${patient.id}&status=active&_count=50`)
-      .then((rows) => {
-        if (!cancelled) {
-          setPatientCoverages(rows.filter((c): c is WithId<Coverage> => Boolean(c.id)));
-        }
+    const orgById = new Map(
+      (organizations ?? []).filter((org): org is WithId<Organization> => Boolean(org.id)).map((org) => [org.id, org])
+    );
+    const rows = preferredPharmacyRefs
+      .map((pref) => {
+        const id = resolveId(pref.organizationRef);
+        const org = id ? orgById.get(id) : undefined;
+        return org ? { org, isPrimary: pref.isPrimary } : undefined;
       })
-      .catch((e) => {
-        if (!cancelled) {
-          showErrorNotification(e);
-        }
-      });
-    return (): void => {
-      cancelled = true;
-    };
-  }, [medplum, patient]);
+      .filter(isDefined);
+    // Surface the primary pharmacy first.
+    rows.sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+    return rows;
+  }, [patient, preferredPharmacyOrgIds, organizations, preferredPharmacyRefs]);
 
   useEffect(() => {
-    if (!patient) {
-      setPreferredPharmacies((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
+    if (coveragesOutcome && !isOk(coveragesOutcome)) {
+      showErrorNotification(coveragesOutcome);
     }
-    const refs = getPreferredPharmaciesFromPatient(patient);
-    if (refs.length === 0) {
-      setPreferredPharmacies((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
+  }, [coveragesOutcome]);
+
+  useEffect(() => {
+    if (organizationsOutcome && !isOk(organizationsOutcome)) {
+      showErrorNotification(organizationsOutcome);
     }
-    let cancelled = false;
-    Promise.all(
-      refs.map((p) =>
-        medplum
-          .readReference(p.organizationRef)
-          .then((org) => (org.id ? { org, isPrimary: p.isPrimary } : undefined))
-          .catch(() => undefined)
-      )
-    )
-      .then((rows) => {
-        if (cancelled) {
-          return;
-        }
-        const filtered = rows.filter(isDefined);
-        // Surface the primary pharmacy first.
-        filtered.sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
-        setPreferredPharmacies(filtered);
-      })
-      .catch(showErrorNotification);
-    return (): void => {
-      cancelled = true;
-    };
-  }, [medplum, patient]);
+  }, [organizationsOutcome]);
 
   // Auto-select primary pharmacy when nothing is chosen yet.
   useEffect(() => {
@@ -1435,7 +1437,6 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
     [preferredPharmacies]
   );
 
-  const patientId = patient?.id;
   const loadConditionOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<Condition[]> => {
       if (!patientId) {
