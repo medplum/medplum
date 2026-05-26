@@ -43,10 +43,13 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
       SchedulingTransientIdentifier.remove(booking);
 
       try {
-        const data = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(medplum.fhirUrl('Appointment', '$book'), {
-          resourceType: 'Parameters',
-          parameter: [{ name: 'appointment', resource: booking }],
-        });
+        const data = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+          medplum.fhirUrl('Appointment', '$book'),
+          {
+            resourceType: 'Parameters',
+            parameter: [{ name: 'appointment', resource: booking }],
+          }
+        );
         medplum.invalidateSearches('Appointment');
         medplum.invalidateSearches('Slot');
 
