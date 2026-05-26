@@ -36,6 +36,7 @@ import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
+import { appointmentConfirmHandler } from './operations/confirm';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
 import { getColumnStatisticsHandler } from './operations/db-column-statistics';
@@ -397,6 +398,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
   router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
   router.add('POST', '/Appointment/:id/$cancel', appointmentCancelHandler);
+  router.add('POST', '/Appointment/:id/$confirm', appointmentConfirmHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);
