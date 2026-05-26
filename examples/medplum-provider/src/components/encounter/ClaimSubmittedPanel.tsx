@@ -23,10 +23,9 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
     return null;
   }
 
-  const status = "Submitted";
+  const status = 'Submitted';
   const createdAt = claimResponseResource.created;
-  const claimAmount =
-    claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
+  const claimAmount = claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
   const candidEncounterId = claimResponseResource.identifier?.find(
     (id) => id.system === CANDID_IDENTIFIER_SYSTEM
   )?.value;

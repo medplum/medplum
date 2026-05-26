@@ -106,10 +106,7 @@ describe('ClaimSubmittedPanel', () => {
       identifier: [{ system: CANDID_IDENTIFIER_SYSTEM, value: 'enc-123' }],
     });
     await userEvent.click(screen.getByText('View Claim on Candid'));
-    expect(windowOpenSpy).toHaveBeenCalledWith(
-      'https://app-staging.joincandidhealth.com/claims/enc-123',
-      '_blank'
-    );
+    expect(windowOpenSpy).toHaveBeenCalledWith('https://app-staging.joincandidhealth.com/claims/enc-123', '_blank');
     windowOpenSpy.mockRestore();
   });
 });

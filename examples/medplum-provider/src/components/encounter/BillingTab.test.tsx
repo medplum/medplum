@@ -283,7 +283,6 @@ describe('BillingTab', () => {
   });
 
   test('submits claim when conditions exist', async () => {
-
     const mockCondition = {
       resourceType: 'Condition' as const,
       id: 'condition-1',
@@ -1061,7 +1060,6 @@ describe('BillingTab', () => {
         insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/coverage-123' } }],
       };
 
-
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim);
@@ -1163,10 +1161,10 @@ describe('BillingTab', () => {
     };
 
     const mockSearchOneWithClaimResponse = (claimResponse: WithId<ClaimResponse>): void => {
-      vi.spyOn(medplum, 'searchOne').mockImplementation(
-        ((resourceType: string) =>
-          resourceType === 'ClaimResponse' ? Promise.resolve(claimResponse) : Promise.resolve(undefined)) as (resourceType: string) => ReadablePromise<WithId<ClaimResponse> | undefined>
-      );
+      vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) =>
+        resourceType === 'ClaimResponse' ? Promise.resolve(claimResponse) : Promise.resolve(undefined)) as (
+        resourceType: string
+      ) => ReadablePromise<WithId<ClaimResponse> | undefined>);
     };
 
     test('shows Candid claim card when a ClaimResponse exists', async () => {

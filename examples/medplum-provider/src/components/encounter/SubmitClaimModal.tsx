@@ -264,24 +264,18 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
       </Grid>
 
       <Group justify="flex-end">
-       
-          <Button
-            size="md"
-            variant="outline"
-            rightSection={<IconArrowUpRight size={16} />}
-            disabled={!canSubmit}
-            onClick={handleSubmitToStedi}
-          >
-            Submit to Stedi
-          </Button>
-          <Button
-            size="md"
-            rightSection={<IconArrowUpRight size={16} />}
-            disabled={!canSubmit}
-            onClick={handleConfirm}
-          >
-            Submit to Candid
-          </Button>
+        <Button
+          size="md"
+          variant="outline"
+          rightSection={<IconArrowUpRight size={16} />}
+          disabled={!canSubmit}
+          onClick={handleSubmitToStedi}
+        >
+          Submit to Stedi
+        </Button>
+        <Button size="md" rightSection={<IconArrowUpRight size={16} />} disabled={!canSubmit} onClick={handleConfirm}>
+          Submit to Candid
+        </Button>
       </Group>
     </Stack>
   );

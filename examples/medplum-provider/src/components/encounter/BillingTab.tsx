@@ -70,7 +70,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
   const [claimResponseLoading, setClaimResponseLoading] = useState(false);
- 
+
   const conditionsRef = useRef(conditions);
   conditionsRef.current = conditions;
   const claimRef = useRef(claim);
@@ -485,32 +485,32 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       <Card withBorder shadow="sm">
         <Flex justify="space-between">
           {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
-         
-              <SubmitClaimModal
-                opened={confirmModalOpen}
-                coverages={coverages}
-                selectedCoverage={coverage}
-                patient={patient}
-                conditions={conditions}
-                practitioner={practitioner}
-                onClose={() => setConfirmModalOpen(false)}
-                onSubmitClaim={handleConfirmSubmit}
-                onSubmitToStedi={submitToStedi}
-                ensureSelfPayCoverage={ensureSelfPayCoverage}
-              />
-              <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
-                <Button
-                  component="div"
-                  variant="outline"
-                  leftSection={<IconSend size={16} />}
-                  loading={submitting}
-                  onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
-                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || submitting}
-                  data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
-                >
-                  Submit Claim
-                </Button>
-              </Tooltip>
+
+          <SubmitClaimModal
+            opened={confirmModalOpen}
+            coverages={coverages}
+            selectedCoverage={coverage}
+            patient={patient}
+            conditions={conditions}
+            practitioner={practitioner}
+            onClose={() => setConfirmModalOpen(false)}
+            onSubmitClaim={handleConfirmSubmit}
+            onSubmitToStedi={submitToStedi}
+            ensureSelfPayCoverage={ensureSelfPayCoverage}
+          />
+          <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
+            <Button
+              component="div"
+              variant="outline"
+              leftSection={<IconSend size={16} />}
+              loading={submitting}
+              onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
+              disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || submitting}
+              data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
+            >
+              Submit Claim
+            </Button>
+          </Tooltip>
         </Flex>
       </Card>
     );
