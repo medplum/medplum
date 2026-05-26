@@ -98,6 +98,12 @@ curl -X POST http://127.0.0.1:7681/scenarios \
   }'
 ```
 
+The CLI auto-detects the monorepo root (so the source launcher knows where
+`packages/agent` is); override with `MEDPLUM_MONOREPO_ROOT` if you're running
+the harness from a checked-out package outside the medplum tree. Each spawned
+agent gets an isolated `$TMPDIR` so the agent's pidfile doesn't collide when
+running multiple instances on one host.
+
 Inspect / control:
 
 ```sh

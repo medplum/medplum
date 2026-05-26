@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import type { AgentHandle, AgentLauncher, AgentRunState, AgentSpawnOptions } from './launcher';
 
 export interface SourceLauncherOptions {
@@ -11,8 +12,12 @@ export interface SourceLauncherOptions {
   monorepoRoot: string;
   /** Override the tsx executable (default: 'npx tsx'). */
   tsxCommand?: string;
-  /** Forwarded stdio mode: 'inherit' to surface logs in the parent, 'pipe' to collect. */
-  stdio?: 'inherit' | 'pipe';
+  /**
+   * Forwarded stdio mode. Default 'ignore' — without a drainer, 'pipe' will
+   * block the agent process once the kernel buffer fills. Use 'inherit' for
+   * interactive debugging.
+   */
+  stdio?: 'inherit' | 'pipe' | 'ignore';
 }
 
 /**
@@ -41,7 +46,7 @@ export class SourceAgentLauncher implements AgentLauncher {
   }
 
   async spawn(opts: AgentSpawnOptions): Promise<AgentHandle> {
-    const stdio = this.opts.stdio ?? 'pipe';
+    const stdio = this.opts.stdio ?? 'ignore';
     const args = [
       'tsx',
       this.agentMainPath,
@@ -51,12 +56,16 @@ export class SourceAgentLauncher implements AgentLauncher {
       opts.agentId,
       ...(opts.logLevel ? [opts.logLevel] : []),
     ];
+    // The real agent writes a PID file at `${tmpdir()}/medplum-agent/medplum-agent.pid`
+    // and exits with EEXIST if another agent already wrote one. Give every spawn
+    // its own TMPDIR so N agents can run side-by-side on the same host.
+    const isolatedTmp = mkdtempSync(join(tmpdir(), `medplum-agent-harness-${opts.nodeId}-`));
     const child = spawn('npx', args, {
       cwd: this.opts.monorepoRoot,
       stdio,
-      env: process.env,
+      env: { ...process.env, TMPDIR: isolatedTmp, TMP: isolatedTmp, TEMP: isolatedTmp },
     });
-    return new SourceAgentHandle(opts.nodeId, child);
+    return new SourceAgentHandle(opts.nodeId, child, isolatedTmp);
   }
 }
 
@@ -66,15 +75,24 @@ class SourceAgentHandle implements AgentHandle {
   readonly pid?: number;
   private state: AgentRunState = 'starting';
   private readonly child: ChildProcess;
+  private readonly isolatedTmp?: string;
   private exitPromise: Promise<void>;
 
-  constructor(nodeId: string, child: ChildProcess) {
+  constructor(nodeId: string, child: ChildProcess, isolatedTmp?: string) {
     this.nodeId = nodeId;
     this.child = child;
     this.pid = child.pid;
+    this.isolatedTmp = isolatedTmp;
     this.exitPromise = new Promise((resolveFn) => {
       child.once('exit', (code) => {
         this.state = code === 0 ? 'stopped' : 'crashed';
+        if (this.isolatedTmp) {
+          try {
+            rmSync(this.isolatedTmp, { recursive: true, force: true });
+          } catch {
+            // best-effort cleanup
+          }
+        }
         resolveFn();
       });
     });
