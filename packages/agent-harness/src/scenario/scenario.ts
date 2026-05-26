@@ -163,6 +163,12 @@ export class Scenario {
       case 'simulate-server-upgrade':
         await this.backend.simulateServerUpgrade({ downtimeMs: command.downtimeMs });
         return;
+      case 'simulate-server-restart':
+        await this.backend.simulateServerRestart({
+          downtimeMs: command.downtimeMs,
+          graceful: command.graceful,
+        });
+        return;
       default: {
         const _exhaustive: never = command;
         throw new Error(`unknown command: ${JSON.stringify(_exhaustive)}`);

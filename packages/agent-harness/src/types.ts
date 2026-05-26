@@ -104,7 +104,17 @@ export type Command =
    * `downtimeMs`, then accepting them again. Tests agent reconnect + buffering
    * behavior under realistic conditions.
    */
-  | { type: 'simulate-server-upgrade'; downtimeMs: number };
+  | { type: 'simulate-server-upgrade'; downtimeMs: number }
+  /**
+   * Simulates a Medplum server restart. Distinct from `simulate-server-upgrade`
+   * in that it's abrupt by default — sockets are torn down with TCP RST (no
+   * close frame), modeling a crash, OOM kill, or `kill -9`. The agent has no
+   * warning and must rely on its own reconnect/backoff loop.
+   *
+   * Set `graceful: true` to send a 1012 close frame first (same as
+   * `simulate-server-upgrade` but with the restart semantic).
+   */
+  | { type: 'simulate-server-restart'; downtimeMs: number; graceful?: boolean };
 
 export interface TimedCommand {
   /** Milliseconds after scenario start. */

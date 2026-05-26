@@ -30,6 +30,12 @@ describe('Scenario (smoke)', () => {
     // dataplane, but the event must show up in the recording.
     await scenario.issueCommand({ type: 'simulate-server-upgrade', downtimeMs: 50 });
 
+    // simulate an abrupt server restart (default: not graceful)
+    await scenario.issueCommand({ type: 'simulate-server-restart', downtimeMs: 50 });
+
+    // and a graceful restart
+    await scenario.issueCommand({ type: 'simulate-server-restart', downtimeMs: 50, graceful: true });
+
     // Pause load
     await scenario.issueCommand({ type: 'set-mps', nodeId: 'src', mps: 0 });
 
@@ -43,6 +49,13 @@ describe('Scenario (smoke)', () => {
     expect(types).toContain('sink.message');
     expect(types).toContain('server.upgrade.start');
     expect(types).toContain('server.upgrade.end');
+    expect(types).toContain('server.restart.start');
+    expect(types).toContain('server.restart.end');
+    // Both abrupt + graceful restarts should appear.
+    const restartStarts = recording.events.filter((e) => e.type === 'server.restart.start');
+    expect(restartStarts).toHaveLength(2);
+    const gracefulFlags = restartStarts.map((e) => (e.data as { graceful: boolean }).graceful);
+    expect(gracefulFlags).toEqual(expect.arrayContaining([true, false]));
     expect(types).toContain('scenario.stopped');
   });
 });

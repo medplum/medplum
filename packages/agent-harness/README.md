@@ -78,6 +78,10 @@ curl http://127.0.0.1:7681/scenarios
 curl -X POST http://127.0.0.1:7681/scenarios/s1/commands \
   -H 'content-type: application/json' \
   -d '{"type":"simulate-server-upgrade","downtimeMs":1000}'
+# abrupt restart (RST, no close frame) — models a crash
+curl -X POST http://127.0.0.1:7681/scenarios/s1/commands \
+  -H 'content-type: application/json' \
+  -d '{"type":"simulate-server-restart","downtimeMs":500}'
 curl http://127.0.0.1:7681/scenarios/s1/recording > recording.json
 ```
 

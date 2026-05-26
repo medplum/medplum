@@ -117,6 +117,24 @@ export class SimulatedBackend implements Backend {
     this.recordEvent('server.upgrade.end');
   }
 
+  async simulateServerRestart({ downtimeMs, graceful }: { downtimeMs: number; graceful?: boolean }): Promise<void> {
+    this.recordEvent('server.restart.start', { downtimeMs, graceful: graceful === true });
+    this.acceptingConnections = false;
+    if (this.wsServer) {
+      for (const client of this.wsServer.clients) {
+        if (graceful) {
+          client.close(1012, 'server restarting');
+        } else {
+          // terminate() == abrupt RST, no close frame — models a crash / kill -9.
+          client.terminate();
+        }
+      }
+    }
+    await sleep(downtimeMs);
+    this.acceptingConnections = true;
+    this.recordEvent('server.restart.end');
+  }
+
   resolveAgentChannelTarget(nodeId: string, channelName: string): { host: string; port: number } {
     const agent = this.getAgent(nodeId);
     const channel = agent.materialization.agent.channel?.find((c) => c.name === channelName);

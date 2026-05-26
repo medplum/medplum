@@ -20,6 +20,19 @@ export interface RealBackendOptions {
   launcher?: SelectLauncherOptions;
   /** Default agent version to launch. Defaults to latest. */
   defaultAgentVersion?: string;
+  /**
+   * Hooks for driving the medplum/server process from inside a scenario. The
+   * harness can't bounce a remote server on its own, so callers wire these to
+   * whatever they use to run the server (docker compose, systemctl, a child
+   * process they own, etc.). Each hook is optional; if absent the matching
+   * scenario command throws.
+   */
+  serverControl?: {
+    /** Restart the server. Should resolve once the server is up and accepting connections again. */
+    restart?: (opts: { downtimeMs: number; graceful: boolean }) => Promise<void>;
+    /** Trigger an upgrade-style bounce (graceful close). Falls back to restart if absent. */
+    upgrade?: (opts: { downtimeMs: number }) => Promise<void>;
+  };
 }
 
 interface RegisteredAgent {
@@ -40,10 +53,11 @@ interface RegisteredAgent {
  *     WindowsInstallerAgentLauncher.
  *   - upgradeAgent: stop → swap version → start. The Windows installer's
  *     own upgrade path is used when going through the service.
- *   - simulateServerUpgrade: not feasible to bounce a real server from inside
- *     the harness. v0 throws so it's loud rather than silently no-op'd; users
- *     should run the bounce out-of-band (docker compose restart, etc.) and
- *     the harness will observe agents reconnecting through scenario events.
+ *   - simulateServerUpgrade / simulateServerRestart: the harness can't bounce
+ *     a real server on its own, so callers pass `serverControl.restart` (and
+ *     optionally `.upgrade`) callbacks wired to their runtime — docker compose
+ *     restart, systemctl, a managed child process, etc. Without those hooks
+ *     these commands throw so it's loud rather than silently no-op'd.
  */
 export class RealBackend implements Backend {
   readonly kind = 'real' as const;
@@ -137,10 +151,35 @@ export class RealBackend implements Backend {
     this.recordEvent('agent.upgrade', { nodeId, version });
   }
 
-  async simulateServerUpgrade(_opts: { downtimeMs: number }): Promise<void> {
-    throw new Error(
-      'RealBackend.simulateServerUpgrade is not supported — bounce the medplum/server out-of-band (e.g. docker compose restart server) and the harness will observe agent reconnects.'
-    );
+  async simulateServerUpgrade(opts: { downtimeMs: number }): Promise<void> {
+    const hook = this.options.serverControl?.upgrade ?? this.upgradeViaRestart();
+    if (!hook) {
+      throw new Error(
+        'RealBackend.simulateServerUpgrade requires options.serverControl.upgrade (or .restart) — wire it to your medplum/server runtime (docker compose, systemctl, etc.).'
+      );
+    }
+    this.recordEvent('server.upgrade.start', { downtimeMs: opts.downtimeMs });
+    await hook(opts);
+    this.recordEvent('server.upgrade.end');
+  }
+
+  async simulateServerRestart(opts: { downtimeMs: number; graceful?: boolean }): Promise<void> {
+    const hook = this.options.serverControl?.restart;
+    if (!hook) {
+      throw new Error(
+        'RealBackend.simulateServerRestart requires options.serverControl.restart — wire it to your medplum/server runtime (docker compose restart, systemctl restart, ChildProcess.kill+respawn, etc.).'
+      );
+    }
+    const graceful = opts.graceful === true;
+    this.recordEvent('server.restart.start', { downtimeMs: opts.downtimeMs, graceful });
+    await hook({ downtimeMs: opts.downtimeMs, graceful });
+    this.recordEvent('server.restart.end');
+  }
+
+  private upgradeViaRestart(): ((opts: { downtimeMs: number }) => Promise<void>) | undefined {
+    const restart = this.options.serverControl?.restart;
+    if (!restart) return undefined;
+    return ({ downtimeMs }) => restart({ downtimeMs, graceful: true });
   }
 
   resolveAgentChannelTarget(nodeId: string, channelName: string): { host: string; port: number } {

@@ -55,6 +55,18 @@ export interface Backend {
   simulateServerUpgrade(opts: { downtimeMs: number }): Promise<void>;
 
   /**
+   * Simulate a Medplum server restart. Distinct from `simulateServerUpgrade` in
+   * that it's abrupt by default — sockets are torn down with TCP RST (no close
+   * frame), modeling a crash, OOM kill, or `kill -9`. The agent has no warning
+   * and must rely on its own reconnect/backoff loop.
+   *
+   * When `graceful` is true, sockets are closed with a 1012 frame first (same
+   * shape as `simulateServerUpgrade`, but recorded under the restart event
+   * names so scenarios can distinguish the two intents).
+   */
+  simulateServerRestart(opts: { downtimeMs: number; graceful?: boolean }): Promise<void>;
+
+  /**
    * Return the agent-facing host/port a downstream HL7 source should target
    * when sending into a particular agent channel.
    */
