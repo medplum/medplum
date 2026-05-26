@@ -8,12 +8,71 @@
   min-width: 200px;
 }
 
+/* Make it clearer that events are clickable */
 .interactiveEvent {
-  /* Make it clearer that events are clickable */
   cursor: pointer;
 }
 
+/* For short background events (typical for before/after buffer slots), reduce
+ * the vertical padding and shrink the font size so that they overflow less
+ * often. */
+.backgroundEvent {
+  container-type: size;
+}
+@container (height < 50px) {
+  .backgroundEventInner > div {
+    font-size: 10px;
+    padding-top: 2px;
+  }
+}
+
+/* round off background events a little bit */
+.backgroundEvent {
+  border-radius: var(--mantine-radius-xs);
+}
+
+/* Keep "today" column highlighting similar to react-big-calendar default style */
 :root {
-  /* Keep "today" column highlighting similar to react-big-calendar default style */
   --fc-classic-today: #b8e0ff4d;
+
+  [data-color-scheme=dark] {
+    --fc-classic-today: #406e934d;
+  }
+}
+
+/* appointments and slots are colored by status */
+.appointment-pending {
+  background-color: light-dark(var(--mantine-color-cyan-4), var(--mantine-color-cyan-8));
+
+  .eventInner {
+    color: light-dark(var(--mantine-color-dark-6), var(--mantine-color-gray-2));
+  }
+}
+
+.appointment-booked {
+  background-color: light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-8));
+
+  .eventInner {
+    color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
+  }
+}
+
+.slot-free {
+  background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
+
+  .backgroundEventInner > div {
+    color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
+    opacity: 1;
+  }
+}
+
+.slot-busy,
+.slot-busy-unavailable,
+.slot-busy-tentative {
+  background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-gray-7));
+
+  .backgroundEventInner > div {
+    color: light-dark(var(--mantine-color-dark-4), var(--mantine-color-gray-4));
+    opacity: 1;
+  }
 }
