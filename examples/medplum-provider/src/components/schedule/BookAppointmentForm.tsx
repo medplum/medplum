@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, formatPeriod, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, Patient, Resource, Slot } from '@medplum/fhirtypes';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
@@ -11,7 +12,7 @@ import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
   slot: Slot;
-  onSuccess?: (result: { appointments: Appointment[]; slots: Slot[] }) => void;
+  onSuccess?: (result: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
 };
 
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
@@ -30,20 +31,25 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
       SchedulingTransientIdentifier.remove(bookSlot);
 
       try {
-        const data = await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
-          resourceType: 'Parameters',
-          parameter: [
-            { name: 'slot', resource: bookSlot },
-            { name: 'patient-reference', valueReference: createReference(patient) },
-          ],
-        });
+        const data = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+          medplum.fhirUrl('Appointment', '$book'),
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'slot', resource: bookSlot },
+              { name: 'patient-reference', valueReference: createReference(patient) },
+            ],
+          }
+        );
         medplum.invalidateSearches('Appointment');
         medplum.invalidateSearches('Slot');
 
         const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
-        const slots = resources.filter((obj: Slot | Appointment): obj is Slot => obj.resourceType === 'Slot');
+        const slots = resources.filter(
+          (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Slot> => obj.resourceType === 'Slot'
+        );
         const appointments = resources.filter(
-          (obj: Slot | Appointment): obj is Appointment => obj.resourceType === 'Appointment'
+          (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
         );
 
         onSuccess?.({ appointments, slots });
