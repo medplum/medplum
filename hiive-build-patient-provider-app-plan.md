@@ -1,6 +1,6 @@
 # Hiive Build Patient And Provider App Deployment Plan
 
-Last updated: 2026-05-20
+Last updated: 2026-05-26
 
 ## Purpose
 
@@ -52,7 +52,7 @@ Verified against the current CDK/config shape:
 - `api.ehr.hiivehealth.net` is the existing Medplum API domain from `apiDomainName`.
 - `storage.ehr.hiivehealth.net` is the existing Medplum storage domain from `storageDomainName`.
 - The current CDK `FrontEnd` construct creates the admin app bucket/distribution from `appDomainName` only.
-- There are no current `patient.ehr.hiivehealth.net` or `provider.ehr.hiivehealth.net` app resources in `medplum.build.config.json`.
+- `patient.ehr.hiivehealth.net` and `provider.ehr.hiivehealth.net` are now modeled as additive `StaticApp` resources in `medplum.build.config.json` and `packages/cdk/src/stack.ts`.
 
 Safety rules for implementation:
 
@@ -102,7 +102,7 @@ Runtime flow:
 
 ## Current Implementation Status
 
-As of 2026-05-20, Workstream 1, the Medplum-side portion of Workstream 2, Workstream 3, and the code/synth portion of Workstream 4 are complete.
+As of 2026-05-26, the Medplum-side setup, frontend configuration, CDK hosting, GitHub workflow automation, and live hiive-build deployment validation are complete for the current rollout scope.
 
 | Item | Status | Notes |
 | --- | --- | --- |
@@ -114,13 +114,16 @@ As of 2026-05-20, Workstream 1, the Medplum-side portion of Workstream 2, Workst
 | Patient access policy | Created | `AccessPolicy/ca3a5687-5a1a-4301-95b4-15a977ad29e4`. |
 | Provider access policy | Created | `AccessPolicy/05fa99c3-6400-4d8c-af38-8b00b890315d`. |
 | Browser client credentials policy | Created | `AccessPolicy/eabeb0e2-56c3-4d3d-8cea-41e6ec331b42`; assigned to both browser client app memberships to avoid broad client-credentials access. |
-| Patient app config | Implemented | Uses `VITE_MEDPLUM_*` values with live Hiive defaults; build and focused test pass. |
-| Provider app config | Implemented | Uses `VITE_MEDPLUM_*` values with live Hiive defaults; build and focused sign-in test pass. |
-| Patient/provider CDK hosting | Implemented in code | `cdk synth` includes additive `PatientApp` and `ProviderApp` buckets, certificates, CloudFront distributions, WAFs, Route 53 records, and storage CORS origins. |
+| Patient app config | Validated | Uses `VITE_MEDPLUM_*` values with live Hiive defaults; local build, lint (warnings only), and tests pass. |
+| Provider app config | Validated | Uses `VITE_MEDPLUM_*` values with live Hiive defaults; local build, lint (warnings only), and the full 1,084-test suite pass after Vitest compatibility fixes. |
+| Patient/provider CDK hosting | Deployed | `cdk diff` was reviewed, then `MedplumBuild` updated successfully on 2026-05-26 with additive patient/provider static app hosting still managed from the shared CDK stack. |
+| GitHub workflow automation | Implemented | Build workflows exist for patient/provider, deploy workflows exist for patient/provider, and a manual hiive-build CDK workflow exists in `medplum`. |
 
 No browser client secrets were printed or stored during setup. The existing `ubix-data` client remains machine-to-machine only. Open patient registration remains disabled until default patient access policy assignment and generated-patient account-linking are explicitly approved.
 
-AWS `cdk diff` and deploy are blocked because the local `hiive-build` AWS profile is not present in `~/.aws/config` and there are no default AWS credentials. Configure or locate the appropriate SSO profile before running live diff or deployment commands.
+Live AWS validation is now complete: `cdk diff` showed only the expected backend task definition replacement for `MEDPLUM_ALLOWED_ORIGINS`, `cdk deploy` completed successfully, `medplum aws describe build` reports `UPDATE_COMPLETE`, and `https://api.ehr.hiivehealth.net/healthcheck` returned a healthy response.
+
+GitHub deploy auth is now configured for the origin repositories: `HIIVE_BUILD_AWS_ROLE_TO_ASSUME` points to `arn:aws:iam::476905305808:role/GitHubActionsRole` in `clong-viimed/medplum`, `hiivehealth/medplum-provider`, and `hiivehealth/medplum-patient`, and the IAM trust policy allows GitHub OIDC from those repo subjects.
 
 ## Workstream 1: Confirm Data And Project Shape
 
