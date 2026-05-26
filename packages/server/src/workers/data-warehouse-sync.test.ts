@@ -16,6 +16,7 @@
 
 import type { Queue } from 'bullmq';
 import { Queue as BullmqQueue, Worker } from 'bullmq';
+import type { PoolClient } from 'pg';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -23,6 +24,8 @@ import type { MedplumServerConfig } from '../config/types';
 import type * as DataWarehouseConfigModule from '../data-warehouse/config';
 import { buildPgConnectionURI } from '../data-warehouse/config';
 import { syncData } from '../data-warehouse/sync';
+import * as database from '../database';
+import { locks } from '../database';
 import {
   DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
   DataWarehouseSyncQueueName,
@@ -260,49 +263,92 @@ describe('data-warehouse sync worker', () => {
     });
   });
 
-  test('processDataWarehouseSyncJob calls syncData with resolved database config', async () => {
-    const updateProgress = jest.fn().mockResolvedValue(undefined);
-    await processDataWarehouseSyncJob(config, {
-      id: 'job-1',
-      data: { trigger: 'scheduler' },
-      updateProgress,
-    } as any);
-
-    expect(mockedSyncData).toHaveBeenCalledTimes(1);
-    const callArg = mockedSyncData.mock.calls[0][0];
-    expect(callArg?.database).toMatchObject({
-      host: config.readonlyDatabase?.host,
-      dbname: config.readonlyDatabase?.dbname,
+  describe('processDataWarehouseSyncJob', () => {
+    beforeEach(() => {
+      jest.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
+      jest
+        .spyOn(database, 'withPoolClient')
+        .mockImplementation(async (callback) => callback({} as PoolClient));
+      jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
+      jest.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
     });
-    expect(callArg?.database).not.toBe(config);
-    expect(callArg).toMatchObject({
-      destination: { type: 's3tables' },
-    });
-    expect(typeof callArg?.onProgress).toStrictEqual('function');
-  });
 
-  test('processDataWarehouseSyncJob forwards syncData onProgress to job.updateProgress', async () => {
-    const updateProgress = jest.fn().mockResolvedValue(undefined);
-    mockedSyncData.mockImplementationOnce(async (options) => {
-      await options?.onProgress?.('Syncing Patient_history: 1 row(s)', {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('acquires and releases data warehouse sync advisory lock', async () => {
+      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      await processDataWarehouseSyncJob(config, {
+        id: 'job-1',
+        data: { trigger: 'scheduler' },
+        updateProgress,
+      } as any);
+
+      expect(database.withPoolClient).toHaveBeenCalledTimes(1);
+      expect(database.acquireAdvisoryLock).toHaveBeenCalledWith(expect.anything(), locks.dataWarehouseSync, {
+        maxAttempts: 1,
+      });
+      expect(database.releaseAdvisoryLock).toHaveBeenCalledWith(expect.anything(), locks.dataWarehouseSync);
+    });
+
+    test('skips sync when advisory lock is not available', async () => {
+      jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValueOnce(false);
+
+      await processDataWarehouseSyncJob(config, {
+        id: 'job-1',
+        data: { trigger: 'scheduler' },
+        updateProgress: jest.fn(),
+      } as any);
+
+      expect(mockedSyncData).not.toHaveBeenCalled();
+      expect(database.releaseAdvisoryLock).not.toHaveBeenCalled();
+    });
+
+    test('calls syncData with resolved database config', async () => {
+      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      await processDataWarehouseSyncJob(config, {
+        id: 'job-1',
+        data: { trigger: 'scheduler' },
+        updateProgress,
+      } as any);
+
+      expect(mockedSyncData).toHaveBeenCalledTimes(1);
+      const callArg = mockedSyncData.mock.calls[0][0];
+      expect(callArg?.database).toMatchObject({
+        host: config.readonlyDatabase?.host,
+        dbname: config.readonlyDatabase?.dbname,
+      });
+      expect(callArg?.database).not.toBe(config);
+      expect(callArg).toMatchObject({
+        destination: { type: 's3tables' },
+      });
+      expect(typeof callArg?.onProgress).toStrictEqual('function');
+    });
+
+    test('forwards syncData onProgress to job.updateProgress', async () => {
+      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      mockedSyncData.mockImplementationOnce(async (options) => {
+        await options?.onProgress?.('Syncing Patient_history: 1 row(s)', {
+          table: 'patient_history',
+          icebergTable: 'patient_history',
+          count: 1,
+        });
+        return { resources: [] };
+      });
+
+      await processDataWarehouseSyncJob(config, {
+        id: 'job-1',
+        data: { trigger: 'scheduler' },
+        updateProgress,
+      } as any);
+
+      expect(updateProgress).toHaveBeenCalledWith({
+        message: 'Syncing Patient_history: 1 row(s)',
         table: 'patient_history',
         icebergTable: 'patient_history',
         count: 1,
       });
-      return { resources: [] };
-    });
-
-    await processDataWarehouseSyncJob(config, {
-      id: 'job-1',
-      data: { trigger: 'scheduler' },
-      updateProgress,
-    } as any);
-
-    expect(updateProgress).toHaveBeenCalledWith({
-      message: 'Syncing Patient_history: 1 row(s)',
-      table: 'patient_history',
-      icebergTable: 'patient_history',
-      count: 1,
     });
   });
 

@@ -10,6 +10,14 @@ import { getWarehouseSyncPostgresTableNames, toIcebergTableName } from '../data-
 import { LocalParquetWarehouseDestination } from '../data-warehouse/destination';
 import type { SyncOptions } from '../data-warehouse/sync';
 import { syncData } from '../data-warehouse/sync';
+import {
+  acquireAdvisoryLock,
+  DatabaseMode,
+  getDatabasePool,
+  locks,
+  releaseAdvisoryLock,
+  withPoolClient,
+} from '../database';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { addVerboseQueueLogging, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
@@ -135,30 +143,56 @@ export async function processDataWarehouseSyncJob(
   job: Job<DataWarehouseSyncJobData>
 ): Promise<void> {
   const syncConfig = config.dataWarehouse;
-  try {
-    const syncOptions = getDataWarehouseSyncOptions(config);
 
-    const result = await syncData({
-      ...syncOptions,
-      onProgress: async (message, metadata) => {
-        globalLogger.info(message, metadata);
-        await job.updateProgress({ message, ...metadata });
-      },
-    });
+  await withPoolClient(async (client) => {
+    let hasLock = false;
+    try {
+      /*
+       * for a DW sync job, it makes sense to skip on failure,
+       * as it probably means there's already one in progress
+       */
 
-    const inserted = result.resources.filter((resource) => resource.count > 0).length;
-    const skipped = result.resources.length - inserted;
-    globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
-  } catch (err) {
-    globalLogger.error('Data warehouse sync failed', {
-      jobId: job.id,
-      trigger: job.data.trigger,
-      destination: syncConfig?.destination,
-      namespace: syncConfig?.namespace,
-      err,
-    });
-    throw err;
-  }
+      hasLock = await acquireAdvisoryLock(client, locks.dataWarehouseSync, { maxAttempts: 1 });
+      if (!hasLock) {
+        globalLogger.info('Skipping data warehouse sync; another sync is in progress', {
+          jobId: job.id,
+          trigger: job.data.trigger,
+        });
+        return;
+      }
+
+      const syncOptions = getDataWarehouseSyncOptions(config);
+
+      const result = await syncData({
+        ...syncOptions,
+        onProgress: async (message, metadata) => {
+          globalLogger.info(message, metadata);
+          await job.updateProgress({ message, ...metadata });
+        },
+      });
+
+      const inserted = result.resources.filter((resource) => resource.count > 0).length;
+      const skipped = result.resources.length - inserted;
+      globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
+    } catch (err) {
+      globalLogger.error('Data warehouse sync failed', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        destination: syncConfig?.destination,
+        namespace: syncConfig?.namespace,
+        err,
+      });
+      throw err;
+    } finally {
+      if (hasLock) {
+        await releaseAdvisoryLock(client, locks.dataWarehouseSync);
+      }
+    }
+  /*
+   * use the _writer_ database pool for the lock, even though we use the reader for sync,
+   * as we can have many readers
+   */
+  }, getDatabasePool(DatabaseMode.WRITER));
 }
 
 export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOptions {

@@ -39,6 +39,7 @@ export function getDatabasePool(mode: DatabaseMode): Pool {
 
 export const locks = {
   migration: 1,
+  dataWarehouseSync: 2,
 };
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
