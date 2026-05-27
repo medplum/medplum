@@ -77,7 +77,7 @@ export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promis
   const codeHash = await bcryptHashPassword(code);
   const expiresAt = new Date(Date.now() + EMAIL_MFA_CODE_EXPIRATION_MS).toISOString();
   await systemRepo.updateResource<Login>({ ...login, emailMfa: { codeHash, expiresAt } });
-  const expirationMinutes = Math.round(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
+  const expirationMinutes = Math.floor(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
   await sendEmail(systemRepo, {
     to: user.email,
     subject: `Your Medplum verification code: ${code}`,
