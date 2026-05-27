@@ -797,6 +797,45 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/identity-provider-user-info-mode",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "identity-provider-user-info-mode",
+        "url": "https://medplum.com/fhir/CodeSystem/identity-provider-user-info-mode",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "oidc",
+            "display": "OpenID Connect",
+            "definition": "Clients that use OpenID Connect (OIDC) for authentication and authorization."
+          },
+          {
+            "code": "gcip",
+            "display": "GCIP",
+            "definition": "Clients that use Google Cloud Identity Platform (GCIP) for authentication and authorization."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "identity-provider-user-info-mode",
+        "url": "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/identity-provider-user-info-mode"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/client-application-status",
       "resource": {
         "resourceType": "CodeSystem",
