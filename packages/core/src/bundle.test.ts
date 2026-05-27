@@ -448,7 +448,7 @@ describe('Bundle tests', () => {
                   type: 'replaces',
                 },
               ],
-            } as Patient,
+            },
           },
         ],
       };
@@ -481,7 +481,7 @@ describe('Bundle tests', () => {
                   type: 'seealso',
                 },
               ],
-            } as Patient,
+            },
           },
         ],
       };
