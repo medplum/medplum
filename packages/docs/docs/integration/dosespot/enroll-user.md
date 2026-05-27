@@ -331,7 +331,9 @@ curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
   }'
 ```
 
-After this, the prescriber must log in to the DoseSpot iFrame one final time to complete the TFA setup. Once complete, EPCS is fully enabled.
+### Step 6: Complete TFA Setup
+
+The prescriber must log in to the DoseSpot iFrame one final time to complete the TFA setup. Once complete, EPCS is fully enabled.
 
 ## Bot Response
 
