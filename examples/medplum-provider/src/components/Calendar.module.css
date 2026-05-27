@@ -43,6 +43,11 @@
   }
 }
 
+.backgroundEventInner > div {
+  opacity: 1;
+}
+
+
 /* For short background events (typical for before/after buffer slots), reduce
  * the vertical padding and shrink the font size so that they overflow less
  * often. */
@@ -58,7 +63,7 @@
 
 /* round off background events a little bit */
 .backgroundEvent {
-  border-radius: var(--mantine-radius-xs);
+  border-radius: var(--mantine-radius-sm);
 }
 
 /* Keep "today" column highlighting similar to react-big-calendar default style */
@@ -70,41 +75,36 @@
   }
 }
 
-/* appointments and slots are colored by status */
-.appointment-pending {
+/* appointments and slots can be styled by status */
+.appointment {
+  --cal-color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
+  --cal-background-color: light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-8));
+}
+.slot {
+  --cal-color: light-dark(var(--mantine-color-dark-4), var(--mantine-color-gray-4));
+  --cal-background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-gray-7));
+}
+
+.appointment.pending {
+  --cal-color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
+  --cal-background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
+
   /* pending: outlined with border color */
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
-  border: 2px solid light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-8));
+  border: 1px solid var(--cal-color);
+}
 
+.slot.free {
+  --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
+  --cal-background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
+}
+
+.event,
+.backgroundEvent {
+  background-color: var(--cal-background-color);
   .eventInner {
-    color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
+    color: var(--cal-color);
   }
-}
-
-.appointment-booked {
-  background-color: light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-8));
-
-  .eventInner {
-    color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
-  }
-}
-
-.slot-free {
-  background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
-
   .backgroundEventInner > div {
-    color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
-    opacity: 1;
-  }
-}
-
-.slot-busy,
-.slot-busy-unavailable,
-.slot-busy-tentative {
-  background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-gray-7));
-
-  .backgroundEventInner > div {
-    color: light-dark(var(--mantine-color-dark-4), var(--mantine-color-gray-4));
-    opacity: 1;
+    color: var(--cal-color);
   }
 }

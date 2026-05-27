@@ -41,7 +41,7 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
         end: appointment.end,
         extendedProps: { type: 'appointment' as const, appointment },
         interactive: true,
-        className: classes[`appointment-${appointment.status}`],
+        className: cx(classes.appointment, classes[appointment.status]),
       };
     });
 }
@@ -54,7 +54,7 @@ function slotsToEvents(slots: Slot[]): EventInput[] {
     title: slot.status === 'free' ? 'Available' : 'Blocked',
     extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
     interactive: false,
-    className: classes[`slot-${slot.status}`],
+    className: cx(classes.slot, classes[slot.status]),
     display: 'background',
   }));
 }
@@ -161,7 +161,8 @@ export function Calendar(props: {
         }
         slotMinHeight={38}
         eventClass={(evt) =>
-          cx({
+          cx(classes.event, {
+            [classes.event]: true,
             [classes.interactiveEvent]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
           })
