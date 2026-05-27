@@ -498,8 +498,35 @@ async function validateAvailability(
   });
   const hasAvailability = availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
   if (!hasAvailability) {
-    // TODO: tie back to specific slot that has problem
-    throw new OperationOutcomeError(badRequest('Requested time slot is not available'));
+    // Include references to blocking slots and the schedule so clients can
+    // decide whether to retry with a different time or choose another schedule.
+    const blockingSlots = existingSlots
+      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .map((slot) => ({
+        reference: `Slot/${slot.id}`,
+        start: slot.start,
+        end: slot.end,
+        status: slot.status,
+      }));
+
+    const diagnostics = blockingSlots.length > 0
+      ? `Blocked by ${blockingSlots.length} existing slot(s) on Schedule/${schedule.id}: ` +
+        blockingSlots.map((s) => `${s.reference} (${s.start} - ${s.end})`).join(', ')
+      : `No availability on Schedule/${schedule.id} for the requested time`;
+
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: 'Requested time slot is not available',
+          },
+          diagnostics,
+        },
+      ],
+    });
   }
 }
 
