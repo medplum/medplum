@@ -18,6 +18,7 @@ import { randomInt } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
+import { EMAIL_MFA_CODE_EXPIRATION_MS } from '../constants';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
@@ -65,16 +66,18 @@ export function getEnrolledMfaMethods(user: User): MfaMethod[] {
 
 /**
  * Generates a single-use 6-digit code for email-based MFA, stores a hash of it
- * on the login, and emails the code to the user. The hash is cleared once the
- * code is verified (see verifyMfaToken).
+ * (along with its expiration time) on the login, and emails the code to the user.
+ * The code is cleared once it is verified (see verifyMfaToken).
  * @param login - The login to attach the hashed code to.
  * @param user - The user to email.
  */
 export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promise<void> {
   const systemRepo = getGlobalSystemRepo();
   const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
-  const emailMfaCodeHash = await bcryptHashPassword(code);
-  await systemRepo.updateResource<Login>({ ...login, emailMfaCodeHash });
+  const codeHash = await bcryptHashPassword(code);
+  const expiresAt = new Date(Date.now() + EMAIL_MFA_CODE_EXPIRATION_MS).toISOString();
+  await systemRepo.updateResource<Login>({ ...login, emailMfa: { codeHash, expiresAt } });
+  const expirationMinutes = Math.round(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
   await sendEmail(systemRepo, {
     to: user.email,
     subject: 'Medplum Login Verification Code',
@@ -85,7 +88,7 @@ export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promis
       '',
       code,
       '',
-      'This code will expire shortly. If you did not try to sign in, you can safely ignore this email.',
+      `This code will expire in ${expirationMinutes} minutes. If you did not try to sign in, you can safely ignore this email.`,
       '',
       'Thank you,',
       'Medplum',
@@ -194,9 +197,9 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     const mfaMethods = getEnrolledMfaMethods(user);
     // If email is the user's only MFA method, send the verification code
     // immediately so they can enter it without any further interaction. A set
-    // emailMfaCodeHash means a code has already been issued for this login, so
+    // emailMfa means a code has already been issued for this login, so
     // don't re-send (e.g. when the login status endpoint is queried again).
-    if (mfaMethods.length === 1 && mfaMethods[0] === 'email' && !login.emailMfaCodeHash) {
+    if (mfaMethods.length === 1 && mfaMethods[0] === 'email' && !login.emailMfa) {
       await sendMfaEmailCode(login as WithId<Login>, user);
     }
     res.json({ login: login.id, mfaRequired: true, mfaMethods, email: user.email });

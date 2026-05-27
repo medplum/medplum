@@ -3,7 +3,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
-import type { Project } from '@medplum/fhirtypes';
+import type { Login, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -390,6 +390,51 @@ describe('MFA', () => {
       .send({ login: loginRes.body.login, token: code });
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.code).toBeDefined();
+  });
+
+  test('Expired email code is rejected', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'Expired',
+        projectName: `Email Expired Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'email');
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+
+    // Login emails a verification code automatically
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaRequired).toBe(true);
+    const code = await getCodeFromEmail();
+
+    // Force the code to be expired
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+      await systemRepo.updateResource<Login>({
+        ...login,
+        emailMfa: { ...login.emailMfa, expiresAt: new Date(Date.now() - 1000).toISOString() } as Login['emailMfa'],
+      });
+    });
+
+    // Even the correct code is rejected once expired
+    const verifyRes = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: loginRes.body.login, token: code });
+    expect(verifyRes.status).toBe(400);
+    expect(verifyRes.body).toMatchObject(badRequest('MFA code expired'));
   });
 
   test('Enroll in both TOTP and email; login defaults to TOTP with email fallback', async () => {

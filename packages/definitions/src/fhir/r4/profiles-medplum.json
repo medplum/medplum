@@ -2871,17 +2871,47 @@
             }
           },
           {
-            "id" : "Login.emailMfaCodeHash",
-            "path" : "Login.emailMfaCodeHash",
-            "definition" : "Hashed single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
+            "id" : "Login.emailMfa",
+            "path" : "Login.emailMfa",
+            "definition" : "Single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
             "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "Login.emailMfa",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.emailMfa.codeHash",
+            "path" : "Login.emailMfa.codeHash",
+            "definition" : "Hashed single-use 6-digit code that was emailed to the user.",
+            "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
-              "path" : "Login.emailMfaCodeHash",
-              "min" : 0,
+              "path" : "Login.emailMfa.codeHash",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.emailMfa.expiresAt",
+            "path" : "Login.emailMfa.expiresAt",
+            "definition" : "The time at which the emailed code expires and can no longer be used to verify the login.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }],
+            "base" : {
+              "path" : "Login.emailMfa.expiresAt",
+              "min" : 1,
               "max" : "1"
             }
           },

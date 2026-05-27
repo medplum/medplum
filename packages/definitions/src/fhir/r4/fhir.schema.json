@@ -156,6 +156,7 @@
       "ClientApplication": "#/definitions/ClientApplication",
       "User": "#/definitions/User",
       "Login": "#/definitions/Login",
+      "LoginEmailMfa": "#/definitions/LoginEmailMfa",
       "JsonWebKey": "#/definitions/JsonWebKey",
       "Bot": "#/definitions/Bot",
       "AccessPolicy": "#/definitions/AccessPolicy",
@@ -62209,9 +62210,9 @@
           "description": "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
           "$ref": "#/definitions/boolean"
         },
-        "emailMfaCodeHash": {
-          "description": "Hashed single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
-          "$ref": "#/definitions/string"
+        "emailMfa": {
+          "description": "Single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
+          "$ref": "#/definitions/LoginEmailMfa"
         },
         "expiresAt": {
           "description": "The time at which a token will expire for this login.",
@@ -62256,6 +62257,24 @@
         "user",
         "authMethod",
         "authTime"
+      ]
+    },
+    "LoginEmailMfa": {
+      "description": "Single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
+      "properties": {
+        "codeHash": {
+          "description": "Hashed single-use 6-digit code that was emailed to the user.",
+          "$ref": "#/definitions/string"
+        },
+        "expiresAt": {
+          "description": "The time at which the emailed code expires and can no longer be used to verify the login.",
+          "$ref": "#/definitions/instant"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "codeHash",
+        "expiresAt"
       ]
     },
     "JsonWebKey": {
