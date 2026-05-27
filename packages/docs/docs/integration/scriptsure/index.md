@@ -8,7 +8,7 @@ sidebar_position: 0
 The ScriptSure integration is in beta. Features and APIs may change.
 :::
 
-Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e-prescribing via ScriptSure. The integration exposes a full API surface — including FHIR custom operations and Medplum bots — for drug search, order creation, pharmacy management, and more. For the prescribing UI itself, ScriptSure is embedded as an authenticated iframe. Together these give providers access to:
+Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e-prescribing via ScriptSure. The integration exposes a full API surface, including custom FHIR operations and Medplum bots. This allows users to build custom UI on top of the platform, though ScriptSure also offers an authenticated iframe. Providers can have access to features such as:
 
 - Drug search with real-time DDI/allergy checks
 - Electronic prescriptions including controlled substances (EPCS)
@@ -18,7 +18,7 @@ Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e
 
 ## Prerequisites
 
-Medplum will create your organization in the ScriptSure vendor portal and configure the integration before you begin. Once setup is complete, you'll receive an invite email.
+Medplum will create your organization in the ScriptSure vendor portal and configure the integration before you begin. Once setup is complete, you'll receive an invite email. Once onboarded, you can send invites to new users.
 
 ## Getting started
 
@@ -27,7 +27,7 @@ Medplum will create your organization in the ScriptSure vendor portal and config
 | [Account Setup](/docs/integration/scriptsure/account-setup) | Accept your invite, configure your Medplum profile, and verify access |
 | [Sync a Provider](/docs/integration/scriptsure/sync-provider) | Enroll a prescriber in ScriptSure |
 | [Sync a Patient](/docs/integration/scriptsure/sync-patient) | Sync a patient to ScriptSure before an encounter |
-| [Mount the iFrame](/docs/integration/scriptsure/iframe) | Render the ScriptSure prescribing UI |
+| [Prescribing iFrame](/docs/integration/scriptsure/iframe) | Render the ScriptSure prescribing UI |
 | Order Medication _(docs coming soon)_ | Create a pending prescription order and launch the prescribing widget |
 | Drug Search _(docs coming soon)_ | Search drugs by name or routed med ID via `$drug-search` |
 | Drug Interaction Check _(docs coming soon)_ | Check candidate drugs against the patient's current medications |
