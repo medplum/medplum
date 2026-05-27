@@ -21,7 +21,7 @@ What it does on each call:
 6. Syncs preferred pharmacies as Medplum `Organization` resources
 
 :::tip[React SDK]
-If you're building a React app, use [`useScriptSureIFrame`](/docs/integration/scriptsure/iframe#react-hook-usescriptsureiframe) — it runs patient sync automatically before fetching the iFrame URL.
+If you're building a React app, use [`useScriptSureIFrame`](/docs/integration/scriptsure/iframe#usescriptsureiframe) — it runs patient sync automatically before fetching the iFrame URL.
 :::
 
 ## Patient resource requirements
