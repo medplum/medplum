@@ -236,16 +236,7 @@ describe('Calendar', () => {
       expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
     });
 
-    test('shows status suffix for non-standard statuses', async () => {
-      const pendingAppointment = createAppointment({
-        status: 'pending',
-      });
-
-      setup({ appointments: [pendingAppointment] });
-      expect(screen.getByText(/John Doe.*\(pending\)/)).toBeInTheDocument();
-    });
-
-    test.each(['booked', 'arrived', 'fulfilled'] as const)(
+    test.each(['booked', 'arrived', 'fulfilled', 'pending'] as const)(
       'does not show status suffix for %s appointments',
       async (status) => {
         const bookedAppointment = createAppointment({ status });
@@ -256,7 +247,7 @@ describe('Calendar', () => {
       }
     );
 
-    test.each(['pending', 'waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
+    test.each(['waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
       const bookedAppointment = createAppointment({ status });
 
       setup({ appointments: [bookedAppointment] });

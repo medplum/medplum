@@ -21,6 +21,28 @@
   cursor: pointer;
 }
 
+/* Put more important title info first */
+.eventTitle { order: 1; }
+.eventTime { order: 2 }
+
+/* Tweak event layout: title can span multiple lines */
+.eventInner { overflow: hidden; }
+.eventTitle {
+  white-space: normal;
+  overflow: visible;
+}
+
+/* Formatting tweaks */
+.eventTitle { font-weight: 500; }
+.eventTime { font-size: 10px; }
+
+.shortEvent  {
+  .eventInner {
+    flex-direction: column;
+    align-items: inherit;
+  }
+}
+
 /* For short background events (typical for before/after buffer slots), reduce
  * the vertical padding and shrink the font size so that they overflow less
  * often. */
@@ -50,10 +72,12 @@
 
 /* appointments and slots are colored by status */
 .appointment-pending {
-  background-color: light-dark(var(--mantine-color-cyan-4), var(--mantine-color-cyan-8));
+  /* pending: outlined with border color */
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
+  border: 2px solid light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-8));
 
   .eventInner {
-    color: light-dark(var(--mantine-color-dark-6), var(--mantine-color-gray-2));
+    color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
   }
 }
 

@@ -13,6 +13,7 @@ import { Button, Group, SegmentedControl, Title, useMantineColorScheme } from '@
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useMemo } from 'react';
 import type { Range } from '../types/scheduling';
@@ -27,7 +28,9 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
     .map((appointment) => {
       // Find the patient among the participants to use as title
       const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status) ? ` (${appointment.status})` : '';
+      const status = !['booked', 'arrived', 'fulfilled', 'pending'].includes(appointment.status)
+        ? ` (${appointment.status})`
+        : '';
 
       const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
 
@@ -156,13 +159,22 @@ export function Calendar(props: {
             end: eventInfo.end,
           })
         }
-        slotMinHeight={35}
-        eventClass={(evt) => (evt.isInteractive ? classes.interactiveEvent : undefined)}
+        slotMinHeight={38}
+        eventClass={(evt) =>
+          cx({
+            [classes.interactiveEvent]: evt.isInteractive,
+            [classes.shortEvent]: evt.isShort,
+          })
+        }
+        eventTimeClass={classes.eventTime}
+        eventTitleClass={classes.eventTitle}
         eventInnerClass={classes.eventInner}
         backgroundEventClass={classes.backgroundEvent}
         backgroundEventInnerClass={classes.backgroundEventInner}
         colorScheme={colorScheme}
         nowIndicator
+        displayEventEnd={false}
+        eventTimeFormat={{ timeStyle: 'short' }}
       />
     </div>
   );
