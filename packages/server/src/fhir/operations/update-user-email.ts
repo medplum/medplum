@@ -101,7 +101,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
     user = await txRepo.updateResource(user);
 
     if (!params.skipEmailVerification) {
-      const { id, secret } = await verifyEmail(txRepo, user, undefined);
+      const { id, secret } = await verifyEmail(txRepo, user);
       const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 
       await sendEmail(txRepo, {
