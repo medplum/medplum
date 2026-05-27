@@ -47,7 +47,7 @@ expect.extend({
       };
     }
     const remaining = [...received];
-    const customTesters = [...(this.customTesters ?? []), iterableEquality];
+    const customTesters = [...this.customTesters, iterableEquality];
     for (const item of expected) {
       const idx = remaining.findIndex((r) => equals(r, item, customTesters));
       if (idx === -1) {
