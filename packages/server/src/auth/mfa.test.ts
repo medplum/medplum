@@ -575,4 +575,197 @@ describe('MFA', () => {
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status.body.enrolled).toBe(false);
   });
+
+  /**
+   * Enrolls the user (identified by `accessToken`) in both TOTP and email MFA.
+   * @param accessToken - The user's access token.
+   * @returns The authenticator secret, for generating TOTP tokens.
+   */
+  async function enrollBothMethods(accessToken: string): Promise<string> {
+    const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: authenticator.generate(secret) });
+
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+
+    return secret;
+  }
+
+  test('Remove a single factor keeps the others', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'RemoveOne',
+        projectName: `Remove One Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    const secret = await enrollBothMethods(accessToken);
+
+    // Both methods are enrolled
+    const status1 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status1.body.enrolled).toBe(true);
+    expect(status1.body.enrolledMethods).toEqual(expect.arrayContaining(['totp', 'email']));
+
+    // Removing email requires a valid TOTP token because TOTP is still enrolled
+    const noToken = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+    expect(noToken.status).toBe(400);
+    expect(noToken.body).toMatchObject(badRequest('Missing token'));
+
+    // Remove the email factor
+    const removeRes = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email', token: authenticator.generate(secret) });
+    expect(removeRes.status).toBe(200);
+    expect(removeRes.body).toMatchObject(allOk);
+
+    // Still enrolled, but only in TOTP now
+    const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status2.body.enrolled).toBe(true);
+    expect(status2.body.enrolledMethods).toEqual(['totp']);
+  });
+
+  test('Removing TOTP regenerates the secret and keeps email', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'RemoveTotp',
+        projectName: `Remove Totp Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    const secret = await enrollBothMethods(accessToken);
+
+    const removeRes = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: authenticator.generate(secret) });
+    expect(removeRes.status).toBe(200);
+
+    // Still enrolled in email; the authenticator secret was rotated
+    const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status.body.enrolled).toBe(true);
+    expect(status.body.enrolledMethods).toEqual(['email']);
+    expect(new URL(status.body.enrollUri).searchParams.get('secret')).not.toBe(secret);
+  });
+
+  test('Removing the last factor disables MFA', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'RemoveLast',
+        projectName: `Remove Last Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+
+    // Email-only, so no token required to remove it
+    const removeRes = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+    expect(removeRes.status).toBe(200);
+
+    const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status.body.enrolled).toBe(false);
+    expect(status.body.enrolledMethods).toEqual([]);
+  });
+
+  test('Removing an invalid method fails', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'RemoveInvalid',
+        projectName: `Remove Invalid Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    const secret = await enrollBothMethods(accessToken);
+
+    const badMethod = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'sms', token: authenticator.generate(secret) });
+    expect(badMethod.status).toBe(400);
+    expect(badMethod.body).toMatchObject(badRequest('Invalid method'));
+  });
+
+  test('Removing a method the user is not enrolled in fails', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'RemoveUnenrolled',
+        projectName: `Remove Unenrolled Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // Enroll in TOTP only
+    const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: authenticator.generate(secret) });
+
+    const res = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email', token: authenticator.generate(secret) });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('User not enrolled in MFA method'));
+  });
 });

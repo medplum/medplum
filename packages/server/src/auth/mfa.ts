@@ -237,7 +237,7 @@ mfaRouter.post(
 mfaRouter.post(
   '/disable',
   authenticateRequest,
-  [body('token').optional().isString()],
+  [body('token').optional().isString(), body('method').optional().isString()],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
@@ -253,10 +253,29 @@ mfaRouter.post(
       return;
     }
 
+    const enrolledMethods = getEnrolledMfaMethods(user);
+
+    // When a `method` is provided, remove just that single factor and leave any
+    // other enrolled factors in place. When it is omitted, disable MFA entirely
+    // (the historical behavior).
+    let methodToRemove: MfaMethod | undefined;
+    if (req.body.method !== undefined) {
+      const requested = req.body.method as unknown;
+      if (requested !== 'totp' && requested !== 'email') {
+        sendOutcome(res, badRequest('Invalid method'));
+        return;
+      }
+      methodToRemove = requested;
+      if (!enrolledMethods.includes(methodToRemove)) {
+        sendOutcome(res, badRequest('User not enrolled in MFA method'));
+        return;
+      }
+    }
+
     // If the user is enrolled in TOTP, require a valid authenticator code to
-    // disable. Email-only users are already authenticated for this request, so
-    // no second factor is available to verify.
-    if (getEnrolledMfaMethods(user).includes('totp')) {
+    // make any change. Email-only users are already authenticated for this
+    // request, so no second factor is available to verify.
+    if (enrolledMethods.includes('totp')) {
       if (!user.mfaSecret) {
         sendOutcome(res, badRequest('Secret not found'));
         return;
@@ -274,13 +293,18 @@ mfaRouter.post(
       }
     }
 
+    const remainingMethods = methodToRemove ? enrolledMethods.filter((m) => m !== methodToRemove) : [];
+
+    // Regenerate the authenticator secret whenever TOTP is being removed, so a
+    // future re-enrollment gets a fresh secret. This covers the lost / stolen
+    // device case. Email-only removals leave the secret untouched.
+    const totpRemoved = !methodToRemove || methodToRemove === 'totp';
+
     await ctx.systemRepo.updateResource({
       ...user,
-      mfaEnrolled: false,
-      mfaMethod: [],
-      // We generate a new secret so that next time the user enrolls that they don't get the same secret
-      // This allows for new secrets in the case of lost / stolen two-factor devices
-      mfaSecret: authenticator.generateSecret(),
+      mfaEnrolled: remainingMethods.length > 0,
+      mfaMethod: remainingMethods,
+      ...(totpRemoved ? { mfaSecret: authenticator.generateSecret() } : {}),
     });
     sendOutcome(res, allOk);
   }

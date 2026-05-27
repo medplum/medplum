@@ -43,7 +43,71 @@ describe('MfaPage', () => {
     const user = await setup();
     await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
-    expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+  });
+
+  test('Add another method when one is available', async () => {
+    // Simulate a user already enrolled in email MFA, with TOTP allowed but not yet enrolled.
+    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['email'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = jest.spyOn(medplum, 'post');
+    const user = await setup();
+
+    // Already-enrolled view shows the existing method and an option to add TOTP
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    expect(screen.getByText('Email')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add email-based MFA' })).not.toBeInTheDocument();
+
+    // Reveal the authenticator enrollment form
+    await user.click(screen.getByRole('button', { name: 'Add an authenticator app' }));
+
+    // Enter a code and enroll
+    await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'totp', token: '123456' });
+    await expect(screen.findByText('Authenticator app')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Remove a single factor', async () => {
+    // Simulate a user enrolled in both methods so per-factor removal is offered.
+    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp', 'email'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = jest.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+
+    // Each enrolled factor has a Remove link
+    const removeLinks = screen.getAllByText('Remove');
+    expect(removeLinks).toHaveLength(2);
+
+    // Remove the email factor (first method row order: totp, email)
+    await user.click(removeLinks[1]);
+
+    // A modal prompts for the authenticator code
+    await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Submit code' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/disable', { method: 'email', token: '123456' });
+    await expect(screen.findByText('Email removed')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
   });
 
   test('Disable -- success', async () => {
@@ -56,7 +120,7 @@ describe('MfaPage', () => {
     // Enroll into MFA
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
 
-    expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
 
     // Clean notifications
     await act(async () => {
@@ -92,7 +156,7 @@ describe('MfaPage', () => {
 
     // Enroll into MFA
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
-    expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
 
     // Clean notifications
     await act(async () => {
