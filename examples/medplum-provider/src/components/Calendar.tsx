@@ -143,7 +143,7 @@ export function Calendar(props: {
         />
       </Group>
       <FullCalendar
-        className={classes.calendar}
+        className={cx(classes.calendar, controller.view?.type)}
         height="100%"
         plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
         controller={controller}
