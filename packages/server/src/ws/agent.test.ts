@@ -13,6 +13,7 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { globalLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
@@ -525,8 +526,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
-    const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -537,8 +537,10 @@ describe('Agent WebSockets', () => {
       )
       .close()
       .expectClosed();
-    expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('[Agent]: Error received from agent'));
-    console.log = originalConsoleLog;
+    expect(writeSpy).toHaveBeenLastCalledWith(
+      expect.stringMatching(/"level":"ERROR".*\[Agent\]: Error received from agent/)
+    );
+    writeSpy.mockRestore();
   });
 
   describe('Bot failures', () => {

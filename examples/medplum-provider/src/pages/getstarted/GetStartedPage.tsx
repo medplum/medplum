@@ -35,6 +35,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
 import { showErrorNotification } from '../../utils/notifications';
@@ -45,6 +46,7 @@ export function GetStartedPage(): JSX.Element {
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
   const [importingIcd10, setImportingIcd10] = useState(false);
+  const [importingOrderSet, setImportingOrderSet] = useState(false);
 
   const handleImportPatient = useCallback(async () => {
     setImportingPatient(true);
@@ -115,6 +117,27 @@ export function GetStartedPage(): JSX.Element {
       showErrorNotification(error);
     } finally {
       setImportingIcd10(false);
+    }
+  }, [medplum]);
+
+  const handleImportOrderSet = useCallback(async () => {
+    setImportingOrderSet(true);
+    try {
+      const transactionBundle = convertToTransactionBundle(orderSetBundleData as Bundle);
+      const result = await medplum.executeBatch(transactionBundle);
+
+      const resourceCount =
+        result.entry?.filter((entry: BundleEntry) => entry.response?.status?.startsWith('2')).length || 0;
+
+      showNotification({
+        color: 'green',
+        title: 'Success',
+        message: `Imported ${resourceCount} resources for Geriatric T2DM Order Set`,
+      });
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      setImportingOrderSet(false);
     }
   }, [medplum]);
 
@@ -269,6 +292,37 @@ export function GetStartedPage(): JSX.Element {
                   mt="sm"
                 >
                   {importingIcd10 ? 'Importing...' : 'Import ValueSet'}
+                </Button>
+              </Paper>
+              <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
+                <Stack gap="md" className={classes.flexOne}>
+                  <Group gap="sm" align="center">
+                    <IconMedicalCross size={24} color="var(--icon-secondary)" />
+                    <Stack gap={0}>
+                      <Text size="11px" fw={500} className={classes.textLabel}>
+                        Sample Order Set
+                      </Text>
+                      <Text fw={600} size="lg">
+                        Geriatric T2DM Starter
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Divider />
+                  <Text size="md" className={classes.textSecondary} mb="sm" style={{ flex: 1 }}>
+                    A sample order set with medication templates for geriatric type 2 diabetes management.
+                  </Text>
+                </Stack>
+                <Button
+                  variant="filled"
+                  size="sm"
+                  fullWidth
+                  onClick={handleImportOrderSet}
+                  loading={importingOrderSet}
+                  disabled={importingOrderSet}
+                  leftSection={<IconDownload size={14} />}
+                  mt="sm"
+                >
+                  {importingOrderSet ? 'Importing...' : 'Import Order Set'}
                 </Button>
               </Paper>
               <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>

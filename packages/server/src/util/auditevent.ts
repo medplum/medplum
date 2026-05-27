@@ -20,6 +20,7 @@ import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -231,7 +232,7 @@ export function createAuditEvent(
 export function logAuditEvent(auditEvent: AuditEvent): void {
   const config = getConfig();
   if (config.logAuditEvents) {
-    console.log(JSON.stringify(auditEvent));
+    globalLogger.write(JSON.stringify(auditEvent));
   }
 }
 

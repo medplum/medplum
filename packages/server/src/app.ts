@@ -42,7 +42,7 @@ import { cleanupReservedDatabaseConnections, healthcheckHandler } from './health
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
-import { getLogger, globalLogger } from './logger';
+import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
 import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
@@ -286,6 +286,8 @@ export async function shutdownApp(): Promise<void> {
   if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
     rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
+
+  await drainStdout();
 }
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
