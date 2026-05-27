@@ -160,12 +160,11 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
 
+  // Default scoping: Patients are project-scoped, Practitioners/RelatedPersons are server-scoped.
+  // Either default can be overridden with scope: 'project' | 'server'.
+  // Users with an externalId are always project-scoped regardless of resourceType.
   let project: Reference<Project> | undefined = undefined;
-  if (request.resourceType === 'Patient' || externalId || scope === 'project') {
-    // Users can optionally be scoped to a project.
-    // We force users to be scoped to a project if:
-    // 1) They are a patient
-    // 2) They are a practitioner with an externalId
+  if ((request.resourceType === 'Patient' && scope !== 'server') || externalId || scope === 'project') {
     project = createReference(request.project);
   }
 

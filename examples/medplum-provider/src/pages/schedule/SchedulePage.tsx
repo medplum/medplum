@@ -3,7 +3,7 @@
 import { ActionIcon, Box, Drawer, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { createReference, EMPTY, getReferenceString, isReference } from '@medplum/core';
+import { createReference, EMPTY, getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconSettings } from '@tabler/icons-react';
@@ -62,10 +62,10 @@ export function SchedulePage(): JSX.Element | null {
   const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
   const [range, setRange] = useState<Range | undefined>(undefined);
   const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
-  const [appointments, setAppointments] = useState<Appointment[] | undefined>(undefined);
+  const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
 
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
-  const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
+  const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
 
   // Load the schedule directly from the URL param
   useEffect(() => {
@@ -156,7 +156,7 @@ export function SchedulePage(): JSX.Element | null {
   );
 
   const handleBookSuccess = useCallback(
-    (results: { appointments: Appointment[]; slots: Slot[] }) => {
+    (results: { appointments: WithId<Appointment>[]; slots: Slot[] }) => {
       setAppointments((state) => results.appointments.concat(state ?? EMPTY));
       setAppointmentDetails(results.appointments[0]);
       appointmentDetailsHandlers.open();
@@ -168,11 +168,11 @@ export function SchedulePage(): JSX.Element | null {
   // When an appointment is selected, navigate to the detail page
   const handleSelectAppointment = useCallback(
     async (appointment: Appointment) => {
-      const reference = getReferenceString(appointment);
-      if (!reference) {
+      if (!isResourceWithId(appointment)) {
         showErrorNotification("Can't navigate to unsaved appointment");
         return;
       }
+      const reference = getReferenceString(appointment);
 
       try {
         const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
@@ -196,10 +196,16 @@ export function SchedulePage(): JSX.Element | null {
 
   const height = window.innerHeight - 60;
 
-  const handleAppointmentUpdate = useCallback((updated: Appointment) => {
-    setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-    setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
-  }, []);
+  const handleAppointmentUpdate = useCallback(
+    (updated: WithId<Appointment>) => {
+      setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
+      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
+      if (updated.status === 'cancelled') {
+        appointmentDetailsHandlers.close();
+      }
+    },
+    [appointmentDetailsHandlers]
+  );
 
   const handleActorChange = useCallback(
     (ref: Reference | undefined) => {

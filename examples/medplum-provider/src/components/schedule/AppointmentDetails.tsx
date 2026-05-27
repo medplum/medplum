@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Button, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName, formatPeriod, isReference } from '@medplum/core';
 import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodingInput, Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
 import { useResource } from '@medplum/react-hooks';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { IconAlertSquareRounded, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -15,8 +16,8 @@ import { showErrorNotification } from '../../utils/notifications';
 import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 type UpdateAppointmentFormProps = {
-  appointment: Appointment;
-  onUpdate: (appointment: Appointment) => void;
+  appointment: WithId<Appointment>;
+  onUpdate: (appointment: WithId<Appointment>) => void;
 };
 
 function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
@@ -39,7 +40,7 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
       ],
     } satisfies Appointment;
 
-    let result: Appointment;
+    let result: WithId<Appointment>;
     try {
       result = await medplum.updateResource(updated);
     } catch (error) {
@@ -75,8 +76,8 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
 // As one example, this can be used after a patient has scheduled an appointment
 // via $find/$hold to set up an Encounter and apply a plan definition to it.
 export function AppointmentDetails(props: {
-  appointment: Appointment;
-  onUpdate: (appointment: Appointment) => void;
+  appointment: WithId<Appointment>;
+  onUpdate: (appointment: WithId<Appointment>) => void;
 }): JSX.Element {
   const medplum = useMedplum();
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
@@ -90,6 +91,7 @@ export function AppointmentDetails(props: {
 
   const patient = useResource(patientRef);
   const navigate = useNavigate();
+  const { appointment, onUpdate } = props;
 
   const handleSubmit = useCallback(async () => {
     if (!patient) {
@@ -138,10 +140,35 @@ export function AppointmentDetails(props: {
     }
   }, [medplum, patient, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
 
+  const cancellable =
+    appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
+  const cancelTooltip = cancellable ? null : `Can't cancel appointment with status "${appointment.status}"`;
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const handleCancel = useCallback(async () => {
+    if (!cancellable) {
+      console.error(new Error(`handleCancel called from non cancellable status '${appointment.status}'`));
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      const updated = await medplum.post<WithId<Appointment>>(
+        medplum.fhirUrl('Appointment', appointment.id, '$cancel')
+      );
+      medplum.invalidateSearches('Appointment');
+      medplum.invalidateSearches('Slot');
+      onUpdate(updated);
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setCancelLoading(false);
+    }
+  }, [medplum, appointment, cancellable, onUpdate]);
+
   return (
     <Stack gap="md">
       <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
-
       {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onUpdate} />}
 
       {!!patient && (
@@ -194,6 +221,19 @@ export function AppointmentDetails(props: {
           </div>
         </>
       )}
+      <Divider my="md" />
+      <Tooltip label={cancelTooltip} disabled={!cancelTooltip}>
+        <Button
+          loading={cancelLoading}
+          onClick={handleCancel}
+          variant="outline"
+          color="red"
+          leftSection={<IconTrash size={16} />}
+          data-disabled={!cancellable}
+        >
+          Cancel Visit
+        </Button>
+      </Tooltip>
     </Stack>
   );
 }
