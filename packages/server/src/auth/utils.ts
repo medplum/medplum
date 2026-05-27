@@ -82,7 +82,7 @@ export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promis
     to: user.email,
     subject: `Your Medplum verification code: ${code}`,
     text: [
-      'Here is your Medplum verification code:',
+      'Below is your requested Medplum verification code. You can copy it into the open browser window to confirm your login.',
       '',
       code,
       '',

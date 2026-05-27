@@ -319,6 +319,10 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
       throw new OperationOutcomeError(badRequest('MFA code expired'));
     }
     if (await bcrypt.compare(token, login.emailMfa.codeHash)) {
+      // Entering the emailed code proves the user controls the email address.
+      if (!user.emailVerified) {
+        await systemRepo.updateResource<User>({ ...user, emailVerified: true });
+      }
       return systemRepo.updateResource<Login>({
         ...login,
         mfaVerified: true,

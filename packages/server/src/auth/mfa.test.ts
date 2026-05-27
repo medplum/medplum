@@ -3,7 +3,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
-import type { Login, Project } from '@medplum/fhirtypes';
+import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -392,6 +392,50 @@ describe('MFA', () => {
     expect(verifyRes.body.code).toBeDefined();
   });
 
+  test('Verifying email code marks the user emailVerified', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'Verified',
+        projectName: `Email Verified Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'email');
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaRequired).toBe(true);
+
+    const systemRepo = getGlobalSystemRepo();
+    const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+
+    // The user should not be email-verified before entering the code
+    const userBefore = await systemRepo.readReference<User>(login.user as Reference<User>);
+    expect(userBefore.emailVerified).toBeFalsy();
+
+    const code = await getCodeFromEmail();
+    const verifyRes = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: loginRes.body.login, token: code });
+    expect(verifyRes.status).toBe(200);
+    expect(verifyRes.body.code).toBeDefined();
+
+    // Entering the emailed code proves the user controls the email address
+    const userAfter = await systemRepo.readReference<User>(login.user as Reference<User>);
+    expect(userAfter.emailVerified).toBe(true);
+  });
+
   test('Expired email code is rejected', async () => {
     const email = `email-mfa${randomUUID()}@example.com`;
     const password = 'password!@#';
@@ -541,7 +585,7 @@ describe('MFA', () => {
     expect(verifyRes.body.code).toBeDefined();
   });
 
-  test('Disable email-only MFA without a token', async () => {
+  test('Disable email-only MFA requires an emailed code', async () => {
     const email = `email-mfa${randomUUID()}@example.com`;
     const password = 'password!@#';
 
@@ -563,17 +607,76 @@ describe('MFA', () => {
       .type('json')
       .send({ method: 'email' });
 
-    // Email-only users have no authenticator code, so disable does not require a token
-    const disableRes = await request(app)
+    // Disabling now requires proving control of a connected factor
+    const noToken = await request(app)
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
+    expect(noToken.status).toBe(400);
+    expect(noToken.body).toMatchObject(badRequest('Missing token'));
+
+    // Request an emailed verification code
+    const challengeRes = await request(app)
+      .post('/auth/mfa/send-email-challenge')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({});
+    expect(challengeRes.status).toBe(200);
+    const code = await getCodeFromEmail();
+
+    // A wrong code is rejected
+    const wrongCode = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ token: '000000' });
+    expect(wrongCode.status).toBe(400);
+    expect(wrongCode.body).toMatchObject(badRequest('Invalid token'));
+
+    // The emailed code disables MFA
+    const disableRes = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ token: code });
     expect(disableRes.status).toBe(200);
     expect(disableRes.body).toMatchObject(allOk);
 
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status.body.enrolled).toBe(false);
+  });
+
+  test('send-email-challenge requires email enrollment', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'NoEmailMfa',
+        projectName: `No Email MFA Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // Enroll in TOTP only
+    const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: authenticator.generate(secret) });
+
+    const res = await request(app)
+      .post('/auth/mfa/send-email-challenge')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('User not enrolled in email MFA'));
   });
 
   /**
@@ -622,7 +725,7 @@ describe('MFA', () => {
     expect(status1.body.enrolled).toBe(true);
     expect(status1.body.enrolledMethods).toEqual(expect.arrayContaining(['totp', 'email']));
 
-    // Removing email requires a valid TOTP token because TOTP is still enrolled
+    // Removing a factor requires proving control of a connected factor
     const noToken = await request(app)
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -698,17 +801,70 @@ describe('MFA', () => {
       .type('json')
       .send({ method: 'email' });
 
-    // Email-only, so no token required to remove it
+    // Email is the only connected factor, so verify with an emailed code
+    await request(app)
+      .post('/auth/mfa/send-email-challenge')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({});
+    const code = await getCodeFromEmail();
+
     const removeRes = await request(app)
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ method: 'email' });
+      .send({ method: 'email', token: code });
     expect(removeRes.status).toBe(200);
 
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status.body.enrolled).toBe(false);
     expect(status.body.enrolledMethods).toEqual([]);
+  });
+
+  test('A connected factor can be removed using the emailed code', async () => {
+    const email = `email-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'RemoveViaEmail',
+        projectName: `Remove Via Email Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    await enrollBothMethods(accessToken);
+
+    // Verify with the emailed code instead of the authenticator, then remove TOTP
+    await request(app)
+      .post('/auth/mfa/send-email-challenge')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({});
+    const code = await getCodeFromEmail();
+
+    const removeRes = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: code });
+    expect(removeRes.status).toBe(200);
+
+    const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status.body.enrolled).toBe(true);
+    expect(status.body.enrolledMethods).toEqual(['email']);
+
+    // The emailed code is single-use; a second disable attempt with it fails
+    const reuse = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ token: code });
+    expect(reuse.status).toBe(400);
+    expect(reuse.body).toMatchObject(badRequest('Invalid token'));
   });
 
   test('Removing an invalid method fails', async () => {

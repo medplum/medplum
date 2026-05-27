@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
+import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -40,6 +42,40 @@ function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
   return Array.from(methods);
 }
 
+/**
+ * Verifies that the supplied token proves control of one of the user's
+ * currently-enrolled MFA factors. The token may be either an authenticator
+ * (TOTP) code or the 6-digit code emailed via `/send-email-challenge`, so the
+ * user only needs to satisfy a single connected factor to make a change.
+ * @param user - The user.
+ * @param login - The current login (holds the emailed code hash, if any).
+ * @param token - The user supplied token.
+ * @returns True if the token matches an enrolled factor.
+ */
+async function verifyConnectedFactor(user: User, login: Login, token: string | undefined): Promise<boolean> {
+  if (!token) {
+    return false;
+  }
+  const methods = getEnrolledMfaMethods(user);
+
+  // Authenticator app
+  if (methods.includes('totp') && user.mfaSecret) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (authenticator.verify({ token, secret: user.mfaSecret })) {
+      return true;
+    }
+  }
+
+  // Emailed code
+  if (methods.includes('email') && login.emailMfa) {
+    if (new Date(login.emailMfa.expiresAt).getTime() >= Date.now() && (await bcrypt.compare(token, login.emailMfa.codeHash))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
   let user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
@@ -64,6 +100,7 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
     enrolled: Boolean(user.mfaEnrolled),
     enrolledMethods: getEnrolledMfaMethods(user),
     allowedMethods,
+    email: user.email,
     enrollUri: otp,
     enrollQrCode: await toDataURL(otp),
   });
@@ -234,6 +271,25 @@ mfaRouter.post(
   }
 );
 
+/**
+ * Emails a verification code to the currently authenticated user so they can
+ * prove control of their email factor when changing MFA settings (removing a
+ * factor or disabling MFA). The code is stored on the current login and later
+ * checked by the `/disable` endpoint.
+ */
+mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+
+  if (!user.mfaEnrolled || !getEnrolledMfaMethods(user).includes('email')) {
+    sendOutcome(res, badRequest('User not enrolled in email MFA'));
+    return;
+  }
+
+  await sendMfaEmailCode(ctx.login as WithId<Login>, user);
+  sendOutcome(res, allOk);
+});
+
 mfaRouter.post(
   '/disable',
   authenticateRequest,
@@ -272,25 +328,16 @@ mfaRouter.post(
       }
     }
 
-    // If the user is enrolled in TOTP, require a valid authenticator code to
-    // make any change. Email-only users are already authenticated for this
-    // request, so no second factor is available to verify.
-    if (enrolledMethods.includes('totp')) {
-      if (!user.mfaSecret) {
-        sendOutcome(res, badRequest('Secret not found'));
-        return;
-      }
-      if (!req.body.token) {
-        sendOutcome(res, badRequest('Missing token'));
-        return;
-      }
-      const secret = user.mfaSecret;
-      const token = req.body.token as string;
-      authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-      if (!authenticator.verify({ token, secret })) {
-        sendOutcome(res, badRequest('Invalid token'));
-        return;
-      }
+    // Require the user to prove control of one of their connected factors. The
+    // token may be an authenticator code or the code emailed via
+    // `/send-email-challenge` — whichever method they are enrolled in.
+    if (!req.body.token) {
+      sendOutcome(res, badRequest('Missing token'));
+      return;
+    }
+    if (!(await verifyConnectedFactor(user, ctx.login, req.body.token as string))) {
+      sendOutcome(res, badRequest('Invalid token'));
+      return;
     }
 
     const remainingMethods = methodToRemove ? enrolledMethods.filter((m) => m !== methodToRemove) : [];
@@ -306,6 +353,12 @@ mfaRouter.post(
       mfaMethod: remainingMethods,
       ...(totpRemoved ? { mfaSecret: authenticator.generateSecret() } : {}),
     });
+
+    // Consume any emailed verification code so it cannot be reused.
+    if (ctx.login.emailMfa) {
+      await ctx.systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
+    }
+
     sendOutcome(res, allOk);
   }
 );

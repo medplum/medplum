@@ -10,6 +10,9 @@ import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
 export type MfaFormFields = 'token';
 
+/** An MFA factor a user can enroll in or verify with. */
+export type MfaMethod = 'totp' | 'email';
+
 export interface MfaFormProps {
   readonly title: string;
   readonly buttonText: string;
@@ -35,7 +38,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
           {props.title}
         </Title>
         {!props.qrCodeUrl && props.description && (
-          <Text c="dimmed" mb="lg" mt="-lg">
+          <Text c="dimmed" mb="lg" mt="-lg" ta="center">
             {props.description}
           </Text>
         )}
@@ -47,7 +50,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
       )}
       {props.qrCodeUrl && (
         <Center>
-          <Stack mb="xl">
+          <Stack mb="xl" justify="center">
             {props.description && (
               <Text c="dimmed" mb="md" mt="-lg" ta="center">
                 {props.description}
