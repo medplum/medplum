@@ -9,7 +9,6 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
 
-
 const voiceInstructions = (
   <ul>
     <li>

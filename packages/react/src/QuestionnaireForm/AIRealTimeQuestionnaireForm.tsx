@@ -155,9 +155,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
           parameter,
         });
 
-        const responseParam = response.parameter?.find(
-          (p: { name: string }) => p.name === 'questionnaireResponse'
-        );
+        const responseParam = response.parameter?.find((p: { name: string }) => p.name === 'questionnaireResponse');
         if (responseParam?.valueString) {
           try {
             const aiQuestionnaireResponse = JSON.parse(responseParam.valueString) as QuestionnaireResponse;
