@@ -419,14 +419,14 @@ describe('$find/$book component integration tests', () => {
 
     // Mock $find operation
     const originalGet = medplum.get.bind(medplum);
-    const mockFindSlots: Slot[] = [
+    const mockFindAppointments: Appointment[] = [
       {
-        resourceType: 'Slot',
-        id: 'find-slot-1',
-        schedule: createReference(DrAliceSmithSchedule),
-        status: 'free',
+        resourceType: 'Appointment',
+        id: 'find-appointment-1',
+        status: 'proposed',
         start: slotStart,
         end: slotEnd,
+        participant: [],
       },
     ];
     vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
@@ -435,8 +435,8 @@ describe('$find/$book component integration tests', () => {
           Promise.resolve({
             resourceType: 'Bundle',
             type: 'searchset',
-            entry: mockFindSlots.map((slot) => ({ resource: slot })),
-          } satisfies Bundle<Slot>)
+            entry: mockFindAppointments.map((appointment) => ({ resource: appointment })),
+          } satisfies Bundle<Appointment>)
         );
       }
       return originalGet(url, options);
@@ -494,7 +494,7 @@ describe('$find/$book component integration tests', () => {
     // Pane header shows selected service type
     expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
 
-    // Click on a slot button from the find pane
+    // Click on an appointment button from the find pane
     const slotButtons = screen.getAllByText(/1\/16\/2024/);
     expect(slotButtons.length).toEqual(1);
     await user.click(slotButtons[0]);
