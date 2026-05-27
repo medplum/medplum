@@ -18,6 +18,7 @@ import { showNotification } from '@mantine/notifications';
 import { convertToTransactionBundle } from '@medplum/core';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
+import { SCRIPTSURE_ORDERSET_SYNC_BOT } from '@medplum/scriptsure-react';
 import {
   IconApps,
   IconArrowUpRight,
@@ -128,6 +129,13 @@ export function GetStartedPage(): JSX.Element {
 
       const resourceCount =
         result.entry?.filter((entry: BundleEntry) => entry.response?.status?.startsWith('2')).length || 0;
+
+      const pdLocation = result.entry?.find((e) => e.response?.location?.startsWith('PlanDefinition/'))?.response
+        ?.location;
+      const pdId = pdLocation?.split('/')[1];
+      if (pdId) {
+        await medplum.executeBot(SCRIPTSURE_ORDERSET_SYNC_BOT, { planDefinitionId: pdId });
+      }
 
       showNotification({
         color: 'green',
