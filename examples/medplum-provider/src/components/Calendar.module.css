@@ -17,6 +17,10 @@
   min-width: 400px;
 }
 
+:global(.dayGridMonth).calendar .listItemEventBefore {
+  display: none;
+}
+
 
 /* Make it clearer that events are clickable */
 .interactiveEvent {
@@ -86,6 +90,11 @@
   --cal-color: light-dark(var(--mantine-color-dark-4), var(--mantine-color-gray-4));
   --cal-background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-gray-7));
 }
+
+:global(.dayGridMonth) .event:hover {
+  background-color: var(--cal-background-color);
+}
+
 
 .appointment.pending {
   --cal-color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
