@@ -87,11 +87,11 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     (response: LoginAuthenticationResponse): void => {
       setMfaEnrollRequired(!!response.mfaEnrollRequired);
       setEnrollQrCode(response.enrollQrCode);
-      setEnrollMethods(response.allowedMfaMethods as MfaMethod[] | undefined);
+      setEnrollMethods(response.allowedMfaMethods);
       setMfaRequired(!!response.mfaRequired);
 
       if (response.mfaRequired) {
-        const methods = response.mfaMethods as MfaMethod[] | undefined;
+        const methods = response.mfaMethods;
         setMfaMethods(methods);
         setMfaEmail(response.email);
         // When email is the only enrolled method, the server has already sent

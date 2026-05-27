@@ -993,9 +993,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign In'));
     });
 
-    await expect(
-      screen.findByRole('button', { name: 'Continue with email-based MFA' })
-    ).resolves.toBeInTheDocument();
+    await expect(screen.findByRole('button', { name: 'Continue with email-based MFA' })).resolves.toBeInTheDocument();
 
     // Enrolling in email-based MFA sends a code and shows the code entry form
     await act(async () => {
