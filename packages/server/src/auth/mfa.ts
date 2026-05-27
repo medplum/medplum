@@ -68,7 +68,10 @@ async function verifyConnectedFactor(user: User, login: Login, token: string | u
 
   // Emailed code
   if (methods.includes('email') && login.emailMfa) {
-    if (new Date(login.emailMfa.expiresAt).getTime() >= Date.now() && (await bcrypt.compare(token, login.emailMfa.codeHash))) {
+    if (
+      new Date(login.emailMfa.expiresAt).getTime() >= Date.now() &&
+      (await bcrypt.compare(token, login.emailMfa.codeHash))
+    ) {
       return true;
     }
   }
