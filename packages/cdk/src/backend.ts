@@ -482,9 +482,11 @@ export class BackEnd extends Construct {
     }
 
     // Task Containers
+    const serviceCommand = region === 'us-east-1' ? `aws:/medplum/${name}/,env` : `aws:${region}:/medplum/${name}/,env`;
+
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
       image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials, 'Server'),
-      command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
+      command: [serviceCommand],
       logging: this.logDriver,
       environment: config.environment,
     });
