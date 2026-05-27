@@ -151,33 +151,20 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
       prev.size === insuranceCoverages.length ? new Set() : new Set(insuranceCoverages.map((c) => c.id))
     );
   };
-  const handleConfirm = (): void => {
+
+  const resolveCoverages = async (): Promise<Reference<Coverage>[]> => {
     if (billingType === 'self-pay') {
-      onSubmitClaim(selfPayCoverage ? [createReference(selfPayCoverage)] : []);
-    } else {
-      onSubmitClaim(insuranceCoverages.filter((c) => selectedIds.has(c.id)).map(createReference));
+      const coverage = ensureSelfPayCoverage ? await ensureSelfPayCoverage() : selfPayCoverage;
+      return coverage ? [createReference(coverage)] : [];
     }
+    return insuranceCoverages.filter((c) => selectedIds.has(c.id)).map(createReference);
   };
 
-  const handleSubmitToStedi = async (): Promise<void> => {
-    if (!onSubmitToStedi) {
-      return;
-    }
+  const handleSubmit = async (submit: (coverages: Reference<Coverage>[]) => void): Promise<void> => {
     try {
-      let resolved: WithId<Coverage>[];
-      if (billingType === 'self-pay') {
-        if (!ensureSelfPayCoverage) {
-          return;
-        }
-        resolved = [await ensureSelfPayCoverage()];
-      } else {
-        resolved = insuranceCoverages.filter((c) => selectedIds.has(c.id));
-        if (resolved.length === 0) {
-          return;
-        }
-      }
+      const coverages = await resolveCoverages();
       onClose();
-      onSubmitToStedi(resolved.map((c) => createReference(c)));
+      submit(coverages);
     } catch (err) {
       showErrorNotification(err);
     }
@@ -264,16 +251,23 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
       </Grid>
 
       <Group justify="flex-end">
+        {onSubmitToStedi && (
+          <Button
+            size="md"
+            variant="outline"
+            rightSection={<IconArrowUpRight size={16} />}
+            disabled={!canSubmit}
+            onClick={() => handleSubmit(onSubmitToStedi)}
+          >
+            Submit to Stedi
+          </Button>
+        )}
         <Button
           size="md"
-          variant="outline"
           rightSection={<IconArrowUpRight size={16} />}
           disabled={!canSubmit}
-          onClick={handleSubmitToStedi}
+          onClick={() => handleSubmit(onSubmitClaim)}
         >
-          Submit to Stedi
-        </Button>
-        <Button size="md" rightSection={<IconArrowUpRight size={16} />} disabled={!canSubmit} onClick={handleConfirm}>
           Submit to Candid
         </Button>
       </Group>

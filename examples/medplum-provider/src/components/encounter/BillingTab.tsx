@@ -235,49 +235,46 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
   };
 
-  const submitClaim = useCallback(
-    async (claimOverride?: WithId<Claim>): Promise<void> => {
-      const claimToSubmit = claimOverride ?? claim;
-      if (!claimToSubmit) {
+  const runClaimSubmit = useCallback(
+    async (
+      coverageRefs: Reference<Coverage>[],
+      operation: '$candid-submit-claim' | '$stedi-submit-claim',
+      successTitle: string,
+      successMessage: string
+    ): Promise<void> => {
+      if (!claim) {
         return;
       }
-
-      const currentConditions = conditionsRef.current;
-      if (!currentConditions || currentConditions.length === 0) {
-        showNotification({
-          title: 'Missing Diagnosis',
-          message: 'Please add at least one diagnosis before submitting a claim',
-          color: 'red',
-        });
-        return;
-      }
-
       setSubmitting(true);
       debouncedUpdateClaim.cancel();
       try {
-        const result = await medplum.post(
-          medplum.fhirUrl('Claim', claimToSubmit.id, '$candid-submit-claim')
-        );
-        showNotification({
-          title: 'Claim Submitted',
-          message: 'Claim successfully submitted to Candid Health',
-          color: 'green',
+        const updatedClaim = await medplum.updateResource({
+          ...claim,
+          insurance: coverageRefs.map((ref, index) => ({
+            sequence: index + 1,
+            focal: index === 0,
+            coverage: ref,
+          })),
         });
+        setClaim(updatedClaim);
+        const result = await medplum.post(medplum.fhirUrl('Claim', updatedClaim.id, operation), {
+          resourceType: 'Parameters',
+          parameter: [],
+        });
+        showNotification({ title: successTitle, message: successMessage, color: 'green' });
         if (result?.resourceType === 'ClaimResponse') {
           setClaimResponse(result as WithId<ClaimResponse>);
         } else {
           await fetchClaimResponse();
         }
       } catch (err) {
-        let errorMessage: string | undefined;
         try {
           const parsed = JSON.parse((err as Error).message);
-          errorMessage = parsed?.errorMessage;
           notifications.show({
             color: 'red',
             icon: <IconCircleOff />,
             title: 'Error',
-            message: errorMessage,
+            message: parsed?.errorMessage,
           });
         } catch {
           showErrorNotification(normalizeErrorString(err));
@@ -286,69 +283,29 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         setSubmitting(false);
       }
     },
-    [claim, debouncedUpdateClaim, fetchClaimResponse, medplum]
+    [claim, debouncedUpdateClaim, fetchClaimResponse, medplum, setClaim]
+  );
+
+  const submitToCandid = useCallback(
+    async (insurance: Reference<Coverage>[]): Promise<void> => {
+      await runClaimSubmit(
+        insurance,
+        '$candid-submit-claim',
+        'Claim Submitted',
+        'Claim successfully submitted to Candid Health'
+      );
+    },
+    [runClaimSubmit]
   );
 
   const submitToStedi = useCallback(
     async (insurance: Reference<Coverage>[]): Promise<void> => {
-      if (!claim) {
-        return;
-      }
-      if (!conditionsRef.current?.length) {
-        showNotification({
-          title: 'Missing Diagnosis',
-          message: 'Please add at least one diagnosis before submitting a claim',
-          color: 'red',
-        });
-        return;
-      }
-      if (insurance.length === 0) {
-        return;
-      }
-      setSubmitting(true);
-      debouncedUpdateClaim.cancel();
-      try {
-        const claimPayload = {
-          ...claim,
-          insurance: insurance.map((cov, index) => ({
-            sequence: index + 1,
-            focal: index === 0,
-            coverage: cov,
-          })),
-        };
-        await medplum.updateResource(claimPayload);
-        const result = await medplum.post(
-          medplum.fhirUrl('Claim', claim.id, '$stedi-submit-claim')
-        );
-        showNotification({
-          title: 'Submitted to Stedi',
-          message: 'Claim successfully submitted to Stedi',
-          color: 'green',
-        });
-        if (result?.resourceType === 'ClaimResponse') {
-          setClaimResponse(result as WithId<ClaimResponse>);
-        } else {
-          await fetchClaimResponse();
-        }
-      } catch (err) {
-        let errorMessage: string | undefined;
-        try {
-          const parsed = JSON.parse((err as Error).message);
-          errorMessage = parsed?.errorMessage;
-          notifications.show({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: errorMessage,
-          });
-        } catch {
-          showErrorNotification(normalizeErrorString(err));
-        }
-      } finally {
-        setSubmitting(false);
-      }
+      await runClaimSubmit(insurance, 
+        '$stedi-submit-claim', 
+        'Submitted to Stedi', 
+        'Claim successfully submitted to Stedi');
     },
-    [claim, debouncedUpdateClaim, fetchClaimResponse, medplum]
+    [runClaimSubmit]
   );
 
   const ensureSelfPayCoverage = useCallback(async (): Promise<WithId<Coverage>> => {
@@ -416,38 +373,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Menu>
   );
 
-  const handleConfirmSubmit = useCallback(
-    async (coverageRefs: Reference<Coverage>[]): Promise<void> => {
-      setConfirmModalOpen(false);
-      if (!claim || coverageRefs.length === 0) {
-        showNotification({
-          title: 'Missing Coverage',
-          message: 'Please select at least one coverage before submitting a claim',
-          color: 'red',
-        });
-        return;
-      }
-
-      const firstCoverage = coverages.find((c) => getReferenceString(c) === coverageRefs[0].reference);
-      if (firstCoverage) {
-        setCoverage(firstCoverage);
-      }
-
-      debouncedUpdateClaim.cancel();
-      const updatedClaim = await medplum.updateResource({
-        ...claim,
-        insurance: coverageRefs.map((ref, index) => ({
-          sequence: index + 1,
-          focal: index === 0,
-          coverage: ref,
-        })),
-      });
-      setClaim(updatedClaim);
-      await submitClaim(updatedClaim);
-    },
-    [claim, coverages, debouncedUpdateClaim, medplum, setClaim, submitClaim]
-  );
-
+ 
   const handleSubmitClaimClick = useCallback(async (): Promise<void> => {
     if (!conditions.length) {
       showNotification({
@@ -494,7 +420,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
             conditions={conditions}
             practitioner={practitioner}
             onClose={() => setConfirmModalOpen(false)}
-            onSubmitClaim={handleConfirmSubmit}
+            onSubmitClaim={submitToCandid}
             onSubmitToStedi={submitToStedi}
             ensureSelfPayCoverage={ensureSelfPayCoverage}
           />
