@@ -176,6 +176,7 @@ export function Calendar(props: {
         nowIndicator
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}
+        listItemEventBeforeClass={classes.listItemEventBefore}
       />
     </div>
   );
