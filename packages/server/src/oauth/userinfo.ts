@@ -9,6 +9,7 @@ import {
   getDateProperty,
   getExtensionValue,
   getReferenceString,
+  HTTP_HL7_ORG,
 } from '@medplum/core';
 import type { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
@@ -59,36 +60,23 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource | 
     return;
   }
 
-  userInfo.birthdate = profile.birthDate;
-  userInfo.gender = profile.gender ?? '';
-  userInfo.picture = profile.photo?.[0]?.url ?? '';
-
   const humanName = profile.name?.[0];
   if (humanName) {
     userInfo.name = formatHumanName(humanName);
     userInfo.family_name = formatFamilyName(humanName);
 
     const givenNameParts = formatGivenName(humanName).split(' ');
-    userInfo.given_name = givenNameParts[0] ?? '';
-    userInfo.middle_name = givenNameParts.slice(1).join(' ') ?? '';
-  } else {
-    userInfo.name = '';
-    userInfo.family_name = '';
-    userInfo.given_name = '';
-    userInfo.middle_name = '';
+    userInfo.given_name = givenNameParts[0];
+    userInfo.middle_name = givenNameParts.slice(1).join(' ');
   }
 
-  const nickname = profile.name?.find((n) => n.use === 'nickname');
-  userInfo.nickname = nickname ? formatHumanName(nickname) : '';
-
-  const website = profile.telecom?.find((cp) => cp.system === 'url')?.value;
-  userInfo.website = website ?? '';
-
-  const email = profile.telecom?.find((cp) => cp.system === 'email')?.value;
-  userInfo.preferred_username = email ? email.split('@')[0] : '';
-
-  const preferredTimeZone = getExtensionValue(profile, 'http://hl7.org/fhir/StructureDefinition/timezone');
-  userInfo.zoneinfo = preferredTimeZone ?? '';
+  userInfo.birthdate = profile.birthDate;
+  userInfo.gender = profile.gender;
+  userInfo.picture = profile.photo?.[0]?.url;
+  userInfo.nickname = profile.name?.find((n) => n.use === 'nickname')?.given?.[0];
+  userInfo.website = profile.telecom?.find((cp) => cp.system === 'url')?.value;
+  userInfo.preferred_username = profile.telecom?.find((cp) => cp.system === 'email')?.value?.split('@')[0];
+  userInfo.zoneinfo = getExtensionValue(profile, `${HTTP_HL7_ORG}/fhir/StructureDefinition/timezone`);
 }
 
 function buildEmail(
@@ -121,6 +109,11 @@ function buildAddress(userInfo: Record<string, any>, profile: ProfileResource | 
   if (address) {
     userInfo.address = {
       formatted: formatAddress(address),
+      street_address: address.line?.join(' '),
+      locality: address.city,
+      region: address.state,
+      postal_code: address.postalCode,
+      country: address.country,
     };
   }
 }

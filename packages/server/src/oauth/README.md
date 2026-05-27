@@ -37,7 +37,7 @@ For example:
       "valueCode": "US/Pacific"
     }
   ],
-  "birthDate": "1982-06-05",
+  "birthDate": "1970-01-01",
   "gender": "male",
   "name": [
     {
@@ -223,7 +223,11 @@ Be sure to logout between each test by visiting <http://host.docker.internal:810
 
 In "EHR Launch Sequence":
 
-Make sure "Scopes" includes "fhirUser launch launch/patient offline*access openid profile user/\*.* patient/\_.\_"
+Make sure "Scopes" includes:
+
+```
+fhirUser launch launch/patient offline_access openid profile user/*.* patient/*.*
+```
 
 Launch URL's:
 
