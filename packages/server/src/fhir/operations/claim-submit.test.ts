@@ -45,7 +45,11 @@ describe('Claim $submit dispatcher', () => {
   });
 
   test('Rejects invalid processor value', async () => {
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
+      },
+    });
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -55,7 +59,7 @@ describe('Claim $submit dispatcher', () => {
     expect(JSON.stringify(res.body)).toMatch(/Invalid processor/i);
   });
 
-  test('Returns 400 when no processor in body and no matching secret', async () => {
+  test('Returns 400 when no processor secrets are configured', async () => {
     const accessToken = await initTestAuth();
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
@@ -66,8 +70,57 @@ describe('Claim $submit dispatcher', () => {
     expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
   });
 
-  test('Routes to stedi when processor=stedi in body (sub-operation missing → clear error)', async () => {
-    const accessToken = await initTestAuth();
+  test('Returns 400 when processor=stedi in body but STEDI_CLAIM_API_KEY not configured', async () => {
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' }],
+      },
+    });
+    const res = await request(app)
+      .post('/fhir/R4/Claim/$submit')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bodyWith('stedi'));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
+  });
+
+  test('Returns 400 when processor=candid in body but CANDID_SECRET_ID not configured', async () => {
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
+      },
+    });
+    const res = await request(app)
+      .post('/fhir/R4/Claim/$submit')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bodyWith('candid'));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
+  });
+
+  test('Treats empty-string secret as not configured', async () => {
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: '' }],
+      },
+    });
+    const res = await request(app)
+      .post('/fhir/R4/Claim/$submit')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bodyWith(undefined));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
+  });
+
+  test('Routes to stedi when processor=stedi in body and STEDI_CLAIM_API_KEY configured', async () => {
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
+      },
+    });
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -78,7 +131,11 @@ describe('Claim $submit dispatcher', () => {
   });
 
   test('Routes to candid when processor=CANDID in body (case-insensitive)', async () => {
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' }],
+      },
+    });
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -118,10 +175,13 @@ describe('Claim $submit dispatcher', () => {
     expect(JSON.stringify(res.body)).toMatch(/candid-submit-claim/);
   });
 
-  test('Body processor overrides project secrets', async () => {
+  test('Body processor overrides project secrets when both are configured', async () => {
     const accessToken = await initTestAuth({
       project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
+        secret: [
+          { name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' },
+          { name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' },
+        ],
       },
     });
     const res = await request(app)
@@ -132,5 +192,23 @@ describe('Claim $submit dispatcher', () => {
     expect(res.status).toBe(400);
     expect(JSON.stringify(res.body)).toMatch(/candid-submit-claim/);
     expect(JSON.stringify(res.body)).not.toMatch(/stedi-submit-claim/);
+  });
+
+  test('Returns 400 when no Claim payload provided and processor secret configured', async () => {
+    const accessToken = await initTestAuth({
+      project: {
+        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
+      },
+    });
+    const res = await request(app)
+      .post('/fhir/R4/Claim/$submit')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'processor', valueCode: 'stedi' }],
+      });
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/Missing Claim payload/i);
   });
 });

@@ -81,27 +81,27 @@ interface ClaimSubmitInput {
 export async function claimSubmitHandler(req: FhirRequest): Promise<FhirResponse> {
   try {
     const params = parseInputParameters<ClaimSubmitInput>(operation, req);
+    const { project, repo } = getAuthenticatedContext();
+    const hasSecret = (p: Processor): boolean =>
+      project.secret?.some((s) => s.name === SECRET_NAME_FOR_PROCESSOR[p] && s.valueString) ?? false;
 
-    let processor: Processor | undefined;
+    let processor: Processor;
     if (params.processor) {
       const normalized = params.processor.toLowerCase();
       if (!(normalized in SECRET_NAME_FOR_PROCESSOR)) {
         return [badRequest(`Invalid processor '${params.processor}': must be 'stedi' or 'candid'.`)];
       }
       processor = normalized as Processor;
+      if (!hasSecret(processor)) {
+        return [badRequest('No claim processor configured.')];
+      }
     } else {
-      processor = processorFromSecrets();
+      const resolved = (Object.keys(SECRET_NAME_FOR_PROCESSOR) as Processor[]).find(hasSecret);
+      if (!resolved) {
+        return [badRequest('No claim processor configured.')];
+      }
+      processor = resolved;
     }
-
-    if (!processor) {
-      return [
-        badRequest(
-          "No claim processor configured. Pass 'processor' in the body, or set STEDI_CLAIM_API_KEY or CANDID_SECRET_ID in project secrets."
-        ),
-      ];
-    }
-
-    const { repo } = getAuthenticatedContext();
 
     const claimId = (req.params as { id?: string } | undefined)?.id;
     let claim: Claim;
@@ -137,12 +137,3 @@ export async function claimSubmitHandler(req: FhirRequest): Promise<FhirResponse
   }
 }
 
-function processorFromSecrets(): Processor | undefined {
-  const { project } = getAuthenticatedContext();
-  for (const processor of Object.keys(SECRET_NAME_FOR_PROCESSOR) as Processor[]) {
-    if (project.secret?.some((s) => s.name === SECRET_NAME_FOR_PROCESSOR[processor])) {
-      return processor;
-    }
-  }
-  return undefined;
-}
