@@ -41,4 +41,26 @@ describe('toEqualUnordered', () => {
   test('asymmetric matcher fails when length differs', () => {
     expect(() => expect({ arr: [1, 2, 3, 4] }).toEqual({ arr: expect.toEqualUnordered([1, 2, 3]) })).toThrow();
   });
+
+  test('negated form passes when arrays differ', () => {
+    expect([1, 2, 3]).not.toEqualUnordered([1, 2, 4]);
+    expect([1, 2]).not.toEqualUnordered([1, 2, 3]);
+    expect('not an array').not.toEqualUnordered([]);
+  });
+
+  test('negated form fails when arrays match unordered', () => {
+    expect(() => expect([1, 2, 3]).not.toEqualUnordered([3, 1, 2])).toThrow(/not to equal/);
+  });
+
+  test('failure message includes expected and received arrays', () => {
+    expect(() => expect([1, 2, 3]).toEqualUnordered([1, 2, 4])).toThrow(/Expected[\s\S]*Received/);
+  });
+
+  test('inverse asymmetric matcher passes when arrays differ', () => {
+    expect({ arr: [1, 2, 3] }).toEqual({ arr: expect.not.toEqualUnordered([1, 2, 4]) });
+  });
+
+  test('inverse asymmetric matcher fails when arrays match unordered', () => {
+    expect(() => expect({ arr: [3, 1, 2] }).toEqual({ arr: expect.not.toEqualUnordered([1, 2, 3]) })).toThrow();
+  });
 });
