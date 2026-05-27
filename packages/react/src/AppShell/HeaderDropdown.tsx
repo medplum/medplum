@@ -29,13 +29,7 @@ const THEME_OPTIONS: { value: string; label: JSX.Element }[] = [
   { value: 'dark', label: <ThemeOptionLabel Icon={IconMoon} label="Dark" /> },
 ];
 
-function ThemeOptionLabel({
-  Icon,
-  label,
-}: {
-  readonly Icon: TablerIcon;
-  readonly label: string;
-}): JSX.Element {
+function ThemeOptionLabel({ Icon, label }: { readonly Icon: TablerIcon; readonly label: string }): JSX.Element {
   return (
     <span aria-label={label} style={{ display: 'flex' }}>
       <Icon size={16} color={MENU_ICON_COLOR} aria-hidden />
