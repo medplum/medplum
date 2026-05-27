@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
 import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
-import type { Project } from '@medplum/fhirtypes';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -20,12 +19,14 @@ export interface FhirQuotaConfig {
   projectLimit: number;
 }
 
-export function getFhirQuotaConfig(project: Project): FhirQuotaConfig {
-  const defaultUserLimit = project.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
-  const userLimit = defaultUserLimit ?? getConfig().defaultFhirQuota ?? 50_000;
+export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
+  const { project, userConfig } = authState;
+  const defaultUserLimit = project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
 
-  const defaultProjectLimit = project.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
-  const projectLimit = defaultProjectLimit ?? userLimit * 10;
+  const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return { userLimit, projectLimit };
 }

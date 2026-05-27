@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, created, createReference, OperationOutcomeError } from '@medplum/core';
+import { created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
+import type { Appointment, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { withPath } from '../../util/withpath';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { validateAllAvailability, validateProposedAppointment } from './utils/scheduling';
+import { createProposedAppointment } from './utils/scheduling';
 
 const holdOperation = {
   resourceType: 'OperationDefinition',
@@ -40,48 +40,21 @@ type HoldParameters = {
 export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<HoldParameters>(holdOperation, req);
-  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
+  const bundle = await createProposedAppointment(
     ctx.repo,
-    withPath(params.appointment, 'Parameters.appointment')
-  );
+    withPath(params.appointment, 'Parameters.appointment'),
+    (appointment, slots) => {
+      // Create appointment with "pending" status
+      appointment.status = 'pending';
 
-  // We will write this attribute later, check that we aren't clobbering something that was submitted
-  if (appointment.slot) {
-    throw new OperationOutcomeError(
-      badRequest('Proposed appointment must not have Slot references', 'Parameters.appointment.slot')
-    );
-  }
-
-  // $hold creates slots in "busy-tentative" state
-  for (const slot of slots) {
-    if (slot.status === 'busy') {
-      slot.status = 'busy-tentative';
-    }
-  }
-
-  const createdResources = await ctx.repo.withTransaction(
-    async () => {
-      await validateAllAvailability(ctx.repo, slots, healthcareService, schedulingParametersGroup);
-
-      const createdSlots: Slot[] = [];
+      // $hold creates slots with "busy-tentative" status
       for (const slot of slots) {
-        createdSlots.push(await ctx.repo.createResource<Slot>(slot));
+        if (slot.status === 'busy') {
+          slot.status = 'busy-tentative';
+        }
       }
-
-      const createdAppointment = await ctx.repo.createResource<Appointment>({
-        ...appointment,
-        status: 'pending',
-        slot: createdSlots.map((slot) => createReference(slot)),
-      });
-      return [createdAppointment, ...createdSlots];
-    },
-    { serializable: true }
+    }
   );
-  const bundle: Bundle = {
-    resourceType: 'Bundle',
-    type: 'transaction-response',
-    entry: createdResources.map((resource) => ({ resource })),
-  };
 
   return [created, buildOutputParameters(holdOperation, bundle)];
 }
