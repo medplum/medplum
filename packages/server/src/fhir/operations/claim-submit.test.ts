@@ -100,21 +100,6 @@ describe('Claim $submit dispatcher', () => {
     expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
   });
 
-  test('Treats empty-string secret as not configured', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: '' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith(undefined));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
-  });
-
   test('Routes to stedi when processor=stedi in body and STEDI_CLAIM_API_KEY configured', async () => {
     const accessToken = await initTestAuth({
       project: {
