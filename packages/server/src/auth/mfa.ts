@@ -45,11 +45,9 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   let user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
   const allowedMethods = getAllowedMfaMethods(ctx.project);
 
-  if (user.mfaEnrolled) {
-    res.json({ enrolled: true, enrolledMethods: getEnrolledMfaMethods(user), allowedMethods });
-    return;
-  }
-
+  // Ensure the user has an authenticator secret so the TOTP QR code can always
+  // be shown, whether for initial enrollment or for adding TOTP as a second
+  // method to an account already enrolled in email-based MFA.
   if (!user.mfaSecret) {
     user = await ctx.systemRepo.updateResource({
       ...user,
@@ -63,8 +61,8 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   const otp = authenticator.keyuri(accountName, issuer, secret);
 
   res.json({
-    enrolled: false,
-    enrolledMethods: [],
+    enrolled: Boolean(user.mfaEnrolled),
+    enrolledMethods: getEnrolledMfaMethods(user),
     allowedMethods,
     enrollUri: otp,
     enrollQrCode: await toDataURL(otp),

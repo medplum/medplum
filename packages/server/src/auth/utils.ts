@@ -80,18 +80,16 @@ export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promis
   const expirationMinutes = Math.round(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
   await sendEmail(systemRepo, {
     to: user.email,
-    subject: 'Medplum Login Verification Code',
+    subject: `Your Medplum verification code: ${code}`,
     text: [
-      'Someone is trying to sign in to your Medplum account.',
-      '',
-      'Enter the following verification code to complete sign in:',
+      'Here is your Medplum verification code:',
       '',
       code,
       '',
       `This code will expire in ${expirationMinutes} minutes. If you did not try to sign in, you can safely ignore this email.`,
       '',
       'Thank you,',
-      'Medplum',
+      'The Medplum Team',
       '',
     ].join('\n'),
   });
