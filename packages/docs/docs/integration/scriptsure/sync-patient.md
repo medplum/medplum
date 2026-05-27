@@ -54,9 +54,11 @@ All `AllergyIntolerance` resources linked to the patient are pushed on first syn
 }
 ```
 
-Once synced, a ScriptSure allergy ID is stamped on the resource:
+Once synced, the ScriptSure allergy ID is stamped on `AllergyIntolerance.identifier`:
 ```json
-{ "system": "https://scriptsure.com/allergy-id", "value": "12345" }
+{
+  "identifier": [{ "system": "https://scriptsure.com/allergy-id", "value": "12345" }]
+}
 ```
 
 ## MedicationRequest sync (DDI)
