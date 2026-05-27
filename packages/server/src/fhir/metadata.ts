@@ -225,7 +225,7 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
           extension: [
             {
               url: 'hub.url',
-              valueUrl: `${config.baseUrl}fhircast/STU3`,
+              valueUrl: `${config.baseUrl}fhircast/R4`,
             },
           ],
           url: 'http://hl7.org/fhir/uv/fhircast/StructureDefinition/fhircast-configuration-extension',
