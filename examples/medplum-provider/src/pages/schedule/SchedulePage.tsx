@@ -230,8 +230,8 @@ export function SchedulePage(): JSX.Element | null {
   return (
     <Box pos="relative" className={classes.page} p="md">
       <div className={classes.wrapper}>
-        <Group justify="space-between">
-          <Box mb="sm" w={320}>
+        <Group justify="space-between" mb="sm">
+          <Box w={320}>
             <ReferenceInput
               key={schedule?.id}
               name="schedule-actor"

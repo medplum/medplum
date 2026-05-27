@@ -1,18 +1,24 @@
 .wrapper {
   height: 100%;
-
-  /* Very narrow calendars in the provider UI are ending up in a weird resize
-   * loop that flickers and is very ugly. Set a min-width that protects
-   * against that behavior.
-   * */
-  min-width: 200px;
-
   display: flex;
   flex-direction: column;
 }
 
 .calendar {
   flex-grow: 1;
+  /* Prevent FullCalendar from entering a redraw loop
+   * when the flex-container shifts size;
+   * @see https://github.com/fullcalendar/fullcalendar/issues/8076
+   */
+  min-width: 0;
+}
+
+/* Very narrow 7-column calendars are impossible to read. Set a larger minimum
+ * width even if that requires scrolling on small viewports.
+ */
+:global(.dayGridMonth).calendar,
+:global(.timeGridWeek).calendar {
+  min-width: 480px;
 }
 
 
