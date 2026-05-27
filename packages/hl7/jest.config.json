@@ -1,15 +1,1 @@
-{
-  "testEnvironment": "jsdom",
-  "testEnvironmentOptions": {
-    "globalsCleanup": "on"
-  },
-  "testTimeout": 120000,
-  "transform": {
-    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
-  },
-  "moduleFileExtensions": ["ts", "js", "json", "node"],
-  "testMatch": ["**/src/**/*.test.ts"],
-  "coverageDirectory": "coverage",
-  "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": ["**/src/**/*.ts"]
-}
+{"testEnvironment":"jsdom","testTimeout":120000,"transform":{"^.+\\.(ts)$":"babel-jest"},"testMatch":["**/src/**/*.test.ts"]}

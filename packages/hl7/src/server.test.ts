@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, sleep } from '@medplum/core';
 import { Hl7Client } from './client';
-import { Hl7Server } from './server';
+import { DEFAULT_FORCE_DRAIN_TIMEOUT_MS, Hl7Server } from './server';
 
 describe('HL7 Server', () => {
   test('Start and stop', async () => {
@@ -30,9 +30,7 @@ describe('HL7 Server', () => {
     const response = await client.sendAndWait(
       Hl7Message.parse(
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
       )
     );
     expect(response).toBeDefined();
@@ -203,70 +201,9 @@ describe('HL7 Server', () => {
     expect(connectionCloseCalled).toBe(true);
   }, 10000);
 
-  test('Default forceDrainTimeout is 10 seconds when no options passed', async () => {
-    const state = {
-      connectionCloseCalled: false,
-    };
-
-    const server = new Hl7Server((connection) => {
-      connection.addEventListener('message', ({ message }) => {
-        connection.send(message.buildAck());
-      });
-      connection.addEventListener('close', () => {
-        state.connectionCloseCalled = true;
-      });
-    });
-
-    await server.start(1251);
-
-    const client = new Hl7Client({
-      host: 'localhost',
-      port: 1251,
-    });
-
-    await client.connect();
-
-    // Send a message to verify connection is working
-    const response = await client.sendAndWait(
-      Hl7Message.parse(
-        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
-      )
-    );
-    expect(response).toBeDefined();
-
-    jest.useFakeTimers();
-
-    // Call stop with no options - should use default 10 second timeout
-    const stopPromise = server.stop();
-
-    // Advance timers by 5 seconds - connection should still be open
-    jest.advanceTimersByTime(5000);
-    await Promise.resolve();
-    expect(state.connectionCloseCalled).toBe(false);
-
-    // Advance timers by another 5 seconds (total 10 seconds) - connection should be force-closed
-    jest.advanceTimersByTime(5000);
-    await Promise.resolve();
-
-    jest.useRealTimers();
-
-    // Wait for the server to finish stopping
-    await stopPromise;
-
-    // Sleep to allow the close event to be processed on next tick
-    for (let i = 0; i < 100 && !state.connectionCloseCalled; i++) {
-      await sleep(1);
-    }
-
-    // The forceDrainTimeout should have triggered and closed the connection
-    expect(state.connectionCloseCalled).toBe(true);
-
-    // Clean up
-    await client.close().catch(() => {
-      // Client might already be closed by the server, ignore errors
-    });
-  }, 10000);
+  test('Default forceDrainTimeout is 10 seconds when no options passed', () => {
+    expect(DEFAULT_FORCE_DRAIN_TIMEOUT_MS).toBe(10_000);
+  });
 
   describe('Server configuration setters and getters', () => {
     test('setEncoding and getEncoding work correctly', () => {

@@ -348,21 +348,24 @@ describe('Hl7Client', () => {
 
   // Test sending to a non-responsive server
   test('Connection timeout when server does not respond', async () => {
-    const port = await getFreePort();
+    const mockSocket = new MockSocket();
+    vi.spyOn(mockSocket, 'destroy').mockImplementation(() => {
+      mockSocket.destroyed = true;
+    });
+    vi.spyOn(net, 'connect').mockReturnValue(mockSocket as unknown as Socket);
 
-    // Create client with a short timeout
     const client = new Hl7Client({
-      host: '10.255.255.1', // Use an unreachable IP address
-      port,
+      host: 'localhost',
+      port: 1234,
       connectTimeout: 500,
     });
 
-    // Attempt to connect should fail with timeout error
-    await expect(client.connect()).rejects.toThrow('Connection timeout after 500ms');
+    const connectPromise = client.connect();
+    mockSocket.emit('timeout');
+    await expect(connectPromise).rejects.toThrow('Connection timeout after 500ms');
 
-    // Close the connection
-    await client.close();
-  }, 1000);
+    vi.restoreAllMocks();
+  });
 
   // Test cancelling a connection attempt
   test('Cancel connection attempt', async () => {
@@ -635,8 +638,8 @@ describe('Hl7Client', () => {
       const mockServer = new MockServer();
 
       // Mock connect and createServer so we can wait to connect with a delay
-      jest.spyOn(net, 'connect').mockImplementation(() => clientMockSocket as unknown as net.Socket);
-      jest.spyOn(net, 'createServer').mockImplementation(((
+      vi.spyOn(net, 'connect').mockImplementation(() => clientMockSocket as unknown as net.Socket);
+      vi.spyOn(net, 'createServer').mockImplementation(((
         connectionListener?: (socket: net.Socket) => void
       ): net.Server => {
         mockServer.connectionListener = connectionListener as any;

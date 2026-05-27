@@ -5,6 +5,7 @@ import { ClientStorage, MemoryStorage, MockAsyncClientStorage, getDisplayString,
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
+import type { MockInstance } from 'vitest';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { MedplumProvider } from './MedplumProvider';
@@ -114,7 +115,7 @@ describe('MedplumProvider', () => {
         });
       });
 
-      const getSpy = jest.spyOn(medplum, 'get');
+      const getSpy = vi.spyOn(medplum, 'get');
 
       expect(medplum.isLoading()).toEqual(true);
 
@@ -163,7 +164,7 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
 
       act(() => {
         medplum = new MockClient();
@@ -206,7 +207,7 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
 
       act(() => {
         medplum = new MockClient({
@@ -254,15 +255,15 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
-      let dispatchEventSpy!: jest.SpyInstance;
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
+      let dispatchEventSpy!: MockInstance;
 
       act(() => {
         medplum = new MockClient({
           storage,
           mockFetchOverride: { router, repo, client },
         });
-        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+        dispatchEventSpy = vi.spyOn(medplum, 'dispatchEvent');
       });
 
       expect(medplum.isLoading()).toEqual(true);
@@ -374,15 +375,15 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
-      let dispatchEventSpy!: jest.SpyInstance;
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
+      let dispatchEventSpy!: MockInstance;
 
       act(() => {
         medplum = new MockClient({
           storage,
           mockFetchOverride: { router, repo, client },
         });
-        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+        dispatchEventSpy = vi.spyOn(medplum, 'dispatchEvent');
       });
 
       expect(medplum.isLoading()).toEqual(true);
@@ -436,7 +437,7 @@ describe('MedplumProvider', () => {
 
     test('Async ClientStorage.getInitPromise throws', async () => {
       const originalConsoleError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       class TestAsyncStorage extends MockAsyncClientStorage {
         private promise: Promise<void>;
@@ -459,13 +460,13 @@ describe('MedplumProvider', () => {
 
       const storage = new TestAsyncStorage();
       let medplum!: MockClient;
-      let dispatchEventSpy!: jest.SpyInstance;
+      let dispatchEventSpy!: MockInstance;
 
       act(() => {
         medplum = new MockClient({
           storage,
         });
-        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+        dispatchEventSpy = vi.spyOn(medplum, 'dispatchEvent');
       });
 
       expect(medplum.isLoading()).toEqual(true);

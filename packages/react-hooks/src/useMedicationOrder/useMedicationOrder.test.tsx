@@ -32,7 +32,7 @@ describe('useMedicationOrder', () => {
       total: 1,
       entry: [{ resource: { resourceType: 'Medication', id: 'm1' } }],
     };
-    const postSpy = jest.spyOn(medplum, 'post').mockResolvedValueOnce(bundle);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(bundle);
 
     const { result } = renderHook(() => useMedicationOrder(), { wrapper: wrapper(medplum) });
 
@@ -53,7 +53,7 @@ describe('useMedicationOrder', () => {
 
   test('searchMedications throws when response is not a Bundle', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockResolvedValueOnce({ not: 'a bundle' });
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce({ not: 'a bundle' });
 
     const { result } = renderHook(() => useMedicationOrder(), { wrapper: wrapper(medplum) });
 
@@ -70,7 +70,7 @@ describe('useMedicationOrder', () => {
         { name: 'launchUrl', valueUri: 'https://example.com/iframe' },
       ],
     };
-    const postSpy = jest.spyOn(medplum, 'post').mockResolvedValueOnce(responseParams);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(responseParams);
 
     const { result } = renderHook(() => useMedicationOrder(), { wrapper: wrapper(medplum) });
 
@@ -97,7 +97,7 @@ describe('useMedicationOrder', () => {
 
   test('orderMedication throws when response is not a Parameters envelope', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockResolvedValueOnce({ launchUrl: 'only-url' });
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce({ launchUrl: 'only-url' });
 
     const { result } = renderHook(() => useMedicationOrder(), { wrapper: wrapper(medplum) });
 
@@ -114,7 +114,7 @@ describe('useMedicationOrder', () => {
       resourceType: 'Parameters',
       parameter: [{ name: 'orderId', valueInteger: 1 }],
     };
-    jest.spyOn(medplum, 'post').mockResolvedValueOnce(malformed);
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce(malformed);
 
     const { result } = renderHook(() => useMedicationOrder(), { wrapper: wrapper(medplum) });
 
