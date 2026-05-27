@@ -12,7 +12,7 @@ This guide walks through completing your ScriptSure account setup after Medplum 
 
 ## 1. Accept the invite and complete sign-up
 
-You'll receive an invite email from ScriptSure. Click the link and complete the registration flow: Eligibility, User, Password, and Identification.
+You'll receive an invite email from ScriptSure–To add the first user, Medplum will initiate, but after this, Admin users can invite new users. Click the link and complete the registration flow: Eligibility, User, Password, and Identification.
 
 **Staging credentials:**
 
