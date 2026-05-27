@@ -4,7 +4,6 @@ import { Box, Group, Text } from '@mantine/core';
 import type { ProjectMembership } from '@medplum/fhirtypes';
 import { IconBriefcase, IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { getMembershipLabel } from './membership.utils';
 import classes from './ProjectLoginOption.module.css';
 
 export interface ProjectLoginOptionProps {
@@ -36,12 +35,18 @@ export function ProjectLoginOption(props: ProjectLoginOptionProps): JSX.Element 
   );
 }
 
-export function ProjectMembershipLoginOption(membership: ProjectMembership): JSX.Element {
+export interface ProjectMembershipLoginOptionProps {
+  readonly membership: ProjectMembership;
+  readonly label?: string;
+}
+
+export function ProjectMembershipLoginOption(props: ProjectMembershipLoginOptionProps): JSX.Element {
+  const { membership, label } = props;
   return (
     <ProjectLoginOption
       projectDisplay={membership.project?.display}
       profileDisplay={membership.profile?.display}
-      label={getMembershipLabel(membership)}
+      label={label}
     />
   );
 }

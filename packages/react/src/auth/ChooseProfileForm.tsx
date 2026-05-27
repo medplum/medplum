@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Combobox, Flex, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
-import { normalizeOperationOutcome } from '@medplum/core';
+import { getIdentifier, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
@@ -10,7 +10,6 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
-import { getMembershipLabel } from './membership.utils';
 import { ProjectMembershipLoginOption } from './ProjectLoginOption';
 import projectLoginClasses from './ProjectLoginOption.module.css';
 
@@ -53,7 +52,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
     .slice(0, 10)
     .map((item) => (
       <Combobox.Option value={item.id as string} key={item.id} className={projectLoginClasses.interactive}>
-        <ProjectMembershipLoginOption {...item} />
+        <ProjectMembershipLoginOption membership={item} label={getMembershipLabel(item)} />
       </Combobox.Option>
     ));
 
@@ -100,4 +99,8 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
       </Text>
     </Stack>
   );
+}
+
+function getMembershipLabel(membership: ProjectMembership): string | undefined {
+  return getIdentifier(membership, 'https://medplum.com/identifier/label');
 }
