@@ -18,5 +18,10 @@ dev:
 	$(DOCKER_COMPOSE) up -d
 	node_modules/.bin/next dev apps/web
 
+restart:
+	-pkill -f "next dev"
+	rm -rf /tmp/hh-next
+	node_modules/.bin/next dev apps/web
+
 seed:
 	npx tsx infrastructure/scripts/seed-app.ts
