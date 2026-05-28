@@ -377,7 +377,7 @@ async function handleTokenExchange(req: Request, res: Response): Promise<void> {
  * @param subjectTokenType - The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
  * @param membershipId - Optional membership ID to restrict the exchange to.
  */
-export async function exchangeExternalAuthToken(
+async function exchangeExternalAuthToken(
   req: Request,
   res: Response,
   clientId: string,
