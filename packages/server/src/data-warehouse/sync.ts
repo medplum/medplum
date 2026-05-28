@@ -54,7 +54,7 @@ function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
 }
 
-function buildWarehouseSourcePredicate(
+export function buildWarehouseSourcePredicate(
   options: SyncOptions,
   tableSpec: WarehouseSourceTable,
   namespace: string
