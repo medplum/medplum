@@ -498,8 +498,8 @@ async function validateAvailability(
   });
   const hasAvailability = availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
   if (!hasAvailability) {
-    // Include references to blocking slots and the schedule so clients can
-    // decide whether to retry with a different time or choose another schedule.
+    // Include structured JSON in diagnostics so automated tooling can
+    // programmatically inspect which slots are blocking the request.
     const blockingSlots = existingSlots
       .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
       .map((slot) => ({
@@ -509,10 +509,10 @@ async function validateAvailability(
         status: slot.status,
       }));
 
-    const diagnostics = blockingSlots.length > 0
-      ? `Blocked by ${blockingSlots.length} existing slot(s) on Schedule/${schedule.id}: ` +
-        blockingSlots.map((s) => `${s.reference} (${s.start} - ${s.end})`).join(', ')
-      : `No availability on Schedule/${schedule.id} for the requested time`;
+    const diagnostics = JSON.stringify({
+      schedule: `Schedule/${schedule.id}`,
+      blockingSlots,
+    });
 
     throw new OperationOutcomeError({
       resourceType: 'OperationOutcome',
