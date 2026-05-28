@@ -4,7 +4,7 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "dist/types",
-    "types": ["jest", "node"],
+    "types": ["vitest/globals", "node"],
     "noEmit": false,
     "emitDeclarationOnly": true
   },

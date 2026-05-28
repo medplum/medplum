@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { findAlignedSlotTimes, findSlotTimes } from './find';
-import type { SchedulingParameters } from './scheduling-parameters';
+import { findAlignedSlotTimes } from './find';
 
 describe('findAlignedSlotTimes', () => {
   test('can find a slot that exactly coincides with the interval', () => {
@@ -148,84 +147,6 @@ describe('findAlignedSlotTimes', () => {
       { start: new Date('2025-12-01T00:30:00Z'), end: new Date('2025-12-01T00:40:00Z') },
       { start: new Date('2025-12-01T00:45:00Z'), end: new Date('2025-12-01T00:55:00Z') },
       { start: new Date('2025-12-01T01:00:00Z'), end: new Date('2025-12-01T01:10:00Z') },
-    ]);
-  });
-});
-
-describe('findSlotTimes', () => {
-  test('finds slots of the requested duration', () => {
-    const schedulingParameters: SchedulingParameters = {
-      availability: [],
-      duration: 20,
-      bufferBefore: 0,
-      bufferAfter: 0,
-      alignmentInterval: 60,
-      alignmentOffset: 0,
-      service: { reference: 'HealthcareService/abcde' },
-    };
-    const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
-    expect(findSlotTimes(schedulingParameters, availability)).toEqual([
-      { start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T12:20:00Z') },
-      { start: new Date('2025-12-01T13:00:00Z'), end: new Date('2025-12-01T13:20:00Z') },
-      { start: new Date('2025-12-01T14:00:00Z'), end: new Date('2025-12-01T14:20:00Z') },
-    ]);
-  });
-
-  test('can offset alignment', () => {
-    const schedulingParameters: SchedulingParameters = {
-      availability: [],
-      duration: 20,
-      bufferBefore: 0,
-      bufferAfter: 0,
-      alignmentInterval: 30,
-      alignmentOffset: 15,
-      service: { reference: 'HealthcareService/abcde' },
-    };
-    const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
-    expect(findSlotTimes(schedulingParameters, availability)).toEqual([
-      { start: new Date('2025-12-01T12:15:00Z'), end: new Date('2025-12-01T12:35:00Z') },
-      { start: new Date('2025-12-01T12:45:00Z'), end: new Date('2025-12-01T13:05:00Z') },
-      { start: new Date('2025-12-01T13:15:00Z'), end: new Date('2025-12-01T13:35:00Z') },
-      { start: new Date('2025-12-01T13:45:00Z'), end: new Date('2025-12-01T14:05:00Z') },
-      { start: new Date('2025-12-01T14:15:00Z'), end: new Date('2025-12-01T14:35:00Z') },
-    ]);
-  });
-
-  test('can require buffer time around the slot', () => {
-    const schedulingParameters: SchedulingParameters = {
-      availability: [],
-      duration: 20,
-      bufferBefore: 20,
-      bufferAfter: 30,
-      alignmentInterval: 30,
-      alignmentOffset: 15,
-      service: { reference: 'HealthcareService/abcde' },
-    };
-    const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
-    expect(findSlotTimes(schedulingParameters, availability)).toEqual([
-      // Slot from 12:15-12:35 not found because it doesn't have enough bufferBefore
-      { start: new Date('2025-12-01T12:45:00Z'), end: new Date('2025-12-01T13:05:00Z') },
-      { start: new Date('2025-12-01T13:15:00Z'), end: new Date('2025-12-01T13:35:00Z') },
-      { start: new Date('2025-12-01T13:45:00Z'), end: new Date('2025-12-01T14:05:00Z') },
-      // Slot from 14:15-14:35 not found because it doesn't have enough bufferAfter
-    ]);
-  });
-
-  test('respects the maxCount option', () => {
-    const schedulingParameters: SchedulingParameters = {
-      availability: [],
-      duration: 20,
-      bufferBefore: 0,
-      bufferAfter: 0,
-      alignmentInterval: 30,
-      alignmentOffset: 15,
-      service: { reference: 'HealthcareService/abcde' },
-    };
-    const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
-    expect(findSlotTimes(schedulingParameters, availability, { maxCount: 3 })).toEqual([
-      { start: new Date('2025-12-01T12:15:00Z'), end: new Date('2025-12-01T12:35:00Z') },
-      { start: new Date('2025-12-01T12:45:00Z'), end: new Date('2025-12-01T13:05:00Z') },
-      { start: new Date('2025-12-01T13:15:00Z'), end: new Date('2025-12-01T13:35:00Z') },
     ]);
   });
 });

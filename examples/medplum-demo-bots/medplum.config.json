@@ -137,6 +137,12 @@
       "id": "",
       "source": "src/spaces-bots/fhir-visualizer-bot.ts",
       "dist": "dist/spaces-bots/fhir-visualizer-bot.js"
+    },
+    {
+      "name": "nppes-lookup",
+      "id": "",
+      "source": "src/nppes-lookup.ts",
+      "dist": "dist/nppes-lookup.js"
     }
   ]
 }

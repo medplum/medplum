@@ -64,11 +64,19 @@ To view or update the Project-level limits:
 
 If those values are not set, the server defaults will be used.
 
+To monitor live FHIR quota usage, use the **Rate Limits** dashboard in Medplum App (at [/admin/rate-limits](https://app.medplum.com/admin/rate-limits)) or the [Project `$rate-limits`](/docs/api/fhir/operations/project-rate-limits) operation.
+
 :::info[]
 There are some scenarios where you may want to **set a custom quota for a User, Bot, or ClientApplication**. For example, say you expect higher traffic for a specific User, Bot, or ClientApplication than the default user quota in your project, you can set a custom quota for that User, Bot, or ClientApplication. See [how to set user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits) for more information about how to do this.
 
 **Important:** The `totalFhirQuota` will still be enforced, but `userFhirQuota` will be overridden for the User, Bot, or ClientApplication.
 :::
+
+### Avoiding quota with async batch requests
+
+[Asynchronous batch requests](/docs/fhir-datastore/processing-async-bundles) do not count the **operations inside the background job** against a user's FHIR interaction quota. If you're running large data seeding or import jobs and hitting quota limits, processing the bundle with the `Prefer: respond-async` header is an alternative to raising the quota. Note that data will not be immediately available until the job completes.
+
+Status polling and reading the result `Binary` still consume quota like ordinary FHIR reads. Plan poll backoff accordingly; see [Processing Asynchronous Bundles](/docs/fhir-datastore/processing-async-bundles#rate-limits-and-quotas) for details.
 
 ## Reporting Request and Load Rate Limits: HTTP Headers
 

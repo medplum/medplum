@@ -2,16 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchParameter } from '@medplum/fhirtypes';
 import type { Atom } from '../fhirlexer/parse';
-import {
-  AsAtom,
-  BooleanInfixOperatorAtom,
-  DotAtom,
-  FhirPathAtom,
-  FunctionAtom,
-  IndexerAtom,
-  IsAtom,
-  UnionAtom,
-} from '../fhirpath/atoms';
+import { InfixOperatorAtom } from '../fhirlexer/parse';
+import { AsAtom, DotAtom, FhirPathAtom, FunctionAtom, IndexerAtom, IsAtom, UnionAtom } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
@@ -59,12 +51,10 @@ interface SearchParameterDetailsBuilder {
  * @returns The search parameter type details.
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
-  let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code];
-  if (!result) {
-    result = buildSearchParameterDetails(resourceType, searchParam);
-  }
-  return result;
+  return (
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code] ??
+    buildSearchParameterDetails(resourceType, searchParam)
+  );
 }
 
 function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
@@ -94,7 +84,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     const atomArray = flattenAtom(expression);
     const flattenedExpression = lazy(() => atomArray.join('.'));
 
-    if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
+    if (atomArray.length === 1 && atomArray[0] instanceof InfixOperatorAtom && atomArray[0].operator !== '.') {
       builder.propertyTypes.add('boolean');
     } else if (searchParam.code.endsWith(':identifier')) {
       // This is a derived "identifier" search parameter
@@ -191,12 +181,19 @@ function crawlSearchParameterDetails(
     details.array = true;
   }
 
-  if (nextIndex === atoms.length - 1 && nextAtom instanceof AsAtom) {
-    // This is the 2nd to last atom in the expression
-    // And the last atom is an "as" expression
-    details.elementDefinitions.push(elementDefinition);
-    details.propertyTypes.add(nextAtom.right.toString());
-    return;
+  if (nextIndex === atoms.length - 1) {
+    // This is the penultimate atom in the expression
+    // If the last atom is a type guard (i.e. an "as" expression or ofType() function), use that type
+    if (nextAtom instanceof AsAtom) {
+      details.elementDefinitions.push(elementDefinition);
+      details.propertyTypes.add(nextAtom.right.toString());
+      return;
+    }
+    if (nextAtom instanceof FunctionAtom && nextAtom.name === 'ofType') {
+      details.elementDefinitions.push(elementDefinition);
+      details.propertyTypes.add(nextAtom.args[0].toString());
+      return;
+    }
   }
 
   if (nextIndex >= atoms.length) {
@@ -328,7 +325,7 @@ function flattenAtom(atom: Atom): Atom[] {
   if (atom instanceof AsAtom || atom instanceof IndexerAtom) {
     return [flattenAtom(atom.left), atom].flat();
   }
-  if (atom instanceof BooleanInfixOperatorAtom) {
+  if (atom instanceof InfixOperatorAtom && atom.operator !== '.') {
     return [atom];
   }
   if (atom instanceof DotAtom) {

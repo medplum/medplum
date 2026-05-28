@@ -130,6 +130,11 @@
             "definition": "AI"
           },
           {
+            "code": "ai-realtime",
+            "display": "AI Realtime",
+            "definition": "Enable the OpenAI realtime transcription proxy at /ws/ai-realtime"
+          },
+          {
             "code": "aws-comprehend",
             "display": "AWS Comprehend",
             "definition": "AWS Comprehend"
@@ -165,6 +170,11 @@
             "definition": "GraphQL Introspection"
           },
           {
+            "code": "scheduling",
+            "display": "Scheduling",
+            "definition": "Enable Medplum Scheduling features"
+          },
+          {
             "code": "websocket-subscriptions",
             "display": "WebSocket Subscriptions",
             "definition": "WebSocket Subscriptions"
@@ -178,6 +188,16 @@
             "code": "validate-terminology",
             "display": "Validate Terminology Bindings",
             "definition": "Validate that resource fields contain codes from the expected ValueSet"
+          },
+          {
+            "code": "range-search",
+            "display": "Range Search",
+            "definition": "Precision-aware range search for datetime and number values"
+          },
+          {
+            "code": "log-streaming",
+            "display": "Log Streaming",
+            "definition": "Real-time streaming of log data for monitoring and analysis"
           }
         ]
       }
@@ -369,6 +389,11 @@
             "code": "password",
             "display": "Password",
             "definition": "Password"
+          },
+          {
+            "code": "pre-authorized",
+            "display": "Pre-authorized",
+            "definition": "Pre-authorized"
           }
         ]
       }
@@ -766,6 +791,45 @@
           "include": [
             {
               "system": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/identity-provider-user-info-mode",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "identity-provider-user-info-mode",
+        "url": "https://medplum.com/fhir/CodeSystem/identity-provider-user-info-mode",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "oidc",
+            "display": "OpenID Connect",
+            "definition": "Clients that use OpenID Connect (OIDC) for authentication and authorization."
+          },
+          {
+            "code": "gcip",
+            "display": "GCIP",
+            "definition": "Clients that use Google Cloud Identity Platform (GCIP) for authentication and authorization."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "identity-provider-user-info-mode",
+        "url": "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/identity-provider-user-info-mode"
             }
           ]
         }

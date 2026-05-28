@@ -24,7 +24,7 @@ jobRouter.get('/:id/status', async (req: Request, res: Response) => {
   const id = singularize(req.params.id) ?? '';
   // This inexpensive read should be exempt from rate limits so that users can poll
   // for job state when the job exhausts the available FHIR quota
-  const asyncJob = await ctx.systemRepo.readResource<AsyncJob>('AsyncJob', id);
+  const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
   let outcome: OperationOutcome;
   if (finalJobStatusCodes.includes(asyncJob.status)) {

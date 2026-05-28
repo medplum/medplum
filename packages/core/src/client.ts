@@ -503,7 +503,7 @@ export interface BaseLoginRequest {
 export interface EmailPasswordLoginRequest extends BaseLoginRequest {
   readonly email: string;
   readonly password: string;
-  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  /** @deprecated Use "offline_access" scope instead. */
   readonly remember?: boolean;
 }
 
@@ -512,7 +512,7 @@ export interface NewUserRequest {
   readonly lastName: string;
   readonly email: string;
   readonly password: string;
-  readonly recaptchaToken: string;
+  readonly recaptchaToken?: string;
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
   readonly projectId?: string;
@@ -542,6 +542,7 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly emailVerificationRequired?: boolean;
   readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
   readonly enrollQrCode?: string;
@@ -805,6 +806,7 @@ interface RequestState {
  * Standard identifiers: {@link https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types}
  * JWT bearer extension: {@link https://datatracker.ietf.org/doc/html/rfc7523}
  * Token exchange extension: {@link https://datatracker.ietf.org/doc/html/rfc8693}
+ * Pre-authorized code: {@link https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-urnietfparamsoauthgrant-typ}
  */
 export const OAuthGrantType = {
   ClientCredentials: 'client_credentials',
@@ -812,6 +814,7 @@ export const OAuthGrantType = {
   RefreshToken: 'refresh_token',
   JwtBearer: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
   TokenExchange: 'urn:ietf:params:oauth:grant-type:token-exchange',
+  PreAuthorizedCode: 'urn:ietf:params:oauth:grant-type:pre-authorized_code',
 } as const;
 export type OAuthGrantType = (typeof OAuthGrantType)[keyof typeof OAuthGrantType];
 
@@ -1204,9 +1207,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   clear(): void {
     this.storage.clear();
-    if (isBrowserEnvironment()) {
-      sessionStorage.clear();
-    }
     this.clearActiveLogin();
   }
 
@@ -3977,10 +3977,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   async startPkce(): Promise<{ codeChallengeMethod: CodeChallengeMethod; codeChallenge: string }> {
     const pkceState = getRandomString();
-    sessionStorage.setItem('pkceState', pkceState);
+    this.storage.setString('pkceState', pkceState);
 
     const codeVerifier = getRandomString().slice(0, 128);
-    sessionStorage.setItem('codeVerifier', codeVerifier);
+    this.storage.setString('codeVerifier', codeVerifier);
 
     try {
       const arrayHash = await encryptSHA256(codeVerifier);
@@ -4005,7 +4005,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const loginRequest = await this.ensureCodeChallenge(loginParams ?? {});
     const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
+    url.searchParams.set('state', this.storage.getString('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
     url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? locationUtils.getOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
@@ -4030,11 +4030,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       redirect_uri: loginParams?.redirectUri ?? locationUtils.getOrigin(),
     };
 
-    if (typeof sessionStorage !== 'undefined') {
-      const codeVerifier = sessionStorage.getItem('codeVerifier');
-      if (codeVerifier) {
-        tokenParams.code_verifier = codeVerifier;
-      }
+    const codeVerifier = this.storage.getString('codeVerifier');
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
     }
 
     return this.fetchTokens(tokenParams);
@@ -4052,36 +4050,79 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.refresh();
+      this.refresh(gracePeriod);
     }
     return this.refreshPromise ?? Promise.resolve();
   }
 
   /**
    * Tries to refresh the auth tokens.
+   *
+   * When `navigator.locks` is available, the network call is wrapped in a Web Lock
+   * scoped to this client's storage namespace. This serializes refresh attempts across
+   * browser tabs/windows on the same origin so a single-use refresh token is not
+   * consumed by more than one tab. Tabs that wait on the lock re-read the latest
+   * tokens from storage when they acquire it and skip the network call if another tab
+   * has already refreshed.
+   *
+   * @param gracePeriod - Optional grace period in milliseconds threaded through to the post-lock authentication check.
    * @returns The refresh promise if available; otherwise undefined.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  private refresh(): Promise<void> | undefined {
+  private refresh(gracePeriod?: number): Promise<void> | undefined {
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
 
-    if (this.refreshToken) {
-      this.refreshPromise = this.fetchTokens({
-        grant_type: OAuthGrantType.RefreshToken,
-        client_id: this.clientId ?? '',
-        refresh_token: this.refreshToken,
-      });
-      return this.refreshPromise;
+    if (!this.refreshToken && !(this.clientId && this.clientSecret)) {
+      return undefined;
     }
 
-    if (this.clientId && this.clientSecret) {
-      this.refreshPromise = this.startClientLogin(this.clientId, this.clientSecret);
-      return this.refreshPromise;
+    this.refreshPromise = this.runRefreshWithLock(gracePeriod);
+    return this.refreshPromise;
+  }
+
+  /**
+   * Acquires a cross-tab Web Lock (when available) and performs the token refresh.
+   * Tabs that wait on the lock check storage on acquisition and skip the network call
+   * if a peer tab has already produced a fresh access token.
+   * @param gracePeriod - Optional grace period in milliseconds used by the post-lock authentication check to decide whether the current token still has enough life left to skip the network refresh.
+   * @returns Promise that resolves when the refresh (or short-circuit) is complete.
+   */
+  private async runRefreshWithLock(gracePeriod?: number): Promise<ProfileResource | undefined> {
+    const run = (): Promise<ProfileResource | undefined> => {
+      // Re-read latest tokens from storage before hitting the network.
+      // A peer tab may have completed a refresh while we were queued on the lock.
+      const latest = this.getActiveLogin();
+      if (latest?.accessToken && latest.accessToken !== this.accessToken) {
+        this.setAccessToken(latest.accessToken, latest.refreshToken);
+      }
+      if (this.isAuthenticated(gracePeriod)) {
+        return Promise.resolve(this.getProfile());
+      }
+
+      if (this.refreshToken) {
+        return this.fetchTokens({
+          grant_type: OAuthGrantType.RefreshToken,
+          client_id: this.clientId ?? '',
+          refresh_token: this.refreshToken,
+        });
+      }
+
+      if (this.clientId && this.clientSecret) {
+        return this.startClientLogin(this.clientId, this.clientSecret);
+      }
+
+      return Promise.resolve(undefined);
+    };
+
+    const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+    if (!locks?.request) {
+      return run();
     }
 
-    return undefined;
+    const lockName = `medplum-refresh:${this.storage.makeKey('activeLogin')}`;
+    return locks.request(lockName, run);
   }
 
   /**

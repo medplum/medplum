@@ -1,13 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Paper, ScrollArea } from '@mantine/core';
+import type { TabDefinition } from '@medplum/react';
 import { Container, InfoBar, LinkTabs, Panel, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 import { Outlet } from 'react-router';
 import { getProjectId } from '../utils';
 
-const tabs = ['Details', 'Users', 'Clients', 'Bots', 'Secrets', 'Sites'];
+const tabs: TabDefinition[] = [
+  { label: 'Details', value: 'details' },
+  { label: 'Users', value: 'users' },
+  { label: 'Clients', value: 'clients' },
+  { label: 'Bots', value: 'bots' },
+  { label: 'Secrets', value: 'secrets' },
+  { label: 'Sites', value: 'sites' },
+  { label: 'Rate Limits', value: 'rate-limits' },
+];
 
 export function ProjectPage(): JSX.Element {
   const medplum = useMedplum();

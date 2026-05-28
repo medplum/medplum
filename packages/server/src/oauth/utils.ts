@@ -35,6 +35,7 @@ import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
+import type { RequestInit as FetchRequestInit } from 'node-fetch';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -68,7 +69,7 @@ export type CodeChallengeMethod = 'plain' | 'S256';
 export interface LoginRequest {
   readonly email?: string;
   readonly externalId?: string;
-  readonly authMethod: 'password' | 'google' | 'external' | 'exchange';
+  readonly authMethod: Login['authMethod'];
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;
@@ -86,7 +87,7 @@ export interface LoginRequest {
   readonly origin?: string;
   readonly pictureUrl?: string;
   readonly forceUseFirstMembership?: boolean;
-  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  /** @deprecated Use "offline_access" scope instead. */
   readonly remember?: boolean;
 }
 
@@ -178,7 +179,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 
   await authenticate(request, user);
 
-  const refreshSecret = includeRefreshToken(request) ? generateSecret(32) : undefined;
+  const refreshSecret = includeRefreshToken(request, client) ? generateSecret(32) : undefined;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -461,16 +462,12 @@ export async function setLoginMembership(
     }
   }
 
+  // Check IP Access Rules
   // TODO: Do we really need to check IP access rules inside this method?
   // Or could this be done closer to call site?
   // This method is used internally in a bunch of places that do not need to check IP access rules
-
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
-
-  // Get the access policy
   const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
-
-  // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
 
   const auditEvent = createAuditEvent(
@@ -486,6 +483,7 @@ export async function setLoginMembership(
   // Everything checks out, update the login
   const updatedLogin: Login = {
     ...login,
+    project: createReference(project),
     membership: createReference(membership),
   };
 
@@ -563,6 +561,9 @@ export async function setLoginScope(systemRepo: SystemRepository, login: Login, 
   }
   if (login.granted) {
     throw new OperationOutcomeError(badRequest('Login granted'));
+  }
+  if (!login.membership) {
+    throw new OperationOutcomeError(badRequest('Login profile not set'));
   }
 
   const existingScopes = parseSmartScopes(login.scope);
@@ -799,20 +800,28 @@ export function timingSafeEqualStr(a: string | undefined, b: string | undefined)
 /**
  * Determines if the login request should include a refresh token.
  * @param request - The login request.
+ * @param client - The client application.
  * @returns True if the login should include a refresh token.
  */
-function includeRefreshToken(request: LoginRequest): boolean {
+function includeRefreshToken(request: LoginRequest, client: ClientApplication | undefined): boolean {
   // Deprecated legacy "remember" flag
   if (request.remember) {
+    getLogger().warn('LoginRequest.remember is deprecated, use "offline_access" instead');
     return true;
   }
 
-  // Check for offline scope
-  // Google calls it "offline": https://developers.google.com/identity/protocols/oauth2/web-server#offline
-  // Auth0 calls it "offline_access": https://auth0.com/docs/secure/tokens/refresh-tokens/get-refresh-tokens
-  // We support both
-  const scopeArray = request.scope.split(' ');
-  return scopeArray.includes('offline') || scopeArray.includes('offline_access');
+  const scopeArray = request.scope?.split(' ');
+  if (scopeArray?.includes('offline')) {
+    // Historically, we supported "offline" as the scope for refresh tokens, but that is not the standard.
+    // Google called it "offline": https://developers.google.com/identity/protocols/oauth2/web-server#offline
+    getLogger().warn('Scope "offline" is deprecated, use "offline_access" instead');
+    return true;
+  }
+
+  // There are two ways that a client can indicate that it wants refresh tokens:
+  // 1. Include "offline_access" in the scope of the authorization request
+  // 2. Include "refresh_token" in the grant types of the client application registration
+  return !!(client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access'));
 }
 
 export function normalizeUserInfoUrl(userInfoUrl: string): string {
@@ -845,22 +854,18 @@ export async function getExternalUserInfo(
     throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
   }
 
+  const request = buildExternalUserInfoRequest(userInfoUrl, externalAccessToken, idp);
+
   let response;
   try {
-    response = await fetch(userInfoUrl, {
-      method: 'GET',
-      headers: {
-        Accept: ContentType.JSON,
-        Authorization: `Bearer ${externalAccessToken}`,
-      },
-    });
+    response = await fetch(request.url, request.init);
   } catch (err: any) {
     log.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   if (response.status === 429) {
-    log.warn('Auth rate limit exceeded', { url: userInfoUrl, clientId: idp?.clientId });
+    log.warn('Auth rate limit exceeded', { url: request.url, clientId: idp?.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
@@ -872,16 +877,80 @@ export async function getExternalUserInfo(
   const contentType = response.headers.get('content-type');
   try {
     if (contentType?.includes(ContentType.JSON)) {
-      return await response.json();
+      return normalizeExternalUserInfo(await response.json(), idp);
     } else if (contentType?.includes(ContentType.JWT)) {
       return parseJWTPayload(await response.text());
     }
   } catch (err: any) {
+    if (err instanceof OperationOutcomeError) {
+      throw err;
+    }
     log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
+}
+
+function buildExternalUserInfoRequest(
+  userInfoUrl: string,
+  externalAccessToken: string,
+  idp: IdentityProvider | undefined
+): { url: string; init: FetchRequestInit } {
+  if (idp?.userInfoMode === 'gcip') {
+    const apiKey = idp.userInfoApiKey;
+    if (!apiKey) {
+      throw new OperationOutcomeError(
+        badRequest('Missing user info API key - check your identity provider configuration')
+      );
+    }
+
+    const url = new URL(userInfoUrl);
+    url.searchParams.set('key', apiKey);
+
+    return {
+      url: url.toString(),
+      init: {
+        method: 'POST',
+        headers: {
+          Accept: ContentType.JSON,
+          'Content-Type': ContentType.JSON,
+        },
+        body: JSON.stringify({ idToken: externalAccessToken }),
+      },
+    };
+  }
+
+  return {
+    url: userInfoUrl,
+    init: {
+      method: 'GET',
+      headers: {
+        Accept: ContentType.JSON,
+        Authorization: `Bearer ${externalAccessToken}`,
+      },
+    },
+  };
+}
+
+function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: IdentityProvider): Record<string, unknown> {
+  if (idp?.userInfoMode !== 'gcip') {
+    return body;
+  }
+
+  const users = body.users;
+  if (!Array.isArray(users) || users.length === 0 || !users[0] || typeof users[0] !== 'object') {
+    throw new OperationOutcomeError(badRequest('Failed to verify code - invalid user info response'));
+  }
+
+  const user = users[0] as Record<string, unknown>;
+  if (!user.localId) {
+    throw new OperationOutcomeError(badRequest('Failed to verify code - missing localId in user info response'));
+  }
+  return {
+    ...user,
+    sub: user.localId,
+  };
 }
 
 interface ValidationAssertion {
@@ -1016,8 +1085,13 @@ async function makeAuthResult(
 ): Promise<AuthenticationResult> {
   const extendedMode = req ? isExtendedMode(req) : true;
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  let smartAppLaunch: WithId<SmartAppLaunch> | undefined;
+  if (login.launch) {
+    smartAppLaunch = await systemRepo.readReference(login.launch);
+  }
   const authState: AuthState = {
     login,
+    smartAppLaunch,
     project,
     membership,
     userConfig,

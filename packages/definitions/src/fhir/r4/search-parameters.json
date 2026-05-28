@@ -869,7 +869,7 @@
       "code" : "context",
       "base" : ["ActivityDefinition"],
       "type" : "token",
-      "expression" : "(ActivityDefinition.useContext.value as CodeableConcept)",
+      "expression" : "(ActivityDefinition.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:ActivityDefinition/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -906,7 +906,7 @@
       "code" : "context-quantity",
       "base" : ["ActivityDefinition"],
       "type" : "quantity",
-      "expression" : "(ActivityDefinition.useContext.value as Quantity) | (ActivityDefinition.useContext.value as Range)",
+      "expression" : "(ActivityDefinition.useContext.value.ofType(Quantity)) | (ActivityDefinition.useContext.value.ofType(Range))",
       "xpath" : "f:ActivityDefinition/f:useContext/f:valueQuantity | f:ActivityDefinition/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -2188,7 +2188,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ActivityDefinition-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -2233,7 +2233,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ActivityDefinition-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -2868,7 +2868,7 @@
       "Procedure",
       "ServiceRequest"],
       "type" : "token",
-      "expression" : "AllergyIntolerance.code | AllergyIntolerance.reaction.substance | Condition.code | (DeviceRequest.code as CodeableConcept) | DiagnosticReport.code | FamilyMemberHistory.condition.code | List.code | Medication.code | (MedicationAdministration.medication as CodeableConcept) | (MedicationDispense.medication as CodeableConcept) | (MedicationRequest.medication as CodeableConcept) | (MedicationStatement.medication as CodeableConcept) | Observation.code | Procedure.code | ServiceRequest.code",
+      "expression" : "AllergyIntolerance.code | AllergyIntolerance.reaction.substance | Condition.code | (DeviceRequest.code.ofType(CodeableConcept)) | DiagnosticReport.code | FamilyMemberHistory.condition.code | List.code | Medication.code | (MedicationAdministration.medication.ofType(CodeableConcept)) | (MedicationDispense.medication.ofType(CodeableConcept)) | (MedicationRequest.medication.ofType(CodeableConcept)) | (MedicationStatement.medication.ofType(CodeableConcept)) | Observation.code | Procedure.code | ServiceRequest.code",
       "xpath" : "f:AllergyIntolerance/f:code | f:AllergyIntolerance/f:reaction/f:substance | f:Condition/f:code | f:DeviceRequest/f:codeCodeableConcept | f:DiagnosticReport/f:code | f:FamilyMemberHistory/f:condition/f:code | f:List/f:code | f:Medication/f:code | f:MedicationAdministration/f:medicationCodeableConcept | f:MedicationDispense/f:medicationCodeableConcept | f:MedicationRequest/f:medicationCodeableConcept | f:MedicationStatement/f:medicationCodeableConcept | f:Observation/f:code | f:Procedure/f:code | f:ServiceRequest/f:code",
       "xpathUsage" : "normal"
     }
@@ -2958,7 +2958,7 @@
       "RiskAssessment",
       "SupplyRequest"],
       "type" : "date",
-      "expression" : "AllergyIntolerance.recordedDate | CarePlan.period | CareTeam.period | ClinicalImpression.date | Composition.date | Consent.dateTime | DiagnosticReport.effective | Encounter.period | EpisodeOfCare.period | FamilyMemberHistory.date | Flag.period | Immunization.occurrence | List.date | Observation.effective | Procedure.performed | (RiskAssessment.occurrence as dateTime) | SupplyRequest.authoredOn",
+      "expression" : "AllergyIntolerance.recordedDate | CarePlan.period | CareTeam.period | ClinicalImpression.date | Composition.date | Consent.dateTime | DiagnosticReport.effective | Encounter.period | EpisodeOfCare.period | FamilyMemberHistory.date | Flag.period | Immunization.occurrence | List.date | Observation.effective | Procedure.performed | (RiskAssessment.occurrence.ofType(dateTime)) | SupplyRequest.authoredOn",
       "xpath" : "f:AllergyIntolerance/f:recordedDate | f:CarePlan/f:period | f:CareTeam/f:period | f:ClinicalImpression/f:date | f:Composition/f:date | f:Consent/f:dateTime | f:DiagnosticReport/f:effectiveDateTime | f:DiagnosticReport/f:effectivePeriod | f:Encounter/f:period | f:EpisodeOfCare/f:period | f:FamilyMemberHistory/f:date | f:Flag/f:period | f:Immunization/f:occurrenceDateTime | f:Immunization/f:occurrenceString | f:List/f:date | f:Observation/f:effectiveDateTime | f:Observation/f:effectivePeriod | f:Observation/f:effectiveTiming | f:Observation/f:effectiveInstant | f:Procedure/f:performedDateTime | f:Procedure/f:performedPeriod | f:Procedure/f:performedString | f:Procedure/f:performedAge | f:Procedure/f:performedRange | f:RiskAssessment/f:occurrenceDateTime | f:SupplyRequest/f:authoredOn",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -6104,7 +6104,7 @@
       "TerminologyCapabilities",
       "ValueSet"],
       "type" : "token",
-      "expression" : "(CapabilityStatement.useContext.value as CodeableConcept) | (CodeSystem.useContext.value as CodeableConcept) | (CompartmentDefinition.useContext.value as CodeableConcept) | (ConceptMap.useContext.value as CodeableConcept) | (GraphDefinition.useContext.value as CodeableConcept) | (ImplementationGuide.useContext.value as CodeableConcept) | (MessageDefinition.useContext.value as CodeableConcept) | (NamingSystem.useContext.value as CodeableConcept) | (OperationDefinition.useContext.value as CodeableConcept) | (SearchParameter.useContext.value as CodeableConcept) | (StructureDefinition.useContext.value as CodeableConcept) | (StructureMap.useContext.value as CodeableConcept) | (TerminologyCapabilities.useContext.value as CodeableConcept) | (ValueSet.useContext.value as CodeableConcept)",
+      "expression" : "(CapabilityStatement.useContext.value.ofType(CodeableConcept)) | (CodeSystem.useContext.value.ofType(CodeableConcept)) | (CompartmentDefinition.useContext.value.ofType(CodeableConcept)) | (ConceptMap.useContext.value.ofType(CodeableConcept)) | (GraphDefinition.useContext.value.ofType(CodeableConcept)) | (ImplementationGuide.useContext.value.ofType(CodeableConcept)) | (MessageDefinition.useContext.value.ofType(CodeableConcept)) | (NamingSystem.useContext.value.ofType(CodeableConcept)) | (OperationDefinition.useContext.value.ofType(CodeableConcept)) | (SearchParameter.useContext.value.ofType(CodeableConcept)) | (StructureDefinition.useContext.value.ofType(CodeableConcept)) | (StructureMap.useContext.value.ofType(CodeableConcept)) | (TerminologyCapabilities.useContext.value.ofType(CodeableConcept)) | (ValueSet.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:CapabilityStatement/f:useContext/f:valueCodeableConcept | f:CodeSystem/f:useContext/f:valueCodeableConcept | f:CompartmentDefinition/f:useContext/f:valueCodeableConcept | f:ConceptMap/f:useContext/f:valueCodeableConcept | f:GraphDefinition/f:useContext/f:valueCodeableConcept | f:ImplementationGuide/f:useContext/f:valueCodeableConcept | f:MessageDefinition/f:useContext/f:valueCodeableConcept | f:NamingSystem/f:useContext/f:valueCodeableConcept | f:OperationDefinition/f:useContext/f:valueCodeableConcept | f:SearchParameter/f:useContext/f:valueCodeableConcept | f:StructureDefinition/f:useContext/f:valueCodeableConcept | f:StructureMap/f:useContext/f:valueCodeableConcept | f:TerminologyCapabilities/f:useContext/f:valueCodeableConcept | f:ValueSet/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -6154,7 +6154,7 @@
       "TerminologyCapabilities",
       "ValueSet"],
       "type" : "quantity",
-      "expression" : "(CapabilityStatement.useContext.value as Quantity) | (CapabilityStatement.useContext.value as Range) | (CodeSystem.useContext.value as Quantity) | (CodeSystem.useContext.value as Range) | (CompartmentDefinition.useContext.value as Quantity) | (CompartmentDefinition.useContext.value as Range) | (ConceptMap.useContext.value as Quantity) | (ConceptMap.useContext.value as Range) | (GraphDefinition.useContext.value as Quantity) | (GraphDefinition.useContext.value as Range) | (ImplementationGuide.useContext.value as Quantity) | (ImplementationGuide.useContext.value as Range) | (MessageDefinition.useContext.value as Quantity) | (MessageDefinition.useContext.value as Range) | (NamingSystem.useContext.value as Quantity) | (NamingSystem.useContext.value as Range) | (OperationDefinition.useContext.value as Quantity) | (OperationDefinition.useContext.value as Range) | (SearchParameter.useContext.value as Quantity) | (SearchParameter.useContext.value as Range) | (StructureDefinition.useContext.value as Quantity) | (StructureDefinition.useContext.value as Range) | (StructureMap.useContext.value as Quantity) | (StructureMap.useContext.value as Range) | (TerminologyCapabilities.useContext.value as Quantity) | (TerminologyCapabilities.useContext.value as Range) | (ValueSet.useContext.value as Quantity) | (ValueSet.useContext.value as Range)",
+      "expression" : "(CapabilityStatement.useContext.value.ofType(Quantity)) | (CapabilityStatement.useContext.value.ofType(Range)) | (CodeSystem.useContext.value.ofType(Quantity)) | (CodeSystem.useContext.value.ofType(Range)) | (CompartmentDefinition.useContext.value.ofType(Quantity)) | (CompartmentDefinition.useContext.value.ofType(Range)) | (ConceptMap.useContext.value.ofType(Quantity)) | (ConceptMap.useContext.value.ofType(Range)) | (GraphDefinition.useContext.value.ofType(Quantity)) | (GraphDefinition.useContext.value.ofType(Range)) | (ImplementationGuide.useContext.value.ofType(Quantity)) | (ImplementationGuide.useContext.value.ofType(Range)) | (MessageDefinition.useContext.value.ofType(Quantity)) | (MessageDefinition.useContext.value.ofType(Range)) | (NamingSystem.useContext.value.ofType(Quantity)) | (NamingSystem.useContext.value.ofType(Range)) | (OperationDefinition.useContext.value.ofType(Quantity)) | (OperationDefinition.useContext.value.ofType(Range)) | (SearchParameter.useContext.value.ofType(Quantity)) | (SearchParameter.useContext.value.ofType(Range)) | (StructureDefinition.useContext.value.ofType(Quantity)) | (StructureDefinition.useContext.value.ofType(Range)) | (StructureMap.useContext.value.ofType(Quantity)) | (StructureMap.useContext.value.ofType(Range)) | (TerminologyCapabilities.useContext.value.ofType(Quantity)) | (TerminologyCapabilities.useContext.value.ofType(Range)) | (ValueSet.useContext.value.ofType(Quantity)) | (ValueSet.useContext.value.ofType(Range))",
       "xpath" : "f:CapabilityStatement/f:useContext/f:valueQuantity | f:CapabilityStatement/f:useContext/f:valueRange | f:CodeSystem/f:useContext/f:valueQuantity | f:CodeSystem/f:useContext/f:valueRange | f:CompartmentDefinition/f:useContext/f:valueQuantity | f:CompartmentDefinition/f:useContext/f:valueRange | f:ConceptMap/f:useContext/f:valueQuantity | f:ConceptMap/f:useContext/f:valueRange | f:GraphDefinition/f:useContext/f:valueQuantity | f:GraphDefinition/f:useContext/f:valueRange | f:ImplementationGuide/f:useContext/f:valueQuantity | f:ImplementationGuide/f:useContext/f:valueRange | f:MessageDefinition/f:useContext/f:valueQuantity | f:MessageDefinition/f:useContext/f:valueRange | f:NamingSystem/f:useContext/f:valueQuantity | f:NamingSystem/f:useContext/f:valueRange | f:OperationDefinition/f:useContext/f:valueQuantity | f:OperationDefinition/f:useContext/f:valueRange | f:SearchParameter/f:useContext/f:valueQuantity | f:SearchParameter/f:useContext/f:valueRange | f:StructureDefinition/f:useContext/f:valueQuantity | f:StructureDefinition/f:useContext/f:valueRange | f:StructureMap/f:useContext/f:valueQuantity | f:StructureMap/f:useContext/f:valueRange | f:TerminologyCapabilities/f:useContext/f:valueQuantity | f:TerminologyCapabilities/f:useContext/f:valueRange | f:ValueSet/f:useContext/f:valueQuantity | f:ValueSet/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -7060,7 +7060,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/conformance-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -7118,7 +7118,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/conformance-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -8720,7 +8720,7 @@
       "code" : "context",
       "base" : ["ChargeItemDefinition"],
       "type" : "token",
-      "expression" : "(ChargeItemDefinition.useContext.value as CodeableConcept)",
+      "expression" : "(ChargeItemDefinition.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:ChargeItemDefinition/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -8757,7 +8757,7 @@
       "code" : "context-quantity",
       "base" : ["ChargeItemDefinition"],
       "type" : "quantity",
-      "expression" : "(ChargeItemDefinition.useContext.value as Quantity) | (ChargeItemDefinition.useContext.value as Range)",
+      "expression" : "(ChargeItemDefinition.useContext.value.ofType(Quantity)) | (ChargeItemDefinition.useContext.value.ofType(Range))",
       "xpath" : "f:ChargeItemDefinition/f:useContext/f:valueQuantity | f:ChargeItemDefinition/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -9237,7 +9237,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ChargeItemDefinition-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -9282,7 +9282,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ChargeItemDefinition-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -12508,7 +12508,7 @@
       "code" : "occurrence",
       "base" : ["CommunicationRequest"],
       "type" : "date",
-      "expression" : "(CommunicationRequest.occurrence as dateTime)",
+      "expression" : "(CommunicationRequest.occurrence.ofType(dateTime))",
       "xpath" : "f:CommunicationRequest/f:occurrenceDateTime",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -13424,7 +13424,7 @@
       "code" : "related-id",
       "base" : ["Composition"],
       "type" : "token",
-      "expression" : "(Composition.relatesTo.target as Identifier)",
+      "expression" : "(Composition.relatesTo.target.ofType(Identifier))",
       "xpath" : "f:Composition/f:relatesTo/f:targetIdentifier",
       "xpathUsage" : "normal"
     }
@@ -13461,7 +13461,7 @@
       "code" : "related-ref",
       "base" : ["Composition"],
       "type" : "reference",
-      "expression" : "(Composition.relatesTo.target as Reference)",
+      "expression" : "(Composition.relatesTo.target.ofType(Reference))",
       "xpath" : "f:Composition/f:relatesTo/f:targetReference",
       "xpathUsage" : "normal",
       "target" : ["Composition"]
@@ -13904,7 +13904,7 @@
       "code" : "source",
       "base" : ["ConceptMap"],
       "type" : "reference",
-      "expression" : "(ConceptMap.source as canonical)",
+      "expression" : "(ConceptMap.source.ofType(canonical))",
       "xpath" : "f:ConceptMap/f:sourceCanonical",
       "xpathUsage" : "normal",
       "target" : ["ValueSet"]
@@ -14016,7 +14016,7 @@
       "code" : "source-uri",
       "base" : ["ConceptMap"],
       "type" : "reference",
-      "expression" : "(ConceptMap.source as uri)",
+      "expression" : "(ConceptMap.source.ofType(uri))",
       "xpath" : "f:ConceptMap/f:sourceUri",
       "xpathUsage" : "normal",
       "target" : ["ValueSet"]
@@ -14054,7 +14054,7 @@
       "code" : "target",
       "base" : ["ConceptMap"],
       "type" : "reference",
-      "expression" : "(ConceptMap.target as canonical)",
+      "expression" : "(ConceptMap.target.ofType(canonical))",
       "xpath" : "f:ConceptMap/f:targetCanonical",
       "xpathUsage" : "normal",
       "target" : ["ValueSet"]
@@ -14166,7 +14166,7 @@
       "code" : "target-uri",
       "base" : ["ConceptMap"],
       "type" : "reference",
-      "expression" : "(ConceptMap.target as uri)",
+      "expression" : "(ConceptMap.target.ofType(uri))",
       "xpath" : "f:ConceptMap/f:targetUri",
       "xpathUsage" : "normal",
       "target" : ["ValueSet"]
@@ -14204,7 +14204,7 @@
       "code" : "abatement-age",
       "base" : ["Condition"],
       "type" : "quantity",
-      "expression" : "Condition.abatement.as(Age) | Condition.abatement.as(Range)",
+      "expression" : "Condition.abatement.ofType(Age) | Condition.abatement.ofType(Range)",
       "xpath" : "f:Condition/f:abatementAge | f:Condition/f:abatementRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -14250,7 +14250,7 @@
       "code" : "abatement-date",
       "base" : ["Condition"],
       "type" : "date",
-      "expression" : "Condition.abatement.as(dateTime) | Condition.abatement.as(Period)",
+      "expression" : "Condition.abatement.ofType(dateTime) | Condition.abatement.ofType(Period)",
       "xpath" : "f:Condition/f:abatementDateTime | f:Condition/f:abatementPeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -14296,7 +14296,7 @@
       "code" : "abatement-string",
       "base" : ["Condition"],
       "type" : "string",
-      "expression" : "Condition.abatement.as(string)",
+      "expression" : "Condition.abatement.ofType(string)",
       "xpath" : "f:Condition/f:abatementString",
       "xpathUsage" : "normal"
     }
@@ -14742,7 +14742,7 @@
       "code" : "onset-age",
       "base" : ["Condition"],
       "type" : "quantity",
-      "expression" : "Condition.onset.as(Age) | Condition.onset.as(Range)",
+      "expression" : "Condition.onset.ofType(Age) | Condition.onset.ofType(Range)",
       "xpath" : "f:Condition/f:onsetAge | f:Condition/f:onsetRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -14788,7 +14788,7 @@
       "code" : "onset-date",
       "base" : ["Condition"],
       "type" : "date",
-      "expression" : "Condition.onset.as(dateTime) | Condition.onset.as(Period)",
+      "expression" : "Condition.onset.ofType(dateTime) | Condition.onset.ofType(Period)",
       "xpath" : "f:Condition/f:onsetDateTime | f:Condition/f:onsetPeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -14834,7 +14834,7 @@
       "code" : "onset-info",
       "base" : ["Condition"],
       "type" : "string",
-      "expression" : "Condition.onset.as(string)",
+      "expression" : "Condition.onset.ofType(string)",
       "xpath" : "f:Condition/f:onsetString",
       "xpathUsage" : "normal"
     }
@@ -18608,7 +18608,7 @@
       "code" : "device",
       "base" : ["DeviceRequest"],
       "type" : "reference",
-      "expression" : "(DeviceRequest.code as Reference)",
+      "expression" : "(DeviceRequest.code.ofType(Reference))",
       "xpath" : "f:DeviceRequest/f:codeReference",
       "xpathUsage" : "normal",
       "target" : ["Device"]
@@ -18646,7 +18646,7 @@
       "code" : "event-date",
       "base" : ["DeviceRequest"],
       "type" : "date",
-      "expression" : "(DeviceRequest.occurrence as dateTime) | (DeviceRequest.occurrence as Period)",
+      "expression" : "(DeviceRequest.occurrence.ofType(dateTime)) | (DeviceRequest.occurrence.ofType(Period))",
       "xpath" : "f:DeviceRequest/f:occurrenceDateTime | f:DeviceRequest/f:occurrencePeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -21424,7 +21424,7 @@
       "code" : "context",
       "base" : ["EffectEvidenceSynthesis"],
       "type" : "token",
-      "expression" : "(EffectEvidenceSynthesis.useContext.value as CodeableConcept)",
+      "expression" : "(EffectEvidenceSynthesis.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:EffectEvidenceSynthesis/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -21461,7 +21461,7 @@
       "code" : "context-quantity",
       "base" : ["EffectEvidenceSynthesis"],
       "type" : "quantity",
-      "expression" : "(EffectEvidenceSynthesis.useContext.value as Quantity) | (EffectEvidenceSynthesis.useContext.value as Range)",
+      "expression" : "(EffectEvidenceSynthesis.useContext.value.ofType(Quantity)) | (EffectEvidenceSynthesis.useContext.value.ofType(Range))",
       "xpath" : "f:EffectEvidenceSynthesis/f:useContext/f:valueQuantity | f:EffectEvidenceSynthesis/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -21978,7 +21978,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/EffectEvidenceSynthesis-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -22023,7 +22023,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/EffectEvidenceSynthesis-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -23655,7 +23655,7 @@
       "code" : "context",
       "base" : ["EventDefinition"],
       "type" : "token",
-      "expression" : "(EventDefinition.useContext.value as CodeableConcept)",
+      "expression" : "(EventDefinition.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:EventDefinition/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -23692,7 +23692,7 @@
       "code" : "context-quantity",
       "base" : ["EventDefinition"],
       "type" : "quantity",
-      "expression" : "(EventDefinition.useContext.value as Quantity) | (EventDefinition.useContext.value as Range)",
+      "expression" : "(EventDefinition.useContext.value.ofType(Quantity)) | (EventDefinition.useContext.value.ofType(Range))",
       "xpath" : "f:EventDefinition/f:useContext/f:valueQuantity | f:EventDefinition/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -24974,7 +24974,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/EventDefinition-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -25019,7 +25019,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/EventDefinition-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -25237,7 +25237,7 @@
       "code" : "context",
       "base" : ["Evidence"],
       "type" : "token",
-      "expression" : "(Evidence.useContext.value as CodeableConcept)",
+      "expression" : "(Evidence.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:Evidence/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -25274,7 +25274,7 @@
       "code" : "context-quantity",
       "base" : ["Evidence"],
       "type" : "quantity",
-      "expression" : "(Evidence.useContext.value as Quantity) | (Evidence.useContext.value as Range)",
+      "expression" : "(Evidence.useContext.value.ofType(Quantity)) | (Evidence.useContext.value.ofType(Range))",
       "xpath" : "f:Evidence/f:useContext/f:valueQuantity | f:Evidence/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -26556,7 +26556,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Evidence-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -26601,7 +26601,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Evidence-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -26819,7 +26819,7 @@
       "code" : "context",
       "base" : ["EvidenceVariable"],
       "type" : "token",
-      "expression" : "(EvidenceVariable.useContext.value as CodeableConcept)",
+      "expression" : "(EvidenceVariable.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:EvidenceVariable/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -26856,7 +26856,7 @@
       "code" : "context-quantity",
       "base" : ["EvidenceVariable"],
       "type" : "quantity",
-      "expression" : "(EvidenceVariable.useContext.value as Quantity) | (EvidenceVariable.useContext.value as Range)",
+      "expression" : "(EvidenceVariable.useContext.value.ofType(Quantity)) | (EvidenceVariable.useContext.value.ofType(Range))",
       "xpath" : "f:EvidenceVariable/f:useContext/f:valueQuantity | f:EvidenceVariable/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -28138,7 +28138,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/EvidenceVariable-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -28183,7 +28183,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/EvidenceVariable-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -28219,7 +28219,7 @@
       "code" : "context",
       "base" : ["ExampleScenario"],
       "type" : "token",
-      "expression" : "(ExampleScenario.useContext.value as CodeableConcept)",
+      "expression" : "(ExampleScenario.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:ExampleScenario/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -28256,7 +28256,7 @@
       "code" : "context-quantity",
       "base" : ["ExampleScenario"],
       "type" : "quantity",
-      "expression" : "(ExampleScenario.useContext.value as Quantity) | (ExampleScenario.useContext.value as Range)",
+      "expression" : "(ExampleScenario.useContext.value.ofType(Quantity)) | (ExampleScenario.useContext.value.ofType(Range))",
       "xpath" : "f:ExampleScenario/f:useContext/f:valueQuantity | f:ExampleScenario/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -28653,7 +28653,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ExampleScenario-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -28698,7 +28698,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ExampleScenario-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -29819,7 +29819,7 @@
       "code" : "start-date",
       "base" : ["Goal"],
       "type" : "date",
-      "expression" : "(Goal.start as date)",
+      "expression" : "(Goal.start.ofType(date))",
       "xpath" : "f:Goal/f:startDate",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -29905,7 +29905,7 @@
       "code" : "target-date",
       "base" : ["Goal"],
       "type" : "date",
-      "expression" : "(Goal.target.due as date)",
+      "expression" : "(Goal.target.due.ofType(date))",
       "xpath" : "f:Goal/f:target/f:dueDate",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -30295,7 +30295,7 @@
       "code" : "value",
       "base" : ["Group"],
       "type" : "token",
-      "expression" : "(Group.characteristic.value as CodeableConcept) | (Group.characteristic.value as boolean)",
+      "expression" : "(Group.characteristic.value.ofType(CodeableConcept)) | (Group.characteristic.value.ofType(boolean))",
       "xpath" : "f:Group/f:characteristic/f:valueCodeableConcept | f:Group/f:characteristic/f:valueBoolean | f:Group/f:characteristic/f:valueQuantity | f:Group/f:characteristic/f:valueRange | f:Group/f:characteristic/f:valueReference",
       "xpathUsage" : "normal"
     }
@@ -34340,7 +34340,7 @@
       "code" : "context",
       "base" : ["Library"],
       "type" : "token",
-      "expression" : "(Library.useContext.value as CodeableConcept)",
+      "expression" : "(Library.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:Library/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -34377,7 +34377,7 @@
       "code" : "context-quantity",
       "base" : ["Library"],
       "type" : "quantity",
-      "expression" : "(Library.useContext.value as Quantity) | (Library.useContext.value as Range)",
+      "expression" : "(Library.useContext.value.ofType(Quantity)) | (Library.useContext.value.ofType(Range))",
       "xpath" : "f:Library/f:useContext/f:valueQuantity | f:Library/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -35696,7 +35696,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Library-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -35741,7 +35741,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Library-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -37333,7 +37333,7 @@
       "code" : "context",
       "base" : ["Measure"],
       "type" : "token",
-      "expression" : "(Measure.useContext.value as CodeableConcept)",
+      "expression" : "(Measure.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:Measure/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -37370,7 +37370,7 @@
       "code" : "context-quantity",
       "base" : ["Measure"],
       "type" : "quantity",
-      "expression" : "(Measure.useContext.value as Quantity) | (Measure.useContext.value as Range)",
+      "expression" : "(Measure.useContext.value.ofType(Quantity)) | (Measure.useContext.value.ofType(Range))",
       "xpath" : "f:Measure/f:useContext/f:valueQuantity | f:Measure/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -38652,7 +38652,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Measure-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -38697,7 +38697,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Measure-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -39875,7 +39875,7 @@
       "code" : "ingredient",
       "base" : ["Medication"],
       "type" : "reference",
-      "expression" : "(Medication.ingredient.item as Reference)",
+      "expression" : "(Medication.ingredient.item.ofType(Reference))",
       "xpath" : "f:Medication/f:ingredient/f:itemReference",
       "xpathUsage" : "normal",
       "target" : ["Medication",
@@ -39914,7 +39914,7 @@
       "code" : "ingredient-code",
       "base" : ["Medication"],
       "type" : "token",
-      "expression" : "(Medication.ingredient.item as CodeableConcept)",
+      "expression" : "(Medication.ingredient.item.ofType(CodeableConcept))",
       "xpath" : "f:Medication/f:ingredient/f:itemCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -40189,7 +40189,7 @@
       "MedicationRequest",
       "MedicationStatement"],
       "type" : "reference",
-      "expression" : "(MedicationAdministration.medication as Reference) | (MedicationDispense.medication as Reference) | (MedicationRequest.medication as Reference) | (MedicationStatement.medication as Reference)",
+      "expression" : "(MedicationAdministration.medication.ofType(Reference)) | (MedicationDispense.medication.ofType(Reference)) | (MedicationRequest.medication.ofType(Reference)) | (MedicationStatement.medication.ofType(Reference))",
       "xpath" : "f:MedicationAdministration/f:medicationReference | f:MedicationDispense/f:medicationReference | f:MedicationRequest/f:medicationReference | f:MedicationStatement/f:medicationReference",
       "xpathUsage" : "normal",
       "target" : ["Medication"]
@@ -41012,7 +41012,7 @@
       "code" : "ingredient",
       "base" : ["MedicationKnowledge"],
       "type" : "reference",
-      "expression" : "(MedicationKnowledge.ingredient.item as Reference)",
+      "expression" : "(MedicationKnowledge.ingredient.item.ofType(Reference))",
       "xpath" : "f:MedicationKnowledge/f:ingredient/f:itemReference",
       "xpathUsage" : "normal",
       "target" : ["Substance"]
@@ -41050,7 +41050,7 @@
       "code" : "ingredient-code",
       "base" : ["MedicationKnowledge"],
       "type" : "token",
-      "expression" : "(MedicationKnowledge.ingredient.item as CodeableConcept)",
+      "expression" : "(MedicationKnowledge.ingredient.item.ofType(CodeableConcept))",
       "xpath" : "f:MedicationKnowledge/f:ingredient/f:itemCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -44876,7 +44876,7 @@
       "code" : "combo-value-concept",
       "base" : ["Observation"],
       "type" : "token",
-      "expression" : "(Observation.value as CodeableConcept) | (Observation.component.value as CodeableConcept)",
+      "expression" : "(Observation.value.ofType(CodeableConcept)) | (Observation.component.value.ofType(CodeableConcept))",
       "xpath" : "f:Observation/f:valueCodeableConcept | f:Observation/f:component/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -44913,7 +44913,7 @@
       "code" : "combo-value-quantity",
       "base" : ["Observation"],
       "type" : "quantity",
-      "expression" : "(Observation.value as Quantity) | (Observation.value as SampledData) | (Observation.component.value as Quantity) | (Observation.component.value as SampledData)",
+      "expression" : "(Observation.value.ofType(Quantity)) | (Observation.value.ofType(SampledData)) | (Observation.component.value.ofType(Quantity)) | (Observation.component.value.ofType(SampledData))",
       "xpath" : "f:Observation/f:valueQuantity | f:Observation/f:valueCodeableConcept | f:Observation/f:valueString | f:Observation/f:valueBoolean | f:Observation/f:valueInteger | f:Observation/f:valueRange | f:Observation/f:valueRatio | f:Observation/f:valueSampledData | f:Observation/f:valueTime | f:Observation/f:valueDateTime | f:Observation/f:valuePeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -45033,7 +45033,7 @@
       "code" : "component-value-concept",
       "base" : ["Observation"],
       "type" : "token",
-      "expression" : "(Observation.component.value as CodeableConcept)",
+      "expression" : "(Observation.component.value.ofType(CodeableConcept))",
       "xpath" : "f:Observation/f:component/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -45070,7 +45070,7 @@
       "code" : "component-value-quantity",
       "base" : ["Observation"],
       "type" : "quantity",
-      "expression" : "(Observation.component.value as Quantity) | (Observation.component.value as SampledData)",
+      "expression" : "(Observation.component.value.ofType(Quantity)) | (Observation.component.value.ofType(SampledData))",
       "xpath" : "f:Observation/f:component/f:valueQuantity | f:Observation/f:component/f:valueCodeableConcept | f:Observation/f:component/f:valueString | f:Observation/f:component/f:valueBoolean | f:Observation/f:component/f:valueInteger | f:Observation/f:component/f:valueRange | f:Observation/f:component/f:valueRatio | f:Observation/f:component/f:valueSampledData | f:Observation/f:component/f:valueTime | f:Observation/f:component/f:valueDateTime | f:Observation/f:component/f:valuePeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -45696,7 +45696,7 @@
       "code" : "value-concept",
       "base" : ["Observation"],
       "type" : "token",
-      "expression" : "(Observation.value as CodeableConcept)",
+      "expression" : "(Observation.value.ofType(CodeableConcept))",
       "xpath" : "f:Observation/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -45733,7 +45733,7 @@
       "code" : "value-date",
       "base" : ["Observation"],
       "type" : "date",
-      "expression" : "(Observation.value as dateTime) | (Observation.value as Period)",
+      "expression" : "(Observation.value.ofType(dateTime)) | (Observation.value.ofType(Period))",
       "xpath" : "f:Observation/f:valueDateTime | f:Observation/f:valuePeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -45779,7 +45779,7 @@
       "code" : "value-quantity",
       "base" : ["Observation"],
       "type" : "quantity",
-      "expression" : "(Observation.value as Quantity) | (Observation.value as SampledData)",
+      "expression" : "(Observation.value.ofType(Quantity)) | (Observation.value.ofType(SampledData))",
       "xpath" : "f:Observation/f:valueQuantity | f:Observation/f:valueCodeableConcept | f:Observation/f:valueString | f:Observation/f:valueBoolean | f:Observation/f:valueInteger | f:Observation/f:valueRange | f:Observation/f:valueRatio | f:Observation/f:valueSampledData | f:Observation/f:valueTime | f:Observation/f:valueDateTime | f:Observation/f:valuePeriod",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -45825,7 +45825,7 @@
       "code" : "value-string",
       "base" : ["Observation"],
       "type" : "string",
-      "expression" : "(Observation.value as string) | (Observation.value as CodeableConcept).text",
+      "expression" : "(Observation.value.ofType(string)) | (Observation.value.ofType(CodeableConcept)).text",
       "xpath" : "f:Observation/f:valueQuantity | f:Observation/f:valueCodeableConcept | f:Observation/f:valueString | f:Observation/f:valueBoolean | f:Observation/f:valueInteger | f:Observation/f:valueRange | f:Observation/f:valueRatio | f:Observation/f:valueSampledData | f:Observation/f:valueTime | f:Observation/f:valueDateTime | f:Observation/f:valuePeriod",
       "xpathUsage" : "normal"
     }
@@ -45871,7 +45871,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-value-concept",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -45916,7 +45916,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-value-date",
-        "expression" : "value.as(DateTime) | value.as(Period)"
+        "expression" : "value.ofType(DateTime) | value.ofType(Period)"
       }]
     }
   },
@@ -45961,7 +45961,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-value-quantity",
-        "expression" : "value.as(Quantity)"
+        "expression" : "value.ofType(Quantity)"
       }]
     }
   },
@@ -46006,7 +46006,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-value-string",
-        "expression" : "value.as(string)"
+        "expression" : "value.ofType(string)"
       }]
     }
   },
@@ -46051,7 +46051,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-combo-value-concept",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -46096,7 +46096,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity",
-        "expression" : "value.as(Quantity)"
+        "expression" : "value.ofType(Quantity)"
       }]
     }
   },
@@ -46141,7 +46141,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-component-value-concept",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -46186,7 +46186,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Observation-component-value-quantity",
-        "expression" : "value.as(Quantity)"
+        "expression" : "value.ofType(Quantity)"
       }]
     }
   },
@@ -47862,7 +47862,7 @@
       "code" : "death-date",
       "base" : ["Patient"],
       "type" : "date",
-      "expression" : "(Patient.deceased as dateTime)",
+      "expression" : "(Patient.deceased.ofType(dateTime))",
       "xpath" : "f:Patient/f:deceasedDateTime",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -49772,7 +49772,7 @@
       "code" : "context",
       "base" : ["PlanDefinition"],
       "type" : "token",
-      "expression" : "(PlanDefinition.useContext.value as CodeableConcept)",
+      "expression" : "(PlanDefinition.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:PlanDefinition/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -49809,7 +49809,7 @@
       "code" : "context-quantity",
       "base" : ["PlanDefinition"],
       "type" : "quantity",
-      "expression" : "(PlanDefinition.useContext.value as Quantity) | (PlanDefinition.useContext.value as Range)",
+      "expression" : "(PlanDefinition.useContext.value.ofType(Quantity)) | (PlanDefinition.useContext.value.ofType(Range))",
       "xpath" : "f:PlanDefinition/f:useContext/f:valueQuantity | f:PlanDefinition/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -51168,7 +51168,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/PlanDefinition-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -51213,7 +51213,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/PlanDefinition-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -52852,7 +52852,7 @@
       "code" : "when",
       "base" : ["Provenance"],
       "type" : "date",
-      "expression" : "(Provenance.occurred as dateTime)",
+      "expression" : "(Provenance.occurred.ofType(dateTime))",
       "xpath" : "f:Provenance/f:occurredDateTime",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -52935,7 +52935,7 @@
       "code" : "context",
       "base" : ["Questionnaire"],
       "type" : "token",
-      "expression" : "(Questionnaire.useContext.value as CodeableConcept)",
+      "expression" : "(Questionnaire.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:Questionnaire/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -52972,7 +52972,7 @@
       "code" : "context-quantity",
       "base" : ["Questionnaire"],
       "type" : "quantity",
-      "expression" : "(Questionnaire.useContext.value as Quantity) | (Questionnaire.useContext.value as Range)",
+      "expression" : "(Questionnaire.useContext.value.ofType(Quantity)) | (Questionnaire.useContext.value.ofType(Range))",
       "xpath" : "f:Questionnaire/f:useContext/f:valueQuantity | f:Questionnaire/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -53563,7 +53563,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Questionnaire-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -53608,7 +53608,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/Questionnaire-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -55129,7 +55129,7 @@
       "code" : "context",
       "base" : ["ResearchDefinition"],
       "type" : "token",
-      "expression" : "(ResearchDefinition.useContext.value as CodeableConcept)",
+      "expression" : "(ResearchDefinition.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:ResearchDefinition/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -55166,7 +55166,7 @@
       "code" : "context-quantity",
       "base" : ["ResearchDefinition"],
       "type" : "quantity",
-      "expression" : "(ResearchDefinition.useContext.value as Quantity) | (ResearchDefinition.useContext.value as Range)",
+      "expression" : "(ResearchDefinition.useContext.value.ofType(Quantity)) | (ResearchDefinition.useContext.value.ofType(Range))",
       "xpath" : "f:ResearchDefinition/f:useContext/f:valueQuantity | f:ResearchDefinition/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -56448,7 +56448,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ResearchDefinition-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -56493,7 +56493,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ResearchDefinition-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -56711,7 +56711,7 @@
       "code" : "context",
       "base" : ["ResearchElementDefinition"],
       "type" : "token",
-      "expression" : "(ResearchElementDefinition.useContext.value as CodeableConcept)",
+      "expression" : "(ResearchElementDefinition.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:ResearchElementDefinition/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -56748,7 +56748,7 @@
       "code" : "context-quantity",
       "base" : ["ResearchElementDefinition"],
       "type" : "quantity",
-      "expression" : "(ResearchElementDefinition.useContext.value as Quantity) | (ResearchElementDefinition.useContext.value as Range)",
+      "expression" : "(ResearchElementDefinition.useContext.value.ofType(Quantity)) | (ResearchElementDefinition.useContext.value.ofType(Range))",
       "xpath" : "f:ResearchElementDefinition/f:useContext/f:valueQuantity | f:ResearchElementDefinition/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -58030,7 +58030,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ResearchElementDefinition-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -58075,7 +58075,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/ResearchElementDefinition-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -59078,7 +59078,7 @@
       "code" : "context",
       "base" : ["RiskEvidenceSynthesis"],
       "type" : "token",
-      "expression" : "(RiskEvidenceSynthesis.useContext.value as CodeableConcept)",
+      "expression" : "(RiskEvidenceSynthesis.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:RiskEvidenceSynthesis/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -59115,7 +59115,7 @@
       "code" : "context-quantity",
       "base" : ["RiskEvidenceSynthesis"],
       "type" : "quantity",
-      "expression" : "(RiskEvidenceSynthesis.useContext.value as Quantity) | (RiskEvidenceSynthesis.useContext.value as Range)",
+      "expression" : "(RiskEvidenceSynthesis.useContext.value.ofType(Quantity)) | (RiskEvidenceSynthesis.useContext.value.ofType(Range))",
       "xpath" : "f:RiskEvidenceSynthesis/f:useContext/f:valueQuantity | f:RiskEvidenceSynthesis/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -59632,7 +59632,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/RiskEvidenceSynthesis-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -59677,7 +59677,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/RiskEvidenceSynthesis-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },
@@ -62468,7 +62468,7 @@
       "code" : "code",
       "base" : ["Substance"],
       "type" : "token",
-      "expression" : "Substance.code | (Substance.ingredient.substance as CodeableConcept)",
+      "expression" : "Substance.code | (Substance.ingredient.substance.ofType(CodeableConcept))",
       "xpath" : "f:Substance/f:code | f:Substance/f:ingredient/f:substanceCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -62708,7 +62708,7 @@
       "code" : "substance-reference",
       "base" : ["Substance"],
       "type" : "reference",
-      "expression" : "(Substance.ingredient.substance as Reference)",
+      "expression" : "(Substance.ingredient.substance.ofType(Reference))",
       "xpath" : "f:Substance/f:ingredient/f:substanceReference",
       "xpathUsage" : "normal",
       "target" : ["Substance"]
@@ -64509,7 +64509,7 @@
       "code" : "context",
       "base" : ["TestScript"],
       "type" : "token",
-      "expression" : "(TestScript.useContext.value as CodeableConcept)",
+      "expression" : "(TestScript.useContext.value.ofType(CodeableConcept))",
       "xpath" : "f:TestScript/f:useContext/f:valueCodeableConcept",
       "xpathUsage" : "normal"
     }
@@ -64546,7 +64546,7 @@
       "code" : "context-quantity",
       "base" : ["TestScript"],
       "type" : "quantity",
-      "expression" : "(TestScript.useContext.value as Quantity) | (TestScript.useContext.value as Range)",
+      "expression" : "(TestScript.useContext.value.ofType(Quantity)) | (TestScript.useContext.value.ofType(Range))",
       "xpath" : "f:TestScript/f:useContext/f:valueQuantity | f:TestScript/f:useContext/f:valueRange",
       "xpathUsage" : "normal",
       "comparator" : ["eq",
@@ -65054,7 +65054,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/TestScript-context-quantity",
-        "expression" : "value.as(Quantity) | value.as(Range)"
+        "expression" : "value.ofType(Quantity) | value.ofType(Range)"
       }]
     }
   },
@@ -65099,7 +65099,7 @@
       },
       {
         "definition" : "http://hl7.org/fhir/SearchParameter/TestScript-context",
-        "expression" : "value.as(CodeableConcept)"
+        "expression" : "value.ofType(CodeableConcept)"
       }]
     }
   },

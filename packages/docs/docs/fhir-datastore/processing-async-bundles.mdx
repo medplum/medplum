@@ -1,0 +1,174 @@
+---
+sidebar_position: 8
+---
+
+# Processing Asynchronous Bundles
+
+Medplum can process a FHIR **batch** `Bundle` in the background when you ask for the [asynchronous request pattern](https://hl7.org/fhir/R5/async-bundle.html). When the batch request includes the `Prefer: respond-async` HTTP header, the server will respond immediately with a **`202 Accepted`** status code and a **status URL** in the `Content-Location` response header.  You should poll that URL until the job finishes, reading the status of the **`AsyncJob`** resource tracking the operation on each response. When the job succeeds, you can download the resulting **`batch-response`** Bundle payload from a linked **`Binary`** resource.
+
+For how to **author** batch bundles (entries, internal references, error semantics), see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests). This page covers only the **async workflow**: headers, status URLs, polling, results, quotas, and limitations.
+
+## When to use asynchronous batches
+
+Use `Prefer: respond-async` when:
+
+- **Large imports or migrations** — The synchronous batch path is limited by the server’s general JSON body size (`maxJsonSize`, often smaller) and request timeouts. The async entrypoint accepts a larger bundle body (up to `maxBatchSize`, commonly **50 MB** in default server configs) and runs work off the HTTP thread.
+- **Avoiding FHIR interaction quota** — The operations performed inside the background job **do not consume** your per-user [FHIR interaction load quota](/docs/rate-limits#fhir-interaction-load-rate-limit) the way a synchronous batch does. This is often the right choice for seeding environments, backfills, or other high-volume writes that would otherwise exhaust quota. See [Rate limits](/docs/rate-limits) for the distinction between **FHIR quota** and other safeguards.
+- **Long-running work** — Work continues in a worker after the client receives `202 Accepted`, so you are not tied to a single HTTP request’s lifetime.
+
+Avoid async when:
+
+- **Callers need the `batch-response` immediately** — Data is committed only as the job runs; until then, treat the system as “in progress.”
+- **You require a synchronous `transaction`** — Async **transaction** bundles are rejected when the `transaction-bundles` project feature is enabled (see [Limitations](#limitations)).
+
+## Step-by-step: submit, poll, read results
+
+### 1. Build a batch `Bundle`
+
+Same rules as a normal batch: `resourceType: "Bundle"`, `type: "batch"`, and one `entry` per operation. Details and examples live in [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+
+### 2. `POST` the bundle to the FHIR base URL with `Prefer: respond-async`
+
+Issue a `POST` to your FHIR base URL (for example `https://api.medplum.com/fhir/R4`) with:
+
+- `Content-Type: application/fhir+json`
+- `Authorization: Bearer …`
+- **`Prefer: respond-async`**
+
+Example:
+
+```bash
+curl -X POST 'https://api.medplum.com/fhir/R4' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/fhir+json" \
+  -H "Prefer: respond-async" \
+  -d @my-bundle.json
+```
+
+### 3. Read `202 Accepted` and the status URL
+
+A successful enqueue returns:
+
+- **HTTP `202 Accepted`**
+- Response header **`Content-Location`** set to the status URL
+- A small **`OperationOutcome`** body whose first issue’s **`diagnostics`** field is the same absolute URL
+
+Example response body:
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "id": "accepted",
+  "issue": [
+    {
+      "severity": "information",
+      "code": "informational",
+      "details": {
+        "text": "Accepted"
+      },
+      "diagnostics": "https://api.medplum.com/fhir/R4/job/0192a3b4-c5d6-7890-abcd-ef1234567890/status"
+    }
+  ]
+}
+```
+
+Save that URL (from **`diagnostics`** or **`Content-Location`**): it is the polling location for the rest of the workflow.
+
+### 4. Poll `GET …/fhir/R4/job/{id}/status`
+
+Medplum exposes the [FHIR asynchronous status interaction](https://hl7.org/fhir/R5/async-bundle.html) at:
+
+```http
+GET [base]/fhir/R4/job/{job-id}/status
+```
+
+Behavior:
+
+| HTTP status | `AsyncJob.status` (typical) | Meaning |
+| --- | --- | --- |
+| `202` | `accepted` (or still in progress) | Keep polling after a short backoff. |
+| `200` | `completed` | Job finished successfully; see below for `output`. |
+| `200` | `error` | Job failed; `output` usually contains an `outcome` or error details. |
+
+When the job finishes successfully, the **`200`** response body is an **`AsyncJob`** with `status: "completed"`. Its **`output`** is a **`Parameters`** resource with a parameter named **`results`** whose value is a **`Reference`** to a **`Binary`** (for example `Binary/abc`). That `Binary` stores the full **`batch-response`** `Bundle` as FHIR JSON—the same shape you would have received from a synchronous batch.
+
+```json
+{
+  "resourceType": "AsyncJob",
+  "id": "0192a3b4-c5d6-7890-abcd-ef1234567890",
+  "status": "completed",
+  "output": {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "results",
+        "valueReference": {
+          "reference": "Binary/abc"
+        }
+      }
+    ]
+  }
+}
+```
+
+Each status `GET` counts as a **Read** (1 FHIR interaction point) against your [per-minute FHIR quota](/docs/rate-limits#fhir-interaction-load-rate-limit). The work performed inside the background batch does not consume quota, but polling does—use backoff so you do not exhaust quota on status checks alone.
+
+**Cancellation:** While the job is still `accepted`, you can cancel with `DELETE` on the same status URL (FHIR async pattern). You can also use [`AsyncJob/$cancel`](/docs/api/fhir/operations/asyncjob-cancel) on the underlying `AsyncJob` id if you prefer the operation endpoint.
+
+### 5. `GET` the `Binary` and parse the response bundle
+
+`GET` the `results` reference from `output` (for example `Binary/abc`). Medplum follows the [Binary read rules](https://hl7.org/fhir/R4/binary.html#rest): the **`Accept`** header chooses the response shape.
+
+| `Accept` header | Response |
+| --- | --- |
+| **`application/fhir+json`** (or starts with that value) | The **`Binary` resource** as FHIR JSON, including base64-encoded `data`. Base64-decode `data` and parse the JSON as a `Bundle` with `type: "batch-response"`. |
+| **Omitted**, or any value that does not start with `application/fhir+json` | The **stored file bytes** directly. For async batch results, the stored content is FHIR JSON, so the body is the **`batch-response`** `Bundle`—parse it as JSON with no base64 step. |
+
+Omitting `Accept` is fine and is often simpler for async batches: you receive the `batch-response` document directly. Use `Accept: application/fhir+json` only when you need the full `Binary` resource (for example to read `contentType` or other metadata).
+
+```bash
+# Recommended for async batch results: raw batch-response JSON
+curl 'https://api.medplum.com/fhir/R4/Binary/abc' \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+```bash
+# Optional: Binary resource wrapper (base64 data field)
+curl 'https://api.medplum.com/fhir/R4/Binary/abc' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Accept: application/fhir+json"
+```
+
+Inspect each `entry.response` as documented under [Response structure](/docs/fhir-datastore/fhir-batch-requests#response-structure).
+
+:::note[MedplumClient `executeBatch`]
+
+`MedplumClient.executeBatch()` is typed to return a response `Bundle` and does not yet implement built-in polling for `202` + `AsyncJob`. For async batches, use `fetch`, `MedplumClient.post` with manual handling of `202`, or your own helper until the SDK adds first-class support.
+
+:::
+
+## Rate limits and quotas
+
+- **FHIR interaction load (quota points)** — Operations inside the background batch **do not** count toward FHIR quota; each status poll and result `Binary` read **does** (1 point per Read). Asynchronous batches are still the recommended way to run **large** writes that would exhaust quota synchronously. See [Rate limits — Avoiding quota with async batch requests](/docs/rate-limits#avoiding-quota-with-async-batch-requests).
+- **HTTP request rate limits** — Global per-IP [request rate limits](/docs/rate-limits#total-requests-rate-limit) still apply to each HTTP call (the initial `POST`, every poll, and the `Binary` read). Plan backoff on polls to stay well under those caps.
+
+## Access control
+
+Ensure the caller’s [access policies](/docs/access/access-policies) allow:
+
+- Creating and reading the enqueued **`AsyncJob`**
+- Reading the outcome **`Binary`** that stores the `batch-response`
+
+If either is blocked, polling or downloading results will fail with an HTTP **403/404** error status even though the job ran.
+
+## Limitations
+
+- **Transaction bundles** — If your project has the **`transaction-bundles`** feature enabled, Medplum rejects **`type: "transaction"`** bundles submitted with `Prefer: respond-async`. Use a synchronous transaction or split work into a **`batch`** async bundle instead.
+- **No automatic retry of failed batches** — If the worker hits an unrecoverable error, the `AsyncJob` moves to a terminal error state; you must fix the bundle or data issue and submit a new job.
+
+## Related topics
+
+- [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests) — Bundle structure, sync vs async summary, response entry layout
+- [AsyncJob](/docs/api/fhir/medplum/asyncjob) — Resource fields
+- [AsyncJob $cancel](/docs/api/fhir/operations/asyncjob-cancel) — Cancelling jobs
+- [Rate limits](/docs/rate-limits) — Quotas, headers, and async batch behavior

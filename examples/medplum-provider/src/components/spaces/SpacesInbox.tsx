@@ -35,6 +35,7 @@ import { processMessage } from '../../utils/spaceMessaging';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { HistoryList } from './HistoryList';
+import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
 import classes from './SpacesInbox.module.css';
@@ -167,8 +168,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const handleSend = async (): Promise<void> => {
-    if (!input.trim()) {
+  const handleSend = async (overrideInput?: string): Promise<void> => {
+    if (isSendingRef.current) {
+      return;
+    }
+    const text = (overrideInput ?? input).trim();
+    if (!text) {
       return;
     }
 
@@ -177,7 +182,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(true);
     }
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: text };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     setInput('');
@@ -192,7 +197,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     try {
       const result = await processMessage({
         medplum,
-        input,
+        input: text,
         userMessage,
         currentMessages,
         currentTopicId,
@@ -405,7 +410,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     >
                       {message.content && (
                         <div className={classes.messageContent}>
-                          <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                          {message.role === 'assistant' ? (
+                            <Markdown>{message.content}</Markdown>
+                          ) : (
+                            <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                          )}
                         </div>
                       )}
                       {message.componentCode && (
@@ -480,7 +489,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 {loading && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
                     <div className={classes.messageContent}>
-                      {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
+                      {streamingContent && <Markdown>{streamingContent}</Markdown>}
                       {!streamingContent && currentFhirRequest && (
                         <Text size="sm" c="dimmed" fs="italic">
                           Executing {currentFhirRequest}...
