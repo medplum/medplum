@@ -29,7 +29,7 @@ import { botInitHandler } from './operations/botinit';
 import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
-import { claimSubmitHandler } from './operations/claim-submit';
+import { claimSubmitHandler } from './operations/claimsubmit';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
