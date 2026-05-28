@@ -17,6 +17,7 @@
   "vmContextBotsEnabled": true,
   "defaultBotRuntimeVersion": "vmcontext",
   "allowedOrigins": "*",
+  "awsRegion": "us-west-2",
   "introspectionEnabled": true,
   "database": {
     "host": "localhost",
@@ -33,6 +34,13 @@
   "bullmq": {
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
+  },
+  "dataWarehouse": {
+    "enabled": true,
+    "cron": "0 * * * *",
+    "destination": "s3tables",
+    "awsS3TableArn": "arn:aws:s3tables:us-west-2:462446642923:bucket/data-warehouse",
+    "namespace": "default"
   },
   "shutdownTimeoutMilliseconds": 30000
 }

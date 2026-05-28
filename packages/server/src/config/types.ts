@@ -338,6 +338,11 @@ export interface MedplumDataWarehouseConfig {
   localBasePath?: string;
   /** Optional Iceberg namespace used by sync. */
   namespace?: string;
+  /**
+   * Earliest resource `lastUpdated` timestamp to include in sync.
+   * History rows with `lastUpdated` before this value are excluded.
+   */
+  startDate?: Date;
 }
 
 export interface MedplumFissionConfig {

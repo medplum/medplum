@@ -1,17 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Expression } from '../fhir/sql';
-import {
-  Column,
-  Condition,
-  Constant,
-  Disjunction,
-  InsertQuery,
-  IsNull,
-  SelectQuery,
-  SqlBuilder,
-  Subquery,
-} from '../fhir/sql';
+import { Column, Condition, Disjunction, InsertQuery, IsNull, SelectQuery, SqlBuilder, Subquery } from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -63,8 +53,14 @@ function buildSqlBuilder(buildFn: (sql: SqlBuilder) => void): SqlBuilder {
   return sql;
 }
 
-export function buildTrueSourcePredicate(): Expression {
-  return new Constant('TRUE');
+/**
+ * Lower bound on Postgres history `lastUpdated` for warehouse export.
+ *
+ * @param startDate - Lower bound on history `lastUpdated` (validated by config before sync runs).
+ * @returns A SQL boolean expression for the lower bound on Postgres history `lastUpdated` for warehouse export.
+ */
+export function buildStartDatePredicate(startDate: Date): Expression {
+  return new Condition('lastUpdated', '>=', startDate);
 }
 
 export async function runParameterizedWarehouseSql(
@@ -137,10 +133,13 @@ export function buildInsertIntoSelectQuery(
  * using the DuckDB's JSON functionality.  This minimizes the load on the source database.
  *
  * @param sourceHistoryTable - Postgres table identifier exactly as stored (e.g. `Patient_history` or `Patient_History`).
- * @param sourcePredicate - SQL boolean expression (joined with `AND` after non-empty content filter).
+ * @param sourcePredicate - Optional SQL boolean expression (joined with `AND` after non-empty content filter).
  * @returns `SELECT` with a subquery and outer `json_extract_string` projection.
  */
-export function buildSelectFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate: Expression): SelectQuery {
+export function buildSelectFromHistoryTableQuery(
+  sourceHistoryTable: string,
+  sourcePredicate?: Expression
+): SelectQuery {
   const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
   const col = (name: string, alias?: string): Column => new Column(table, name, false, alias);
 
@@ -150,9 +149,11 @@ export function buildSelectFromHistoryTableQuery(sourceHistoryTable: string, sou
     .column('content')
     .column(col('lastUpdated', 'last_updated'))
     .where('content', '!=', null)
-    .where('content', '!=', '')
-    .whereExpr(sourcePredicate)
-    .orderBy('lastUpdated');
+    .where('content', '!=', '');
+  if (sourcePredicate) {
+    inner.whereExpr(sourcePredicate);
+  }
+  inner.orderBy('lastUpdated');
 
   return new SelectQuery('src', inner)
     .column('id')
@@ -164,20 +165,19 @@ export function buildSelectFromHistoryTableQuery(sourceHistoryTable: string, sou
 
 export function buildProjectedSelectFromHistoryTable(
   sourceHistoryTable: string,
-  sourcePredicate: Expression
+  sourcePredicate?: Expression
 ): SqlBuilder {
   return buildSqlBuilder((sql) =>
     sql.appendExpression(buildSelectFromHistoryTableQuery(sourceHistoryTable, sourcePredicate))
   );
 }
 
-export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate: Expression): SqlBuilder {
+export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate?: Expression): SqlBuilder {
   const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
-  const query = new SelectQuery(table)
-    .raw('COUNT(*) AS count')
-    .where('content', '!=', null)
-    .where('content', '!=', '')
-    .whereExpr(sourcePredicate);
+  const query = new SelectQuery(table).raw('COUNT(*) AS count').where('content', '!=', null).where('content', '!=', '');
+  if (sourcePredicate) {
+    query.whereExpr(sourcePredicate);
+  }
 
   return buildSqlBuilder((sql) => {
     sql.appendExpression(query);

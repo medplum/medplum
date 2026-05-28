@@ -88,6 +88,17 @@ describe('data-warehouse sync worker', () => {
     await initConfig();
   });
 
+  test('getDataWarehouseSyncOptions passes startDate when configured', async () => {
+    await initConfig({
+      dataWarehouse: {
+        ...enabledDataWarehouse,
+        startDate: new Date('2024-01-01T00:00:00.000Z'),
+      },
+    });
+    const result = getDataWarehouseSyncOptions(config);
+    expect(result.startDate).toEqual(new Date('2024-01-01T00:00:00.000Z'));
+  });
+
   test('getDataWarehouseSyncOptions uses resolved readonlyDatabase config', () => {
     const result = getDataWarehouseSyncOptions(config);
 

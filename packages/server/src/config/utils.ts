@@ -51,6 +51,10 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.asyncDelayScaling ??= 5;
   config.aiRealtimeTranscriptionUrl ??= 'wss://api.openai.com/v1/realtime?intent=transcription';
 
+  if (config.dataWarehouse?.startDate !== undefined) {
+    config.dataWarehouse.startDate = normalizeDate(config.dataWarehouse.startDate);
+  }
+
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
     getLogger().warn(
@@ -204,6 +208,28 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
+const dateKeys = new Set(['dataWarehouse.startDate']);
+
+export function isDateConfig(key: string): boolean {
+  return dateKeys.has(key);
+}
+
+/**
+ * Coerces a `Date` or ISO 8601 string to a `Date`.
+ * @param raw - A `Date` instance or date string.
+ * @returns The parsed `Date`, or `undefined` when the string is empty.
+ */
+export function normalizeDate(raw: Date | string): Date | undefined {
+  if (raw instanceof Date) {
+    return raw;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return new Date(trimmed);
+}
+
 export function setValue(config: Record<string, unknown>, key: string, value: string): void {
   const keySegments = key.split('.');
   let obj = config;
@@ -221,6 +247,8 @@ export function setValue(config: Record<string, unknown>, key: string, value: st
     parsedValue = Number.parseInt(value, 10);
   } else if (isBooleanConfig(key)) {
     parsedValue = value === 'true';
+  } else if (isDateConfig(key)) {
+    parsedValue = normalizeDate(value);
   } else if (isObjectConfig(key)) {
     parsedValue = JSON.parse(value);
   }

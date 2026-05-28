@@ -5,6 +5,7 @@ import type { ILogger } from '@medplum/core';
 import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
+
 /**
  * Returns configuration errors for data warehouse sync when `dataWarehouse.enabled` is true.
  * Returns an empty array when sync is disabled or configuration is valid.
@@ -39,6 +40,10 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     errors.push('dataWarehouse.destination must be "s3tables" or "local"');
   }
 
+  if (dw.startDate !== undefined && !isDate(dw.startDate)) {
+    errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
+  }
+
   return errors;
 }
 
@@ -66,4 +71,8 @@ export function warnInvalidDataWarehouseConfig(config: MedplumServerConfig, logg
   logger.warn('Data warehouse sync is enabled but configuration is invalid; sync worker will not start', {
     errors,
   });
+}
+
+function isDate(value: Date | undefined): boolean {
+  return value !== undefined && !Number.isNaN(value.getTime());
 }

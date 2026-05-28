@@ -6,18 +6,22 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
+import { Conjunction  } from '../fhir/sql';
+import type {Expression} from '../fhir/sql';
 import { globalLogger } from '../logger';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseDestination } from './destination';
 import type { DuckdbConnection } from './warehouse-sql';
-import { DEFAULT_NAMESPACE } from './warehouse-sql';
+import { buildStartDatePredicate, DEFAULT_NAMESPACE } from './warehouse-sql';
 
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
   warehouseSources: WarehouseSourceTable[];
   destination: DataWarehouseDestination;
   namespace?: string;
+  /** Earliest history `lastUpdated` to export. */
+  startDate?: Date;
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
@@ -50,6 +54,20 @@ function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
 }
 
+function buildWarehouseSourcePredicate(
+  options: SyncOptions,
+  tableSpec: WarehouseSourceTable,
+  namespace: string
+): Expression | undefined {
+  const destinationPredicate = options.destination.buildSourcePredicate(tableSpec, namespace);
+  if (!options.startDate) {
+    return destinationPredicate;
+  }
+
+  const startDatePredicate = buildStartDatePredicate(options.startDate);
+  return destinationPredicate ? new Conjunction([destinationPredicate, startDatePredicate]) : startDatePredicate;
+}
+
 type WarehouseSyncDuckdbConnection = DuckdbConnection & {
   closeSync(): void;
 };
@@ -66,6 +84,7 @@ async function runWarehouseTableSync(
   // general logging of the sync start
   globalLogger.info('Starting warehouse sync', {
     tableCount: total,
+    startDate: options.startDate?.toISOString(),
     warehouseSources: options.warehouseSources.map((spec) => ({
       icebergTable: spec.icebergTable,
       postgresTable: spec.postgresTable,
@@ -76,7 +95,7 @@ async function runWarehouseTableSync(
   for (const [index, spec] of options.warehouseSources.entries()) {
     const { icebergTable, postgresTable } = spec;
     const tableNumber = index + 1;
-    const sourcePredicate = options.destination.buildSourcePredicate(spec, namespace);
+    const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
     const resultTableName = options.destination.getDestinationName(spec);
     await options.destination.ensureTargetExists(spec, namespace);
 
