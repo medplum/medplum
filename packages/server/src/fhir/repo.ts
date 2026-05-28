@@ -53,6 +53,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  ClientApplication,
   Meta,
   OperationOutcome,
   Project,
@@ -154,6 +155,17 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.onBehalfOf.
    */
   onBehalfOf?: Reference;
+
+  /**
+   * The authenticating ClientApplication for the current login, when present.
+   * This is the application that obtained the access token, which may differ
+   * from the acting `author` (e.g. when using `X-Medplum-On-Behalf-Of`, or for
+   * a SMART on FHIR app acting on behalf of a user). It is recorded as an
+   * additional non-requestor `agent[]` participant on per-interaction AuditEvents
+   * so the audit trail captures which client performed an action.
+   * Absent on the pure `client_credentials` / system paths.
+   */
+  client?: Reference<ClientApplication>;
 
   remoteAddress?: string;
 
@@ -2072,6 +2084,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         resource,
         searchQuery: query,
         durationMs: options?.durationMs,
+        client: this.context.client,
       }
     );
     logAuditEvent(auditEvent);
