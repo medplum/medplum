@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Group, Loader, Stack, Title } from '@mantine/core';
+import { Alert, Group, Input, Loader, Stack, Title } from '@mantine/core';
 import { EMPTY, getExtensionValue, isOk, normalizeErrorString } from '@medplum/core';
-import type { Coding, HealthcareService, OperationOutcome, ResourceType } from '@medplum/fhirtypes';
-import { CodingInput, Form, SubmitButton } from '@medplum/react';
+import type { Coding, HealthcareService, OperationOutcome, PlanDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
+import { CodingInput, Form, ReferenceInput, SubmitButton } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { AlphaBanner } from '../../components/AlphaBanner';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { SchedulingEncounterCodingURI } from '../../utils/scheduling';
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 
 interface HealthcareServiceSchedulingFormProps {
   readonly service: HealthcareService;
@@ -22,17 +22,29 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>(
     () => getExtensionValue(service, SchedulingEncounterCodingURI) as Coding | undefined
   );
+  const [planDefinition, setPlanDefinition] = useState<Reference<PlanDefinition> | undefined>(
+    () => getExtensionValue(service, SchedulingPlanDefinitionURI) as Reference<PlanDefinition> | undefined
+  );
 
   const handleSubmit = async (): Promise<void> => {
     const updated = {
       ...service,
-      extension: (service.extension ?? EMPTY).filter((ext) => ext.url !== SchedulingEncounterCodingURI),
+      extension: (service.extension ?? EMPTY).filter(
+        (ext) => ext.url !== SchedulingEncounterCodingURI && ext.url !== SchedulingPlanDefinitionURI
+      ),
     };
 
     if (encounterClass) {
       updated.extension.push({
         url: SchedulingEncounterCodingURI,
         valueCoding: encounterClass,
+      });
+    }
+
+    if (planDefinition) {
+      updated.extension.push({
+        url: SchedulingPlanDefinitionURI,
+        valueReference: planDefinition,
       });
     }
 
@@ -58,6 +70,25 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
           defaultValue={encounterClass}
           onChange={setEncounterClass}
         />
+        <Input.Wrapper
+          label="Plan Definition"
+          description="The plan definition to apply to encounters created when scheduling this HealthcareService"
+        >
+          {/*
+            Tricky: The complex nesting of the `<input>` deeply inside
+            ReferenceInput prevents the margins here from applying
+            normally, so we add a custom spacing wrapper that matches what
+            Mantine would normally do.
+          */}
+          <div style={{ marginTop: 'calc(var(--mantine-spacing-xs) / 2)' }}>
+            <ReferenceInput
+              name="planDefinition"
+              targetTypes={['PlanDefinition']}
+              defaultValue={planDefinition}
+              onChange={setPlanDefinition}
+            />
+          </div>
+        </Input.Wrapper>
         <Group justify="flex-end">
           <SubmitButton>Save</SubmitButton>
         </Group>

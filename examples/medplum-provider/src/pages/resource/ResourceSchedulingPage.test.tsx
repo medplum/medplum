@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { HealthcareService } from '@medplum/fhirtypes';
+import type { HealthcareService, PlanDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent, waitFor } from '../../test-utils/render';
-import { SchedulingEncounterCodingURI } from '../../utils/scheduling';
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 import { ResourceSchedulingPage } from './ResourceSchedulingPage';
 
 vi.mock('../../utils/notifications', () => ({
@@ -73,9 +73,8 @@ describe('ResourceSchedulingPage', () => {
 
     const updateSpy = vi.spyOn(medplum, 'updateResource');
 
-    // The existing coding shows as a pill (searchbox is hidden when a value is selected)
+    // The existing coding shows as a pill; the CodingInput's searchbox is hidden when a value is selected
     expect(screen.getByText('ambulatory')).toBeInTheDocument();
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
 
     // Saving without making changes preserves the existing extension
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -86,9 +85,14 @@ describe('ResourceSchedulingPage', () => {
     );
 
     // Clear "ambulatory" and select a new coding.
-    // MockClient always returns fixed test codes for any ValueSet/$expand call;
+    // MockClient always returns fixed test codes for any ValueSet/$expand call.
+    // After clearing, two searchboxes are visible (CodingInput + ReferenceInput); target by name.
     await userEvent.click(screen.getByTitle('Clear all'));
-    await userEvent.type(screen.getByRole('searchbox'), 'test');
+    const encounterInput = screen.getAllByRole('searchbox').find((el) => el.getAttribute('name') === 'encounterClass');
+    if (!encounterInput) {
+      throw new Error('Encounter input not found.');
+    }
+    await userEvent.type(encounterInput, 'test');
     await userEvent.click(await screen.findByText('Test Display 2'));
 
     // Submit and verify the new coding was saved
@@ -110,5 +114,38 @@ describe('ResourceSchedulingPage', () => {
     await waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(4));
     const fourthSave = updateSpy.mock.calls[3][0] as HealthcareService;
     expect((fourthSave.extension ?? []).filter((e) => e.url === SchedulingEncounterCodingURI)).toHaveLength(0);
+  });
+
+  test('PlanDefinition reference is saved and preserved', async () => {
+    const planDef = await medplum.createResource<PlanDefinition>({
+      resourceType: 'PlanDefinition',
+      id: 'pd-1',
+      title: 'Annual Checkup Protocol',
+      status: 'active',
+    });
+    // Include display so ReferenceInput can render the pill without a separate fetch
+    const ref = { reference: `PlanDefinition/${planDef.id}`, display: 'Annual Checkup Protocol' };
+    await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      id: 'svc-pd',
+      name: 'Protocol Service',
+      extension: [{ url: SchedulingPlanDefinitionURI, valueReference: ref }],
+    });
+    setup('/HealthcareService/svc-pd/scheduling');
+    await screen.findByText('Protocol Service - Scheduling Configuration');
+    // The Plan Definition label confirms the input is rendered
+    expect(screen.getByText('Plan Definition')).toBeInTheDocument();
+
+    // Saving without interaction preserves the reference extension
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1));
+    const saved = updateSpy.mock.calls[0][0] as HealthcareService;
+    expect(saved.extension).toContainEqual(
+      expect.objectContaining({
+        url: SchedulingPlanDefinitionURI,
+        valueReference: expect.objectContaining({ reference: `PlanDefinition/${planDef.id}` }),
+      })
+    );
   });
 });
