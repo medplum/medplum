@@ -282,8 +282,6 @@ export interface SubmitClaimModalProps {
   patient: WithId<Patient>;
   conditions: Condition[];
   practitioner: WithId<Practitioner> | undefined;
-  showCandidButton?: boolean;
-  showStediButton?: boolean;
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;

@@ -1063,7 +1063,6 @@ describe('BillingTab', () => {
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
       vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
       vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedClaim);
-      vi.spyOn(medplum, 'readResource').mockResolvedValue(updatedClaim);
       const postSpy = vi.spyOn(medplum, 'post').mockImplementation(async (url: any) => {
         if (url?.toString().includes('$candid-submit-claim')) {
           return { resourceType: 'ClaimResponse', id: 'cr-1' };
