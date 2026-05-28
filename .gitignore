@@ -1,5 +1,12 @@
 .DS_Store
 
+# Home Health local env
+.env.local
+.env.*.local
+
+# Architecture / planning docs (kept locally, not in repo)
+ARCHITECTURE.md
+
 # Local files for FileSystemBinaryStorage
 binary/
 

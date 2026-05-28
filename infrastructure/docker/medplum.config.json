@@ -1,0 +1,23 @@
+{
+  "port": 8103,
+  "baseUrl": "http://localhost:8103/",
+  "database": {
+    "host": "postgres",
+    "port": 5432,
+    "dbname": "medplum",
+    "username": "medplum",
+    "password": "medplum",
+    "ssl": false
+  },
+  "redis": {
+    "host": "redis",
+    "port": 6379
+  },
+  "storageBaseUrl": "http://localhost:8103/storage/",
+  "allowedOrigins": [
+    "http://localhost:3000",
+    "http://localhost:3001"
+  ],
+  "defaultBotRuntimeVersion": "vmcontext",
+  "logLevel": "info"
+}

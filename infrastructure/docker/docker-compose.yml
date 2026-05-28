@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  medplum-server:
+    image: medplum/medplum-server:latest
+    ports:
+      - '8103:8103'
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_DBNAME=medplum
+      - DATABASE_USERNAME=medplum
+      - DATABASE_PASSWORD=medplum
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - STORAGE_DRIVER=file
+      - STORAGE_PATH=/var/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - medplum-data:/var/data
+      - ./medplum.config.json:/usr/src/medplum/packages/server/medplum.config.json:ro
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: medplum
+      POSTGRES_PASSWORD: medplum
+      POSTGRES_DB: medplum
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U medplum']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  medplum-data:
