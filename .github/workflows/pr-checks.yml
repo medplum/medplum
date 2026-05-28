@@ -1,0 +1,45 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --workspace=@hh/web --workspace=@hh/core --workspace=@hh/fhir --workspace=@hh/billing --workspace=@hh/whatsapp --include-workspace-root
+
+      - name: Typecheck — apps/web
+        run: npm run typecheck --workspace=@hh/web
+
+      - name: Typecheck — hh-core
+        run: npm run typecheck --workspace=@hh/core
+
+      - name: Typecheck — hh-fhir
+        run: npm run typecheck --workspace=@hh/fhir
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --workspace=@hh/web --include-workspace-root
+
+      - name: Lint — apps/web
+        run: npm run lint --workspace=@hh/web

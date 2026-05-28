@@ -73,7 +73,7 @@ export function PatientDetailClient({ patient: initial }: { patient: HHPatient }
         <PatientModal
           initial={patient}
           onClose={() => setShowEdit(false)}
-          onSaved={updated => { setPatient(updated); setShowEdit(false); }}
+          onSaved={(updated: HHPatient) => { setPatient(updated); setShowEdit(false); }}
         />
       )}
     </>

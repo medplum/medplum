@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  await req.json(); // body will be used when appointments are implemented
 
   // TODO: verify session
   // TODO: validate body (required: patientId, practitionerId, start, end)

@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { fhirGet } from '@/lib/medplum-client';
 import { fromFHIRPatient } from '@hh/fhir';
-import { formatPhone, formatCPF, formatDate } from '@hh/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { PatientDetailClient } from './PatientDetailClient';
 

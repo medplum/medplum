@@ -49,7 +49,7 @@ export async function fhirSearch<T>(resourceType: string, params: Record<string,
   const res = await medplumFetch(`/fhir/R4/${resourceType}?${qs}`);
   if (!res.ok) throw new Error(`FHIR search error: ${res.status}`);
   const bundle = await res.json();
-  return bundle.entry?.map((e: any) => e.resource) ?? [];
+  return bundle.entry?.map((e: { resource: T }) => e.resource) ?? [];
 }
 
 export async function fhirCreate<T>(resourceType: string, resource: T): Promise<T> {

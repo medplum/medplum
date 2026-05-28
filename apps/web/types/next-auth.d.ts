@@ -5,6 +5,7 @@ declare module 'next-auth' {
   interface User {
     practitionerId: string;
     projectId: string;
+    role: string;
   }
 
   interface Session {
@@ -14,6 +15,7 @@ declare module 'next-auth' {
       email?: string | null;
       practitionerId: string;
       projectId: string;
+      role: string;
     };
   }
 }
@@ -22,5 +24,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     practitionerId: string;
     projectId: string;
+    role?: string;
   }
 }

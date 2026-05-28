@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { verifyUser } from '@/lib/users';
+import type { AppUser } from '@/lib/users';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -19,16 +20,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.practitionerId = (user as any).practitionerId;
-        token.projectId = (user as any).projectId;
-        token.role = (user as any).role;
+        const u = user as AppUser;
+        token.practitionerId = u.practitionerId;
+        token.projectId = u.projectId;
+        token.role = u.role;
       }
       return token;
     },
     session({ session, token }) {
-      (session.user as any).practitionerId = token.practitionerId;
-      (session.user as any).projectId = token.projectId;
-      (session.user as any).role = token.role;
+      session.user.practitionerId = token.practitionerId;
+      session.user.projectId = token.projectId;
+      session.user.role = token.role as string;
       return session;
     },
   },
