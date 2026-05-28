@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bot, Claim } from '@medplum/fhirtypes';
+import type { Bot, Claim, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import type { Repository } from '../repo';
 
 const app = express();
 const SUB_OPERATION_CODE = 'test-submit-claim';
@@ -46,6 +47,18 @@ const claimResponseBotCode = `
     };
   };
 `;
+
+// Sets the CLAIM_SUBMIT_OPERATION project setting to the given operation code.
+async function setClaimSubmitOperation(repo: Repository, project: WithId<Project>, code: string): Promise<void> {
+  const systemRepo = repo.getSystemRepo();
+  await withTestContext(async () => {
+    const latest = await systemRepo.readResource('Project', project.id);
+    await systemRepo.updateResource({
+      ...latest,
+      setting: [{ name: 'CLAIM_SUBMIT_OPERATION', valueString: code }],
+    });
+  });
+}
 
 // Creates a custom claim-submit OperationDefinition backed by a deployed Bot.
 async function deployClaimOperation(accessToken: string, code = SUB_OPERATION_CODE): Promise<void> {
@@ -89,13 +102,10 @@ async function deployClaimOperation(accessToken: string, code = SUB_OPERATION_CO
   expect(res3.status).toBe(201);
 }
 
-function bodyWith(params: { operation?: string; resource?: Claim }): object {
-  const parameter: { name: string; valueCode?: string; resource?: Claim }[] = [];
-  if (params.operation !== undefined) {
-    parameter.push({ name: 'operation', valueCode: params.operation });
-  }
-  if (params.resource !== undefined) {
-    parameter.push({ name: 'resource', resource: params.resource });
+function bodyWith(resource?: Claim): object {
+  const parameter: { name: string; resource?: Claim }[] = [];
+  if (resource !== undefined) {
+    parameter.push({ name: 'resource', resource });
   }
   return { resourceType: 'Parameters', parameter };
 }
@@ -111,69 +121,50 @@ describe('Claim $submit', () => {
     await shutdownApp();
   });
 
-  test('Returns 400 when no operation is configured and no operation param is passed', async () => {
+  test('Returns 400 when CLAIM_SUBMIT_OPERATION is not configured', async () => {
     const accessToken = await initTestAuth();
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith({ resource: minimalClaim }));
+      .send(bodyWith(minimalClaim));
     expect(res.status).toBe(400);
     expect(JSON.stringify(res.body)).toMatch(/not configured/i);
   });
 
   test('Returns 400 when the configured operation has no matching OperationDefinition', async () => {
-    const accessToken = await initTestAuth();
+    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    await setClaimSubmitOperation(repo, project, 'no-such-operation');
+
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith({ operation: 'no-such-operation', resource: minimalClaim }));
+      .send(bodyWith(minimalClaim));
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/no-such-operation/);
+    expect(JSON.stringify(res.body)).toMatch(/not available/i);
   });
 
-  test('Dispatches to the operation named by the operation override parameter', async () => {
-    const accessToken = await initTestAuth();
+  test('Dispatches to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
+    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
     await deployClaimOperation(accessToken);
+    await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith({ operation: SUB_OPERATION_CODE, resource: minimalClaim }));
+      .send(bodyWith(minimalClaim));
     expect(res.status).toBe(200);
     // A single 'return' output of a resource type is sent as the bare resource, not wrapped in Parameters.
     expect(res.body.resourceType).toBe('ClaimResponse');
     expect(res.body.outcome).toBe('complete');
   });
 
-  test('Dispatches to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
+  test('Reads the Claim from the URL on the instance route', async () => {
     const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
     await deployClaimOperation(accessToken);
-
-    // Configure the project setting to point at the custom operation.
-    const systemRepo = repo.getSystemRepo();
-    await withTestContext(async () => {
-      const latest = await systemRepo.readResource('Project', project.id);
-      await systemRepo.updateResource({
-        ...latest,
-        setting: [{ name: 'CLAIM_SUBMIT_OPERATION', valueString: SUB_OPERATION_CODE }],
-      });
-    });
-
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith({ resource: minimalClaim }));
-    expect(res.status).toBe(200);
-    expect(res.body.resourceType).toBe('ClaimResponse');
-  });
-
-  test('Reads the Claim from the URL on the instance route', async () => {
-    const accessToken = await initTestAuth();
-    await deployClaimOperation(accessToken);
+    await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const createRes = await request(app)
       .post('/fhir/R4/Claim')
@@ -187,20 +178,21 @@ describe('Claim $submit', () => {
       .post(`/fhir/R4/Claim/${claimId}/$submit`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith({ operation: SUB_OPERATION_CODE }));
+      .send(bodyWith());
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toBe('ClaimResponse');
   });
 
   test('Returns 400 when no Claim payload is provided', async () => {
-    const accessToken = await initTestAuth();
+    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
     await deployClaimOperation(accessToken);
+    await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith({ operation: SUB_OPERATION_CODE }));
+      .send(bodyWith());
     expect(res.status).toBe(400);
     expect(JSON.stringify(res.body)).toMatch(/Missing Claim payload/i);
   });
