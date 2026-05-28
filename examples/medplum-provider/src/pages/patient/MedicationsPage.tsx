@@ -196,7 +196,10 @@ export function MedicationsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
-const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
@@ -263,7 +266,7 @@ const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
             autoClose: 3000,
           });
           medplum.invalidateSearches('MedicationRequest');
-          await fetchData();
+          await fetchDataRef.current();
         }
       } catch (err) {
         if (!cancelled) {
@@ -275,8 +278,7 @@ const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     return () => {
       cancelled = true;
     };
-    // fetchData is intentionally excluded — including it would re-trigger the sync on every tab/page change.
-  }, [hasDoseSpot, medplum, patient?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hasDoseSpot, medplum, patient?.id]);
 
   const handleOrderMedicationComplete = useCallback(
     async (result: { launchUrl: string; medicationRequestId?: string }): Promise<void> => {
