@@ -4,7 +4,7 @@ import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mant
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, HTTP_HL7_ORG, normalizeErrorString } from '@medplum/core';
+import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
@@ -277,7 +277,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
             message: parsed?.errorMessage,
           });
         } catch {
-          showErrorNotification(normalizeErrorString(err));
+          showErrorNotification(err);
         }
       } finally {
         setSubmitting(false);

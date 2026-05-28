@@ -102,7 +102,7 @@ interface ClaimReviewPanelProps {
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
-  ensureSelfPayCoverage?: () => Promise<WithId<Coverage>>;
+  ensureSelfPayCoverage: () => Promise<WithId<Coverage>>;
 }
 
 const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
@@ -112,7 +112,6 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
     practitioner,
     insuranceCoverages,
     selectedCoverage,
-    selfPayCoverage,
     initialBillingType,
     onClose,
     onSubmitClaim,
@@ -154,8 +153,8 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
 
   const resolveCoverages = async (): Promise<Reference<Coverage>[]> => {
     if (billingType === 'self-pay') {
-      const coverage = ensureSelfPayCoverage ? await ensureSelfPayCoverage() : selfPayCoverage;
-      return coverage ? [createReference(coverage)] : [];
+      const coverage = await ensureSelfPayCoverage();
+      return [createReference(coverage)];
     }
     return insuranceCoverages.filter((c) => selectedIds.has(c.id)).map(createReference);
   };
@@ -285,7 +284,7 @@ export interface SubmitClaimModalProps {
   onClose: () => void;
   onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
-  ensureSelfPayCoverage?: () => Promise<WithId<Coverage>>;
+  ensureSelfPayCoverage: () => Promise<WithId<Coverage>>;
 }
 
 export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
