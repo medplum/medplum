@@ -227,7 +227,7 @@ export function MedicationsPage(): JSX.Element {
 
   useEffect(() => {
     if (!hasDoseSpot || !patient?.id) {
-      return;
+      return undefined;
     }
     const today = new Date().toISOString().split('T')[0];
     const notificationId = 'dosespot-sync';
@@ -278,7 +278,7 @@ export function MedicationsPage(): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [hasDoseSpot, patient?.id]);
+  }, [hasDoseSpot, medplum, patient?.id]);
 
   const handleOrderMedicationComplete = useCallback(
     async (result: { launchUrl: string; medicationRequestId?: string }): Promise<void> => {
