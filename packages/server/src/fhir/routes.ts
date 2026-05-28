@@ -327,7 +327,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
-  // Claim $submit operation (dispatcher → $stedi-submit-claim or $candid-submit-claim)
+  // Claim $submit operation (dispatches to the custom operation configured via CLAIM_SUBMIT_OPERATION, or the optional 'operation' override)
   router.add('POST', '/Claim/$submit', claimSubmitHandler);
   router.add('POST', '/Claim/:id/$submit', claimSubmitHandler);
 

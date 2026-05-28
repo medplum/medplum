@@ -1,13 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Claim } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
+import type { Bot, Claim } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 const app = express();
+const SUB_OPERATION_CODE = 'test-submit-claim';
+
 const minimalClaim: Claim = {
   resourceType: 'Claim',
   status: 'active',
@@ -26,17 +30,80 @@ const minimalClaim: Claim = {
   ],
 };
 
-function bodyWith(processor: string | undefined, resource: Claim = minimalClaim): object {
-  const parameter: { name: string; valueCode?: string; resource?: Claim }[] = [{ name: 'resource', resource }];
-  if (processor !== undefined) {
-    parameter.unshift({ name: 'processor', valueCode: processor });
+// Bot handler that echoes the submitted Claim back as a minimal ClaimResponse.
+const claimResponseBotCode = `
+  exports.handler = async function (medplum, event) {
+    const claim = event.input;
+    return {
+      resourceType: 'ClaimResponse',
+      status: 'active',
+      type: claim.type,
+      use: claim.use,
+      patient: claim.patient,
+      created: '2026-01-01T00:00:00.000Z',
+      insurer: { display: 'Test Payer' },
+      outcome: 'complete',
+    };
+  };
+`;
+
+// Creates a custom claim-submit OperationDefinition backed by a deployed Bot.
+async function deployClaimOperation(accessToken: string, code = SUB_OPERATION_CODE): Promise<void> {
+  const res1 = await request(app)
+    .post('/fhir/R4/Bot')
+    .set('Content-Type', ContentType.FHIR_JSON)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send({ resourceType: 'Bot', name: 'Claim Submit Bot', runtimeVersion: 'vmcontext' });
+  expect(res1.status).toBe(201);
+  const bot = res1.body as WithId<Bot>;
+
+  const res2 = await request(app)
+    .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+    .set('Content-Type', ContentType.FHIR_JSON)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send({ code: claimResponseBotCode });
+  expect(res2.status).toBe(200);
+
+  const res3 = await request(app)
+    .post('/fhir/R4/OperationDefinition')
+    .set('Content-Type', ContentType.FHIR_JSON)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send({
+      resourceType: 'OperationDefinition',
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+          valueReference: createReference(bot),
+        },
+      ],
+      name: code,
+      status: 'active',
+      kind: 'operation',
+      code,
+      system: false,
+      type: true,
+      instance: false,
+      resource: ['Claim'],
+      parameter: [{ use: 'out', name: 'return', type: 'ClaimResponse', min: 1, max: '1' }],
+    });
+  expect(res3.status).toBe(201);
+}
+
+function bodyWith(params: { operation?: string; resource?: Claim }): object {
+  const parameter: { name: string; valueCode?: string; resource?: Claim }[] = [];
+  if (params.operation !== undefined) {
+    parameter.push({ name: 'operation', valueCode: params.operation });
+  }
+  if (params.resource !== undefined) {
+    parameter.push({ name: 'resource', resource: params.resource });
   }
   return { resourceType: 'Parameters', parameter };
 }
 
-describe('Claim $submit dispatcher', () => {
+describe('Claim $submit', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.vmContextBotsEnabled = true;
     await initApp(app, config);
   });
 
@@ -44,155 +111,96 @@ describe('Claim $submit dispatcher', () => {
     await shutdownApp();
   });
 
-  test('Rejects invalid processor value', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith('foo'));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/Invalid processor/i);
-  });
-
-  test('Returns 400 when no processor secrets are configured', async () => {
+  test('Returns 400 when no operation is configured and no operation param is passed', async () => {
     const accessToken = await initTestAuth();
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith(undefined));
+      .send(bodyWith({ resource: minimalClaim }));
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
+    expect(JSON.stringify(res.body)).toMatch(/not configured/i);
   });
 
-  test('Returns 400 when processor=stedi in body but STEDI_CLAIM_API_KEY not configured', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' }],
-      },
-    });
+  test('Returns 400 when the configured operation has no matching OperationDefinition', async () => {
+    const accessToken = await initTestAuth();
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith('stedi'));
+      .send(bodyWith({ operation: 'no-such-operation', resource: minimalClaim }));
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
+    expect(JSON.stringify(res.body)).toMatch(/no-such-operation/);
   });
 
-  test('Returns 400 when processor=candid in body but CANDID_SECRET_ID not configured', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
-      },
-    });
+  test('Dispatches to the operation named by the operation override parameter', async () => {
+    const accessToken = await initTestAuth();
+    await deployClaimOperation(accessToken);
+
     const res = await request(app)
       .post('/fhir/R4/Claim/$submit')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith('candid'));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/No claim processor configured/i);
+      .send(bodyWith({ operation: SUB_OPERATION_CODE, resource: minimalClaim }));
+    expect(res.status).toBe(200);
+    // A single 'return' output of a resource type is sent as the bare resource, not wrapped in Parameters.
+    expect(res.body.resourceType).toBe('ClaimResponse');
+    expect(res.body.outcome).toBe('complete');
   });
 
-  test('Routes to stedi when processor=stedi in body and STEDI_CLAIM_API_KEY configured', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith('stedi'));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/stedi-submit-claim/);
-  });
+  test('Dispatches to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
+    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    await deployClaimOperation(accessToken);
 
-  test('Routes to candid when processor=CANDID in body (case-insensitive)', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith('CANDID'));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/candid-submit-claim/);
-  });
-
-  test('Falls back to STEDI_CLAIM_API_KEY secret when processor not in body', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith(undefined));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/stedi-submit-claim/);
-  });
-
-  test('Falls back to CANDID_SECRET_ID secret when processor not in body', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith(undefined));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/candid-submit-claim/);
-  });
-
-  test('Body processor overrides project secrets when both are configured', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [
-          { name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' },
-          { name: 'CANDID_SECRET_ID', valueString: 'candid-test-secret' },
-        ],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith('candid'));
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/candid-submit-claim/);
-    expect(JSON.stringify(res.body)).not.toMatch(/stedi-submit-claim/);
-  });
-
-  test('Returns 400 when no Claim payload provided and processor secret configured', async () => {
-    const accessToken = await initTestAuth({
-      project: {
-        secret: [{ name: 'STEDI_CLAIM_API_KEY', valueString: 'stedi-test-key' }],
-      },
-    });
-    const res = await request(app)
-      .post('/fhir/R4/Claim/$submit')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'processor', valueCode: 'stedi' }],
+    // Configure the project setting to point at the custom operation.
+    const systemRepo = repo.getSystemRepo();
+    await withTestContext(async () => {
+      const latest = await systemRepo.readResource('Project', project.id);
+      await systemRepo.updateResource({
+        ...latest,
+        setting: [{ name: 'CLAIM_SUBMIT_OPERATION', valueString: SUB_OPERATION_CODE }],
       });
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/Claim/$submit')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bodyWith({ resource: minimalClaim }));
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ClaimResponse');
+  });
+
+  test('Reads the Claim from the URL on the instance route', async () => {
+    const accessToken = await initTestAuth();
+    await deployClaimOperation(accessToken);
+
+    const createRes = await request(app)
+      .post('/fhir/R4/Claim')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(minimalClaim);
+    expect(createRes.status).toBe(201);
+    const claimId = createRes.body.id;
+
+    const res = await request(app)
+      .post(`/fhir/R4/Claim/${claimId}/$submit`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bodyWith({ operation: SUB_OPERATION_CODE }));
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ClaimResponse');
+  });
+
+  test('Returns 400 when no Claim payload is provided', async () => {
+    const accessToken = await initTestAuth();
+    await deployClaimOperation(accessToken);
+
+    const res = await request(app)
+      .post('/fhir/R4/Claim/$submit')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bodyWith({ operation: SUB_OPERATION_CODE }));
     expect(res.status).toBe(400);
     expect(JSON.stringify(res.body)).toMatch(/Missing Claim payload/i);
   });
