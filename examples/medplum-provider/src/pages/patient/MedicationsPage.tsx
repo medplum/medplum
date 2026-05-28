@@ -244,8 +244,16 @@ export function MedicationsPage(): JSX.Element {
       .executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id })
       .then(() =>
         Promise.all([
-          medplum.executeBot(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, { patientId: patient.id as string, start: today, end: today }),
-          medplum.executeBot(DOSESPOT_MEDICATION_HISTORY_BOT, { patientId: patient.id as string, start: today, end: today }),
+          medplum.executeBot(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, {
+            patientId: patient.id as string,
+            start: today,
+            end: today,
+          }),
+          medplum.executeBot(DOSESPOT_MEDICATION_HISTORY_BOT, {
+            patientId: patient.id as string,
+            start: today,
+            end: today,
+          }),
         ])
       )
       .then(() => {
