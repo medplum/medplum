@@ -217,7 +217,7 @@ export function isDateConfig(key: string): boolean {
 /**
  * Coerces a `Date` or ISO 8601 string to a `Date`.
  * @param raw - A `Date` instance or date string.
- * @returns The parsed `Date`, or `undefined` when the string is empty.
+ * @returns The parsed `Date`.
  */
 export function normalizeDate(raw: Date | string): Date | undefined {
   if (raw instanceof Date) {
@@ -225,7 +225,7 @@ export function normalizeDate(raw: Date | string): Date | undefined {
   }
   const trimmed = raw.trim();
   if (!trimmed) {
-    return undefined;
+    throw new Error('Date string is empty');
   }
   return new Date(trimmed);
 }
