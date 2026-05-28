@@ -300,10 +300,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
   const submitToStedi = useCallback(
     async (insurance: Reference<Coverage>[]): Promise<void> => {
-      await runClaimSubmit(insurance, 
-        '$stedi-submit-claim', 
-        'Submitted to Stedi', 
-        'Claim successfully submitted to Stedi');
+      await runClaimSubmit(
+        insurance,
+        '$stedi-submit-claim',
+        'Submitted to Stedi',
+        'Claim successfully submitted to Stedi'
+      );
     },
     [runClaimSubmit]
   );
@@ -373,7 +375,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Menu>
   );
 
- 
   const handleSubmitClaimClick = useCallback(async (): Promise<void> => {
     if (!conditions.length) {
       showNotification({
