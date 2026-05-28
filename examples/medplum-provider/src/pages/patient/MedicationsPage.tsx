@@ -196,6 +196,9 @@ export function MedicationsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const getOrderUrl = useCallback(
@@ -257,7 +260,7 @@ export function MedicationsPage(): JSX.Element {
             autoClose: 3000,
           });
           medplum.invalidateSearches('MedicationRequest');
-          fetchData().catch(showErrorNotification);
+          fetchDataRef.current().catch(showErrorNotification);
         }
       })
       .catch((err: unknown) => {
