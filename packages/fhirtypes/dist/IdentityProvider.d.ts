@@ -33,6 +33,17 @@ export interface IdentityProvider {
   userInfoUrl: string;
 
   /**
+   * Optional userinfo mode. Defaults to standard OIDC userinfo semantics.
+   */
+  userInfoMode?: 'oidc' | 'gcip';
+
+  /**
+   * Optional API key used by custom userinfo modes such as Google Cloud
+   * Identity Platform.
+   */
+  userInfoApiKey?: string;
+
+  /**
    * External Identity Provider client ID.
    */
   clientId: string;

@@ -1,14 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { GetFunctionConfigurationCommandOutput } from '@aws-sdk/client-lambda';
+import type { GetFunctionConfigurationCommandOutput, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
   DeleteFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
-  LambdaClient,
   ListLayerVersionsCommand,
-  ListVersionsByFunctionCommand,
   PackageType,
   ResourceConflictException,
   ResourceNotFoundException,
@@ -17,19 +15,18 @@ import {
 } from '@aws-sdk/client-lambda';
 import { normalizeErrorString, sleep } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger, globalLogger } from '../../logger';
+import { deleteOldLambdaVersions, getBotManagementLambdaClient } from './lambda';
 
 export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
-export const LAMBDA_VERSIONS_TO_KEEP = 2;
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
@@ -119,22 +116,11 @@ export function getLambdaNameForBot(bot: Bot): string {
   return `medplum-bot-lambda-${bot.id}`;
 }
 
-/**
- * Creates a new AWS Lambda client with a custom retry strategy.
- * @returns A configured LambdaClient.
- */
-export function createLambdaClient(): LambdaClient {
-  return new LambdaClient({
-    region: getConfig().awsRegion,
-    retryStrategy: new ConfiguredRetryStrategy(
-      5, // max attempts
-      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
-    ),
-  });
-}
+export const LAMBDA_NAME_REGEX_PATTERN =
+  '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
-  const client = createLambdaClient();
+  const client = getBotManagementLambdaClient();
   const name = getLambdaNameForBot(bot);
   let timeout: number;
   try {
@@ -168,7 +154,7 @@ export async function deployLambdaInternal(
     throw new Error('Bot timeout exceeds allowed maximum of 900 seconds');
   }
 
-  const client = createLambdaClient();
+  const client = getBotManagementLambdaClient();
   const name = getLambdaNameForBot(bot);
   log.info(`Deploying lambda${label} function for bot`, { name });
   const zipFile = await createZipFileFn(bot, code);
@@ -178,7 +164,7 @@ export async function deployLambdaInternal(
     await updateLambda(bot, client, name, zipFile);
     const { project } = getAuthenticatedContext();
     // Don't block on delete since this could take a while
-    deleteOldLambdaVersions(client, name).catch((err) => {
+    deleteOldLambdaVersions(client, name, { dryRun: false }).catch((err) => {
       globalLogger.error('Error occurred while deleting old Lambdas', {
         projectId: project.id,
         name,
@@ -187,42 +173,6 @@ export async function deployLambdaInternal(
     });
   } else {
     await createLambda(bot, client, name, zipFile);
-  }
-}
-
-/**
- * Deletes published lambda versions older than the most recent `LAMBDA_VERSIONS_TO_KEEP` versions.
- * Always preserves the unpublished `$LATEST` qualifier.
- * @param client - The AWS Lambda client.
- * @param name - The lambda name.
- */
-export async function deleteOldLambdaVersions(client: LambdaClient, name: string): Promise<void> {
-  const log = getLogger();
-  const versions: number[] = [];
-  let marker: string | undefined;
-  do {
-    const response = await client.send(new ListVersionsByFunctionCommand({ FunctionName: name, Marker: marker }));
-    for (const v of response.Versions ?? []) {
-      const parsed = Number(v.Version);
-      if (Number.isInteger(parsed)) {
-        versions.push(parsed);
-      }
-    }
-    marker = response.NextMarker;
-  } while (marker);
-
-  const toDelete = versions.toSorted((a, b) => b - a).slice(LAMBDA_VERSIONS_TO_KEEP);
-  if (toDelete.length === 0) {
-    return;
-  }
-
-  log.info('Cleaning up old lambda versions', { name, versions: toDelete });
-  for (const version of toDelete) {
-    try {
-      await client.send(new DeleteFunctionCommand({ FunctionName: name, Qualifier: String(version) }));
-    } catch (err) {
-      log.warn('Failed to delete old lambda version', { name, version, err: normalizeErrorString(err) });
-    }
   }
 }
 
@@ -265,6 +215,18 @@ export async function lambdaExists(client: LambdaClient, name: string): Promise<
     }
     throw err;
   }
+}
+
+/**
+ * Deletes the AWS Lambda for the bot name.
+ *
+ * Because no `Qualifier` is passed, AWS deletes the entire function — all versions and aliases.
+ *
+ * @param client - The AWS Lambda client.
+ * @param name - The bot name.
+ */
+export async function deleteLambda(client: LambdaClient, name: string): Promise<void> {
+  await client.send(new DeleteFunctionCommand({ FunctionName: name }));
 }
 
 /**

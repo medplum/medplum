@@ -6,8 +6,10 @@ import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { initCronWorker } from './cron';
+import { initDataWarehouseSyncWorker } from './data-warehouse-sync';
 import { addDispatchJobs, initDispatchWorker } from './dispatch';
 import { initDownloadWorker } from './download';
+import { initLambdaCleanerWorker } from './lambda-cleaner';
 import { initPostDeployMigrationWorker } from './post-deploy-migration';
 import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
@@ -24,6 +26,8 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'batch', init: initBatchWorker },
   { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
   { name: 'set-accounts', init: initSetAccountsWorker },
+  { name: 'lambda-cleaner', init: initLambdaCleanerWorker },
+  { name: 'data-warehouse-sync', init: initDataWarehouseSyncWorker },
 ];
 
 /**
@@ -38,7 +42,10 @@ export function initWorkers(config: MedplumServerConfig): void {
   for (const { name, init } of workerDefs) {
     const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);
     const { name: queueName, queue, worker } = init(config, { workerEnabled });
-    queueRegistry.add(queueName, queue, worker);
+    // a queue can be disabled, in which case, don't register it
+    if (queue) {
+      queueRegistry.add(queueName, queue, worker);
+    }
   }
   globalLogger.debug('Workers initialized');
 }

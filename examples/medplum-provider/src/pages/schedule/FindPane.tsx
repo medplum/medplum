@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
+import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
@@ -20,7 +20,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
-  onSuccess: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
+  onSuccess: (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
   className?: string;
 };
 
@@ -45,8 +45,8 @@ function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Elem
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element | null {
   const medplum = useMedplum();
-  const [slots, setSlots] = useState<readonly Slot[] | undefined>(undefined);
-  const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
+  const [appointments, setAppointments] = useState<readonly Appointment[] | undefined>(undefined);
+  const [chosenAppointment, setChosenAppointment] = useState<Appointment | undefined>(undefined);
   const [selectedHealthcareService, setSelectedHealthcareService] = useState<WithId<HealthcareService> | undefined>();
   const { schedule, range, onSuccess } = props;
 
@@ -85,7 +85,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     }
   }, [scheduleableServices]);
 
-  // Ensure that we are searching for slots in the future by at least 30 minutes.
+  // Ensure that we are searching for appointments in the future by at least 30 minutes.
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
 
   useEffect(() => {
@@ -102,14 +102,15 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     let completed = false;
     const controller = new AbortController();
     const signal = controller.signal;
-    const params = new URLSearchParams({
-      start,
-      end,
-      'service-type-reference': `HealthcareService/${selectedHealthcareService.id}`,
-    });
+
+    const url = medplum.fhirUrl('Appointment', '$find');
+    url.searchParams.append('start', start);
+    url.searchParams.append('end', end);
+    url.searchParams.append('service-type-reference', getReferenceString(selectedHealthcareService));
+    url.searchParams.append('schedule', getReferenceString(schedule));
 
     medplum
-      .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
+      .get<Bundle<Appointment>>(url, { signal })
       .then(
         (bundle) => {
           if (signal.aborted) {
@@ -117,9 +118,9 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
           }
           if (bundle.entry) {
             bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
-            setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
+            setAppointments(bundle.entry.map((entry) => entry.resource).filter(isDefined));
           } else {
-            setSlots([]);
+            setAppointments([]);
           }
         },
         (error) => {
@@ -140,14 +141,14 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
 
   const handleDismiss = useCallback(() => {
     setSelectedHealthcareService(undefined);
-    setSlots(EMPTY);
+    setAppointments(EMPTY);
   }, []);
 
   const handleBookSuccess = useCallback(
-    (results: { appointments: Appointment[]; slots: Slot[] }) => {
+    (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => {
       setSelectedHealthcareService(undefined);
-      setSlots([]);
-      setChosenSlot(undefined);
+      setAppointments([]);
+      setChosenAppointment(undefined);
       onSuccess(results);
     },
     [onSuccess]
@@ -157,18 +158,18 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     return null;
   }
 
-  if (selectedHealthcareService && chosenSlot) {
+  if (selectedHealthcareService && chosenAppointment) {
     return (
       <Stack gap="sm" justify="flex-start" className={props.className}>
         <Title order={4}>
           <Group justify="space-between">
             <HealthcareServiceDisplay value={selectedHealthcareService} />
-            <Button variant="subtle" onClick={() => setChosenSlot(undefined)} aria-label="Clear selection">
+            <Button variant="subtle" onClick={() => setChosenAppointment(undefined)} aria-label="Clear selection">
               <IconX size={20} />
             </Button>
           </Group>
         </Title>
-        <BookAppointmentForm slot={chosenSlot} onSuccess={handleBookSuccess} />
+        <BookAppointmentForm appointment={chosenAppointment} onSuccess={handleBookSuccess} />
       </Stack>
     );
   }
@@ -186,15 +187,15 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
             )}
           </Group>
         </Title>
-        {(slots ?? EMPTY).map((slot) => (
+        {(appointments ?? EMPTY).map((appointment) => (
           <Button
-            key={SchedulingTransientIdentifier.get(slot)}
+            key={SchedulingTransientIdentifier.get(appointment)}
             variant="outline"
             color="gray.3"
             styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
-            onClick={() => setChosenSlot(slot)}
+            onClick={() => setChosenAppointment(appointment)}
           >
-            {formatDateTime(slot.start)}
+            {formatDateTime(appointment.start)}
           </Button>
         ))}
       </Stack>

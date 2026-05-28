@@ -83,9 +83,7 @@ describe('EncounterModal', () => {
     });
 
     const createButton = screen.getByRole('button', { name: /Create Encounter/i });
-    await act(async () => {
-      await user.click(createButton);
-    });
+    await user.click(createButton);
 
     await waitFor(() => {
       expect(screen.getByText('Please fill out required fields.')).toBeInTheDocument();
@@ -102,11 +100,13 @@ describe('EncounterModal', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  test('Displays care template section', () => {
+  test('Displays care template section', async () => {
     setup();
 
     expect(screen.getByText('Apply care template')).toBeInTheDocument();
     expect(screen.getByText(/You can select template for new encounter/i)).toBeInTheDocument();
+    // Drain pending async state updates (e.g. ResourceInput default value resolution)
+    await act(async () => {});
   });
 
   test('Form fields can be populated with values', async () => {
@@ -171,9 +171,7 @@ describe('EncounterModal', () => {
 
     // The error notification will show when trying to create without filling required fields
     const createButton = screen.getByRole('button', { name: /Create Encounter/i });
-    await act(async () => {
-      await user.click(createButton);
-    });
+    await user.click(createButton);
 
     // Should show validation error - use getAllByText since there may be multiple
     await waitFor(() => {
@@ -274,9 +272,7 @@ describe('EncounterModal', () => {
 
     // Should show validation error when trying to create without patient
     const createButton = screen.getByRole('button', { name: /Create Encounter/i });
-    await act(async () => {
-      await user.click(createButton);
-    });
+    await user.click(createButton);
 
     // Use getAllByText since there may be multiple validation messages
     await waitFor(() => {

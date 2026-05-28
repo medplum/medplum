@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
 import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
-import type { Project } from '@medplum/fhirtypes';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -11,19 +10,23 @@ import type { AuthState } from '../oauth/middleware';
 
 export const FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX = 'medplum:rl:fhir:membership:';
 export const FHIR_RATE_LIMIT_PROJECT_PREFIX = 'medplum:rl:fhir:project:';
+export const FHIR_RATE_LIMIT_ACTIVE_PREFIX = 'medplum:rl:fhir:active:';
 export const FHIR_RATE_LIMIT_DURATION = 60;
+export const FHIR_RATE_LIMIT_ACTIVE_TTL = 120;
 
 export interface FhirQuotaConfig {
   userLimit: number;
   projectLimit: number;
 }
 
-export function getFhirQuotaConfig(project: Project): FhirQuotaConfig {
-  const defaultUserLimit = project.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
-  const userLimit = defaultUserLimit ?? getConfig().defaultFhirQuota ?? 50_000;
+export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
+  const { project, userConfig } = authState;
+  const defaultUserLimit = project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
 
-  const defaultProjectLimit = project.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
-  const projectLimit = defaultProjectLimit ?? userLimit * 10;
+  const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return { userLimit, projectLimit };
 }
@@ -34,7 +37,13 @@ type InMemoryBlock = {
 };
 const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 
+export function getActiveRateLimitKey(projectId: string, minuteBucket?: number): string {
+  const bucket = minuteBucket ?? Math.floor(Date.now() / 60_000);
+  return `${FHIR_RATE_LIMIT_ACTIVE_PREFIX}${projectId}:${bucket}`;
+}
+
 export class FhirRateLimiter {
+  private readonly redis: Redis;
   private readonly limiter: RateLimiterRedis;
   private readonly userKey: string;
   private readonly projectLimiter: RateLimiterRedis;
@@ -56,6 +65,7 @@ export class FhirRateLimiter {
     logger: Logger,
     async?: boolean
   ) {
+    this.redis = redis;
     this.limiter = new RateLimiterRedis({
       keyPrefix: FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
       storeClient: redis,
@@ -89,6 +99,14 @@ export class FhirRateLimiter {
       }
     }
     this.current = result;
+  }
+
+  getMembershipKey(membershipId: string): string {
+    return this.limiter.getKey(membershipId);
+  }
+
+  getProjectKey(): string {
+    return this.projectLimiter.getKey(this.projectKey);
   }
 
   attachRateLimitHeader(res: Response): void {
@@ -134,6 +152,7 @@ export class FhirRateLimiter {
       }
       const projectResult = await this.projectLimiter.consume(this.projectKey, points);
       this.setState(result, projectResult);
+      this.trackActiveConsumer(result.consumedPoints);
     } catch (err: unknown) {
       if (err instanceof Error) {
         this.logger.error('Error updating FHIR quota', err);
@@ -148,6 +167,7 @@ export class FhirRateLimiter {
       }
       const result = err;
       this.setState(result);
+      this.trackActiveConsumer(result.consumedPoints);
       this.logger.warn('User rate limited', {
         limit: this.limiter.points,
         used: result.consumedPoints,
@@ -169,6 +189,21 @@ export class FhirRateLimiter {
       }
     }
     return undefined;
+  }
+
+  private trackActiveConsumer(consumedPoints: number): void {
+    const currentBucket = Math.floor(Date.now() / 60_000);
+    const currentKey = getActiveRateLimitKey(this.projectKey, currentBucket);
+    const nextKey = getActiveRateLimitKey(this.projectKey, currentBucket + 1);
+
+    const pipeline = this.redis.pipeline();
+    pipeline.zadd(currentKey, 'GT', consumedPoints, this.userKey);
+    pipeline.expire(currentKey, FHIR_RATE_LIMIT_ACTIVE_TTL);
+    pipeline.zadd(nextKey, 'GT', consumedPoints, this.userKey);
+    pipeline.expire(nextKey, FHIR_RATE_LIMIT_ACTIVE_TTL);
+    pipeline.exec().catch((err) => {
+      this.logger.error('Error tracking active rate limit consumer', err);
+    });
   }
 
   /**

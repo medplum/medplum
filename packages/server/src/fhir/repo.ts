@@ -280,8 +280,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 13. 01/05/25 - Added search params: ActivityDefinition-code, Communication-priority, Communication-priority-order, ProjectMembership-active (https://github.com/medplum/medplum/pull/8160)
    * 14. 04/14/26 - Added search params: ProjectMembership-admin, Practitioner-qualification-code (https://github.com/medplum/medplum/pull/8919)
    *                and sort inline array columns (https://github.com/medplum/medplum/pull/8961)
+   * 15. 05/19/26 - Added range-column search strategy (https://github.com/medplum/medplum/pull/9159)
+   *                Project.features (https://github.com/medplum/medplum/pull/9049)
+   *                Login.preAuthorizedCodeHash (https://github.com/medplum/medplum/pull/9231)
+   *                Project.link (https://github.com/medplum/medplum/pull/9159)
    */
-  static readonly VERSION: number = 14;
+  static readonly VERSION: number = 15;
 
   constructor(context: RepositoryContext, connection?: RepositoryConnection) {
     super();
@@ -1550,9 +1554,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    */
   private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
-    await new InsertQuery(resource.resourceType, [buildResourceRow(resource, Repository.VERSION)])
-      .mergeOnConflict()
-      .execute(client);
+    const row = buildResourceRow(resource, Repository.VERSION);
+    await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
   }
 
   private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
@@ -2075,7 +2078,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
-      this.updateResourceImpl(auditEvent, true).catch(console.error);
+      this.updateResourceImpl(auditEvent, true).catch((err) => getLogger().error('Failed to save AuditEvent', err));
     }
   }
 

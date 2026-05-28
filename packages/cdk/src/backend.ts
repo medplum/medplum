@@ -389,6 +389,14 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
         }),
 
+        // Lambda: List functions
+        // https://docs.aws.amazon.com/lambda/latest/dg/permissions-user-function.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:ListFunctions'],
+          resources: ['*'],
+        }),
+
         // Lambda layers: List layer versions
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -547,7 +555,7 @@ export class BackEnd extends Construct {
       config.apiPort,
       config.apiInternetFacing !== false,
       config.apiSslCertArn,
-      config.loadBalancerLoggingBucket,
+      config.loadBalancerLoggingPrefix,
       config.apiWafIpSetArn,
       config.wafLogGroupName,
       config.wafLogGroupCreate,
@@ -563,7 +571,7 @@ export class BackEnd extends Construct {
         config.apiPort,
         config.mtlsInternetFacing !== false,
         config.mtlsSslCertArn,
-        config.loadBalancerLoggingBucket,
+        config.loadBalancerLoggingPrefix,
         config.mtlsWafIpSetArn,
         config.wafLogGroupName,
         config.wafLogGroupCreate,

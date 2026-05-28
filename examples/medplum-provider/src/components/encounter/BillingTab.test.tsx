@@ -535,9 +535,7 @@ describe('BillingTab', () => {
     expect(cptInput).toBeDefined();
 
     // Type in CPT code input
-    await act(async () => {
-      await user.type(cptInput, '99214');
-    });
+    await user.type(cptInput, '99214');
 
     // Wait for valueSetExpand to be called
     await waitFor(
@@ -574,9 +572,7 @@ describe('BillingTab', () => {
     expect(definitionInput).toBeDefined();
 
     // Type in definition input
-    await act(async () => {
-      await user.type(definitionInput, 'Test');
-    });
+    await user.type(definitionInput, 'Test');
 
     // Wait for searchResources to be called
     await waitFor(

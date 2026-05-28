@@ -5,7 +5,6 @@ import {
   badRequest,
   conflict,
   created,
-  DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   getReferenceString,
   isNotFound,
@@ -13,68 +12,43 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  Appointment,
-  Bundle,
-  HealthcareService,
-  OperationDefinition,
-  Patient,
-  Reference,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Patient, Reference, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { getServiceTypeReferences } from '../../util/servicetype';
-import type { WithPath } from '../../util/withpath';
-import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
+import { copyPaths, withPath, withPaths } from '../../util/withpath';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, assertAllLoaded, getTimeZone, resolveAvailability } from './utils/scheduling';
-import { chooseSchedulingParameters } from './utils/scheduling-parameters';
+import {
+  applyExistingSlots,
+  assertAllLoaded,
+  assertAllMatch,
+  createProposedAppointment,
+  getSchedulingParametersGroup,
+  resolveAvailability,
+  slotsOverlappingInterval,
+} from './utils/scheduling';
 
-const bookOperation = {
-  resourceType: 'OperationDefinition',
-  name: 'book',
-  status: 'active',
-  kind: 'operation',
-  code: 'book',
-  resource: ['Appointment'],
-  system: false,
-  type: true,
-  instance: false,
-  parameter: [
-    { use: 'in', name: 'slot', type: 'Resource', min: 1, max: '*' },
-    { use: 'in', name: 'patient-reference', type: 'Reference', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-} as const satisfies OperationDefinition;
+const bookOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Appointment' },
+  {
+    name: 'book',
+    code: 'book',
+    parameter: [
+      { use: 'in', name: 'appointment', type: 'Appointment', min: 0, max: '1' },
+      { use: 'in', name: 'slot', type: 'Resource', min: 0, max: '*' },
+      { use: 'in', name: 'patient-reference', type: 'Reference', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
+  }
+);
 
 type BookParameters = {
+  appointment?: Appointment;
   slot: Slot[];
   'patient-reference'?: Reference<Patient>;
 };
-
-// Finds keys that can be used to index into `T` and yield a primitive type
-// that can be compared with strict equality.
-type PrimitiveKey<T> = {
-  [K in keyof T]-?: T[K] extends string | number | boolean | undefined ? K : never;
-}[keyof T];
-
-function assertAllMatch<T extends object>(
-  objects: WithPath<T>[],
-  attribute: PrimitiveKey<T> & string,
-  msg: string
-): void {
-  if (objects.length <= 1) {
-    return;
-  }
-  const mismatched = objects.find((value) => value[attribute] !== objects[0][attribute]);
-  if (mismatched) {
-    throw new OperationOutcomeError(
-      badRequest(msg, [`${getPath(objects[0])}.${attribute}`, `${getPath(mismatched)}.${attribute}`])
-    );
-  }
-}
 
 function serviceTypeTokens(slots: Slot[]): string[] {
   const tokenSet = new Set<string>();
@@ -86,6 +60,20 @@ function serviceTypeTokens(slots: Slot[]): string[] {
     }
   }
   return [...tokenSet.values()];
+}
+
+async function bookFromProposedAppointmentHandler(proposedAppointment: Appointment): Promise<FhirResponse> {
+  const ctx = getAuthenticatedContext();
+  const bundle = await createProposedAppointment(
+    ctx.repo,
+    withPath(proposedAppointment, 'Parameters.appointment'),
+    (appointment, _slots) => {
+      // Create appointment with "booked" status
+      appointment.status = 'booked';
+    }
+  );
+
+  return [created, buildOutputParameters(bookOperation, bundle)];
 }
 
 /**
@@ -100,6 +88,20 @@ function serviceTypeTokens(slots: Slot[]): string[] {
 export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<BookParameters>(bookOperation, req);
+
+  if (params.appointment) {
+    if (params.slot.length) {
+      throw new OperationOutcomeError(badRequest('Received exclusive parameters `slot` and `appointment`'));
+    }
+    if (params['patient-reference']) {
+      throw new OperationOutcomeError(
+        badRequest('`patient-reference` parameter not allowed with `appointment` parameter')
+      );
+    }
+
+    return bookFromProposedAppointmentHandler(params.appointment);
+  }
+
   const proposedSlots = withPaths(params.slot, 'Parameters.slot');
 
   assertAllMatch(proposedSlots, 'start', 'Mismatched slot start times');
@@ -107,6 +109,10 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const { start, end } = proposedSlots[0];
   const startDate = new Date(start);
   const endDate = new Date(end);
+
+  // We intend to remove the older `Slot` based approach beyond here, probably
+  // around when we transition into the scheduling "beta" milestone. For now
+  // we support the original implementation path as well.
 
   if (params['patient-reference']) {
     // validate that the patient reference exists and is visible to the caller
@@ -125,17 +131,6 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     .readReferences(proposedSlots.map((slot) => slot.schedule))
     .then((schedules) => copyPaths(proposedSlots, schedules, { suffix: '.schedule' }));
   assertAllLoaded(schedules, 'Schedule load failed');
-
-  schedules.forEach((schedule) => {
-    if (schedule.actor.length !== 1) {
-      throw new OperationOutcomeError(badRequest('$book only supported on schedules with exactly one actor'));
-    }
-  });
-
-  const actors = await ctx.repo
-    .readReferences(schedules.flatMap((schedule) => schedule.actor))
-    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-  assertAllLoaded(actors, 'Schedule.actor load failed');
 
   let healthcareService: WithId<HealthcareService>;
   // We expect that at most one unique serviceType reference will be found
@@ -177,30 +172,28 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     healthcareService = healthcareServices[0];
   }
 
-  const bufferSlots: Slot[] = [];
+  const parameterGroup = await getSchedulingParametersGroup(
+    ctx.repo,
+    schedules,
+    withPath(healthcareService, 'Parameters.service-type-reference')
+  );
 
   const createdResources = await ctx.repo.withTransaction(
     async () => {
+      const bufferSlots: Slot[] = [];
+
       await Promise.all(
         proposedSlots.map(async (proposedSlot) => {
           const scheduleRefString = getReferenceString(proposedSlot.schedule);
           const schedule = schedules.find((s) => `Schedule/${s.id}` === scheduleRefString);
           assert(schedule, 'Slot.schedule not loaded');
-
-          const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
-          assert(actor, 'Slot.schedule.actor not loaded');
-          const actorTimeZone = getTimeZone(actor);
-          if (!actorTimeZone) {
-            throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
-          }
           const durationMinutes = (Date.parse(proposedSlot.end) - Date.parse(proposedSlot.start)) / 60000;
-          const parameters = chooseSchedulingParameters(schedule, withPath(healthcareService, 'HealthcareService'));
+          const parameters = parameterGroup.get(schedule);
+          assert(parameters);
 
-          if (parameters?.duration !== durationMinutes) {
+          if (parameters.duration !== durationMinutes) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
           }
-
-          const timeZone = parameters.timezone ?? actorTimeZone;
 
           const range = {
             start: addMinutes(startDate, -1 * parameters.bufferBefore),
@@ -209,33 +202,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           const searchStart = range.start.toISOString();
           const searchEnd = range.end.toISOString();
 
-          const existingSlots = await ctx.repo.searchResources<Slot>({
-            resourceType: 'Slot',
-            count: DEFAULT_MAX_SEARCH_COUNT,
-            filters: [
-              {
-                code: 'schedule',
-                operator: Operator.EQUALS,
-                value: getReferenceString(schedule),
-              },
-              {
-                code: 'status',
-                operator: Operator.EQUALS,
-                value: 'busy,busy-tentative,busy-unavailable,free',
-              },
-              {
-                code: '_filter',
-                operator: Operator.EQUALS,
-                value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
-              },
-            ],
-          });
-
-          // If we filled a full search page of slots, then there may be slots we
-          // didn't fetch that would impact availability. Fail loudly here.
-          if (existingSlots.length === DEFAULT_MAX_SEARCH_COUNT) {
-            throw new OperationOutcomeError(badRequest('Too many existing slots found in range. Try another time.'));
-          }
+          const existingSlots = await slotsOverlappingInterval(ctx.repo, [schedule], range);
 
           // If there exists busy slots overlapping with the requested booking time,
           // we can bail out now with an informative error message.
@@ -253,7 +220,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const availability = applyExistingSlots({
-            availability: resolveAvailability(parameters, range, timeZone),
+            availability: resolveAvailability(parameters, range, parameters.timezone),
             slots: existingSlots,
             range,
             serviceType: healthcareService.type,

@@ -3,7 +3,9 @@
 export * from './MedplumProvider/MedplumProvider';
 export * from './MedplumProvider/MedplumProvider.context';
 export * from './useCachedBinaryUrl/useCachedBinaryUrl';
-export * from './useEPrescribingIFrame/useEPrescribingIFrame';
+export * from './useMedicationIFrame/useMedicationIFrame';
+export * from './useMedicationOrder/useMedicationOrder';
+export * from './useMedicationOrderSet/useMedicationOrderSet';
 export * from './useNotificationCount/useNotificationCount';
 export * from './usePatientSummaryData/usePatientSummaryData';
 export * from './usePharmacySearch/usePharmacySearch';
@@ -14,3 +16,4 @@ export * from './useResource/useResource';
 export * from './useSearch/useSearch';
 export * from './useSubscription/useSubscription';
 export * from './useThreadInbox/useThreadInbox';
+export * from './useWhisper/useWhisper';
