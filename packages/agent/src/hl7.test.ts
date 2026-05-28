@@ -2674,6 +2674,7 @@ describe('AgentHl7Channel application-level ACK gating', () => {
         dispatchEvent: jest.fn(),
       },
       getAgentConfig: jest.fn(),
+      getDurableQueue: jest.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -2967,6 +2968,7 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
       getAgentConfig: jest.fn(),
       addToWebSocketQueue: jest.fn(),
       agentId: 'test-agent',
+      getDurableQueue: jest.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;

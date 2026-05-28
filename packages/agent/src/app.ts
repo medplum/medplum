@@ -57,6 +57,9 @@ import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { DurableQueue } from './queue/durable-queue';
+import { QueueLeaseManager } from './queue/lease-manager';
+import { RetentionSweeper } from './queue/retention';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -106,6 +109,9 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
+  private durableQueue: DurableQueue | undefined;
+  private retentionSweeper: RetentionSweeper | undefined;
+  private leaseManager: QueueLeaseManager | undefined;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
@@ -294,6 +300,12 @@ export class App {
             if (!command.callback) {
               this.log.warn('Transmit response missing callback');
             }
+            // First, see if this response belongs to a durable-queue worker.
+            // Workers own their callback IDs end-to-end; if any worker claims
+            // this response, we skip the legacy in-memory path entirely.
+            if (this.routeServerResponseToWorker(command)) {
+              break;
+            }
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
@@ -384,6 +396,15 @@ export class App {
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
+    const durableQueueOn = agent?.setting?.find((setting) => setting.name === 'durableQueue')?.valueBoolean ?? false;
+    const queueDbPath = agent?.setting?.find((setting) => setting.name === 'queueDbPath')?.valueString;
+    const queueRetentionDays = agent?.setting?.find((setting) => setting.name === 'queueRetentionDays')?.valueInteger;
+    const queueRetentionMaxMb = agent?.setting?.find((setting) => setting.name === 'queueRetentionMaxMb')?.valueInteger;
+    const queueErroredRetentionDays = agent?.setting?.find(
+      (setting) => setting.name === 'queueErroredRetentionDays'
+    )?.valueInteger;
+    const queueSweepIntervalSecs = agent?.setting?.find((setting) => setting.name === 'queueSweepIntervalSecs')
+      ?.valueInteger;
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
@@ -426,7 +447,148 @@ export class App {
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
     }
 
+    this.reconcileDurableQueue({
+      durableQueueOn,
+      queueDbPath,
+      queueRetentionDays,
+      queueRetentionMaxMb,
+      queueErroredRetentionDays,
+      queueSweepIntervalSecs,
+    });
+
     await this.hydrateListeners();
+  }
+
+  /**
+   * Opens, closes, or reconfigures the durable queue based on the latest config.
+   *
+   * Toggling `durableQueue` between true and false at runtime triggers a queue
+   * open/close. Toggling other queue settings (retention, sweep interval) starts
+   * a fresh {@link RetentionSweeper} against the existing DB without reopening it.
+   *
+   * Changing `queueDbPath` while the queue is already open is intentionally NOT
+   * supported — that would require moving / closing the existing DB. Operators
+   * who need to change the path should disable the queue, then re-enable with the
+   * new path.
+   * @param args - The current queue-related settings drawn from the Agent resource.
+   * @param args.durableQueueOn - Master switch — true to open the queue, false to close it.
+   * @param args.queueDbPath - Optional override for the DB file path (defaults to `<logDir>/medplum-agent-queue.sqlite`).
+   * @param args.queueRetentionDays - Time-based retention window for `processed` rows, in days.
+   * @param args.queueRetentionMaxMb - Soft cap on DB size, in MiB.
+   * @param args.queueErroredRetentionDays - Floor on `errored` / `nacked` retention, in days.
+   * @param args.queueSweepIntervalSecs - How often the retention sweeper runs, in seconds.
+   */
+  private reconcileDurableQueue(args: {
+    durableQueueOn: boolean;
+    queueDbPath: string | undefined;
+    queueRetentionDays: number | undefined;
+    queueRetentionMaxMb: number | undefined;
+    queueErroredRetentionDays: number | undefined;
+    queueSweepIntervalSecs: number | undefined;
+  }): void {
+    if (!args.durableQueueOn) {
+      if (this.durableQueue) {
+        this.log.info('durableQueue disabled — closing queue.');
+        this.leaseManager?.stop();
+        this.leaseManager = undefined;
+        this.retentionSweeper?.stop();
+        this.retentionSweeper = undefined;
+        this.durableQueue.close();
+        this.durableQueue = undefined;
+      }
+      return;
+    }
+
+    if (!this.durableQueue) {
+      const path = args.queueDbPath ?? this.defaultQueueDbPath();
+      try {
+        this.durableQueue = DurableQueue.open({ path, log: this.log });
+        this.log.info(`Durable queue opened at ${path}.`);
+      } catch (err) {
+        this.log.error(`Failed to open durable queue at ${path}: ${normalizeErrorString(err)}`);
+        this.durableQueue = undefined;
+        return;
+      }
+    }
+
+    // Start the lease manager — it'll attempt acquisition immediately and, on
+    // success, the callback runs recoverOnStartup() + brings up channel workers.
+    // If a peer (e.g. an old agent in the upgrade overlap) holds the lease, we
+    // sit as a follower until the lease is free, then take over.
+    if (!this.leaseManager) {
+      this.leaseManager = new QueueLeaseManager({ queue: this.durableQueue, log: this.log });
+      this.leaseManager.start(() => this.onBecameQueueLeader());
+    }
+
+    // (Re)start the retention sweeper with the latest settings. The sweeper runs
+    // regardless of leadership because its only writes are DELETEs of terminal
+    // rows; both processes running it concurrently is wasteful but not unsafe.
+    // (We could gate it on leadership too — left ungated for now since the cost
+    // during the brief overlap is small.)
+    this.retentionSweeper?.stop();
+    this.retentionSweeper = new RetentionSweeper({
+      queue: this.durableQueue,
+      log: this.log,
+      retentionDays: args.queueRetentionDays,
+      maxSizeMb: args.queueRetentionMaxMb,
+      erroredRetentionDays: args.queueErroredRetentionDays,
+      sweepIntervalSecs: args.queueSweepIntervalSecs,
+    });
+    this.retentionSweeper.start();
+  }
+
+  /**
+   * Called by the {@link QueueLeaseManager} the first time we take the lease.
+   *
+   * This is the single point that runs `recoverOnStartup` and spins up the
+   * channel workers. Both depend on us being the only writer — running them at
+   * raw queue-open time would race with any peer that still holds the lease.
+   *
+   * Re-entrancy: if we lose and regain the lease later, this fires again. The
+   * recovery sweep is idempotent (no `processing` rows means no work), and
+   * `maybeStartWorker` is a no-op if the worker is already running.
+   */
+  private onBecameQueueLeader(): void {
+    const queue = this.durableQueue;
+    if (!queue) {
+      return;
+    }
+    const promoted = queue.recoverOnStartup();
+    if (promoted > 0) {
+      this.log.info(`Acquired queue lease — promoted ${promoted} interrupted row(s) to errored.`);
+    }
+    // Tell every HL7 channel to start its worker now that we're leader.
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        channel.onBecameQueueLeader();
+      }
+    }
+  }
+
+  /** @returns True when this agent currently holds the durable-queue lease. */
+  isQueueLeader(): boolean {
+    return this.leaseManager?.isLeader() ?? false;
+  }
+
+  /**
+   * Default location for the queue DB file when no override is provided.
+   *
+   * Co-locating with the main logger's log directory keeps everything an
+   * operator needs to mount a persistent volume in one place. The fallback is
+   * the current working directory — same default an unconfigured agent uses.
+   * @returns Absolute path to the default queue DB file.
+   */
+  private defaultQueueDbPath(): string {
+    const baseDir = (isWinstonWrapperLogger(this.log) && (this.log as unknown as { logDir?: string }).logDir) || process.cwd();
+    // Manual join to avoid pulling in node:path solely for this — the agent
+    // doesn't need to support exotic path normalizations here.
+    const sep = baseDir.endsWith('/') || baseDir.endsWith('\\') ? '' : '/';
+    return `${baseDir}${sep}medplum-agent-queue.sqlite`;
+  }
+
+  /** @returns The opened {@link DurableQueue}, or undefined when the queue setting is off. */
+  getDurableQueue(): DurableQueue | undefined {
+    return this.durableQueue;
   }
 
   getStats(): AgentStats {
@@ -458,6 +620,50 @@ export class App {
       outstandingHeartbeats: this.outstandingHeartbeats,
       channelStats,
       clientStats,
+      ...(this.durableQueue ? { durableQueue: this.getDurableQueueStats(this.durableQueue) } : {}),
+    };
+  }
+
+  /**
+   * Snapshot of durable-queue health, surfaced in `agent:stats:response`.
+   *
+   * Structured to fit the `AgentStatValue` shape — 3 nested levels of primitive
+   * records — so `AgentStats`'s index signature stays satisfied. Null sentinels
+   * become `-1` for the same reason ("never swept" reads as -1 on the wire).
+   *
+   * The field is only included when the queue is on; consumers that detect its
+   * absence know the queue is disabled, which is more honest than reporting a
+   * zeroed structure that a dashboard could misread as "queue on but idle."
+   * @param queue - The opened durable queue to read counters from.
+   * @returns A primitive-friendly snapshot fit for `AgentStats`.
+   */
+  private getDurableQueueStats(
+    queue: DurableQueue
+  ): Record<string, number | boolean | Record<string, number | Record<string, number>>> {
+    const counts = queue.countByState();
+    const channelDepth: Record<string, Record<string, number>> = {};
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        const d = queue.getChannelDepth(channel.getDefinition().name);
+        channelDepth[channel.getDefinition().name] = {
+          queued: d.queued,
+          processing: d.processing,
+          // -1 means "no queued rows" (a zero-aged-row would be 0).
+          oldestQueuedAgeMs: d.oldestQueuedAgeMs ?? -1,
+        };
+      }
+    }
+    const lastResult = this.retentionSweeper?.getLastResult();
+    return {
+      enabled: true,
+      isLeader: this.isQueueLeader(),
+      dbSizeBytes: queue.getDbSizeBytes(),
+      countsByState: counts,
+      channelDepth,
+      // -1 means "never swept yet."
+      lastSweepAt: this.retentionSweeper?.getLastSweepAt() ?? -1,
+      lastSweepDeletedProcessed: lastResult?.deletedProcessed ?? -1,
+      lastSweepDeletedErrored: lastResult?.deletedErrored ?? -1,
     };
   }
 
@@ -682,7 +888,44 @@ export class App {
     }
     await Promise.all(channelStopPromises);
 
+    // Channels drain their own workers in stop() above, so by the time we get
+    // here no worker is touching the DB and it's safe to tear down.
+    if (this.retentionSweeper) {
+      this.retentionSweeper.stop();
+      this.retentionSweeper = undefined;
+    }
+    // Release the lease BEFORE closing the DB so a waiting peer can take over
+    // immediately rather than waiting for our TTL to expire.
+    if (this.leaseManager) {
+      this.leaseManager.stop();
+      this.leaseManager = undefined;
+    }
+    if (this.durableQueue) {
+      this.durableQueue.close();
+      this.durableQueue = undefined;
+    }
+
     this.log.info('Medplum service stopped successfully');
+  }
+
+  /**
+   * Dispatches an `agent:transmit:response` to the owning channel's worker, if any.
+   * @param response - The response message received over the agent WebSocket.
+   * @returns True if a worker claimed the response (caller should stop here);
+   *          false if no worker matched and legacy handling should run.
+   */
+  private routeServerResponseToWorker(response: AgentTransmitResponse): boolean {
+    if (!this.durableQueue) {
+      return false;
+    }
+    if (!response.channel) {
+      return false;
+    }
+    const channel = this.channels.get(response.channel);
+    if (!(channel instanceof AgentHl7Channel) || !channel.worker) {
+      return false;
+    }
+    return channel.worker.onServerResponse(response);
   }
 
   addToWebSocketQueue(message: AgentMessage): void {

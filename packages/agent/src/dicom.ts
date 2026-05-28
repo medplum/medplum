@@ -229,7 +229,7 @@ export class AgentDicomChannel extends BaseChannel {
     this.log.info('Channel stopped successfully');
   }
 
-  sendToRemote(msg: AgentTransmitResponse): void {
+  sendToRemote(msg: AgentTransmitResponse): boolean {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
   }
 }

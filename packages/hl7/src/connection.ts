@@ -1,11 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { AckCode } from '@medplum/core';
 import { Hl7Message, OperationOutcomeError, ReturnAckCategory, sleep, validationError } from '@medplum/core';
 import iconv from 'iconv-lite';
 import type net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
 import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent, Hl7WarningEvent } from './events';
+
+/**
+ * Negative commit ACK code accepted by {@link Hl7Connection.nackCommit}.
+ *
+ * - `CR` — Commit Reject (transient, retryable)
+ * - `CE` — Commit Error  (permanent, malformed)
+ * - `AR` — Application Reject (used when enhancedMode=aaMode rejects)
+ */
+export type NackCommitCode = 'CR' | 'CE' | 'AR';
+
+/** Upper bound on the size of the deferred-ack idempotency set. */
+const ACKED_CONTROL_IDS_MAX = 10_000;
 
 // Export `ReturnAckCategory` for backwards-compat
 export { ReturnAckCategory } from '@medplum/core';
@@ -57,6 +70,11 @@ export class Hl7Connection extends Hl7Base {
   private lastMessageDispatchedTime = 0;
   private responseQueueProcessing = false;
   private closing = false;
+  private deferredCommitAck = false;
+  // Bounded FIFO of MSH.10s we've already (n)acked under deferred mode.
+  // Used to make ackCommit/nackCommit idempotent so the wire only sees one ACK
+  // per inbound message even if upstream code retries.
+  private readonly ackedControlIds: Set<string> = new Set<string>();
 
   constructor(
     socket: net.Socket,
@@ -123,11 +141,15 @@ export class Hl7Connection extends Hl7Base {
     this.addEventListener('message', (event) => {
       // In standard enhanced mode, send commit ACK (CA) immediately, then later forward app-level ACKs
       // In aaMode, send application ACK (AA) immediately, then ignore any later app-level ACKs
+      // When deferredCommitAck is on, the application is responsible for calling ackCommit/nackCommit
+      // after it has durably committed (or rejected) the message.
       let response: Hl7Message | undefined;
-      if (this.enhancedMode === 'standard') {
-        response = event.message.buildAck({ ackCode: 'CA' });
-      } else if (this.enhancedMode === 'aaMode') {
-        response = event.message.buildAck({ ackCode: 'AA' });
+      if (!this.deferredCommitAck) {
+        if (this.enhancedMode === 'standard') {
+          response = event.message.buildAck({ ackCode: 'CA' });
+        } else if (this.enhancedMode === 'aaMode') {
+          response = event.message.buildAck({ ackCode: 'AA' });
+        }
       }
       if (response) {
         this.send(response);
@@ -408,6 +430,114 @@ export class Hl7Connection extends Hl7Base {
 
   private resetBuffer(): void {
     this.chunks = [];
+  }
+
+  /**
+   * Enables or disables deferred commit-ACK mode.
+   *
+   * When `deferred` is true, the connection will not auto-send CA/AA on message receipt;
+   * the application MUST call {@link Hl7Connection.ackCommit} or {@link Hl7Connection.nackCommit}
+   * after it has durably committed (or rejected) the inbound message. This is the hook
+   * the Medplum Agent's durable inbound queue uses to back the enhanced-mode CA promise
+   * with an actual on-disk write.
+   *
+   * Only meaningful when {@link Hl7Connection.enhancedMode} is set. When `enhancedMode`
+   * is undefined this flag has no effect (no ACK is auto-sent in either case).
+   *
+   * Toggling the flag clears the internal idempotency set so a fresh session of
+   * (n)acks can be tracked.
+   * @param deferred - True to suppress auto-ACK; false to restore default behavior.
+   */
+  setDeferredCommitAck(deferred: boolean): void {
+    this.deferredCommitAck = deferred;
+    this.ackedControlIds.clear();
+  }
+
+  /** @returns Whether deferred commit-ACK mode is currently enabled. */
+  getDeferredCommitAck(): boolean {
+    return this.deferredCommitAck;
+  }
+
+  /**
+   * Sends the configured commit ACK (CA in `standard` enhanced mode, AA in `aaMode`)
+   * for the supplied inbound message.
+   *
+   * No-op (and no wire write) in these cases:
+   * - `enhancedMode` is undefined (no commit ACK is part of the protocol).
+   * - The same MSH.10 has already been (n)acked under this connection's deferred session.
+   *
+   * @param message - The original inbound message to ACK.
+   */
+  ackCommit(message: Hl7Message): void {
+    if (!this.enhancedMode) {
+      return;
+    }
+    const controlId = message.getSegment('MSH')?.getField(10)?.toString();
+    if (controlId && !this.recordAcked(controlId)) {
+      return;
+    }
+    const ackCode: AckCode = this.enhancedMode === 'standard' ? 'CA' : 'AA';
+    const response = message.buildAck({ ackCode });
+    this.send(response);
+    this.dispatchEvent(new Hl7EnhancedAckSentEvent(this, response));
+  }
+
+  /**
+   * Sends a negative commit ACK for the supplied inbound message. The wire-level code is:
+   * - `standard` enhanced mode: `CR` (transient) or `CE` (permanent).
+   * - `aaMode`: `AR` (the only negative code the sender expects in this mode).
+   *
+   * Passing a code that doesn't match the connection's enhanced mode is permitted —
+   * the caller decides which code best describes the failure. An optional `reason`
+   * is recorded in MSA.3 of the outgoing ACK for the sender's logs.
+   *
+   * No-op (and no wire write) in these cases:
+   * - `enhancedMode` is undefined.
+   * - The same MSH.10 has already been (n)acked under this connection's deferred session.
+   *
+   * @param message - The original inbound message to NACK.
+   * @param code - The negative ACK code to send.
+   * @param reason - Optional human-readable explanation placed in MSA.3.
+   */
+  nackCommit(message: Hl7Message, code: NackCommitCode, reason?: string): void {
+    if (!this.enhancedMode) {
+      return;
+    }
+    const controlId = message.getSegment('MSH')?.getField(10)?.toString();
+    if (controlId && !this.recordAcked(controlId)) {
+      return;
+    }
+    const response = message.buildAck({ ackCode: code });
+    if (reason) {
+      // Overwrite the default MSA.3 text (e.g. "Commit Reject") with the supplied reason.
+      response.getSegment('MSA')?.setField(3, reason);
+    }
+    this.send(response);
+    this.dispatchEvent(new Hl7EnhancedAckSentEvent(this, response));
+  }
+
+  /**
+   * Records that we've sent a deferred-mode ACK for `controlId`. Returns true if the
+   * caller should proceed with the send, false if the control ID was already acked.
+   *
+   * The set is bounded; once it reaches `ACKED_CONTROL_IDS_MAX` the oldest entry is
+   * evicted. The bound is generous enough to cover real-world bursts but prevents
+   * unbounded growth on a long-lived connection.
+   * @param controlId - MSH.10 of the inbound message being (n)acked.
+   * @returns True if this is a fresh ack the caller should proceed with; false if it was already acked.
+   */
+  private recordAcked(controlId: string): boolean {
+    if (this.ackedControlIds.has(controlId)) {
+      return false;
+    }
+    if (this.ackedControlIds.size >= ACKED_CONTROL_IDS_MAX) {
+      const oldest = this.ackedControlIds.values().next().value;
+      if (oldest !== undefined) {
+        this.ackedControlIds.delete(oldest);
+      }
+    }
+    this.ackedControlIds.add(controlId);
+    return true;
   }
 
   setEncoding(encoding: string | undefined): void {
