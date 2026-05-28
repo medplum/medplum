@@ -2,12 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { WS } from 'jest-websocket-mock';
+import { WS } from 'vitest-websocket-mock';
 import type { JSX } from 'react';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { convertToPCM16, useWhisper } from './useWhisper';
 
 describe('useWhisper', () => {
+
+function mockAudioContext(): {
+  processor: { onaudioprocess: ((event: unknown) => void) | null; connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> };
+} {
+  const processor = {
+    onaudioprocess: null as ((event: unknown) => void) | null,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+  class MockAudioContext {
+    destination = {};
+    createMediaStreamSource = vi.fn().mockReturnValue({ connect: vi.fn() });
+    createScriptProcessor = vi.fn().mockReturnValue(processor);
+    close = vi.fn().mockResolvedValue(undefined);
+  }
+  vi.stubGlobal('AudioContext', MockAudioContext);
+  return { processor };
+}
+
+
   let medplum: MockClient;
 
   beforeEach(() => {
@@ -16,7 +36,7 @@ describe('useWhisper', () => {
 
   afterEach(() => {
     WS.clean();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }): JSX.Element => (
@@ -45,7 +65,7 @@ describe('useWhisper', () => {
     const mediaError = new Error('Permission denied');
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockRejectedValue(mediaError) },
+      value: { getUserMedia: vi.fn().mockRejectedValue(mediaError) },
     });
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
@@ -63,27 +83,15 @@ describe('useWhisper', () => {
   test('records transcript end-to-end', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = {
-      onaudioprocess: null as ((event: unknown) => void) | null,
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    };
-    const sourceNode = { connect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      createMediaStreamSource: jest.fn().mockReturnValue(sourceNode),
-      createScriptProcessor: jest.fn().mockReturnValue(processor),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    (globalThis as any).AudioContext = jest.fn().mockImplementation(() => audioContext);
+    mockAudioContext();
 
-    const onTranscript = jest.fn();
+    const onTranscript = vi.fn();
     const { result } = renderHook(() => useWhisper({ onTranscript }), { wrapper });
 
     await act(async () => {
@@ -120,20 +128,13 @@ describe('useWhisper', () => {
   test('handles speech_started and speech_stopped messages', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = { onaudioprocess: null, connect: jest.fn(), disconnect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      createMediaStreamSource: jest.fn().mockReturnValue({ connect: jest.fn() }),
-      createScriptProcessor: jest.fn().mockReturnValue(processor),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    globalThis.AudioContext = jest.fn().mockImplementation(() => audioContext);
+    mockAudioContext();
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
 
@@ -166,12 +167,12 @@ describe('useWhisper', () => {
 
   test('handles ai-realtime:error message from server', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });

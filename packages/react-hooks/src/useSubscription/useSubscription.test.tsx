@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SubscriptionEmitter, generateId } from '@medplum/core';
+import { SubscriptionEmitter, generateId, sleep } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-import 'jest-websocket-mock';
+
 import type { JSX, ReactNode } from 'react';
 import { StrictMode, useCallback, useState } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -46,17 +46,11 @@ function RenderToggleComponent({ render }: { render: boolean }): JSX.Element {
 describe('useSubscription()', () => {
   let medplum: MockClient;
 
-  beforeAll(() => {
-    jest.useFakeTimers();
-  });
 
   beforeEach(() => {
     medplum = new MockClient();
   });
 
-  afterAll(() => {
-    jest.useRealTimers();
-  });
 
   function setup(
     children: ReactNode,
@@ -98,8 +92,12 @@ describe('useSubscription()', () => {
     expect(bundle.type).toBe('history');
 
     // Make sure subscription is cleaned up
-    unmount();
-    jest.advanceTimersByTime(5000);
+    await act(async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      unmount();
+      await vi.advanceTimersByTimeAsync(5000);
+      vi.useRealTimers();
+    });
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 
@@ -112,18 +110,26 @@ describe('useSubscription()', () => {
     expect(emitter).toBeInstanceOf(SubscriptionEmitter);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    rerender(<RenderToggleComponent render={false} />);
-    jest.advanceTimersByTime(1000);
+    await act(async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      rerender(<RenderToggleComponent render={false} />);
+      await vi.advanceTimersByTimeAsync(1000);
+      vi.useRealTimers();
+    });
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    rerender(<RenderToggleComponent render={true} />);
-    jest.advanceTimersByTime(5000);
+    await act(async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      rerender(<RenderToggleComponent render={true} />);
+      await vi.advanceTimersByTimeAsync(5000);
+      vi.useRealTimers();
+    });
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
     expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
 
     // Make sure we fully unmount later when actually unmounting
     rerender(<RenderToggleComponent render={false} />);
-    jest.advanceTimersByTime(5000);
+    await sleep(3100);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 
@@ -133,7 +139,11 @@ describe('useSubscription()', () => {
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
     setup(<TestComponent criteria="Communication" />, true);
-    jest.advanceTimersByTime(5000);
+    await act(async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      await vi.advanceTimersByTimeAsync(5000);
+      vi.useRealTimers();
+    });
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
     expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
   });
@@ -612,7 +622,7 @@ describe('useSubscription()', () => {
   });
 
   test('Changing callback should not recreate Subscription', async () => {
-    const subscribeSpy = jest.spyOn(medplum, 'subscribeToCriteria');
+    const subscribeSpy = vi.spyOn(medplum, 'subscribeToCriteria');
     let callsToOpen = 0;
 
     function TestWrapper(): JSX.Element {

@@ -31,7 +31,7 @@ describe('useQuestionnaireForm', () => {
         },
       ],
     } as const;
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     const { result } = renderHook(() => useQuestionnaireForm({ questionnaire, onChange }), { wrapper });
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(result.current).toMatchObject({
