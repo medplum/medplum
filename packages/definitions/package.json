@@ -54,7 +54,7 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "jest"
+    "test": "vitest run"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
