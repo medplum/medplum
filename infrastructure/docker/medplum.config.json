@@ -19,5 +19,8 @@
     "http://localhost:3001"
   ],
   "defaultBotRuntimeVersion": "vmcontext",
-  "logLevel": "info"
+  "logLevel": "info",
+  "defaultSuperAdminEmail": "admin@homehealth.local",
+  "defaultSuperAdminPassword": "change-me-before-production",
+  "registerEnabled": false
 }

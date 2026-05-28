@@ -1,0 +1,17 @@
+{
+  "name": "@hh/fhir",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hh/core": "*",
+    "@medplum/fhirtypes": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

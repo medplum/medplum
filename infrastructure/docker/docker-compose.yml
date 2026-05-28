@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   medplum-server:
     image: medplum/medplum-server:latest
@@ -22,7 +20,7 @@ services:
         condition: service_started
     volumes:
       - medplum-data:/var/data
-      - ./medplum.config.json:/usr/src/medplum/packages/server/medplum.config.json:ro
+      - ./medplum.config.json:/usr/src/medplum/medplum.config.json:ro
     restart: unless-stopped
 
   postgres:
