@@ -12,7 +12,11 @@ import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
   appointment: Appointment;
-  onSuccess?: (result: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
+  onSuccess?: (result: {
+    appointments: WithId<Appointment>[];
+    slots: WithId<Slot>[];
+    patient: Patient;
+  }) => void | Promise<void>;
 };
 
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
@@ -61,7 +65,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
         );
 
-        onSuccess?.({ appointments, slots });
+        await onSuccess?.({ appointments, slots, patient });
       } finally {
         setLoading(false);
       }

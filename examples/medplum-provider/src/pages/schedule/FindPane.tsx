@@ -2,17 +2,35 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
+import { EMPTY, formatDateTime, getExtensionValue, getReferenceString, isDefined, isReference } from '@medplum/core';
+import type {
+  Appointment,
+  Bundle,
+  Coding,
+  HealthcareService,
+  Patient,
+  PlanDefinition,
+  Practitioner,
+  Reference,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
+import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { hasSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
+import {
+  hasSchedulingParameters,
+  SchedulingEncounterCodingURI,
+  SchedulingPlanDefinitionURI,
+  SchedulingTransientIdentifier,
+} from '../../utils/scheduling';
 import { extractReferencesFromCodeableReferenceLike } from '../../utils/servicetype';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -45,6 +63,7 @@ function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Elem
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element | null {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<readonly Appointment[] | undefined>(undefined);
   const [chosenAppointment, setChosenAppointment] = useState<Appointment | undefined>(undefined);
   const [selectedHealthcareService, setSelectedHealthcareService] = useState<WithId<HealthcareService> | undefined>();
@@ -146,13 +165,39 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, []);
 
   const handleBookSuccess = useCallback(
-    (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => {
+    async (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[]; patient: Patient }) => {
+      try {
+        const planDefinitionRef = getExtensionValue(selectedHealthcareService, SchedulingPlanDefinitionURI);
+        const encounterClass = getExtensionValue(selectedHealthcareService, SchedulingEncounterCodingURI);
+        const practitioners = schedule.actor.filter((actor) => isReference<Practitioner>(actor, 'Practitioner'));
+
+        if (practitioners.length === 1 && planDefinitionRef && encounterClass) {
+          const planDefinition = await medplum.readReference(planDefinitionRef as Reference<PlanDefinition>);
+
+          const encounter = await createEncounter(
+            medplum,
+            encounterClass as Coding,
+            results.patient,
+            planDefinition,
+            results.appointments[0],
+            practitioners[0]
+          );
+
+          await navigate(`/Patient/${results.patient.id}/Encounter/${encounter.id}`);
+        }
+      } catch (err) {
+        // If we couldn't load the plan definition or create the encounter for
+        // some reason, we log the error but ignore it. The viewer can decide how
+        // to proceed and manually create the encounter.
+        console.error(err);
+      }
+
       setSelectedHealthcareService(undefined);
       setAppointments([]);
       setChosenAppointment(undefined);
       onSuccess(results);
     },
-    [onSuccess]
+    [medplum, onSuccess, schedule.actor, selectedHealthcareService, navigate]
   );
 
   if (!scheduleableServices?.length) {

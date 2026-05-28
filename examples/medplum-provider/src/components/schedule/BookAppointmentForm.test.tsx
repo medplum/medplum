@@ -205,6 +205,7 @@ describe('BookAppointmentForm', () => {
       expect(onSuccess).toHaveBeenCalledWith({
         appointments: [bookedAppointment],
         slots: [busySlot, bufferAfterSlot],
+        patient: HomerSimpson,
       });
     });
   });
