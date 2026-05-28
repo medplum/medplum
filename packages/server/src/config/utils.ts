@@ -93,6 +93,7 @@ type DefaultConfigKeys =
   | 'botLambdaLayerName'
   | 'bcryptHashSalt'
   | 'bullmq'
+  | 'dataWarehouse'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
@@ -176,6 +177,7 @@ const booleanKeys = new Set([
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
   'redactAuditEvents',
+  'dataWarehouse.enabled',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
@@ -195,6 +197,7 @@ const objectKeys = new Set([
   'workers',
   'workers.enabled',
   'workers.bullmq',
+  'dataWarehouse',
 ]);
 
 export function isObjectConfig(key: string): boolean {
