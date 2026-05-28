@@ -44,7 +44,7 @@ describe('Infra', () => {
   };
 
   beforeEach(() => {
-    console.log = jest.fn();
+    console.log = vi.fn();
   });
 
   test('Missing config', async () => {
