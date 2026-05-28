@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addDefaults, isBooleanConfig, isIntegerConfig, isObjectConfig, normalizeDate, setValue } from './utils';
+import { addDefaults, isBooleanConfig, isIntegerConfig, isObjectConfig, setValue } from './utils';
 
 describe('utils', () => {
   test('isObjectConfig', () => {
@@ -54,22 +54,22 @@ describe('utils', () => {
     });
   });
 
-  test('addDefaults coerces dataWarehouse.startDate from JSON string to Date', () => {
+  test('addDefaults preserves dataWarehouse.startDate as ISO-8601 string', () => {
     const config = addDefaults({
       baseUrl: 'https://example.com',
       dataWarehouse: {
-        startDate: '2024-01-01T00:00:00.000Z' as unknown as Date,
+        startDate: '2024-01-01T00:00:00.000Z',
       },
     } as any);
-    expect(config.dataWarehouse?.startDate).toEqual(new Date('2024-01-01T00:00:00.000Z'));
+    expect(config.dataWarehouse?.startDate).toBe('2024-01-01T00:00:00.000Z');
   });
 
-  test('setValue parses date config keys', () => {
+  test('setValue stores dataWarehouse.startDate as string', () => {
     const config = {};
     setValue(config, 'dataWarehouse.startDate', '2024-01-01T00:00:00.000Z');
     expect(config).toEqual({
       dataWarehouse: {
-        startDate: new Date('2024-01-01T00:00:00.000Z'),
+        startDate: '2024-01-01T00:00:00.000Z',
       },
     });
   });
@@ -86,20 +86,5 @@ describe('utils', () => {
         password: 'p@ssw0rd',
       },
     });
-  });
-});
-
-describe('normalizeDate', () => {
-  test('returns Date instances unchanged', () => {
-    const date = new Date('2024-01-01T00:00:00.000Z');
-    expect(normalizeDate(date)).toBe(date);
-  });
-
-  test('parses ISO 8601 strings', () => {
-    expect(normalizeDate('2024-01-01T00:00:00.000Z')).toEqual(new Date('2024-01-01T00:00:00.000Z'));
-  });
-
-  test('returns undefined for empty strings', () => {
-    expect(normalizeDate('   ')).toBeUndefined();
   });
 });

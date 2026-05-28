@@ -59,7 +59,7 @@ function buildSqlBuilder(buildFn: (sql: SqlBuilder) => void): SqlBuilder {
  * @param startDate - Lower bound on history `lastUpdated` (validated by config before sync runs).
  * @returns A SQL boolean expression for the lower bound on Postgres history `lastUpdated` for warehouse export.
  */
-export function buildStartDatePredicate(startDate: Date): Expression {
+export function buildStartDatePredicate(startDate: string): Expression {
   return new Condition('lastUpdated', '>=', startDate);
 }
 

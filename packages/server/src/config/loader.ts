@@ -10,7 +10,7 @@ import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
-import { addDefaults, isBooleanConfig, isDateConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
+import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
 import { warnInvalidDataWarehouseConfig } from './validate-config';
 
 let cachedConfig: ServerConfig | undefined = undefined;
@@ -241,8 +241,6 @@ function loadEnvConfig(): MedplumServerConfig {
       currConfig[key] = Number.parseFloat(value ?? '');
     } else if (isBooleanConfig(lookupKey) || isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
-    } else if (isDateConfig(lookupKey) || isDateConfig(key)) {
-      currConfig[key] = new Date(value ?? '');
     } else if (isObjectConfig(lookupKey) || isObjectConfig(key)) {
       currConfig[key] = JSON.parse(value ?? '');
     } else {

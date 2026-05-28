@@ -20,8 +20,8 @@ export interface SyncOptions {
   warehouseSources: WarehouseSourceTable[];
   destination: DataWarehouseDestination;
   namespace?: string;
-  /** Earliest history `lastUpdated` to export. */
-  startDate?: Date;
+  /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
+  startDate?: string;
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
@@ -84,7 +84,7 @@ async function runWarehouseTableSync(
   // general logging of the sync start
   globalLogger.info('Starting warehouse sync', {
     tableCount: total,
-    startDate: options.startDate?.toISOString(),
+    startDate: options.startDate,
     warehouseSources: options.warehouseSources.map((spec) => ({
       icebergTable: spec.icebergTable,
       postgresTable: spec.postgresTable,

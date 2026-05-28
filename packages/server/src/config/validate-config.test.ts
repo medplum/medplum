@@ -41,7 +41,7 @@ describe('getDataWarehouseConfigErrors', () => {
             cron: '0 * * * *',
             destination: 'local',
             localBasePath: '/tmp/out',
-            startDate: new Date('not-a-date'),
+            startDate: 'not-a-date',
           },
         })
       )

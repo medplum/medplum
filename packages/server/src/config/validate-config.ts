@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
+import isISO8601 from 'validator/lib/isISO8601';
 import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
@@ -39,7 +40,7 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     errors.push('dataWarehouse.destination must be "s3tables" or "local"');
   }
 
-  if (dw.startDate !== undefined && !isDate(dw.startDate)) {
+  if (dw.startDate !== undefined && (typeof dw.startDate !== 'string' || !isISO8601(dw.startDate))) {
     errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
   }
 
@@ -70,8 +71,4 @@ export function warnInvalidDataWarehouseConfig(config: MedplumServerConfig, logg
   logger.warn('Data warehouse sync is enabled but configuration is invalid; sync worker will not start', {
     errors,
   });
-}
-
-function isDate(value: Date | undefined): boolean {
-  return value !== undefined && !Number.isNaN(value.getTime());
 }

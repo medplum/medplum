@@ -62,7 +62,7 @@ describe('warehouse SQL query builders', () => {
   });
 
   test('buildStartDatePredicate filters history rows at or after the bound', () => {
-    const startDate = new Date('2024-01-01T00:00:00.000Z');
+    const startDate = '2024-01-01T00:00:00.000Z';
     const startDateSql = new SqlBuilder();
     startDateSql.appendExpression(buildStartDatePredicate(startDate));
     expect(startDateSql.toString()).toBe(`"lastUpdated" >= $1`);
@@ -70,7 +70,7 @@ describe('warehouse SQL query builders', () => {
   });
 
   test('Conjunction ANDs watermark and startDate filters', () => {
-    const startDate = new Date('2024-06-01T00:00:00.000Z');
+    const startDate = '2024-06-01T00:00:00.000Z';
     const combinedSql = new SqlBuilder();
     combinedSql.appendExpression(
       new Conjunction([
