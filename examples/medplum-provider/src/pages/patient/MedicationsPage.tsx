@@ -16,8 +16,8 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
-import { showNotification, updateNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { hideNotification, showNotification, updateNotification } from '@mantine/notifications';
+import { getReferenceString } from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
@@ -196,10 +196,7 @@ export function MedicationsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
-  const fetchDataRef = useRef(fetchData);
-  fetchDataRef.current = fetchData;
-
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
@@ -240,10 +237,10 @@ export function MedicationsPage(): JSX.Element {
       autoClose: false,
       withCloseButton: false,
     });
-    medplum
-      .executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id })
-      .then(() =>
-        Promise.all([
+    (async () => {
+      try {
+        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id });
+        await Promise.all([
           medplum.executeBot(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, {
             patientId: patient.id as string,
             start: today,
@@ -254,9 +251,7 @@ export function MedicationsPage(): JSX.Element {
             start: today,
             end: today,
           }),
-        ])
-      )
-      .then(() => {
+        ]);
         if (!cancelled) {
           updateNotification({
             id: notificationId,
@@ -268,25 +263,20 @@ export function MedicationsPage(): JSX.Element {
             autoClose: 3000,
           });
           medplum.invalidateSearches('MedicationRequest');
-          fetchDataRef.current().catch(showErrorNotification);
+          await fetchData();
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err) {
         if (!cancelled) {
-          updateNotification({
-            id: notificationId,
-            loading: false,
-            color: 'red',
-            title: 'Error syncing with DoseSpot',
-            message: normalizeErrorString(err),
-            autoClose: 5000,
-          });
+          hideNotification(notificationId);
+          showErrorNotification(err);
         }
-      });
+      }
+    })().catch(showErrorNotification);
     return () => {
       cancelled = true;
     };
-  }, [hasDoseSpot, medplum, patient?.id]);
+    // fetchData is intentionally excluded — including it would re-trigger the sync on every tab/page change.
+  }, [hasDoseSpot, medplum, patient?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOrderMedicationComplete = useCallback(
     async (result: { launchUrl: string; medicationRequestId?: string }): Promise<void> => {
