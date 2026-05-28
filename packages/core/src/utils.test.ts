@@ -61,7 +61,6 @@ import {
   lazy,
   mapByIdentifier,
   NOOP,
-  normalizeDate,
   parseReference,
   preciseEquals,
   preciseGreaterThan,

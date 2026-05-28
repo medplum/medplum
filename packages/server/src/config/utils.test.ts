@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  addDefaults,
-  isBooleanConfig,
-  isIntegerConfig,
-  isObjectConfig,
-  normalizeDate,
-  setValue,
-} from './utils';
+import { addDefaults, isBooleanConfig, isIntegerConfig, isObjectConfig, normalizeDate, setValue } from './utils';
 
 describe('utils', () => {
   test('isObjectConfig', () => {

@@ -5,7 +5,6 @@ import type { ILogger } from '@medplum/core';
 import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
-
 /**
  * Returns configuration errors for data warehouse sync when `dataWarehouse.enabled` is true.
  * Returns an empty array when sync is disabled or configuration is valid.
