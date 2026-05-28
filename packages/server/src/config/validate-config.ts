@@ -40,7 +40,7 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     errors.push('dataWarehouse.destination must be "s3tables" or "local"');
   }
 
-  if (dw.startDate !== undefined && (typeof dw.startDate !== 'string' || !isISO8601(dw.startDate))) {
+  if (dw.startDate && !isISO8601(dw.startDate)) {
     errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
   }
 
