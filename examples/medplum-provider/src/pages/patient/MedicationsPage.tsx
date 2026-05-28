@@ -196,7 +196,7 @@ export function MedicationsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
-const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
