@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
-import isISO8601 from 'validator/lib/isISO8601';
+import isISO8601 from 'validator/lib/isISO8601.js';
 import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
