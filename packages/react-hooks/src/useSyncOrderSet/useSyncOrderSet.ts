@@ -33,4 +33,3 @@ export function useSyncOrderSet(): (planDefinitionId: string) => Promise<void> {
     [medplum]
   );
 }
-
