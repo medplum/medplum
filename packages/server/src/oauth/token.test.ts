@@ -19,6 +19,7 @@ import type {
   Login,
   Project,
   ProjectMembership,
+  Reference,
   SmartAppLaunch,
 } from '@medplum/fhirtypes';
 import express from 'express';
