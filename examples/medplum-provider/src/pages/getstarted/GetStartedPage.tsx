@@ -17,8 +17,8 @@ import {
 import { showNotification } from '@mantine/notifications';
 import { convertToTransactionBundle } from '@medplum/core';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import { useSyncOrderSet } from '@medplum/react-hooks';
 import { MedplumLink, useMedplum } from '@medplum/react';
-import { SCRIPTSURE_ORDERSET_SYNC_BOT } from '@medplum/scriptsure-react';
 import {
   IconApps,
   IconArrowUpRight,
@@ -44,6 +44,7 @@ import classes from './GetStartedPage.module.css';
 
 export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
+  const syncOrderSet = useSyncOrderSet();
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
   const [importingIcd10, setImportingIcd10] = useState(false);
@@ -134,7 +135,7 @@ export function GetStartedPage(): JSX.Element {
         ?.location;
       const pdId = pdLocation?.split('/')[1];
       if (pdId) {
-        await medplum.executeBot(SCRIPTSURE_ORDERSET_SYNC_BOT, { planDefinitionId: pdId });
+        await syncOrderSet(pdId);
       }
 
       showNotification({
@@ -147,7 +148,7 @@ export function GetStartedPage(): JSX.Element {
     } finally {
       setImportingOrderSet(false);
     }
-  }, [medplum]);
+  }, [medplum, syncOrderSet]);
 
   const integrations = [
     { src: '/img/integrations/labcorp.png', alt: 'Labcorp', left: 20, top: 20, zIndex: 1, rotation: -2 },

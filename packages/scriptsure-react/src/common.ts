@@ -85,11 +85,6 @@ export const SCRIPTSURE_ADD_PATIENT_PHARMACY_BOT: Identifier = {
   value: 'scriptsure-add-patient-pharmacy-bot',
 };
 
-export const SCRIPTSURE_ORDERSET_SYNC_BOT: Identifier = {
-  system: MEDPLUM_BOT_SYSTEM,
-  value: 'scriptsure-orderset-sync-bot',
-};
-
 export const SCRIPTSURE_PATIENT_ID_SYSTEM = 'https://scriptsure.com/patient-id';
 
 /** Base URL for ScriptSure-specific extensions on in-memory Medication resources (e.g. `/sig`). */
