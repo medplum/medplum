@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineColorScheme } from '@mantine/core';
-import { Box, Divider, Flex, Group, Menu, SegmentedControl, Text, useMantineColorScheme } from '@mantine/core';
+import { Box, Divider, Flex, Menu, SegmentedControl, Text, useMantineColorScheme } from '@mantine/core';
 import type { LoginState, ProfileResource } from '@medplum/core';
 import { formatHumanName, getReferenceString, locationUtils } from '@medplum/core';
 import { useMedplumContext } from '@medplum/react-hooks';
@@ -14,12 +14,16 @@ import {
   IconSettings,
   IconSunHigh,
   IconSwitchHorizontal,
+  IconTable,
 } from '@tabler/icons-react';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { ProjectLoginOption } from '../auth/ProjectLoginOption';
 import { getAppName } from '../utils/app';
 import classes from './HeaderDropdown.module.css';
+
+type AppShellLayoutVersion = 'v1' | 'v2';
 
 const MENU_ICON_COLOR = 'var(--mantine-color-dimmed)';
 
@@ -27,6 +31,11 @@ const THEME_OPTIONS: { value: string; label: JSX.Element }[] = [
   { value: 'light', label: <ThemeOptionLabel Icon={IconSunHigh} label="Light" /> },
   { value: 'auto', label: <ThemeOptionLabel Icon={IconDeviceDesktop} label="System" /> },
   { value: 'dark', label: <ThemeOptionLabel Icon={IconMoon} label="Dark" /> },
+];
+
+const LAYOUT_OPTIONS: { label: string; value: AppShellLayoutVersion }[] = [
+  { label: 'v1', value: 'v1' },
+  { label: 'v2', value: 'v2' },
 ];
 
 function ThemeOptionLabel({ Icon, label }: { readonly Icon: TablerIcon; readonly label: string }): JSX.Element {
@@ -64,16 +73,13 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const logins = medplum.getLogins();
   const recentLogins = logins.filter((login) => !isSameLogin(login, activeLogin));
   const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const [layoutVersion] = useState((localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1');
+  const [layoutVersion] = useState(
+    () => (localStorage['appShellLayoutVersion'] as AppShellLayoutVersion | undefined) ?? 'v1'
+  );
   const showLayoutToggle = props.showLayoutVersionToggle ?? true;
 
   const projectDisplay = activeLogin?.project.display;
   const profileDisplay = activeLogin?.profile.display ?? (profile ? formatHumanName(profile.name?.[0]) : undefined);
-
-  function setAppShellVersion(version: 'v1' | 'v2'): void {
-    localStorage['appShellLayoutVersion'] = version;
-    locationUtils.reload();
-  }
 
   function switchLogin(login: LoginState): void {
     medplum
@@ -119,35 +125,46 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         <Text size="sm">Account settings</Text>
       </Menu.Item>
 
-      <Flex className={classes.appearanceRow} align="center" pl="sm" pr="xs" py="xs">
+      <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
         <Flex align="center" gap="xs">
           <IconPalette size={16} color={MENU_ICON_COLOR} />
           <Text size="sm">Appearance</Text>
         </Flex>
-        <Box className={classes.appearanceControlWrapper}>
+        <Box className={classes.settingsControlWrapper}>
           <SegmentedControl
-            classNames={{ root: classes.appearanceControl }}
+            classNames={{ root: cx(classes.segmentedControl, classes.appearanceControl) }}
             size="xs"
             radius="xl"
             withItemsBorders={false}
             value={colorScheme}
             onChange={(newValue) => setColorScheme(newValue as MantineColorScheme)}
             data={THEME_OPTIONS}
+            aria-label="Color scheme"
           />
         </Box>
       </Flex>
       {showLayoutToggle && (
-        <Group justify="center" px="sm" pb="xs">
-          <SegmentedControl
-            size="xs"
-            value={layoutVersion}
-            onChange={(newValue) => setAppShellVersion(newValue as 'v1' | 'v2')}
-            data={[
-              { label: 'v1', value: 'v1' },
-              { label: 'v2', value: 'v2' },
-            ]}
-          />
-        </Group>
+        <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
+          <Flex align="center" gap="xs">
+            <IconTable size={16} color={MENU_ICON_COLOR} />
+            <Text size="sm">Layout</Text>
+          </Flex>
+          <Box className={classes.settingsControlWrapper}>
+            <SegmentedControl
+              classNames={{ root: cx(classes.segmentedControl, classes.layoutControl) }}
+              size="xs"
+              radius="xl"
+              withItemsBorders={false}
+              value={layoutVersion}
+              onChange={(newValue) => {
+                localStorage['appShellLayoutVersion'] = newValue;
+                locationUtils.reload();
+              }}
+              data={LAYOUT_OPTIONS}
+              aria-label="App shell layout version"
+            />
+          </Box>
+        </Flex>
       )}
       <Menu.Item
         leftSection={<IconLogout size={16} color={MENU_ICON_COLOR} />}
