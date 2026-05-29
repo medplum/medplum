@@ -599,5 +599,5 @@ export function invalidSearchOperator(operator: Operator, searchParameterCodeOrI
 }
 
 export function getSearchResourceTypes(searchRequest: SearchRequest): Iterable<ResourceType> {
-  return searchRequest.types ? searchRequest.types : [searchRequest.resourceType];
+  return searchRequest.types ?? [searchRequest.resourceType];
 }

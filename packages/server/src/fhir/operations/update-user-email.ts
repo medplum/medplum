@@ -17,6 +17,7 @@ import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
+import type { Repository } from '../repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
@@ -151,20 +152,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         if (membership) {
           const profile = await txRepo.readReference(membership.profile);
           if (profileTypesWithTelecom.includes(profile.resourceType)) {
-            let telecom = (profile as ProfileResource).telecom;
-            // Add new email if not already present
-            if (!telecom?.some((contact) => contact.system === 'email' && contact.value === params.email)) {
-              telecom = append(telecom, { use: 'work', system: 'email', value: params.email });
-            }
-
-            // Mark instances of the previous email as old
-            const previous = telecom.find((contact) => contact.value === oldEmail && contact.system === 'email');
-            if (previous) {
-              previous.use = 'old';
-            }
-            (profile as ProfileResource).telecom = telecom;
-
-            await txRepo.updateResource(profile);
+            await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, params.email);
           }
         }
       }
@@ -176,4 +164,29 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       source: 'updateUserEmail.updateUser',
     }
   );
+}
+
+async function updateProfileTelecom(
+  repo: Repository,
+  profile: WithId<ProfileResource>,
+  oldEmail: string | undefined,
+  newEmail: string
+): Promise<WithId<ProfileResource>> {
+  let telecom = profile.telecom;
+  // Add new email if not already present
+  if (!telecom?.some((contact) => contact.system === 'email' && contact.value === newEmail)) {
+    telecom = append(telecom, { use: 'work', system: 'email', value: newEmail });
+  }
+
+  // Mark instances of the previous email as old
+  if (oldEmail) {
+    for (const contact of telecom) {
+      if (contact.system === 'email' && contact.value === oldEmail) {
+        contact.use = 'old';
+      }
+    }
+  }
+  profile.telecom = telecom;
+
+  return repo.updateResource(profile);
 }
