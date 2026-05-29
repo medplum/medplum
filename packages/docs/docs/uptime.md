@@ -6,7 +6,7 @@ sidebar_position: 3
 
 There are two separate questions about uptime. The first is what Medplum commits to in a contract. The second is what Medplum has actually delivered in production. These are different things, and this page covers them separately.
 
-Medplum commits to 99.99% uptime in its service level agreement (SLA). In production, Medplum has historically operated above that level. The SLA is set lower than historical performance. That is intentional.
+Medplum commits to 99.99% uptime in its service level agreement (SLA). In production, Medplum has historically operated above that level.
 
 ## Availability percentages
 
@@ -25,9 +25,7 @@ The amount of allowed downtime depends on the measurement period. At 99.99%, the
 
 Medplum offers a 99.99% uptime SLA for the production hosted platform. The SLA is measured per month. It covers authentication, the FHIR API, subscriptions and webhooks, WebSocket connections, and Bot execution. If uptime falls below 99.99% in a month, the customer receives service credits as described in the agreement. Medplum sets the SLA at a level it can sustain under normal and adverse conditions.
 
-> The exact percentages, measurement methods, credit amounts, and exclusions are
-> defined in the customer agreement. This page is documentation, not a contract
-> or legal advice. Confirm the specifics with legal and sales before publishing.
+> The exact percentages, measurement methods, credit amounts, and exclusions are defined in the customer agreement. This page is documentation, not a contract or legal advice.
 
 ## How Medplum achieves high availability
 
