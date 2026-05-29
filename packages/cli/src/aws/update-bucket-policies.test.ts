@@ -30,21 +30,24 @@ import fs from 'node:fs';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';
 
-jest.mock('node:fs', () => ({
-  createReadStream: jest.fn(),
-  existsSync: jest.fn(),
-  mkdtempSync: jest.fn(() => '/tmp/'),
-  readdirSync: jest.fn(() => []),
-  readFileSync: jest.fn(),
-  rmSync: jest.fn(),
-  writeFileSync: jest.fn(),
+vi.mock('node:fs', () => {
+  const mock = {
+  createReadStream: vi.fn(),
+  existsSync: vi.fn(),
+  mkdtempSync: vi.fn(() => '/tmp/'),
+  readdirSync: vi.fn(() => []),
+  readFileSync: vi.fn(),
+  rmSync: vi.fn(),
+  writeFileSync: vi.fn(),
   constants: {
     O_CREAT: 0,
   },
   promises: {
-    readFile: jest.fn(async () => '{}'),
+    readFile: vi.fn(async () => '{}'),
   },
-}));
+};
+  return { default: mock, ...mock };
+});
 
 let cfMock: AwsStub<
   CloudFormationServiceInputTypes,
@@ -55,13 +58,13 @@ let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedC
 let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-bucket-policies command', () => {
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
 
     cfMock = mockClient(CloudFormationClient);
 
@@ -149,7 +152,7 @@ describe('update-bucket-policies command', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     cfMock.reset();
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [
@@ -233,11 +236,11 @@ describe('update-bucket-policies command', () => {
   });
 
   test('Success', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce(
       JSON.stringify({
         baseUrl: 'https://api.staging.medplum.com/',
         clientId: '',
@@ -252,9 +255,9 @@ describe('update-bucket-policies command', () => {
   });
 
   test('Config not found', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+    (fs.existsSync as Mock).mockReturnValueOnce(false);
 
-    console.log = jest.fn();
+    console.log = vi.fn();
     await expect(main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
@@ -263,11 +266,11 @@ describe('update-bucket-policies command', () => {
   });
 
   test('Stack not found', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce('{}');
 
     await expect(main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found'])).rejects.toThrow(
       'Process exited with exit code 1'
@@ -277,11 +280,11 @@ describe('update-bucket-policies command', () => {
   });
 
   test('Continues when App bucket update fails', async () => {
-    console.log = jest.fn();
-    console.error = jest.fn();
+    console.log = vi.fn();
+    console.error = vi.fn();
 
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce('{}');
 
     s3Mock
       .on(GetBucketPolicyCommand)
@@ -311,11 +314,11 @@ describe('update-bucket-policies command', () => {
   });
 
   test('Continues when Storage bucket update fails', async () => {
-    console.log = jest.fn();
-    console.error = jest.fn();
+    console.log = vi.fn();
+    console.error = vi.fn();
 
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce('{}');
 
     s3Mock
       .on(GetBucketPolicyCommand)
@@ -370,7 +373,7 @@ describe('update-bucket-policies command', () => {
     });
 
     test('Dry run', async () => {
-      console.log = jest.fn();
+      console.log = vi.fn();
       await updateBucketPolicy(
         'App',
         { PhysicalResourceId: 'x' } as StackResource,
@@ -409,7 +412,7 @@ describe('update-bucket-policies command', () => {
     });
 
     test('Updates bucket policy and invalidates CloudFront', async () => {
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       await updateBucketPolicy(
         'App',
@@ -444,7 +447,7 @@ describe('update-bucket-policies command', () => {
     });
 
     test('Storage GuardDuty malware protection', async () => {
-      console.log = jest.fn();
+      console.log = vi.fn();
       await updateBucketPolicy(
         'Storage',
         { PhysicalResourceId: 'storage.test.medplum.com' } as StackResource,
@@ -490,7 +493,7 @@ describe('update-bucket-policies command', () => {
     });
 
     test('Storage GuardDuty malware protection does not add duplicate deny', async () => {
-      console.log = jest.fn();
+      console.log = vi.fn();
       s3Mock.on(GetBucketPolicyCommand).resolvesOnce({
         Policy: JSON.stringify({
           Version: '2012-10-17',
@@ -521,7 +524,7 @@ describe('update-bucket-policies command', () => {
         { dryrun: true, guarddutyMalwareProtection: true }
       );
 
-      expect(JSON.parse((console.log as jest.Mock).mock.calls[1][0] as string)).toEqual({
+      expect(JSON.parse((console.log as Mock).mock.calls[1][0] as string)).toEqual({
         Version: '2012-10-17',
         Statement: [
           {
@@ -551,7 +554,7 @@ describe('update-bucket-policies command', () => {
     });
 
     test('Storage GuardDuty malware protection adds deny when existing deny is incomplete', async () => {
-      console.log = jest.fn();
+      console.log = vi.fn();
       s3Mock.on(GetBucketPolicyCommand).resolvesOnce({
         Policy: JSON.stringify({
           Statement: [
@@ -581,7 +584,7 @@ describe('update-bucket-policies command', () => {
         { dryrun: true, guarddutyMalwareProtection: true }
       );
 
-      expect(JSON.parse((console.log as jest.Mock).mock.calls[1][0] as string)).toEqual({
+      expect(JSON.parse((console.log as Mock).mock.calls[1][0] as string)).toEqual({
         Statement: [
           {
             Sid: 'IncompleteGuardDutyReadGate',

@@ -10,13 +10,13 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { main } from '../index';
 
 describe('describe command', () => {
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
 
     const cfMock = mockClient(CloudFormationClient);
 
@@ -97,17 +97,17 @@ describe('describe command', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Describe command', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     await main(['node', 'index.js', 'aws', 'describe', 'dev']);
     expect(console.log).toHaveBeenCalledWith('Stack ID:              123');
   });
 
   test('Describe not found', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     await expect(main(['node', 'index.js', 'aws', 'describe', 'not-found'])).rejects.toThrow(
       'Process exited with exit code 1'
     );

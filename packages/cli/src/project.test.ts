@@ -8,46 +8,49 @@ import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('./util/client');
-jest.mock('node:child_process');
-jest.mock('node:http');
+vi.mock('./util/client');
+vi.mock('node:child_process');
+vi.mock('node:http');
 
-jest.mock('node:fs', () => ({
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
+vi.mock('node:fs', () => {
+  const mock = {
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
   constants: {
     O_CREAT: 0,
   },
   promises: {
-    readFile: jest.fn(async () => '{}'),
+    readFile: vi.fn(async () => '{}'),
   },
-}));
+};
+  return { default: mock, ...mock };
+});
 
 describe('CLI Project', () => {
   let medplum: MedplumClient;
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     medplum = new MockClient({ storage: new FileSystemStorage('default') });
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
 
-    console.log = jest.fn();
-    console.error = jest.fn();
+    console.log = vi.fn();
+    console.error = vi.fn();
   });
 
   test('Project List', async () => {
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         logins: JSON.stringify([
           {
@@ -70,8 +73,8 @@ describe('CLI Project', () => {
   });
 
   test('Project Current', async () => {
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         activeLogin: JSON.stringify({
           accessToken: 'abc',
@@ -92,8 +95,8 @@ describe('CLI Project', () => {
   });
 
   test('Project Switch', async () => {
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         logins: JSON.stringify([
           {
@@ -128,8 +131,8 @@ describe('CLI Project', () => {
   });
 
   test('Project Switch invalid id', async () => {
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         logins: JSON.stringify([
           {
@@ -176,8 +179,8 @@ describe('CLI Project', () => {
   });
 
   test('Project invite with no project', async () => {
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         activeLogin: JSON.stringify({
           accessToken: 'abc',
@@ -194,8 +197,8 @@ describe('CLI Project', () => {
 
   test('Project invite with no send-email flag', async () => {
     const project = await medplum.createResource<Project>({ resourceType: 'Project', name: 'test' });
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         activeLogin: JSON.stringify({
           accessToken: 'abc',
@@ -231,8 +234,8 @@ describe('CLI Project', () => {
 
   test('Project invite with all default role and all flags', async () => {
     const project = await medplum.createResource<Project>({ resourceType: 'Project', name: 'test' });
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         activeLogin: JSON.stringify({
           accessToken: 'abc',

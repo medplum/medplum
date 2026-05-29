@@ -12,24 +12,25 @@ import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('node:os');
-jest.mock('fast-glob', () => ({
-  sync: jest.fn(() => []),
-}));
-jest.mock('./util/client');
+vi.mock('node:os');
+vi.mock('fast-glob', () => {
+  const mock = { sync: vi.fn(() => []) };
+  return { default: mock, ...mock };
+});
+vi.mock('./util/client');
 
 describe('CLI rest', () => {
   const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
   const env = process.env;
   let medplum: MedplumClient;
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(async () => {
-    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    (os.homedir as unknown as Mock).mockReturnValue(testHomeDir);
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   afterAll(() => {
@@ -37,14 +38,14 @@ describe('CLI rest', () => {
   });
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     process.env = { ...env };
     medplum = new MockClient();
-    console.log = jest.fn();
-    console.error = jest.fn();
+    console.log = vi.fn();
+    console.error = vi.fn();
 
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
   });
 
   afterEach(() => {
@@ -119,7 +120,7 @@ describe('CLI rest', () => {
   });
 
   test('Post command with --prefer-async', async () => {
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
 
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
     expect(postSpy).toHaveBeenCalledTimes(1);

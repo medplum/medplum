@@ -2,27 +2,30 @@
 // SPDX-License-Identifier: Apache-2.0
 import { main, run } from '.';
 
-jest.mock('node:fs', () => ({
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
+vi.mock('node:fs', () => {
+  const mock = {
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
   constants: {
     O_CREAT: 0,
   },
   promises: {
-    readFile: jest.fn(async () => '{}'),
+    readFile: vi.fn(async () => '{}'),
   },
-}));
-const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+};
+  return { default: mock, ...mock };
+});
+const processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
 
 describe('CLI', () => {
   const env = process.env;
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     process.env = { ...env };
-    process.exit = jest.fn<never, any>();
+    process.exit = vi.fn<(exitCode?: number) => never>();
   });
 
   afterEach(() => {

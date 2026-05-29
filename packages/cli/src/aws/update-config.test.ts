@@ -3,7 +3,6 @@
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
@@ -11,17 +10,17 @@ import { main } from '../index';
 import { getConfigFileName } from '../utils';
 import { mockReadline } from './test.utils';
 
-jest.mock('node:readline');
+vi.mock('node:readline');
 
 describe('update-config command', () => {
   let ssmClient: AwsClientStub<SSMClient>;
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
@@ -35,11 +34,11 @@ describe('update-config command', () => {
   });
 
   test('Not found', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const tag = randomUUID();
 
-    readline.createInterface = jest.fn(() => mockReadline());
+    readline.createInterface = vi.fn(() => mockReadline());
 
     await expect(main(['node', 'index.js', 'aws', 'update-config', tag])).rejects.toThrow(
       'Process exited with exit code 1'
@@ -77,7 +76,7 @@ describe('update-config command', () => {
     );
 
     // Mock readline.createInterface for two calls
-    (readline.createInterface as jest.Mock).mockImplementation(() => mockReadline('y', 'y'));
+    (readline.createInterface as Mock).mockImplementation(() => mockReadline('y', 'y'));
 
     await main(['node', 'index.js', 'aws', 'update-config', tag]);
     unlinkSync(infraFileName);
@@ -111,7 +110,7 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'n' // No, do not write to Parameter Store
       )
@@ -158,7 +157,7 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'y' // Yes, write to Parameter Store
       )
@@ -170,7 +169,7 @@ describe('update-config command', () => {
   });
 
   test('Infra and server config conflict', async () => {
-    console.error = jest.fn();
+    console.error = vi.fn();
 
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
@@ -207,7 +206,7 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    readline.createInterface = jest.fn(() => mockReadline());
+    readline.createInterface = vi.fn(() => mockReadline());
 
     await expect(main(['node', 'index.js', 'aws', 'update-config', tag])).rejects.toThrow(
       'Process exited with exit code 1'
@@ -249,7 +248,7 @@ describe('update-config command', () => {
     await main(['node', 'index.js', 'aws', 'update-config', tag, '--yes']);
     unlinkSync(infraFileName);
 
-    expect(ssmClient).toHaveReceivedCommandTimes(PutParameterCommand, 4);
+    expect(ssmClient.commandCalls(PutParameterCommand)).toHaveLength(4);
   });
 
   test('Configuration is merged properly', async () => {
@@ -284,18 +283,21 @@ describe('update-config command', () => {
     unlinkSync(infraFileName);
 
     // Verify that storageBaseUrl parameter includes the /binary/ path
-    expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
-      Name: `/medplum/${tag}/storageBaseUrl`,
-      Value: 'https://storage.test.example.com/binary/',
-      Type: 'SecureString',
-      Overwrite: true,
-    });
-    // Verify that appBaseUrl has protocol and trailing slash
-    expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
-      Name: `/medplum/${tag}/appBaseUrl`,
-      Value: 'https://app.test.example.com/',
-      Type: 'SecureString',
-      Overwrite: true,
-    });
+    expect(
+      ssmClient.commandCalls(PutParameterCommand, {
+        Name: `/medplum/${tag}/storageBaseUrl`,
+        Value: 'https://storage.test.example.com/binary/',
+        Type: 'SecureString',
+        Overwrite: true,
+      })
+    ).toHaveLength(1);
+    expect(
+      ssmClient.commandCalls(PutParameterCommand, {
+        Name: `/medplum/${tag}/appBaseUrl`,
+        Value: 'https://app.test.example.com/',
+        Type: 'SecureString',
+        Overwrite: true,
+      })
+    ).toHaveLength(1);
   });
 });

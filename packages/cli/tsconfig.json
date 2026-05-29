@@ -1,12 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "types": ["jest", "node"],
+    "types": ["node", "vitest/globals"],
     "lib": ["esnext", "dom", "dom.iterable"],
     "rootDir": "src",
     "outDir": "dist/types",
     "noEmit": false,
     "emitDeclarationOnly": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
 }

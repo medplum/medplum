@@ -57,7 +57,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "medplum": "tsx src/index.ts",
-    "test": "jest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@aws-sdk/client-acm": "3.1052.0",
