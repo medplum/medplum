@@ -633,8 +633,13 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
-      id: 'rate-limits/index',
+      id: 'rate-limits',
       label: 'Rate Limits',
+    },
+    {
+      type: 'doc',
+      id: 'uptime',
+      label: 'Uptime',
     },
     {
       type: 'html',
