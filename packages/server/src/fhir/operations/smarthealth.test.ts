@@ -3,6 +3,9 @@
 import { ContentType } from '@medplum/core';
 import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
 import express from 'express';
+import type { KeyLike } from 'jose';
+import { CompactSign, exportJWK, generateKeyPair } from 'jose';
+import { deflateRawSync } from 'node:zlib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -117,6 +120,59 @@ describe('SMART Health operations', () => {
       .set('Content-Type', ContentType.JSON)
       .send({});
     expect(missingPatientResponse.status).toBe(400);
+  });
+
+  test('Verifies external SMART Health Card signatures without trusting issuer', async () => {
+    const issuer = 'https://issuer.example.com';
+    const { privateKey, publicKey } = await generateKeyPair('ES256', { extractable: true });
+    const publicJwk = await exportJWK(publicKey);
+    publicJwk.alg = 'ES256';
+    publicJwk.kid = 'external-key';
+    publicJwk.use = 'sig';
+
+    const credential = await createSmartHealthCardCredential({
+      issuer,
+      keyId: publicJwk.kid,
+      privateKey,
+      bundle: { resourceType: 'Bundle', type: 'collection' },
+    });
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ keys: [publicJwk] }),
+    } as Response);
+
+    const verifyResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ credential });
+    expect(verifyResponse.status).toBe(200);
+    expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(true);
+    expect(getBooleanParameter(verifyResponse.body, 'signatureValid')).toBe(true);
+    expect(getBooleanParameter(verifyResponse.body, 'issuerTrusted')).toBe(false);
+    expect(getBooleanParameter(verifyResponse.body, 'verified')).toBe(false);
+    expect(fetchSpy).toHaveBeenCalledWith(new URL('https://issuer.example.com/.well-known/jwks.json'), {
+      redirect: 'error',
+      signal: expect.any(AbortSignal),
+    });
+
+    fetchSpy.mockRestore();
+
+    const insecureCredential = await createSmartHealthCardCredential({
+      issuer: 'http://issuer.example.com',
+      keyId: publicJwk.kid,
+      privateKey,
+      bundle: { resourceType: 'Bundle', type: 'collection' },
+    });
+    const insecureVerifyResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ credential: insecureCredential });
+    expect(insecureVerifyResponse.status).toBe(200);
+    expect(getBooleanParameter(insecureVerifyResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(insecureVerifyResponse.body, 'error')).toContain('HTTPS');
   });
 
   test('Generate manifest and resolve SMART Health Link', async () => {
@@ -280,4 +336,26 @@ function getBooleanParameter(parameters: Parameters, name: string): boolean {
 
 function encodeShlinkPayload(payload: object): string {
   return `shlink:/${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
+}
+
+async function createSmartHealthCardCredential(options: {
+  issuer: string;
+  keyId: string;
+  privateKey: KeyLike;
+  bundle: Bundle;
+}): Promise<string> {
+  const payload = {
+    iss: options.issuer,
+    nbf: Math.floor(Date.now() / 1000),
+    vc: {
+      type: ['https://smarthealth.cards#health-card'],
+      credentialSubject: {
+        fhirVersion: '4.0.1',
+        fhirBundle: options.bundle,
+      },
+    },
+  };
+  return new CompactSign(deflateRawSync(Buffer.from(JSON.stringify(payload))))
+    .setProtectedHeader({ alg: 'ES256', kid: options.keyId, zip: 'DEF' })
+    .sign(options.privateKey);
 }
