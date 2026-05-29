@@ -10,14 +10,14 @@ Medplum commits to 99.99% uptime in its service level agreement (SLA). In produc
 
 ## Availability percentages
 
-Availability is usually expressed as a percentage. The table below shows the downtime allowed at each level.
+Availability is usually expressed as a percentage. The table below shows the time allowed at each level.
 
-| Availability         | Downtime per year | Downtime per 30-day month |
-| -------------------- | ----------------- | ------------------------- |
-| 99.9% (three nines)  | about 8.8 hours   | about 43 minutes          |
-| 99.99% (four nines)  | about 53 minutes  | about 4.3 minutes         |
-| 99.999% (five nines) | about 5.3 minutes | about 26 seconds          |
-| 99.9999% (six nines) | about 32 seconds  | about 2.6 seconds         |
+| Availability         | Per year          | Per 30-day month  |
+| -------------------- | ----------------- | ----------------- |
+| 99.9% (three nines)  | about 8.8 hours   | about 43 minutes  |
+| 99.99% (four nines)  | about 53 minutes  | about 4.3 minutes |
+| 99.999% (five nines) | about 5.3 minutes | about 26 seconds  |
+| 99.9999% (six nines) | about 32 seconds  | about 2.6 seconds |
 
 The amount of allowed downtime depends on the measurement period. At 99.99%, the service can be unavailable for about 53 minutes per year, or about 4 minutes per 30-day month. SLAs are usually measured per month.
 
@@ -25,7 +25,11 @@ The amount of allowed downtime depends on the measurement period. At 99.99%, the
 
 Medplum offers a 99.99% uptime SLA for the production hosted platform. The SLA is measured per month. It covers authentication, the FHIR API, subscriptions and webhooks, WebSocket connections, and Bot execution. If uptime falls below 99.99% in a month, the customer receives service credits as described in the agreement. Medplum sets the SLA at a level it can sustain under normal and adverse conditions.
 
-> The exact percentages, measurement methods, credit amounts, and exclusions are defined in the customer agreement. This page is documentation, not a contract or legal advice.
+:::warning[IMPORTANT]
+
+The exact percentages, measurement methods, credit amounts, and exclusions are defined in the customer agreement. This page is documentation, not a contract or legal advice.
+
+:::
 
 ## How Medplum achieves high availability
 
