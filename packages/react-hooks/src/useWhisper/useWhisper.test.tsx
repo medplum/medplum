@@ -2,31 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { WS } from 'vitest-websocket-mock';
 import type { JSX } from 'react';
+import { WS } from 'vitest-websocket-mock';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { convertToPCM16, useWhisper } from './useWhisper';
 
 describe('useWhisper', () => {
-
-function mockAudioContext(): {
-  processor: { onaudioprocess: ((event: unknown) => void) | null; connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> };
-} {
-  const processor = {
-    onaudioprocess: null as ((event: unknown) => void) | null,
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-  };
-  class MockAudioContext {
-    destination = {};
-    createMediaStreamSource = vi.fn().mockReturnValue({ connect: vi.fn() });
-    createScriptProcessor = vi.fn().mockReturnValue(processor);
-    close = vi.fn().mockResolvedValue(undefined);
+  function mockAudioContext(): {
+    processor: {
+      onaudioprocess: ((event: unknown) => void) | null;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    };
+  } {
+    const processor = {
+      onaudioprocess: null as ((event: unknown) => void) | null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    class MockAudioContext {
+      destination = {};
+      createMediaStreamSource = vi.fn().mockReturnValue({ connect: vi.fn() });
+      createScriptProcessor = vi.fn().mockReturnValue(processor);
+      close = vi.fn().mockResolvedValue(undefined);
+    }
+    vi.stubGlobal('AudioContext', MockAudioContext);
+    return { processor };
   }
-  vi.stubGlobal('AudioContext', MockAudioContext);
-  return { processor };
-}
-
 
   let medplum: MockClient;
 

@@ -5,9 +5,9 @@ import { ClientStorage, MemoryStorage, MockAsyncClientStorage, getDisplayString,
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-import type { MockInstance } from 'vitest';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import type { MockInstance } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 

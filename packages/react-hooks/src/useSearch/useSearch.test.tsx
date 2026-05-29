@@ -143,8 +143,7 @@ describe('useSearch hooks', () => {
       resolveSecond = resolve;
     });
 
-    vi
-      .spyOn(medplum, 'search')
+    vi.spyOn(medplum, 'search')
       .mockReturnValueOnce(firstPromise as ReturnType<typeof medplum.search>)
       .mockReturnValueOnce(secondPromise as ReturnType<typeof medplum.search>);
 

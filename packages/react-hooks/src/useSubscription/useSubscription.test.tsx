@@ -86,11 +86,9 @@ async function advanceDebounce(ms: number, action?: () => void): Promise<void> {
 describe('useSubscription()', () => {
   let medplum: MockClient;
 
-
   beforeEach(() => {
     medplum = new MockClient();
   });
-
 
   function setup(
     children: ReactNode,

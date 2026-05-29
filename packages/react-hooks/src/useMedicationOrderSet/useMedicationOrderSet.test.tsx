@@ -190,10 +190,7 @@ describe('useMedicationOrderSet', () => {
 
   test('refresh() re-runs the operation call and returns the fresh URL', async () => {
     const medplum = new MockClient();
-    vi
-      .spyOn(medplum, 'post')
-      .mockResolvedValueOnce(paramsResponse(URL_A))
-      .mockResolvedValueOnce(paramsResponse(URL_B));
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce(paramsResponse(URL_A)).mockResolvedValueOnce(paramsResponse(URL_B));
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -218,8 +215,7 @@ describe('useMedicationOrderSet', () => {
       resolveRefreshFetch = r;
     });
 
-    vi
-      .spyOn(medplum, 'post')
+    vi.spyOn(medplum, 'post')
       .mockResolvedValueOnce(paramsResponse(URL_A))
       .mockReturnValueOnce(refreshFetchPromise)
       .mockResolvedValueOnce(paramsResponse(URL_B));
