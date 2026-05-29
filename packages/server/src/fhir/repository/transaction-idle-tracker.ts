@@ -14,7 +14,8 @@ export type TransactionIdleTrackerOptions = {
 };
 
 export class TransactionIdleTracker {
-  static readonly OTEL_METRIC_NAME = 'medplum.db.idleInTransactionMs';
+  static readonly OTEL_MAX_METRIC_NAME = 'medplum.db.idleInTransactionMaxMs';
+  static readonly OTEL_TOTAL_METRIC_NAME = 'medplum.db.idleInTransactionTotalMs';
   static readonly LOG_HIGH_IDLE_TIME_MSG = 'High idle in transaction time';
   private readonly client: PoolClient;
   private readonly options: TransactionIdleTrackerOptions;
@@ -23,7 +24,8 @@ export class TransactionIdleTracker {
   private readonly originalQueryFn: (...args: any[]) => any;
   private readonly wrappedQuery: PoolClient['query'];
   private lastIdleStartTimeMs: number;
-  private idleMs = 0;
+  private maxIdleMs = 0;
+  private totalIdleMs = 0;
   private queryDurationMs = 0;
   private activeQueryCount = 0;
   private queryCount = 0;
@@ -50,7 +52,7 @@ export class TransactionIdleTracker {
     this.restore();
 
     // Keep both logs and metrics thresholded so this stays useful during spikes.
-    if (this.idleMs < this.options.thresholdMs) {
+    if (this.maxIdleMs < this.options.thresholdMs) {
       return;
     }
 
@@ -61,13 +63,18 @@ export class TransactionIdleTracker {
       status,
     };
 
-    recordHistogramValue(TransactionIdleTracker.OTEL_METRIC_NAME, this.idleMs, {
+    recordHistogramValue(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, this.totalIdleMs, {
+      attributes,
+      options: { unit: 'ms' },
+    });
+    recordHistogramValue(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, this.maxIdleMs, {
       attributes,
       options: { unit: 'ms' },
     });
     getLogger().warn(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, {
       ...attributes,
-      idleMs: this.idleMs,
+      totalIdleMs: this.totalIdleMs,
+      maxIdleMs: this.maxIdleMs,
       transactionDurationMs,
       queryDurationMs: this.queryDurationMs,
       queryCount: this.queryCount,
@@ -113,7 +120,9 @@ export class TransactionIdleTracker {
     }
     if (this.activeQueryCount === 0) {
       // Only the first concurrent query closes the idle period.
-      this.idleMs += queryStartTimeMs - this.lastIdleStartTimeMs;
+      const idleMs = queryStartTimeMs - this.lastIdleStartTimeMs;
+      this.totalIdleMs += idleMs;
+      this.maxIdleMs = Math.max(this.maxIdleMs, idleMs);
     }
     this.activeQueryCount++;
   }

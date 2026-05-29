@@ -1653,14 +1653,19 @@ describe('FHIR Repo', () => {
         })
       ).rejects.toThrow('work failed');
 
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_METRIC_NAME, 10, {
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 10, {
+        attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
+        options: { unit: 'ms' },
+      });
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, 10, {
         attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
         options: { unit: 'ms' },
       });
       expect(warnSpy).toHaveBeenCalledWith(
         TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
         expect.objectContaining({
-          idleMs: 10,
+          totalIdleMs: 10,
+          maxIdleMs: 10,
           queryCount: 1,
           status: 'rolled_back',
           transactionDurationMs: 10,
@@ -1697,12 +1702,27 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.withTransaction(async () => {
+        now += 30;
+        await repo.withTransaction(async (txClient) => {
+          now += 20;
+          await txClient.query('SELECT 1');
+        });
+        now += 10;
+      });
+
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
+
+      now = 0;
+      query.mockClear();
+
+      await repo.withTransaction(async () => {
         now += 20;
         await repo.withTransaction(async (txClient) => {
           now += 5;
           await txClient.query('SELECT 1');
         });
-        now += 40;
+        now += 50;
       });
 
       expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
@@ -1712,8 +1732,12 @@ describe('FHIR Repo', () => {
         'RELEASE SAVEPOINT sp2',
         'COMMIT',
       ]);
-      expect(recordHistogramValueSpy).toHaveBeenCalledTimes(1);
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_METRIC_NAME, 65, {
+      expect(recordHistogramValueSpy).toHaveBeenCalledTimes(2);
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 75, {
+        attributes: { attempt: 0, serializable: false, status: 'committed' },
+        options: { unit: 'ms' },
+      });
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, 50, {
         attributes: { attempt: 0, serializable: false, status: 'committed' },
         options: { unit: 'ms' },
       });
@@ -1721,14 +1745,15 @@ describe('FHIR Repo', () => {
         TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
         expect.objectContaining({
           attempt: 0,
-          idleMs: 65,
+          totalIdleMs: 75,
+          maxIdleMs: 50,
           queryCount: 4,
           queryDurationMs: 25,
           serializable: false,
           status: 'committed',
           thresholdMs: 50,
           transactionAttempts: 2,
-          transactionDurationMs: 90,
+          transactionDurationMs: 100,
         })
       );
       expect(client.query).toBe(query);
