@@ -106,6 +106,11 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
+  // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
+  // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
+  // the PID before start()). An upgrading agent stays non-primary until it wins the PID from the
+  // outgoing agent, so that the two overlapping processes don't both send to the same remote.
+  private isPrimary = false;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
@@ -117,6 +122,12 @@ export class App {
 
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
+
+    // A normally-started agent already holds the `medplum-agent` PID (created in main.ts), so it is
+    // primary immediately. An upgrading agent is finalizing an upgrade and only becomes primary once
+    // it wins that PID from the outgoing agent (see tryToCreateAgentPidFile). Until then it stays
+    // connected for control-plane messages but does not touch the data plane.
+    this.isPrimary = !existsSync(UPGRADE_MANIFEST_PATH);
 
     await this.startWebSocket();
 
@@ -183,20 +194,23 @@ export class App {
 
   private async tryToCreateAgentPidFile(): Promise<void> {
     // Should be ~ 500 seconds (500 ms wait x 1000 times)
-    const maxAttempts = 1000;
+    const maxAttempts = 10_000;
     let attempt = 0;
     let success = false;
     while (!success) {
       try {
         createPidFile('medplum-agent');
         success = true;
+        // We now own the primary PID, so the outgoing agent has exited and it is safe to start
+        // handling data-plane messages.
+        this.isPrimary = true;
       } catch (_err) {
         this.log.info('Unable to create agent PID file, trying again...');
         attempt++;
         if (attempt === maxAttempts) {
           throw new Error('Too many unsuccessful attempts to create agent PID file');
         }
-        await sleep(500);
+        await sleep(50);
       }
     }
   }
@@ -291,6 +305,12 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'transmit':
           case 'agent:transmit:response': {
+            // While finalizing an upgrade we may briefly overlap with the outgoing agent, which
+            // receives the same broadcast and owns the inbound connection. Drop until we're primary.
+            if (!this.isPrimary) {
+              this.log.debug('Ignoring transmit response while not primary');
+              break;
+            }
             if (!command.callback) {
               this.log.warn('Transmit response missing callback');
             }
@@ -308,6 +328,13 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':
+            // While finalizing an upgrade we may briefly overlap with the outgoing agent, which
+            // receives the same broadcast and is still the primary sender. Drop until we're primary
+            // so we don't send the same message to the remote twice.
+            if (!this.isPrimary) {
+              this.log.debug('Ignoring transmit request while not primary');
+              break;
+            }
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
             } else if (command.contentType === ContentType.PING) {

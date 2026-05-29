@@ -3130,6 +3130,143 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
+    test('Upgrading -- Ignores transmit requests until it becomes primary', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID until
+      // we flip this flag, simulating the outgoing agent still owning the PID during the overlap.
+      let allowPrimary = false;
+      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+        if (appName === 'medplum-agent' && !allowPrimary) {
+          throw new Error('Unable to create PID');
+        }
+        return '/tmp/test.pid';
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:transmit:response':
+              state.transmitResponses.push(command);
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const listenerPort = await getFreePort();
+      const hl7Messages: Hl7Message[] = [];
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          hl7Messages.push(message);
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(listenerPort);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const appStartPromise = app.start();
+      appStartPromise.catch(console.error);
+
+      // Wait for the WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const transmitRequest = {
+        type: 'agent:transmit:request',
+        contentType: ContentType.HL7_V2,
+        body:
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r',
+        remote: `mllp://localhost:${listenerPort}`,
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentTransmitRequest;
+
+      // While non-primary, the transmit request should be dropped: the remote receives nothing and
+      // no response comes back. (The outgoing agent is still primary and handles it during overlap.)
+      state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
+      await sleep(500);
+      expect(hl7Messages).toHaveLength(0);
+      expect(state.transmitResponses).toHaveLength(0);
+
+      // Now let the agent win the PID and become primary. Wait until the PID is actually acquired
+      // (which sets isPrimary) before sending again, since dropped requests are not queued/replayed.
+      allowPrimary = true;
+      let shouldThrow = false;
+      let timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (!createPidFileSpy.mock.results.some((result) => result.type === 'return')) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for agent to become primary');
+        }
+        await sleep(50);
+      }
+      clearTimeout(timeout);
+
+      // The same request should now be forwarded to the remote and acknowledged.
+      state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
+
+      shouldThrow = false;
+      timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (hl7Messages.length === 0 || state.transmitResponses.length === 0) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for transmit to be forwarded after becoming primary');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(hl7Messages).toHaveLength(1);
+      expect(state.transmitResponses).toHaveLength(1);
+
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      createPidFileSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
     test('Upgrade -- Missing artifact for platform', async () => {
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
 
