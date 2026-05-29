@@ -54,8 +54,19 @@ export function useWhisper({
   const audioStreamRef = useRef<MediaStream | undefined>(undefined);
   const audioContextRef = useRef<AudioContext | undefined>(undefined);
   const audioProcessorRef = useRef<ScriptProcessorNode | undefined>(undefined);
+  // sessionReadyRef stays true across stop/start so a warm connection can be reused; it is
+  // only reset when the socket (re)opens or the connection is fully closed.
+  const sessionReadyRef = useRef(false);
+  // capturingRef is true between a user start() and stop(); it gates auto-starting capture
+  // so a stray session.updated (e.g. from a background reconnect while idle) never reopens
+  // the mic on its own.
+  const capturingRef = useRef(false);
 
-  const stop = useCallback(() => {
+  // Stop capturing audio and release the microphone, but leave the WebSocket + OpenAI
+  // session warm so the next start() can reuse them. This is the user-facing `stop`.
+  const stopCapture = useCallback(() => {
+    capturingRef.current = false;
+
     audioProcessorRef.current?.disconnect();
     audioProcessorRef.current = undefined;
 
@@ -65,11 +76,21 @@ export function useWhisper({
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = undefined;
 
+    // Keep the connection warm if it is still open; otherwise report disconnected.
+    setStatus(websocketRef.current ? 'idle' : 'disconnected');
+  }, []);
+
+  // Fully tear down the connection in addition to stopping capture. Used on unmount.
+  const closeConnection = useCallback(() => {
+    stopCapture();
+
     websocketRef.current?.close();
     websocketRef.current = undefined;
 
+    sessionReadyRef.current = false;
+
     setStatus('disconnected');
-  }, []);
+  }, [stopCapture]);
 
   const setupSession = useCallback(() => {
     websocketRef.current?.send(
@@ -142,6 +163,27 @@ export function useWhisper({
     setStatus('listening');
   }, []);
 
+  // Capture can only start once the user intends to capture, the session is ready, and the
+  // mic is acquired — these now arrive in arbitrary order (parallel start, warm reuse,
+  // background reconnect).
+  const maybeStartAudioCapture = useCallback(() => {
+    if (!capturingRef.current) {
+      return; // user is not dictating
+    }
+    if (!sessionReadyRef.current) {
+      return; // session.updated not received yet
+    }
+    if (!audioStreamRef.current) {
+      return; // mic not acquired yet
+    }
+    if (audioProcessorRef.current) {
+      return; // already capturing
+    }
+    // Discard any stale partial buffer left over from a previous utterance on this session.
+    websocketRef.current?.send(JSON.stringify({ type: 'input_audio_buffer.clear' }));
+    startAudioCapture();
+  }, [startAudioCapture]);
+
   const handleMessage = useCallback(
     (message: any) => {
       switch (message.type) {
@@ -150,7 +192,8 @@ export function useWhisper({
           break;
 
         case 'session.updated':
-          startAudioCapture();
+          sessionReadyRef.current = true;
+          maybeStartAudioCapture();
           break;
 
         case 'input_audio_buffer.speech_started':
@@ -190,7 +233,7 @@ export function useWhisper({
           break;
       }
     },
-    [setupSession, startAudioCapture]
+    [setupSession, maybeStartAudioCapture]
   );
 
   const acquireMicrophone = useCallback(async (): Promise<MediaStream> => {
@@ -214,46 +257,85 @@ export function useWhisper({
     const websocket = new ReconnectingWebSocket(url);
     websocketRef.current = websocket;
 
-    websocket.onopen = () => setStatus('connected');
+    websocket.onopen = () => {
+      // Re-authenticate on every (re)open: ReconnectingWebSocket reconnects after a drop
+      // (e.g. OpenAI session expiry) but does not replay messages, so the connect handshake
+      // must be sent here. A fresh access token is read each time.
+      sessionReadyRef.current = false;
+      // Only surface connection progress while the user is actively starting capture. A
+      // background reconnect while idle must NOT flip the UI into a "connecting" state, or
+      // the mic button gets stuck on a disabled spinner that never resolves.
+      if (capturingRef.current) {
+        setStatus('connected');
+      } else {
+        setStatus('idle');
+      }
+      websocket.send(
+        JSON.stringify({
+          type: 'ai-realtime:connect',
+          accessToken: medplum.getAccessToken(),
+        })
+      );
+    };
     websocket.onmessage = (event) => handleMessage(JSON.parse(event.data));
     websocket.onerror = (err) => {
+      // While idle, let ReconnectingWebSocket retry silently rather than surfacing an error.
+      if (!capturingRef.current) {
+        return;
+      }
       setError(err);
+      closeConnection();
       setStatus('error');
-      stop();
     };
-    websocket.onclose = () => setStatus('disconnected');
+    // A transient close is left to ReconnectingWebSocket to recover from (onopen re-runs the
+    // handshake). Skip if we intentionally closed (websocketRef already cleared). While idle,
+    // stay 'idle' rather than entering a connecting-class state.
+    websocket.onclose = () => {
+      // The session is gone once the socket drops; require a fresh session.updated (sent
+      // after onopen re-handshakes) before capture can start again.
+      sessionReadyRef.current = false;
+      if (!websocketRef.current) {
+        return; // intentional closeConnection(); status already set
+      }
+      setStatus(capturingRef.current ? 'connecting' : 'idle');
+    };
 
-    websocket.send(
-      JSON.stringify({
-        type: 'ai-realtime:connect',
-        accessToken: medplum.getAccessToken(),
-      })
-    );
     return websocket;
-  }, [medplum, handleMessage, stop]);
+  }, [medplum, handleMessage, closeConnection]);
+
+  // Reuse the warm connection if one already exists; otherwise open a new one.
+  const ensureConnected = useCallback((): ReconnectingWebSocket => {
+    return websocketRef.current ?? openWebSocket();
+  }, [openWebSocket]);
 
   const start = useCallback(async () => {
     try {
       setError(undefined);
-      await acquireMicrophone();
-      openWebSocket();
+      capturingRef.current = true;
+      // Reuse a warm connection if present; otherwise open one. Acquire the mic concurrently
+      // so its latency overlaps any handshake.
+      ensureConnected();
+      const micPromise = acquireMicrophone(); // status -> requesting_microphone
+      await micPromise;
+      // The session may already be ready (warm reuse) or arrive later via session.updated.
+      maybeStartAudioCapture();
     } catch (err) {
       setError(err);
       setStatus('error');
-      stop();
+      stopCapture();
     }
-  }, [acquireMicrophone, openWebSocket, stop]);
+  }, [acquireMicrophone, ensureConnected, stopCapture, maybeStartAudioCapture]);
 
   useEffect(() => {
-    return () => stop();
-  }, [stop]);
+    return () => closeConnection();
+  }, [closeConnection]);
 
   return {
     status,
     error,
     transcripts,
     start,
-    stop,
+    stop: stopCapture,
     isListening: status === 'listening' || status === 'speech_started' || status === 'speech_stopped',
   };
 }
