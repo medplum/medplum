@@ -585,6 +585,136 @@ describe('MFA', () => {
     expect(verifyRes.body.code).toBeDefined();
   });
 
+  test('send-email requires a login', async () => {
+    const res = await request(app).post('/auth/mfa/send-email').type('json').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Missing login');
+  });
+
+  test('send-email rejects a revoked login', async () => {
+    const email = `both-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Revoked',
+        lastName: 'Login',
+        projectName: `Revoked Login Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    await enrollBothMethods(accessToken);
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaRequired).toBe(true);
+
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+      await systemRepo.updateResource<Login>({ ...login, revoked: true });
+    });
+
+    const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('Login revoked'));
+  });
+
+  test('send-email rejects a granted login', async () => {
+    const email = `both-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Granted',
+        lastName: 'Login',
+        projectName: `Granted Login Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    await enrollBothMethods(accessToken);
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaRequired).toBe(true);
+
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+      await systemRepo.updateResource<Login>({ ...login, granted: true });
+    });
+
+    const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('Login granted'));
+  });
+
+  test('send-email rejects an already-verified login', async () => {
+    const email = `both-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Verified',
+        lastName: 'Login',
+        projectName: `Verified Login Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+    await enrollBothMethods(accessToken);
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaRequired).toBe(true);
+
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+      await systemRepo.updateResource<Login>({ ...login, mfaVerified: true });
+    });
+
+    const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('Login already verified'));
+  });
+
+  test('send-email requires email enrollment', async () => {
+    const email = `totp-only${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Totp',
+        lastName: 'Only',
+        projectName: `Totp Only Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // Enroll in TOTP only, so the user has MFA but not the email method
+    const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: authenticator.generate(secret) });
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaRequired).toBe(true);
+
+    const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('User not enrolled in email MFA'));
+  });
+
   test('Disable email-only MFA requires an emailed code', async () => {
     const email = `email-mfa${randomUUID()}@example.com`;
     const password = 'password!@#';
