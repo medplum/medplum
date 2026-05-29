@@ -254,7 +254,7 @@ function parseSmartHealthLink(input: string): SmartHealthLinkPayload {
 }
 
 function getSmartHealthLinkId(manifestUrl: string): string | undefined {
-  const match = manifestUrl.match(/\/smart-health-links\/([^/]+)\/manifest\.json$/);
+  const match = /\/smart-health-links\/([^/]+)\/manifest\.json$/.exec(manifestUrl);
   return match?.[1];
 }
 

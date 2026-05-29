@@ -29,7 +29,7 @@ describe('SMART Health operations', () => {
       .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-card`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
-      .send({ includeQrCode: true });
+      .send({ _type: 'Patient', includeQrCode: true });
     expect(generateResponse.status).toBe(200);
 
     const credential = getStringParameter(generateResponse.body, 'credential');
@@ -49,6 +49,74 @@ describe('SMART Health operations', () => {
     const bundle = JSON.parse(getStringParameter(verifyResponse.body, 'fhirBundle')) as Bundle;
     expect(bundle.resourceType).toBe('Bundle');
     expect(bundle.entry?.some((entry) => entry.resource?.resourceType === 'Patient')).toBe(true);
+
+    const verifyShcUriResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shcUri: getStringParameter(generateResponse.body, 'shcUri') });
+    expect(verifyShcUriResponse.status).toBe(200);
+    expect(getBooleanParameter(verifyShcUriResponse.body, 'valid')).toBe(true);
+
+    const verifyFileResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ file: getStringParameter(generateResponse.body, 'file') });
+    expect(verifyFileResponse.status).toBe(200);
+    expect(getBooleanParameter(verifyFileResponse.body, 'valid')).toBe(true);
+  });
+
+  test('Rejects invalid SMART Health Cards', async () => {
+    const patient = await createPatient();
+    const expiredResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-card`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ exp: Math.floor(Date.now() / 1000) - 60 });
+    expect(expiredResponse.status).toBe(200);
+
+    const expiredVerifyResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ credential: getStringParameter(expiredResponse.body, 'credential') });
+    expect(expiredVerifyResponse.status).toBe(200);
+    expect(getBooleanParameter(expiredVerifyResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(expiredVerifyResponse.body, 'error')).toContain('expired');
+
+    const missingInputResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({});
+    expect(missingInputResponse.status).toBe(200);
+    expect(getBooleanParameter(missingInputResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(missingInputResponse.body, 'error')).toContain('Expected credential');
+
+    const invalidQrResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shcUri: 'shc:/123' });
+    expect(invalidQrResponse.status).toBe(200);
+    expect(getBooleanParameter(invalidQrResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(invalidQrResponse.body, 'error')).toContain('numeric encoding');
+
+    const invalidFileResponse = await request(app)
+      .post('/fhir/R4/$verify-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ file: JSON.stringify({ verifiableCredential: [] }) });
+    expect(invalidFileResponse.status).toBe(200);
+    expect(getBooleanParameter(invalidFileResponse.body, 'valid')).toBe(false);
+
+    const missingPatientResponse = await request(app)
+      .post('/fhir/R4/Patient/not-found/$generate-smart-health-card')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({});
+    expect(missingPatientResponse.status).toBe(400);
   });
 
   test('Generate manifest and resolve SMART Health Link', async () => {
@@ -83,6 +151,108 @@ describe('SMART Health operations', () => {
 
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
     expect(fhirResources[0]?.resourceType).toBe('Bundle');
+
+    const viewerResolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: `https://viewer.example/#${shlink}`, recipient: 'Test Recipient', passcode: '123456' });
+    expect(viewerResolveResponse.status).toBe(200);
+    expect(getBooleanParameter(viewerResolveResponse.body, 'valid')).toBe(true);
+  });
+
+  test('Rejects invalid SMART Health Links', async () => {
+    const patient = await createPatient();
+    const passcodeResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ _type: 'Patient', passcode: '123456', includeQrCode: true });
+    expect(passcodeResponse.status).toBe(200);
+    expect(getStringParameter(passcodeResponse.body, 'qrCodeDataUrl')).toMatch(/^data:image\/png;base64,/);
+
+    const manifestUrl = new URL(getStringParameter(passcodeResponse.body, 'manifestUrl'));
+    const missingPasscodeManifestResponse = await request(app)
+      .post(manifestUrl.pathname)
+      .set('Content-Type', ContentType.JSON)
+      .send({ recipient: 'Test Recipient' });
+    expect(missingPasscodeManifestResponse.status).toBe(400);
+    expect(missingPasscodeManifestResponse.body.error).toContain('passcode');
+
+    const wrongPasscodeResolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: getStringParameter(passcodeResponse.body, 'shlink'),
+        recipient: 'Test Recipient',
+        passcode: 'wrong',
+      });
+    expect(wrongPasscodeResolveResponse.status).toBe(200);
+    expect(getBooleanParameter(wrongPasscodeResolveResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(wrongPasscodeResolveResponse.body, 'error')).toContain('passcode');
+
+    const missingManifestResponse = await request(app)
+      .post('/fhir/R4/.well-known/smart-health-links/not-found/manifest.json')
+      .set('Content-Type', ContentType.JSON)
+      .send({});
+    expect(missingManifestResponse.status).toBe(404);
+
+    const expiredResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ exp: Math.floor(Date.now() / 1000) - 60 });
+    expect(expiredResponse.status).toBe(200);
+
+    const expiredResolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: getStringParameter(expiredResponse.body, 'shlink') });
+    expect(expiredResolveResponse.status).toBe(200);
+    expect(getBooleanParameter(expiredResolveResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(expiredResolveResponse.body, 'error')).toContain('expired');
+
+    const invalidUriResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: 'https://example.com/no-link' });
+    expect(invalidUriResponse.status).toBe(200);
+    expect(getBooleanParameter(invalidUriResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(invalidUriResponse.body, 'error')).toContain('Invalid SMART Health Link URI');
+
+    const invalidPayloadResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: 'shlink:/e30' });
+    expect(invalidPayloadResponse.status).toBe(200);
+    expect(getBooleanParameter(invalidPayloadResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(invalidPayloadResponse.body, 'error')).toContain('Invalid SMART Health Link payload');
+
+    const unknownGeneratedLinkResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://example.com/fhir/R4/.well-known/smart-health-links/not-found/manifest.json',
+          key: '0000000000000000000000000000000000000000000',
+          v: 1,
+        }),
+      });
+    expect(unknownGeneratedLinkResponse.status).toBe(200);
+    expect(getBooleanParameter(unknownGeneratedLinkResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(unknownGeneratedLinkResponse.body, 'error')).toContain('Medplum-generated');
+
+    const missingPatientResponse = await request(app)
+      .post('/fhir/R4/Patient/not-found/$generate-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({});
+    expect(missingPatientResponse.status).toBe(400);
   });
 });
 
@@ -106,4 +276,8 @@ function getBooleanParameter(parameters: Parameters, name: string): boolean {
   const value = parameters.parameter?.find((p) => p.name === name)?.valueBoolean;
   expect(value).toBeDefined();
   return value as boolean;
+}
+
+function encodeShlinkPayload(payload: object): string {
+  return `shlink:/${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
 }

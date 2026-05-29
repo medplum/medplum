@@ -228,7 +228,7 @@ function encodeSmartHealthCardUri(credential: string): string {
     credential
       .split('')
       .map((char) => {
-        const value = char.charCodeAt(0) - 45;
+        const value = (char.codePointAt(0) as number) - 45;
         if (value < 0 || value > 77) {
           throw new Error(`Invalid SMART Health Card JWS character: ${char}`);
         }
@@ -245,7 +245,7 @@ function decodeSmartHealthCardUri(uri: string): string {
   }
   let result = '';
   for (let i = 0; i < numeric.length; i += 2) {
-    result += String.fromCharCode(Number.parseInt(numeric.substring(i, i + 2), 10) + 45);
+    result += String.fromCodePoint(Number.parseInt(numeric.substring(i, i + 2), 10) + 45);
   }
   return result;
 }
