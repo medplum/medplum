@@ -1409,14 +1409,12 @@ describe('MFA', () => {
 
       // Not enrolled -> no methods.
       expect(getEnrolledMfaMethods({ resourceType: 'User' } as User)).toEqual([]);
-      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: false, mfaSecret: 'ABC' } as User)).toEqual(
-        []
-      );
+      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: false, mfaSecret: 'ABC' } as User)).toEqual([]);
 
       // When mfaMethod is present it takes precedence over the inference.
-      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: true, mfaMethod: ['email'] } as User)).toEqual(
-        ['email']
-      );
+      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: true, mfaMethod: ['email'] } as User)).toEqual([
+        'email',
+      ]);
     });
 
     // /status — legacy enrolled user still reports enrolled: true.
