@@ -201,6 +201,9 @@ export interface MedplumServerConfig {
    * Optional flag to require email verification before allowing users to create projects.
    */
   requireVerifiedEmailForProjectCreation?: boolean;
+
+  /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
+  allowInsecureRestHookUrl?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
