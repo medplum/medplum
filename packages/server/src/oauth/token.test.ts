@@ -1175,7 +1175,7 @@ describe('OAuth2 Token', () => {
       refresh_token: res2.body.refresh_token,
     });
     expect(res3.status).toBe(400);
-    expect(res3.body.error).toBe('invalid_grant');
+    expect(res3.body.error).toBe('access_denied');
     expect(res3.body.error_description).toBe('Profile not active');
   });
 
