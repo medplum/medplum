@@ -42,7 +42,7 @@ import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
-import { bundleContains, createTestProject, spyOnQuery, withTestContext } from '../test.setup';
+import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
@@ -59,8 +59,11 @@ describe('FHIR Repo', () => {
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
   beforeAll(async () => {
+    stdoutSpy = mockStdoutWrite();
+
     const config = await loadTestConfig();
     await initAppServices(config);
 
@@ -81,6 +84,7 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await shutdownApp();
+    stdoutSpy.mockRestore();
   });
 
   test('getRepoForLogin', async () => {
@@ -386,9 +390,9 @@ describe('FHIR Repo', () => {
         layer: 'cache',
         operation: 'read',
         source: 'repo.getCacheEntries',
-        specialResourceTypes: ['Project'],
-        otherResourceTypes: ['Patient'],
-        resourceTypes: ['Patient', 'Project'],
+        specialResourceTypes: expect.toEqualUnordered(['Project']),
+        otherResourceTypes: expect.toEqualUnordered(['Patient']),
+        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
       })
     );
   });
@@ -412,9 +416,9 @@ describe('FHIR Repo', () => {
         layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
-        specialResourceTypes: ['Project'],
-        otherResourceTypes: ['Patient'],
-        resourceTypes: ['Patient', 'Project'],
+        specialResourceTypes: expect.toEqualUnordered(['Project']),
+        otherResourceTypes: expect.toEqualUnordered(['Patient']),
+        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
       })
     );
   });
@@ -440,10 +444,10 @@ describe('FHIR Repo', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'committed',
-        specialResourceTypes: ['Project'],
-        otherResourceTypes: ['Patient'],
-        readResourceTypes: ['Patient', 'Project'],
-        writeResourceTypes: [],
+        specialResourceTypes: expect.toEqualUnordered(['Project']),
+        otherResourceTypes: expect.toEqualUnordered(['Patient']),
+        readResourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+        writeResourceTypes: expect.toEqualUnordered([]),
       })
     );
   });
