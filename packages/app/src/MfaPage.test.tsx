@@ -67,7 +67,7 @@ describe('MfaPage', () => {
     await user.click(screen.getByRole('button', { name: 'Add an authenticator app' }));
 
     // Enter a code and enroll
-    await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
+    await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
 
     expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'totp', token: '123456' });
