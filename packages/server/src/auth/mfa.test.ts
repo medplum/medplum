@@ -1210,10 +1210,7 @@ describe('MFA', () => {
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
 
-    const res = await request(app)
-      .post('/auth/mfa/login-enroll')
-      .type('json')
-      .send({ login: loginRes.body.login });
+    const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: loginRes.body.login });
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject(badRequest('Secret not found'));
   });
@@ -1239,10 +1236,7 @@ describe('MFA', () => {
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
 
-    const res = await request(app)
-      .post('/auth/mfa/login-enroll')
-      .type('json')
-      .send({ login: loginRes.body.login });
+    const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: loginRes.body.login });
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject(badRequest('Missing token'));
   });
