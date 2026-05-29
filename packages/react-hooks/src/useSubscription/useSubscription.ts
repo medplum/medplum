@@ -92,7 +92,10 @@ export function useSubscription(
     }
 
     let shouldSubscribe = false;
-    if (prevCriteriaRef.current !== effectiveCriteria || !deepEquals(prevMemoizedSubPropsRef.current, memoizedSubProps)) {
+    if (
+      prevCriteriaRef.current !== effectiveCriteria ||
+      !deepEquals(prevMemoizedSubPropsRef.current, memoizedSubProps)
+    ) {
       shouldSubscribe = true;
     }
 
