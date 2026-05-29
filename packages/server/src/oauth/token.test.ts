@@ -1123,6 +1123,61 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Token revoked');
   });
 
+  test('Refresh token membership inactive', async () => {
+    // Use a dedicated user so deactivating the membership does not affect other tests
+    const inactiveEmail = `test-${randomUUID()}@example.com`;
+    const inactivePassword = 'test-password';
+    await inviteUser({
+      project,
+      resourceType: 'Practitioner',
+      firstName: 'Test',
+      lastName: 'Test',
+      email: inactiveEmail,
+      password: inactivePassword,
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: inactiveEmail,
+      password: inactivePassword,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline_access',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.refresh_token).toBeDefined();
+
+    // Find the login
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
+    expect(loginBundle.entry).toHaveLength(1);
+
+    // Deactivate the membership
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    const membership = await systemRepo.readReference<ProjectMembership>(
+      login.membership as Reference<ProjectMembership>
+    );
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...membership,
+        active: false,
+      })
+    );
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body.error).toBe('invalid_grant');
+    expect(res3.body.error_description).toBe('Profile not active');
+  });
+
   test('Refresh token Basic auth success', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
