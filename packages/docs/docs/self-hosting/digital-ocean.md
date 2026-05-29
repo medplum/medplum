@@ -8,7 +8,6 @@ This guide will walk you through the process of setting up Medplum on DigitalOce
 
 You can either run the Medplum API in a droplet following the Ubuntu instructions or run it as an app
 
-
 ## Prerequisites
 
 #### Option 1: Running Medplum API in a Droplet
@@ -39,9 +38,7 @@ Using managed database
 - Configure your database settings (e.g., region, cluster name).
 - Note down the Redis connection details (host, port, password).
 
-
 **Create a managed app**
-
 
 - Select your fork repository and branch
 
@@ -52,7 +49,7 @@ Configure the build and run commands:
 **Build Command:**
 
 ```
-npm install -g @microsoft/api-extractor @microsoft/api-documenter @testing-library/jest-dom rimraf turbo
+npm ci
 npx turbo run build --filter=@medplum/server
 ```
 
