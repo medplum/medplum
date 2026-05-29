@@ -12,7 +12,6 @@ import {
   buildDuckdbPostgresAttachQuery,
   buildInsertIntoSelectQuery,
   buildSelectFromHistoryTableQuery,
-  buildTrueSourcePredicate,
   runParameterizedWarehouseSql,
   runParameterizedWarehouseSqlReadAll,
 } from './warehouse-sql';
@@ -78,7 +77,7 @@ describe('warehouse SQL (integration)', () => {
 
   test('INSERT INTO with subquery projection extracts project_id via DuckDB json_extract_string', async () => {
     const connStr = buildPgConnectionURI({ host, port, dbname: database, username, password });
-    const projectedSelect = buildSelectFromHistoryTableQuery(HISTORY_TABLE, buildTrueSourcePredicate());
+    const projectedSelect = buildSelectFromHistoryTableQuery(HISTORY_TABLE);
     const insertQuery = buildInsertIntoSelectQuery(`main.${DEST_TABLE}`, projectedSelect);
 
     const instance = await DuckDBInstance.create(':memory:');

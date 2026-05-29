@@ -22,6 +22,17 @@ function createDoseSpotMembership(): ReturnType<MockClient['getProjectMembership
   };
 }
 
+function createScriptSureMembership(): ReturnType<MockClient['getProjectMembership']> {
+  return {
+    resourceType: 'ProjectMembership',
+    id: 'test-membership',
+    project: { reference: 'Project/test' },
+    user: { reference: 'User/test' },
+    profile: { reference: 'Practitioner/test' },
+    identifier: [{ system: 'https://scriptsure.com', value: '12345' }],
+  };
+}
+
 /**
  * Build an empty MedicationRequest search Bundle so the new server-side search path
  * (`medplum.search('MedicationRequest', ...)` returning a Bundle with `total`) is
@@ -95,7 +106,10 @@ describe('MedicationsPage', () => {
   });
 
   test('Renders medication tabs and order action', async () => {
-    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`);
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
     expect(await screen.findByText('Active')).toBeInTheDocument();
     expect(await screen.findByText('Draft')).toBeInTheDocument();
     expect(await screen.findByText('Completed')).toBeInTheDocument();
@@ -192,34 +206,23 @@ describe('MedicationsPage', () => {
     });
   });
 
-  test('Does not show DoseSpot sync button without DoseSpot identifier', async () => {
-    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`);
-    expect(await screen.findByText('Active')).toBeInTheDocument();
-    expect(screen.queryByText('DoseSpot sync')).not.toBeInTheDocument();
-  });
-
-  test('Shows DoseSpot sync button with DoseSpot identifier', async () => {
+  test('Does not trigger DoseSpot sync without DoseSpot identifier', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
-    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
+    const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
 
     await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
-    expect(await screen.findByText('DoseSpot sync')).toBeInTheDocument();
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    expect(executeBotSpy).not.toHaveBeenCalled();
   });
 
-  test('DoseSpot sync button triggers bot execution', async () => {
+  test('DoseSpot sync calls all three bots automatically on mount', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
     vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
     const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
 
     await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
-    expect(await screen.findByText('DoseSpot sync')).toBeInTheDocument();
-
-    const syncButton = screen.getByText('DoseSpot sync');
-    await act(async () => {
-      fireEvent.click(syncButton);
-    });
 
     await waitFor(() => {
       expect(executeBotSpy).toHaveBeenCalledTimes(3);

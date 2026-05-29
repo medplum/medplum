@@ -201,6 +201,9 @@ export interface MedplumServerConfig {
    * Optional flag to require email verification before allowing users to create projects.
    */
   requireVerifiedEmailForProjectCreation?: boolean;
+
+  /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
+  allowInsecureRestHookUrl?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -338,6 +341,11 @@ export interface MedplumDataWarehouseConfig {
   localBasePath?: string;
   /** Optional Iceberg namespace used by sync. */
   namespace?: string;
+  /**
+   * Earliest resource `lastUpdated` timestamp to include in sync (ISO-8601 date or date-time string).
+   * History rows with `lastUpdated` before this value are excluded.
+   */
+  startDate?: string;
 }
 
 export interface MedplumFissionConfig {

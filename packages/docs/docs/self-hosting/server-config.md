@@ -431,6 +431,12 @@ Iceberg namespace used by sync when using the `s3tables` destination.
 
 **Default:** None
 
+#### dataWarehouse.startDate
+
+Earliest resource `lastUpdated` timestamp to include in warehouse sync (ISO 8601 string in JSON or environment config). History rows older than this bound are excluded from export.
+
+**Default:** None (no lower bound; sync all history rows that pass other filters)
+
 ### awsRegion
 
 The AWS Region identifier.
