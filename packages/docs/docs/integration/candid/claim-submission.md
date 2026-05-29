@@ -4,7 +4,7 @@ This guide explains how to model your FHIR resources for the Candid Health integ
 
 ## Overview
 
-The Candid Health integration allows you to submit professional medical claims by creating a [Claim](/docs/api/fhir/resources/claim) resource and sending it to Candid Health's API. This workflow is handled by our **Send to Candid Bot**. Please [contact the Medplum team](mailto:support@medplum.com) to get access to this bot.
+The Candid Health integration allows you to submit professional medical claims via the `$candid-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on the [Claim](/docs/api/fhir/resources/claim) resource. On success, the operation returns a [ClaimResponse](/docs/api/fhir/resources/claimresponse) saved to Medplum with Candid's encounter and claim identifiers written back for recordkeeping. Please [contact the Medplum team](mailto:support@medplum.com) to get access to this integration.
 
 ## Creating the Claim
 
@@ -141,35 +141,50 @@ The billing provider Organization is linked to the Practitioner via a `Practitio
 
 ## Submitting the Claim
 
-The **Send to Candid Bot** processes the FHIR Claim and submits it to Candid Health's API. Invoke the bot by executing it with a stored `Claim` resource:
+The `$candid-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on `Claim` submits the claim to Candid Health's API and returns a `ClaimResponse`. Invoke it in either of these ways:
+
+- **Instance level** — on a stored Claim: `POST {base}/fhir/R4/Claim/{id}/$candid-submit-claim`
+- **Type level** — with a `Claim` in the request body: `POST {base}/fhir/R4/Claim/$candid-submit-claim`
+
+**Instance level** (after the `Claim` has been created and stored):
 
 ```ts
-const response = await medplum.post(
-  medplum.fhirUrl('Bot', SEND_TO_CANDID_BOT_ID, '$execute'),
-  claim
+const claimResponse = await medplum.post(
+  medplum.fhirUrl('Claim', claim.id, '$candid-submit-claim')
 );
 ```
 
 Or via the FHIR REST API:
 
 ```http
-POST {base}/fhir/R4/Bot/{send-to-candid-bot-id}/$execute
-Content-Type: application/fhir+json
-
-{ ...claimResource }
+POST {base}/fhir/R4/Claim/{id}/$candid-submit-claim
 ```
 
-A successful response contains the Candid encounter and claim IDs:
+On success, the operation returns a `ClaimResponse` resource saved to Medplum. The Candid encounter and claim IDs are written back onto both the `ClaimResponse` and the original `Claim` as identifiers:
 
 ```json
 {
-  "success": true,
-  "medplumClaimId": "...",
-  "candidEncounterId": "...",
-  "candidClaimId": "...",
-  "serviceLineIds": ["..."]
+  "resourceType": "ClaimResponse",
+  "status": "active",
+  "outcome": "complete",
+  "request": { "reference": "Claim/{id}" },
+  "insurer": { "reference": "Organization/{payer-id}" },
+  "identifier": [
+    { "system": "https://candidhealth.com/claim-id", "value": "..." },
+    { "system": "https://candidhealth.com/encounter-id", "value": "..." }
+  ],
+  "total": [
+    {
+      "category": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/adjudication", "code": "submitted" }] },
+      "amount": { "value": 175.00, "currency": "USD" }
+    }
+  ]
 }
 ```
+
+:::note[]
+The operation is idempotent. If an active `ClaimResponse` already exists for the `Claim`, the bot returns it immediately without re-submitting to Candid.
+:::
 
 <details>
 <summary>Example transaction Bundle (for creating all required resources)</summary>
@@ -323,10 +338,11 @@ A successful response contains the Candid encounter and claim IDs:
 
 ## Candid Health Workflow
 
-Once the bot submits the claim, Candid Health processes it in two steps:
+Once the operation is invoked, the bot runs the following steps:
 
-1. **Encounter Creation** — The bot creates a Candid encounter with patient demographics, provider info, and all diagnoses. Candid returns an `encounterId` and `claimId`.
-2. **Service Line Creation** — For each `Claim.item`, the bot creates a Candid service line linked to the encounter, including CPT codes, charges, and diagnosis pointers.
+1. **Encounter Creation** — The bot creates a Candid encounter with patient demographics, provider info, and all diagnoses. Candid returns an `encounterId` and `claimId`. On transient failures the bot retries up to 3 times; if the encounter already exists in Candid (identified by the FHIR `Encounter.id` as the external ID) it is fetched instead of re-created.
+2. **Service Line Creation** — For each `Claim.item`, the bot creates a Candid service line with the CPT code, charge amount, and diagnosis pointers. This step is skipped if the encounter was recovered rather than freshly created to avoid duplicating service lines.
+3. **ClaimResponse Creation** — The bot saves a `ClaimResponse` to Medplum with `outcome: complete` and writes the Candid `claim-id` and `encounter-id` back onto both the `ClaimResponse` and the original `Claim` as identifiers.
 
 ### Common Claim Status Values
 
