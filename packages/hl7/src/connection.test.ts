@@ -397,7 +397,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
     test('standard mode: auto-CA is suppressed when deferred', async () => {
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
-      const ackListener = jest.fn();
+      const ackListener = vi.fn();
       connection.addEventListener('enhancedAckSent', ackListener);
       connection.setDeferredCommitAck(true);
 
@@ -425,7 +425,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
     test('ackCommit sends CA in standard mode', async () => {
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
-      const ackListener = jest.fn();
+      const ackListener = vi.fn();
       connection.addEventListener('enhancedAckSent', ackListener);
       connection.setDeferredCommitAck(true);
 
@@ -480,7 +480,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
     test('nackCommit sends CR in standard mode with optional reason in MSA.3', async () => {
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
-      const ackListener = jest.fn();
+      const ackListener = vi.fn();
       connection.addEventListener('enhancedAckSent', ackListener);
       connection.setDeferredCommitAck(true);
 
