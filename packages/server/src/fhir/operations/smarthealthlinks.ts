@@ -3,9 +3,10 @@
 import { allOk, badRequest, concatUrls, ContentType, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
+import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { base64url, compactDecrypt, CompactEncrypt } from 'jose';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
@@ -14,6 +15,7 @@ import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 const SHL_CONTENT_TYPE_FHIR_JSON = 'application/fhir+json';
+const SHL_PASSCODE_BCRYPT_ROUNDS = 12;
 
 interface GenerateSmartHealthLinkParams {
   _type?: string;
@@ -122,7 +124,7 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
       projectId: ctx.project.id,
       patientReference: `Patient/${patient.id}`,
       payload,
-      passcodeHash: params.passcode ? hashPasscode(params.passcode) : undefined,
+      passcodeHash: params.passcode ? await hashPasscode(params.passcode) : undefined,
       files: [
         {
           contentType: SHL_CONTENT_TYPE_FHIR_JSON,
@@ -164,7 +166,7 @@ export async function smartHealthLinkManifestHandler(req: Request, res: Response
     return;
   }
   const passcode = typeof req.body?.passcode === 'string' ? req.body.passcode : undefined;
-  const outcome = validateSmartHealthLinkRecord(record, passcode);
+  const outcome = await validateSmartHealthLinkRecord(record, passcode);
   if (outcome) {
     res.status(400).json({ error: outcome });
     return;
@@ -182,7 +184,7 @@ async function resolveGeneratedSmartHealthLink(
   if (!record) {
     throw new Error('Only Medplum-generated SMART Health Links are supported by this prototype');
   }
-  const outcome = validateSmartHealthLinkRecord(record, passcode);
+  const outcome = await validateSmartHealthLinkRecord(record, passcode);
   if (outcome) {
     throw new Error(outcome);
   }
@@ -219,13 +221,18 @@ function buildSmartHealthLinkManifest(record: SmartHealthLinkRecord): object {
   };
 }
 
-function validateSmartHealthLinkRecord(record: SmartHealthLinkRecord, passcode?: string): string | undefined {
+async function validateSmartHealthLinkRecord(
+  record: SmartHealthLinkRecord,
+  passcode?: string
+): Promise<string | undefined> {
   const now = Math.floor(Date.now() / 1000);
   if (record.payload.exp !== undefined && record.payload.exp <= now) {
     return 'SMART Health Link has expired';
   }
-  if (record.payload.flag?.includes('P') && (!passcode || hashPasscode(passcode) !== record.passcodeHash)) {
-    return 'Invalid SMART Health Link passcode';
+  if (record.payload.flag?.includes('P')) {
+    if (!passcode || !record.passcodeHash || !(await bcrypt.compare(passcode, record.passcodeHash))) {
+      return 'Invalid SMART Health Link passcode';
+    }
   }
   return undefined;
 }
@@ -251,8 +258,8 @@ function getSmartHealthLinkId(manifestUrl: string): string | undefined {
   return match?.[1];
 }
 
-function hashPasscode(passcode: string): string {
-  return createHash('sha256').update(passcode).digest('hex');
+function hashPasscode(passcode: string): Promise<string> {
+  return bcrypt.hash(passcode, SHL_PASSCODE_BCRYPT_ROUNDS);
 }
 
 function makeParameters(values: Record<string, string | boolean | undefined>): Parameters {
