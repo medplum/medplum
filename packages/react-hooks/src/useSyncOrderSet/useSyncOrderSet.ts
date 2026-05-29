@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
 import { useCallback } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
@@ -24,7 +24,7 @@ export function useSyncOrderSet(): (planDefinitionId: string) => Promise<void> {
         await medplum.post(medplum.fhirUrl('PlanDefinition', '$sync-orderset'), { planDefinitionId });
       } catch (err: unknown) {
         // If the operation isn't deployed, silently skip — project has no e-prescribing vendor configured.
-        if (isOperationOutcome(err) && err.issue?.some((i) => i.code === 'not-found')) {
+        if (err instanceof OperationOutcomeError && err.outcome.issue?.some((i) => i.code === 'not-found')) {
           return;
         }
         throw err;
@@ -33,3 +33,4 @@ export function useSyncOrderSet(): (planDefinitionId: string) => Promise<void> {
     [medplum]
   );
 }
+

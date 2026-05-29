@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { OperationOutcome } from '@medplum/fhirtypes';
+import { OperationOutcomeError } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
@@ -34,32 +34,34 @@ describe('useSyncOrderSet', () => {
 
   test('silently no-ops when operation is not deployed (not-found)', async () => {
     const medplum = new MockClient();
-    const notFound: OperationOutcome = {
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Operation not found' }],
-    };
-    jest.spyOn(medplum, 'post').mockRejectedValue(notFound);
+    jest.spyOn(medplum, 'post').mockRejectedValue(
+      new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Operation not found' }],
+      })
+    );
 
     const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
 
     await act(async () => {
-      // Should resolve without throwing
       await expect(result.current('plan-def-123')).resolves.toBeUndefined();
     });
   });
 
   test('re-throws non-not-found errors', async () => {
     const medplum = new MockClient();
-    const serverError: OperationOutcome = {
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'exception', diagnostics: 'Internal server error' }],
-    };
-    jest.spyOn(medplum, 'post').mockRejectedValue(serverError);
+    jest.spyOn(medplum, 'post').mockRejectedValue(
+      new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [{ severity: 'error', code: 'exception', diagnostics: 'Internal server error' }],
+      })
+    );
 
     const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
 
     await act(async () => {
-      await expect(result.current('plan-def-123')).rejects.toMatchObject({ resourceType: 'OperationOutcome' });
+      await expect(result.current('plan-def-123')).rejects.toBeInstanceOf(OperationOutcomeError);
     });
   });
 });
+
