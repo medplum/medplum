@@ -1,27 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, normalizeErrorString } from '@medplum/core';
+import { allOk, badRequest, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import type { JWK, KeyLike } from 'jose';
-import { calculateJwkThumbprint, CompactSign, compactVerify, exportJWK, generateKeyPair } from 'jose';
+import { CompactSign, compactVerify, decodeProtectedHeader, importJWK } from 'jose';
 import { deflateRawSync, inflateRawSync } from 'node:zlib';
 import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getJwks, getSigningKey } from '../../oauth/keys';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 const SHC_VC_TYPE = ['https://smarthealth.cards#health-card'];
 const FHIR_VERSION = '4.0.1';
-
-let signingKeyPromise: Promise<SmartHealthCardSigningKey> | undefined;
+const SHC_SIGNING_ALG = OAuthSigningAlgorithm.ES256;
 
 interface SmartHealthCardSigningKey {
   privateKey: KeyLike;
-  publicKey: KeyLike;
-  publicJwk: JWK;
   kid: string;
 }
 
@@ -115,7 +113,7 @@ export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<
         file,
         qrCodeDataUrl,
         issuer,
-        keyId: (await getSmartHealthCardSigningKey()).kid,
+        keyId: getSmartHealthCardSigningKey().kid,
       }),
     ];
   } catch (err) {
@@ -128,7 +126,7 @@ export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<Fh
     const params = parseInputParameters<VerifySmartHealthCardParams>(verifySmartHealthCardOperation, req);
     const credential = readSmartHealthCardCredential(params);
     const payload = await verifySmartHealthCardCredential(credential);
-    const header = JSON.parse(Buffer.from(credential.split('.')[0], 'base64url').toString('utf8')) as { kid?: string };
+    const header = decodeProtectedHeader(credential);
 
     return [
       allOk,
@@ -145,7 +143,7 @@ export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<Fh
 }
 
 async function createSmartHealthCardCredential(bundle: Bundle, issuer: string, exp?: number): Promise<string> {
-  const key = await getSmartHealthCardSigningKey();
+  const key = getSmartHealthCardSigningKey();
   const payload: SmartHealthCardJwt = {
     iss: issuer,
     nbf: Math.floor(Date.now() / 1000),
@@ -160,18 +158,15 @@ async function createSmartHealthCardCredential(bundle: Bundle, issuer: string, e
   };
   const compressedPayload = deflateRawSync(Buffer.from(JSON.stringify(payload)));
   return new CompactSign(compressedPayload)
-    .setProtectedHeader({ alg: 'ES256', kid: key.kid, zip: 'DEF' })
+    .setProtectedHeader({ alg: SHC_SIGNING_ALG, kid: key.kid, zip: 'DEF' })
     .sign(key.privateKey);
 }
 
 async function verifySmartHealthCardCredential(credential: string): Promise<SmartHealthCardJwt> {
-  const key = await getSmartHealthCardSigningKey();
-  const { payload, protectedHeader } = await compactVerify(credential, key.publicKey);
-  if (protectedHeader.alg !== 'ES256') {
+  const publicKey = await getSmartHealthCardPublicKey(credential);
+  const { payload, protectedHeader } = await compactVerify(credential, publicKey);
+  if (protectedHeader.alg !== SHC_SIGNING_ALG) {
     throw new Error('Unsupported SMART Health Card signing algorithm');
-  }
-  if (protectedHeader.kid !== key.kid) {
-    throw new Error('Untrusted SMART Health Card key');
   }
   const bytes = protectedHeader.zip === 'DEF' ? inflateRawSync(payload) : payload;
   const jwt = JSON.parse(Buffer.from(bytes).toString('utf8')) as SmartHealthCardJwt;
@@ -250,18 +245,35 @@ function decodeSmartHealthCardUri(uri: string): string {
   return result;
 }
 
-async function getSmartHealthCardSigningKey(): Promise<SmartHealthCardSigningKey> {
-  signingKeyPromise ??= generateSmartHealthCardSigningKey();
-  return signingKeyPromise;
+function getSmartHealthCardSigningKey(): SmartHealthCardSigningKey {
+  const jwk = getSmartHealthCardSigningJwk();
+  return {
+    privateKey: getSigningKey(SHC_SIGNING_ALG),
+    kid: jwk.kid as string,
+  };
 }
 
-async function generateSmartHealthCardSigningKey(): Promise<SmartHealthCardSigningKey> {
-  const { privateKey, publicKey } = await generateKeyPair('ES256', { extractable: true });
-  const publicJwk = await exportJWK(publicKey);
-  publicJwk.alg = 'ES256';
-  publicJwk.use = 'sig';
-  const kid = await calculateJwkThumbprint(publicJwk, 'sha256');
-  return { privateKey, publicKey, publicJwk, kid };
+function getSmartHealthCardSigningJwk(): JWK {
+  const jwk = getJwks().keys.find((key) => key.alg === SHC_SIGNING_ALG);
+  if (!jwk?.kid) {
+    throw new Error(`Signing key not found for alg: ${SHC_SIGNING_ALG}`);
+  }
+  return jwk;
+}
+
+async function getSmartHealthCardPublicKey(credential: string): Promise<KeyLike> {
+  const header = decodeProtectedHeader(credential);
+  if (header.alg !== SHC_SIGNING_ALG) {
+    throw new Error('Unsupported SMART Health Card signing algorithm');
+  }
+  if (!header.kid) {
+    throw new Error('Missing SMART Health Card key ID');
+  }
+  const jwk = getJwks().keys.find((key) => key.kid === header.kid && key.alg === SHC_SIGNING_ALG);
+  if (!jwk) {
+    throw new Error('Untrusted SMART Health Card key');
+  }
+  return importJWK(jwk, SHC_SIGNING_ALG) as Promise<KeyLike>;
 }
 
 function makeParameters(values: Record<string, string | boolean | undefined>): Parameters {
