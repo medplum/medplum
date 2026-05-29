@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/with-auth';
 import { fhirSearch, fhirCreate } from '@/lib/medplum-client';
 import { toFHIRPatient, fromFHIRPatient } from '@hh/fhir';
 import { isValidCPF } from '@hh/core';
 import type { Patient } from '@medplum/fhirtypes';
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+export const GET = withAuth(async (req: NextRequest, session) => {
   const q = req.nextUrl.searchParams.get('q') ?? '';
-
-  const params: Record<string, string> = { _sort: '-_lastUpdated', _count: '50' };
+  const params: Record<string, string | string[]> = { _sort: '-_lastUpdated', _count: '50' };
   if (q) params.name = q;
 
-  const patients = await fhirSearch<Patient>('Patient', params);
+  const patients = await fhirSearch<Patient>('Patient', params, session.user.projectId);
   return NextResponse.json(patients.map(fromFHIRPatient));
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+export const POST = withAuth(async (req: NextRequest, session) => {
   const body = await req.json();
   const { name, phone, cpf, email, birthDate, notes } = body;
 
@@ -30,6 +23,6 @@ export async function POST(req: NextRequest) {
   if (cpf && !isValidCPF(cpf)) return NextResponse.json({ error: 'CPF inválido' }, { status: 400 });
 
   const fhirPatient = toFHIRPatient({ id: '', name, phone, cpf, email, birthDate, notes, createdAt: '' });
-  const created = await fhirCreate<Patient>('Patient', fhirPatient);
+  const created = await fhirCreate<Patient>('Patient', fhirPatient, session.user.projectId);
   return NextResponse.json(fromFHIRPatient(created), { status: 201 });
-}
+});

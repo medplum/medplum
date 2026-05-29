@@ -59,7 +59,7 @@ export async function verifyUser(email: string, password: string): Promise<AppUs
   const valid = await verifyPassword(password, storedHash);
   if (!valid) return null;
 
-  const projectId = practitioner.extension?.find(e => e.url === HH_EXT.SUBSCRIPTION_PLAN)?.valueString
+  const projectId = practitioner.extension?.find(e => e.url === HH_EXT.PROJECT_ID)?.valueString
     ?? process.env.MEDPLUM_PROJECT_ID!;
   const role = practitioner.extension?.find(e => e.url === ROLE_EXT)?.valueString ?? 'practitioner';
 
@@ -89,6 +89,7 @@ export async function createUser(params: {
     extension: [
       { url: PASSWORD_HASH_EXT, valueString: passwordHash },
       { url: ROLE_EXT, valueString: role },
+      { url: HH_EXT.PROJECT_ID, valueString: process.env.MEDPLUM_PROJECT_ID! },
     ],
   });
 

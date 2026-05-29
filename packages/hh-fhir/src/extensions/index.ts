@@ -22,6 +22,7 @@ export const HH_EXT = {
   SOAP_P: `${BASE}/soap-p`,
 
   // Tenant / SaaS
+  PROJECT_ID: `${BASE}/project-id`,
   SUBSCRIPTION_PLAN: `${BASE}/subscription-plan`,
   SUBSCRIPTION_STATUS: `${BASE}/subscription-status`,
   USER_ROLE: `${BASE}/user-role`,
