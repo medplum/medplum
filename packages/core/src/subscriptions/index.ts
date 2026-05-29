@@ -535,7 +535,7 @@ export class SubscriptionManager {
 
   private checkTokenExpirations(): void {
     // Don't attempt token refreshes while unauthenticated — they would 401 in a loop.
-    if (!this.isAuthenticated()) {
+    if (!this.medplum.getProfile()) {
       return;
     }
     const now = Date.now();
