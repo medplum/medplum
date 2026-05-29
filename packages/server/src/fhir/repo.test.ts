@@ -46,6 +46,7 @@ import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { RepositoryConnection } from './repository/repository-connection';
+import { TransactionIdleTracker } from './repository/transaction-idle-tracker';
 import { PostgresError, SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -1577,7 +1578,7 @@ describe('FHIR Repo', () => {
           'COMMIT',
         ]);
         expect(client.query).toBe(query);
-        expect(warnSpy).not.toHaveBeenCalledWith('High idle time in transaction', expect.anything());
+        expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
         expect(recordHistogramValueSpy).not.toHaveBeenCalled();
       } finally {
         restoreThreshold();
@@ -1618,7 +1619,7 @@ describe('FHIR Repo', () => {
       });
 
       expect(client.query).toBe(query);
-      expect(warnSpy).not.toHaveBeenCalledWith('High idle time in transaction', expect.anything());
+      expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
     } finally {
       restoreThreshold();
@@ -1652,12 +1653,12 @@ describe('FHIR Repo', () => {
         })
       ).rejects.toThrow('work failed');
 
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.db.transactionIdleMs', 10, {
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_METRIC_NAME, 10, {
         attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
         options: { unit: 'ms' },
       });
       expect(warnSpy).toHaveBeenCalledWith(
-        'High idle time in transaction',
+        TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
         expect.objectContaining({
           idleMs: 10,
           queryCount: 1,
@@ -1712,12 +1713,12 @@ describe('FHIR Repo', () => {
         'COMMIT',
       ]);
       expect(recordHistogramValueSpy).toHaveBeenCalledTimes(1);
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.db.transactionIdleMs', 65, {
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_METRIC_NAME, 65, {
         attributes: { attempt: 0, serializable: false, status: 'committed' },
         options: { unit: 'ms' },
       });
       expect(warnSpy).toHaveBeenCalledWith(
-        'High idle time in transaction',
+        TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
         expect.objectContaining({
           attempt: 0,
           idleMs: 65,

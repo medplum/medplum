@@ -14,6 +14,8 @@ export type TransactionIdleTrackerOptions = {
 };
 
 export class TransactionIdleTracker {
+  static readonly OTEL_METRIC_NAME = 'medplum.db.idleInTransactionMs';
+  static readonly LOG_HIGH_IDLE_TIME_MSG = 'High idle in transaction time';
   private readonly client: PoolClient;
   private readonly options: TransactionIdleTrackerOptions;
   private readonly startTimeMs: number;
@@ -33,8 +35,8 @@ export class TransactionIdleTracker {
     this.startTimeMs = Date.now();
     // The transaction is idle as soon as BEGIN finishes and until the first query starts.
     this.lastIdleStartTimeMs = this.startTimeMs;
-    this.originalQuery = client.query;
-    this.originalQueryFn = client.query.bind(client);
+    this.originalQuery = client.query; // for restoring
+    this.originalQueryFn = client.query.bind(client); // for calling the original query function
     this.wrappedQuery = ((...args: any[]) => this.query(args)) as PoolClient['query'];
     // Patch only the transaction's dedicated PoolClient, and restore it when tracking ends.
     client.query = this.wrappedQuery;
@@ -59,11 +61,11 @@ export class TransactionIdleTracker {
       status,
     };
 
-    recordHistogramValue('medplum.db.idleInTransactionMs', this.idleMs, {
+    recordHistogramValue(TransactionIdleTracker.OTEL_METRIC_NAME, this.idleMs, {
       attributes,
       options: { unit: 'ms' },
     });
-    getLogger().warn('High idle in transaction time', {
+    getLogger().warn(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, {
       ...attributes,
       idleMs: this.idleMs,
       transactionDurationMs,
