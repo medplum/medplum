@@ -30,7 +30,7 @@ describe('FHIRcast WebSocket', () => {
     let accessToken: string;
 
     beforeAll(async () => {
-      console.log = jest.fn();
+      jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
       app = express();
       config = await loadTestConfig();
       config.heartbeatEnabled = false;

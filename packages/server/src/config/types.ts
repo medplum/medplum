@@ -175,6 +175,12 @@ export interface MedplumServerConfig {
   workers?: MedplumWorkersConfig;
 
   /**
+   * Optional configuration for scheduled data warehouse sync jobs.
+   * Runs incremental in-server data warehouse sync jobs on a fixed cron pattern.
+   */
+  dataWarehouse?: MedplumDataWarehouseConfig;
+
+  /**
    * Optional mTLS certificate header for incoming requests.
    * If set, the server will attempt to extract the client certificate from the specified header.
    * Header name should be all lowercase.
@@ -195,6 +201,9 @@ export interface MedplumServerConfig {
    * Optional flag to require email verification before allowing users to create projects.
    */
   requireVerifiedEmailForProjectCreation?: boolean;
+
+  /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
+  allowInsecureRestHookUrl?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -272,6 +281,11 @@ export interface MedplumBullmqConfig {
    * @see {@link https://docs.bullmq.io/guide/workers/concurrency}
    */
   concurrency?: number;
+  /**
+   * Duration of the job lock in milliseconds while a worker is processing.
+   * @see {@link https://docs.bullmq.io/guide/workers/stalled-jobs}
+   */
+  lockDuration?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
 }
@@ -290,7 +304,8 @@ export type WorkerName =
   | 'batch'
   | 'post-deploy-migration'
   | 'set-accounts'
-  | 'lambda-cleaner';
+  | 'lambda-cleaner'
+  | 'data-warehouse-sync';
 
 export interface MedplumWorkersConfig {
   /**
@@ -305,6 +320,27 @@ export interface MedplumWorkersConfig {
    * Only takes effect for workers that are enabled.
    */
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
+}
+
+export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
+
+export interface MedplumDataWarehouseConfig {
+  /**
+   * Enables/disables the scheduled sync worker. Defaults to false.
+   */
+  enabled?: boolean;
+  /**
+   * BullMQ cron pattern used to schedule sync runs.
+   */
+  cron?: string;
+  /** Warehouse export destination type. */
+  destination?: MedplumDataWarehouseDestinationType;
+  /** Required when destination is `s3tables`. */
+  awsS3TableArn?: string;
+  /** Required when destination is `local`. */
+  localBasePath?: string;
+  /** Optional Iceberg namespace used by sync. */
+  namespace?: string;
 }
 
 export interface MedplumFissionConfig {

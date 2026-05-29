@@ -341,6 +341,95 @@ describe('Calendar', () => {
       await userEvent.click(screen.getByText('Available'));
       expect(onSelectSlot).toHaveBeenCalledWith(slot);
     });
+
+    test('filters out entered-in-error slots', async () => {
+      const slot = createSlot({ status: 'entered-in-error' });
+      setup({ slots: [slot] });
+
+      expect(screen.queryByText('Available')).not.toBeInTheDocument();
+      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
+    });
+
+    test('shows busy slot not referenced by any appointment', async () => {
+      const busySlot = createSlot({ id: 'busy-slot-1', status: 'busy' });
+      setup({ slots: [busySlot] });
+
+      expect(screen.getByText('Blocked')).toBeInTheDocument();
+    });
+
+    test('hides slot referenced by appointment when start/end times match exactly', async () => {
+      const slotStart = new Date(baseDate.getTime()).toISOString();
+      const slotEnd = new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString();
+
+      const slot = createSlot({ id: 'linked-slot', status: 'busy', start: slotStart, end: slotEnd });
+      const appointment = createAppointment({
+        start: slotStart,
+        end: slotEnd,
+        slot: [{ reference: 'Slot/linked-slot' }],
+      });
+
+      setup({ slots: [slot], appointments: [appointment] });
+
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
+    });
+
+    test('shows slot referenced by appointment when start/end times differ', async () => {
+      // Example: "bufferAfter" slot may be referenced from appointment, but
+      // covers time after the appointment ends. This should be visible as a
+      // block on the calendar.
+      const appointmentStart = new Date(baseDate.getTime()).toISOString();
+      const appointmentEnd = new Date(baseDate.getTime() + 45 * 60 * 1000).toISOString();
+      const bufferAfterEnd = new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString();
+
+      const busySlot = createSlot({
+        id: 'linked-slot',
+        status: 'busy',
+        start: appointmentStart,
+        end: appointmentEnd,
+      });
+
+      const bufferSlot = createSlot({
+        id: 'buffer-after-slot',
+        status: 'busy',
+        start: appointmentEnd,
+        end: bufferAfterEnd,
+      });
+
+      const appointment = createAppointment({
+        start: appointmentStart,
+        end: appointmentEnd,
+        slot: [{ reference: 'Slot/linked-slot' }, { reference: 'Slot/buffer-after-slot' }],
+      });
+
+      setup({ slots: [busySlot, bufferSlot], appointments: [appointment] });
+
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getByText('Blocked')).toBeInTheDocument();
+    });
+
+    test('hides only the slot matching an appointment, shows unrelated slots', async () => {
+      const slotStart = new Date(baseDate.getTime()).toISOString();
+      const slotEnd = new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString();
+
+      const linkedSlot = createSlot({ id: 'linked-slot', status: 'busy', start: slotStart, end: slotEnd });
+      const freeSlot = createSlot({
+        id: 'free-slot',
+        status: 'free',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+      });
+      const appointment = createAppointment({
+        start: slotStart,
+        end: slotEnd,
+        slot: [{ reference: 'Slot/linked-slot' }],
+      });
+
+      setup({ slots: [linkedSlot, freeSlot], appointments: [appointment] });
+
+      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
+      expect(screen.getByText('Available')).toBeInTheDocument();
+    });
   });
 
   describe('onRangeChange', () => {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import type { Appointment, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -27,7 +28,7 @@ describe('AppointmentDetails', () => {
   });
 
   type SetupOptions = {
-    appointment: Appointment;
+    appointment: WithId<Appointment>;
     onUpdate?: (appointment: Appointment) => void;
   };
 
@@ -50,7 +51,7 @@ describe('AppointmentDetails', () => {
     });
   };
 
-  const createAppointment = (overrides?: Partial<Appointment>): Appointment => ({
+  const createAppointment = (overrides?: Partial<Appointment>): WithId<Appointment> => ({
     resourceType: 'Appointment',
     id: 'appointment-1',
     status: 'booked',
@@ -111,6 +112,14 @@ describe('AppointmentDetails', () => {
       await setup({ appointment });
 
       expect(screen.getByRole('button', { name: 'Update Appointment' })).toBeInTheDocument();
+    });
+
+    test('renders Cancel Visit button', async () => {
+      const appointment = createAppointment();
+
+      await setup({ appointment });
+
+      expect(screen.getByRole('button', { name: 'Cancel Visit' })).toBeInTheDocument();
     });
   });
 
@@ -294,7 +303,7 @@ describe('AppointmentDetails', () => {
   });
 
   describe('Set Up Encounter', () => {
-    let patient: Patient;
+    let patient: WithId<Patient>;
 
     beforeEach(async () => {
       patient = await medplum.createResource<Patient>({
@@ -303,7 +312,7 @@ describe('AppointmentDetails', () => {
       });
     });
 
-    const createAppointmentWithPatient = (patientId: string): Appointment => ({
+    const createAppointmentWithPatient = (patientId: string): WithId<Appointment> => ({
       resourceType: 'Appointment',
       id: 'appointment-with-patient',
       status: 'booked',
@@ -322,7 +331,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('renders Set Up Encounter section when patient participant is loaded', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -343,7 +352,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('Apply button is disabled when class and care template are not selected', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -352,7 +361,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('shows warning notification when form submitted without required fields filled', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -372,7 +381,7 @@ describe('AppointmentDetails', () => {
     });
 
     test('does not call createEncounter when required fields are not filled', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -404,7 +413,7 @@ describe('AppointmentDetails', () => {
       const encounterError = new Error('Failed to create encounter');
       vi.mocked(createEncounter).mockRejectedValue(encounterError);
 
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
@@ -439,12 +448,61 @@ describe('AppointmentDetails', () => {
     });
 
     test('renders patient name when patient participant is loaded', async () => {
-      const appointment = createAppointmentWithPatient(patient.id as string);
+      const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
 
       await waitFor(() => {
         expect(screen.getByText('Jane Doe')).toBeInTheDocument();
       });
     });
+  });
+
+  test('Cancel Visit button', async () => {
+    const user = userEvent.setup();
+    const appointment = createAppointment();
+    const cancelledAppointment = { ...appointment, status: 'cancelled' as const };
+
+    const postPromise = Promise.withResolvers<Appointment>();
+    const postMock = vi.fn().mockReturnValue(postPromise.promise);
+    const invalidateSearchesMock = vi.fn();
+    medplum.post = postMock;
+    medplum.invalidateSearches = invalidateSearchesMock;
+
+    // click the button
+    await setup({ appointment });
+    const button = screen.getByRole('button', { name: /Cancel Visit/i });
+    await user.click(button);
+
+    // it invokes the $cancel endpoint
+    await waitFor(() => expect(medplum.post).toHaveBeenCalled());
+    const postUrl = postMock.mock.calls[0][0];
+    expect(postUrl.toString()).toContain(`Appointment/${appointment.id}/$cancel`);
+
+    // button goes into loading state
+    await waitFor(() => expect(button).toHaveAttribute('data-loading'));
+
+    // resolve the promise
+    postPromise.resolve(cancelledAppointment);
+
+    // button is no longer loading
+    await waitFor(() => expect(button).not.toHaveAttribute('data-loading'));
+
+    // it invalidated Appointment and Slot searches on success
+    expect(invalidateSearchesMock).toHaveBeenCalledWith('Appointment');
+    expect(invalidateSearchesMock).toHaveBeenCalledWith('Slot');
+  });
+
+  test('Uncancellable appointment status', async () => {
+    const user = userEvent.setup();
+    const appointment = createAppointment();
+    const status = 'arrived' as const;
+    const arrivedAppointment = { ...appointment, status };
+    await setup({ appointment: arrivedAppointment });
+
+    // button is disabled with explanatory tooltip
+    const button = screen.getByRole('button', { name: /Cancel Visit/i });
+    await waitFor(() => expect(button).toHaveAttribute('data-disabled'));
+    await user.hover(button);
+    await waitFor(() => screen.getByText(`Can't cancel appointment with status "${status}"`));
   });
 });

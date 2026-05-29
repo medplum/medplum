@@ -1,17 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchParameter } from '@medplum/fhirtypes';
+import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Atom } from '../fhirlexer/parse';
-import {
-  AsAtom,
-  BooleanInfixOperatorAtom,
-  DotAtom,
-  FhirPathAtom,
-  FunctionAtom,
-  IndexerAtom,
-  IsAtom,
-  UnionAtom,
-} from '../fhirpath/atoms';
+import { InfixOperatorAtom } from '../fhirlexer/parse';
+import { AsAtom, DotAtom, FhirPathAtom, FunctionAtom, IndexerAtom, IsAtom, UnionAtom } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
@@ -37,6 +29,7 @@ export interface SearchParameterDetails {
   readonly elementDefinitions?: InternalSchemaElement[];
   readonly parsedExpression: FhirPathAtom;
   readonly array?: boolean;
+  readonly referenceTargetTypes?: ResourceType[];
 }
 
 interface SearchParameterDetailsBuilder {
@@ -92,7 +85,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     const atomArray = flattenAtom(expression);
     const flattenedExpression = lazy(() => atomArray.join('.'));
 
-    if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
+    if (atomArray.length === 1 && atomArray[0] instanceof InfixOperatorAtom && atomArray[0].operator !== '.') {
       builder.propertyTypes.add('boolean');
     } else if (searchParam.code.endsWith(':identifier')) {
       // This is a derived "identifier" search parameter
@@ -140,13 +133,16 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     parsedExpression = getParsedExpressionForResourceType(resourceType, expression);
   }
 
+  const elementDefinitions = builder.elementDefinitions
+    .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
+    .filter((ed) => ed.type && ed.type.length > 0);
+
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
-    elementDefinitions: builder.elementDefinitions
-      .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
-      .filter((ed) => ed.type && ed.type.length > 0),
+    elementDefinitions,
     parsedExpression,
     array: builder.array,
+    referenceTargetTypes: getReferenceTargetTypes(searchParam, elementDefinitions),
   };
   setSearchParameterDetails(resourceType, code, result);
   return result;
@@ -333,7 +329,7 @@ function flattenAtom(atom: Atom): Atom[] {
   if (atom instanceof AsAtom || atom instanceof IndexerAtom) {
     return [flattenAtom(atom.left), atom].flat();
   }
-  if (atom instanceof BooleanInfixOperatorAtom) {
+  if (atom instanceof InfixOperatorAtom && atom.operator !== '.') {
     return [atom];
   }
   if (atom instanceof DotAtom) {
@@ -350,4 +346,47 @@ function flattenAtom(atom: Atom): Atom[] {
     }
   }
   return [atom];
+}
+
+/**
+ * Returns the reference target type for a search parameter on a
+ * specific resource type.  Shared search parameters (e.g. `encounter`) may
+ * list multiple targets globally, but the element definition on a concrete
+ * resource (e.g. `DeviceRequest.encounter`) often narrows it to exactly one.
+ *
+ * @param searchParam - The search parameter definition.
+ * @param elementDefs - The element definitions for the resource type.
+ * @returns The target resource types, or undefined if there are zero targets.
+ */
+function getReferenceTargetTypes(
+  searchParam: SearchParameter,
+  elementDefs: InternalSchemaElement[] | undefined
+): ResourceType[] | undefined {
+  // Fast path: the SearchParameter itself has exactly one target type.
+  if (searchParam.target?.length === 1) {
+    return searchParam.target;
+  }
+
+  // Derive from element definitions (resource-specific target profiles).
+  if (elementDefs) {
+    const targetTypes = new Set<string>();
+    for (const ed of elementDefs) {
+      for (const t of ed.type) {
+        if (t.code !== 'Reference' || !t.targetProfile) {
+          continue;
+        }
+        for (const profile of t.targetProfile) {
+          const resourceType = profile.split('/').at(-1);
+          if (resourceType && resourceType !== 'Resource') {
+            targetTypes.add(resourceType);
+          }
+        }
+      }
+    }
+    if (targetTypes.size > 0) {
+      return Array.from(targetTypes) as ResourceType[];
+    }
+  }
+
+  return undefined;
 }

@@ -496,7 +496,6 @@ class ResourceValidator implements CrawlerVisitor {
 
     try {
       const evalValues = evalFhirPathTyped(constraint.expression, [value], variables, fhirPathCache);
-
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
       this.issues.push(

@@ -9,6 +9,7 @@ import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
 import { SelectQuery } from './fhir/sql';
+import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
   getPendingPostDeployMigration,
@@ -31,7 +32,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
     return;
   }
 
-  console.log(
+  globalLogger.write(
     `${new Date().toISOString()} - Running pending post-deploy migrations ${pendingMigration} through ${lastVersion}`
   );
 
@@ -44,17 +45,16 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
-  console.log(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
+  globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);
-  console.log(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
+  globalLogger.write(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
 }
 
 describe('Seed', () => {
-  const originalConsoleLog = console.log;
-  let consoleLogSpy: jest.SpyInstance;
+  let loggerWriteSpy: jest.SpyInstance;
 
   beforeAll(async () => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn());
+    loggerWriteSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
@@ -62,7 +62,7 @@ describe('Seed', () => {
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
 
-    console.log(`${new Date().toISOString()} - Initializing app services`);
+    globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
     await withTestContext(async () => {
       const repo = getGlobalSystemRepo();
@@ -88,7 +88,7 @@ describe('Seed', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    consoleLogSpy.mockRestore();
+    loggerWriteSpy.mockRestore();
   });
 
   test('Seeder completes successfully', () =>
@@ -108,7 +108,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        consoleLogSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
+        loggerWriteSpy.mock.calls.forEach((call) => console.log(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 

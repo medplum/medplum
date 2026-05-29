@@ -1428,4 +1428,117 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
   });
+
+  test('Invite Patient with scope: server creates server-scoped user', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'server',
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ProjectMembership');
+
+    // Server-scoped user should NOT be visible from the project context
+    const res2 = await request(app)
+      .get('/fhir/R4/User?email=' + bobEmail)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('Bundle');
+    expect(res2.body.entry).toBeUndefined();
+  });
+
+  test('Invite Patient without scope defaults to project-scoped', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+
+    // Project-scoped user should be visible from the project context
+    const res2 = await request(app)
+      .get('/fhir/R4/User?email=' + bobEmail)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    const user = res2.body.entry[0].resource;
+    expect(user.resourceType).toBe('User');
+    expect(user.project?.reference).toBe(getReferenceString(project));
+  });
+
+  test('Invite Patient with scope: server - conflict with existing project-scoped Patient', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+
+    // Invite Bob first as project-scoped Patient
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+    expect(res1.status).toBe(200);
+
+    // Invite Bob again as server-scoped Patient - should fail (different scope, same project)
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'server',
+        sendEmail: false,
+      });
+    expect(res2.status).toBe(409);
+    expect(normalizeErrorString(res2.body)).toStrictEqual('User is already a member of this project');
+  });
 });

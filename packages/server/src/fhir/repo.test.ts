@@ -1703,6 +1703,238 @@ describe('FHIR Repo', () => {
     ]);
   });
 
+  test('withTransactionStateLock serializes concurrent transaction begins', async () => {
+    const beginIssued = Promise.withResolvers<undefined>();
+    const allowBegin = Promise.withResolvers<undefined>();
+    const finishFirstTransaction = Promise.withResolvers<undefined>();
+    const secondCallbackStarted = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    let beginCount = 0;
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql === 'BEGIN ISOLATION LEVEL REPEATABLE READ' && ++beginCount === 1) {
+        // Pause the first BEGIN before beginTransaction can publish transactionDepth = 1.
+        beginIssued.resolve(undefined);
+        await allowBegin.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    const tx1 = repo.withTransaction(async () => {
+      await finishFirstTransaction.promise;
+    });
+    await beginIssued.promise;
+
+    // Start a second transaction while the first transaction is suspended in BEGIN. Without the state
+    // lock, this second call can observe transactionDepth = 0 and incorrectly issue another BEGIN.
+    const tx2 = repo.withTransaction(async () => {
+      secondCallbackStarted.resolve(undefined);
+    });
+    // Let the second transaction run any queued promise continuations. If it is not blocked by the
+    // lock, it will append its own SQL before this assertion.
+    await allowPendingMicrotasks();
+
+    // The second begin must wait until the first BEGIN has completed and published transactionDepth.
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ']);
+
+    allowBegin.resolve(undefined);
+    await secondCallbackStarted.promise;
+    finishFirstTransaction.resolve(undefined);
+    await Promise.all([tx1, tx2]);
+
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('withTransactionStateLock serializes concurrent transaction commits', async () => {
+    const firstStarted = Promise.withResolvers<undefined>();
+    const secondStarted = Promise.withResolvers<undefined>();
+    const finishTransactions = Promise.withResolvers<undefined>();
+    const releaseSavepointIssued = Promise.withResolvers<undefined>();
+    const allowReleaseSavepoint = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    let releaseSavepointCount = 0;
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql === 'RELEASE SAVEPOINT sp2' && ++releaseSavepointCount === 1) {
+        // Hold the inner commit in the database call before transactionDepth is decremented.
+        releaseSavepointIssued.resolve(undefined);
+        await allowReleaseSavepoint.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    const tx1 = repo.withTransaction(async () => {
+      firstStarted.resolve(undefined);
+      await secondStarted.promise;
+      await finishTransactions.promise;
+    });
+    await firstStarted.promise;
+
+    const tx2 = repo.withTransaction(async () => {
+      secondStarted.resolve(undefined);
+      await finishTransactions.promise;
+    });
+    await secondStarted.promise;
+
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
+    finishTransactions.resolve(undefined);
+    await releaseSavepointIssued.promise;
+    // Both transaction callbacks have finished. Yield so the second commit path can attempt to run;
+    // it must not issue COMMIT until the first RELEASE SAVEPOINT has decremented transactionDepth.
+    await allowPendingMicrotasks();
+
+    // The other commit path must wait until transactionDepth is decremented after RELEASE SAVEPOINT.
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'RELEASE SAVEPOINT sp2']);
+
+    allowReleaseSavepoint.resolve(undefined);
+    await Promise.all([tx1, tx2]);
+
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('withTransactionStateLock serializes concurrent transaction rollbacks', async () => {
+    const firstStarted = Promise.withResolvers<undefined>();
+    const secondStarted = Promise.withResolvers<undefined>();
+    const failTransactions = Promise.withResolvers<undefined>();
+    const rollbackSavepointIssued = Promise.withResolvers<undefined>();
+    const allowRollbackSavepoint = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    let rollbackSavepointCount = 0;
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql === 'ROLLBACK TO SAVEPOINT sp2' && ++rollbackSavepointCount === 1) {
+        // Hold the inner rollback in the database call before transactionDepth is decremented.
+        rollbackSavepointIssued.resolve(undefined);
+        await allowRollbackSavepoint.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      const tx1 = repo
+        .withTransaction(async () => {
+          firstStarted.resolve(undefined);
+          await secondStarted.promise;
+          await failTransactions.promise;
+          throw new Error('first rollback');
+        })
+        .catch((err) => err);
+      await firstStarted.promise;
+
+      const tx2 = repo
+        .withTransaction(async () => {
+          secondStarted.resolve(undefined);
+          await failTransactions.promise;
+          throw new Error('second rollback');
+        })
+        .catch((err) => err);
+      await secondStarted.promise;
+
+      expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
+      failTransactions.resolve(undefined);
+      await rollbackSavepointIssued.promise;
+      // Both transaction callbacks have failed. Yield so the second rollback path can attempt to run;
+      // it must not issue ROLLBACK until the savepoint rollback has updated transactionDepth.
+      await allowPendingMicrotasks();
+
+      // The other rollback path must wait until transactionDepth is decremented after ROLLBACK TO SAVEPOINT.
+      expect(queries).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'ROLLBACK TO SAVEPOINT sp2',
+      ]);
+
+      allowRollbackSavepoint.resolve(undefined);
+      const results = await Promise.all([tx1, tx2]);
+
+      expect(results).toEqual([expect.any(Error), expect.any(Error)]);
+      expect(queries).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'ROLLBACK TO SAVEPOINT sp2',
+        'ROLLBACK',
+      ]);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('processing pre-commit callbacks does not deadlock a transaction', async () => {
+    const queries: string[] = [];
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    const result = await Promise.race([
+      repo
+        .withTransaction(async () => {
+          await repo.preCommit(async () => {
+            // Pre-commit callbacks are allowed to start their own nested transaction.
+            // If the outer commit held transactionStateLock while running callbacks, this nested
+            // transaction would wait for the lock while the outer commit waited for the callback.
+            await repo.withTransaction(async () => undefined);
+          });
+        })
+        .then(() => 'completed'),
+      new Promise((resolve) => {
+        // The broken implementation deadlocks, so the race gives the test a bounded failure mode.
+        setTimeout(() => resolve('timed out'), 100);
+      }),
+    ]);
+
+    expect(result).toBe('completed');
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
@@ -1974,4 +2206,13 @@ function shuffleString(s: string): string {
     arr[j] = temp;
   }
   return arr.join('');
+}
+
+// Some transaction race tests need to make a negative assertion: a competing async path has had a
+// chance to resume, but it must not issue SQL while the transaction state lock is held.
+async function allowPendingMicrotasks(): Promise<void> {
+  // Yield twice so already-queued promise continuations, and continuations queued by those
+  // continuations, can run far enough to issue SQL if the lock is missing.
+  await Promise.resolve();
+  await Promise.resolve();
 }
