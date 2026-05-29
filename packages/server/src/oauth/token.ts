@@ -302,7 +302,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   if (login.membership) {
     const membership = await systemRepo.readReference<ProjectMembership>(
-      login.membership as Reference<ProjectMembership>
+      login.membership
     );
     if (membership.active === false) {
       sendTokenError(res, 'invalid_grant', 'Profile not active');
