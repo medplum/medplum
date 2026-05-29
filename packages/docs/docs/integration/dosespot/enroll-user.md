@@ -247,7 +247,17 @@ curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
   }'
 ```
 
-After this step, the prescriber must log in to the DoseSpot iFrame and sign the legal agreement before proceeding.
+### Step 2: Prescriber Signs Legal Agreement
+
+The prescriber must log in to the DoseSpot iFrame via the provider app and sign the required legal agreement. No bot action is needed for this step.
+
+1. The prescriber opens the DoseSpot iFrame in the provider app.
+2. DoseSpot presents a legal agreement on the prescriber's first login.
+3. The prescriber reviews and signs the agreement.
+
+Expected `registrationStatus` after this step: `RegistrationSuccess`
+
+Once signed, the admin can proceed to Step 3.
 
 ### Step 3: Initialize IDP
 
@@ -278,7 +288,17 @@ curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
   }'
 ```
 
-After this, the prescriber must log in to the DoseSpot iFrame and complete the identity verification process.
+### Step 4: Prescriber Completes Identity Verification (IDP)
+
+The prescriber must log in to the DoseSpot iFrame and complete the Experian identity proofing process.
+
+1. The prescriber opens the DoseSpot iFrame in the provider app.
+2. DoseSpot presents the identity verification (Experian) flow.
+3. The prescriber provides the required information, which may include Social Security Number, date of birth, and a credit card number.
+
+Expected `registrationStatus` after this step: `IDPSuccess`
+
+Once IDP is complete, the admin can proceed to Step 5.
 
 ### Step 5: Initialize TFA
 
@@ -311,7 +331,9 @@ curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
   }'
 ```
 
-After this, the prescriber must log in to the DoseSpot iFrame one final time to complete the TFA setup. Once complete, EPCS is fully enabled.
+### Step 6: Complete TFA Setup
+
+The prescriber must log in to the DoseSpot iFrame one final time to complete the TFA setup. Once complete, EPCS is fully enabled.
 
 ## Bot Response
 
@@ -323,10 +345,27 @@ The bot returns the following fields:
 | `doseSpotClinicianId` | `number`            | The DoseSpot clinician ID                                                                          |
 | `projectMembership`   | `ProjectMembership` | The updated ProjectMembership with DoseSpot identifier                                             |
 | `practitioner`        | `Practitioner`      | The updated Practitioner with registration status extension and EPCS qualification (if applicable) |
-| `registrationStatus`  | `string`            | <details><summary>Current DoseSpot registration status (all values)</summary>`"Pending"`<br/>`"RegistrationSuccess"`<br/>`"RegistrationError"`<br/>`"IDPSuccess"`<br/>`"IDPError"`<br/>`"TFAActivateInit"`<br/>`"TFAActivatedSuccess"`<br/>`"TFAActivatedError"`<br/>`"TFADeactivateInit"`<br/>`"TFADeactivatedSuccess"`<br/>`"TFADeactivatedError"`<br/>`"IDPInitializeSuccess"`</details> |
+| `registrationStatus`  | `string`            | Current DoseSpot registration status — see [Registration Statuses](#registration-statuses) below |
 | `idpInitialized`      | `boolean`           | Whether IDP was initialized in this run                                                            |
 | `tfaInitialized`      | `boolean`           | Whether TFA was initialized in this run                                                            |
 
+
+### Registration Statuses
+
+| Status | Meaning | Next Action |
+|--------|---------|-------------|
+| `Pending` | Clinician created; legal agreement not yet signed | Prescriber logs in to iFrame and signs agreement (Step 2) |
+| `RegistrationSuccess` | Legal agreement signed; IDP not yet initiated | Admin runs bot with `initIdp: true` (Step 3) |
+| `RegistrationError` | Registration failed | Check enrollment data and re-run the bot |
+| `IDPInitializeSuccess` | IDP initiated by admin; prescriber has not yet completed it | Prescriber logs in to iFrame and completes identity verification (Step 4) |
+| `IDPSuccess` | Identity proofing complete; TFA not yet initiated | Admin runs bot with `initTfa: true` (Step 5) |
+| `IDPError` | Identity proofing failed | Prescriber must retry IDP in the iFrame |
+| `TFAActivateInit` | TFA activation initiated; prescriber has not yet completed setup | Prescriber logs in to iFrame and completes TFA setup (Step 6) |
+| `TFAActivatedSuccess` | TFA setup complete; EPCS fully enabled | No action needed — EPCS is active |
+| `TFAActivatedError` | TFA activation failed | Re-initiate TFA (run bot with `initTfa: true` again) |
+| `TFADeactivateInit` | TFA deactivation in progress | Wait for deactivation to complete before re-initiating |
+| `TFADeactivatedSuccess` | TFA successfully deactivated | Re-initiate TFA if needed (run bot with `initTfa: true`) |
+| `TFADeactivatedError` | TFA deactivation failed | Contact DoseSpot support |
 
 ### Stored Data on Practitioner
 

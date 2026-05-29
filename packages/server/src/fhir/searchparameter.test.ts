@@ -257,6 +257,14 @@ describe('SearchParameterImplementation', () => {
     expectTokenColumnImplementation(impl);
   });
 
+  test('Task-subject preserves single target legacy behavior', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'Task-subject') as SearchParameter;
+    const impl = getSearchParameterImplementation('Task', searchParam);
+    assertColumnImplementation(impl);
+    expect(impl.columnName).toStrictEqual('subject');
+    expect(impl.singleTargetType).toBeUndefined();
+  });
+
   test.each([
     ['individual-address-country', AddressTable, false],
     ['individual-given', HumanNameTable, true],

@@ -56,7 +56,7 @@ describe('Batch', () => {
   test('Process batch with missing bundle type', async () => {
     try {
       await processBatch(req, repo, router, { resourceType: 'Bundle' } as Bundle);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -67,7 +67,7 @@ describe('Batch', () => {
   test('Process batch with invalid bundle type', async () => {
     try {
       await processBatch(req, repo, router, { resourceType: 'Bundle', type: 'xyz' as unknown as 'batch' });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -78,7 +78,7 @@ describe('Batch', () => {
   test('Process batch with missing entries', async () => {
     try {
       await processBatch(req, repo, router, { resourceType: 'Bundle', type: 'batch' });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
