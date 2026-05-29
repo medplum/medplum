@@ -54,7 +54,7 @@ function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
  * @param token - The user supplied token.
  * @returns True if the token matches an enrolled factor.
  */
-async function verifyConnectedFactor(user: User, login: Login, token: string | undefined): Promise<boolean> {
+export async function verifyConnectedFactor(user: User, login: Login, token: string | undefined): Promise<boolean> {
   if (!token) {
     return false;
   }
