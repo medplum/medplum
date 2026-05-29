@@ -15,6 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
+import { getEnrolledMfaMethods } from './utils';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -1305,5 +1306,355 @@ describe('MFA', () => {
       .send({ method: 'email', token: authenticator.generate(secret) });
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject(badRequest('User not enrolled in MFA method'));
+  });
+
+  // ===========================================================================
+  // Backward-compatibility regression tests.
+  //
+  // These intentionally reproduce the state and the request shapes that existed
+  // BEFORE email-based MFA (and the `User.mfaMethod` field) were introduced, and
+  // assert that the current code reproduces the historical behavior exactly:
+  //
+  //   1. Users who enrolled under the old codebase — rows with
+  //      `mfaEnrolled: true` and a `mfaSecret` but NO `mfaMethod` field — keep
+  //      working without any data migration.
+  //   2. Old clients that send the legacy request bodies (a bare `token`, with
+  //      no `method` field) against `/enroll`, `/login-enroll`, `/verify`, and
+  //      `/disable` get the same outcomes they always did.
+  //   3. The new email factor is strictly opt-in: a project with no
+  //      `allowedMfaMethods` setting never sends a verification email and only
+  //      offers TOTP.
+  //
+  // The linchpin under test is `getEnrolledMfaMethods`, which infers `['totp']`
+  // from `mfaEnrolled === true` when `mfaMethod` is absent.
+  // ===========================================================================
+  describe('Legacy backward compatibility', () => {
+    /**
+     * Registers a new account and returns its access token plus the user.
+     * @returns The access token and the registered user.
+     */
+    async function registerLegacyAccount(): Promise<{ accessToken: string; user: WithId<User>; email: string }> {
+      const email = `legacy${randomUUID()}@example.com`;
+      const password = 'password!@#';
+      const { accessToken, user } = await withTestContext(() =>
+        registerNew({
+          firstName: 'Legacy',
+          lastName: 'User',
+          projectName: `Legacy MFA Project ${randomUUID()}`,
+          email,
+          password,
+        })
+      );
+      return { accessToken, user, email };
+    }
+
+    /**
+     * Puts the user into the exact persisted state that pre-`mfaMethod` users
+     * have: enrolled in MFA with a TOTP secret, but with NO `mfaMethod` field.
+     * Hitting `/status` first lets the server generate and persist the secret;
+     * we then flip the user to enrolled and explicitly strip `mfaMethod` to
+     * simulate a row written by the old codebase.
+     * @param accessToken - The user's access token.
+     * @param user - The user to mutate.
+     * @returns The base32 TOTP secret for generating valid codes.
+     */
+    async function makeLegacyEnrolledTotpUser(accessToken: string, user: WithId<User>): Promise<string> {
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+
+      await withTestContext(async () => {
+        const systemRepo = getGlobalSystemRepo();
+        const current = await systemRepo.readResource<User>('User', user.id);
+        await systemRepo.updateResource<User>({
+          ...current,
+          mfaEnrolled: true,
+          // Explicitly absent: this is what distinguishes a legacy row.
+          mfaMethod: undefined,
+        });
+      });
+
+      // Sanity check: the persisted user really has no mfaMethod field.
+      const persisted = await withTestContext(() => getGlobalSystemRepo().readResource<User>('User', user.id));
+      expect(persisted.mfaMethod).toBeUndefined();
+      expect(persisted.mfaEnrolled).toBe(true);
+
+      return secret;
+    }
+
+    /**
+     * Starts a password login and returns the response body.
+     * @param email - The user email.
+     * @returns The login response body.
+     */
+    async function startLogin(email: string): Promise<any> {
+      const res = await request(app).post('/auth/login').type('json').send({
+        email,
+        password: 'password!@#',
+        scope: 'openid',
+      });
+      expect(res.status).toBe(200);
+      return res.body;
+    }
+
+    // getEnrolledMfaMethods inference — the core compatibility shim.
+    test('getEnrolledMfaMethods infers totp for legacy enrolled users', () => {
+      // Legacy enrolled user: enrolled, has a secret, no mfaMethod.
+      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: true, mfaSecret: 'ABC' } as User)).toEqual([
+        'totp',
+      ]);
+
+      // Legacy enrolled user without a secret still infers totp (secret presence
+      // is checked separately by the endpoints).
+      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: true } as User)).toEqual(['totp']);
+
+      // Not enrolled -> no methods.
+      expect(getEnrolledMfaMethods({ resourceType: 'User' } as User)).toEqual([]);
+      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: false, mfaSecret: 'ABC' } as User)).toEqual(
+        []
+      );
+
+      // When mfaMethod is present it takes precedence over the inference.
+      expect(getEnrolledMfaMethods({ resourceType: 'User', mfaEnrolled: true, mfaMethod: ['email'] } as User)).toEqual(
+        ['email']
+      );
+    });
+
+    // /status — legacy enrolled user still reports enrolled: true.
+    test('status reports enrolled for a legacy user and keeps the same secret', async () => {
+      const { accessToken, user } = await registerLegacyAccount();
+      const secret = await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      const res = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(res.status).toBe(200);
+      // The field old clients read:
+      expect(res.body.enrolled).toBe(true);
+      // For an already-enrolled user the secret must NOT be regenerated.
+      expect(new URL(res.body.enrollUri).searchParams.get('secret')).toBe(secret);
+      // The new fields are additive and reflect the inferred method.
+      expect(res.body.enrolledMethods).toEqual(['totp']);
+    });
+
+    // /verify — legacy login challenge with a bare TOTP token.
+    test('verify accepts a legacy TOTP token with no method and no emailMfa', async () => {
+      const { accessToken, user, email } = await registerLegacyAccount();
+      const secret = await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      const login = await startLogin(email);
+      expect(login.mfaRequired).toBe(true);
+
+      // Missing token -> validator rejects exactly as before.
+      const missing = await request(app).post('/auth/mfa/verify').type('json').send({ login: login.login, token: '' });
+      expect(missing.status).toBe(400);
+      expect(missing.body.issue[0].details.text).toBe('Missing token');
+
+      // Invalid token -> historical 'Invalid MFA token'.
+      const invalid = await request(app)
+        .post('/auth/mfa/verify')
+        .type('json')
+        .send({ login: login.login, token: '000000' });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.issue[0].details.text).toBe('Invalid MFA token');
+
+      // Valid TOTP token -> success with an auth code, no method field needed.
+      const ok = await request(app)
+        .post('/auth/mfa/verify')
+        .type('json')
+        .send({ login: login.login, token: authenticator.generate(secret) });
+      expect(ok.status).toBe(200);
+      expect(ok.body.code).toBeDefined();
+    });
+
+    // Login challenge must NOT email a legacy TOTP user.
+    test('password login does not email a legacy TOTP-only user', async () => {
+      const { accessToken, user, email } = await registerLegacyAccount();
+      await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      (SendEmailCommand as unknown as jest.Mock).mockClear();
+
+      const login = await startLogin(email);
+      expect(login.mfaRequired).toBe(true);
+      // The inferred method is TOTP only; the server must not auto-send a code.
+      expect(login.mfaMethods).toEqual(['totp']);
+      expect(SendEmailCommand as unknown as jest.Mock).not.toHaveBeenCalled();
+    });
+
+    // /enroll — legacy already-enrolled user, bare token, no method.
+    test('enroll on a legacy enrolled user returns Already enrolled', async () => {
+      const { accessToken, user } = await registerLegacyAccount();
+      const secret = await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      const res = await request(app)
+        .post('/auth/mfa/enroll')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({ token: authenticator.generate(secret) });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toBe('Already enrolled');
+    });
+
+    // /login-enroll — legacy enroll flow, no method, bare token.
+    test('login-enroll enrolls TOTP with no method and backfills mfaMethod', async () => {
+      const { accessToken, user, email } = await registerLegacyAccount();
+
+      // Generate + persist a secret, then require enrollment (NOT yet enrolled).
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+      await withTestContext(async () => {
+        const systemRepo = getGlobalSystemRepo();
+        const current = await systemRepo.readResource<User>('User', user.id);
+        await systemRepo.updateResource<User>({ ...current, mfaRequired: true });
+      });
+
+      const login = await startLogin(email);
+      expect(login.mfaEnrollRequired).toBe(true);
+
+      // Legacy client: { login, token } with no method.
+      const enroll = await request(app)
+        .post('/auth/mfa/login-enroll')
+        .type('json')
+        .send({ login: login.login, token: authenticator.generate(secret) });
+      expect(enroll.status).toBe(200);
+      expect(enroll.body.code).toBeDefined();
+
+      // The user is now enrolled and the method was backfilled to totp.
+      const persisted = await withTestContext(() => getGlobalSystemRepo().readResource<User>('User', user.id));
+      expect(persisted.mfaEnrolled).toBe(true);
+      expect(persisted.mfaMethod).toEqual(['totp']);
+    });
+
+    test('login-enroll still requires a token for the legacy TOTP path', async () => {
+      const { accessToken, user, email } = await registerLegacyAccount();
+
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(statusRes.status).toBe(200);
+      await withTestContext(async () => {
+        const systemRepo = getGlobalSystemRepo();
+        const current = await systemRepo.readResource<User>('User', user.id);
+        await systemRepo.updateResource<User>({ ...current, mfaRequired: true });
+      });
+
+      const login = await startLogin(email);
+      expect(login.mfaEnrollRequired).toBe(true);
+
+      const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: login.login });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toBe('Missing token');
+    });
+
+    // /disable — legacy full-disable with a bare TOTP token, no method.
+    test('disable with a bare TOTP token disables MFA entirely and rotates the secret', async () => {
+      const { accessToken, user } = await registerLegacyAccount();
+      const oldSecret = await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      // Missing token -> historical 'Missing token'.
+      const missing = await request(app)
+        .post('/auth/mfa/disable')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json');
+      expect(missing.status).toBe(400);
+      expect(missing.body).toMatchObject(badRequest('Missing token'));
+
+      // Invalid token -> historical 'Invalid token'.
+      const invalid = await request(app)
+        .post('/auth/mfa/disable')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({ token: 'invalid' });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body).toMatchObject(badRequest('Invalid token'));
+
+      // Valid TOTP token, no method -> full disable.
+      const ok = await request(app)
+        .post('/auth/mfa/disable')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({ token: authenticator.generate(oldSecret) });
+      expect(ok.status).toBe(200);
+      expect(ok.body).toMatchObject(allOk);
+
+      // User is fully disabled, methods cleared, and the secret was rotated
+      // (the lost/stolen-device behavior preserved from the old code).
+      const persisted = await withTestContext(() => getGlobalSystemRepo().readResource<User>('User', user.id));
+      expect(persisted.mfaEnrolled).toBe(false);
+      // No methods remain. An empty array is persisted as absent by FHIR, which
+      // is exactly the legacy "not enrolled" shape; the inference confirms it.
+      expect(getEnrolledMfaMethods(persisted)).toEqual([]);
+      expect(persisted.mfaSecret).toBeDefined();
+      expect(persisted.mfaSecret).not.toBe(oldSecret);
+
+      // Disabling again now reports not enrolled (the secret rotated, so the old
+      // token would be invalid anyway).
+      const again = await request(app)
+        .post('/auth/mfa/disable')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({ token: authenticator.generate(oldSecret) });
+      expect(again.status).toBe(400);
+      expect(again.body).toMatchObject(badRequest('User not enrolled in MFA'));
+    });
+
+    test('disable before enrollment reports not enrolled (legacy behavior)', async () => {
+      const { accessToken } = await registerLegacyAccount();
+      const res = await request(app)
+        .post('/auth/mfa/disable')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({ token: '123' });
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject(badRequest('User not enrolled in MFA'));
+    });
+
+    // verifyConnectedFactor — unit level, legacy user with no mfaMethod.
+    test('verifyConnectedFactor accepts a TOTP token for a legacy user without mfaMethod', async () => {
+      const secret = authenticator.generateSecret();
+      const legacyUser = { resourceType: 'User', mfaEnrolled: true, mfaSecret: secret } as User;
+      const login = { resourceType: 'Login' } as Login;
+
+      expect(await verifyConnectedFactor(legacyUser, login, authenticator.generate(secret))).toBe(true);
+      expect(await verifyConnectedFactor(legacyUser, login, '000000')).toBe(false);
+      expect(await verifyConnectedFactor(legacyUser, login, undefined)).toBe(false);
+    });
+
+    // Email factor is strictly opt-in for default projects.
+    test('default project (no allowedMfaMethods) only offers totp', async () => {
+      const { accessToken, user } = await registerLegacyAccount();
+      await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      const res = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.allowedMethods).toEqual(['totp']);
+
+      // Enrolling email is rejected when the project hasn't opted in: the
+      // allowed-methods guard fires because the default project only allows totp.
+      const enrollEmail = await request(app)
+        .post('/auth/mfa/enroll')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({ method: 'email' });
+      expect(enrollEmail.status).toBe(400);
+      expect(enrollEmail.body.issue[0].details.text).toBe('MFA method not allowed');
+    });
+
+    // Full legacy lifecycle: old client, end to end.
+    test('end-to-end legacy lifecycle: login challenge then verify with TOTP', async () => {
+      const { accessToken, user, email } = await registerLegacyAccount();
+      const secret = await makeLegacyEnrolledTotpUser(accessToken, user);
+
+      (SendEmailCommand as unknown as jest.Mock).mockClear();
+
+      // 1. Password login returns an MFA challenge (no email sent).
+      const login = await startLogin(email);
+      expect(login.mfaRequired).toBe(true);
+      expect(login.code).toBeUndefined();
+      expect(SendEmailCommand as unknown as jest.Mock).not.toHaveBeenCalled();
+
+      // 2. Verify with a bare TOTP token completes the login.
+      const verify = await request(app)
+        .post('/auth/mfa/verify')
+        .type('json')
+        .send({ login: login.login, token: authenticator.generate(secret) });
+      expect(verify.status).toBe(200);
+      expect(verify.body.code).toBeDefined();
+    });
   });
 });
