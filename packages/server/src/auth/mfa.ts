@@ -37,9 +37,11 @@ function parseMfaMethod(value: unknown): MfaMethod {
  * @returns The updated list of MFA methods.
  */
 function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
-  const methods = new Set<MfaMethod>(getEnrolledMfaMethods(user));
-  methods.add(method);
-  return Array.from(methods);
+  const methods = getEnrolledMfaMethods(user);
+  if (!methods.includes(method)) {
+    methods.push(method);
+  }
+  return methods;
 }
 
 /**
