@@ -10,7 +10,6 @@ import {
   buildCopySelectToParquetQuery,
   buildDuckdbPostgresAttachQuery,
   buildProjectedSelectFromHistoryTable,
-  buildTrueSourcePredicate,
   runParameterizedWarehouseSql,
 } from './warehouse-sql';
 
@@ -19,14 +18,14 @@ export type DataWarehouseDestinationType = 's3tables' | 'local';
 export interface DestinationQueryContext {
   tableSpec: WarehouseSourceTable;
   namespace: string;
-  sourcePredicate: Expression;
+  sourcePredicate?: Expression;
 }
 
 export interface DataWarehouseDestination {
   readonly type: DataWarehouseDestinationType;
   getSetupQueries(connectionString: string): string[];
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression;
+  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression | undefined;
   writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number>;
   /**
    * For local destinations, use the path to the Parquet file
@@ -51,11 +50,11 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
     mkdirSync(this.basePath, { recursive: true });
   }
 
-  buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): Expression {
+  buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): undefined {
     /* TODO: Support incremental local sync by deriving a watermark from existing parquet output.
      * For now we always export all source rows because the local destination does not yet read prior parquet state.
      */
-    return buildTrueSourcePredicate();
+    return undefined;
   }
 
   async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {
