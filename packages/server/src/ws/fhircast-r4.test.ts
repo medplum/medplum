@@ -51,7 +51,7 @@ describe('FHIRcast R4 WebSocket', () => {
 
         // Subscribe with URL-encoded body (spec-compliant)
         const res1 = await request(server)
-          .post('/fhircast/R4')
+          .post('/fhircast/hub')
           .set('Content-Type', ContentType.FORM_URL_ENCODED)
           .set('Authorization', 'Bearer ' + accessToken)
           .send(
@@ -82,7 +82,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Publish a Patient-open event
             const res2 = await request(server)
-              .post(`/fhircast/R4/${topic}`)
+              .post(`/fhircast/hub/${topic}`)
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
               .send({
@@ -121,7 +121,7 @@ describe('FHIRcast R4 WebSocket', () => {
         const topic = randomUUID();
 
         const res1 = await request(server)
-          .post('/fhircast/R4')
+          .post('/fhircast/hub')
           .set('Content-Type', ContentType.FORM_URL_ENCODED)
           .set('Authorization', 'Bearer ' + accessToken)
           .send(
@@ -207,7 +207,7 @@ describe('FHIRcast R4 WebSocket', () => {
 
         // Subscribe
         const res1 = await request(server)
-          .post('/fhircast/R4')
+          .post('/fhircast/hub')
           .set('Content-Type', ContentType.FORM_URL_ENCODED)
           .set('Authorization', 'Bearer ' + accessToken)
           .send(
@@ -234,7 +234,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Open DiagnosticReport 1
             const res = await request(server)
-              .post('/fhircast/R4')
+              .post('/fhircast/hub')
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
               .send({
@@ -260,7 +260,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Update DiagnosticReport 1 — add Observation
             const res = await request(server)
-              .post('/fhircast/R4')
+              .post('/fhircast/hub')
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
               .send({
@@ -303,7 +303,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Open DiagnosticReport 2 (suspends report 1)
             const res = await request(server)
-              .post('/fhircast/R4')
+              .post('/fhircast/hub')
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
               .send({
@@ -328,7 +328,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Reopen DiagnosticReport 1 — should restore content
             const res = await request(server)
-              .post('/fhircast/R4')
+              .post('/fhircast/hub')
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
               .send({
@@ -354,7 +354,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Close DiagnosticReport 1
             const res = await request(server)
-              .post('/fhircast/R4')
+              .post('/fhircast/hub')
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
               .send({
@@ -378,7 +378,7 @@ describe('FHIRcast R4 WebSocket', () => {
           .exec(async () => {
             // Verify empty context
             const res = await request(server)
-              .get(`/fhircast/R4/${topic}`)
+              .get(`/fhircast/hub/${topic}`)
               .set('Authorization', 'Bearer ' + accessToken);
             expect(res.status).toBe(200);
             expect(res.body).toMatchObject({ 'context.type': '', context: [] });
@@ -393,7 +393,7 @@ describe('FHIRcast R4 WebSocket', () => {
 
         // Subscribe
         const res1 = await request(server)
-          .post('/fhircast/R4')
+          .post('/fhircast/hub')
           .set('Content-Type', ContentType.JSON)
           .set('Authorization', 'Bearer ' + accessToken)
           .send({
@@ -407,7 +407,7 @@ describe('FHIRcast R4 WebSocket', () => {
 
         // Unsubscribe
         const res2 = await request(server)
-          .post('/fhircast/R4')
+          .post('/fhircast/hub')
           .set('Content-Type', ContentType.JSON)
           .set('Authorization', 'Bearer ' + accessToken)
           .send({

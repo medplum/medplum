@@ -17,6 +17,14 @@ import { trackEventAcks } from './sync-error';
 import type { EventCategory } from './types';
 import { getEventCategory, isFhircastMessagePayload, SUPPORTED_EVENTS } from './types';
 
+/** The mount path for this router. */
+export const FHIRCAST_R4_MOUNT_PATH = '/fhircast/hub/';
+
+/** Build the full public hub URL from a base URL. */
+export function getFhircastHubUrl(baseUrl: string): string {
+  return `${baseUrl}fhircast/hub`;
+}
+
 export const fhircastR4Router = Router();
 
 // ============================================================================
@@ -102,7 +110,7 @@ protectedRoutes.post('/:topic', async (req: Request, res: Response) => {
 protectedRoutes.get('/:topic', async (req: Request, res: Response) => {
   try {
     const { project } = getAuthenticatedContext();
-    const topic = req.params.topic;
+    const topic = req.params.topic as string;
 
     const currentContext = await getCurrentContext(project.id, topic);
     if (!currentContext) {

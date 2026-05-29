@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { FhircastEventName, FhircastMessagePayload } from '@medplum/core';
+import type { FhircastMessagePayload } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 
 /**

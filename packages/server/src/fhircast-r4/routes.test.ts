@@ -1,15 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   ContentType,
-  createReference,
-  generateId,
-  getReferenceString,
   serializeFhircastSubscriptionRequest,
 } from '@medplum/core';
-import type { DiagnosticReport, Observation, Patient, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -19,13 +14,12 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { createTestProject, withTestContext } from '../test.setup';
 
-const R4_BASE_ROUTE = '/fhircast/R4';
+const R4_BASE_ROUTE = '/fhircast/hub';
 
 describe('FHIRcast R4 routes', () => {
   let app: express.Express;
   let config: MedplumServerConfig;
   let server: Server;
-  let project: WithId<Project>;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -39,7 +33,6 @@ describe('FHIRcast R4 routes', () => {
     );
 
     accessToken = result.accessToken;
-    project = result.project;
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8520, resolve);

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { CurrentContext, FhircastAnchorResourceType, FhircastEventPayload, FhircastEventName } from '@medplum/core';
+import type { CurrentContext, FhircastAnchorResourceType, FhircastEventPayload } from '@medplum/core';
 import { generateId, badRequest, OperationOutcomeError, isResource, EMPTY, append } from '@medplum/core';
 import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { getCacheRedis } from '../redis';
@@ -265,8 +265,8 @@ export async function handleUpdateEvent(
   }
 
   // Extract and validate updates bundle
-  const updates = event.context.find(
-    (ctx: { key: string; resource?: Resource }) => ctx.key === 'updates'
+  const updates = (event.context as Array<{ key: string; resource?: Resource }>).find(
+    (ctx) => ctx.key === 'updates'
   )?.resource as Bundle | undefined;
 
   if (!updates) {
