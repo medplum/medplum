@@ -5,6 +5,7 @@ import {
   concatUrls,
   ContentType,
   encodeBase64,
+  isString,
   OAuthGrantType,
   OAuthTokenAuthMethod,
   OperationOutcomeError,
@@ -213,7 +214,10 @@ async function resolveExternalLoginIdentity(
   const identityMappingMode = getIdentityMappingMode(idp);
 
   if (identitySource === 'email' && identityMappingMode === 'user-email') {
-    const email = (userInfo.email as string | undefined)?.toLowerCase();
+    let email: string | undefined;
+    if (isString(userInfo.email)) {
+      email = userInfo.email.toLowerCase();
+    }
     if (!email) {
       throw new OperationOutcomeError(badRequest('External token does not contain email address'));
     }
@@ -221,7 +225,10 @@ async function resolveExternalLoginIdentity(
   }
 
   if (identitySource === 'subject' && identityMappingMode === 'project-membership-external-id') {
-    const externalId = userInfo.sub as string | undefined;
+    let externalId: string | undefined;
+    if (isString(userInfo.sub)) {
+      externalId = userInfo.sub;
+    }
     if (!externalId) {
       throw new OperationOutcomeError(badRequest('External token does not contain subject'));
     }
@@ -232,10 +239,12 @@ async function resolveExternalLoginIdentity(
 }
 
 function getIdentitySource(idp: IdentityProvider): IdentitySource {
+  // Fallback to preserve legacy behavior
   return idp.identitySource ?? (idp.useSubject ? 'subject' : 'email');
 }
 
 function getIdentityMappingMode(idp: IdentityProvider): IdentityMappingMode {
+  // Fallback to preserve legacy behavior
   return idp.identityMappingMode ?? (idp.useSubject ? 'project-membership-external-id' : 'user-email');
 }
 
