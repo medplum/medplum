@@ -1,0 +1,139 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { PoolClient } from 'pg';
+import { getLogger } from '../../logger';
+import { recordHistogramValue } from '../../otel/otel';
+
+export type TransactionIdleStatus = 'committed' | 'rolled_back';
+
+export type TransactionIdleTrackerOptions = {
+  thresholdMs: number;
+  attempt: number;
+  transactionAttempts: number;
+  serializable: boolean;
+};
+
+export class TransactionIdleTracker {
+  private readonly client: PoolClient;
+  private readonly options: TransactionIdleTrackerOptions;
+  private readonly startTimeMs: number;
+  private readonly originalQuery: PoolClient['query'];
+  private readonly originalQueryFn: (...args: any[]) => any;
+  private readonly wrappedQuery: PoolClient['query'];
+  private lastIdleStartTimeMs: number;
+  private idleMs = 0;
+  private queryDurationMs = 0;
+  private activeQueryCount = 0;
+  private queryCount = 0;
+  private finished = false;
+
+  constructor(client: PoolClient, options: TransactionIdleTrackerOptions) {
+    this.client = client;
+    this.options = options;
+    this.startTimeMs = Date.now();
+    // The transaction is idle as soon as BEGIN finishes and until the first query starts.
+    this.lastIdleStartTimeMs = this.startTimeMs;
+    this.originalQuery = client.query;
+    this.originalQueryFn = client.query.bind(client);
+    this.wrappedQuery = ((...args: any[]) => this.query(args)) as PoolClient['query'];
+    // Patch only the transaction's dedicated PoolClient, and restore it when tracking ends.
+    client.query = this.wrappedQuery;
+  }
+
+  finish(status: TransactionIdleStatus): void {
+    if (this.finished) {
+      return;
+    }
+    this.finished = true;
+    this.restore();
+
+    // Keep both logs and metrics thresholded so this stays useful during spikes.
+    if (this.idleMs < this.options.thresholdMs) {
+      return;
+    }
+
+    const transactionDurationMs = Date.now() - this.startTimeMs;
+    const attributes = {
+      attempt: this.options.attempt,
+      serializable: this.options.serializable,
+      status,
+    };
+
+    recordHistogramValue('medplum.db.idleInTransactionMs', this.idleMs, {
+      attributes,
+      options: { unit: 'ms' },
+    });
+    getLogger().warn('High idle in transaction time', {
+      ...attributes,
+      idleMs: this.idleMs,
+      transactionDurationMs,
+      queryDurationMs: this.queryDurationMs,
+      queryCount: this.queryCount,
+      transactionAttempts: this.options.transactionAttempts,
+      thresholdMs: this.options.thresholdMs,
+    });
+  }
+
+  discard(): void {
+    if (this.finished) {
+      return;
+    }
+    // Stop measuring when the query shape cannot be timed accurately.
+    this.finished = true;
+    this.restore();
+  }
+
+  private query(args: any[]): any {
+    const queryStartTimeMs = Date.now();
+    // The gap since the previous completed query is the approximation of "idle in transaction".
+    this.startQuery(queryStartTimeMs);
+
+    try {
+      const result = this.originalQueryFn(...args);
+      if (result && typeof result.finally === 'function') {
+        // Promise-returning pg queries are the normal repository path and can be timed exactly.
+        return result.finally(() => this.endQuery(queryStartTimeMs));
+      }
+
+      // Callback/EventEmitter query styles still run, but we cannot know when DB work
+      // finishes without a broader wrapper. Disable reporting rather than emit false idle.
+      this.discard();
+      return result;
+    } catch (err) {
+      this.endQuery(queryStartTimeMs);
+      throw err;
+    }
+  }
+
+  private startQuery(queryStartTimeMs: number): void {
+    if (this.finished) {
+      return;
+    }
+    if (this.activeQueryCount === 0) {
+      // Only the first concurrent query closes the idle period.
+      this.idleMs += queryStartTimeMs - this.lastIdleStartTimeMs;
+    }
+    this.activeQueryCount++;
+  }
+
+  private endQuery(queryStartTimeMs: number): void {
+    if (this.finished) {
+      return;
+    }
+    const queryEndTimeMs = Date.now();
+    this.queryDurationMs += queryEndTimeMs - queryStartTimeMs;
+    this.queryCount++;
+    this.activeQueryCount = Math.max(this.activeQueryCount - 1, 0);
+    if (this.activeQueryCount === 0) {
+      // When the last active query ends, the transaction becomes idle again.
+      this.lastIdleStartTimeMs = queryEndTimeMs;
+    }
+  }
+
+  private restore(): void {
+    // Avoid clobbering a later wrapper if something else replaced query first.
+    if (this.client.query === this.wrappedQuery) {
+      this.client.query = this.originalQuery;
+    }
+  }
+}

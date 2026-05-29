@@ -124,6 +124,7 @@ const integerKeys = new Set([
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'idleInTransactionLogThresholdMs',
   'fhirSearchMinLimit',
 
   'database.maxConnections',

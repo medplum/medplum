@@ -9,6 +9,8 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
 import type { TransactionIsolationLevel } from '../sql';
 import { isRetryableTransactionError, normalizeDatabaseError } from '../sql';
+import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
+import { TransactionIdleTracker } from './transaction-idle-tracker';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
@@ -44,6 +46,7 @@ export class RepositoryConnection implements Disposable {
   private discardOnRelease = false;
   private closed = false;
   mode: RepositoryMode;
+  private transactionIdleTracker?: TransactionIdleTracker;
 
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
@@ -143,6 +146,7 @@ export class RepositoryConnection implements Disposable {
     const releaseErr = err || this.discardOnRelease;
     if (this.ownsClient) {
       const conn = this.conn;
+      this.discardTransactionIdleTracking();
       this.conn = undefined;
       this.connMode = undefined;
       this.discardOnRelease = false;
@@ -156,6 +160,7 @@ export class RepositoryConnection implements Disposable {
     } else if (releaseErr) {
       // Shared connection is known to be dead. Drop our reference so we don't reuse it.
       // The owner of the connection is responsible for the actual release.
+      this.discardTransactionIdleTracking();
       this.conn = undefined;
       this.connMode = undefined;
       this.discardOnRelease = false;
@@ -203,6 +208,14 @@ export class RepositoryConnection implements Disposable {
       try {
         const client = await this.beginTransaction(isolationLevel);
         transactionStarted = true;
+        if (this.transactionDepth === 1) {
+          this.startTransactionIdleTracking(client, {
+            thresholdMs: config.idleInTransactionLogThresholdMs ?? -1,
+            attempt,
+            transactionAttempts,
+            serializable: options?.serializable ?? false,
+          });
+        }
         const result = await callback(client);
         await this.commitTransaction();
         if (attempt > 0) {
@@ -346,6 +359,7 @@ export class RepositoryConnection implements Disposable {
       const conn = await this.getConnection(DatabaseMode.WRITER);
       if (this.transactionDepth === 1) {
         await conn.query('COMMIT');
+        this.finishTransactionIdleTracking('committed');
         this.transactionDepth = 0;
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
@@ -384,6 +398,10 @@ export class RepositoryConnection implements Disposable {
           await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
         }
       } catch (rollbackErr) {
+        if (isOuter) {
+          this.finishTransactionIdleTracking('rolled_back');
+        }
+
         // ROLLBACK itself failed — connection is effectively dead (e.g. killed by idle_in_transaction_session_timeout).
         getLogger().warn('Error rolling back transaction', {
           err: normalizeErrorString(rollbackErr),
@@ -398,6 +416,9 @@ export class RepositoryConnection implements Disposable {
         this.releaseConnection(error);
         return;
       }
+      if (isOuter) {
+        this.finishTransactionIdleTracking('rolled_back');
+      }
       this.transactionDepth--; // safe to decrement since early return if transactionDepth === 0
       this.truncateCommitCallbacks();
       if (isOuter) {
@@ -411,6 +432,23 @@ export class RepositoryConnection implements Disposable {
     if (this.transactionDepth === 0) {
       this.releaseConnection();
     }
+  }
+
+  private startTransactionIdleTracking(client: PoolClient, options: TransactionIdleTrackerOptions): void {
+    if (options.thresholdMs < 0 || this.transactionIdleTracker) {
+      return;
+    }
+    this.transactionIdleTracker = new TransactionIdleTracker(client, options);
+  }
+
+  private finishTransactionIdleTracking(status: TransactionIdleStatus): void {
+    this.transactionIdleTracker?.finish(status);
+    this.transactionIdleTracker = undefined;
+  }
+
+  private discardTransactionIdleTracking(): void {
+    this.transactionIdleTracker?.discard();
+    this.transactionIdleTracker = undefined;
   }
 
   private assertInTransaction(): void {
