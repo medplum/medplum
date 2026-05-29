@@ -40,6 +40,7 @@ import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
+import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -730,6 +731,7 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
+    validateRestHookUrl(url);
     log.info('Sending rest hook', {
       url,
       subscriptionId: subscription.id,
@@ -785,6 +787,25 @@ async function sendRestHook(
   if (error) {
     throw error;
   }
+}
+
+function validateRestHookUrl(url: string): void {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
+  }
+
+  if (parsedUrl.protocol === 'https:') {
+    return;
+  }
+
+  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
+    return;
+  }
+
+  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
 }
 
 /**
