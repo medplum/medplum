@@ -44,7 +44,7 @@ export class RepositoryAccessTracker {
   readonly transactionFrames: TransactionAccessFrame[] = [];
 
   getCurrentTransactionFrame(): TransactionAccessFrame | undefined {
-    return this.transactionFrames[this.transactionFrames.length - 1];
+    return this.transactionFrames.at(-1);
   }
 
   private hasTrackedTransaction(): boolean {
@@ -84,15 +84,15 @@ export class RepositoryAccessTracker {
     getLogger().info('[RepoSplit] Mixed transaction access', {
       scope: 'transaction',
       status,
-      specialResourceTypes: [...frame.specialResourceTypes].sort(),
-      otherResourceTypes: [...frame.otherResourceTypes].sort(),
-      readResourceTypes: [...frame.readResourceTypes].sort(),
-      writeResourceTypes: [...frame.writeResourceTypes].sort(),
+      specialResourceTypes: Array.from(frame.specialResourceTypes),
+      otherResourceTypes: Array.from(frame.otherResourceTypes),
+      readResourceTypes: Array.from(frame.readResourceTypes),
+      writeResourceTypes: Array.from(frame.writeResourceTypes),
       sqlReadCount: frame.sqlReadCount,
       sqlWriteCount: frame.sqlWriteCount,
       cacheReadCount: frame.cacheReadCount,
       cacheWriteCount: frame.cacheWriteCount,
-      sources: [...frame.sources].sort(),
+      sources: Array.from(frame.sources),
     });
   }
 
@@ -103,57 +103,63 @@ export class RepositoryAccessTracker {
     source: string
   ): void {
     const access = partitionResourceTypes(resourceTypes);
-    if (access.all.length === 0) {
+    if (access.all.size === 0) {
       return;
     }
 
-    if (access.special.length > 0 && access.other.length > 0) {
+    if (access.special.size > 0 && access.other.size > 0) {
       getLogger().info('[RepoSplit] Mixed resource access', {
         scope: 'statement',
         layer,
         operation,
         source,
         inTransaction: this.hasTrackedTransaction(),
-        specialResourceTypes: access.special,
-        otherResourceTypes: access.other,
-        resourceTypes: access.all,
+        specialResourceTypes: Array.from(access.special),
+        otherResourceTypes: Array.from(access.other),
+        resourceTypes: Array.from(access.all),
       });
     }
 
     const frame = this.getCurrentTransactionFrame();
-    if (!frame) {
-      return;
+    if (frame) {
+      updateTransactionAccessFrame(frame, layer, operation, source, access);
     }
+  }
+}
 
+function updateTransactionAccessFrame(
+  frame: TransactionAccessFrame,
+  layer: RepositoryAccessLayer,
+  operation: RepositoryAccessOperation,
+  source: string,
+  access: ResourceTypePartition
+): void {
+  if (operation === 'read') {
     if (layer === 'sql') {
-      if (operation === 'read') {
-        frame.sqlReadCount++;
-      } else if (operation === 'write') {
-        frame.sqlWriteCount++;
-      }
-    } else if (operation === 'read') {
+      frame.sqlReadCount++;
+    } else {
       frame.cacheReadCount++;
+    }
+    for (const resourceType of access.all) {
+      frame.readResourceTypes.add(resourceType);
+    }
+  } else if (operation === 'write') {
+    if (layer === 'sql') {
+      frame.sqlWriteCount++;
     } else {
       frame.cacheWriteCount++;
     }
-
-    if (operation === 'read') {
-      for (const resourceType of access.all) {
-        frame.readResourceTypes.add(resourceType);
-      }
-    } else if (operation === 'write') {
-      for (const resourceType of access.all) {
-        frame.writeResourceTypes.add(resourceType);
-      }
+    for (const resourceType of access.all) {
+      frame.writeResourceTypes.add(resourceType);
     }
-    for (const resourceType of access.special) {
-      frame.specialResourceTypes.add(resourceType);
-    }
-    for (const resourceType of access.other) {
-      frame.otherResourceTypes.add(resourceType);
-    }
-    frame.sources.add(source);
   }
+  for (const resourceType of access.special) {
+    frame.specialResourceTypes.add(resourceType);
+  }
+  for (const resourceType of access.other) {
+    frame.otherResourceTypes.add(resourceType);
+  }
+  frame.sources.add(source);
 }
 
 function createTransactionAccessFrame(): TransactionAccessFrame {
@@ -170,19 +176,18 @@ function createTransactionAccessFrame(): TransactionAccessFrame {
   };
 }
 
-function partitionResourceTypes(resourceTypes: Iterable<ResourceType>): {
-  all: ResourceType[];
-  special: ResourceType[];
-  other: ResourceType[];
-} {
+type ResourceTypePartition = {
+  readonly all: Set<ResourceType>;
+  readonly special: Set<ResourceType>;
+  readonly other: Set<ResourceType>;
+};
+
+function partitionResourceTypes(resourceTypes: Iterable<ResourceType>): ResourceTypePartition {
   const all = new Set<ResourceType>();
   const special = new Set<ResourceType>();
   const other = new Set<ResourceType>();
 
   for (const resourceType of resourceTypes) {
-    if (!resourceType) {
-      continue;
-    }
     all.add(resourceType);
     if (splitTrackedResourceTypes.has(resourceType)) {
       special.add(resourceType);
@@ -191,11 +196,7 @@ function partitionResourceTypes(resourceTypes: Iterable<ResourceType>): {
     }
   }
 
-  return {
-    all: [...all].sort(),
-    special: [...special].sort(),
-    other: [...other].sort(),
-  };
+  return { all, special, other };
 }
 
 function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: TransactionAccessFrame): void {
@@ -221,7 +222,7 @@ function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: Tra
   }
 }
 
-export function getLocalReferenceResourceTypes(references: Reference[]): ResourceType[] {
+export function getResourceTypesFromReferences(references: Reference[]): ResourceType[] {
   const resourceTypes = new Set<ResourceType>();
   for (const reference of references) {
     const resourceType = reference.reference?.split('/')[0];
@@ -229,5 +230,5 @@ export function getLocalReferenceResourceTypes(references: Reference[]): Resourc
       resourceTypes.add(resourceType);
     }
   }
-  return [...resourceTypes].sort();
+  return Array.from(resourceTypes);
 }
