@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SubscriptionEmitter, generateId, sleep } from '@medplum/core';
+import { SubscriptionEmitter, generateId } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
@@ -41,6 +41,46 @@ function TestComponent({
 
 function RenderToggleComponent({ render }: { render: boolean }): JSX.Element {
   return <>{render ? <TestComponent criteria="Communication" /> : null}</>;
+}
+
+/**
+ * Advance past `useSubscription`'s debounced unsubscribe timer in a single step.
+ *
+ * `useSubscription` waits 3 seconds before calling `unsubscribeFromCriteria` on unmount so
+ * that brief remounts (e.g. StrictMode or toggling conditional render) can reuse the same
+ * subscription. Tests that assert on cleanup must advance time past that debounce.
+ *
+ * How to use:
+ * - Pass a duration >= 3000 ms (the hook's debounce interval).
+ * - Optionally pass an action (unmount, rerender, etc.) to run before advancing time.
+ *
+ * ```ts
+ * await advanceDebounce(5000, unmount);
+ * expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+ * ```
+ *
+ * Why fake timers are scoped here instead of enabled for the whole file:
+ * - Most tests in this file rely on real timers (`screen.findByTestId`, WebSocket mocks, etc.).
+ * - Enabling fake timers globally causes those async helpers to hang.
+ *
+ * When this helper is not enough:
+ * - If a test performs several mount/unmount cycles against the same debounce window, toggling
+ *   fake timers on and off between steps can leave orphaned timer state and make the final
+ *   cleanup assertion fail.
+ * - For that case, call `vi.useFakeTimers({ shouldAdvanceTime: true })` once, keep it enabled
+ *   for the whole sequence, split each step into two `act` blocks (action, then advance), and
+ *   restore real timers in a `finally` block. See "Mount and remount before debounce timeout".
+ *
+ * @param ms - Milliseconds to advance fake time. Use >= 3000 to exceed the hook debounce.
+ * @param action - Optional callback (e.g. unmount or rerender) run before time is advanced.
+ */
+async function advanceDebounce(ms: number, action?: () => void): Promise<void> {
+  await act(async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    action?.();
+    await vi.advanceTimersByTimeAsync(ms);
+    vi.useRealTimers();
+  });
 }
 
 describe('useSubscription()', () => {
@@ -92,12 +132,7 @@ describe('useSubscription()', () => {
     expect(bundle.type).toBe('history');
 
     // Make sure subscription is cleaned up
-    await act(async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      unmount();
-      await vi.advanceTimersByTimeAsync(5000);
-      vi.useRealTimers();
-    });
+    await advanceDebounce(5000, unmount);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 
@@ -110,26 +145,35 @@ describe('useSubscription()', () => {
     expect(emitter).toBeInstanceOf(SubscriptionEmitter);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    await act(async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      rerender(<RenderToggleComponent render={false} />);
-      await vi.advanceTimersByTimeAsync(1000);
-      vi.useRealTimers();
-    });
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await act(async () => {
+        rerender(<RenderToggleComponent render={false} />);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    await act(async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      rerender(<RenderToggleComponent render={true} />);
-      await vi.advanceTimersByTimeAsync(5000);
-      vi.useRealTimers();
-    });
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
-    expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
+      await act(async () => {
+        rerender(<RenderToggleComponent render={true} />);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+      expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
 
-    // Make sure we fully unmount later when actually unmounting
-    rerender(<RenderToggleComponent render={false} />);
-    await sleep(3100);
+      // Make sure we fully unmount later when actually unmounting
+      await act(async () => {
+        rerender(<RenderToggleComponent render={false} />);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 
@@ -139,11 +183,7 @@ describe('useSubscription()', () => {
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
     setup(<TestComponent criteria="Communication" />, true);
-    await act(async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      await vi.advanceTimersByTimeAsync(5000);
-      vi.useRealTimers();
-    });
+    await advanceDebounce(5000);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
     expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
   });
