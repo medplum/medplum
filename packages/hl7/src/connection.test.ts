@@ -11,7 +11,7 @@ describe('HL7 Connection', () => {
   test('Error', async () => {
     // Create a mock net.Socket
     const mockSocket = new MockSocket();
-    const listener = jest.fn();
+    const listener = vi.fn();
 
     const connection = new Hl7Connection(mockSocket as any);
     expect(mockSocket.handlers.data).toBeDefined();
@@ -116,7 +116,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
 
     test('emits enhancedAckSent event with CA when in standard enhanced mode', async () => {
       const mockSocket = new MockSocket();
-      const enhancedAckListener = jest.fn();
+      const enhancedAckListener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
       connection.addEventListener('enhancedAckSent', enhancedAckListener);
@@ -135,7 +135,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
 
     test('emits enhancedAckSent event with AA when in aaMode', async () => {
       const mockSocket = new MockSocket();
-      const enhancedAckListener = jest.fn();
+      const enhancedAckListener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any, undefined, 'aaMode');
       connection.addEventListener('enhancedAckSent', enhancedAckListener);
@@ -154,7 +154,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
 
     test('does not emit enhancedAckSent event when not in enhanced mode', async () => {
       const mockSocket = new MockSocket();
-      const enhancedAckListener = jest.fn();
+      const enhancedAckListener = vi.fn();
 
       // Create connection without enhanced mode (undefined)
       const connection = new Hl7Connection(mockSocket as any, undefined, undefined);
@@ -171,7 +171,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
 
     test('does not emit enhancedAckSent when enhanced mode is disabled after initialization', async () => {
       const mockSocket = new MockSocket();
-      const enhancedAckListener = jest.fn();
+      const enhancedAckListener = vi.fn();
 
       // Start with enhanced mode, then disable it
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
@@ -189,8 +189,8 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
 
   test('Data received after close emits warning', async () => {
     const mockSocket = new MockSocket();
-    const messageListener = jest.fn();
-    const warningListener = jest.fn();
+    const messageListener = vi.fn();
+    const warningListener = vi.fn();
 
     const connection = new Hl7Connection(mockSocket as any);
     connection.addEventListener('message', messageListener);
@@ -236,7 +236,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
 
     test('Multiple HL7 messages in one incoming chunk', async () => {
       const mockSocket = new MockSocket();
-      const listener = jest.fn();
+      const listener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
@@ -267,7 +267,7 @@ PID|1||11111^^^MRN^MR||JONES^BOB^C||19700101|M`;
 
     test('Partial message in a chunk', async () => {
       const mockSocket = new MockSocket();
-      const listener = jest.fn();
+      const listener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
@@ -292,7 +292,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
     test('Random bytes before an HL7 message should be ignored', async () => {
       const mockSocket = new MockSocket();
-      const listener = jest.fn();
+      const listener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
@@ -316,7 +316,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
     test('Random bytes between multiple messages should be ignored', async () => {
       const mockSocket = new MockSocket();
-      const listener = jest.fn();
+      const listener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
@@ -343,7 +343,7 @@ PID|1||67890^^^MRN^MR||SMITH^JANE^B||19900101|F`;
 
     test('Bytes at the end should be ignored and next message should be processed successfully', async () => {
       const mockSocket = new MockSocket();
-      const listener = jest.fn();
+      const listener = vi.fn();
 
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);

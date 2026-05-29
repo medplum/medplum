@@ -41,7 +41,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "medplum": "tsx src/index.ts",
-    "test": "jest"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "22.19.19"
