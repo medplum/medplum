@@ -403,8 +403,9 @@ export class App {
     const queueErroredRetentionDays = agent?.setting?.find(
       (setting) => setting.name === 'queueErroredRetentionDays'
     )?.valueInteger;
-    const queueSweepIntervalSecs = agent?.setting?.find((setting) => setting.name === 'queueSweepIntervalSecs')
-      ?.valueInteger;
+    const queueSweepIntervalSecs = agent?.setting?.find(
+      (setting) => setting.name === 'queueSweepIntervalSecs'
+    )?.valueInteger;
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
@@ -579,7 +580,8 @@ export class App {
    * @returns Absolute path to the default queue DB file.
    */
   private defaultQueueDbPath(): string {
-    const baseDir = (isWinstonWrapperLogger(this.log) && (this.log as unknown as { logDir?: string }).logDir) || process.cwd();
+    const baseDir =
+      (isWinstonWrapperLogger(this.log) && (this.log as unknown as { logDir?: string }).logDir) || process.cwd();
     // Manual join to avoid pulling in node:path solely for this — the agent
     // doesn't need to support exotic path normalizations here.
     const sep = baseDir.endsWith('/') || baseDir.endsWith('\\') ? '' : '/';

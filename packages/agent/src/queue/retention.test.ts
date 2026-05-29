@@ -45,7 +45,11 @@ function seedRow(
       r.row.id
     );
   } else {
-    db.prepare(`UPDATE inbound_hl7_messages SET state = ?, errored_at = ? WHERE id = ?`).run(state, terminalAt, r.row.id);
+    db.prepare(`UPDATE inbound_hl7_messages SET state = ?, errored_at = ? WHERE id = ?`).run(
+      state,
+      terminalAt,
+      r.row.id
+    );
   }
   return r.row.id;
 }

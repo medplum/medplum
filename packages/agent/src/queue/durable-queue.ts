@@ -6,13 +6,7 @@ import { normalizeErrorString } from '@medplum/core';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import { runMigrations } from './schema';
-import type {
-  EnqueueInput,
-  EnqueueRejectedInput,
-  EnqueueResult,
-  InboundRow,
-  MessageState,
-} from './types';
+import type { EnqueueInput, EnqueueRejectedInput, EnqueueResult, InboundRow, MessageState } from './types';
 import { MessageState as MessageStateValues } from './types';
 
 export interface DurableQueueOptions {
@@ -523,9 +517,9 @@ export class DurableQueue {
    * `page_count * page_size`. Used by the retention sweeper.
    */
   getDbSizeBytes(): number {
-    const row = this.db.prepare('SELECT page_count * page_size AS bytes FROM pragma_page_count, pragma_page_size').get() as
-      | { bytes: number }
-      | undefined;
+    const row = this.db
+      .prepare('SELECT page_count * page_size AS bytes FROM pragma_page_count, pragma_page_size')
+      .get() as { bytes: number } | undefined;
     return row?.bytes ?? 0;
   }
 
@@ -556,9 +550,10 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     state: raw.state as MessageState,
     attemptCount: raw.attempt_count as number,
     callbackId: raw.callback_id as string,
-    serverResponseBody: raw.server_response_body === null || raw.server_response_body === undefined
-      ? null
-      : toBuffer(raw.server_response_body),
+    serverResponseBody:
+      raw.server_response_body === null || raw.server_response_body === undefined
+        ? null
+        : toBuffer(raw.server_response_body),
     serverStatusCode: (raw.server_status_code as number | null) ?? null,
     ackSentToSource: (raw.ack_sent_to_source as number) === 1,
     lastError: (raw.last_error as string | null) ?? null,

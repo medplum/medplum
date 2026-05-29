@@ -85,6 +85,4 @@ export interface EnqueueRejectedInput extends EnqueueInput {
  * Distinguishes the outcomes of an idempotent intake attempt against an active
  * duplicate (one still in `queued` or `processing`).
  */
-export type EnqueueResult =
-  | { kind: 'inserted'; row: InboundRow }
-  | { kind: 'duplicateActive'; existing: InboundRow };
+export type EnqueueResult = { kind: 'inserted'; row: InboundRow } | { kind: 'duplicateActive'; existing: InboundRow };

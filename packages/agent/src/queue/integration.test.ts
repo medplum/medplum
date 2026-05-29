@@ -82,7 +82,10 @@ describe('Durable queue integration', () => {
         if (command.type === 'agent:heartbeat:request') {
           socket.send(
             Buffer.from(
-              JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION } satisfies AgentHeartbeatResponse)
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
           return;
@@ -120,9 +123,7 @@ describe('Durable queue integration', () => {
       resourceType: 'Agent',
       name: 'Durable Queue Test Agent',
       status: 'active',
-      channel: [
-        { name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) },
-      ],
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
       setting: [
         { name: 'durableQueue', valueBoolean: true },
         { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
@@ -154,15 +155,18 @@ describe('Durable queue integration', () => {
   });
 
   test('server 4xx response marks the row errored', async () => {
-    startMockServer((cmd) => ({
-      type: 'agent:transmit:response',
-      channel: cmd.channel,
-      remote: cmd.remote,
-      callback: cmd.callback,
-      contentType: ContentType.TEXT,
-      statusCode: 500,
-      body: 'server boom',
-    } satisfies AgentTransmitResponse));
+    startMockServer(
+      (cmd) =>
+        ({
+          type: 'agent:transmit:response',
+          channel: cmd.channel,
+          remote: cmd.remote,
+          callback: cmd.callback,
+          contentType: ContentType.TEXT,
+          statusCode: 500,
+          body: 'server boom',
+        }) satisfies AgentTransmitResponse
+    );
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
@@ -172,9 +176,7 @@ describe('Durable queue integration', () => {
       resourceType: 'Agent',
       name: 'Durable Queue Test Agent',
       status: 'active',
-      channel: [
-        { name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) },
-      ],
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
       setting: [
         { name: 'durableQueue', valueBoolean: true },
         { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
@@ -215,9 +217,7 @@ describe('Durable queue integration', () => {
       resourceType: 'Agent',
       name: 'Durable Queue Test Agent',
       status: 'active',
-      channel: [
-        { name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) },
-      ],
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
       setting: [
         { name: 'durableQueue', valueBoolean: true },
         { name: 'queueDbPath', valueString: queuePath },
@@ -227,7 +227,10 @@ describe('Durable queue integration', () => {
     // Pre-stage a "crashed mid-flight" row directly: insert + claim, then close
     // the DB without finalizing. On next open, the row is still in processing.
     {
-      const queue = DurableQueue.open({ path: queuePath, log: console as unknown as Parameters<typeof DurableQueue.open>[0]['log'] });
+      const queue = DurableQueue.open({
+        path: queuePath,
+        log: console as unknown as Parameters<typeof DurableQueue.open>[0]['log'],
+      });
       const r = queue.enqueue({
         channelName: 'dq-test',
         remote: '1.2.3.4:5000',
@@ -275,6 +278,7 @@ async function waitForRow(
     }
     await sleep(25);
   }
-  throw new Error(`waitForRow: predicate not satisfied after ${timeoutMs}ms; counts=${JSON.stringify(queue.countByState())}`);
+  throw new Error(
+    `waitForRow: predicate not satisfied after ${timeoutMs}ms; counts=${JSON.stringify(queue.countByState())}`
+  );
 }
-

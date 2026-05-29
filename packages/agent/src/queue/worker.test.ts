@@ -30,11 +30,7 @@ function makeStubApp(): { app: App; sent: AgentMessage[] } {
   return { app: stub as unknown as App, sent };
 }
 
-function enqueueOne(
-  queue: DurableQueue,
-  callbackId: string,
-  body: string = 'MSH|^~\\&|...|2.5\r'
-): InboundRow {
+function enqueueOne(queue: DurableQueue, callbackId: string, body: string = 'MSH|^~\\&|...|2.5\r'): InboundRow {
   const r = queue.enqueue({
     channelName: 'ch1',
     remote: '127.0.0.1:5000',

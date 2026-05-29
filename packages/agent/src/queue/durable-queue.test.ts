@@ -8,9 +8,9 @@ import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
 import { MessageState } from './types';
 
-function makeEnqueueInput(overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}): Parameters<
-  DurableQueue['enqueue']
->[0] {
+function makeEnqueueInput(
+  overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}
+): Parameters<DurableQueue['enqueue']>[0] {
   return {
     channelName: 'ch1',
     remote: '127.0.0.1:5000',
@@ -75,7 +75,9 @@ describe('DurableQueue', () => {
 
   test('duplicate is permitted once the prior row is terminal (processed)', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2' }));
-    if (r1.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (r1.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     queue.markProcessed(r1.row.id);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-second' }));
     expect(r2.kind).toBe('inserted');
@@ -90,7 +92,9 @@ describe('DurableQueue', () => {
     const second = queue.claimNext('A');
     const third = queue.claimNext('A');
 
-    if (a.kind !== 'inserted' || a2.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (a.kind !== 'inserted' || a2.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     expect(first?.id).toBe(a.row.id);
     expect(first?.state).toBe(MessageState.PROCESSING);
     expect(first?.attemptCount).toBe(1);
@@ -104,7 +108,9 @@ describe('DurableQueue', () => {
 
   test('markProcessed and markErrored set timestamps correctly', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1' }));
-    if (r.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     const claimed = queue.claimNext(r.row.channelName);
     expect(claimed?.processingStartedAt).not.toBeNull();
 
@@ -116,7 +122,9 @@ describe('DurableQueue', () => {
 
     // markErrored on a separate row, to confirm it doesn't disturb the processed one.
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS2' }));
-    if (r2.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (r2.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     queue.claimNext(r2.row.channelName);
     queue.markErrored(r2.row.id, 'boom', 1700000000123);
     expect(queue.getById(r2.row.id)?.state).toBe(MessageState.ERRORED);
@@ -129,7 +137,9 @@ describe('DurableQueue', () => {
 
   test('recordServerResponse writes statusCode + body without changing state', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'RSP1' }));
-    if (r.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     queue.claimNext(r.row.channelName);
 
     queue.recordServerResponse(r.row.id, 201, 'response-body');
@@ -141,7 +151,9 @@ describe('DurableQueue', () => {
 
   test('findByCallback locates the row by callback_id', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'CB1', callbackId: 'find-me' }));
-    if (r.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     const found = queue.findByCallback('find-me');
     expect(found?.id).toBe(r.row.id);
     expect(queue.findByCallback('nope')).toBeNull();
@@ -151,14 +163,18 @@ describe('DurableQueue', () => {
     // Different channels so the claim picks the row we expect.
     const qrow = queue.enqueue(makeEnqueueInput({ channelName: 'Q', msgControlId: 'Q1' }));
     const prow = queue.enqueue(makeEnqueueInput({ channelName: 'P', msgControlId: 'P1' }));
-    if (prow.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (prow.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     queue.claimNext('P'); // P → processing
 
     const promoted = queue.recoverOnStartup(1700000000000);
     expect(promoted).toBe(1);
     expect(queue.getById(prow.row.id)?.state).toBe(MessageState.ERRORED);
     expect(queue.getById(prow.row.id)?.lastError).toContain('interrupted');
-    if (qrow.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (qrow.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     expect(queue.getById(qrow.row.id)?.state).toBe(MessageState.QUEUED);
 
     // Re-running is a no-op now that no rows are in processing.
@@ -179,7 +195,9 @@ describe('DurableQueue', () => {
   test('countByState reports correct totals across states', () => {
     const a = queue.enqueue(makeEnqueueInput({ msgControlId: 'CB-A' }));
     const b = queue.enqueue(makeEnqueueInput({ msgControlId: 'CB-B' }));
-    if (a.kind !== 'inserted' || b.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (a.kind !== 'inserted' || b.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     queue.claimNext(a.row.channelName); // a → processing
     queue.markProcessed(a.row.id);
     queue.claimNext(b.row.channelName); // b → processing
@@ -215,7 +233,9 @@ describe('DurableQueue', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'L', msgControlId: 'L1' }));
     const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'L', msgControlId: 'L2' }));
     queue.enqueue(makeEnqueueInput({ channelName: 'OTHER', msgControlId: 'X' }));
-    if (r1.kind !== 'inserted' || r2.kind !== 'inserted') {throw new Error('expected inserted');}
+    if (r1.kind !== 'inserted' || r2.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
     expect(queue.listQueuedIdsForChannel('L')).toEqual([r1.row.id, r2.row.id]);
   });
 

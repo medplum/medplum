@@ -63,8 +63,7 @@ export class RetentionSweeper {
     this.log = options.log;
     this.retentionMs = (options.retentionDays ?? DEFAULT_RETENTION_DAYS) * 24 * 60 * 60 * 1000;
     this.maxSizeBytes = (options.maxSizeMb ?? DEFAULT_MAX_SIZE_MB) * 1024 * 1024;
-    this.erroredRetentionMs =
-      (options.erroredRetentionDays ?? DEFAULT_ERRORED_RETENTION_DAYS) * 24 * 60 * 60 * 1000;
+    this.erroredRetentionMs = (options.erroredRetentionDays ?? DEFAULT_ERRORED_RETENTION_DAYS) * 24 * 60 * 60 * 1000;
     this.intervalMs = (options.sweepIntervalSecs ?? DEFAULT_SWEEP_INTERVAL_SECS) * 1000;
   }
 
@@ -101,7 +100,9 @@ export class RetentionSweeper {
     if (this.running) {
       // A previous sweep is still running (e.g. on a very slow disk). Skip rather
       // than queue — the next interval will pick up where this one left off.
-      return this.lastResult ?? { deletedProcessed: 0, deletedErrored: 0, dbSizeBytesAfter: this.queue.getDbSizeBytes() };
+      return (
+        this.lastResult ?? { deletedProcessed: 0, deletedErrored: 0, dbSizeBytesAfter: this.queue.getDbSizeBytes() }
+      );
     }
     this.running = true;
     try {
