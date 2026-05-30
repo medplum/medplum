@@ -175,12 +175,13 @@ describe('Claim $submit', () => {
     const claimId = createRes.body.id;
 
     const res = await request(app)
-      .post(`/fhir/R4/Claim/${claimId}/$submit`)
+      .get(`/fhir/R4/Claim/${claimId}/$submit`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send(bodyWith());
+      .set('Accept', 'application/fhir+json');
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toBe('ClaimResponse');
+    // Confirms the Claim read from the URL was forwarded to the bot as the body.
+    expect(res.body.patient?.reference).toBe('Patient/example');
   });
 
   test('Returns 400 when no Claim payload is provided', async () => {
@@ -194,6 +195,7 @@ describe('Claim $submit', () => {
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith());
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/Missing Claim payload/i);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+    expect(res.body.issue[0].severity).toBe('error');
   });
 });

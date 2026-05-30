@@ -29,7 +29,7 @@ import { botInitHandler } from './operations/botinit';
 import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
-import { claimSubmitHandler } from './operations/claimsubmit';
+import { claimSubmitGetHandler, claimSubmitPostHandler } from './operations/claimsubmit';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
@@ -327,9 +327,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
-  // Claim $submit operation (dispatches to the custom operation configured via CLAIM_SUBMIT_OPERATION, or the optional 'operation' override)
-  router.add('POST', '/Claim/$submit', claimSubmitHandler);
-  router.add('POST', '/Claim/:id/$submit', claimSubmitHandler);
+  // Claim $submit operation (dispatches to the custom operation configured via CLAIM_SUBMIT_OPERATION).
+  // POST passes the Claim via the 'resource' input parameter; GET reads the Claim from the URL.
+  router.add('POST', '/Claim/$submit', claimSubmitPostHandler);
+  router.add('GET', '/Claim/:id/$submit', claimSubmitGetHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
