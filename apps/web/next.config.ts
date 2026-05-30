@@ -8,6 +8,20 @@ const nextConfig: NextConfig = {
   watchOptions: {
     pollIntervalMs: 1000,
   },
+  async redirects() {
+    return [
+      // Auth
+      { source: '/signup',   destination: '/cadastro', permanent: false },
+      { source: '/register', destination: '/cadastro', permanent: false },
+      // App pages
+      { source: '/schedule', destination: '/agenda',    permanent: false },
+      { source: '/patients', destination: '/pacientes', permanent: false },
+      { source: '/patients/:id', destination: '/pacientes/:id', permanent: false },
+      { source: '/patients/:id/notes', destination: '/pacientes/:id/evolucao', permanent: false },
+      { source: '/notes',    destination: '/evolucoes', permanent: false },
+      { source: '/billing',  destination: '/financeiro', permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;
