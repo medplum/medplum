@@ -3,13 +3,14 @@
 import { allOk, badRequest, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
-import type { JWK, KeyLike } from 'jose';
+import type { JWK, KeyLike, ProtectedHeaderParameters } from 'jose';
 import { CompactSign, compactVerify, decodeProtectedHeader, importJWK } from 'jose';
 import { isIP } from 'node:net';
 import { deflateRawSync, inflateRawSync } from 'node:zlib';
 import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getJwks, getSigningKey } from '../../oauth/keys';
 import { makeOperationDefinition, makeParameters } from './definitions';
 import { getPatientEverything } from './patienteverything';
@@ -80,7 +81,6 @@ export const verifySmartHealthCardOperation = makeOperationDefinition(
       { use: 'in', name: 'shcUri', type: 'string', min: 0, max: '1' },
       { use: 'in', name: 'file', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'valid', type: 'boolean', min: 1, max: '1' },
-      { use: 'out', name: 'signatureValid', type: 'boolean', min: 0, max: '1' },
       { use: 'out', name: 'issuerTrusted', type: 'boolean', min: 0, max: '1' },
       { use: 'out', name: 'verified', type: 'boolean', min: 0, max: '1' },
       { use: 'out', name: 'issuer', type: 'uri', min: 0, max: '1' },
@@ -91,6 +91,15 @@ export const verifySmartHealthCardOperation = makeOperationDefinition(
   }
 );
 
+/**
+ * Handles the Patient/$generate-smart-health-card operation.
+ *
+ * Builds a Patient/$everything bundle for the requested patient, signs it as a SMART Health Card credential, and
+ * returns the credential in JWS, SHC URI, and SMART Health Card file formats.
+ *
+ * @param req - FHIR request containing the patient ID and optional parameters for filtering, expiration, and QR code generation.
+ * @returns FHIR response containing the generated SMART Health Card credential in multiple formats and related metadata.
+ */
 export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<FhirResponse> {
   try {
     const ctx = getAuthenticatedContext();
@@ -125,30 +134,52 @@ export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<
   }
 }
 
+/**
+ * Handles the system-level $verify-smart-health-card operation.
+ *
+ * Reads a SMART Health Card credential from one of the supported input formats, verifies the signature when possible,
+ * and returns the decoded issuer, key ID, and FHIR Bundle details.
+ *
+ * @param req - FHIR request containing the SMART Health Card credential in one of the supported input formats.
+ * @returns FHIR response containing the verification results, including validity, issuer trust, and decoded payload details.
+ */
 export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<FhirResponse> {
-  try {
-    const params = parseInputParameters<VerifySmartHealthCardParams>(verifySmartHealthCardOperation, req);
-    const credential = readSmartHealthCardCredential(params);
-    const { payload, issuerTrusted } = await verifySmartHealthCardCredential(credential);
-    const header = decodeProtectedHeader(credential);
+  const params = parseInputParameters<VerifySmartHealthCardParams>(verifySmartHealthCardOperation, req);
+  const credential = readSmartHealthCardCredential(params);
+  const unverifiedPayload = decodeSmartHealthCardPayload(credential);
+  let issuerTrusted: boolean | undefined = undefined;
+  let header: ProtectedHeaderParameters | undefined = undefined;
+  let valid = true;
 
-    return [
-      allOk,
-      makeParameters({
-        valid: true,
-        signatureValid: true,
-        issuerTrusted,
-        verified: issuerTrusted,
-        issuer: payload.iss,
-        keyId: header.kid,
-        fhirBundle: JSON.stringify(payload.vc.credentialSubject.fhirBundle),
-      }),
-    ];
+  try {
+    ({ issuerTrusted } = await verifySmartHealthCardCredential(credential));
+    header = decodeProtectedHeader(credential);
   } catch (err) {
-    return [allOk, makeParameters({ valid: false, error: normalizeErrorString(err) })];
+    getLogger().warn('SMART Health Card validation failed', { err });
+    valid = false;
   }
+
+  return [
+    allOk,
+    makeParameters({
+      valid,
+      issuerTrusted,
+      verified: issuerTrusted,
+      issuer: unverifiedPayload.iss,
+      keyId: header?.kid,
+      fhirBundle: JSON.stringify(unverifiedPayload.vc.credentialSubject.fhirBundle),
+    }),
+  ];
 }
 
+/**
+ * Creates a compressed JWS credential containing the given FHIR Bundle as a SMART Health Card Verifiable Credential.
+ *
+ * @param bundle - FHIR Bundle to embed in the credential subject.
+ * @param issuer - Issuer URL to place in the JWT `iss` claim.
+ * @param exp - Optional expiration time as a NumericDate value in seconds since the Unix epoch.
+ * @returns Compact JWS string for the signed SMART Health Card credential.
+ */
 async function createSmartHealthCardCredential(bundle: Bundle, issuer: string, exp?: number): Promise<string> {
   const key = getSmartHealthCardSigningKey();
   const payload: SmartHealthCardJwt = {
@@ -169,6 +200,12 @@ async function createSmartHealthCardCredential(bundle: Bundle, issuer: string, e
     .sign(key.privateKey);
 }
 
+/**
+ * Verifies a SMART Health Card credential signature and validates the decoded payload claims.
+ *
+ * @param credential - Compact JWS credential to verify.
+ * @returns The decoded SMART Health Card JWT payload and whether the credential came from a trusted issuer.
+ */
 async function verifySmartHealthCardCredential(
   credential: string
 ): Promise<{ payload: SmartHealthCardJwt; issuerTrusted: boolean }> {
@@ -184,6 +221,13 @@ async function verifySmartHealthCardCredential(
   return { payload: jwt, issuerTrusted };
 }
 
+/**
+ * Validates SMART Health Card JWT claims and embedded FHIR metadata.
+ *
+ * @param payload - Decoded SMART Health Card JWT payload to validate.
+ * @param options - Validation options, including whether to require the configured issuer.
+ * @param options.requireTrustedIssuer - When true, requires the JWT `iss` claim to match the configured issuer URL; otherwise, allows any issuer.
+ */
 function validateSmartHealthCardPayload(
   payload: SmartHealthCardJwt,
   options: { requireTrustedIssuer?: boolean } = {}
@@ -209,6 +253,12 @@ function validateSmartHealthCardPayload(
   }
 }
 
+/**
+ * Extracts the compact JWS credential from supported verification input parameters.
+ *
+ * @param params - Verification parameters containing either `credential`, `shcUri`, or SMART Health Card file JSON.
+ * @returns Compact JWS credential string.
+ */
 function readSmartHealthCardCredential(params: VerifySmartHealthCardParams): string {
   if (params.credential) {
     return params.credential;
@@ -226,10 +276,22 @@ function readSmartHealthCardCredential(params: VerifySmartHealthCardParams): str
   throw new Error('Expected credential, shcUri, or file');
 }
 
+/**
+ * Wraps a SMART Health Card credential in the standard file export shape.
+ *
+ * @param credential - Compact JWS credential to include in the file payload.
+ * @returns SMART Health Card file object with a `verifiableCredential` array.
+ */
 function writeSmartHealthCardFile(credential: string): { verifiableCredential: string[] } {
   return { verifiableCredential: [credential] };
 }
 
+/**
+ * Encodes a compact JWS credential as an `shc:/` SMART Health Card URI.
+ *
+ * @param credential - Compact JWS credential to numerically encode.
+ * @returns SMART Health Card URI string.
+ */
 function encodeSmartHealthCardUri(credential: string): string {
   return (
     'shc:/' +
@@ -246,6 +308,12 @@ function encodeSmartHealthCardUri(credential: string): string {
   );
 }
 
+/**
+ * Decodes a SMART Health Card URI or numeric payload back into a compact JWS credential.
+ *
+ * @param uri - `shc:/` URI or bare numeric SMART Health Card encoding.
+ * @returns Compact JWS credential string.
+ */
 function decodeSmartHealthCardUri(uri: string): string {
   const numeric = uri.startsWith('shc:/') ? uri.substring(5) : uri;
   if (!/^\d+$/.test(numeric) || numeric.length % 2 !== 0) {
@@ -258,6 +326,11 @@ function decodeSmartHealthCardUri(uri: string): string {
   return result;
 }
 
+/**
+ * Resolves the local private signing key and key ID for SMART Health Card issuance.
+ *
+ * @returns Private key and `kid` used to sign SMART Health Card credentials.
+ */
 function getSmartHealthCardSigningKey(): SmartHealthCardSigningKey {
   const jwk = getSmartHealthCardSigningJwk();
   return {
@@ -266,6 +339,11 @@ function getSmartHealthCardSigningKey(): SmartHealthCardSigningKey {
   };
 }
 
+/**
+ * Finds the local JWK metadata for the configured SMART Health Card signing algorithm.
+ *
+ * @returns JWK containing the signing key metadata.
+ */
 function getSmartHealthCardSigningJwk(): JWK {
   const jwk = getJwks().keys.find((key) => key.alg === SHC_SIGNING_ALG);
   if (!jwk?.kid) {
@@ -274,6 +352,12 @@ function getSmartHealthCardSigningJwk(): JWK {
   return jwk;
 }
 
+/**
+ * Decodes a SMART Health Card credential payload without verifying its signature.
+ *
+ * @param credential - Compact JWS credential to decode.
+ * @returns Decoded SMART Health Card JWT payload.
+ */
 function decodeSmartHealthCardPayload(credential: string): SmartHealthCardJwt {
   const [headerPart, payloadPart] = credential.split('.');
   if (!headerPart || !payloadPart) {
@@ -285,6 +369,15 @@ function decodeSmartHealthCardPayload(credential: string): SmartHealthCardJwt {
   return JSON.parse(Buffer.from(bytes).toString('utf8')) as SmartHealthCardJwt;
 }
 
+/**
+ * Resolves the public key needed to verify a SMART Health Card credential.
+ *
+ * Uses a matching local JWK when available; otherwise, fetches the issuer JWKS after issuer host validation.
+ *
+ * @param credential - Compact JWS credential whose protected header contains the key ID.
+ * @param issuer - Issuer URL from the unverified credential payload.
+ * @returns Public key and whether the issuer matches the configured local issuer.
+ */
 async function getSmartHealthCardPublicKey(
   credential: string,
   issuer: string
@@ -312,6 +405,12 @@ async function getSmartHealthCardPublicKey(
   return { publicKey: (await importJWK(externalJwk, SHC_SIGNING_ALG)) as KeyLike, issuerTrusted: false };
 }
 
+/**
+ * Fetches external SMART Health Card issuer JWKS from the standard well-known URL.
+ *
+ * @param issuer - External issuer URL to query.
+ * @returns JWK array from the issuer JWKS document.
+ */
 async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
   const issuerUrl = new URL(issuer);
   if (issuerUrl.protocol !== 'https:') {
@@ -329,6 +428,12 @@ async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
   return jwks.keys ?? [];
 }
 
+/**
+ * Checks whether a hostname should be rejected for outbound SMART Health Card JWKS lookup.
+ *
+ * @param hostname - Hostname from an external issuer URL.
+ * @returns True when the hostname is localhost, link-local, loopback, private, or otherwise unsafe.
+ */
 function isUnsafeHostname(hostname: string): boolean {
   const ipVersion = isIP(hostname);
   if (ipVersion === 0) {
