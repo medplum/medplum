@@ -116,13 +116,13 @@ export async function claimSubmitGetHandler(req: FhirRequest): Promise<FhirRespo
  */
 export async function claimSubmitPostHandler(req: FhirRequest): Promise<FhirResponse> {
   // try {
-    const params = parseInputParameters<ClaimSubmitParameters>(operation, req);
-    const claim = params.resource;
+  const params = parseInputParameters<ClaimSubmitParameters>(operation, req);
+  const claim = params.resource;
 
-    if (!claim) {
-      return [badRequest('The resource Claim is required')];
-    }
+  if (!claim) {
+    return [badRequest('The resource Claim is required')];
+  }
 
-    const result = await handleClaimSubmit(req, claim);
-    return result;
+  const result = await handleClaimSubmit(req, claim);
+  return result;
 }
