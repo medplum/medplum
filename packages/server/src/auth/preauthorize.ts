@@ -10,7 +10,7 @@ import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const DEFAULT_PRE_AUTH_CODE_TTL = 60 * 60; // 1 hour
-export const MAX_PRE_AUTH_CODE_TTL = 24 * 60 * 60; // 24 hours
+export const MAX_PRE_AUTH_CODE_TTL = 7 * 24 * 60 * 60; // 7 days
 
 export const preAuthorizeValidator = makeValidationMiddleware([
   body('clientId').isUUID().withMessage('Client ID is required'),

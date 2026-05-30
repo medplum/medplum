@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "mockclient": "tsx src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
-    "test": "jest",
+    "test": "vitest run",
     "valuesets": "tsx src/valuesets.ts"
   },
   "devDependencies": {

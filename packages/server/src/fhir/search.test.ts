@@ -26,6 +26,7 @@ import type {
   Communication,
   Composition,
   Condition,
+  DeviceRequest,
   DiagnosticReport,
   Encounter,
   EvidenceVariable,
@@ -38,6 +39,7 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
+  PractitionerRole,
   Project,
   Provenance,
   Questionnaire,
@@ -5140,6 +5142,96 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v2Cursor}`)
         );
         expect(bundleContains(bundle2, task)).toBeUndefined();
+      }));
+  });
+
+  describe('Reference search bare-id prefix derivation', () => {
+    // Verifies that single-target reference search parameters accept bare ids
+    // (per FHIR R4 §3.1.1.4.12 — the spec defines bare `[id]` as the standard
+    // form and reserves `[type]/[id]` for multi-target params). Prior to the
+    // fix, only the `subject`/`patient` columns were prefixed, so spec-compliant
+    // queries like `DeviceRequest?encounter=<uuid>` silently returned zero.
+    test('Single-target reference param: bare uuid matches (DeviceRequest.encounter)', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const encounter = await repo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'in-progress',
+          class: { code: 'AMB' },
+          subject: createReference(patient),
+        });
+        const deviceRequest = await repo.createResource<DeviceRequest>({
+          resourceType: 'DeviceRequest',
+          status: 'active',
+          intent: 'order',
+          subject: createReference(patient),
+          encounter: createReference(encounter),
+          codeCodeableConcept: { text: 'Test device' },
+        });
+
+        // Bare uuid form (the spec-compliant form for single-target refs).
+        const bareResult = await repo.search(parseSearchRequest(`DeviceRequest?encounter=${encounter.id}`));
+        expect(bareResult.entry).toHaveLength(1);
+        expect(bareResult.entry?.[0]?.resource?.id).toBe(deviceRequest.id);
+
+        // Control: typed-prefix form still works.
+        const typedResult = await repo.search(parseSearchRequest(`DeviceRequest?encounter=Encounter/${encounter.id}`));
+        expect(typedResult.entry).toHaveLength(1);
+        expect(typedResult.entry?.[0]?.resource?.id).toBe(deviceRequest.id);
+      }));
+
+    test('Single-target reference param: bare uuid matches (PractitionerRole.practitioner)', () =>
+      withTestContext(async () => {
+        const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+        const role = await repo.createResource<PractitionerRole>({
+          resourceType: 'PractitionerRole',
+          practitioner: createReference(practitioner),
+        });
+
+        const result = await repo.search(parseSearchRequest(`PractitionerRole?practitioner=${practitioner.id}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toBe(role.id);
+      }));
+
+    test('Single-target reference param on array column: bare uuid matches (Encounter.location)', () =>
+      withTestContext(async () => {
+        const location = await repo.createResource<Location>({ resourceType: 'Location', name: randomUUID() });
+        const encounter = await repo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'in-progress',
+          class: { code: 'AMB' },
+          location: [{ location: createReference(location) }],
+        });
+
+        const result = await repo.search(parseSearchRequest(`Encounter?location=${location.id}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toBe(encounter.id);
+      }));
+
+    test('Back-compat: bare uuid on multi-target subject column still defaults to Patient', () =>
+      withTestContext(async () => {
+        // Observation.subject targets [Patient, Group, Device, Location] — multi-target.
+        // The legacy heuristic prepends `Patient/` for bare values; preserved.
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const observation = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'back-compat probe' },
+          subject: createReference(patient),
+        });
+
+        const result = await repo.search(parseSearchRequest(`Observation?subject=${patient.id}`));
+        expect(result.entry?.some((e) => e.resource?.id === observation.id)).toBe(true);
+      }));
+
+    test('Non-uuid bare value is not rewritten (avoids corrupting unrelated values)', () =>
+      withTestContext(async () => {
+        // Sanity: a value that is neither a uuid nor a typed reference should be
+        // left untouched on a single-target reference column. The search simply
+        // matches nothing — but importantly, it does not throw or get rewritten
+        // into an unintended `Type/not-a-uuid` filter.
+        const result = await repo.search(parseSearchRequest('DeviceRequest?encounter=not-a-uuid'));
+        expect(result.entry ?? []).toHaveLength(0);
       }));
   });
 
