@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, concatUrls, ContentType, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
+import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { base64url, compactDecrypt, CompactEncrypt } from 'jose';
@@ -10,12 +10,12 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { makeOperationDefinition } from './definitions';
+import { makeOperationDefinition, makeParameters } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 const SHL_CONTENT_TYPE_FHIR_JSON = 'application/fhir+json';
-const SHL_PASSCODE_BCRYPT_ROUNDS = 12;
+const SHL_PASSCODE_BCRYPT_ROUNDS = 10;
 
 interface GenerateSmartHealthLinkParams {
   _type?: string;
@@ -260,17 +260,4 @@ function getSmartHealthLinkId(manifestUrl: string): string | undefined {
 
 function hashPasscode(passcode: string): Promise<string> {
   return bcrypt.hash(passcode, SHL_PASSCODE_BCRYPT_ROUNDS);
-}
-
-function makeParameters(values: Record<string, string | boolean | undefined>): Parameters {
-  const parameters: Parameters = { resourceType: 'Parameters', parameter: [] };
-  for (const [name, value] of Object.entries(values)) {
-    if (value === undefined) {
-      continue;
-    }
-    parameters.parameter?.push(
-      typeof value === 'boolean' ? { name, valueBoolean: value } : { name, valueString: value }
-    );
-  }
-  return parameters;
 }

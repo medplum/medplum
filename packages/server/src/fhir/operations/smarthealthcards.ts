@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
+import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
 import type { JWK, KeyLike } from 'jose';
 import { CompactSign, compactVerify, decodeProtectedHeader, importJWK } from 'jose';
 import { isIP } from 'node:net';
@@ -11,14 +11,13 @@ import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getJwks, getSigningKey } from '../../oauth/keys';
-import { makeOperationDefinition } from './definitions';
+import { makeOperationDefinition, makeParameters } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 const SHC_VC_TYPE = ['https://smarthealth.cards#health-card'];
 const FHIR_VERSION = '4.0.1';
 const SHC_SIGNING_ALG = OAuthSigningAlgorithm.ES256;
-const jwksCache = new Map<string, JWK[]>();
 
 interface SmartHealthCardSigningKey {
   privateKey: KeyLike;
@@ -322,18 +321,12 @@ async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
     throw new Error('Unsafe SMART Health Card issuer host');
   }
   const jwksUrl = new URL('/.well-known/jwks.json', issuerUrl);
-  const cached = jwksCache.get(jwksUrl.toString());
-  if (cached) {
-    return cached;
-  }
   const response = await fetch(jwksUrl, { redirect: 'error', signal: AbortSignal.timeout(5000) });
   if (!response.ok) {
     throw new Error(`SMART Health Card issuer JWKS request failed: ${response.status}`);
   }
   const jwks = (await response.json()) as { keys?: JWK[] };
-  const keys = jwks.keys ?? [];
-  jwksCache.set(jwksUrl.toString(), keys);
-  return keys;
+  return jwks.keys ?? [];
 }
 
 function isUnsafeHostname(hostname: string): boolean {
@@ -345,17 +338,4 @@ function isUnsafeHostname(hostname: string): boolean {
     return /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(hostname);
   }
   return hostname === '::1' || hostname.toLowerCase().startsWith('fe80:') || hostname.toLowerCase().startsWith('fc');
-}
-
-function makeParameters(values: Record<string, string | boolean | undefined>): Parameters {
-  const parameters: Parameters = { resourceType: 'Parameters', parameter: [] };
-  for (const [name, value] of Object.entries(values)) {
-    if (value === undefined) {
-      continue;
-    }
-    parameters.parameter?.push(
-      typeof value === 'boolean' ? { name, valueBoolean: value } : { name, valueString: value }
-    );
-  }
-  return parameters;
 }

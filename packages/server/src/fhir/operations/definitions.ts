@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { arrayify, OperationOutcomeError, serverError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import type { Bundle, OperationDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, OperationDefinition, Parameters, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 
 const operationDefinitions = (
   readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition | OperationDefinition>
@@ -73,4 +73,17 @@ function getOperationScopeFlags(
   scope: OperationDefinitionScope['scope']
 ): Pick<OperationDefinition, 'system' | 'type' | 'instance'> {
   return operationScopeFlags[scope];
+}
+
+export function makeParameters(values: Record<string, string | boolean | undefined>): Parameters {
+  const parameters: Parameters = { resourceType: 'Parameters', parameter: [] };
+  for (const [name, value] of Object.entries(values)) {
+    if (value === undefined) {
+      continue;
+    }
+    parameters.parameter?.push(
+      typeof value === 'boolean' ? { name, valueBoolean: value } : { name, valueString: value }
+    );
+  }
+  return parameters;
 }
