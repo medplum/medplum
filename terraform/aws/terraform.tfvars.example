@@ -1,0 +1,139 @@
+# terraform.tfvars.example — copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is excluded from version control (.gitignore) to prevent accidental
+# commit of real credentials. Never commit your actual terraform.tfvars.
+
+# ── Core ──────────────────────────────────────────────────────────────────────
+region             = "us-east-1"
+environment        = "dev"
+deployment_id      = "1"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+app_domain    = "medplum.example.com"
+api_domain    = "api.example.com"
+support_email = "support@example.com"
+
+tags = {
+  app         = "medplum"
+  environment = "dev"
+}
+
+# ── Compute (EKS) ─────────────────────────────────────────────────────────────
+# eks_node_instance_types = ["t3.large"]  # minimum recommended; use m5.large+ for prod
+# eks_node_min_size       = 1
+# eks_node_max_size       = 5             # upper bound for Cluster Autoscaler
+# eks_node_desired_size   = 2             # initial node count; autoscaler adjusts at runtime
+# eks_public_access_cidrs = ["203.0.113.0/32"]  # restrict before production — default is 0.0.0.0/0
+#
+# IAM principals to grant cluster-admin access via EKS Access Entries.
+# The terraform apply principal already has cluster-admin automatically.
+# Add operators, CI roles, or teammates who need kubectl access:
+# eks_admin_arns = [
+#   "arn:aws:iam::123456789012:user/alice",
+#   "arn:aws:iam::123456789012:role/ci-deploy-role",
+# ]
+
+# ── Database (Aurora PostgreSQL) ──────────────────────────────────────────────
+# db_instance_tier = "db.t3.medium"   # use db.r6g.large or larger for production
+# rds_instances    = 1                # set to 2 for a writer + reader in production
+# postgres_version = "15.4"
+#
+# rds_ssl_reject_unauthorized controls whether the Medplum server verifies the
+# Aurora TLS certificate chain. The server container has no RDS CA bundle, so
+# set this to false (dev/test). For production, bundle the RDS CA cert and set true:
+#   https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+rds_ssl_reject_unauthorized = false
+
+# ── Cache (ElastiCache Redis) ─────────────────────────────────────────────────
+# redis_node_type        = "cache.t3.micro"  # use cache.r6g.large+ for production
+# redis_num_cache_nodes  = 1                 # must be >= 2 when environment = "prod"
+# redis_multi_az_enabled = true              # set false only for single-node dev clusters
+
+# ── ACM certificates (required) ───────────────────────────────────────────────
+# All three ACM certificates must be pre-created and provided as ARNs.
+# DNS setup is handled by the Helm chart via external-dns — see charts/README.md.
+#
+# App cert: covers app_domain, must be in us-east-1 (CloudFront requirement).
+# ALB cert: covers api_domain, must be in your deployment region.
+# Storage cert: covers storage_domain, must be in us-east-1. Required when storage_domain is set.
+#
+# To create a certificate: open AWS Certificate Manager → Request a public certificate →
+# enter the domain name → DNS validation → add the CNAME record at your DNS provider →
+# wait for status "Issued" → copy the ARN.
+ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/APP_CERT_ID"
+alb_certificate_arn = "arn:aws:acm:REGION:ACCOUNT:certificate/ALB_CERT_ID"
+
+# ── Storage CDN (dedicated CloudFront for binary uploads) ─────────────────────
+# Enables a dedicated CloudFront distribution for binary storage (presigned URLs).
+# Requires an RSA signing key — generate one with:
+#   openssl genrsa -aes256 -out cf_signing_key.pem 2048
+#   openssl rsa -pubout -in cf_signing_key.pem -out cf_signing_key_pub.pem
+# Then upload the public key to CloudFront and paste the returned key ID below.
+# See README §3a for full walkthrough.
+#
+# storage_domain = "storage.example-aws.example.com"
+# signing_key_id = "APKA..."
+#
+# Paste the RSA private key PEM (from cf_signing_key.pem above) as a heredoc:
+# signing_key = <<-EOT
+#   -----BEGIN RSA PRIVATE KEY-----
+#   MIIEowIBAAKCAQEA...
+#   -----END RSA PRIVATE KEY-----
+# EOT
+# signing_key_passphrase = "your-passphrase-here"
+#
+# storage_ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/STORAGE_CERT_ID"
+
+# ── WAF ───────────────────────────────────────────────────────────────────────
+# enable_waf = true  # default true; set to false to skip WAF (not recommended for production)
+# Optional IP allowlists (CLOUDFRONT-scoped sets must be in us-east-1):
+# api_waf_ip_set_arn     = ""
+# app_waf_ip_set_arn     = ""
+# storage_waf_ip_set_arn = ""
+# The ALB WAF is attached via ingress.wafAclArn in Helm values (terraform output api_waf_arn).
+
+# ── CloudTrail + Alarms ───────────────────────────────────────────────────────
+# Recommended for production compliance. Creates a CloudTrail trail, CloudWatch
+# metric filters, 10 security alarms, and an SNS topic.
+# enable_cloudtrail_alarms = true
+# cloudtrail_alarm_email   = "oncall@example.com"
+
+# ── Bot Lambda ────────────────────────────────────────────────────────────────
+# Leave empty to use the role created by this stack (default).
+# Override only if you need to reuse a pre-existing bot Lambda execution role.
+# bot_lambda_role_arn = ""
+
+# ══ Medplum server config ═════════════════════════════════════════════════════
+# The variables below are written to AWS SSM Parameter Store and read by the
+# Medplum server at startup. After changing any of these, run:
+#   terraform apply && kubectl rollout restart deployment/medplum -n medplum
+
+# ── Authentication ────────────────────────────────────────────────────────────
+# reCAPTCHA — both keys required together. The site key (public) is also baked
+# into the frontend build via packages/app/.env (RECAPTCHA_SITE_KEY).
+# recaptcha_site_key   = "6LeXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# recaptcha_secret_key = "6LeXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Google Sign-In — create OAuth 2.0 credentials at console.cloud.google.com.
+# The client ID also goes into packages/app/.env (GOOGLE_CLIENT_ID) for the frontend.
+# google_client_id     = "123456789-xxxx.apps.googleusercontent.com"
+# google_client_secret = "GOCSPX-xxxxxxxxxxxxxxxxxxxx"
+
+# ── Registration ──────────────────────────────────────────────────────────────
+# register_enabled = true   # set false to disable the /register endpoint in production
+
+# ── Email (AWS SES) ───────────────────────────────────────────────────────────
+# Comma-separated list of approved sender addresses for SES.
+# Leave empty to allow any verified SES identity.
+# approved_sender_emails = "noreply@example.com,support@example.com"
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Comma-separated additional origins beyond appBaseUrl (which is always allowed).
+# Only needed if you have custom apps or tools that call the API from a different origin.
+# allowed_origins = "https://my-custom-app.example.com,https://storybook.example.com"
+
+# ── Logging & audit ───────────────────────────────────────────────────────────
+# log_level         = "INFO"    # NONE | ERROR | WARN | INFO | DEBUG
+# save_audit_events = true      # persist AuditEvent resources to the database
+# log_audit_events  = true      # stream AuditEvents to CloudWatch
+# audit_event_log_group = "/medplum/prod/audit"  # CloudWatch log group name
+# redact_audit_events   = true  # strip patient names/PII from stored AuditEvents

@@ -67,3 +67,17 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Validate dns.* values when dns.enabled = true on AWS.
+*/}}
+{{- define "medplum.validateDns" -}}
+{{- if and .Values.dns.enabled (eq .Values.global.cloudProvider "aws") }}
+{{- if not .Values.dns.zoneId }}
+{{- fail "dns.zoneId is required when dns.enabled = true on AWS" }}
+{{- end }}
+{{- if not .Values.dns.iamRoleArn }}
+{{- fail "dns.iamRoleArn is required when dns.enabled = true on AWS" }}
+{{- end }}
+{{- end }}
+{{- end }}
