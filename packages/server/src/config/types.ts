@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ClientApplication, Project, ProjectSetting } from '@medplum/fhirtypes';
+import type { ClientApplication, IdentityProvider, Project, ProjectSetting } from '@medplum/fhirtypes';
 import type { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -292,7 +292,9 @@ export interface MedplumBullmqConfig {
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
-  readonly userInfoUrl: string;
+  /** @deprecated Use identityProvider.userInfoUrl instead. */
+  readonly userInfoUrl?: string;
+  readonly identityProvider?: IdentityProvider;
 }
 
 export type WorkerName =

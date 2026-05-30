@@ -62,4 +62,14 @@ export interface IdentityProvider {
    * Optional flag to use the subject field instead of the email field.
    */
   useSubject?: boolean;
+
+  /**
+   * External credential field used to identify the user.
+   */
+  identitySource?: 'email' | 'subject' | 'fhir-user';
+
+  /**
+   * Medplum identity mapping target.
+   */
+  identityMappingMode?: 'user-email' | 'user-external-id' | 'project-membership-external-id' | 'project-membership-profile';
 }

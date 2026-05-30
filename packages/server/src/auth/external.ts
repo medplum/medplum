@@ -5,6 +5,7 @@ import {
   concatUrls,
   ContentType,
   encodeBase64,
+  isString,
   OAuthGrantType,
   OAuthTokenAuthMethod,
   OperationOutcomeError,
@@ -30,6 +31,7 @@ import { getDomainConfiguration } from './method';
 
 export interface ExternalAuthState {
   domain?: string;
+  issuer?: string;
   projectId?: string;
   clientId?: string;
   scope?: string;
@@ -39,6 +41,14 @@ export interface ExternalAuthState {
   codeChallengeMethod?: CodeChallengeMethod;
   redirectUri?: string;
   returnTo?: string;
+}
+
+type IdentitySource = NonNullable<IdentityProvider['identitySource']>;
+type IdentityMappingMode = NonNullable<IdentityProvider['identityMappingMode']>;
+
+interface ExternalLoginIdentity {
+  email?: string;
+  externalId?: string;
 }
 
 export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
@@ -75,23 +85,18 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
 
   const userInfo = await verifyExternalCode(idp, code, body.codeChallenge);
 
-  let email: string | undefined = undefined;
-  let externalId: string | undefined = undefined;
-  if (idp.useSubject) {
-    externalId = userInfo.sub as string | undefined;
-    if (!externalId) {
-      sendOutcome(res, badRequest('External token does not contain subject'));
+  let identity: ExternalLoginIdentity;
+  try {
+    identity = await resolveExternalLoginIdentity(idp, userInfo);
+  } catch (err) {
+    if (err instanceof OperationOutcomeError) {
+      sendOutcome(res, err.outcome);
       return;
     }
-  } else {
-    email = (userInfo.email as string | undefined)?.toLowerCase();
-    if (!email) {
-      sendOutcome(res, badRequest('External token does not contain email address'));
-      return;
-    }
+    throw err;
   }
 
-  if (body.domain && !email?.endsWith('@' + body.domain)) {
+  if (body.domain && !identity.email?.endsWith('@' + body.domain)) {
     sendOutcome(res, badRequest('Email address does not match domain'));
     return;
   }
@@ -107,8 +112,8 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
 
   const login = await tryLogin({
     authMethod: 'external',
-    email,
-    externalId,
+    email: identity.email,
+    externalId: identity.externalId,
     projectId,
     clientId: body.clientId,
     scope: body.scope ?? 'openid offline_access',
@@ -194,7 +199,53 @@ async function getIdentityProvider(
     idp = domainConfig.identityProvider;
   }
 
+  if (!idp && state.issuer) {
+    idp = getConfig().externalAuthProviders?.find((provider) => provider.issuer === state.issuer)?.identityProvider;
+  }
+
   return { idp, client };
+}
+
+async function resolveExternalLoginIdentity(
+  idp: IdentityProvider,
+  userInfo: Record<string, unknown>
+): Promise<ExternalLoginIdentity> {
+  const identitySource = getIdentitySource(idp);
+  const identityMappingMode = getIdentityMappingMode(idp);
+
+  if (identitySource === 'email' && identityMappingMode === 'user-email') {
+    let email: string | undefined;
+    if (isString(userInfo.email)) {
+      email = userInfo.email.toLowerCase();
+    }
+    if (!email) {
+      throw new OperationOutcomeError(badRequest('External token does not contain email address'));
+    }
+    return { email };
+  }
+
+  if (identitySource === 'subject' && identityMappingMode === 'project-membership-external-id') {
+    let externalId: string | undefined;
+    if (isString(userInfo.sub)) {
+      externalId = userInfo.sub;
+    }
+    if (!externalId) {
+      throw new OperationOutcomeError(badRequest('External token does not contain subject'));
+    }
+    return { externalId };
+  }
+
+  throw new OperationOutcomeError(badRequest('Unsupported identity provider configuration'));
+}
+
+function getIdentitySource(idp: IdentityProvider): IdentitySource {
+  // Fallback to preserve legacy behavior
+  return idp.identitySource ?? (idp.useSubject ? 'subject' : 'email');
+}
+
+function getIdentityMappingMode(idp: IdentityProvider): IdentityMappingMode {
+  // Fallback to preserve legacy behavior
+  return idp.identityMappingMode ?? (idp.useSubject ? 'project-membership-external-id' : 'user-email');
 }
 
 /**
