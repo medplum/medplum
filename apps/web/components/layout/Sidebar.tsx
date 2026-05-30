@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const nav = [
-  { href: '/agenda', label: 'Agenda', icon: '📅' },
-  { href: '/pacientes', label: 'Pacientes', icon: '👥' },
-  { href: '/evolucoes', label: 'Evoluções', icon: '📝' },
-  { href: '/financeiro', label: 'Financeiro', icon: '💳' },
-  { href: '/configuracoes', label: 'Configurações', icon: '⚙️' },
+  { href: '/schedule', label: 'Agenda', icon: '📅' },
+  { href: '/patients', label: 'Pacientes', icon: '👥' },
+  { href: '/notes', label: 'Evoluções', icon: '📝' },
+  { href: '/billing', label: 'Financeiro', icon: '💳' },
+  { href: '/settings', label: 'Configurações', icon: '⚙️' },
 ];
 
 export function Sidebar() {

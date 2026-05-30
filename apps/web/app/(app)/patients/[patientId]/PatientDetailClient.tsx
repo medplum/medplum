@@ -13,7 +13,7 @@ export function PatientDetailClient({ patient: initial }: { patient: HHPatient }
   return (
     <>
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/pacientes" className="text-slate-400 hover:text-slate-600 text-sm">
+        <Link href="/patients" className="text-slate-400 hover:text-slate-600 text-sm">
           ← Pacientes
         </Link>
       </div>
@@ -56,13 +56,13 @@ export function PatientDetailClient({ patient: initial }: { patient: HHPatient }
       {/* Actions */}
       <div className="grid grid-cols-2 gap-3">
         <Link
-          href={`/agenda?paciente=${patient.id}`}
+          href={`/schedule?patient=${patient.id}`}
           className="bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium py-2.5 rounded-lg text-center transition-colors"
         >
           + Agendar consulta
         </Link>
         <Link
-          href={`/pacientes/${patient.id}/evolucao`}
+          href={`/patients/${patient.id}/notes`}
           className="border border-slate-300 text-slate-700 text-sm font-medium py-2.5 rounded-lg text-center hover:bg-slate-50 transition-colors"
         >
           Ver evoluções

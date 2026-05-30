@@ -9,17 +9,16 @@ const nextConfig: NextConfig = {
     pollIntervalMs: 1000,
   },
   async redirects() {
+    // Backwards-compat: Portuguese URLs → canonical English URLs
     return [
-      // Auth
-      { source: '/signup',   destination: '/cadastro', permanent: false },
-      { source: '/register', destination: '/cadastro', permanent: false },
-      // App pages
-      { source: '/schedule', destination: '/agenda',    permanent: false },
-      { source: '/patients', destination: '/pacientes', permanent: false },
-      { source: '/patients/:id', destination: '/pacientes/:id', permanent: false },
-      { source: '/patients/:id/notes', destination: '/pacientes/:id/evolucao', permanent: false },
-      { source: '/notes',    destination: '/evolucoes', permanent: false },
-      { source: '/billing',  destination: '/financeiro', permanent: false },
+      { source: '/cadastro',            destination: '/signup',                      permanent: true },
+      { source: '/agenda',              destination: '/schedule',                    permanent: true },
+      { source: '/pacientes',           destination: '/patients',                    permanent: true },
+      { source: '/pacientes/:id',       destination: '/patients/:id',               permanent: true },
+      { source: '/pacientes/:id/evolucao', destination: '/patients/:id/notes',      permanent: true },
+      { source: '/evolucoes',           destination: '/notes',                       permanent: true },
+      { source: '/financeiro',          destination: '/billing',                     permanent: true },
+      { source: '/configuracoes',       destination: '/settings',                    permanent: true },
     ];
   },
 };

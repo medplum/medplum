@@ -67,7 +67,7 @@ export function EvolucaoClient({ patientId, patientName }: Props) {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <Link
-          href={`/pacientes/${patientId}`}
+          href={`/patients/${patientId}`}
           className="text-slate-400 hover:text-slate-600 text-sm"
         >
           ← {patientName}

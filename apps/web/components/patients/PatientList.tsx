@@ -76,7 +76,7 @@ export function PatientList({ initial }: { initial: HHPatient[] }) {
           {patients.map(p => (
             <Link
               key={p.id}
-              href={`/pacientes/${p.id}`}
+              href={`/patients/${p.id}`}
               className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors"
             >
               {/* avatar */}

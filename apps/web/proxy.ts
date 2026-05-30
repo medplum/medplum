@@ -10,7 +10,7 @@ export const proxy = auth((req) => {
 
   const isPublic =
     pathname.startsWith('/login') ||
-    pathname.startsWith('/cadastro') ||
+    pathname.startsWith('/signup') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/users') ||
     pathname.startsWith('/api/webhooks');
@@ -21,8 +21,8 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isLoggedIn && (pathname === '/login' || pathname === '/cadastro')) {
-    return NextResponse.redirect(new URL('/agenda', req.nextUrl.origin));
+  if (isLoggedIn && (pathname === '/login' || pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/schedule', req.nextUrl.origin));
   }
 
   return NextResponse.next();
