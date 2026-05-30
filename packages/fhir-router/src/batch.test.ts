@@ -1413,4 +1413,117 @@ describe('Batch', () => {
       resource: undefined,
     });
   });
+
+  describe('Transaction resource type tracking', () => {
+    test('Gathers resource types from transaction entries', async () => {
+      // Pre-create resources so the patch/delete/read entries succeed within the transaction
+      const serviceRequest = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { display: 'Test' },
+      });
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+      });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const spy = vi.spyOn(repo, 'withTransaction');
+      try {
+        const bundle = await processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [
+            {
+              // create: type derived from the route (URL)
+              request: { method: 'POST', url: 'Organization' },
+              resource: { resourceType: 'Organization', name: 'Test Org' },
+            },
+            {
+              // PATCH: type comes from the URL, NOT the Parameters payload
+              request: { method: 'PATCH', url: 'ServiceRequest/' + serviceRequest.id },
+              resource: {
+                resourceType: 'Parameters',
+                parameter: [
+                  {
+                    name: 'operation',
+                    part: [
+                      { name: 'op', valueCode: 'replace' },
+                      { name: 'path', valueString: '/status' },
+                      { name: 'value', valueString: '"completed"' },
+                    ],
+                  },
+                ],
+              },
+            },
+            {
+              // DELETE: no entry.resource at all; type comes from the URL
+              request: { method: 'DELETE', url: 'Observation/' + observation.id },
+            },
+            {
+              // read: no entry.resource; type comes from the URL
+              request: { method: 'GET', url: 'Patient/' + patient.id },
+            },
+          ],
+        });
+
+        expect(bundle.type).toStrictEqual('transaction-response');
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        const { resourceTypes } = spy.mock.calls[0][1];
+        expect(Array.from(resourceTypes).sort()).toStrictEqual([
+          'Observation',
+          'Organization',
+          'Patient',
+          'ServiceRequest',
+        ]);
+        // The PATCH target type is recorded, not the Binary/Parameters payload
+        expect(Array.from(resourceTypes)).not.toContain('Parameters');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    test('De-duplicates repeated resource types', async () => {
+      const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const spy = vi.spyOn(repo, 'withTransaction');
+      try {
+        await processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [
+            { request: { method: 'GET', url: 'Patient/' + patient1.id } },
+            { request: { method: 'GET', url: 'Patient/' + patient2.id } },
+            { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+          ],
+        });
+
+        const { resourceTypes } = spy.mock.calls[0][1];
+        expect(Array.from(resourceTypes)).toStrictEqual(['Patient']);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    test('Skips system-level entries with no resource type', async () => {
+      const spy = vi.spyOn(repo, 'withTransaction');
+      try {
+        // search-system has no resourceType route param, so it is under-reported
+        await processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [{ request: { method: 'GET', url: '?_type=Observation' } }],
+        });
+
+        const { resourceTypes } = spy.mock.calls[0][1];
+        expect(Array.from(resourceTypes)).toStrictEqual([]);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
 });

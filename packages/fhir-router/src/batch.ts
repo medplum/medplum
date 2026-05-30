@@ -19,6 +19,7 @@ import type {
   OperationOutcome,
   ParametersParameter,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -36,6 +37,7 @@ type BundlePreprocessInfo = {
   ordering: number[];
   requiresStrongTransaction: boolean;
   updates: number;
+  resourceTypes: Set<ResourceType>;
 };
 
 /**
@@ -112,7 +114,7 @@ class BatchProcessor {
       (txRepo) => this.withRepo(txRepo, () => this.processBatch(bundleInfo, resultEntries)),
       {
         serializable: bundleInfo.requiresStrongTransaction,
-        resourceTypes: [], // TODO: Determine resource types from bundle
+        resourceTypes: bundleInfo.resourceTypes,
       }
     );
   }
@@ -164,6 +166,7 @@ class BatchProcessor {
       'history-instance': [],
     };
     const seenIdentities = new Set<string>();
+    const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
 
@@ -192,6 +195,17 @@ class BatchProcessor {
           badRequest(`Invalid REST interaction in batch: ${entry.request?.method} ${entry.request?.url}`)
         );
       }
+
+      // Track the resource type touched by this entry, derived from the parsed route.
+      // The URL is used rather than entry.resource since reads/deletes have no resource
+      // and PATCH carries a Binary/Parameters payload instead of the target resource.
+      // System-level interactions (search-system, history-system, nested bundles) have no
+      // resource type and are skipped. GraphQL and custom operations can touch arbitrary
+      // resource types that are not derivable from the URL, so they are under-reported here.
+      const entryResourceType = route?.params?.resourceType as ResourceType | undefined;
+      if (entryResourceType) {
+        resourceTypes.add(entryResourceType);
+      }
       if (interaction === 'create' && entry.request?.ifNoneExist) {
         // Conditional create requires strong (serializable) transaction to
         // guarantee uniqueness of created resource
@@ -218,6 +232,7 @@ class BatchProcessor {
       ordering,
       requiresStrongTransaction,
       updates,
+      resourceTypes,
     };
   }
 
