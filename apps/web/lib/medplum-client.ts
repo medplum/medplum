@@ -25,7 +25,11 @@ async function getServiceToken(): Promise<string> {
   return _token!;
 }
 
-export async function medplumFetch(path: string, init: RequestInit = {}): Promise<Response> {
+export async function medplumFetch(
+  path: string,
+  init: RequestInit = {},
+  projectId?: string,
+): Promise<Response> {
   const token = await getServiceToken();
   return fetch(`${getBase()}${path}`, {
     ...init,
@@ -33,39 +37,65 @@ export async function medplumFetch(path: string, init: RequestInit = {}): Promis
       'Content-Type': 'application/json',
       ...init.headers,
       Authorization: `Bearer ${token}`,
-      'X-Medplum-Project': process.env.MEDPLUM_PROJECT_ID!,
+      'X-Medplum-Project': projectId ?? process.env.MEDPLUM_PROJECT_ID!,
     },
   });
 }
 
-export async function fhirGet<T>(resourceType: string, id: string): Promise<T> {
-  const res = await medplumFetch(`/fhir/R4/${resourceType}/${id}`);
+export async function fhirGet<T>(
+  resourceType: string,
+  id: string,
+  projectId?: string,
+): Promise<T> {
+  const res = await medplumFetch(`/fhir/R4/${resourceType}/${id}`, {}, projectId);
   if (!res.ok) throw new Error(`FHIR GET error: ${res.status}`);
   return res.json();
 }
 
-export async function fhirSearch<T>(resourceType: string, params: Record<string, string>): Promise<T[]> {
-  const qs = new URLSearchParams(params).toString();
-  const res = await medplumFetch(`/fhir/R4/${resourceType}?${qs}`);
+export async function fhirSearch<T>(
+  resourceType: string,
+  params: Record<string, string | string[]>,
+  projectId?: string,
+): Promise<T[]> {
+  const qs = new URLSearchParams();
+  for (const [key, val] of Object.entries(params)) {
+    if (Array.isArray(val)) {
+      val.forEach((v) => qs.append(key, v));
+    } else {
+      qs.append(key, val);
+    }
+  }
+  const res = await medplumFetch(`/fhir/R4/${resourceType}?${qs}`, {}, projectId);
   if (!res.ok) throw new Error(`FHIR search error: ${res.status}`);
   const bundle = await res.json();
   return bundle.entry?.map((e: { resource: T }) => e.resource) ?? [];
 }
 
-export async function fhirCreate<T>(resourceType: string, resource: T): Promise<T> {
-  const res = await medplumFetch(`/fhir/R4/${resourceType}`, {
-    method: 'POST',
-    body: JSON.stringify(resource),
-  });
+export async function fhirCreate<T>(
+  resourceType: string,
+  resource: T,
+  projectId?: string,
+): Promise<T> {
+  const res = await medplumFetch(
+    `/fhir/R4/${resourceType}`,
+    { method: 'POST', body: JSON.stringify(resource) },
+    projectId,
+  );
   if (!res.ok) throw new Error(`FHIR create error: ${res.status}`);
   return res.json();
 }
 
-export async function fhirUpdate<T>(resourceType: string, id: string, resource: T): Promise<T> {
-  const res = await medplumFetch(`/fhir/R4/${resourceType}/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(resource),
-  });
+export async function fhirUpdate<T>(
+  resourceType: string,
+  id: string,
+  resource: T,
+  projectId?: string,
+): Promise<T> {
+  const res = await medplumFetch(
+    `/fhir/R4/${resourceType}/${id}`,
+    { method: 'PUT', body: JSON.stringify(resource) },
+    projectId,
+  );
   if (!res.ok) throw new Error(`FHIR update error: ${res.status}`);
   return res.json();
 }

@@ -2,8 +2,10 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { verifyUser } from '@/lib/users';
 import type { AppUser } from '@/lib/users';
+import { authConfig } from './auth.config';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -12,29 +14,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        return verifyUser(credentials.email as string, credentials.password as string);
+        return verifyUser(credentials.email as string, credentials.password as string) as Promise<AppUser | null>;
       },
     }),
   ],
-
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        const u = user as AppUser;
-        token.practitionerId = u.practitionerId;
-        token.projectId = u.projectId;
-        token.role = u.role;
-      }
-      return token;
-    },
-    session({ session, token }) {
-      session.user.practitionerId = token.practitionerId;
-      session.user.projectId = token.projectId;
-      session.user.role = token.role as string;
-      return session;
-    },
-  },
-
-  pages: { signIn: '/login', error: '/login' },
-  session: { strategy: 'jwt' },
 });
