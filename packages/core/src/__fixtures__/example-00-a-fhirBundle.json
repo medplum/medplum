@@ -9,10 +9,7 @@
         "name": [
           {
             "family": "Anyperson",
-            "given": [
-              "John",
-              "B."
-            ]
+            "given": ["John", "B."]
           }
         ],
         "birthDate": "1951-01-20"
