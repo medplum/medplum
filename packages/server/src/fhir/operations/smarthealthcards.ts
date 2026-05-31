@@ -150,6 +150,7 @@ export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<Fh
   let issuerTrusted: boolean | undefined = undefined;
   let header: ProtectedHeaderParameters | undefined = undefined;
   let valid = true;
+  let error: string | undefined = undefined;
 
   try {
     ({ issuerTrusted } = await verifySmartHealthCardCredential(credential));
@@ -157,6 +158,7 @@ export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<Fh
   } catch (err) {
     getLogger().warn('SMART Health Card validation failed', { err });
     valid = false;
+    error = normalizeErrorString(err);
   }
 
   return [
@@ -168,6 +170,7 @@ export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<Fh
       issuer: unverifiedPayload.iss,
       keyId: header?.kid,
       fhirBundle: JSON.stringify(unverifiedPayload.vc.credentialSubject.fhirBundle),
+      error,
     }),
   ];
 }

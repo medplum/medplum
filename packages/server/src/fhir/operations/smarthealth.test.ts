@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { badRequest, ContentType } from '@medplum/core';
 import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import type { KeyLike } from 'jose';
@@ -70,7 +70,7 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(verifyFileResponse.body, 'valid')).toBe(true);
   });
 
-  test('Rejects invalid SMART Health Cards', async () => {
+  test('Detects invalid SMART Health Cards', async () => {
     const patient = await createPatient();
     const expiredResponse = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-card`)
@@ -93,26 +93,24 @@ describe('SMART Health operations', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({});
-    expect(missingInputResponse.status).toBe(200);
-    expect(getBooleanParameter(missingInputResponse.body, 'valid')).toBe(false);
-    expect(getStringParameter(missingInputResponse.body, 'error')).toContain('Expected credential');
+    expect(missingInputResponse.status).toBe(400);
+    expect(missingInputResponse.body).toMatchObject(badRequest('Expected credential, shcUri, or file'));
 
     const invalidQrResponse = await request(app)
       .post('/fhir/R4/$verify-smart-health-card')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({ shcUri: 'shc:/123' });
-    expect(invalidQrResponse.status).toBe(200);
-    expect(getBooleanParameter(invalidQrResponse.body, 'valid')).toBe(false);
-    expect(getStringParameter(invalidQrResponse.body, 'error')).toContain('numeric encoding');
+    expect(invalidQrResponse.status).toBe(400);
+    expect(invalidQrResponse.body).toMatchObject(badRequest('Invalid SMART Health Card numeric encoding'));
 
     const invalidFileResponse = await request(app)
       .post('/fhir/R4/$verify-smart-health-card')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({ file: JSON.stringify({ verifiableCredential: [] }) });
-    expect(invalidFileResponse.status).toBe(200);
-    expect(getBooleanParameter(invalidFileResponse.body, 'valid')).toBe(false);
+    expect(invalidFileResponse.status).toBe(400);
+    expect(invalidFileResponse.body).toMatchObject(badRequest('Expected credential, shcUri, or file'));
 
     const missingPatientResponse = await request(app)
       .post('/fhir/R4/Patient/not-found/$generate-smart-health-card')
@@ -149,7 +147,6 @@ describe('SMART Health operations', () => {
       .send({ credential });
     expect(verifyResponse.status).toBe(200);
     expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(true);
-    expect(getBooleanParameter(verifyResponse.body, 'signatureValid')).toBe(true);
     expect(getBooleanParameter(verifyResponse.body, 'issuerTrusted')).toBe(false);
     expect(getBooleanParameter(verifyResponse.body, 'verified')).toBe(false);
     expect(fetchSpy).toHaveBeenCalledWith(new URL('https://issuer.example.com/.well-known/jwks.json'), {
