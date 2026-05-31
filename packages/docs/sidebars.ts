@@ -449,6 +449,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/aws-cdk-settings' },
         { type: 'doc', id: 'self-hosting/install-on-gcp' },
         { type: 'doc', id: 'self-hosting/install-on-azure' },
+        { type: 'doc', id: 'self-hosting/install-on-digital-ocean' },
         { type: 'doc', id: 'self-hosting/install-on-ubuntu' },
         { type: 'doc', id: 'self-hosting/install-from-scratch' },
         { type: 'doc', id: 'self-hosting/running-medplum-docker-container' },

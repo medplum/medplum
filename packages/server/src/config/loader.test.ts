@@ -75,6 +75,40 @@ describe('Config', () => {
     expect(getConfig()).toBe(config);
   });
 
+  test('Load database SSL env config', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATABASE_SSL_REQUIRE', 'true');
+    setEnv('MEDPLUM_DATABASE_SSL_REJECT_UNAUTHORIZED', 'true');
+    setEnv('MEDPLUM_DATABASE_SSL_CA', 'DatabaseSslCa');
+
+    const config = await loadConfig('env');
+    expect(config.database.ssl).toStrictEqual({
+      require: true,
+      rejectUnauthorized: true,
+      ca: 'DatabaseSslCa',
+    });
+  });
+
+  test('Load readonly database env config', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_READONLY_DATABASE_HOST', 'readonly.example.com');
+    setEnv('MEDPLUM_READONLY_DATABASE_PORT', '5432');
+    setEnv('MEDPLUM_READONLY_DATABASE_MAX_CONNECTIONS', '5');
+    setEnv('MEDPLUM_READONLY_DATABASE_SSL_REQUIRE', 'true');
+    setEnv('MEDPLUM_READONLY_DATABASE_SSL_REJECT_UNAUTHORIZED', 'false');
+
+    const config = await loadConfig('env');
+    expect(config.readonlyDatabase).toStrictEqual({
+      host: 'readonly.example.com',
+      port: 5432,
+      maxConnections: 5,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    });
+  });
+
   test('Env config ignores non-MEDPLUM_ variables', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('NOT_MEDPLUM_SOMETHING', 'ignored');
