@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Appointment, ClinicalImpression, Encounter, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  ClinicalImpression,
+  Encounter,
+  Patient,
+  Practitioner,
+  Reference,
+  Task,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, renderHook, waitFor } from '@testing-library/react';
