@@ -4,7 +4,7 @@ This guide explains how to model FHIR resources and invoke the Stedi integration
 
 ## Overview
 
-The Stedi integration maps a [Claim](/docs/api/fhir/resources/claim) and related resources into Stedi's [Professional Claims JSON API](https://www.stedi.com/docs/healthcare/api-reference/post-healthcare-claims), submits the claim to the payer, and returns submission metadata. On success, the bot writes Stedi's `correlationId` onto the `Claim` as an identifier you can use for tracking and downstream workflows.
+The Stedi integration maps a [Claim](/docs/api/fhir/resources/claim) and related resources into Stedi's [Professional Claims JSON API](https://www.stedi.com/docs/healthcare/api-reference/post-healthcare-claims), submits the claim to the payer, and returns submission metadata.
 
 This workflow is handled by the **Stedi Professional Claims Bot**. Please [contact the Medplum team](mailto:support@medplum.com) to get access to this bot.
 
@@ -37,7 +37,7 @@ flowchart TD
     Encounter["<div style='text-align: center;'><strong>Encounter</strong></div><u>period.start</u>"]
 
     Claim -->|patient| Patient
-    Claim -->|provider or careTeam.provider| Practitioner
+    Claim -->|provider| Practitioner
     Claim -->|insurance.coverage| Coverage
     Claim -->|item.encounter| Encounter
 
@@ -208,6 +208,246 @@ For each `Claim.item`, the bot chooses a date of service in this order:
 Dates are capped to **today in US Eastern time** so UTC midnight storage does not produce a service date after the payer's transaction date.
 
 Claim-level place of service defaults to `11` (Office) unless `item[0].locationCodeableConcept` specifies a code.
+
+## Example transaction Bundle
+
+The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the `PractitionerRole` that links them, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim`. The values are chosen to pass the validations described above — a checksum-valid NPI, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
+
+POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
+
+:::tip[Billing as an individual]
+To bill under the rendering provider instead, drop the billing `Organization` and `PractitionerRole`, and move the EIN/SSN, `telecom` (phone), and `address` onto the `Practitioner`.
+:::
+
+<details>
+<summary>Example transaction Bundle (organization billing, Stedi test payer)</summary>
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:11111111-1111-4111-8111-111111111111",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "family": "Doe", "given": ["John"] }],
+        "birthDate": "1990-01-15",
+        "gender": "male",
+        "address": [
+          {
+            "line": ["123 Main St"],
+            "city": "Boston",
+            "state": "MA",
+            "postalCode": "02118"
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Patient" }
+    },
+    {
+      "fullUrl": "urn:uuid:22222222-2222-4222-8222-222222222222",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Example Family Practice",
+        "identifier": [
+          { "system": "http://hl7.org/fhir/sid/us-npi", "value": "1999999984" },
+          { "system": "http://hl7.org/fhir/sid/us-ein", "value": "12-3456789" }
+        ],
+        "telecom": [{ "system": "phone", "value": "6175550100" }],
+        "address": [
+          {
+            "line": ["500 Clinic Way"],
+            "city": "Boston",
+            "state": "MA",
+            "postalCode": "02118"
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Organization" }
+    },
+    {
+      "fullUrl": "urn:uuid:33333333-3333-4333-8333-333333333333",
+      "resource": {
+        "resourceType": "Practitioner",
+        "name": [{ "family": "Smith", "given": ["Alice"], "prefix": ["Dr."] }],
+        "identifier": [{ "system": "http://hl7.org/fhir/sid/us-npi", "value": "1234567893" }],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "207Q00000X",
+                  "display": "Family Medicine"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Practitioner" }
+    },
+    {
+      "fullUrl": "urn:uuid:44444444-4444-4444-8444-444444444444",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "practitioner": {
+          "reference": "urn:uuid:33333333-3333-4333-8333-333333333333",
+          "display": "Dr. Alice Smith"
+        },
+        "organization": {
+          "reference": "urn:uuid:22222222-2222-4222-8222-222222222222",
+          "display": "Example Family Practice"
+        }
+      },
+      "request": { "method": "POST", "url": "PractitionerRole" }
+    },
+    {
+      "fullUrl": "urn:uuid:55555555-5555-4555-8555-555555555555",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Stedi Test Payer",
+        "identifier": [
+          { "system": "https://www.stedi.com/healthcare/network", "value": "STEDITEST" }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Organization" }
+    },
+    {
+      "fullUrl": "urn:uuid:66666666-6666-4666-8666-666666666666",
+      "resource": {
+        "resourceType": "Coverage",
+        "status": "active",
+        "subscriberId": "AMBETTER123",
+        "subscriber": {
+          "reference": "urn:uuid:11111111-1111-4111-8111-111111111111",
+          "display": "John Doe"
+        },
+        "beneficiary": {
+          "reference": "urn:uuid:11111111-1111-4111-8111-111111111111",
+          "display": "John Doe"
+        },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self"
+            }
+          ]
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:55555555-5555-4555-8555-555555555555",
+            "display": "Stedi Test Payer"
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Coverage" }
+    },
+    {
+      "fullUrl": "urn:uuid:77777777-7777-4777-8777-777777777777",
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-1111-4111-8111-111111111111",
+          "display": "John Doe"
+        },
+        "period": { "start": "2026-04-01T15:00:00Z", "end": "2026-04-01T15:30:00Z" }
+      },
+      "request": { "method": "POST", "url": "Encounter" }
+    },
+    {
+      "fullUrl": "urn:uuid:88888888-8888-4888-8888-888888888888",
+      "resource": {
+        "resourceType": "Claim",
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "professional"
+            }
+          ]
+        },
+        "use": "claim",
+        "patient": {
+          "reference": "urn:uuid:11111111-1111-4111-8111-111111111111",
+          "display": "John Doe"
+        },
+        "created": "2026-04-01",
+        "provider": {
+          "reference": "urn:uuid:33333333-3333-4333-8333-333333333333",
+          "display": "Dr. Alice Smith"
+        },
+        "priority": { "coding": [{ "code": "normal" }] },
+        "insurance": [
+          {
+            "sequence": 1,
+            "focal": true,
+            "coverage": { "reference": "urn:uuid:66666666-6666-4666-8666-666666666666" }
+          }
+        ],
+        "diagnosis": [
+          {
+            "sequence": 1,
+            "diagnosisCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://hl7.org/fhir/sid/icd-10-cm",
+                  "code": "J06.9",
+                  "display": "Acute upper respiratory infection, unspecified"
+                }
+              ]
+            }
+          }
+        ],
+        "item": [
+          {
+            "sequence": 1,
+            "productOrService": {
+              "coding": [
+                {
+                  "system": "http://www.ama-assn.org/go/cpt",
+                  "code": "99213",
+                  "display": "Office/outpatient visit, established patient"
+                }
+              ]
+            },
+            "servicedDate": "2026-04-01",
+            "unitPrice": { "value": 180, "currency": "USD" },
+            "quantity": { "value": 1 },
+            "diagnosisSequence": [1],
+            "locationCodeableConcept": { "coding": [{ "code": "11" }] },
+            "encounter": [{ "reference": "urn:uuid:77777777-7777-4777-8777-777777777777" }]
+          }
+        ],
+        "total": { "value": 180, "currency": "USD" }
+      },
+      "request": { "method": "POST", "url": "Claim" }
+    }
+  ]
+}
+```
+
+</details>
 
 ## Executing the claim submission
 
