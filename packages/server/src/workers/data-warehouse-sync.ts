@@ -48,6 +48,7 @@ export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
   globalLogger.info('Data warehouse sync is enabled', {
     destination: syncConfig.destination,
     cron: syncConfig.cron,
+    startDate: syncConfig.startDate,
   });
 }
 
