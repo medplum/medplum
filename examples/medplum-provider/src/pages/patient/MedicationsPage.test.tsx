@@ -228,4 +228,40 @@ describe('MedicationsPage', () => {
       expect(executeBotSpy).toHaveBeenCalledTimes(3);
     });
   });
+
+  test('Re-opening a pending order from the details panel opens the full chart/queue iframe (issue #9300)', async () => {
+    const medplum = new MockClient();
+    const draftOrder: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'mr-queued',
+      status: 'draft',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Crestor 10 mg tablet' },
+      identifier: [{ system: 'https://scriptsure.com/pending-order-id', value: '8888' }],
+      extension: [{ url: 'https://scriptsure.com/pending-order-status', valueCode: 'queued' }],
+    };
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, [draftOrder]));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+      url: 'https://ssu.scriptsure.com/chart/253312/prescriptions?sessiontoken=abc',
+    });
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-queued?status=draft`, medplum);
+
+    const openButton = await screen.findByRole('button', { name: /Open in ScriptSure/i });
+    await act(async () => {
+      fireEvent.click(openButton);
+    });
+
+    // Re-open must hit the ScriptSure iframe (chart/queue) bot, NOT re-invoke the
+    // single-order widget via the $order-medication operation.
+    await waitFor(() => {
+      expect(executeBotSpy).toHaveBeenCalledWith(
+        { system: 'https://www.medplum.com/bots', value: 'scriptsure-iframe-bot' },
+        { patientId: HomerSimpson.id }
+      );
+    });
+    expect(await screen.findByText('ScriptSure prescriptions')).toBeInTheDocument();
+  });
 });
