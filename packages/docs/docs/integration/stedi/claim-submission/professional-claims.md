@@ -18,31 +18,31 @@ The bot reads the `Claim` you submit and follows references to gather patient, p
 
 ```mermaid
 flowchart TD
-    Claim["<div style='text-align: center;'><strong>Claim</strong></div>"]
+    Claim["<div style='text-align: center;'><strong>Claim</strong></div><u>item</u>: service lines<br><u>diagnosis</u>: ICD-10"]
 
-    Patient["<div style='text-align: center;'><strong>Patient</strong></div>"]
+    Patient["<div style='text-align: center;'><strong>Patient</strong></div><u>name</u>, <u>birthDate</u>, <u>gender</u><br><u>address</u>"]
 
-    Practitioner["<div style='text-align: center;'><strong>Practitioner</strong></div><u>identifier</u>: NPI<br><u>qualification</u>: taxonomy"]
+    Practitioner["<div style='text-align: center;'><strong>Practitioner</strong> (rendering)</div><u>identifier</u>: NPI<br><u>qualification</u>: taxonomy<br><u>identifier</u>: EIN/SSN*<br><u>telecom</u>: phone*, <u>address</u>*"]
 
-    PractitionerRole["<div style='text-align: center;'><strong>PractitionerRole</strong></div>"]
+    PractitionerRole["<div style='text-align: center;'><strong>PractitionerRole</strong></div><em>(optional — org billing)</em>"]
 
-    BillingOrg["<div style='text-align: center;'><strong>Organization (Billing)</strong></div><u>identifier</u>: EIN, NPI"]
+    BillingOrg["<div style='text-align: center;'><strong>Organization (Billing)</strong></div><em>(optional — org billing)</em><br><u>name</u>, <u>identifier</u>: EIN<br><u>identifier</u>: NPI<br><u>telecom</u>: phone, <u>address</u>"]
 
-    Coverage["<div style='text-align: center;'><strong>Coverage</strong></div><u>subscriberId</u>"]
+    Coverage["<div style='text-align: center;'><strong>Coverage</strong></div><u>subscriberId</u>, <u>relationship</u>"]
 
-    Subscriber["<div style='text-align: center;'><strong>Patient (Subscriber)</strong></div>"]
+    Subscriber["<div style='text-align: center;'><strong>Patient (Subscriber)</strong></div><u>name</u>, <u>birthDate</u>, <u>gender</u>"]
 
-    PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><u>identifier</u>: Stedi payer ID"]
+    PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><u>name</u><br><u>identifier</u>: Stedi payer ID"]
 
-    Encounter["<div style='text-align: center;'><strong>Encounter</strong></div>"]
+    Encounter["<div style='text-align: center;'><strong>Encounter</strong></div><u>period.start</u>"]
 
     Claim -->|patient| Patient
     Claim -->|provider or careTeam.provider| Practitioner
     Claim -->|insurance.coverage| Coverage
     Claim -->|item.encounter| Encounter
 
-    PractitionerRole -->|practitioner| Practitioner
-    PractitionerRole -->|organization| BillingOrg
+    PractitionerRole -.->|practitioner| Practitioner
+    PractitionerRole -.->|organization| BillingOrg
 
     Coverage -->|payor| PayerOrg
     Coverage -->|subscriber| Subscriber
@@ -61,7 +61,18 @@ flowchart TD
     class Practitioner,PractitionerRole,Encounter provider
 ```
 
-The bot resolves the billing organization by searching for a `PractitionerRole` where `practitioner` matches the rendering provider and reading `organization` from the first result.
+\* On the rendering `Practitioner`, the EIN/SSN, phone, and address are required **only when billing as an individual** (no billing `Organization`). The dashed `PractitionerRole` → `Organization (Billing)` path is used only for organization billing.
+
+The bot resolves the billing organization by searching for a `PractitionerRole` where `practitioner` matches the rendering provider and reading `organization` from the **first** result. If the practitioner has multiple roles, make sure the billing one is returned first (or is the only role). When no such role exists, the bot bills under the rendering practitioner directly.
+
+### Billing as an organization vs. an individual
+
+The 837P always requires a **billing provider**. You can bill either way:
+
+- **As an organization** (most common for clinics): create an `Organization` with an NPI, Tax ID (EIN), address, and phone, and link it to the rendering `Practitioner` via a `PractitionerRole`. The claim is billed under the organization.
+- **As an individual provider**: omit the `PractitionerRole`/`Organization`. The bot then bills under the `Practitioner` directly, which means the practitioner must carry the billing data itself — NPI, a tax identifier (**EIN or SSN**), an address, and a phone.
+
+The required fields below note which apply to each case.
 
 ## Project secrets
 
@@ -103,17 +114,22 @@ Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims
 | `name.given[0]`, `name.family` | Patient name | Yes |
 | `birthDate` | Date of birth | Yes when patient is the subscriber, or when patient is a dependent |
 | `gender` | Administrative gender | Yes when patient is a dependent |
-| `address` | Mailing address | Recommended |
+| `address` | Mailing address | Yes — used for the `subscriber`/`dependent` address, and as the **billing provider address fallback** when billing as an individual with no organization address (Stedi rejects claims missing `billing.address`) |
 
 ### Practitioner (rendering provider)
 
 | Field | Description | Required |
 |-------|-------------|----------|
-| `identifier` | System `http://hl7.org/fhir/sid/us-npi` | Yes |
-| `qualification.code.coding` | System `http://nucc.org/provider-taxonomy` (taxonomy code) | Yes |
+| `identifier` | System `http://hl7.org/fhir/sid/us-npi` — must be a **valid 10-digit NPI** (passes the NPI checksum). The payer rejects invalid NPIs such as `1234567890`. | Yes |
+| `qualification.code.coding` | System `http://nucc.org/provider-taxonomy` (taxonomy code, read from `qualification[0]`) | Yes |
 | `name.given[0]`, `name.family` | Provider name | Yes |
+| `identifier` | Tax ID — system `http://hl7.org/fhir/sid/us-ein` (EIN) or `http://hl7.org/fhir/sid/us-ssn` (SSN) | Yes **when billing as an individual** (no billing org). EIN takes precedence; the 837P treats EIN and SSN as mutually exclusive |
+| `telecom` | Phone (`system: phone`) | Yes **when billing as an individual** — used as the submitter phone (see [phone format rules](#common-rejections-and-troubleshooting)) |
+| `address` | Provider address | Used as the billing address fallback when no org address is present |
 
 ### PractitionerRole
+
+Only required when billing under an organization. Omit it to bill under the individual practitioner.
 
 | Field | Description | Required |
 |-------|-------------|----------|
@@ -122,13 +138,15 @@ Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims
 
 ### Organization (billing provider)
 
+Required when billing as an organization. The bot **throws if a billing `Organization` exists but has no EIN**.
+
 | Field | Description | Required |
 |-------|-------------|----------|
 | `name` | Billing provider name | Yes |
-| `identifier` | System `http://hl7.org/fhir/sid/us-ein` (Tax ID) | Yes |
-| `identifier` | System `http://hl7.org/fhir/sid/us-npi` | No (falls back to practitioner NPI) |
-| `telecom` | Phone (`system: phone`) | Recommended |
-| `address` | Billing address (9-digit ZIP preferred) | Recommended |
+| `identifier` | System `http://hl7.org/fhir/sid/us-ein` (Tax ID / EIN) | Yes |
+| `identifier` | System `http://hl7.org/fhir/sid/us-npi` (valid 10-digit NPI) | No (falls back to practitioner NPI) |
+| `telecom` | Phone (`system: phone`) — submitter phone; must satisfy NANP rules (see [troubleshooting](#common-rejections-and-troubleshooting)) | Yes |
+| `address` | Billing address — Stedi **requires** `billing.address`; the bot uses the org address, then falls back to the patient address. 5-digit ZIPs are padded to 9 digits | Yes |
 
 ### Coverage
 
@@ -235,15 +253,36 @@ Use this identifier to correlate the Medplum claim with Stedi claim status, ackn
 
 ### Errors
 
-If submission fails, the bot sets `Claim.status` to `error` and appends an extension:
+If submission fails, the bot sets `Claim.status` to `error` and appends two extensions to the `Claim`, then **re-throws** so the `$execute` operation also fails:
 
-| Extension | Value |
-|-----------|-------|
-| `url` | `https://stedi.com/integration-status` |
-| `valueString` | `error` |
-| `valueDateTime` | Timestamp of the failure |
+| Extension `url` | Value |
+|-----------------|-------|
+| `https://stedi.com/integration-status` | `valueString: error`, `valueDateTime`: timestamp |
+| `https://www.stedi.com/fhir/StructureDefinition/claim-submission-error` | `valueString`: Stedi's full JSON response body (or the error message when the failure is local), `valueDateTime`: timestamp |
 
-The operation then fails with the underlying error (for example, missing payer ID, missing taxonomy code, or Stedi validation errors).
+The prior submission-error extension is removed on each attempt, so a resubmission does not accumulate stale errors.
+
+When Stedi returns a non-2xx response, the thrown error and the persisted `claim-submission-error` extension include Stedi's complete response body — including the `errors[]` array with X12 status codes and human-readable descriptions — so you can see exactly which field the payer or clearinghouse rejected.
+
+## Common rejections and troubleshooting
+
+Most failures are caused by missing or malformed FHIR data. The bot validates some of these up front (failing fast with a clear message); others come back from Stedi or the payer as a `400` with an `errors[]` array.
+
+| Error / message | Cause | Fix |
+|-----------------|-------|-----|
+| `Missing NPI on both billing organization and practitioner` | No `us-npi` identifier on the billing org or rendering practitioner | Add a valid 10-digit NPI identifier |
+| `Provider … missing required taxonomy code` | No `http://nucc.org/provider-taxonomy` coding on `Practitioner.qualification[0]` | Add a qualification with the provider's NUCC taxonomy code (e.g. `207Q00000X` for Family Medicine) |
+| `Missing required field: billing.address` | No address resolvable for the billing provider | Add an `address` to the billing `Organization`, or to the `Patient` (used as fallback when billing as an individual) |
+| `Missing required field: ssn or employerId required for billing provider` | Billing as an individual without a tax identifier | Add an EIN (`us-ein`) or SSN (`us-ssn`) identifier to the `Practitioner`, or bill under an `Organization` with an EIN |
+| `Billing organization … is missing a Tax ID (EIN)` | A billing `Organization` exists but has no `us-ein` identifier | Add a `us-ein` identifier to the org |
+| `Invalid NPI. The Billing Provider NPI of … is invalid` | NPI fails the NPI checksum (e.g. `1234567890`) | Use a real, valid 10-digit NPI |
+| `Invalid Telephone number … must not begin with 0 or 1` | Submitter phone violates NANP rules | Provide a 10-digit phone where **both** the area code (1st digit) **and** the exchange (4th digit) are `2`–`9` (e.g. `6175550100`). The bot validates this when present |
+| `Submitter is missing a valid 10-digit phone number` | No valid phone on the billing org or practitioner | Add a valid `phone` telecom (see rule above) |
+| Payer rejects member / subscriber | `Coverage.subscriberId` does not match the payer's records, or the member ID belongs to a different payer than `tradingPartnerServiceId` | Verify the member ID and that the payer `Organization` Stedi payer ID matches the member's plan |
+
+:::tip[Phone number format]
+X12/NANP forbids both the **area code** and the **exchange** (the 4th digit) from starting with `0` or `1`. For example `6171234567` is invalid because the exchange `123` starts with `1`; `6175550100` is valid.
+:::
 
 ## Test claims
 
@@ -254,23 +293,6 @@ To submit a **test** claim end-to-end (including test 277CA and 835 ERA from the
 3. Use a **production** Stedi claims API key enrolled for your billing provider.
 
 See Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) for enrollment and example payloads.
-
-## FHIR to Stedi mapping reference
-
-| FHIR | Stedi field |
-|------|-------------|
-| Payer `Organization.identifier` | `tradingPartnerServiceId` |
-| Payer `Organization.name` | `tradingPartnerName` |
-| `STEDI_CLAIM_TEST_MODE` | `usageIndicator` (`T` or `P`) |
-| Billing org / practitioner | `billing`, `submitter` |
-| Practitioner | `rendering` |
-| `Coverage.subscriberId` | `subscriber.memberId` |
-| Subscriber / dependent patients | `subscriber`, `dependent` |
-| `Claim.diagnosis` | `claimInformation.healthCareCodeInformation` |
-| `Claim.item` | `claimInformation.serviceLines` |
-| Sum of line charges | `claimInformation.claimChargeAmount` |
-
-ICD-10 codes are normalized for X12: periods are removed, and 3-character category codes receive a trailing `0` subcategory digit.
 
 ## Limitations and roadmap
 
