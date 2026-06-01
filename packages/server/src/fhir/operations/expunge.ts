@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
+import {
+  accepted,
+  AccessPolicyInteraction,
+  allOk,
+  concatUrls,
+  forbidden,
+  getResourceTypes,
+  Operator,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
@@ -25,8 +33,10 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   const { everything } = req.query;
   if (resourceType === 'Project' || everything === 'true') {
-    // Only super admins can expunge a projects other than the current project
-    if (!ctx.project.superAdmin && id !== ctx.project.id) {
+    // Only super admins can expunge a project other than the current project.
+    // For non-Project resources, the project-scoped repo restricts the compartment
+    // search to the caller's own project, so project admins can safely expunge within it.
+    if (resourceType === 'Project' && !ctx.project.superAdmin && id !== ctx.project.id) {
       return [forbidden];
     }
     const { baseUrl } = getConfig();
@@ -63,6 +73,13 @@ export class Expunger {
 
   async expungeByResourceType(resourceType: ResourceType): Promise<void> {
     if (resourceType === 'Binary') {
+      return;
+    }
+
+    // Skip resource types the repository is not allowed to search (e.g. protected
+    // resource types such as Login/JsonWebKey/DomainConfiguration for non-super-admins).
+    // Otherwise the search below throws "forbidden" and aborts the entire expunge job.
+    if (!this.repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)) {
       return;
     }
 
