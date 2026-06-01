@@ -455,5 +455,7 @@ function isUnsafeHostname(hostname: string): boolean {
   if (ipVersion === 4) {
     return /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(ipHostname);
   }
-  return ipHostname === '::1' || ipHostname.startsWith('fe80:') || ipHostname.startsWith('fc') || ipHostname.startsWith('fd');
+  return (
+    ipHostname === '::1' || ipHostname.startsWith('fe80:') || ipHostname.startsWith('fc') || ipHostname.startsWith('fd')
+  );
 }
