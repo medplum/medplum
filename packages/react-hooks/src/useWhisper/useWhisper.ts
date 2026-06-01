@@ -65,17 +65,8 @@ export function useWhisper({
   const audioStreamRef = useRef<MediaStream | undefined>(undefined);
   const audioContextRef = useRef<AudioContext | undefined>(undefined);
   const audioProcessorRef = useRef<AudioWorkletNode | undefined>(undefined);
-  // startingCaptureRef guards against a double-start: startAudioCapture now awaits the worklet
-  // module load, so two near-simultaneous triggers (e.g. a session.updated landing while the
-  // mic promise resolves) could both pass the "already capturing" check before either has set
-  // audioProcessorRef. This single-flight flag closes that window.
   const startingCaptureRef = useRef(false);
-  // sessionReadyRef stays true across stop/start so a warm connection can be reused; it is
-  // only reset when the socket (re)opens or the connection is fully closed.
   const sessionReadyRef = useRef(false);
-  // capturingRef is true between a user start() and stop(); it gates auto-starting capture
-  // so a stray session.updated (e.g. from a background reconnect while idle) never reopens
-  // the mic on its own.
   const capturingRef = useRef(false);
 
   // Stop capturing audio and release the microphone, but leave the WebSocket + OpenAI
@@ -92,7 +83,6 @@ export function useWhisper({
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = undefined;
 
-    // Keep the connection warm if it is still open; otherwise report disconnected.
     setStatus(websocketRef.current ? 'idle' : 'disconnected');
   }, []);
 
@@ -297,13 +287,7 @@ export function useWhisper({
     websocketRef.current = websocket;
 
     websocket.onopen = () => {
-      // Re-authenticate on every (re)open: ReconnectingWebSocket reconnects after a drop
-      // (e.g. OpenAI session expiry) but does not replay messages, so the connect handshake
-      // must be sent here. A fresh access token is read each time.
       sessionReadyRef.current = false;
-      // Only surface connection progress while the user is actively starting capture. A
-      // background reconnect while idle must NOT flip the UI into a "connecting" state, or
-      // the mic button gets stuck on a disabled spinner that never resolves.
       if (capturingRef.current) {
         setStatus('connected');
       } else {
@@ -326,12 +310,8 @@ export function useWhisper({
       closeConnection();
       setStatus('error');
     };
-    // A transient close is left to ReconnectingWebSocket to recover from (onopen re-runs the
-    // handshake). Skip if we intentionally closed (websocketRef already cleared). While idle,
-    // stay 'idle' rather than entering a connecting-class state.
+
     websocket.onclose = () => {
-      // The session is gone once the socket drops; require a fresh session.updated (sent
-      // after onopen re-handshakes) before capture can start again.
       sessionReadyRef.current = false;
       if (!websocketRef.current) {
         return; // intentional closeConnection(); status already set
