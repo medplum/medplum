@@ -10,9 +10,9 @@ import type {
   ValueSet,
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
 import { r4ProjectId } from '../../../constants';
 import type { Repository } from '../../repo';
+import type { PgClientLike } from '../../sql';
 import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -22,7 +22,7 @@ export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelec
 export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
 export async function findTerminologyResource<T extends TerminologyResource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   resourceType: T['resourceType'],
   url: string,
   options?: {
@@ -183,7 +183,7 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
 }
 
 export async function resolveProperty(
-  db: Pool | PoolClient,
+  db: PgClientLike,
   codeSystem: WithId<CodeSystem>,
   property: CodeSystemProperty
 ): Promise<WithId<CodeSystemProperty> | undefined> {

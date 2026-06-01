@@ -5,6 +5,7 @@ import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { getPresignedUrl } from '../storage/loader';
 import type { Repository } from './repo';
+import type { PgClientLike } from './sql';
 
 /**
  * The target type of the attachment rewrite.
@@ -42,7 +43,7 @@ export type RewriteMode = (typeof RewriteMode)[keyof typeof RewriteMode];
  * @param input - The input value (object, array, or primitive).
  * @returns The rewritten value.
  */
-export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository, input: T): Promise<T> {
+export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository<PgClientLike>, input: T): Promise<T> {
   return new Rewriter(mode, repo).rewriteValue(input);
 }
 
@@ -53,9 +54,9 @@ export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository,
 class Rewriter {
   readonly cache: Record<string, string> = {};
   private readonly mode: RewriteMode;
-  private readonly repo: Repository;
+  private readonly repo: Repository<PgClientLike>;
 
-  constructor(mode: RewriteMode, repo: Repository) {
+  constructor(mode: RewriteMode, repo: Repository<PgClientLike>) {
     this.mode = mode;
     this.repo = repo;
   }

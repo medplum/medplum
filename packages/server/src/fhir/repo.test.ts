@@ -1499,7 +1499,7 @@ describe('FHIR Repo', () => {
 
     await expect(
       repo.withTransaction(async (txRepo) => {
-        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER) as unknown as PoolClient;
         querySpy = jest.spyOn(client, 'query').mockImplementation(() => {
           // Simulates a session killed by idle_in_transaction_session_timeout: every query
           // issued on the client — including the ROLLBACK the error handler sends — rejects.
@@ -2064,10 +2064,14 @@ describe('FHIR Repo', () => {
         const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
         const querySpy = jest.spyOn(client, 'query');
         await txRepo.createResource(patient);
-        const calls = querySpy.mock.calls;
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
+        const calls = querySpy.mock.calls as unknown[][];
+        expect(calls.filter((c) => typeof c[0] === 'string' && c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
+        expect(
+          calls.filter((c) => typeof c[0] === 'string' && c[0].includes('INSERT INTO "Patient_History"'))
+        ).toHaveLength(1);
+        expect(
+          calls.filter((c) => typeof c[0] === 'string' && c[0].includes('INSERT INTO "Patient_References"')).length
+        ).toBeGreaterThanOrEqual(2);
         querySpy.mockRestore();
         finishedTransaction = true;
       });

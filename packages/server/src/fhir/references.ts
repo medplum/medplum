@@ -17,6 +17,7 @@ import {
 import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repo';
+import type { PgClientLike } from './sql';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation
@@ -34,7 +35,7 @@ import type { Repository } from './repo';
 const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project', 'ProjectMembership.user'];
 
 async function validateReferences(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   references: TypedValueWithPath[],
   issues: OperationOutcomeIssue[]
 ): Promise<void> {
@@ -95,7 +96,10 @@ export function collectReferences(resource: Resource): Record<string, TypedValue
   return collector.getReferences();
 }
 
-export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
+export async function validateResourceReferences<T extends Resource>(
+  repo: Repository<PgClientLike>,
+  resource: T
+): Promise<void> {
   const references = collectReferences(resource);
   const userReferences: TypedValueWithPath[] = [];
   const systemReferences: TypedValueWithPath[] = [];
@@ -122,7 +126,7 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
 }
 
 async function resolveReplacementReference(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   reference: Reference | undefined,
   path: string
 ): Promise<Reference | undefined> {
@@ -146,7 +150,10 @@ async function resolveReplacementReference(
   return createReference(matches[0]);
 }
 
-export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
+export async function replaceConditionalReferences<T extends Resource>(
+  repo: Repository<PgClientLike>,
+  resource: T
+): Promise<T> {
   await crawlTypedValueAsync(
     toTypedValue(resource),
     {

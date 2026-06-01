@@ -54,7 +54,7 @@ import type { Repository } from './repo';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
-import type { Expression, Operator as SQL } from './sql';
+import type { Expression, PgClientLike, Operator as SQL } from './sql';
 import {
   ArraySubquery,
   Column,
@@ -119,7 +119,7 @@ interface ChainedSearchParameter {
 export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
 
 export async function searchImpl<T extends Resource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequest<T>,
   options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
@@ -150,7 +150,7 @@ export async function searchImpl<T extends Resource>(
 }
 
 export async function searchByReferenceImpl<T extends Resource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequest<T>,
   referenceField: string,
   referenceValues: string[]
@@ -244,7 +244,7 @@ function applyCountAndOffsetLimits<T extends Resource>(
  * @param repo - The user's repository.
  * @param searchRequest - The incoming search request.
  */
-function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequest): void {
+function validateSearchResourceTypes(repo: Repository<PgClientLike>, searchRequest: SearchRequest): void {
   if (searchRequest.types) {
     for (const resourceType of searchRequest.types) {
       validateSearchResourceType(repo, resourceType);
@@ -265,7 +265,7 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
  * @param repo - The user's repository.
  * @param resourceType - The resource type to validate.
  */
-function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
+function validateSearchResourceType(repo: Repository<PgClientLike>, resourceType: ResourceType): void {
   validateResourceType(resourceType);
   if (resourceType === 'Binary') {
     throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
@@ -281,7 +281,7 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
 }
 
 export function getSelectQueryForSearch<T extends Resource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequest<T>,
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
@@ -318,7 +318,7 @@ export function getSelectQueryForSearch<T extends Resource>(
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
@@ -399,7 +399,7 @@ interface GetBaseSelectQueryOptions {
   maxResourceVersion?: number;
 }
 function getBaseSelectQuery(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
@@ -421,7 +421,7 @@ function getBaseSelectQuery(
 }
 
 function getBaseSelectQueryForResourceType(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
@@ -453,7 +453,7 @@ function getBaseSelectQueryForResourceType(
   return builder;
 }
 
-function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
+function removeResourceFields(resource: Resource, repo: Repository<PgClientLike>, searchRequest: SearchRequest): void {
   repo.removeHiddenFields(resource);
   if (searchRequest.fields) {
     const schema = getDataType(resource.resourceType);
@@ -484,7 +484,7 @@ function removeResourceFields(resource: Resource, repo: Repository, searchReques
  * @param entries - The output bundle entries.
  */
 async function getExtraEntries<T extends Resource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequest<T>,
   resources: T[],
   entries: BundleEntry[]
@@ -535,7 +535,7 @@ async function getExtraEntries<T extends Resource>(
  * @returns The bundle entries for the included resources.
  */
 async function getSearchIncludeEntries(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   include: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
@@ -600,7 +600,7 @@ async function getSearchIncludeEntries(
  * @returns The bundle entries for the reverse included resources.
  */
 async function getSearchRevIncludeEntries(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   revInclude: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
@@ -848,7 +848,7 @@ export interface GetCountOptions {
  * @returns The count result with estimate and optionally accurate count.
  */
 export async function getCount(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   searchRequest: SearchRequest,
   options?: GetCountOptions
 ): Promise<CountResult> {
@@ -886,7 +886,7 @@ export async function getCount(
  * @param searchRequest - The search request.
  * @returns The total number of matching results.
  */
-async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
+async function getAccurateCount(repo: Repository<PgClientLike>, searchRequest: SearchRequest): Promise<number> {
   const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
 
   if (builder.joins.length > 0) {
@@ -907,7 +907,7 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * @param searchRequest - The search request.
  * @returns The total number of matching results.
  */
-async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
+async function getEstimateCount(repo: Repository<PgClientLike>, searchRequest: SearchRequest): Promise<number> {
   const builder = getBaseSelectQuery(repo, searchRequest);
   builder.explain = true;
 
@@ -952,7 +952,7 @@ export function clampEstimateCount(searchRequest: SearchRequest, estimateCount: 
  * @param searchRequest - The search request.
  */
 function addSearchFilters(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
@@ -968,7 +968,7 @@ export function isChainedSearchFilter(filter: Filter): boolean {
 }
 
 export function buildSearchExpression(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
@@ -997,7 +997,7 @@ export function buildSearchExpression(
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -1128,7 +1128,7 @@ function buildNormalSearchFilterExpression(
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -1218,7 +1218,7 @@ function trySpecialSearchParameter(
 }
 
 function buildFilterParameterExpression(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -1236,7 +1236,7 @@ function buildFilterParameterExpression(
 }
 
 function buildFilterParameterConnective(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -1250,7 +1250,7 @@ function buildFilterParameterConnective(
 }
 
 function buildFilterParameterComparison(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -1564,7 +1564,7 @@ function buildQuantitySearchFilter(
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  */
-function addSortRules(repo: Repository, builder: SelectQuery, searchRequest: SearchRequest): void {
+function addSortRules(repo: Repository<PgClientLike>, builder: SelectQuery, searchRequest: SearchRequest): void {
   for (const sortRule of searchRequest.sortRules ?? EMPTY) {
     addOrderByClause(repo, builder, searchRequest, sortRule);
   }
@@ -1578,7 +1578,7 @@ function addSortRules(repo: Repository, builder: SelectQuery, searchRequest: Sea
  * @param sortRule - The sort rule.
  */
 function addOrderByClause(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   builder: SelectQuery,
   searchRequest: SearchRequest,
   sortRule: SortRule
@@ -1667,7 +1667,7 @@ function buildCondition(
 }
 
 function buildChainedSearch(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
@@ -1703,7 +1703,7 @@ function buildChainedSearch(
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   selectQuery: SelectQuery,
   param: ChainedSearchParameter
 ): Expression {

@@ -17,6 +17,7 @@ import { validateResourceWithJsonSchema } from '../jsonschema';
 import { findTerminologyResource } from '../operations/utils/terminology';
 import { validateCodingInValueSet } from '../operations/valuesetvalidatecode';
 import type { Repository } from '../repo';
+import type { PgClientLike } from '../sql';
 import { cacheProfile, getCachedProfile } from './profile-cache';
 
 /**
@@ -28,7 +29,7 @@ import { cacheProfile, getCachedProfile } from './profile-cache';
  * @param repo - The repository to use for validation.
  * @param resource - The candidate resource to validate.
  */
-export async function validateRepositoryResource(repo: Repository, resource: Resource): Promise<void> {
+export async function validateRepositoryResource(repo: Repository<PgClientLike>, resource: Resource): Promise<void> {
   if (repo.getConfig().strictMode) {
     await validateRepositoryResourceStrictly(repo, resource);
   } else {
@@ -47,7 +48,10 @@ export async function validateRepositoryResource(repo: Repository, resource: Res
   }
 }
 
-export async function validateRepositoryResourceStrictly(repo: Repository, resource: Resource): Promise<void> {
+export async function validateRepositoryResourceStrictly(
+  repo: Repository<PgClientLike>,
+  resource: Resource
+): Promise<void> {
   const logger = getLogger();
   const start = process.hrtime.bigint();
   const context = repo.getConfig();
@@ -93,7 +97,7 @@ export async function validateRepositoryResourceStrictly(repo: Repository, resou
 }
 
 async function validateProfiles(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   resource: Resource,
   profileUrls: string[],
   options?: ValidatorOptions
@@ -123,7 +127,7 @@ async function validateProfiles(
 }
 
 async function validateTerminology(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   tokens: Record<string, TypedValueWithPath[]>,
   issues: OperationOutcomeIssue[]
 ): Promise<void> {
@@ -175,7 +179,7 @@ async function validateTerminology(
   }
 }
 
-async function loadProfile(repo: Repository, url: string): Promise<StructureDefinition | undefined> {
+async function loadProfile(repo: Repository<PgClientLike>, url: string): Promise<StructureDefinition | undefined> {
   const context = repo.getConfig();
   // Profile fetching/caching should be pushed to a lower level of Repository; as it is, if `repo` has an
   // AccessPolicy on StructureDefinition hiding fields (that would be a strange choice, but possible), then caching

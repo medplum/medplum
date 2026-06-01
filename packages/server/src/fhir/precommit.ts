@@ -21,6 +21,7 @@ import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
 import type { Repository } from './repo';
+import type { PgClientLike } from './sql';
 import { SelectQuery } from './sql';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';
@@ -38,7 +39,7 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
  * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
 export async function preCommitValidation<T extends Resource>(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   resource: WithId<T>,
   interaction: BackgroundJobInteraction
 ): Promise<T | boolean | undefined> {
@@ -173,7 +174,7 @@ function getTargetResourceTypes(element: InternalSchemaElement | undefined): Res
  * @param resource - The resource to be deleted.
  * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
  */
-async function checkReferencesForDelete(repo: Repository, resource: WithId<Resource>): Promise<void> {
+async function checkReferencesForDelete(repo: Repository<PgClientLike>, resource: WithId<Resource>): Promise<void> {
   const db = repo.getDatabaseClient(DatabaseMode.WRITER);
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')

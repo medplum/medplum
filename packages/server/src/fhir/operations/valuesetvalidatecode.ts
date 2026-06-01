@@ -15,6 +15,7 @@ import type {
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import type { Repository } from '../repo';
+import type { PgClientLike } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { hydrateCodeSystemProperties } from './expand';
@@ -77,7 +78,7 @@ export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirR
 }
 
 export async function validateCodingInValueSet(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   valueSet: ValueSet,
   codings: Coding[]
 ): Promise<Coding | undefined> {
@@ -102,7 +103,7 @@ export async function validateCodingInValueSet(
 }
 
 async function findIncludedCode(
-  repo: Repository,
+  repo: Repository<PgClientLike>,
   include: ValueSetComposeInclude,
   ...codings: Coding[]
 ): Promise<Coding | undefined> {
