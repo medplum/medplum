@@ -99,7 +99,7 @@ export async function claimSubmitGetHandler(req: FhirRequest): Promise<FhirRespo
   }
 
   const claim = await repo.readResource<Claim>('Claim', claimId);
-  const result = await handleClaimSubmit(req, claim);
+  return handleClaimSubmit(req, claim);
   return result;
 }
 
