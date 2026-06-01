@@ -398,6 +398,30 @@ describe('Bundle tests', () => {
         expect(entry.request?.method).toBe('POST');
       }
     });
+
+    test('SMART Health Card style references', () => {
+      // Source: https://build.fhir.org/ig/HL7/smart-health-cards-and-links/example-00-a-fhirBundle.json
+      const smartHealthExamplePath = join(
+        dirname(fileURLToPath(import.meta.url)),
+        '__fixtures__',
+        'example-00-a-fhirBundle.json'
+      );
+      const bundle = JSON.parse(readFileSync(smartHealthExamplePath, 'utf8')) as Bundle;
+      const transactionBundle = convertToTransactionBundle(bundle);
+      expect(transactionBundle.resourceType).toBe('Bundle');
+      expect(transactionBundle.type).toBe('transaction');
+      expect(transactionBundle.entry?.length).toBeGreaterThan(0);
+
+      const patientEntry = transactionBundle.entry?.find((e) => e.resource?.resourceType === 'Patient');
+      const immunizations =
+        transactionBundle.entry
+          ?.filter((e) => e.resource?.resourceType === 'Immunization')
+          .map((e) => e.resource as any) ?? [];
+
+      for (const immunization of immunizations) {
+        expect(immunization.patient?.reference).toBe(patientEntry?.fullUrl);
+      }
+    });
   });
 
   describe('convertContainedResourcesToBundle', () => {

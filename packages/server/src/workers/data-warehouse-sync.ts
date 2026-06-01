@@ -206,7 +206,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     throw new Error(errors.join('; '));
   }
 
-  const { namespace } = syncConfig;
+  const { namespace, startDate } = syncConfig;
 
   // Fallback to the writer database when readonly is not configured.
   // For RDS Proxy, set host and ssl.require on the database config directly.
@@ -227,6 +227,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     database,
     destination,
     namespace,
+    startDate,
     warehouseSources,
   };
 }
