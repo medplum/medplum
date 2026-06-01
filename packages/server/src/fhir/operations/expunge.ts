@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { accepted, AccessPolicyInteraction, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
+import {
+  accepted,
+  AccessPolicyInteraction,
+  allOk,
+  concatUrls,
+  forbidden,
+  getResourceTypes,
+  Operator,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
