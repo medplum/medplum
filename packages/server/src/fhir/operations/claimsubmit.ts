@@ -100,7 +100,6 @@ export async function claimSubmitGetHandler(req: FhirRequest): Promise<FhirRespo
 
   const claim = await repo.readResource<Claim>('Claim', claimId);
   return handleClaimSubmit(req, claim);
-  return result;
 }
 
 /**
@@ -122,6 +121,5 @@ export async function claimSubmitPostHandler(req: FhirRequest): Promise<FhirResp
     return [badRequest('The resource Claim is required')];
   }
 
-  const result = await handleClaimSubmit(req, claim);
-  return result;
+  return handleClaimSubmit(req, claim);
 }
