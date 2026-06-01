@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "medplum.fullname" . }}-config
+data:
+  # Server configuration
+  {{- with .Values.config.server }}
+  MEDPLUM_BASE_URL: {{ .baseUrl | required "baseUrl is required" | quote }}
+  MEDPLUM_PORT: {{ .port | quote }}
+  MEDPLUM_APP_BASE_URL: {{ .appBaseUrl | quote }}
+  MEDPLUM_BINARY_STORAGE: {{ .binaryStorage | quote }}
+  MEDPLUM_STORAGE_BASE_URL: {{ .storageBaseUrl | quote }}
+  MEDPLUM_SIGNING_KEY_ID: {{ .signingKeyId | quote }}
+  MEDPLUM_SUPPORT_EMAIL: {{ .supportEmail | quote }}
+  MEDPLUM_GOOGLE_CLIENT_ID: {{ .googleClientId | quote }}
+  MEDPLUM_RECAPTCHA_SITE_KEY: {{ .recaptchaSiteKey | quote }}
+  MEDPLUM_MAX_JSON_SIZE: {{ .maxJsonSize | quote }}
+  MEDPLUM_MAX_BATCH_SIZE: {{ .maxBatchSize | quote }}
+  MEDPLUM_VM_CONTEXT_BOTS_ENABLED: {{ .vmContextBotsEnabled | quote }}
+  MEDPLUM_DEFAULT_BOT_RUNTIME_VERSION: {{ .defaultBotRuntimeVersion | quote }}
+  MEDPLUM_ALLOWED_ORIGINS: {{ .allowedOrigins | quote }}
+  MEDPLUM_INTROSPECTION_ENABLED: {{ .introspectionEnabled | quote }}
+  {{- end }}
+
+  # Database configuration
+  {{- with .Values.config.database }}
+  MEDPLUM_DATABASE_HOST: {{ .host | quote }}
+  MEDPLUM_DATABASE_PORT: {{ .port | quote }}
+  MEDPLUM_DATABASE_DBNAME: {{ .dbname | quote }}
+  MEDPLUM_DATABASE_USERNAME: {{ .username | quote }}
+  {{- end }}
+
+  # Redis configuration
+  {{- with .Values.config.redis }}
+  MEDPLUM_REDIS_HOST: {{ .host | quote }}
+  MEDPLUM_REDIS_PORT: {{ .port | quote }}
+  {{- end }}
+
+  # Fission
+  {{- with .Values.config.fission }}
+  MEDPLUM_FISSION_NAMESPACE: {{ .namespace | quote }}
+  MEDPLUM_FISSION_ROUTER_HOST: {{ .routerHost | quote }}
+  MEDPLUM_FISSION_ROUTER_PORT: {{ .routerPort | quote }}
+  MEDPLUM_FISSION_ENVIRONMENT_NAME: {{ .environmentName | quote }}
+  MEDPLUM_FISSION_FIELD_MANAGER: {{ .fieldManager | quote }}
+  {{- end }}
