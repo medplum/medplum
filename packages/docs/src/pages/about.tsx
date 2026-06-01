@@ -103,7 +103,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Derrick Farris"
               title="Founding Engineer"
-              imgUrl="/img/people/derrickfarris.webp"
+              imgUrl="/img/people/derrick.webp"
               linkedInUrl="https://www.linkedin.com/in/derrickfarris/"
               githubUrl="https://github.com/ThatOneBro"
             />
@@ -119,7 +119,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Ian Plunkett"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/ianplunkett.webp"
+              imgUrl="/img/people/ian.webp"
               linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
               githubUrl="https://github.com/ianplunkett"
             />
@@ -133,7 +133,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Finn Bergquist"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/finnbergquist.webp"
+              imgUrl="/img/people/finn.webp"
               linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
               githubUrl="https://github.com/finnbergquist"
             />
@@ -142,14 +142,14 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Maddy Li"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/maddyli.webp"
+              imgUrl="/img/people/maddy.webp"
               linkedInUrl="https://www.linkedin.com/in/maddy-li/"
               githubUrl="https://github.com/maddyli"
             />
             <ProfileCard
               name="Kevin Shaw"
               title="Product Designer"
-              imgUrl="/img/people/kevinwadeshaw.webp"
+              imgUrl="/img/people/kevin.webp"
               linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
               githubUrl="https://github.com/kevinwadeshaw"
             />
@@ -165,21 +165,21 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Darren Eam"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/darreneam.webp"
+              imgUrl="/img/people/darren.webp"
               linkedInUrl="https://www.linkedin.com/in/darren-eam/"
               githubUrl="https://github.com/deam65"
             />
             <ProfileCard
               name="Noah Silas"
               title="Staff Software Engineer"
-              imgUrl="/img/people/noahsilas.webp"
+              imgUrl="/img/people/noah.webp"
               linkedInUrl="https://www.linkedin.com/in/noahsilas"
               githubUrl="https://github.com/noahsilas"
             />
             <ProfileCard
               name="Everett Williams"
               title="Deployment Strategist"
-              imgUrl="/img/people/everettwilliams.webp"
+              imgUrl="/img/people/everett.webp"
               linkedInUrl="https://www.linkedin.com/in/everetttwilliams/"
               githubUrl="https://github.com/everett-williams"
             />
@@ -188,7 +188,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Alex Lin"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/alexlin.webp"
+              imgUrl="/img/people/alex.webp"
               linkedInUrl="https://www.linkedin.com/in/alexanderxlin/"
               githubUrl="https://github.com/alexanderxlin"
             />
