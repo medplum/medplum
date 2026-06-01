@@ -303,6 +303,15 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(invalidUriResponse.body, 'valid')).toBe(false);
     expect(getStringParameter(invalidUriResponse.body, 'error')).toContain('Invalid SMART Health Link URI');
 
+    const nonStringShlinkResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: 123 });
+    expect(nonStringShlinkResponse.status).toBe(200);
+    expect(getBooleanParameter(nonStringShlinkResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(nonStringShlinkResponse.body, 'error')).toContain('Expected shlink to be a string');
+
     const invalidPayloadResponse = await request(app)
       .post('/fhir/R4/$resolve-smart-health-link')
       .set('Authorization', 'Bearer ' + accessToken)

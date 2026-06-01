@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, concatUrls, ContentType, normalizeErrorString } from '@medplum/core';
+import { allOk, badRequest, concatUrls, ContentType, isString, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
@@ -144,7 +144,10 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
 export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<FhirResponse> {
   try {
     const params = parseInputParameters<ResolveSmartHealthLinkParams>(resolveSmartHealthLinkOperation, req);
-    const result = await resolveGeneratedSmartHealthLink(params.shlink as string, params.passcode);
+    if (!isString(params.shlink)) {
+      throw new Error('Expected shlink to be a string');
+    }
+    const result = await resolveGeneratedSmartHealthLink(params.shlink, params.passcode);
     return [
       allOk,
       makeParameters({
