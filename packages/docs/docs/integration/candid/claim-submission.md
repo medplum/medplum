@@ -187,7 +187,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
 :::
 
 <details>
-<summary>Example transaction Bundle (for creating all required resources)</summary>
+<summary>Example transaction Bundle</summary>
 
 ```json
 {
@@ -195,23 +195,46 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:patient-1",
+      "fullUrl": "urn:uuid:billing-org",
+      "resource": {
+        "resourceType": "Organization",
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization"]
+        },
+        "identifier": [
+          { "system": "http://hl7.org/fhir/sid/us-npi", "value": "1234567890" },
+          { "system": "http://hl7.org/fhir/sid/us-ein", "value": "12-3456789" }
+        ],
+        "name": "Test Medical Practice LLC",
+        "type": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/organization-type", "code": "prov", "display": "Healthcare Provider" }] }],
+        "address": [{ "use": "work", "line": ["456 Medical Center Drive", "Suite 100"], "city": "Boston", "state": "MA", "postalCode": "02101" }]
+      },
+      "request": { "method": "POST", "url": "Organization", "ifNoneExist": "identifier=http://hl7.org/fhir/sid/us-npi|1234567890" }
+    },
+    {
+      "fullUrl": "urn:uuid:patient",
       "resource": {
         "resourceType": "Patient",
-        "identifier": [{ "system": "http://hospital.example.org/patients", "value": "PAT-12345" }],
-        "name": [{ "use": "official", "family": "Smith", "given": ["John", "Michael"] }],
-        "gender": "male",
-        "birthDate": "1985-03-15",
-        "address": [{ "use": "home", "line": ["123 Main Street"], "city": "New York", "state": "NY", "postalCode": "10001" }]
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-patient"]
+        },
+        "identifier": [{ "system": "http://hospital.example.org/patients", "value": "PAT-TEST-001" }],
+        "name": [{ "use": "official", "family": "TestPatient", "given": ["Jane", "Marie"] }],
+        "gender": "female",
+        "birthDate": "1990-07-22",
+        "address": [{ "use": "home", "line": ["789 Oak Avenue", "Apt 2A"], "city": "Cambridge", "state": "MA", "postalCode": "02139" }]
       },
       "request": { "method": "POST", "url": "Patient" }
     },
     {
-      "fullUrl": "urn:uuid:practitioner-1",
+      "fullUrl": "urn:uuid:practitioner",
       "resource": {
         "resourceType": "Practitioner",
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner"]
+        },
         "identifier": [{ "system": "http://hl7.org/fhir/sid/us-npi", "value": "1234567890" }],
-        "name": [{ "use": "official", "family": "Johnson", "given": ["Sarah"], "prefix": ["Dr."] }],
+        "name": [{ "use": "official", "family": "Johnson", "given": ["Sarah", "M"], "prefix": ["Dr."] }],
         "qualification": [
           {
             "code": {
@@ -220,113 +243,108 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
           }
         ]
       },
-      "request": { "method": "POST", "url": "Practitioner" }
+      "request": { "method": "POST", "url": "Practitioner", "ifNoneExist": "identifier=http://hl7.org/fhir/sid/us-npi|1234567890" }
     },
     {
-      "fullUrl": "urn:uuid:organization-billing",
-      "resource": {
-        "resourceType": "Organization",
-        "name": "Example Medical Group",
-        "identifier": [
-          { "system": "http://hl7.org/fhir/sid/us-npi", "value": "9876543210" },
-          { "system": "http://hl7.org/fhir/sid/us-ein", "value": "12-3456789" }
-        ],
-        "address": [{ "line": ["456 Medical Center Drive"], "city": "New York", "state": "NY", "postalCode": "10002" }]
-      },
-      "request": { "method": "POST", "url": "Organization" }
-    },
-    {
-      "fullUrl": "urn:uuid:practitioner-role-1",
+      "fullUrl": "urn:uuid:practitioner-role",
       "resource": {
         "resourceType": "PractitionerRole",
-        "practitioner": { "reference": "urn:uuid:practitioner-1" },
-        "organization": { "reference": "urn:uuid:organization-billing" }
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner-role"]
+        },
+        "practitioner": { "reference": "urn:uuid:practitioner" },
+        "organization": { "reference": "urn:uuid:billing-org" }
       },
       "request": { "method": "POST", "url": "PractitionerRole" }
     },
     {
-      "fullUrl": "urn:uuid:organization-payer",
+      "fullUrl": "urn:uuid:payer-org",
       "resource": {
         "resourceType": "Organization",
-        "name": "Blue Cross Blue Shield",
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-payer-organization"]
+        },
         "identifier": [{ "system": "https://www.cms.gov/payer-id", "value": "13162" }],
+        "name": "1199SEIU Family of Funds",
         "type": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/organization-type", "code": "ins", "display": "Insurance Company" }] }]
       },
-      "request": { "method": "POST", "url": "Organization" }
+      "request": { "method": "POST", "url": "Organization", "ifNoneExist": "identifier=https://www.cms.gov/payer-id|13162" }
     },
     {
-      "fullUrl": "urn:uuid:coverage-1",
+      "fullUrl": "urn:uuid:coverage",
       "resource": {
         "resourceType": "Coverage",
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-coverage"]
+        },
         "status": "active",
-        "subscriber": { "reference": "urn:uuid:patient-1" },
-        "subscriberId": "MEM123456789",
-        "beneficiary": { "reference": "urn:uuid:patient-1" },
+        "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "HIP", "display": "Health Insurance Plan Policy" }] },
+        "subscriber": { "reference": "urn:uuid:patient" },
+        "subscriberId": "MEM-TEST-001",
+        "beneficiary": { "reference": "urn:uuid:patient" },
         "relationship": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship", "code": "self", "display": "Self" }] },
-        "period": { "start": "2024-01-01", "end": "2024-12-31" },
-        "payor": [{ "reference": "urn:uuid:organization-payer" }],
-        "class": [{ "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/coverage-class", "code": "group" }] }, "value": "GRP-ABC123" }]
+        "payor": [{ "reference": "urn:uuid:payer-org" }],
+        "class": [{ "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/coverage-class", "code": "group" }] }, "value": "GRP-TEST-123", "name": "Test Employer Group" }]
       },
       "request": { "method": "POST", "url": "Coverage" }
     },
     {
-      "fullUrl": "urn:uuid:encounter-1",
+      "fullUrl": "urn:uuid:encounter",
       "resource": {
         "resourceType": "Encounter",
-        "identifier": [{ "system": "http://hospital.example.org/encounters", "value": "ENC-2024-06-15-001" }],
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-encounter"]
+        },
+        "identifier": [{ "system": "http://hospital.example.org/encounters", "value": "ENC-TEST-001" }],
         "status": "finished",
         "class": { "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB", "display": "ambulatory" },
-        "subject": { "reference": "urn:uuid:patient-1" },
-        "participant": [{ "individual": { "reference": "urn:uuid:practitioner-1" } }],
-        "period": { "start": "2024-06-15T09:00:00Z", "end": "2024-06-15T09:30:00Z" }
+        "type": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "185349003", "display": "Office visit" }] }],
+        "subject": { "reference": "urn:uuid:patient" },
+        "participant": [{ "individual": { "reference": "urn:uuid:practitioner" } }],
+        "period": { "start": "2025-01-15", "end": "2025-01-15" }
       },
       "request": { "method": "POST", "url": "Encounter" }
     },
     {
-      "fullUrl": "urn:uuid:claim-1",
+      "fullUrl": "urn:uuid:claim",
       "resource": {
         "resourceType": "Claim",
+        "meta": {
+          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-claim"]
+        },
         "status": "active",
         "use": "claim",
-        "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional" }] },
-        "patient": { "reference": "urn:uuid:patient-1" },
-        "created": "2024-06-15T10:00:00Z",
-        "provider": { "reference": "urn:uuid:practitioner-1" },
+        "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional", "display": "Professional" }] },
+        "patient": { "reference": "urn:uuid:patient" },
+        "created": "2025-01-15T10:00:00Z",
+        "provider": { "reference": "urn:uuid:practitioner" },
         "priority": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/processpriority", "code": "normal" }] },
-        "insurance": [{ "sequence": 1, "focal": true, "coverage": { "reference": "urn:uuid:coverage-1" } }],
+        "insurance": [{ "sequence": 1, "focal": true, "coverage": { "reference": "urn:uuid:coverage" } }],
         "diagnosis": [
           {
             "sequence": 1,
-            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "I10", "display": "Essential (primary) hypertension" }] }
+            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "J06.9", "display": "Acute upper respiratory infection, unspecified" }] },
+            "type": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/ex-diagnosistype", "code": "principal" }] }]
           },
           {
             "sequence": 2,
-            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9", "display": "Type 2 diabetes mellitus without complications" }] }
+            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "R05.9", "display": "Cough, unspecified" }] }
           }
         ],
         "item": [
           {
             "sequence": 1,
-            "productOrService": { "coding": [{ "system": "http://www.ama-assn.org/go/cpt", "code": "99213", "display": "Office or other outpatient visit, established patient, low complexity" }] },
-            "servicedDate": "2024-06-15",
+            "diagnosisSequence": [1, 2],
+            "productOrService": { "coding": [{ "system": "http://www.ama-assn.org/go/cpt", "code": "99213", "display": "Office visit, established patient, low complexity" }] },
+            "servicedDate": "2025-01-15",
             "locationCodeableConcept": { "coding": [{ "system": "https://www.cms.gov/Medicare/Coding/place-of-service-codes", "code": "11", "display": "Office" }] },
             "quantity": { "value": 1 },
-            "unitPrice": { "value": 150.00, "currency": "USD" },
-            "encounter": [{ "reference": "urn:uuid:encounter-1" }],
-            "diagnosisSequence": [1, 2]
-          },
-          {
-            "sequence": 2,
-            "productOrService": { "coding": [{ "system": "http://www.ama-assn.org/go/cpt", "code": "36415", "display": "Collection of venous blood by venipuncture" }] },
-            "servicedDate": "2024-06-15",
-            "locationCodeableConcept": { "coding": [{ "system": "https://www.cms.gov/Medicare/Coding/place-of-service-codes", "code": "11", "display": "Office" }] },
-            "quantity": { "value": 1 },
-            "unitPrice": { "value": 25.00, "currency": "USD" },
-            "encounter": [{ "reference": "urn:uuid:encounter-1" }],
-            "diagnosisSequence": [2]
+            "unitPrice": { "value": 125.00, "currency": "USD" },
+            "net": { "value": 125.00, "currency": "USD" },
+            "encounter": [{ "reference": "urn:uuid:encounter" }]
           }
         ],
-        "total": { "value": 175.00, "currency": "USD" }
+        "total": { "value": 125.00, "currency": "USD" }
       },
       "request": { "method": "POST", "url": "Claim" }
     }
