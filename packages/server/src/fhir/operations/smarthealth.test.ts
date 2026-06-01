@@ -172,6 +172,32 @@ describe('SMART Health operations', () => {
     expect(getStringParameter(insecureVerifyResponse.body, 'error')).toContain('HTTPS');
   });
 
+  test('Rejects SMART Health Card issuer hosts with private IPv6 addresses', async () => {
+    const { privateKey } = await generateKeyPair('ES256');
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected fetch'));
+
+    for (const issuer of ['https://[fd12:3456::1]', 'https://[fc00::1]']) {
+      const credential = await createSmartHealthCardCredential({
+        issuer,
+        keyId: 'private-ipv6-key',
+        privateKey,
+        bundle: { resourceType: 'Bundle', type: 'collection' },
+      });
+
+      const verifyResponse = await request(app)
+        .post('/fhir/R4/$verify-smart-health-card')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({ credential });
+      expect(verifyResponse.status).toBe(200);
+      expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(false);
+      expect(getStringParameter(verifyResponse.body, 'error')).toContain('Unsafe SMART Health Card issuer host');
+    }
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
   test('Generate manifest and resolve SMART Health Link', async () => {
     const patient = await createPatient();
 

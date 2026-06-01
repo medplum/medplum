@@ -438,12 +438,17 @@ async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
  * @returns True when the hostname is localhost, link-local, loopback, private, or otherwise unsafe.
  */
 function isUnsafeHostname(hostname: string): boolean {
-  const ipVersion = isIP(hostname);
+  const normalizedHostname = hostname.toLowerCase();
+  const ipHostname =
+    normalizedHostname.startsWith('[') && normalizedHostname.endsWith(']')
+      ? normalizedHostname.slice(1, -1)
+      : normalizedHostname;
+  const ipVersion = isIP(ipHostname);
   if (ipVersion === 0) {
-    return ['localhost', 'localhost.localdomain'].includes(hostname.toLowerCase());
+    return ['localhost', 'localhost.localdomain'].includes(normalizedHostname);
   }
   if (ipVersion === 4) {
-    return /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(hostname);
+    return /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(ipHostname);
   }
-  return hostname === '::1' || hostname.toLowerCase().startsWith('fe80:') || hostname.toLowerCase().startsWith('fc');
+  return ipHostname === '::1' || ipHostname.startsWith('fe80:') || ipHostname.startsWith('fc') || ipHostname.startsWith('fd');
 }
