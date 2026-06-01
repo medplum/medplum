@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   badRequest,
+  createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   getExtensionValue,
@@ -15,6 +16,7 @@ import {
 } from '@medplum/core';
 import type {
   Appointment,
+  Bundle,
   CodeableConcept,
   HealthcareService,
   Reference,
@@ -599,4 +601,43 @@ export async function validateAllAvailability(
       )
     );
   }
+}
+
+export async function createProposedAppointment(
+  repo: Repository,
+  proposedAppointment: WithPath<Appointment>,
+  customizer: (appointment: Appointment, slots: Slot[]) => void
+): Promise<Bundle<Appointment | Slot>> {
+  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
+    repo,
+    proposedAppointment
+  );
+
+  // We will write this attribute later, check that we aren't clobbering something that was submitted
+  if (appointment.slot) {
+    throw new OperationOutcomeError(
+      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
+    );
+  }
+
+  customizer(appointment, slots);
+
+  const createdResources = await repo.withTransaction(
+    async () => {
+      await validateAllAvailability(repo, slots, healthcareService, schedulingParametersGroup);
+      const createdSlots = await Promise.all(slots.map((slot) => repo.createResource<Slot>(slot)));
+      const createdAppointment = await repo.createResource<Appointment>({
+        ...appointment,
+        slot: createdSlots.map((slot) => createReference(slot)),
+      });
+      return [createdAppointment, ...createdSlots];
+    },
+    { serializable: true }
+  );
+
+  return {
+    resourceType: 'Bundle',
+    type: 'transaction-response',
+    entry: createdResources.map((resource) => ({ resource })),
+  };
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchParameterDetails } from '@medplum/core';
-import { capitalize, getSearchParameterDetails } from '@medplum/core';
+import { capitalize, getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
@@ -23,6 +23,19 @@ export const SearchStrategies = {
 export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.COLUMN;
   readonly columnName: string;
+  /**
+   * For literal (non-canonical) reference search parameters that resolve to
+   * exactly one target resource type on this resource, the name of that
+   * target type (e.g. `Encounter` for `DeviceRequest.encounter`).
+   *
+   * Derived from the resource's element definition target profiles when the
+   * global SearchParameter has multiple targets but the element narrows to one.
+   * Pre-computed at impl build time so that {@link buildReferenceSearchFilter}
+   * can prepend a `Type/` prefix to spec-compliant bare-id search values
+   * without re-reading the SearchParameter for every query. Undefined for
+   * multi-target references, canonical references, and non-reference params.
+   */
+  readonly singleTargetType?: ResourceType;
 }
 
 export interface LookupTableSearchParameterImplementation extends SearchParameterDetails {
@@ -159,6 +172,13 @@ function buildSearchParameterImplementation(
   const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
   writeable.searchStrategy = 'column';
   writeable.columnName = convertCodeToColumnName(code);
+  if (
+    searchParam.type === 'reference' &&
+    impl.type !== SearchParameterType.CANONICAL &&
+    impl.referenceTargetTypes?.length === 1
+  ) {
+    writeable.singleTargetType = impl.referenceTargetTypes[0];
+  }
 
   return impl;
 }

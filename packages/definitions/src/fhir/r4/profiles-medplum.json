@@ -5369,6 +5369,42 @@
             }
           },
           {
+            "id" : "IdentityProvider.userInfoMode",
+            "path" : "IdentityProvider.userInfoMode",
+            "short" : "Optional userinfo mode. Defaults to standard OIDC userinfo semantics.",
+            "definition" : "Optional userinfo mode. Defaults to standard OIDC userinfo semantics.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode|4.0.1"
+            },
+            "base" : {
+              "path" : "IdentityProvider.userInfoMode",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.userInfoApiKey",
+            "path" : "IdentityProvider.userInfoApiKey",
+            "short" : "Optional API key used by custom userinfo modes such as Google Cloud Identity Platform.",
+            "definition" : "Optional API key used by custom userinfo modes such as Google Cloud Identity Platform.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.userInfoApiKey",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "IdentityProvider.clientId",
             "path" : "IdentityProvider.clientId",
             "definition" : "External Identity Provider client ID.",
@@ -5428,6 +5464,46 @@
               "path" : "IdentityProvider.useSubject",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.identitySource",
+            "path" : "IdentityProvider.identitySource",
+            "short" : "External credential field used to identify the user.",
+            "definition" : "External credential field used to identify the user.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.identitySource",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-identity-source|4.0.1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.identityMappingMode",
+            "path" : "IdentityProvider.identityMappingMode",
+            "short" : "Medplum identity mapping target.",
+            "definition" : "Medplum identity mapping target.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.identityMappingMode",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-identity-mapping-mode|4.0.1"
             }
           }
         ]

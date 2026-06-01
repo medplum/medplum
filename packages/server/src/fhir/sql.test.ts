@@ -7,7 +7,9 @@ import {
   Column,
   Condition,
   Constant,
+  Disjunction,
   InsertQuery,
+  IsNull,
   isValidColumnName,
   isValidTableName,
   MAX_INDEX_DATA_BYTES,
@@ -17,6 +19,7 @@ import {
   SelectQuery,
   setSqlDebug,
   SqlBuilder,
+  Subquery,
   truncateTextColumn,
   UnionAllBuilder,
   UpdateQuery,
@@ -123,6 +126,60 @@ describe('SqlBuilder', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', '!=', null).buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
+    });
+
+    test('Select where is null expression', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .whereExpr(new IsNull(new Subquery(maxSubquery)))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE (SELECT MAX(name) FROM "MyTable") IS NULL'
+      );
+    });
+
+    test('Select where is not null expression', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable')
+        .column('id')
+        .whereExpr(new Condition(new Column('MyTable', 'name'), '!=', null))
+        .buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
+    });
+
+    test('Select where is null expression in disjunction', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(ts)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .whereExpr(new Disjunction([new IsNull(new Subquery(maxSubquery)), new Condition('ts', '>', 'x')]))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE ((SELECT MAX(ts) FROM "MyTable") IS NULL OR "ts" > $1)'
+      );
+    });
+
+    test('Select where greater than subquery', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable').column('id').where('name', '>', new Subquery(maxSubquery)).buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "MyOtherTable"."name" > (SELECT MAX(name) FROM "MyTable")'
+      );
+    });
+
+    test('Select where greater than subquery expression', () => {
+      const sql = new SqlBuilder();
+      const maxSubquery = new SelectQuery('MyTable').raw('MAX(name)');
+      new SelectQuery('MyOtherTable')
+        .column('id')
+        .whereExpr(new Condition('name', '>', new Subquery(maxSubquery)))
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "name" > (SELECT MAX(name) FROM "MyTable")'
+      );
     });
 
     test('Select value in subquery with type', () => {
@@ -246,6 +303,20 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
     });
 
+    test('Select where not equals empty string', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').where('name', '!=', '').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
+      expect(sql.getValues()).toStrictEqual(['']);
+    });
+
+    test('Select where not equals empty string w/ typed column', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').where(new Column('MyTable', 'name'), '!=', '').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
+      expect(sql.getValues()).toStrictEqual(['']);
+    });
+
     test('Select where lower like', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', 'LOWER_LIKE', 'x').buildSql(sql);
@@ -292,6 +363,32 @@ describe('SqlBuilder', () => {
       const db = { query: jest.fn() } as unknown as PoolClient;
       await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
       expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test('Insert into select', () => {
+      const sql = new SqlBuilder();
+      new InsertQuery('MyTable', new SelectQuery('MyOtherTable').column('id').where('active', '=', true)).buildSql(sql);
+      expect(sql.toString()).toBe(
+        'INSERT INTO "MyTable" SELECT "MyOtherTable"."id" FROM "MyOtherTable" WHERE "MyOtherTable"."active" = $1'
+      );
+      expect(sql.getValues()).toStrictEqual([true]);
+    });
+
+    test('Insert into select with target columns', () => {
+      const sql = new SqlBuilder();
+      new InsertQuery('MyTable', new SelectQuery('MyOtherTable').column('sourceId').column('sourceName'), [
+        'id',
+        'name',
+      ]).buildSql(sql);
+      expect(sql.toString()).toBe(
+        'INSERT INTO "MyTable" ("id", "name") SELECT "MyOtherTable"."sourceId", "MyOtherTable"."sourceName" FROM "MyOtherTable"'
+      );
+    });
+
+    test('Insert query columns throw for values insert', () => {
+      expect(() => new InsertQuery('MyTable', [{ id: '1' }], ['id'])).toThrow(
+        'InsertQuery queryColumns are only valid for INSERT ... SELECT'
+      );
     });
 
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {

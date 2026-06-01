@@ -2,21 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Box, Button, Card, Divider, Flex, Group, Stack, Text } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
+import type { ClaimResponse, Reference } from '@medplum/fhirtypes';
+import { useResource } from '@medplum/react';
 import { IconExternalLink } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 
 const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/';
+const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
 
 export interface ClaimSubmittedPanelProps {
-  status?: string;
-  claimAmount: number;
-  createdAt?: string;
-  candidEncounterId?: string;
+  claimResponse: ClaimResponse | Reference<ClaimResponse>;
   exportMenu: ReactNode;
 }
 
-export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Element => {
-  const { status, claimAmount, createdAt, candidEncounterId, exportMenu } = props;
+export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Element | null => {
+  const { claimResponse, exportMenu } = props;
+  const claimResponseResource = useResource(claimResponse);
+
+  if (!claimResponseResource) {
+    return null;
+  }
+
+  const status = 'Submitted';
+  const createdAt = claimResponseResource.created;
+  const claimAmount = claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
+  const candidEncounterId = claimResponseResource.identifier?.find(
+    (id) => id.system === CANDID_IDENTIFIER_SYSTEM
+  )?.value;
 
   return (
     <Card withBorder shadow="sm" p={0}>

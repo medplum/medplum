@@ -180,6 +180,7 @@ export async function addTestUser(
   options?: {
     accessPolicy?: AccessPolicy;
     resourceType?: 'Practitioner' | 'Patient';
+    scope?: string;
   }
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   let accessPolicy = options?.accessPolicy;
@@ -214,7 +215,7 @@ export async function addTestUser(
     authMethod: 'password',
     email,
     password,
-    scope: 'openid',
+    scope: options?.scope ?? 'openid',
     nonce: 'nonce',
     projectId: project.id,
   });

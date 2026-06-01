@@ -298,6 +298,25 @@ describe('SubscriptionManager', () => {
       expect(receivedBundle).toStrictEqual(sentBundle);
     });
 
+    test('should not bind or create resources while unauthenticated', async () => {
+      await wsServer.connected;
+
+      const getProfileSpy = vi.spyOn(medplum, 'getProfile').mockReturnValue(undefined);
+      const createSpy = vi.spyOn(medplum, 'createResource');
+
+      const emitter = defaultManager.addCriteria('Communication');
+      expect(emitter).toBeInstanceOf(SubscriptionEmitter);
+
+      // Give any async rebind a chance to run — it should be skipped while unauthenticated
+      await sleep(50);
+
+      // No Subscription resource is created and no $get-ws-binding-token call is made
+      expect(createSpy).not.toHaveBeenCalled();
+
+      getProfileSpy.mockRestore();
+      createSpy.mockRestore();
+    });
+
     test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
       const originalError = console.error;
       console.error = vi.fn();

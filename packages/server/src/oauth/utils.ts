@@ -35,6 +35,7 @@ import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
+import type { RequestInit as FetchRequestInit } from 'node-fetch';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -853,22 +854,18 @@ export async function getExternalUserInfo(
     throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
   }
 
+  const request = buildExternalUserInfoRequest(userInfoUrl, externalAccessToken, idp);
+
   let response;
   try {
-    response = await fetch(userInfoUrl, {
-      method: 'GET',
-      headers: {
-        Accept: ContentType.JSON,
-        Authorization: `Bearer ${externalAccessToken}`,
-      },
-    });
+    response = await fetch(request.url, request.init);
   } catch (err: any) {
     log.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   if (response.status === 429) {
-    log.warn('Auth rate limit exceeded', { url: userInfoUrl, clientId: idp?.clientId });
+    log.warn('Auth rate limit exceeded', { url: request.url, clientId: idp?.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
@@ -880,16 +877,80 @@ export async function getExternalUserInfo(
   const contentType = response.headers.get('content-type');
   try {
     if (contentType?.includes(ContentType.JSON)) {
-      return await response.json();
+      return normalizeExternalUserInfo(await response.json(), idp);
     } else if (contentType?.includes(ContentType.JWT)) {
       return parseJWTPayload(await response.text());
     }
   } catch (err: any) {
+    if (err instanceof OperationOutcomeError) {
+      throw err;
+    }
     log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
+}
+
+function buildExternalUserInfoRequest(
+  userInfoUrl: string,
+  externalAccessToken: string,
+  idp: IdentityProvider | undefined
+): { url: string; init: FetchRequestInit } {
+  if (idp?.userInfoMode === 'gcip') {
+    const apiKey = idp.userInfoApiKey;
+    if (!apiKey) {
+      throw new OperationOutcomeError(
+        badRequest('Missing user info API key - check your identity provider configuration')
+      );
+    }
+
+    const url = new URL(userInfoUrl);
+    url.searchParams.set('key', apiKey);
+
+    return {
+      url: url.toString(),
+      init: {
+        method: 'POST',
+        headers: {
+          Accept: ContentType.JSON,
+          'Content-Type': ContentType.JSON,
+        },
+        body: JSON.stringify({ idToken: externalAccessToken }),
+      },
+    };
+  }
+
+  return {
+    url: userInfoUrl,
+    init: {
+      method: 'GET',
+      headers: {
+        Accept: ContentType.JSON,
+        Authorization: `Bearer ${externalAccessToken}`,
+      },
+    },
+  };
+}
+
+function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: IdentityProvider): Record<string, unknown> {
+  if (idp?.userInfoMode !== 'gcip') {
+    return body;
+  }
+
+  const users = body.users;
+  if (!Array.isArray(users) || users.length === 0 || !users[0] || typeof users[0] !== 'object') {
+    throw new OperationOutcomeError(badRequest('Failed to verify code - invalid user info response'));
+  }
+
+  const user = users[0] as Record<string, unknown>;
+  if (!user.localId) {
+    throw new OperationOutcomeError(badRequest('Failed to verify code - missing localId in user info response'));
+  }
+  return {
+    ...user,
+    sub: user.localId,
+  };
 }
 
 interface ValidationAssertion {
@@ -1169,7 +1230,11 @@ async function tryExternalAuthLogin(
 
   // Validate the token against the external IDP's userinfo endpoint
   try {
-    await getExternalUserInfo(externalAuthConfig.userInfoUrl, accessToken);
+    const userInfoUrl = externalAuthConfig.identityProvider?.userInfoUrl ?? externalAuthConfig.userInfoUrl;
+    if (!userInfoUrl) {
+      return undefined;
+    }
+    await getExternalUserInfo(userInfoUrl, accessToken, externalAuthConfig.identityProvider);
   } catch (err: any) {
     getLogger().warn('Failed to get external user info', err);
     return undefined;
