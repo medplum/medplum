@@ -115,7 +115,6 @@ export async function claimSubmitGetHandler(req: FhirRequest): Promise<FhirRespo
  * @returns The FHIR response from the underlying custom operation.
  */
 export async function claimSubmitPostHandler(req: FhirRequest): Promise<FhirResponse> {
-  // try {
   const params = parseInputParameters<ClaimSubmitParameters>(operation, req);
   const claim = params.resource;
 
