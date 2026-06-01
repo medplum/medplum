@@ -12,6 +12,11 @@ on:
         required: true
         type: boolean
         default: false
+      version:
+        description: 'Version override (leave blank to use the version from package.json)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -72,6 +77,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Override version
+        if: ${{ inputs.version != '' }}
+        run: node scripts/set-medplum-version.mjs "${{ inputs.version }}"
 
       - name: Set repo hash
         shell: bash
@@ -251,6 +260,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Override version
+        if: ${{ inputs.version != '' }}
+        run: node scripts/set-medplum-version.mjs "${{ inputs.version }}"
+
       - name: Set repo hash
         shell: bash
         # This forces git shorthash to match between @medplum/agent and @medplum/core
@@ -336,6 +349,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Override version
+        if: ${{ inputs.version != '' }}
+        run: node scripts/set-medplum-version.mjs "${{ inputs.version }}"
+
       - name: Set repo hash
         shell: bash
         # This forces git shorthash to match between @medplum/agent and @medplum/core
@@ -420,6 +437,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Override version
+        if: ${{ inputs.version != '' }}
+        run: node scripts/set-medplum-version.mjs "${{ inputs.version }}"
 
       - name: Set repo hash
         shell: bash
