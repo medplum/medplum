@@ -28,5 +28,18 @@
     // Which prettier cannot even correct after it's been applied
     "yaml.format.enable": false
   },
-  "cSpell.words": ["auditevent", "bullmq", "FHIR", "Fhircast", "Medplum", "rescope"]
+  "cSpell.words": [
+    "auditevent",
+    "bullmq",
+    "FHIR",
+    "Fhircast",
+    "fhirquota",
+    "Medplum",
+    "orangebot",
+    "reindexing",
+    "rescope",
+    "savepoint",
+    "searchparameter",
+    "vread"
+  ]
 }
