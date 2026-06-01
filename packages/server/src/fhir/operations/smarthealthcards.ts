@@ -113,7 +113,7 @@ export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<
         .filter(Boolean),
     });
     const issuer = getConfig().issuer;
-    const credential = await createSmartHealthCardCredential(bundle, issuer, params.exp);
+    const { credential, keyId } = await createSmartHealthCardCredential(bundle, issuer, params.exp);
     const shcUri = encodeSmartHealthCardUri(credential);
     const file = JSON.stringify(writeSmartHealthCardFile(credential));
     const qrCodeDataUrl = params.includeQrCode ? await QRCode.toDataURL(shcUri) : undefined;
@@ -126,7 +126,7 @@ export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<
         file,
         qrCodeDataUrl,
         issuer,
-        keyId: getSmartHealthCardSigningKey().kid,
+        keyId,
       }),
     ];
   } catch (err) {
@@ -181,9 +181,13 @@ export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<Fh
  * @param bundle - FHIR Bundle to embed in the credential subject.
  * @param issuer - Issuer URL to place in the JWT `iss` claim.
  * @param exp - Optional expiration time as a NumericDate value in seconds since the Unix epoch.
- * @returns Compact JWS string for the signed SMART Health Card credential.
+ * @returns Compact JWS string for the signed SMART Health Card credential and the signing key ID.
  */
-async function createSmartHealthCardCredential(bundle: Bundle, issuer: string, exp?: number): Promise<string> {
+async function createSmartHealthCardCredential(
+  bundle: Bundle,
+  issuer: string,
+  exp?: number
+): Promise<{ credential: string; keyId: string }> {
   const key = getSmartHealthCardSigningKey();
   const payload: SmartHealthCardJwt = {
     iss: issuer,
@@ -198,9 +202,10 @@ async function createSmartHealthCardCredential(bundle: Bundle, issuer: string, e
     },
   };
   const compressedPayload = deflateRawSync(Buffer.from(JSON.stringify(payload)));
-  return new CompactSign(compressedPayload)
+  const credential = await new CompactSign(compressedPayload)
     .setProtectedHeader({ alg: SHC_SIGNING_ALG, kid: key.kid, zip: 'DEF' })
     .sign(key.privateKey);
+  return { credential, keyId: key.kid };
 }
 
 /**

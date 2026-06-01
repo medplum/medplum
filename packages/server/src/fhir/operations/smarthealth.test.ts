@@ -40,6 +40,7 @@ describe('SMART Health operations', () => {
     expect(getStringParameter(generateResponse.body, 'shcUri')).toMatch(/^shc:\//);
     expect(getStringParameter(generateResponse.body, 'file')).toContain('verifiableCredential');
     expect(getStringParameter(generateResponse.body, 'qrCodeDataUrl')).toMatch(/^data:image\/png;base64,/);
+    expect(getStringParameter(generateResponse.body, 'keyId')).toBeDefined();
 
     const verifyResponse = await request(app)
       .post('/fhir/R4/$verify-smart-health-card')
