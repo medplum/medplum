@@ -836,6 +836,111 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/identity-provider-identity-source",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "identity-provider-identity-source",
+        "url": "https://medplum.com/fhir/CodeSystem/identity-provider-identity-source",
+        "name": "IdentityProviderIdentitySource",
+        "title": "Identity Provider Identity Source",
+        "status": "active",
+        "description": "External credential fields used to identify a user.",
+        "valueSet": "https://medplum.com/fhir/ValueSet/identity-provider-identity-source",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "email",
+            "display": "Email",
+            "definition": "Use the email claim from the external identity provider."
+          },
+          {
+            "code": "subject",
+            "display": "Subject",
+            "definition": "Use the subject claim from the external identity provider."
+          },
+          {
+            "code": "fhir-user",
+            "display": "FHIR User",
+            "definition": "Use the fhirUser claim from the external identity provider."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/identity-provider-identity-source",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "identity-provider-identity-source",
+        "url": "https://medplum.com/fhir/ValueSet/identity-provider-identity-source",
+        "name": "IdentityProviderIdentitySource",
+        "title": "Identity Provider Identity Source",
+        "status": "active",
+        "description": "External credential fields used to identify a user.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/identity-provider-identity-source"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/identity-provider-identity-mapping-mode",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "identity-provider-identity-mapping-mode",
+        "url": "https://medplum.com/fhir/CodeSystem/identity-provider-identity-mapping-mode",
+        "name": "IdentityProviderIdentityMappingMode",
+        "title": "Identity Provider Identity Mapping Mode",
+        "status": "active",
+        "description": "Medplum identity mapping targets for external identity providers.",
+        "valueSet": "https://medplum.com/fhir/ValueSet/identity-provider-identity-mapping-mode",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "user-email",
+            "display": "User Email",
+            "definition": "Map the external identity to a User by email address."
+          },
+          {
+            "code": "user-external-id",
+            "display": "User External ID",
+            "definition": "Map the external identity to a User by external ID."
+          },
+          {
+            "code": "project-membership-external-id",
+            "display": "Project Membership External ID",
+            "definition": "Map the external identity to a ProjectMembership by external ID."
+          },
+          {
+            "code": "project-membership-profile",
+            "display": "Project Membership Profile",
+            "definition": "Map the external identity to a ProjectMembership by profile reference."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/identity-provider-identity-mapping-mode",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "identity-provider-identity-mapping-mode",
+        "url": "https://medplum.com/fhir/ValueSet/identity-provider-identity-mapping-mode",
+        "name": "IdentityProviderIdentityMappingMode",
+        "title": "Identity Provider Identity Mapping Mode",
+        "status": "active",
+        "description": "Medplum identity mapping targets for external identity providers.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/identity-provider-identity-mapping-mode"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/client-application-status",
       "resource": {
         "resourceType": "CodeSystem",
