@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 // Adapted from https://github.com/codyebberson/medplum-ai-realtime/blob/main/src/hooks/useWhisper.ts
-import { ReconnectingWebSocket } from '@medplum/core';
+import { ReconnectingWebSocket, sleep } from '@medplum/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
@@ -25,7 +25,17 @@ export type UseWhisperOptions = {
   language?: string;
   model?: string;
   onTranscript?: (text: string) => void;
+  /**
+   * How long to keep the WebSocket warm after stop() before fully closing it, in milliseconds.
+   * Defaults to 120000 (2 minutes). Set to 0 or a non-finite value to keep the socket warm
+   * until unmount (the previous behavior).
+   */
+  idleTimeoutMs?: number;
 };
+
+// Fully close a warm-but-unused socket after this long; the timer resets whenever capture
+// (re)starts so an active or about-to-resume session is never torn down.
+const DEFAULT_IDLE_TIMEOUT_MS = 120_000; // 2 minutes
 
 export type UseWhisperResult = {
   status: WhisperStatus;
@@ -40,6 +50,7 @@ export function useWhisper({
   language = 'en',
   model = 'gpt-4o-transcribe',
   onTranscript,
+  idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS,
 }: UseWhisperOptions): UseWhisperResult {
   const medplum = useMedplum();
   const onTranscriptRef = useRef(onTranscript);
@@ -53,7 +64,12 @@ export function useWhisper({
   const websocketRef = useRef<ReconnectingWebSocket | undefined>(undefined);
   const audioStreamRef = useRef<MediaStream | undefined>(undefined);
   const audioContextRef = useRef<AudioContext | undefined>(undefined);
-  const audioProcessorRef = useRef<ScriptProcessorNode | undefined>(undefined);
+  const audioProcessorRef = useRef<AudioWorkletNode | undefined>(undefined);
+  // startingCaptureRef guards against a double-start: startAudioCapture now awaits the worklet
+  // module load, so two near-simultaneous triggers (e.g. a session.updated landing while the
+  // mic promise resolves) could both pass the "already capturing" check before either has set
+  // audioProcessorRef. This single-flight flag closes that window.
+  const startingCaptureRef = useRef(false);
   // sessionReadyRef stays true across stop/start so a warm connection can be reused; it is
   // only reset when the socket (re)opens or the connection is fully closed.
   const sessionReadyRef = useRef(false);
@@ -124,44 +140,66 @@ export function useWhisper({
     );
   }, [language, model]);
 
-  const startAudioCapture = useCallback(() => {
-    const audioStream = audioStreamRef.current;
-    const websocket = websocketRef.current;
-
-    if (!audioStream || !websocket) {
+  const startAudioCapture = useCallback(async () => {
+    if (audioProcessorRef.current || startingCaptureRef.current) {
+      return; // already capturing, or a start is already in flight
+    }
+    if (!audioStreamRef.current || !websocketRef.current) {
       return;
     }
 
-    const audioContext = new AudioContext({ sampleRate: 24000 });
-    const source = audioContext.createMediaStreamSource(audioStream);
-    const processor = audioContext.createScriptProcessor(4096, 1, 1);
+    startingCaptureRef.current = true;
+    try {
+      const audioContext = new AudioContext({ sampleRate: 24000 });
+      // AudioWorklet runs the PCM batching on the dedicated audio thread (the deprecated
+      // ScriptProcessorNode ran it on the main thread). The processor module is loaded from a
+      // Blob URL so the hook stays self-contained and needs no separately bundled worklet file.
+      await audioContext.audioWorklet.addModule(getPcmWorkletUrl());
 
-    processor.onaudioprocess = (event) => {
-      if (websocket.readyState !== WebSocket.OPEN) {
-        console.warn('WebSocket is not open. Unable to send audio data.');
+      // Re-validate after the async module load: capture may have been stopped, or the mic /
+      // socket swapped out, while the worklet was loading.
+      const audioStream = audioStreamRef.current;
+      const websocket = websocketRef.current;
+      if (!capturingRef.current || !audioStream || !websocket) {
+        await audioContext.close().catch(() => undefined);
         return;
       }
 
-      const inputBuffer = event.inputBuffer.getChannelData(0);
-      const pcm16Buffer = convertToPCM16(inputBuffer);
-      const base64Audio = btoa(String.fromCharCode(...pcm16Buffer));
+      const source = audioContext.createMediaStreamSource(audioStream);
+      const processor = new AudioWorkletNode(audioContext, PCM_WORKLET_NAME);
 
-      websocket.send(
-        JSON.stringify({
-          type: 'input_audio_buffer.append',
-          audio: base64Audio,
-        })
-      );
-    };
+      processor.port.onmessage = (event: MessageEvent<Float32Array>) => {
+        if (websocket.readyState !== WebSocket.OPEN) {
+          console.warn('WebSocket is not open. Unable to send audio data.');
+          return;
+        }
 
-    source.connect(processor);
-    processor.connect(audioContext.destination);
+        const pcm16Buffer = convertToPCM16(event.data);
+        const base64Audio = btoa(String.fromCharCode(...pcm16Buffer));
 
-    audioContextRef.current = audioContext;
-    audioProcessorRef.current = processor;
+        websocket.send(
+          JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: base64Audio,
+          })
+        );
+      };
 
-    setStatus('listening');
-  }, []);
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+
+      audioContextRef.current = audioContext;
+      audioProcessorRef.current = processor;
+
+      setStatus('listening');
+    } catch (err) {
+      setError(err);
+      setStatus('error');
+      stopCapture();
+    } finally {
+      startingCaptureRef.current = false;
+    }
+  }, [stopCapture]);
 
   // Capture can only start once the user intends to capture, the session is ready, and the
   // mic is acquired — these now arrive in arbitrary order (parallel start, warm reuse,
@@ -181,7 +219,8 @@ export function useWhisper({
     }
     // Discard any stale partial buffer left over from a previous utterance on this session.
     websocketRef.current?.send(JSON.stringify({ type: 'input_audio_buffer.clear' }));
-    startAudioCapture();
+    // startAudioCapture catches its own errors and never rejects; .catch is belt-and-suspenders.
+    startAudioCapture().catch(() => undefined);
   }, [startAudioCapture]);
 
   const handleMessage = useCallback(
@@ -326,6 +365,23 @@ export function useWhisper({
     }
   }, [acquireMicrophone, ensureConnected, stopCapture, maybeStartAudioCapture]);
 
+  // Fully close a warm-but-idle socket after idleTimeoutMs. 'idle' with a live socket is exactly
+  // the warm-but-unused state (stopCapture and the background-reconnect handlers settle there
+  // while not capturing). Any status change away from 'idle' — including start() ->
+  // 'requesting_microphone', even on warm reuse — runs the cleanup and cancels the pending close.
+  useEffect(() => {
+    if (status !== 'idle' || !websocketRef.current || !Number.isFinite(idleTimeoutMs) || idleTimeoutMs <= 0) {
+      return undefined;
+    }
+    // Use @medplum/core's sleep() as a cancellable timer: aborting its signal on cleanup clears
+    // the underlying timeout and rejects, so the close never fires once we leave the idle state.
+    const controller = new AbortController();
+    sleep(idleTimeoutMs, { signal: controller.signal })
+      .then(() => closeConnection())
+      .catch(() => undefined); // rejects when aborted on cleanup
+    return () => controller.abort();
+  }, [status, idleTimeoutMs, closeConnection]);
+
   useEffect(() => {
     return () => closeConnection();
   }, [closeConnection]);
@@ -355,4 +411,60 @@ function buildWebSocketUrl(baseUrl: string): string {
   const url = new URL('ws/ai-realtime', baseUrl);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.toString();
+}
+
+// Name the processor is registered under inside the AudioWorkletGlobalScope.
+const PCM_WORKLET_NAME = 'medplum-pcm-worklet';
+
+// Source for the AudioWorklet processor. It runs on the audio rendering thread and replaces the
+// deprecated ScriptProcessorNode. process() receives 128-sample render quanta, so it accumulates
+// them into ~4096-sample batches (about 170ms at 24kHz) — matching the old ScriptProcessorNode
+// buffer size — before transferring each batch to the main thread, where it is converted to PCM16
+// and sent over the WebSocket. Defined as a string and loaded via a Blob URL so the hook ships
+// without a separately bundled worklet file.
+const PCM_WORKLET_SOURCE = `
+class PcmWorkletProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.chunks = [];
+    this.length = 0;
+    this.targetLength = 4096;
+  }
+
+  process(inputs) {
+    const channel = inputs[0] && inputs[0][0];
+    if (!channel) {
+      return true;
+    }
+    // The render quantum buffer is reused between calls, so copy it.
+    this.chunks.push(new Float32Array(channel));
+    this.length += channel.length;
+    if (this.length >= this.targetLength) {
+      const merged = new Float32Array(this.length);
+      let offset = 0;
+      for (const chunk of this.chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      this.port.postMessage(merged, [merged.buffer]);
+      this.chunks = [];
+      this.length = 0;
+    }
+    return true;
+  }
+}
+
+registerProcessor('${PCM_WORKLET_NAME}', PcmWorkletProcessor);
+`;
+
+let pcmWorkletUrl: string | undefined;
+
+// Lazily create (and cache) a Blob URL for the worklet module. addModule() must be called per
+// AudioContext, but the URL itself can be reused across contexts.
+function getPcmWorkletUrl(): string {
+  if (!pcmWorkletUrl) {
+    const blob = new Blob([PCM_WORKLET_SOURCE], { type: 'application/javascript' });
+    pcmWorkletUrl = URL.createObjectURL(blob);
+  }
+  return pcmWorkletUrl;
 }
