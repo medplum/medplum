@@ -98,16 +98,14 @@ function toHistoryPostgresTableName(resourceType: string): string {
  * @returns The list of Postgres table names.
  */
 export function getWarehouseSyncPostgresTableNames(resourceTypes?: string[]): string[] {
-  const allTableNames = getResourceTypes().map(toHistoryPostgresTableName);
   if (!resourceTypes?.length) {
-    return allTableNames;
+    return getResourceTypes().map(toHistoryPostgresTableName);
   }
 
   const selectedTypes = new Set(resourceTypes);
-  return allTableNames.filter((tableName) => {
-    const resourceType = tableName.slice(0, -HISTORY_TABLE_SUFFIX.length);
-    return selectedTypes.has(resourceType);
-  });
+  return getResourceTypes()
+    .filter((resourceType) => selectedTypes.has(resourceType))
+    .map(toHistoryPostgresTableName);
 }
 
 /**
