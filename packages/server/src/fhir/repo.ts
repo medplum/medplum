@@ -128,16 +128,6 @@ import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from '.
 
 export type { StatementTimeoutOptions } from './repository/repository-connection';
 
-declare const repositoryDatabaseClientScope: unique symbol;
-
-export type RepositoryDatabaseClient = PgClientLike & {
-  readonly [repositoryDatabaseClientScope]: 'repository';
-};
-
-export type TransactionDatabaseClient = PgClientLike & {
-  readonly [repositoryDatabaseClientScope]: 'transaction';
-};
-
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
  * In practice, there will be one Repository per HTTP request.
@@ -257,6 +247,9 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
   }
 }
 
+export type RepositoryDatabaseClient = PgClientLike;
+// export type FooTransactionRepository = Repository<TransactionDatabaseClient>;
+
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -325,13 +318,8 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
     return new Repository(this.context);
   }
 
-  private createTransactionScopedRepo(): Repository<TransactionDatabaseClient> & this {
-    // create the exact class, e.g. SystemRepository, of the current instance.
-    const RepositoryConstructor = this.constructor as new (
-      context: RepositoryContext,
-      connection?: RepositoryConnection
-    ) => this;
-    return new RepositoryConstructor(this.context, this.connection) as Repository<TransactionDatabaseClient> & this;
+  private createTransactionScopedRepo(): TransactionRepository & this {
+    return new Repository(this.context, this.connection) as TransactionRepository & this;
   }
 
   get shardId(): string {
@@ -1004,10 +992,9 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
     await this.ensureInTransaction(async (txRepo) => {
       const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      const repo = txRepo as this;
-      await repo.writeResource(client, resource);
-      await repo.writeResourceVersion(client, resource);
-      await repo.writeLookupTables(client, resource, create);
+      await txRepo.writeResource(client, resource);
+      await txRepo.writeResourceVersion(client, resource);
+      await txRepo.writeLookupTables(client, resource, create);
     });
   }
 
@@ -1081,35 +1068,6 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
       const resource = await txRepo.readResourceImpl<T>(resourceType, id);
       return txRepo.reindexResources([resource]);
     });
-  }
-
-  /**
-   * Internal implementation of reindexing a resource.
-   * This accepts a resource as a parameter, rather than a resource type and ID.
-   * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
-   * @param resources - The resource(s) to reindex.
-   */
-  async reindexResources<T extends Resource>(resources: WithId<T>[]): Promise<void> {
-    this.assertUsable();
-    if (!this.isSuperAdmin()) {
-      throw new OperationOutcomeError(forbidden);
-    }
-
-    // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    for (let i = 0; i < resources.length; i++) {
-      const resource = resources[i];
-      const meta = resource.meta as Meta;
-      meta.compartment = this.getCompartments(resource);
-
-      if (!meta.project) {
-        const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
-        meta.project = resolveId(projectRef);
-      }
-    }
-
-    await this.batchWriteLookupTables(resources, false);
-    await this.batchWriteResources(resources);
   }
 
   /**
@@ -1640,23 +1598,9 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResource(client: PgClientLike, resource: Resource): Promise<void> {
+  protected async writeResource(client: PoolClient, resource: Resource): Promise<void> {
     const row = buildResourceRow(resource, Repository.VERSION);
     await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
-  }
-
-  private async batchWriteResources(resources: Resource[]): Promise<void> {
-    if (!resources.length) {
-      return;
-    }
-
-    const client = this.getDatabaseClient(DatabaseMode.WRITER);
-    await new InsertQuery(
-      resources[0].resourceType,
-      resources.map((r) => buildResourceRow(r, Repository.VERSION))
-    )
-      .mergeOnConflict()
-      .execute(client);
   }
 
   /**
@@ -1664,7 +1608,7 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResourceVersion(client: PgClientLike, resource: Resource): Promise<void> {
+  protected async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
@@ -1687,7 +1631,7 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
    * @param resource - The resource.
    * @returns The list of compartments for the resource.
    */
-  private getCompartments(resource: WithId<Resource>): Reference[] {
+  protected getCompartments(resource: WithId<Resource>): Reference[] {
     const compartments = new Set<string>();
 
     if (resource.meta?.project && isUUID(resource.meta.project)) {
@@ -1739,16 +1683,9 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PgClientLike, resource: WithId<Resource>, create: boolean): Promise<void> {
+  protected async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
-    }
-  }
-
-  private async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
-    const client = this.getDatabaseClient(DatabaseMode.WRITER);
-    for (const lookupTable of lookupTables) {
-      await lookupTable.batchIndexResources(client, resources, create);
     }
   }
 
@@ -2182,7 +2119,7 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
   }
 
   override async withTransaction<TResult>(
-    callback: (repo: Repository<TransactionDatabaseClient> & this) => Promise<TResult>,
+    callback: (repo: TransactionRepository & this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
@@ -2206,14 +2143,14 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
     return this.connection.withStatementTimeout(options, callback);
   }
 
-  async preCommit(fn: (repo: Repository<TransactionDatabaseClient> & this) => void | Promise<void>): Promise<void> {
+  async preCommit(fn: (repo: TransactionRepository & this) => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.preCommit(async () => fn(this as Repository<TransactionDatabaseClient> & this));
+    return this.connection.preCommit(async () => fn(this as TransactionRepository & this));
   }
 
-  async postCommit(fn: (repo: Repository<TransactionDatabaseClient> & this) => void | Promise<void>): Promise<void> {
+  async postCommit(fn: (repo: TransactionRepository & this) => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.postCommit(async () => fn(this as Repository<TransactionDatabaseClient> & this));
+    return this.connection.postCommit(async () => fn(this as TransactionRepository & this));
   }
 
   /**
@@ -2295,11 +2232,11 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
   }
 
   async ensureInTransaction<TResult>(
-    callback: (repo: Repository<TransactionDatabaseClient> & this) => Promise<TResult>
+    callback: (repo: TransactionRepository & this) => Promise<TResult>
   ): Promise<TResult> {
     this.assertUsable();
     if (this.connection.isInTransaction()) {
-      return callback(this as Repository<TransactionDatabaseClient> & this);
+      return callback(this as TransactionRepository & this);
     }
 
     return this.withTransaction(callback);
@@ -2317,7 +2254,7 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
     this.closed = true;
   }
 
-  private assertUsable(): void {
+  protected assertUsable(): void {
     if (this.closed) {
       throw new Error('Already closed');
     }
@@ -2326,6 +2263,60 @@ export class Repository<TClient extends PgClientLike = RepositoryDatabaseClient>
         'Repository is in an active transaction callback; use the transaction-scoped repository passed to the callback'
       );
     }
+  }
+}
+
+export type TransactionDatabaseClient = PoolClient;
+
+export class TransactionRepository extends Repository<TransactionDatabaseClient> {
+  /**
+   * Internal implementation of reindexing a resource.
+   * This accepts a resource as a parameter, rather than a resource type and ID.
+   * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
+   * @param resources - The resource(s) to reindex.
+   */
+  async reindexResources<T extends Resource>(resources: WithId<T>[]): Promise<void> {
+    this.assertUsable();
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
+    // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < resources.length; i++) {
+      const resource = resources[i];
+      const meta = resource.meta as Meta;
+      meta.compartment = this.getCompartments(resource);
+
+      if (!meta.project) {
+        const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
+        meta.project = resolveId(projectRef);
+      }
+    }
+
+    await this.batchWriteLookupTables(resources, false);
+    await this.batchWriteResources(resources);
+  }
+
+  private async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
+    for (const lookupTable of lookupTables) {
+      await lookupTable.batchIndexResources(client, resources, create);
+    }
+  }
+
+  private async batchWriteResources(resources: Resource[]): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
+
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
+    await new InsertQuery(
+      resources[0].resourceType,
+      resources.map((r) => buildResourceRow(r, Repository.VERSION))
+    )
+      .mergeOnConflict()
+      .execute(client);
   }
 }
 

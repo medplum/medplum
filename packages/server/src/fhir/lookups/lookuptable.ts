@@ -8,6 +8,7 @@ import {
   splitSearchOnComma,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { PoolClient } from 'pg';
 import { getLogger } from '../../logger';
 import type { LookupTableSearchParameterImplementation } from '../searchparameter';
 import type { Expression, PgClientLike } from '../sql';
@@ -80,7 +81,7 @@ export abstract class LookupTable {
    * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  indexResource(client: PgClientLike, resource: WithId<Resource>, create: boolean): Promise<void> {
+  indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     return this.batchIndexResources(client, [resource], create);
   }
 
@@ -92,7 +93,7 @@ export abstract class LookupTable {
    * @param resourceBatchSize - (optional) The resource batch size to yield to the event loop between. Default is 200.
    */
   async batchIndexResources<T extends Resource>(
-    client: PgClientLike,
+    client: PoolClient,
     resources: WithId<T>[],
     create: boolean,
     resourceBatchSize: number = 200
