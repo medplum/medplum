@@ -20,8 +20,8 @@ import type { PoolClient } from 'pg';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import * as validateConfig from '../config/validate-config';
 import type { MedplumServerConfig } from '../config/types';
+import * as validateConfig from '../config/validate-config';
 import type * as DataWarehouseConfigModule from '../data-warehouse/config';
 import { buildPgConnectionURI, getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
 import { syncData } from '../data-warehouse/sync';
@@ -50,9 +50,7 @@ jest.mock('../data-warehouse/config', () => {
         return TABLE_NAMES;
       }
       const selected = new Set(resourceTypes);
-      return FILTERABLE_TABLE_NAMES.filter((tableName) =>
-        selected.has(tableName.replace(/_History$/, ''))
-      );
+      return FILTERABLE_TABLE_NAMES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
     }),
   };
 });
