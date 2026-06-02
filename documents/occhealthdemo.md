@@ -311,6 +311,7 @@ Use only non-admin demo users during the live walkthrough. Do not put passwords 
 
 12. Demonstrate privacy-aware notification:
     - Show the clinician can see the clinical details.
+   - Log in as `ubix.supervisor.hr@example.com` for the restricted role view.
     - Show the supervisor or HR view only displays duty status and restrictions.
     - Emphasize that clinical diagnosis and sensitive results are not disclosed in the minimum-necessary view.
 13. Close the scenario by showing RTW status moving toward clearance or follow-up.
