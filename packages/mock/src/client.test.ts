@@ -286,7 +286,7 @@ describe('MockClient', () => {
 
   test('Debug mode', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalled();
@@ -326,7 +326,7 @@ describe('MockClient', () => {
     const router = new FhirRouter();
     const repo = new MemoryRepository();
     const client = new MockFetchClient(router, repo, baseUrl);
-    const fetchClientSpy = jest.spyOn(client, 'mockFetch');
+    const fetchClientSpy = vi.spyOn(client, 'mockFetch');
 
     const storage = new ClientStorage(new MemoryStorage());
     storage.setObject('activeLogin', {
@@ -361,7 +361,7 @@ describe('MockClient', () => {
       mockFetchOverride: { router, repo, client },
     });
 
-    const handleRequestSpy = jest.spyOn(router, 'handleRequest');
+    const handleRequestSpy = vi.spyOn(router, 'handleRequest');
     await mockClient.search('Patient', 'name=Simpson', { headers: { 'X-Hello-World': 'hAi' } });
     expect(handleRequestSpy).toHaveBeenCalledTimes(1);
     expect(handleRequestSpy).toHaveBeenCalledWith(
@@ -408,7 +408,7 @@ describe('MockClient', () => {
 
   test('Create binary with progress listener', async () => {
     const client = new MockClient();
-    const onProgress = jest.fn();
+    const onProgress = vi.fn();
     const result = await client.createBinary('test', 'test.txt', ContentType.TEXT, onProgress);
     expect(result).toMatchObject({
       resourceType: 'Binary',
@@ -432,7 +432,7 @@ describe('MockClient', () => {
     const result = await client.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result).toBeDefined();
 
-    console.log = jest.fn();
+    console.log = vi.fn();
     const client2 = new MockClient({ debug: true });
     const result2 = await client2.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result2).toBeDefined();
@@ -860,7 +860,7 @@ describe('MockClient', () => {
   test('setProfile()', async () => {
     const medplum = new MockClient({ profile: null });
     expect(medplum.getProfile()).toBeUndefined();
-    const callback = jest.fn();
+    const callback = vi.fn();
     medplum.addEventListener('change', callback);
     medplum.setProfile(DrAliceSmith);
     expect(medplum.getProfile()).toStrictEqual(DrAliceSmith);
@@ -879,7 +879,7 @@ describe('MockClient', () => {
     const medplum = new MockClient();
     const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
     const oldWarn = console.warn;
-    console.warn = jest.fn();
+    console.warn = vi.fn();
     await expect(medplum.pushToAgent(agent, '127.0.0.1', 'PING', ContentType.PING, true)).rejects.toThrow(
       OperationOutcomeError
     );

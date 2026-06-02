@@ -207,6 +207,10 @@ export function SchedulePage(): JSX.Element | null {
     [appointmentDetailsHandlers]
   );
 
+  const handleSlotUpdate = useCallback((updated: WithId<Slot>) => {
+    setSlots((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
+  }, []);
+
   const handleActorChange = useCallback(
     (ref: Reference | undefined) => {
       if (!ref?.reference) {
@@ -299,7 +303,11 @@ export function SchedulePage(): JSX.Element | null {
         h="100%"
       >
         {appointmentDetails && (
-          <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
+          <AppointmentDetails
+            appointment={appointmentDetails}
+            onAppointmentUpdate={handleAppointmentUpdate}
+            onSlotUpdate={handleSlotUpdate}
+          />
         )}
       </Drawer>
     </Box>

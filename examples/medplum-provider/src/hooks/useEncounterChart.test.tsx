@@ -3,8 +3,6 @@
 import type { WithId } from '@medplum/core';
 import type {
   Appointment,
-  ChargeItem,
-  Claim,
   ClinicalImpression,
   Encounter,
   Patient,
@@ -17,13 +15,9 @@ import { MedplumProvider } from '@medplum/react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { getChargeItemsForEncounter } from '../utils/chargeitems';
-import { createClaimFromEncounter } from '../utils/claims';
 import { showErrorNotification } from '../utils/notifications';
 import { useEncounterChart } from './useEncounterChart';
 
-vi.mock('../utils/chargeitems');
-vi.mock('../utils/claims');
 vi.mock('../utils/notifications');
 
 const mockEncounter: WithId<Encounter> = {
@@ -76,37 +70,6 @@ const mockClinicalImpression: ClinicalImpression = {
   encounter: { reference: 'Encounter/encounter-123' },
 };
 
-const mockChargeItem: WithId<ChargeItem> = {
-  resourceType: 'ChargeItem',
-  id: 'charge-item-123',
-  status: 'billable',
-  subject: { reference: 'Patient/patient-123' },
-  code: { text: 'Test Charge' },
-};
-
-const mockClaim: WithId<Claim> = {
-  resourceType: 'Claim',
-  id: 'claim-123',
-  status: 'active',
-  type: { coding: [{ code: 'professional' }] },
-  use: 'claim',
-  created: new Date().toISOString(),
-  patient: { reference: 'Patient/patient-123' },
-  provider: { reference: 'Practitioner/practitioner-123' },
-  priority: { coding: [{ code: 'normal' }] },
-  insurance: [],
-  item: [
-    {
-      sequence: 1,
-      encounter: [{ reference: 'Encounter/encounter-123' }],
-      productOrService: {
-        coding: [{ code: 'CPT', system: 'http://terminology.hl7.org/CodeSystem/cpt' }],
-        text: 'CPT Code',
-      },
-    },
-  ],
-};
-
 describe('useEncounterChart', () => {
   let medplum: MockClient;
 
@@ -123,11 +86,9 @@ describe('useEncounterChart', () => {
     const { result } = renderHook(() => useEncounterChart(undefined), { wrapper });
 
     expect(result.current.encounter).toBeUndefined();
-    expect(result.current.claim).toBeUndefined();
     expect(result.current.practitioner).toBeUndefined();
     expect(result.current.tasks).toEqual([]);
     expect(result.current.clinicalImpression).toBeUndefined();
-    expect(result.current.chargeItems).toEqual([]);
     expect(result.current.appointment).toBeUndefined();
   });
 
@@ -136,8 +97,6 @@ describe('useEncounterChart', () => {
     const createdEncounter = await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
 
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
-
     const encounterRef: Reference<Encounter> = { reference: `Encounter/${createdEncounter.id}` };
 
     const { result } = renderHook(() => useEncounterChart(encounterRef), { wrapper });
@@ -145,56 +104,12 @@ describe('useEncounterChart', () => {
     await waitFor(() => {
       expect(result.current.encounter?.id).toBe(createdEncounter.id);
     });
-
-    await waitFor(() => {
-      expect(result.current.chargeItems).toHaveLength(1);
-    });
-  });
-
-  test('loads charge items for encounter', async () => {
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.chargeItems).toHaveLength(1);
-      expect(result.current.chargeItems[0].id).toBe('charge-item-123');
-    });
-  });
-
-  test('fetches existing claim for encounter', async () => {
-    const createdEncounter = await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    const claimWithEncounter: Claim = {
-      ...mockClaim,
-      item: [
-        {
-          sequence: 1,
-          encounter: [{ reference: `Encounter/${createdEncounter.id}` }],
-          productOrService: {
-            coding: [{ code: 'CPT', system: 'http://terminology.hl7.org/CodeSystem/cpt' }],
-            text: 'CPT Code',
-          },
-        },
-      ],
-    };
-    await medplum.createResource(claimWithEncounter);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
-
-    const { result } = renderHook(() => useEncounterChart(createdEncounter), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.claim).toBeDefined();
-    });
   });
 
   test('fetches tasks for encounter', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockTask);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -220,7 +135,6 @@ describe('useEncounterChart', () => {
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(newerTask);
     await medplum.createResource(olderTask);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -235,7 +149,6 @@ describe('useEncounterChart', () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockClinicalImpression);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -247,7 +160,6 @@ describe('useEncounterChart', () => {
   test('fetches practitioner from encounter participant', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -260,7 +172,6 @@ describe('useEncounterChart', () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockAppointment);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -269,148 +180,12 @@ describe('useEncounterChart', () => {
     });
   });
 
-  test('creates claim when all conditions are met', async () => {
-    const newClaim: WithId<Claim> = {
-      resourceType: 'Claim',
-      id: 'new-claim-123',
-      status: 'active',
-      type: { coding: [{ code: 'professional' }] },
-      use: 'claim',
-      created: new Date().toISOString(),
-      patient: { reference: 'Patient/patient-123' },
-      provider: { reference: 'Practitioner/practitioner-123' },
-      priority: { coding: [{ code: 'normal' }] },
-      insurance: [],
-    };
-
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    await medplum.createResource(mockPatient);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
-    vi.mocked(createClaimFromEncounter).mockResolvedValue(newClaim);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    // Wait for all prerequisites to be met
-    await waitFor(() => {
-      expect(result.current.chargeItems).toHaveLength(1);
-      expect(result.current.practitioner).toBeDefined();
-    });
-
-    // Then wait for claim to be created
-    await waitFor(() => {
-      expect(result.current.claim?.id).toBe('new-claim-123');
-    });
-
-    expect(createClaimFromEncounter).toHaveBeenCalledWith(
-      medplum,
-      expect.objectContaining({ resourceType: 'Patient', id: 'patient-123' }),
-      expect.objectContaining({ resourceType: 'Encounter', id: 'encounter-123' }),
-      expect.objectContaining({ resourceType: 'Practitioner', id: 'practitioner-123' }),
-      [mockChargeItem]
-    );
-  });
-
-  test('does not create claim if one already exists', async () => {
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    await medplum.createResource(mockPatient);
-    const createdClaim = await medplum.createResource(mockClaim);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.claim).toBeDefined();
-    });
-
-    // Verify the existing claim is found (may have different ID due to MockClient)
-    expect(result.current.claim?.id).toBe(createdClaim.id);
-
-    // Verify no new claim is created
-    expect(createClaimFromEncounter).not.toHaveBeenCalled();
-  });
-
-  test('does not create claim if patient is missing', async () => {
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    // Wait for data to load
-    await waitFor(() => {
-      expect(result.current.chargeItems).toHaveLength(1);
-      expect(result.current.practitioner).toBeDefined();
-    });
-
-    // Verify claim was not created and remains undefined
-    expect(result.current.claim).toBeUndefined();
-    expect(createClaimFromEncounter).not.toHaveBeenCalled();
-  });
-
-  test('does not create claim if practitioner is missing', async () => {
-    const encounterWithoutPractitioner: WithId<Encounter> = {
-      ...mockEncounter,
-      participant: [],
-    };
-
-    await medplum.createResource(encounterWithoutPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
-
-    const { result } = renderHook(() => useEncounterChart(encounterWithoutPractitioner), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.chargeItems).toHaveLength(1);
-    });
-
-    // Verify no practitioner and no claim
-    expect(result.current.practitioner).toBeUndefined();
-    expect(result.current.claim).toBeUndefined();
-    expect(createClaimFromEncounter).not.toHaveBeenCalled();
-  });
-
-  test('does not create claim if charge items are empty', async () => {
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.practitioner).toBeDefined();
-    });
-
-    // Verify no charge items and no claim
-    expect(result.current.chargeItems).toEqual([]);
-    expect(result.current.claim).toBeUndefined();
-    expect(createClaimFromEncounter).not.toHaveBeenCalled();
-  });
-
-  test('handles charge item fetch errors gracefully', async () => {
-    const error = new Error('Failed to fetch charge items');
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockRejectedValue(error);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    await waitFor(() => {
-      expect(showErrorNotification).toHaveBeenCalled();
-    });
-
-    // Hook should still function with empty charge items
-    expect(result.current.encounter).toBeDefined();
-    expect(result.current.chargeItems).toEqual([]);
-  });
-
   test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
     await medplum.createResource(mockEncounter);
 
     // Mock searchResources to fail
     medplum.searchResources = vi.fn().mockRejectedValue(error);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -428,7 +203,6 @@ describe('useEncounterChart', () => {
     await medplum.createResource(mockPatient);
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
@@ -440,7 +214,6 @@ describe('useEncounterChart', () => {
   test('allows manual state updates via setters', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
     const { result } = renderHook(() => useEncounterChart(undefined), { wrapper });
 
@@ -456,25 +229,5 @@ describe('useEncounterChart', () => {
     });
 
     expect(result.current.encounter?.status).toBe('finished');
-  });
-
-  test('updates claim via setter', async () => {
-    await medplum.createResource(mockEncounter);
-    await medplum.createResource(mockPractitioner);
-    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.encounter).toBeDefined();
-    });
-
-    expect(result.current.claim).toBeUndefined();
-
-    act(() => {
-      result.current.setClaim(mockClaim);
-    });
-
-    expect(result.current.claim?.id).toBe('claim-123');
   });
 });

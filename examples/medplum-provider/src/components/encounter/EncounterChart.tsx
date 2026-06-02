@@ -42,18 +42,14 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const {
     encounter,
     patient: patientResource,
-    claim,
     practitioner,
     tasks,
     clinicalImpression,
-    chargeItems,
     appointment,
     setEncounter,
-    setClaim,
     setPractitioner,
     setTasks,
     setClinicalImpression,
-    setChargeItems,
   } = useEncounterChart(encounterProp);
 
   const [chartNote, setChartNote] = useState(clinicalImpression?.note?.[0]?.text);
@@ -264,13 +260,9 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
             <BillingTab
               encounter={encounter}
               setEncounter={setEncounter}
-              claim={claim}
               patient={patientResource}
               practitioner={practitioner}
               setPractitioner={setPractitioner}
-              chargeItems={chargeItems}
-              setChargeItems={setChargeItems}
-              setClaim={setClaim}
               chartNoteStatus={chartNoteStatus}
             />
           )}

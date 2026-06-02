@@ -172,61 +172,15 @@ function buildSearchParameterImplementation(
   const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
   writeable.searchStrategy = 'column';
   writeable.columnName = convertCodeToColumnName(code);
-  if (searchParam.type === 'reference' && impl.type !== SearchParameterType.CANONICAL) {
-    const singleTarget = getSingleReferenceTarget(searchParam, impl);
-    if (singleTarget) {
-      writeable.singleTargetType = singleTarget;
-    }
+  if (
+    searchParam.type === 'reference' &&
+    impl.type !== SearchParameterType.CANONICAL &&
+    impl.referenceTargetTypes?.length === 1
+  ) {
+    writeable.singleTargetType = impl.referenceTargetTypes[0];
   }
 
   return impl;
-}
-
-const HL7_FHIR_STRUCTURE_PREFIX = 'http://hl7.org/fhir/StructureDefinition/';
-
-/**
- * Derives the single reference target type for a search parameter on a
- * specific resource type.  Shared search parameters (e.g. `encounter`) may
- * list multiple targets globally, but the element definition on a concrete
- * resource (e.g. `DeviceRequest.encounter`) often narrows it to exactly one.
- *
- * Returns the target resource type name if exactly one HL7 target profile is
- * found, otherwise `undefined`.
- *
- * @param searchParam - The search parameter definition.
- * @param impl - The search parameter implementation details.
- * @returns The single target resource type, or undefined if there are zero or multiple targets.
- */
-function getSingleReferenceTarget(
-  searchParam: SearchParameter,
-  impl: SearchParameterDetails
-): ResourceType | undefined {
-  // Fast path: the SearchParameter itself already has a single target.
-  if (searchParam.target?.length === 1) {
-    return searchParam.target[0];
-  }
-
-  // Derive from element definitions (resource-specific target profiles).
-  const elementDefs = impl.elementDefinitions;
-  if (elementDefs) {
-    const targetTypes = new Set<string>();
-    for (const ed of elementDefs) {
-      for (const t of ed.type) {
-        if (t.code === 'Reference' && t.targetProfile) {
-          for (const profile of t.targetProfile) {
-            if (profile.startsWith(HL7_FHIR_STRUCTURE_PREFIX)) {
-              targetTypes.add(profile.slice(HL7_FHIR_STRUCTURE_PREFIX.length));
-            }
-          }
-        }
-      }
-    }
-    if (targetTypes.size === 1) {
-      return targetTypes.values().next().value as ResourceType;
-    }
-  }
-
-  return undefined;
 }
 
 /**
