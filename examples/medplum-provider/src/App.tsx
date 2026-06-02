@@ -143,7 +143,6 @@ export function App(): JSX.Element | null {
                       ]
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
-                  { icon: <IconUserPlus />, label: 'New Patient (Voice)', href: '/onboarding-voice' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
