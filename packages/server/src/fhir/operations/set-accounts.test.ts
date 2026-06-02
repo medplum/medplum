@@ -148,22 +148,32 @@ describe('Patient Set Accounts Operation', () => {
     //check if the accounts are updated on the patient
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const updatedPatient = res4.body as Patient;
+    console.log(JSON.stringify(updatedPatient, null, 1));
     expect(updatedPatient.meta?.accounts).toBeDefined();
     expect(updatedPatient.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
     expect(updatedPatient.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
 
-    // Check if accounts are updated on the observation
+    // Check if compartments (but not accounts) are updated on the observation
     const res5 = await request(app)
       .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res5.status).toBe(200);
     const updatedObservation = res5.body as Observation;
-    expect(updatedObservation.meta?.accounts).toBeDefined();
-    expect(updatedObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
-    expect(updatedObservation.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
+    expect(updatedObservation.meta?.accounts).toBeUndefined();
+    expect(updatedObservation.meta?.compartment).toStrictEqual(
+      expect.arrayContaining([
+        { reference: getReferenceString(project) },
+        { reference: getReferenceString(updatedPatient) },
+        { reference: getReferenceString(organization1) },
+        { reference: getReferenceString(organization2) },
+      ])
+    );
+    expect(updatedObservation.meta?.compartment).toHaveLength(4);
 
     // Check if accounts are updated on the diagnostic report
     const res6 = await request(app)
@@ -312,11 +322,19 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the observation
     const res2 = await request(app)
       .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
     const updatedObservation = res2.body as Observation;
-    expect(updatedObservation.meta?.accounts).toBeDefined();
-    expect(updatedObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization2.id}`);
+    expect(updatedObservation.meta?.accounts).toBeUndefined();
+    expect(updatedObservation.meta?.compartment).toStrictEqual(
+      expect.arrayContaining([
+        { reference: getReferenceString(project) },
+        { reference: getReferenceString(patient) },
+        { reference: getReferenceString(organization2) },
+        { reference: getReferenceString(organization1) },
+      ])
+    );
 
     // Execute the operation adding the organization to the patient's compartment
     const res3 = await request(app)

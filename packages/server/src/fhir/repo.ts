@@ -1947,6 +1947,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       meta.author = undefined;
       meta.project = undefined;
       meta.account = undefined;
+      meta.accounts = undefined;
       meta.compartment = undefined;
     }
     return input;
