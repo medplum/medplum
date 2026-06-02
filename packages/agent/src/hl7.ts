@@ -13,7 +13,6 @@ import type {
 import { Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
-import type { ChannelStartResult } from './channel';
 import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import { getCurrentStats, updateStat } from './stats';
@@ -60,9 +59,9 @@ export class AgentHl7Channel extends BaseChannel {
     this.stats = new ChannelStatsTracker({ heartbeatEmitter: app.heartbeatEmitter, log: this.log });
   }
 
-  async start(): Promise<ChannelStartResult> {
+  async start(): Promise<void> {
     if (this.started) {
-      return { startPromise: Promise.resolve() };
+      return;
     }
     this.started = true;
 
@@ -70,10 +69,8 @@ export class AgentHl7Channel extends BaseChannel {
     this.log.info(`Channel starting on ${address}...`);
     this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
     this.configureHl7ServerAndConnections();
-    const startPromise = this.server.start(Number.parseInt(address.port, 10)).then(() => {
-      this.log.info('Channel started successfully');
-    });
-    return { startPromise };
+    await this.server.start(Number.parseInt(address.port, 10));
+    this.log.info('Channel started successfully');
   }
 
   async stop(): Promise<void> {
@@ -141,8 +138,7 @@ export class AgentHl7Channel extends BaseChannel {
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
-      const { startPromise } = await this.start();
-      await startPromise;
+      await this.start();
       this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
     } else if (previousEndpoint.address !== endpoint.address) {
       this.log.info(

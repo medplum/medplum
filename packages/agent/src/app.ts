@@ -42,7 +42,7 @@ import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
-import type { Channel, ChannelStartResult } from './channel';
+import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
@@ -594,9 +594,17 @@ export class App {
       }
 
       try {
-        const result = await this.startOrReloadChannel(definition, endpoint);
-        if (result) {
-          startPromises.push(result.startPromise);
+        const newChannel = await this.reloadOrCreateChannel(definition, endpoint);
+        if (newChannel) {
+          // Kick off listener binding but defer awaiting it -- the caller deletes the upgrade manifest
+          // before awaiting the start promises so the previous agent can release the ports. See {@link App.start}.
+          // Only register the channel once it has successfully bound, so a failed start doesn't leave a
+          // half-initialized channel in the map (which `stop()` would then choke on).
+          startPromises.push(
+            newChannel.start().then(() => {
+              this.channels.set(definition.name, newChannel);
+            })
+          );
         }
       } catch (err) {
         errors.push(err as Error);
@@ -714,17 +722,18 @@ export class App {
   }
 
   /**
-   * Starts a new channel, or reloads the config of an existing one.
+   * Reloads the config of an existing channel, or creates a new (unstarted) one.
+   *
+   * Starting the new channel is intentionally left to the caller ({@link App.hydrateListeners}),
+   * which collects the unawaited `start()` promises so binding can be deferred past upgrade
+   * manifest deletion. See {@link App.start} for the zero-downtime upgrade rationale.
    *
    * @param definition - The channel definition from the agent config.
    * @param endpoint - The endpoint for the channel.
-   * @returns A {@link ChannelStartResult} whose `startPromise` resolves once the new channel's
-   * listener has bound, or `undefined` if no new listener was started (config reload or error).
+   * @returns The newly created channel for the caller to start, or `undefined` if no new channel
+   * was needed (config reload) or creating it failed.
    */
-  private async startOrReloadChannel(
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ): Promise<ChannelStartResult | undefined> {
+  private async reloadOrCreateChannel(definition: AgentChannel, endpoint: Endpoint): Promise<Channel | undefined> {
     const existingChannel = this.channels.get(definition.name);
 
     if (existingChannel) {
@@ -740,26 +749,13 @@ export class App {
       this.channels.delete(definition.name);
     }
 
-    let channel: Channel;
-
     try {
       const channelType = getChannelType(endpoint);
-      channel = this.createChannel(channelType, definition, endpoint);
+      return this.createChannel(channelType, definition, endpoint);
     } catch (err) {
       this.log.error(normalizeErrorString(err));
       return undefined;
     }
-
-    // Kick off listener binding but defer awaiting it -- the caller deletes the upgrade manifest
-    // before awaiting the start promises so the previous agent can release the ports. See {@link App.start}.
-    // Only register the channel once it has successfully bound, so a failed start doesn't leave a
-    // half-initialized channel in the map (which `stop()` would then choke on).
-    const { startPromise } = await channel.start();
-    return {
-      startPromise: startPromise.then(() => {
-        this.channels.set(definition.name, channel);
-      }),
-    };
   }
 
   private createChannel(channelType: ChannelType, definition: AgentChannel, endpoint: Endpoint): Channel {

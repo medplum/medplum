@@ -11,7 +11,6 @@ import type net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
-import type { ChannelStartResult } from './channel';
 import { BaseChannel } from './channel';
 
 export class AgentDicomChannel extends BaseChannel {
@@ -166,8 +165,7 @@ export class AgentDicomChannel extends BaseChannel {
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
-      const { startPromise } = await this.start();
-      await startPromise;
+      await this.start();
       this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
     } else {
       this.log.info(`No address change needed. Listening at ${endpoint.address}`);
@@ -184,16 +182,16 @@ export class AgentDicomChannel extends BaseChannel {
     return true;
   }
 
-  async start(): Promise<ChannelStartResult> {
+  async start(): Promise<void> {
     if (this.started) {
-      return { startPromise: Promise.resolve() };
+      return;
     }
     this.started = true;
     const address = new URL(this.getEndpoint().address);
     this.log.info(`Channel starting on ${address}`);
     const port = Number.parseInt(address.port, 10);
 
-    const startPromise = new Promise((resolve) => {
+    await new Promise((resolve) => {
       this.server.on('networkError', async (err) => {
         this.log.error('Network error: ', { err });
         if ((err as Error & { code?: string })?.code === 'EADDRINUSE') {
@@ -206,11 +204,9 @@ export class AgentDicomChannel extends BaseChannel {
       this.server.once('listening', resolve);
 
       this.server.listen(port);
-    }).then(() => {
-      this.log.info('Channel started successfully');
     });
 
-    return { startPromise };
+    this.log.info('Channel started successfully');
   }
 
   async stop(): Promise<void> {
