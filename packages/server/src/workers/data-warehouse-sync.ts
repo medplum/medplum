@@ -165,15 +165,21 @@ export async function processDataWarehouseSyncJob(
 
       const result = await syncData({
         ...syncOptions,
-        onProgress: async (message, metadata) => {
-          globalLogger.info(message, metadata);
-          await job.updateProgress({ message, ...metadata });
+        onProgress: async (_message, metadata) => {
+          await job.updateProgress(metadata ?? {});
         },
       });
 
       const inserted = result.resources.filter((resource) => resource.count > 0).length;
       const skipped = result.resources.length - inserted;
-      globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
+      globalLogger.info('Data warehouse sync completed', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        inserted,
+        skipped,
+        total: result.resources.length,
+        resources: result.resources,
+      });
     } catch (err) {
       globalLogger.error('Data warehouse sync failed', {
         jobId: job.id,

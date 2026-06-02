@@ -368,9 +368,12 @@ describe('data-warehouse sync worker', () => {
     test('forwards syncData onProgress to job.updateProgress', async () => {
       const updateProgress = jest.fn().mockResolvedValue(undefined);
       mockedSyncData.mockImplementationOnce(async (options) => {
-        await options?.onProgress?.('Syncing Patient_history: 1 row(s)', {
-          table: 'patient_history',
+        await options?.onProgress?.('Completed patient_history', {
+          tableNumber: 1,
+          total: 1,
           icebergTable: 'patient_history',
+          postgresTable: 'Patient_history',
+          table: 'patient_history',
           count: 1,
         });
         return { resources: [] };
@@ -383,9 +386,11 @@ describe('data-warehouse sync worker', () => {
       } as any);
 
       expect(updateProgress).toHaveBeenCalledWith({
-        message: 'Syncing Patient_history: 1 row(s)',
-        table: 'patient_history',
+        tableNumber: 1,
+        total: 1,
         icebergTable: 'patient_history',
+        postgresTable: 'Patient_history',
+        table: 'patient_history',
         count: 1,
       });
     });
