@@ -50,6 +50,7 @@ export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
     destination: syncConfig.destination,
     cron: syncConfig.cron,
     resourceTypes: syncConfig.resourceTypes,
+    startDate: syncConfig.startDate,
   });
 }
 

@@ -146,4 +146,74 @@ describe('OrderMedicationPage', () => {
     // and remove the only handle vendor reconciliation has.
     expect(deleteSpy).not.toHaveBeenCalledWith('MedicationRequest', expect.any(String));
   });
+
+  test('medication title combines the drug name with the selected formulation, not just the strength', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+
+    // Drug-name search row: carries the product name + a routed-med-id so the
+    // page expands to formulations (the path that previously dropped the name).
+    const drugHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-jentadueto',
+      code: { text: 'Jentadueto' },
+      identifier: [{ system: 'https://scriptsure.com/routed-med-id', value: '163396' }],
+    };
+    // Formulation row from the routedMedId lookup: only a strength/format string.
+    const formatHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-jentadueto-format',
+      code: {
+        text: '12.5 mg-500 mg tablet',
+        coding: [
+          { system: 'http://hl7.org/fhir/sid/ndc', code: '64764033560', display: '12.5 mg-500 mg tablet' },
+          { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '1368398', display: 'SBD' },
+        ],
+      },
+    };
+    searchMedicationsMock.mockImplementation(async (input: { term?: string; routedMedId?: number }) => {
+      return input?.routedMedId ? [formatHit] : [drugHit];
+    });
+    orderMedicationMock.mockResolvedValue({ launchUrl: 'https://ssu.example/widget', medicationRequestId: 'mr-1' });
+
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i);
+    await user.type(searchInput, 'jentadueto');
+    await user.click(await screen.findByText('Jentadueto'));
+
+    // Wait for the routedMedId formulation lookup to resolve and render.
+    await screen.findByText(/Formulation & directions/i);
+
+    await user.click(await screen.findByRole('button', { name: /^Prescribe$/ }));
+
+    await waitFor(() => {
+      const mrCall = createSpy.mock.calls.find(
+        (c) => (c[0] as { resourceType?: string })?.resourceType === 'MedicationRequest'
+      );
+      expect(mrCall).toBeDefined();
+      expect((mrCall?.[0] as MedicationRequest).medicationCodeableConcept?.text).toBe(
+        'Jentadueto 12.5 mg-500 mg tablet'
+      );
+    });
+  });
 });
