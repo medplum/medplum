@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
 import type { Expression } from '../fhir/sql';
 import { Conjunction } from '../fhir/sql';
+import { globalLogger } from '../logger';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseDestination } from './destination';
@@ -68,6 +69,16 @@ async function runWarehouseTableSync(
   const results: SyncResourceResult[] = [];
 
   const total = options.warehouseSources.length;
+
+  globalLogger.info('Starting warehouse sync', {
+    total,
+    startDate: options.startDate,
+    resourceTypes: options.resourceTypes,
+    warehouseSources: options.warehouseSources.map((spec) => ({
+      icebergTable: spec.icebergTable,
+    })),
+    subsystem: 'data-warehouse-sync',
+  });
 
   for (const [index, spec] of options.warehouseSources.entries()) {
     const { icebergTable, postgresTable } = spec;
