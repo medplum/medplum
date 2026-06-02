@@ -42,7 +42,7 @@ import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
-import type { Channel } from './channel';
+import type { Channel, ChannelStartResult } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
@@ -477,9 +477,8 @@ export class App {
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
     }
 
-    const startPromises: Promise<void>[] = [];
-    await this.hydrateListeners(startPromises);
-    return { listenersStarted: this.awaitChannelStarts(startPromises) };
+    const startPromises = await this.hydrateListeners();
+    return { listenersStarted: this.waitForChannelsToStart(startPromises) };
   }
 
   getStats(): AgentStats {
@@ -522,13 +521,13 @@ export class App {
   /**
    * This method should only be called by {@link App.beginReloadConfig}.
    *
-   * Channel listener start promises are collected into `startPromises` rather than awaited here, so
-   * the caller can delete the upgrade manifest before waiting for the listeners to bind. See
-   * {@link App.start} for the zero-downtime upgrade rationale.
+   * Channel listener start promises are returned rather than awaited here, so the caller can delete
+   * the upgrade manifest before waiting for the listeners to bind. See {@link App.start} for the
+   * zero-downtime upgrade rationale.
    *
-   * @param startPromises - Collector that channel listener start promises are pushed into for the caller to await.
+   * @returns The channel listener start promises for the caller to await.
    */
-  private async hydrateListeners(startPromises: Promise<void>[]): Promise<void> {
+  private async hydrateListeners(): Promise<Promise<void>[]> {
     const config = this.config as Agent;
 
     const pendingRemoval = new Set(this.channels.keys());
@@ -584,6 +583,7 @@ export class App {
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
     const errors = [] as Error[];
+    const startPromises: Promise<void>[] = [];
 
     for (let i = 0; i < filteredChannels.length; i++) {
       const definition = filteredChannels[i];
@@ -594,7 +594,10 @@ export class App {
       }
 
       try {
-        await this.startOrReloadChannel(definition, endpoint, startPromises);
+        const result = await this.startOrReloadChannel(definition, endpoint);
+        if (result) {
+          startPromises.push(result.startPromise);
+        }
       } catch (err) {
         errors.push(err as Error);
         this.log.error(normalizeErrorString(err));
@@ -602,8 +605,8 @@ export class App {
     }
 
     // If there were any errors thrown during reloading, throw them as one error.
-    // Note: errors from actually binding the listeners are deferred into `startPromises` and
-    // surfaced separately by {@link App.awaitChannelStarts}.
+    // Note: errors from actually binding the listeners are deferred into the returned
+    // `startPromises` and surfaced separately by {@link App.waitForChannelsToStart}.
     if (errors.length) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
@@ -626,15 +629,17 @@ export class App {
         ],
       });
     }
+
+    return startPromises;
   }
 
   /**
-   * Awaits the channel listener start promises collected during {@link App.hydrateListeners},
+   * Awaits the channel listener start promises returned by {@link App.hydrateListeners},
    * aggregating any bind failures into a single error (mirroring {@link App.hydrateListeners}).
    *
    * @param startPromises - The channel listener start promises to await.
    */
-  private async awaitChannelStarts(startPromises: Promise<void>[]): Promise<void> {
+  private async waitForChannelsToStart(startPromises: Promise<void>[]): Promise<void> {
     const results = await Promise.allSettled(startPromises);
     const errors = results
       .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
@@ -708,11 +713,18 @@ export class App {
     }
   }
 
+  /**
+   * Starts a new channel, or reloads the config of an existing one.
+   *
+   * @param definition - The channel definition from the agent config.
+   * @param endpoint - The endpoint for the channel.
+   * @returns A {@link ChannelStartResult} whose `startPromise` resolves once the new channel's
+   * listener has bound, or `undefined` if no new listener was started (config reload or error).
+   */
   private async startOrReloadChannel(
     definition: AgentChannel,
-    endpoint: Endpoint,
-    startPromises: Promise<void>[]
-  ): Promise<void> {
+    endpoint: Endpoint
+  ): Promise<ChannelStartResult | undefined> {
     const existingChannel = this.channels.get(definition.name);
 
     if (existingChannel) {
@@ -721,7 +733,7 @@ export class App {
 
       if (previousType === nextType) {
         await existingChannel.reloadConfig(definition, endpoint);
-        return;
+        return undefined;
       }
 
       await existingChannel.stop();
@@ -735,18 +747,19 @@ export class App {
       channel = this.createChannel(channelType, definition, endpoint);
     } catch (err) {
       this.log.error(normalizeErrorString(err));
-      return;
+      return undefined;
     }
 
     // Kick off listener binding but defer awaiting it -- the caller deletes the upgrade manifest
-    // before awaiting these promises so the previous agent can release the ports. See {@link App.start}.
+    // before awaiting the start promises so the previous agent can release the ports. See {@link App.start}.
     // Only register the channel once it has successfully bound, so a failed start doesn't leave a
     // half-initialized channel in the map (which `stop()` would then choke on).
-    startPromises.push(
-      channel.start().then(() => {
+    const { startPromise } = await channel.start();
+    return {
+      startPromise: startPromise.then(() => {
         this.channels.set(definition.name, channel);
-      })
-    );
+      }),
+    };
   }
 
   private createChannel(channelType: ChannelType, definition: AgentChannel, endpoint: Endpoint): Channel {

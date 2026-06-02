@@ -4,10 +4,21 @@ import type { AgentTransmitResponse, ILogger } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import type { App } from './app';
 
+export interface ChannelStartResult {
+  /** Resolves once the channel's listener has bound to its port, or rejects if binding failed. */
+  startPromise: Promise<void>;
+}
+
 export interface Channel {
   readonly log: ILogger;
   readonly channelLog: ILogger;
-  start(): Promise<void>;
+  /**
+   * Kicks off the channel. The returned promise resolves as soon as the listener bind has been
+   * initiated; the `startPromise` it carries resolves once the listener has actually bound.
+   * Binding is deferred so the zero-downtime upgrade flow can signal the previous agent to release
+   * its ports before waiting on the binds. See {@link App.start}.
+   */
+  start(): Promise<ChannelStartResult>;
   stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;
   reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
@@ -28,7 +39,7 @@ export abstract class BaseChannel implements Channel {
 
   abstract readonly log: ILogger;
   abstract readonly channelLog: ILogger;
-  abstract start(): Promise<void>;
+  abstract start(): Promise<ChannelStartResult>;
   abstract stop(): Promise<void>;
   abstract sendToRemote(message: AgentTransmitResponse): void;
   abstract reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;

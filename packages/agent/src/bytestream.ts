@@ -7,6 +7,7 @@ import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import net from 'node:net';
 import type { App } from './app';
+import type { ChannelStartResult } from './channel';
 import { BaseChannel } from './channel';
 
 export class AgentByteStreamChannel extends BaseChannel {
@@ -32,9 +33,9 @@ export class AgentByteStreamChannel extends BaseChannel {
     this.channelLog = app.channelLog.clone({ options: { prefix: `[Byte Stream:${definition.name}] ` } });
   }
 
-  async start(): Promise<void> {
+  async start(): Promise<ChannelStartResult> {
     if (this.started) {
-      return;
+      return { startPromise: Promise.resolve() };
     }
     this.started = true;
 
@@ -42,11 +43,13 @@ export class AgentByteStreamChannel extends BaseChannel {
     this.log.info(`Channel starting on ${address}...`);
     this.configureTcpServerAndConnections();
 
-    await new Promise<void>((resolve) => {
+    const startPromise = new Promise<void>((resolve) => {
       this.server.listen(Number.parseInt(address.port, 10), resolve);
+    }).then(() => {
+      this.log.info('Channel started successfully');
     });
 
-    this.log.info('Channel started successfully');
+    return { startPromise };
   }
 
   async stop(): Promise<void> {
@@ -79,7 +82,8 @@ export class AgentByteStreamChannel extends BaseChannel {
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
-      await this.start();
+      const { startPromise } = await this.start();
+      await startPromise;
       this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
     } else if (previousEndpoint.address !== endpoint.address) {
       this.log.info(
