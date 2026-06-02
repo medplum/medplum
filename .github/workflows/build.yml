@@ -78,7 +78,7 @@ jobs:
 
   preview:
     name: Deploy previews
-    if: github.event_name == 'pull_request'
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [build]
@@ -143,7 +143,7 @@ jobs:
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const body = `### 🚀 Preview Links
+            const body = `### Preview Links
 
             | Project   | URL  |
             | --------- | ---- |
