@@ -82,6 +82,12 @@ export interface AppOptions {
   channelLogger?: ILogger;
 }
 
+interface UpgradeManifest {
+  previousVersion: string;
+  targetVersion: string;
+  callback: string | null;
+}
+
 export class App {
   static instance: App;
   readonly medplum: MedplumClient;
@@ -120,11 +126,26 @@ export class App {
 
     await this.startWebSocket();
 
-    await this.reloadConfig();
+    // Begin reloading the config and starting channel listeners, but DON'T wait for the listeners
+    // to finish binding to their ports yet. During a zero-downtime upgrade, the previous agent is
+    // still listening on those ports; it only releases them once we delete the upgrade manifest
+    // below (which signals the installer to stop the old agent). If we awaited the binds here, we
+    // would deadlock: waiting for ports the old agent won't free until we delete the manifest,
+    // which we can't reach until the binds complete.
+    const { listenersStarted } = await this.beginReloadConfig();
 
-    // We do this after starting WebSockets so that we can send a message if we finished upgrading
-    // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
-    await this.maybeFinalizeUpgrade();
+    // Delete the upgrade manifest (if present) now that the listeners are attempting to bind.
+    // Removing it is the signal the installer waits on before stopping the previous agent, which
+    // is what releases the ports our listeners are binding to.
+    const upgradeManifest = this.consumeUpgradeManifest();
+
+    // Now that the previous agent is being torn down, the listeners can finish binding.
+    await listenersStarted;
+
+    // We do this after starting WebSockets so that we can send a message if we finished upgrading.
+    // We also do it after the listeners have bound, to make sure we've acquired the ports before
+    // releasing the upgrading agent PID file.
+    await this.maybeFinalizeUpgrade(upgradeManifest);
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -139,46 +160,60 @@ export class App {
     this.log.info('Medplum service started successfully');
   }
 
-  private async maybeFinalizeUpgrade(): Promise<void> {
-    if (existsSync(UPGRADE_MANIFEST_PATH)) {
-      const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
-      const upgradeDetails = JSON.parse(upgradeFile) as {
-        previousVersion: string;
-        targetVersion: string;
-        callback: string | null;
-      };
-
-      // If we are on the right version, send success response to Medplum
-      if (MEDPLUM_VERSION.startsWith(upgradeDetails.targetVersion)) {
-        // Send message
-        await this.sendToWebSocket({
-          type: 'agent:upgrade:response',
-          statusCode: 200,
-          callback: upgradeDetails.callback ?? undefined,
-        } satisfies AgentUpgradeResponse);
-        this.log.info(`Successfully upgraded to version ${upgradeDetails.targetVersion}`);
-      } else {
-        // Otherwise if we are on the wrong version, send error
-        const errMsg = `Failed to upgrade to version ${upgradeDetails.targetVersion}. Agent still running with version ${MEDPLUM_VERSION}`;
-        await this.sendToWebSocket({
-          type: 'agent:error',
-          body: errMsg,
-          callback: upgradeDetails.callback ?? undefined,
-        } satisfies AgentError);
-        this.log.error(errMsg);
-      }
-
-      // Delete manifest
-      unlinkSync(UPGRADE_MANIFEST_PATH);
-
-      await this.tryToCreateAgentPidFile();
-
-      // Wait for upgrading agent PID file since it could have been created just a few ms ago
-      await waitForPidFile('medplum-upgrading-agent');
-
-      // Now make sure to remove it
-      removePidFile('medplum-upgrading-agent');
+  /**
+   * Reads and deletes the upgrade manifest if one is present.
+   *
+   * Deleting the manifest is intentionally decoupled from {@link App.maybeFinalizeUpgrade}: removing
+   * the file is the signal the installer waits on before stopping the previous agent (which frees the
+   * ports the new agent is binding to), so it must happen BEFORE we await the channel binds. Reporting
+   * upgrade status and taking over the agent PID file happen afterwards in {@link App.maybeFinalizeUpgrade}.
+   *
+   * @returns The parsed manifest, or undefined if no upgrade is in progress.
+   */
+  private consumeUpgradeManifest(): UpgradeManifest | undefined {
+    if (!existsSync(UPGRADE_MANIFEST_PATH)) {
+      return undefined;
     }
+    const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
+    const upgradeDetails = JSON.parse(upgradeFile) as UpgradeManifest;
+    // Delete manifest -- this signals the installer that the new agent is up and binding,
+    // so it can stop the previous agent and release the ports.
+    unlinkSync(UPGRADE_MANIFEST_PATH);
+    return upgradeDetails;
+  }
+
+  private async maybeFinalizeUpgrade(upgradeDetails: UpgradeManifest | undefined): Promise<void> {
+    if (!upgradeDetails) {
+      return;
+    }
+
+    // If we are on the right version, send success response to Medplum
+    if (MEDPLUM_VERSION.startsWith(upgradeDetails.targetVersion)) {
+      // Send message
+      await this.sendToWebSocket({
+        type: 'agent:upgrade:response',
+        statusCode: 200,
+        callback: upgradeDetails.callback ?? undefined,
+      } satisfies AgentUpgradeResponse);
+      this.log.info(`Successfully upgraded to version ${upgradeDetails.targetVersion}`);
+    } else {
+      // Otherwise if we are on the wrong version, send error
+      const errMsg = `Failed to upgrade to version ${upgradeDetails.targetVersion}. Agent still running with version ${MEDPLUM_VERSION}`;
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: errMsg,
+        callback: upgradeDetails.callback ?? undefined,
+      } satisfies AgentError);
+      this.log.error(errMsg);
+    }
+
+    await this.tryToCreateAgentPidFile();
+
+    // Wait for upgrading agent PID file since it could have been created just a few ms ago
+    await waitForPidFile('medplum-upgrading-agent');
+
+    // Now make sure to remove it
+    removePidFile('medplum-upgrading-agent');
   }
 
   private async tryToCreateAgentPidFile(): Promise<void> {
@@ -380,6 +415,22 @@ export class App {
   }
 
   private async reloadConfig(): Promise<void> {
+    const { listenersStarted } = await this.beginReloadConfig();
+    await listenersStarted;
+  }
+
+  /**
+   * Reloads the agent config and begins (re)starting channel listeners, resolving as soon as the
+   * listeners have been *kicked off* -- it does NOT wait for them to finish binding to their ports.
+   * The returned `listenersStarted` promise resolves once all listeners have bound, or rejects with
+   * the aggregated bind errors.
+   *
+   * This split exists for the zero-downtime upgrade flow; see {@link App.start} and
+   * {@link App.consumeUpgradeManifest} for why binding must be deferred past manifest deletion.
+   *
+   * @returns An object whose `listenersStarted` promise resolves once all channel listeners have bound.
+   */
+  private async beginReloadConfig(): Promise<{ listenersStarted: Promise<void> }> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
@@ -426,7 +477,9 @@ export class App {
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
     }
 
-    await this.hydrateListeners();
+    const startPromises: Promise<void>[] = [];
+    await this.hydrateListeners(startPromises);
+    return { listenersStarted: this.awaitChannelStarts(startPromises) };
   }
 
   getStats(): AgentStats {
@@ -467,9 +520,15 @@ export class App {
   }
 
   /**
-   * This method should only be called by {@link App.reloadConfig}
+   * This method should only be called by {@link App.beginReloadConfig}.
+   *
+   * Channel listener start promises are collected into `startPromises` rather than awaited here, so
+   * the caller can delete the upgrade manifest before waiting for the listeners to bind. See
+   * {@link App.start} for the zero-downtime upgrade rationale.
+   *
+   * @param startPromises - Collector that channel listener start promises are pushed into for the caller to await.
    */
-  private async hydrateListeners(): Promise<void> {
+  private async hydrateListeners(startPromises: Promise<void>[]): Promise<void> {
     const config = this.config as Agent;
 
     const pendingRemoval = new Set(this.channels.keys());
@@ -535,14 +594,16 @@ export class App {
       }
 
       try {
-        await this.startOrReloadChannel(definition, endpoint);
+        await this.startOrReloadChannel(definition, endpoint, startPromises);
       } catch (err) {
         errors.push(err as Error);
         this.log.error(normalizeErrorString(err));
       }
     }
 
-    // If there were any errors thrown during reloading, throw them as one error
+    // If there were any errors thrown during reloading, throw them as one error.
+    // Note: errors from actually binding the listeners are deferred into `startPromises` and
+    // surfaced separately by {@link App.awaitChannelStarts}.
     if (errors.length) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
@@ -565,6 +626,48 @@ export class App {
         ],
       });
     }
+  }
+
+  /**
+   * Awaits the channel listener start promises collected during {@link App.hydrateListeners},
+   * aggregating any bind failures into a single error (mirroring {@link App.hydrateListeners}).
+   *
+   * @param startPromises - The channel listener start promises to await.
+   */
+  private async awaitChannelStarts(startPromises: Promise<void>[]): Promise<void> {
+    const results = await Promise.allSettled(startPromises);
+    const errors = results
+      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .map((result) => result.reason as Error);
+
+    if (!errors.length) {
+      return;
+    }
+
+    for (const err of errors) {
+      this.log.error(normalizeErrorString(err));
+    }
+
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: `${errors.length} error(s) occurred while starting channel listeners`,
+          },
+        },
+        ...errors.map(
+          (err) =>
+            ({
+              severity: 'error',
+              code: 'invalid',
+              details: { text: normalizeErrorString(err) },
+            }) satisfies OperationOutcomeIssue
+        ),
+      ],
+    });
   }
 
   /**
@@ -605,7 +708,11 @@ export class App {
     }
   }
 
-  private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+  private async startOrReloadChannel(
+    definition: AgentChannel,
+    endpoint: Endpoint,
+    startPromises: Promise<void>[]
+  ): Promise<void> {
     const existingChannel = this.channels.get(definition.name);
 
     if (existingChannel) {
@@ -631,8 +738,15 @@ export class App {
       return;
     }
 
-    await channel.start();
-    this.channels.set(definition.name, channel);
+    // Kick off listener binding but defer awaiting it -- the caller deletes the upgrade manifest
+    // before awaiting these promises so the previous agent can release the ports. See {@link App.start}.
+    // Only register the channel once it has successfully bound, so a failed start doesn't leave a
+    // half-initialized channel in the map (which `stop()` would then choke on).
+    startPromises.push(
+      channel.start().then(() => {
+        this.channels.set(definition.name, channel);
+      })
+    );
   }
 
   private createChannel(channelType: ChannelType, definition: AgentChannel, endpoint: Endpoint): Channel {
