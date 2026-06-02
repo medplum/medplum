@@ -25,13 +25,13 @@ import type {
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { AwsStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Mock, MockedFunction, MockInstance } from 'vitest';
 import fastGlob from 'fast-glob';
 import type * as NodeFetch from 'node-fetch';
 import fetch from 'node-fetch';
 import fs from 'node:fs';
 import { Readable, Writable } from 'node:stream';
 import * as tar from 'tar';
+import type { Mock, MockedFunction, MockInstance } from 'vitest';
 import { main } from '../index';
 
 vi.mock('fast-glob', () => {
@@ -41,20 +41,20 @@ vi.mock('fast-glob', () => {
 
 vi.mock('node:fs', () => {
   const mock = {
-  createReadStream: vi.fn(),
-  existsSync: vi.fn(),
-  mkdtempSync: vi.fn(() => '/tmp/'),
-  readdirSync: vi.fn(() => []),
-  readFileSync: vi.fn(),
-  rmSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: vi.fn(async () => '{}'),
-  },
-};
+    createReadStream: vi.fn(),
+    existsSync: vi.fn(),
+    mkdtempSync: vi.fn(() => '/tmp/'),
+    readdirSync: vi.fn(() => []),
+    readFileSync: vi.fn(),
+    rmSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
   return { default: mock, ...mock };
 });
 

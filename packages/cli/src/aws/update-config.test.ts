@@ -3,10 +3,10 @@
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Mock, MockInstance } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { getConfigFileName } from '../utils';
 import { mockReadline } from './test.utils';

@@ -9,11 +9,11 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import type { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Mock, MockInstance } from 'vitest';
 import fetch from 'node-fetch';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
 

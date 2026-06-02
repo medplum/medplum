@@ -26,27 +26,27 @@ import type {
 import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client } from '@aws-sdk/client-s3';
 import type { AwsStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Mock, MockInstance } from 'vitest';
 import fs from 'node:fs';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';
 
 vi.mock('node:fs', () => {
   const mock = {
-  createReadStream: vi.fn(),
-  existsSync: vi.fn(),
-  mkdtempSync: vi.fn(() => '/tmp/'),
-  readdirSync: vi.fn(() => []),
-  readFileSync: vi.fn(),
-  rmSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: vi.fn(async () => '{}'),
-  },
-};
+    createReadStream: vi.fn(),
+    existsSync: vi.fn(),
+    mkdtempSync: vi.fn(() => '/tmp/'),
+    readdirSync: vi.fn(() => []),
+    readFileSync: vi.fn(),
+    rmSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
   return { default: mock, ...mock };
 });
 

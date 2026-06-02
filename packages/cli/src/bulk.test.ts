@@ -3,10 +3,10 @@
 import { ContentType, created, MedplumClient } from '@medplum/core';
 import type * as NodeStream from 'node:stream';
 import { ReadableStream } from 'node:stream/web';
+import type { Mock } from 'vitest';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
 import { getUnsupportedExtension } from './utils';
-import type { Mock } from 'vitest';
 
 const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,

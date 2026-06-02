@@ -9,11 +9,11 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Mock } from 'vitest';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
+import type { Mock } from 'vitest';
 import { main } from '../index';
 import { mockReadline } from './test.utils';
 

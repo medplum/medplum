@@ -1683,9 +1683,7 @@ describe('Agent CLI', () => {
           extraField: 'extra-value',
         });
 
-        const channelTable = tableCalls.find(
-          (arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'channel-a'
-        );
+        const channelTable = tableCalls.find((arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'channel-a');
         expect(channelTable).toEqual([
           expect.objectContaining({
             name: 'channel-a',
@@ -1695,9 +1693,7 @@ describe('Agent CLI', () => {
           }),
         ]);
 
-        const clientTable = tableCalls.find(
-          (arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'client-a'
-        );
+        const clientTable = tableCalls.find((arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'client-a');
         expect(clientTable).toEqual([
           expect.objectContaining({
             name: 'client-a',

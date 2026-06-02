@@ -15,16 +15,16 @@ vi.mock('node:http');
 
 vi.mock('node:fs', () => {
   const mock = {
-  existsSync: vi.fn(),
-  readFileSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: vi.fn(async () => '{}'),
-  },
-};
+    existsSync: vi.fn(),
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
   return { default: mock, ...mock };
 });
 

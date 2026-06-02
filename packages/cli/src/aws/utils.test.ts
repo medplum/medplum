@@ -2,26 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Mock } from 'vitest';
 import fs from 'node:fs';
+import type { Mock } from 'vitest';
 import { printConfigNotFound, printStackNotFound } from './utils';
 
 vi.mock('node:fs', () => {
   const mock = {
-  createReadStream: vi.fn(),
-  existsSync: vi.fn(),
-  mkdtempSync: vi.fn(() => '/tmp/'),
-  readdirSync: vi.fn(() => []),
-  readFileSync: vi.fn(),
-  rmSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: vi.fn(async () => '{}'),
-  },
-};
+    createReadStream: vi.fn(),
+    existsSync: vi.fn(),
+    mkdtempSync: vi.fn(() => '/tmp/'),
+    readdirSync: vi.fn(() => []),
+    readFileSync: vi.fn(),
+    rmSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
   return { default: mock, ...mock };
 });
 
