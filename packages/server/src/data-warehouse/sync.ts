@@ -22,6 +22,8 @@ export interface SyncOptions {
   namespace?: string;
   /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
   startDate?: string;
+  /** FHIR resource types to sync; omitted means all types (see `warehouseSources`). */
+  resourceTypes?: string[];
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
@@ -85,6 +87,7 @@ async function runWarehouseTableSync(
   globalLogger.info('Starting warehouse sync', {
     tableCount: total,
     startDate: options.startDate,
+    resourceTypes: options.resourceTypes,
     warehouseSources: options.warehouseSources.map((spec) => ({
       icebergTable: spec.icebergTable,
       postgresTable: spec.postgresTable,

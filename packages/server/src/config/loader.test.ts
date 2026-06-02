@@ -435,6 +435,15 @@ describe('Config', () => {
     expect(config.dataWarehouse?.localBasePath).toStrictEqual('/tmp/warehouse');
   });
 
+  test('Env config dataWarehouse resourceTypes', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_RESOURCE_TYPES', '["Patient","Observation"]');
+
+    const config = await loadConfig('env');
+
+    expect(config.dataWarehouse?.resourceTypes).toStrictEqual(['Patient', 'Observation']);
+  });
+
   test('Multi-source: file then env overlay', async () => {
     setEnv('MEDPLUM_PORT', '9999');
 

@@ -20,9 +20,10 @@ import type { PoolClient } from 'pg';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import * as validateConfig from '../config/validate-config';
 import type { MedplumServerConfig } from '../config/types';
 import type * as DataWarehouseConfigModule from '../data-warehouse/config';
-import { buildPgConnectionURI } from '../data-warehouse/config';
+import { buildPgConnectionURI, getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
 import { syncData } from '../data-warehouse/sync';
 import * as database from '../database';
 import { locks } from '../database';
@@ -38,12 +39,21 @@ import {
 } from './data-warehouse-sync';
 
 const TABLE_NAMES = ['Patient_history', 'Observation_history'];
+const FILTERABLE_TABLE_NAMES = ['Patient_History', 'Observation_History'];
 
 jest.mock('../data-warehouse/config', () => {
   const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
   return {
     ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn(() => TABLE_NAMES),
+    getWarehouseSyncPostgresTableNames: jest.fn((resourceTypes?: string[]) => {
+      if (!resourceTypes?.length) {
+        return TABLE_NAMES;
+      }
+      const selected = new Set(resourceTypes);
+      return FILTERABLE_TABLE_NAMES.filter((tableName) =>
+        selected.has(tableName.replace(/_History$/, ''))
+      );
+    }),
   };
 });
 jest.mock('../data-warehouse/sync', () => ({
@@ -86,6 +96,28 @@ describe('data-warehouse sync worker', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await initConfig();
+  });
+
+  test('getDataWarehouseSyncOptions passes resourceTypes and filters warehouse sources', async () => {
+    jest.spyOn(validateConfig, 'getDataWarehouseConfigErrors').mockReturnValue([]);
+
+    await initConfig({
+      dataWarehouse: {
+        ...enabledDataWarehouse,
+        resourceTypes: ['Patient'],
+      },
+    });
+    const result = getDataWarehouseSyncOptions(config);
+
+    expect(result.resourceTypes).toStrictEqual(['Patient']);
+    expect(getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient']);
+    expect(result.warehouseSources).toHaveLength(1);
+    expect(result.warehouseSources[0]).toMatchObject({
+      postgresTable: 'Patient_History',
+      icebergTable: 'patient_history',
+    });
+
+    jest.restoreAllMocks();
   });
 
   test('getDataWarehouseSyncOptions passes startDate when configured', async () => {

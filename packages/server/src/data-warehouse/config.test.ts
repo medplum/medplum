@@ -1,11 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { ResourceType } from '@medplum/fhirtypes';
 import pgConnectionString from 'pg-connection-string';
+
+jest.mock('@medplum/core', () => {
+  const actual = jest.requireActual('@medplum/core');
+  return {
+    ...actual,
+    getResourceTypes: jest.fn((): ResourceType[] => ['Patient', 'Observation', 'Account']),
+  };
+});
+
 import {
   DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
   appendMedplumDatabaseSslSearchParams,
   buildPgConnectionURI,
+  getWarehouseSyncPostgresTableNames,
   toIcebergTableName,
 } from './config';
 
@@ -95,6 +106,20 @@ describe('appendMedplumDatabaseSslSearchParams', () => {
     const parsed = new URL(uri);
     expect(parsed.searchParams.get('sslcert')).toBe('/path/with spaces/client.crt');
     expect(uri).toContain('sslcert=%2Fpath%2Fwith%20spaces%2Fclient.crt');
+  });
+});
+
+describe('getWarehouseSyncPostgresTableNames', () => {
+  test('returns all history tables when resourceTypes is omitted', () => {
+    const all = getWarehouseSyncPostgresTableNames();
+    const filtered = getWarehouseSyncPostgresTableNames(['Patient', 'Observation']);
+
+    expect(all).toStrictEqual(['Patient_History', 'Observation_History', 'Account_History']);
+    expect(filtered).toStrictEqual(['Patient_History', 'Observation_History']);
+  });
+
+  test('returns all history tables when resourceTypes is empty', () => {
+    expect(getWarehouseSyncPostgresTableNames([])).toStrictEqual(getWarehouseSyncPostgresTableNames());
   });
 });
 

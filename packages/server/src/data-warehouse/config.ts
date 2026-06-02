@@ -83,15 +83,31 @@ export interface WarehouseSourceTable {
   readonly icebergTable: string;
 }
 
+const HISTORY_TABLE_SUFFIX = '_History';
+
+function toHistoryPostgresTableName(resourceType: string): string {
+  return `${resourceType}${HISTORY_TABLE_SUFFIX}`;
+}
+
 /**
- * Postgres history table names for all indexed repository resource types (`{ResourceType}_History`),
+ * Postgres history table names for indexed repository resource types (`{ResourceType}_History`),
  * matching migrations (`resourceType + '_History'`).
  * Used by the scheduled data warehouse sync worker.
  *
+ * @param resourceTypes - Optional FHIR resource types to include. When omitted or empty, all types are included.
  * @returns The list of Postgres table names.
  */
-export function getWarehouseSyncPostgresTableNames(): string[] {
-  return getResourceTypes().map((resourceType) => `${resourceType}_History`);
+export function getWarehouseSyncPostgresTableNames(resourceTypes?: string[]): string[] {
+  const allTableNames = getResourceTypes().map(toHistoryPostgresTableName);
+  if (!resourceTypes?.length) {
+    return allTableNames;
+  }
+
+  const selectedTypes = new Set(resourceTypes);
+  return allTableNames.filter((tableName) => {
+    const resourceType = tableName.slice(0, -HISTORY_TABLE_SUFFIX.length);
+    return selectedTypes.has(resourceType);
+  });
 }
 
 /**
