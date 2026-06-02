@@ -87,6 +87,14 @@ The 837P always requires a **billing provider**. You can bill either way:
 
 The required fields below note which apply to each case.
 
+The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the `PractitionerRole` that links them, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim`. The values are chosen to pass the validations described above — a checksum-valid NPI, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
+
+POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
+
+:::tip[Billing as an individual]
+To bill under the rendering provider instead, drop the billing `Organization` and `PractitionerRole`, and move the EIN/SSN, `telecom` (phone), and `address` onto the `Practitioner`.
+:::
+
 <details>
 <summary>Example transaction Bundle (organization billing, Stedi test payer)</summary>
 
@@ -438,17 +446,6 @@ For each `Claim.item`, the bot chooses a date of service in this order:
 Dates are capped to **today in US Eastern time** so UTC midnight storage does not produce a service date after the payer's transaction date.
 
 Claim-level place of service defaults to `11` (Office) unless `item[0].locationCodeableConcept` specifies a code.
-
-## Example transaction Bundle
-
-The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the `PractitionerRole` that links them, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim`. The values are chosen to pass the validations described above — a checksum-valid NPI, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
-
-POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
-
-:::tip[Billing as an individual]
-To bill under the rendering provider instead, drop the billing `Organization` and `PractitionerRole`, and move the EIN/SSN, `telecom` (phone), and `address` onto the `Practitioner`.
-:::
-
 
 ## Executing the claim submission
 
