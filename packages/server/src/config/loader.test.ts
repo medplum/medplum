@@ -75,6 +75,40 @@ describe('Config', () => {
     expect(getConfig()).toBe(config);
   });
 
+  test('Load database SSL env config', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATABASE_SSL_REQUIRE', 'true');
+    setEnv('MEDPLUM_DATABASE_SSL_REJECT_UNAUTHORIZED', 'true');
+    setEnv('MEDPLUM_DATABASE_SSL_CA', 'DatabaseSslCa');
+
+    const config = await loadConfig('env');
+    expect(config.database.ssl).toStrictEqual({
+      require: true,
+      rejectUnauthorized: true,
+      ca: 'DatabaseSslCa',
+    });
+  });
+
+  test('Load readonly database env config', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_READONLY_DATABASE_HOST', 'readonly.example.com');
+    setEnv('MEDPLUM_READONLY_DATABASE_PORT', '5432');
+    setEnv('MEDPLUM_READONLY_DATABASE_MAX_CONNECTIONS', '5');
+    setEnv('MEDPLUM_READONLY_DATABASE_SSL_REQUIRE', 'true');
+    setEnv('MEDPLUM_READONLY_DATABASE_SSL_REJECT_UNAUTHORIZED', 'false');
+
+    const config = await loadConfig('env');
+    expect(config.readonlyDatabase).toStrictEqual({
+      host: 'readonly.example.com',
+      port: 5432,
+      maxConnections: 5,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    });
+  });
+
   test('Env config ignores non-MEDPLUM_ variables', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('NOT_MEDPLUM_SOMETHING', 'ignored');
@@ -345,6 +379,62 @@ describe('Config', () => {
     expect(config.workers?.bullmq).toStrictEqual({ subscription: { concurrency: 50 } });
   });
 
+  test('Env config dataWarehouse prefix', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_AWS_REGION', 'us-west-2');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_AWS_S3_TABLE_ARN', 'arn:aws:s3tables:us-east-1:123456789012:bucket/test');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_NAMESPACE', 'test');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse).toBeDefined();
+    expect(config.dataWarehouse?.enabled).toBe(true);
+    expect(config.dataWarehouse?.cron).toStrictEqual('0 * * * *');
+    expect(config.awsRegion).toStrictEqual('us-west-2');
+    expect(config.dataWarehouse?.awsS3TableArn).toStrictEqual('arn:aws:s3tables:us-east-1:123456789012:bucket/test');
+    expect(config.dataWarehouse?.destination).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.namespace).toStrictEqual('test');
+  });
+
+  test('loadConfig succeeds when dataWarehouse is enabled but configuration is incomplete', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse?.enabled).toBe(true);
+    expect(config.dataWarehouse?.destination).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.awsS3TableArn).toBeUndefined();
+  });
+
+  test('Env config dataWarehouse local destination fields', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 'local');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_LOCAL_BASE_PATH', '/tmp/warehouse');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse).toBeDefined();
+    expect(config.dataWarehouse?.destination).toStrictEqual('local');
+    expect(config.dataWarehouse?.localBasePath).toStrictEqual('/tmp/warehouse');
+  });
+
   test('Multi-source: file then env overlay', async () => {
     setEnv('MEDPLUM_PORT', '9999');
 
@@ -398,5 +488,7 @@ describe('Config', () => {
     expect(config.defaultRateLimit).toStrictEqual(-1);
     expect(config.defaultSuperAdminClientId).toBeDefined();
     expect(config.defaultSuperAdminClientSecret).toBeDefined();
+    expect(config.dataWarehouse?.enabled).not.toBe(true);
+    expect(config.dataWarehouse?.cron).toBeUndefined();
   });
 });

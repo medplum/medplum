@@ -128,6 +128,13 @@ function eventPropGetter(
     result.style.opacity = 0.6;
   }
 
+  // style "pending" appointments with an outlined event
+  if (event.type === 'appointment' && event.appointment.status === 'pending') {
+    result.style.border = '1px solid #228be6'; // blue.6
+    result.style.color = '#228be6'; // blue.6
+    result.style.backgroundColor = 'white';
+  }
+
   return result;
 }
 

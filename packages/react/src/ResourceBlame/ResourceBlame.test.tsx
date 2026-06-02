@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
@@ -43,6 +44,31 @@ describe('ResourceBlame', () => {
     const el = await screen.findAllByText('1');
     expect(el).toBeDefined();
     expect(el.length).not.toBe(0);
+  });
+
+  test('ResourceBlame renders onBehalfOf when present', async () => {
+    const history: Bundle = {
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: 'test-obo',
+            meta: {
+              versionId: '1',
+              lastUpdated: '2024-01-01T00:00:00Z',
+              author: { reference: 'Practitioner/123' },
+              onBehalfOf: { reference: 'Practitioner/123' },
+            },
+            name: [{ family: 'Doe' }],
+          },
+        },
+      ],
+    };
+    await setup({ history });
+    expect(await screen.findAllByText('Alice Smith')).toHaveLength(2);
+    expect(document.querySelector('.onBehalfOf')).not.toBeNull();
   });
 
   test('getTimeString', () => {

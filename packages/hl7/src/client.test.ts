@@ -26,7 +26,10 @@ describe('Hl7Client', () => {
         connection.addEventListener('message', ({ message }) => {
           // Check if a response cb has been set, otherwise use the default
           if (nextResponseCb) {
-            connection.send(nextResponseCb(message));
+            const reply = nextResponseCb(message);
+            if (reply) {
+              connection.send(reply);
+            }
           } else {
             connection.send(defaultResponseCb(message));
           }
@@ -635,8 +638,8 @@ describe('Hl7Client', () => {
       const mockServer = new MockServer();
 
       // Mock connect and createServer so we can wait to connect with a delay
-      jest.spyOn(net, 'connect').mockImplementation(() => clientMockSocket as unknown as net.Socket);
-      jest.spyOn(net, 'createServer').mockImplementation(((
+      vi.spyOn(net, 'connect').mockImplementation(() => clientMockSocket as unknown as net.Socket);
+      vi.spyOn(net, 'createServer').mockImplementation(((
         connectionListener?: (socket: net.Socket) => void
       ): net.Server => {
         mockServer.connectionListener = connectionListener as any;

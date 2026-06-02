@@ -1,23 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { CPT, createReference } from '@medplum/core';
-import type { ChargeItem, Claim, Coverage } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createClaimFromEncounter, getCptChargeItems } from './claims';
-import * as coverageModule from './coverage';
+import { CPT, HTTP_HL7_ORG, createReference } from '@medplum/core';
+import type { ChargeItem, Condition, Coverage, Encounter, Patient, Practitioner } from '@medplum/fhirtypes';
+import { describe, expect, test } from 'vitest';
+import { buildClaimFromEncounter, getCptChargeItems } from './claims';
 
 describe('claims utils', () => {
-  let medplum: MockClient;
-
-  beforeEach(() => {
-    medplum = new MockClient();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  const patient: WithId<Patient> = { resourceType: 'Patient', id: 'patient-1' };
+  const encounter: WithId<Encounter> = {
+    resourceType: 'Encounter',
+    id: 'encounter-1',
+    status: 'finished',
+    class: { code: 'outpatient' },
+    subject: createReference(patient),
+  };
+  const practitioner: WithId<Practitioner> = { resourceType: 'Practitioner', id: 'practitioner-1' };
+  const coverage: WithId<Coverage> = {
+    resourceType: 'Coverage',
+    id: 'coverage-1',
+    status: 'active',
+    beneficiary: { reference: 'Patient/patient-1' },
+    payor: [{ reference: 'Organization/organization-1' }],
+  };
+  const chargeItems: WithId<ChargeItem>[] = [
+    {
+      resourceType: 'ChargeItem',
+      id: 'charge-1',
+      code: { coding: [{ system: CPT, code: '1111' }], text: 'Visit' },
+      priceOverride: { value: 25 },
+      status: 'billable',
+      subject: { reference: 'Patient/patient-1' },
+    },
+  ];
 
   describe('getCptChargeItems', () => {
     test('filters charge items to CPT codings and preserves modifiers', () => {
@@ -67,125 +82,76 @@ describe('claims utils', () => {
     });
   });
 
-  describe('createClaimFromEncounter', () => {
-    const chargeItems: WithId<ChargeItem>[] = [
-      {
-        resourceType: 'ChargeItem',
-        id: 'charge-1',
-        code: { coding: [{ system: CPT, code: '1111' }], text: 'Visit' },
-        priceOverride: { value: 25 },
-        status: 'billable',
-        subject: { reference: 'Patient/patient-1' },
-      },
-    ];
-
-    test('creates claim using existing coverage', async () => {
-      const patient = await medplum.updateResource({
-        resourceType: 'Patient',
-        id: 'patient-1',
+  describe('buildClaimFromEncounter', () => {
+    test('builds an in-memory draft claim from encounter state', () => {
+      const result = buildClaimFromEncounter({
+        patient,
+        encounter,
+        practitioner,
+        chargeItems,
+        insurance: [createReference(coverage)],
       });
 
-      const encounter = await medplum.updateResource({
-        resourceType: 'Encounter',
-        id: 'encounter-1',
-        subject: createReference(patient),
-        status: 'finished',
-        class: { code: 'outpatient' },
-      });
-
-      const practitioner = await medplum.updateResource({
-        resourceType: 'Practitioner',
-        id: 'practitioner-1',
-      });
-
-      const coverage: Coverage = {
-        resourceType: 'Coverage',
-        id: 'coverage-1',
-        status: 'active',
-        beneficiary: { reference: 'Patient/patient-1' },
-        payor: [{ reference: 'Organization/organization-1' }],
-      };
-
-      const claim: Claim = {
-        resourceType: 'Claim',
-        id: 'claim-1',
-        status: 'draft',
-        type: { coding: [{ code: 'professional' }] },
-        use: 'claim',
-        created: new Date().toISOString(),
-        patient: { reference: 'Patient/patient-1' },
-        provider: { reference: 'Practitioner/practitioner-1' },
-        priority: { coding: [{ code: 'normal' }] },
-        insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/coverage-1' } }],
-        item: [
-          {
-            sequence: 1,
-            encounter: [{ reference: 'Encounter/encounter-1' }],
-            productOrService: { coding: [{ system: CPT, code: '1111' }], text: 'Visit' },
-            net: { value: 25 },
-          },
-        ],
-        total: { value: 25 },
-      };
-
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue([coverage] as any);
-      const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue(claim as any);
-
-      const result = await createClaimFromEncounter(medplum, patient, encounter, practitioner, chargeItems);
-
-      expect(createSpy).toHaveBeenCalledWith(
+      // No persistence: the returned claim has no id.
+      expect(result.id).toBeUndefined();
+      expect(result).toEqual(
         expect.objectContaining({
+          resourceType: 'Claim',
+          status: 'draft',
+          patient: expect.objectContaining({ reference: 'Patient/patient-1' }),
+          provider: expect.objectContaining({ reference: 'Practitioner/practitioner-1' }),
           insurance: [
             expect.objectContaining({
-              coverage: { reference: 'Coverage/coverage-1' },
+              sequence: 1,
+              focal: true,
+              coverage: expect.objectContaining({ reference: 'Coverage/coverage-1' }),
             }),
           ],
-          patient: { reference: 'Patient/patient-1' },
-          provider: expect.objectContaining({ reference: 'Practitioner/practitioner-1' }),
           total: { value: 25 },
         })
       );
-      expect(result).toBe(claim);
+      expect(result.item).toHaveLength(1);
     });
 
-    test('creates self-pay coverage when no coverage exists', async () => {
-      const patient = await medplum.updateResource({
-        resourceType: 'Patient',
-        id: 'patient-1',
-      });
+    test('defaults insurance to an empty array when none is provided', () => {
+      const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems });
+      expect(result.insurance).toEqual([]);
+    });
 
-      const encounter = await medplum.updateResource({
-        resourceType: 'Encounter',
-        id: 'enc-1',
-        subject: createReference(patient),
-        status: 'finished',
-        class: { code: 'outpatient' },
-      });
+    test('maps conditions to a diagnosis array, rewriting ICD-10-CM to ICD-10', () => {
+      const conditions: Condition[] = [
+        {
+          resourceType: 'Condition',
+          id: 'condition-1',
+          subject: { reference: 'Patient/patient-1' },
+          code: { coding: [{ system: `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`, code: 'R51' }] },
+        },
+        {
+          resourceType: 'Condition',
+          id: 'condition-2',
+          subject: { reference: 'Patient/patient-1' },
+          code: { coding: [{ system: `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`, code: 'J00' }] },
+        },
+      ];
 
-      const practitioner = await medplum.updateResource({
-        resourceType: 'Practitioner',
-        id: 'prac-1',
-      });
+      const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems, conditions });
 
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
-
-      const createdCoverage: Coverage = {
-        resourceType: 'Coverage',
-        id: 'coverage-self',
-        status: 'active',
-        beneficiary: { reference: 'Patient/patient-1' },
-        payor: [{ reference: 'Organization/organization-1' }],
-      };
-
-      const coverageSpy = vi.spyOn(coverageModule, 'createSelfPayCoverage').mockResolvedValue(createdCoverage);
-      vi.spyOn(medplum, 'createResource').mockResolvedValue({ resourceType: 'Claim' } as any);
-
-      await createClaimFromEncounter(medplum, patient, encounter, practitioner, chargeItems);
-
-      expect(coverageSpy).toHaveBeenCalledWith(
-        medplum,
-        expect.objectContaining({ resourceType: 'Patient', id: 'patient-1' })
+      expect(result.diagnosis).toHaveLength(2);
+      expect(result.diagnosis?.[0]).toEqual(
+        expect.objectContaining({
+          sequence: 1,
+          type: [{ coding: [{ code: 'principal' }] }],
+          diagnosisCodeableConcept: {
+            coding: [expect.objectContaining({ system: `${HTTP_HL7_ORG}/fhir/sid/icd-10`, code: 'R51' })],
+          },
+        })
       );
+      expect(result.diagnosis?.[1]?.type).toEqual([{ coding: [{ code: 'secondary' }] }]);
+    });
+
+    test('omits diagnosis when there are no conditions', () => {
+      const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems });
+      expect(result.diagnosis).toBeUndefined();
     });
   });
 });

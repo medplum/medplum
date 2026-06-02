@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 global:
-  cloudProvider: gcp # Supported values: gcp, azure
+  cloudProvider: '' # Supported values: gcp, azure
   configSource:
     # Examples:
     # type: "env"
@@ -11,6 +11,39 @@ global:
     # type: "gcp:projectId:secretId"
     # type: "azure:keyVaultURL:secretName"
     type: 'env' # Default to env
+
+config:
+  server:
+    # These are the default values for a local deployment
+    # You should change these values for your own environment
+    # See: https://www.medplum.com/docs/self-hosting/config-settings
+    port: 8103
+    baseUrl: 'http://localhost:8103/'
+    appBaseUrl: 'http://localhost:3000/'
+    binaryStorage: 'file:./binary/'
+    storageBaseUrl: 'http://localhost:8103/storage/'
+    signingKeyId: ''
+    signingKey: ''
+    signingKeyPassphrase: ''
+    supportEmail: '"Medplum" <support@medplum.com>'
+    googleClientId: ''
+    googleClientSecret: ''
+    recaptchaSiteKey: ''
+    recaptchaSecretKey: ''
+    vmContextBotsEnabled: true
+    defaultBotRuntimeVersion: 'vmcontext'
+    allowedOrigins: ''
+    introspectionEnabled: true
+  database:
+    host: 'localhost'
+    port: 5432
+    dbname: 'medplum'
+    username: 'medplum'
+    password: 'medplum'
+  redis:
+    host: 'localhost'
+    port: 6379
+    password: 'medplum'
 
 serviceAccount:
   annotations:

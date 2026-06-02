@@ -112,3 +112,6 @@ CLAUDE.md
 
 # 0x profiling data
 *.0x
+
+# Temp files
+temp/
