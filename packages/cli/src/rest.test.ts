@@ -8,6 +8,7 @@ import { randomUUID, webcrypto } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
@@ -27,7 +28,7 @@ describe('CLI rest', () => {
 
   beforeAll(async () => {
     (os.homedir as unknown as Mock).mockReturnValue(testHomeDir);
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());

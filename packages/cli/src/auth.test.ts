@@ -6,6 +6,7 @@ import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
@@ -35,9 +36,9 @@ describe('CLI auth', () => {
   let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn().mockImplementation(function exit(exitCode?: number): never {
       if (exitCode === 0) {
-        return;
+        return undefined as never;
       }
       throw new Error(`Process exited with exit code ${exitCode}`);
     }) as unknown as typeof process.exit;
@@ -61,7 +62,7 @@ describe('CLI auth', () => {
 
   test('Login success', async () => {
     (cp.exec as unknown as Mock).mockImplementation(
-      (_, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+      (_: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
         if (callback) {
           callback(null, '', '');
         }

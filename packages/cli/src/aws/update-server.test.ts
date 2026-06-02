@@ -9,6 +9,7 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import type { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
+import type { Mock, MockInstance } from 'vitest';
 import fetch from 'node-fetch';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -33,7 +34,7 @@ describe('update-server command', () => {
   beforeAll(() => {
     const ecsMock = mockClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());

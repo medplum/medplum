@@ -3,7 +3,9 @@
 import { ContentType } from '@medplum/core';
 import { Option } from 'commander';
 import { Writable } from 'node:stream';
+import type { ReadEntry } from 'tar';
 import * as tar from 'tar';
+import type { Mocked } from 'vitest';
 import { getCodeContentType, MedplumCommand, safeTarExtractor } from './utils';
 
 vi.mock('tar', () => ({
@@ -12,10 +14,10 @@ vi.mock('tar', () => ({
 
 describe('CLI utils', () => {
   test('safeTarExtractor throws an error when fileCount > MAX_FILES', async () => {
-    (tar as Mocked<typeof tar>).extract.mockImplementationOnce((options) => {
+    (tar as Mocked<typeof tar>).extract.mockImplementationOnce((options: Parameters<typeof tar.extract>[0]) => {
       const writable = new Writable({
         write(chunk, _, callback) {
-          options.filter?.(chunk.toString(), { size: 1 });
+          options.filter?.(chunk.toString(), { size: 1 } as unknown as ReadEntry);
           callback();
         },
       }) as unknown as tar.Unpack;
@@ -32,10 +34,10 @@ describe('CLI utils', () => {
   });
 
   test('safeTarExtractor throws an error when size > MAX_SIZE', async () => {
-    (tar as Mocked<typeof tar>).extract.mockImplementationOnce((options) => {
+    (tar as Mocked<typeof tar>).extract.mockImplementationOnce((options: Parameters<typeof tar.extract>[0]) => {
       const writable = new Writable({
         write(chunk, _, callback) {
-          options.filter?.(chunk.toString(), { size: 1024 * 1024 });
+          options.filter?.(chunk.toString(), { size: 1024 * 1024 } as unknown as ReadEntry);
           callback();
         },
       }) as unknown as tar.Unpack;

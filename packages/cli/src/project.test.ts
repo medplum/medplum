@@ -4,6 +4,7 @@ import type { MedplumClient } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import fs from 'node:fs';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
@@ -32,7 +33,7 @@ describe('CLI Project', () => {
   let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());

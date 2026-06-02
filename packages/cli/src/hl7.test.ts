@@ -3,6 +3,7 @@
 import type * as NodeFs from 'node:fs';
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
+import type { Mock } from 'vitest';
 import { generateSampleHl7Message } from './hl7';
 import { main } from './index';
 
@@ -17,7 +18,7 @@ describe('HL7 commands', () => {
   test('Client and server', async () => {
     console.error = vi.fn();
     console.log = vi.fn();
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     const processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());

@@ -7,13 +7,14 @@ import {
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
 import { mockClient } from 'aws-sdk-client-mock';
+import type { MockInstance } from 'vitest';
 import { main } from '../index';
 
 describe('describe command', () => {
   let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());

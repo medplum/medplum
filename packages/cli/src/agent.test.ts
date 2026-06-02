@@ -11,6 +11,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Agent, Bundle, Parameters, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
 
@@ -30,7 +31,7 @@ describe('Agent CLI', () => {
   let medplumGetSpy: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
@@ -1666,10 +1667,10 @@ describe('Agent CLI', () => {
         expect(consoleInfoSpy).toHaveBeenCalledWith('Channel Stats:');
         expect(consoleInfoSpy).toHaveBeenCalledWith('Client Stats:');
 
-        const tableCalls = consoleTableSpy.mock.calls.map((call) => call[0]);
+        const tableCalls = consoleTableSpy.mock.calls.map((call: unknown[]) => call[0]);
 
         const summary = tableCalls.find(
-          (arg) => arg && typeof arg === 'object' && !Array.isArray(arg) && 'live' in arg
+          (arg: unknown) => arg && typeof arg === 'object' && !Array.isArray(arg) && 'live' in arg
         );
         expect(summary).toMatchObject({
           live: 'true',
@@ -1682,7 +1683,9 @@ describe('Agent CLI', () => {
           extraField: 'extra-value',
         });
 
-        const channelTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'channel-a');
+        const channelTable = tableCalls.find(
+          (arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'channel-a'
+        );
         expect(channelTable).toEqual([
           expect.objectContaining({
             name: 'channel-a',
@@ -1692,7 +1695,9 @@ describe('Agent CLI', () => {
           }),
         ]);
 
-        const clientTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'client-a');
+        const clientTable = tableCalls.find(
+          (arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'client-a'
+        );
         expect(clientTable).toEqual([
           expect.objectContaining({
             name: 'client-a',

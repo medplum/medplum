@@ -25,6 +25,7 @@ import type {
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { AwsStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import type { Mock, MockedFunction, MockInstance } from 'vitest';
 import fastGlob from 'fast-glob';
 import type * as NodeFetch from 'node-fetch';
 import fetch from 'node-fetch';
@@ -78,7 +79,7 @@ describe('update-app command', () => {
   let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
@@ -218,7 +219,7 @@ describe('update-app command', () => {
     );
 
     // Mock the readdirSync to list files to replace variables
-    (fs.readdirSync as Mock).mockImplementation((folderName) => {
+    (fs.readdirSync as Mock).mockImplementation((folderName: string) => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
@@ -286,7 +287,7 @@ describe('update-app command', () => {
     );
 
     // Mock the readdirSync to list files to replace variables
-    (fs.readdirSync as Mock).mockImplementation((folderName) => {
+    (fs.readdirSync as Mock).mockImplementation((folderName: string) => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
@@ -350,7 +351,7 @@ describe('update-app command', () => {
     );
 
     // Mock the readdirSync to list files to replace variables
-    (fs.readdirSync as Mock).mockImplementation((folderName) => {
+    (fs.readdirSync as Mock).mockImplementation((folderName: string) => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }

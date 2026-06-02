@@ -5,6 +5,7 @@ import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
+import type { Mock } from 'vitest';
 import { FileSystemStorage } from '../storage';
 import { createMedplumClient } from './client';
 

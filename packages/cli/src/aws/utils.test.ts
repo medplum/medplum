@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
+import type { Mock } from 'vitest';
 import fs from 'node:fs';
 import { printConfigNotFound, printStackNotFound } from './utils';
 

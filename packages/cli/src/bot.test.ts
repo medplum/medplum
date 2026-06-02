@@ -5,6 +5,7 @@ import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import type { Mock, MockInstance } from 'vitest';
 import * as cli from '.';
 import { createMedplumClient } from './util/client';
 
@@ -32,7 +33,7 @@ describe('CLI Bots', () => {
   let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());

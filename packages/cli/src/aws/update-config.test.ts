@@ -3,6 +3,7 @@
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import type { Mock, MockInstance } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
@@ -17,7 +18,7 @@ describe('update-config command', () => {
   let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
@@ -344,13 +345,15 @@ describe('update-config command', () => {
     unlinkSync(infraFileName);
     unlinkSync(serverFileName);
 
-    expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
-      Name: `/medplum/${tag}/defaultProjectSystemSetting`,
-      Value: JSON.stringify({
-        defaultBotRuntimeVersion: '2.4.17',
-      }),
-      Type: 'SecureString',
-      Overwrite: true,
-    });
+    expect(
+      ssmClient.commandCalls(PutParameterCommand, {
+        Name: `/medplum/${tag}/defaultProjectSystemSetting`,
+        Value: JSON.stringify({
+          defaultBotRuntimeVersion: '2.4.17',
+        }),
+        Type: 'SecureString',
+        Overwrite: true,
+      })
+    ).toHaveLength(1);
   });
 });
