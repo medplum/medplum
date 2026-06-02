@@ -458,10 +458,47 @@ function medicationToOrderDrugInput(
   };
 }
 
-function medicationToCodeableConcept(m: Medication): MedicationRequest['medicationCodeableConcept'] {
+/**
+ * Compose the human-readable medication name for an order.
+ *
+ * The drug-name search result ({@link drug}) carries the actual product name
+ * (e.g. "Jentadueto" / "linagliptin-metformin"), whereas the routedMedId format
+ * lookup ({@link format}) carries only the strength/formulation (e.g.
+ * "12.5 mg-500 mg tablet"). The prescribed medication name is the combination —
+ * using the format's `code.text` alone produces a dose with no drug name (the
+ * draft title bug this fixes).
+ *
+ * @param drug - The drug picked from the name search (name source).
+ * @param format - The selected formulation/strength (coding source).
+ * @returns Combined "<name> <strength>" text, de-duplicated, or whichever is present.
+ */
+function composeMedicationName(drug: Medication | undefined, format: Medication | undefined): string | undefined {
+  const drugName = drug?.code?.text?.trim();
+  const formatText = format?.code?.text?.trim();
+  if (drugName && formatText) {
+    const dl = drugName.toLowerCase();
+    const fl = formatText.toLowerCase();
+    // Avoid duplication when one already contains the other (e.g. a name search
+    // that already includes the strength, or the no-format path where
+    // drug === format).
+    if (fl.includes(dl)) {
+      return formatText;
+    }
+    if (dl.includes(fl)) {
+      return drugName;
+    }
+    return `${drugName} ${formatText}`;
+  }
+  return drugName ?? formatText;
+}
+
+function medicationToCodeableConcept(
+  format: Medication,
+  drug?: Medication
+): MedicationRequest['medicationCodeableConcept'] {
   return {
-    coding: m.code?.coding,
-    text: m.code?.text,
+    coding: format.code?.coding,
+    text: composeMedicationName(drug, format),
   };
 }
 
@@ -878,7 +915,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         subject: createReference(patient),
         requester: createReference(requester),
         authoredOn: writtenDateYmd,
-        medicationCodeableConcept: medicationToCodeableConcept(selectedFormat),
+        medicationCodeableConcept: medicationToCodeableConcept(selectedFormat, termMedication),
         substitution: { allowedBoolean: useSubstitution },
         reasonReference: primaryCondition?.id ? [{ reference: `Condition/${primaryCondition.id}` }] : undefined,
         insurance: coverage?.id ? [{ reference: `Coverage/${coverage.id}` }] : undefined,
