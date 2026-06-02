@@ -422,7 +422,7 @@ describe('Bundle tests', () => {
         expect(immunization.patient?.reference).toBe(patientEntry?.fullUrl);
       }
     });
-    
+
     test('Patient with self-referential link does not produce duplicate entries', () => {
       const inputBundle: Bundle = {
         resourceType: 'Bundle',
