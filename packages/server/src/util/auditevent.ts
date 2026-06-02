@@ -353,23 +353,18 @@ export async function createBotAuditEvent(
   };
 
   const config = getConfig();
-  for (const destination of bot.auditEventDestination ?? ['resource']) {
-    switch (destination) {
-      case 'resource': {
-        const systemRepo = await getProjectSystemRepo(runAs.project);
-        await systemRepo.createResource<AuditEvent>({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
-        });
-        break;
-      }
-      case 'log':
-        logAuditEvent({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultBotOutputLength),
-        });
-        break;
-    }
+  // Always emit to logs — log emission cannot be disabled regardless of auditEventDestination
+  logAuditEvent({
+    ...auditEvent,
+    outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultBotOutputLength),
+  });
+  // Optionally write to the database (default if auditEventDestination is unset)
+  if ((bot.auditEventDestination ?? ['resource']).includes('resource')) {
+    const systemRepo = await getProjectSystemRepo(runAs.project);
+    await systemRepo.createResource<AuditEvent>({
+      ...auditEvent,
+      outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
+    });
   }
 }
 
@@ -389,6 +384,7 @@ const SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL =
  * @param outcomeDesc - The outcome description text.
  * @param subscription - Optional rest-hook subscription.
  * @param bot - Optional bot that was executed.
+ * @param destinationOverride - Optional override for where to write the AuditEvent, ignoring the subscription extension.
  */
 export async function createSubscriptionAuditEvent(
   systemRepo: SystemRepository,
@@ -397,7 +393,8 @@ export async function createSubscriptionAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc?: string,
   subscription?: Subscription,
-  bot?: Bot
+  bot?: Bot,
+  destinationOverride?: string[]
 ): Promise<void> {
   const auditedEvent = subscription ?? resource;
 
@@ -436,18 +433,22 @@ export async function createSubscriptionAuditEvent(
     extension,
   };
 
-  // Read destination extensions from subscription
-  const destinations: string[] = [];
-  if (subscription?.extension) {
-    for (const ext of subscription.extension) {
-      if (ext.url === SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL && ext.valueCode) {
-        destinations.push(ext.valueCode);
+  // Use override if provided, otherwise read destination extensions from subscription
+  let finalDestinations: string[];
+  if (destinationOverride) {
+    finalDestinations = destinationOverride;
+  } else {
+    const destinations: string[] = [];
+    if (subscription?.extension) {
+      for (const ext of subscription.extension) {
+        if (ext.url === SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL && ext.valueCode) {
+          destinations.push(ext.valueCode);
+        }
       }
     }
+    // Default to 'resource' if no extensions found
+    finalDestinations = destinations.length > 0 ? destinations : ['resource'];
   }
-
-  // Default to 'resource' if no extensions found
-  const finalDestinations = destinations.length > 0 ? destinations : ['resource'];
 
   // Process each destination
   for (const destination of finalDestinations) {

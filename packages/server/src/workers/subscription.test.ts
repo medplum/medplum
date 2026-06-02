@@ -985,10 +985,10 @@ describe('Subscription Worker', () => {
       });
       expect(bundle.entry?.length).toStrictEqual(1);
 
-      const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.outcomeDesc).toStrictEqual('Bots not enabled');
-      expect(auditEvent.period).toBeDefined();
-      expect(auditEvent.entity).toHaveLength(3);
+      const botAuditEvent = bundle.entry?.[0]?.resource as AuditEvent;
+      expect(botAuditEvent.outcomeDesc).toStrictEqual('Bots not enabled');
+      expect(botAuditEvent.period).toBeDefined();
+      expect(botAuditEvent.entity).toHaveLength(3);
     }));
 
   test('Execute bot subscriptions', () =>
@@ -1104,6 +1104,67 @@ describe('Subscription Worker', () => {
       });
       expect(bundle.entry?.length).toStrictEqual(1);
       expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+    }));
+
+  test('Bot subscription execution AuditEvent is always emitted to logs', () =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      config.logAuditEvents = true;
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+      try {
+        const bot = await botRepo.createResource<Bot>({
+          resourceType: 'Bot',
+          name: 'Test Bot',
+          runtimeVersion: 'awslambda',
+          code: `export async function handler(medplum, event) { return event.input; }`,
+        });
+
+        await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: { reference: 'Project/' + bot.meta?.project },
+          user: createReference(bot),
+          profile: createReference(bot),
+        });
+
+        const subscription = await botRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: getReferenceString(bot) },
+        });
+
+        const patient = await botRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await findAndExecSubscriptionJob(patient, 'create');
+
+        // The bot execution AuditEvent (type 'execute') must appear in logs regardless of auditEventDestination
+        const loggedExecuteEvent = writeSpy.mock.calls
+          .map((args: unknown[]) => {
+            try {
+              return JSON.parse(args[0] as string);
+            } catch {
+              return null;
+            }
+          })
+          .find((obj: any) => obj?.resourceType === 'AuditEvent' && obj?.type?.code === 'execute');
+        expect(loggedExecuteEvent).toBeDefined();
+
+        // No separate 'transmit' AuditEvent should be created for bot subscriptions
+        const bundle = await botRepo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+        });
+        const transmitEvents = bundle.entry?.filter((e) => e.resource?.type?.code === 'transmit');
+        expect(transmitEvents?.length ?? 0).toStrictEqual(0);
+      } finally {
+        writeSpy.mockRestore();
+        config.logAuditEvents = false;
+      }
     }));
 
   test('Execute Bot from linked Project', () =>
