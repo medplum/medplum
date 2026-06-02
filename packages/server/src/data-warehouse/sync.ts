@@ -115,7 +115,7 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
   let duckdbTempDir: string | undefined;
   try {
     // create a temporary directory for the DuckDB database
-    duckdbTempDir = mkdtempSync(join(tmpdir(), `medplum-dw-sync-${Date.now()}-`));
+    duckdbTempDir = mkdtempSync(join(tmpdir(), `medplum-dw-sync-`));
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
     const instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
