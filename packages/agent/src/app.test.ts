@@ -29,6 +29,7 @@ import type { ChildProcess } from 'node:child_process';
 import child_process from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
+import net from 'node:net';
 import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
@@ -3224,6 +3225,160 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
+    });
+
+    test('Upgrading -- deletes manifest before channel listeners finish binding (zero-downtime, no deadlock)', async () => {
+      // Regression test for the zero-downtime upgrade deadlock.
+      //
+      // During a real upgrade, the previous agent keeps listening on the channel ports until the
+      // installer stops it -- and the installer only stops it once this (new) agent deletes
+      // upgrade.json. So the new agent MUST delete the manifest while its listeners are still
+      // trying to bind; if it waited for the binds to finish first, it would deadlock: the ports
+      // never free, the manifest is never deleted, and both services run forever.
+      //
+      // We simulate that here: a blocker server holds the channel's port (standing in for the old
+      // agent still listening), and we only release it when upgrade.json is deleted (standing in for
+      // the installer stopping the old agent). If start() deferred manifest deletion until after the
+      // listeners bound, this test would deadlock and trip the timeout below.
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const manifestPath = resolve(__dirname, 'upgrade.json');
+
+      // Occupy the channel's port to mimic the previous agent still listening on it.
+      const port = await getFreePort();
+      const blocker = net.createServer();
+      await new Promise<void>((res) => {
+        blocker.listen(port, res);
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+      // How many channels had bound (and thus registered themselves in `app.channels`) at the moment
+      // the manifest was deleted. The fix guarantees this is 0 -- the bind is deferred past deletion.
+      let channelsBoundAtManifestDeletion = -1;
+
+      writeFileSync(
+        manifestPath,
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: `mllp://0.0.0.0:${port}`,
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+
+      const realUnlinkSync = fs.unlinkSync.bind(fs);
+      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+        if (path === manifestPath) {
+          // A channel only registers in `app.channels` once it has successfully bound, so this
+          // proves the manifest is deleted while the listener is still (re)trying to bind.
+          channelsBoundAtManifestDeletion = app.channels.size;
+          // Release the port, mimicking the installer stopping the old agent -- this is what finally
+          // lets the new agent's listener win the bind.
+          blocker.close();
+        }
+        realUnlinkSync(path);
+      });
+
+      // If the manifest-deletion / bind ordering regresses, start() never resolves; fail with a
+      // clear message instead of hanging until the jest timeout.
+      let timeoutHandle: NodeJS.Timeout | undefined;
+      const deadlockTimeout = new Promise<never>((_resolve, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error('app.start() deadlocked: manifest not deleted before listeners bound')),
+          5000
+        );
+      });
+      try {
+        await expect(Promise.race([app.start(), deadlockTimeout])).resolves.toBeUndefined();
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
+
+      // The manifest was deleted while the listener was still unbound (deferred bind worked)...
+      expect(channelsBoundAtManifestDeletion).toBe(0);
+      expect(unlinkSyncSpy).toHaveBeenCalledWith(manifestPath);
+      // ...and once the port freed, the listener bound...
+      expect(app.channels.size).toBe(1);
+
+      // ...and the upgrade was finalized successfully (the response is delivered asynchronously
+      // over the mock WebSocket, so poll for it).
+      let waited = 0;
+      while (!state.gotAgentUpgradeResponse && waited < 3000) {
+        await sleep(50);
+        waited += 50;
+      }
+      expect(state.gotAgentUpgradeResponse).toBe(true);
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((res) => {
+        mockServer.stop(res);
+      });
+      if (blocker.listening) {
+        await new Promise<void>((res) => {
+          blocker.close(() => res());
+        });
+      }
+      unlinkSyncSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
   });
 
