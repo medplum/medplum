@@ -324,7 +324,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
-    const contextDefaults = {
+    const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
     if (this.connection.hasConnection()) {
@@ -332,6 +332,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return createSystemRepository(this.shardId, this.connection, contextDefaults);
     }
     return createSystemRepository(this.shardId, undefined, contextDefaults);
+  }
+
+  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
+    if (this.connection.hasConnection()) {
+      this.assertNotClosed();
+      return new Repository({ ...this.context, ...config }, this.connection);
+    } else {
+      return new Repository({ ...this.context, ...config });
+    }
   }
 
   setMode(mode: RepositoryMode): void {
@@ -1955,6 +1964,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       meta.author = undefined;
       meta.project = undefined;
       meta.account = undefined;
+      meta.accounts = undefined;
       meta.compartment = undefined;
     }
     return input;
@@ -2209,7 +2219,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.connection.ensureInTransaction(callback);
   }
 
-  getConfig(): RepositoryContext {
+  getConfig(): Readonly<RepositoryContext> {
     return this.context;
   }
 
