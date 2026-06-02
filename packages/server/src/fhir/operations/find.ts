@@ -18,7 +18,7 @@ import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot 
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
-import { addMinutes } from '../../util/date';
+import { addMinutes, earliest, latest } from '../../util/date';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
@@ -134,6 +134,27 @@ async function handler(params: {
       throw new OperationOutcomeError(
         badRequest('Schedule is not schedulable for requested service type', getPath(schedule))
       );
+    }
+
+    // If a schedule has a planning horizon, constrain search to values inside that horizon
+    if (schedule.planningHorizon?.start) {
+      const horizonStart = new Date(schedule.planningHorizon.start);
+      if (range.end < horizonStart) {
+        throw new OperationOutcomeError(
+          badRequest('Schedule planning horizon does not extend to requested range', getPath(schedule))
+        );
+      }
+      range.start = latest([range.start, horizonStart]);
+    }
+
+    if (schedule.planningHorizon?.end) {
+      const horizonEnd = new Date(schedule.planningHorizon.end);
+      if (range.start > horizonEnd) {
+        throw new OperationOutcomeError(
+          badRequest('Schedule planning horizon does not extend to requested range', getPath(schedule))
+        );
+      }
+      range.end = earliest([range.end, horizonEnd]);
     }
   });
 

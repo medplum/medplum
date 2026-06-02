@@ -231,7 +231,7 @@ describe('Schedule/:id/$find', () => {
 
   async function makeSchedule(
     availability: AvailabilityOptions[],
-    opts?: { actor?: Schedule['actor'] }
+    opts?: { actor?: Schedule['actor']; planningHorizon?: Schedule['planningHorizon'] }
   ): Promise<Schedule> {
     const serviceType = availability.flatMap((entry) => toCodeableReferenceLike(entry.service));
     return systemRepo.createResource<Schedule>({
@@ -240,6 +240,7 @@ describe('Schedule/:id/$find', () => {
       actor: opts?.actor ?? [createReference(practitioner)],
       extension: makeSchedulingExtension(availability),
       serviceType,
+      planningHorizon: opts?.planningHorizon,
     });
   }
 
@@ -1036,6 +1037,90 @@ describe('Schedule/:id/$find', () => {
     });
   });
 
+  describe('planningHorizon', () => {
+    test('errors when range starts after planning horizon end', async () => {
+      const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }], {
+        planningHorizon: { end: '2025-11-28T00:00:00Z' },
+      });
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+          end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+          'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        });
+      expect(response.status).toBe(400);
+      expect(response.body.issue[0].details.text).toBe('Schedule planning horizon does not extend to requested range');
+    });
+
+    test('errors when range ends before planning horizon start', async () => {
+      const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }], {
+        planningHorizon: { start: '2025-12-03T00:00:00Z' },
+      });
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+          end: new Date('2025-12-01T23:00:00.000-05:00').toISOString(),
+          'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        });
+      expect(response.status).toBe(400);
+      expect(response.body.issue[0].details.text).toBe('Schedule planning horizon does not extend to requested range');
+    });
+
+    test('clips results at planning horizon end, excluding slots beyond the horizon', async () => {
+      // fourDayWorkWeek on Mon Dec 1 2025 (EST) gives slots at 10:00, 11:00, 12:00.
+      // horizon end at 11:30 EST clips the available window to 09:30–11:30, so
+      // only the 10:00 and 11:00 slots fit; the 12:00 slot is excluded.
+      const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }], {
+        planningHorizon: { end: '2025-12-01T11:30:00-05:00' },
+      });
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+          end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+          'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        });
+      expect(response.status).toBe(200);
+      expect(response.body).not.toHaveProperty('issue');
+      const starts = (response.body as Bundle<Slot>).entry?.map((e) => e.resource?.start) ?? [];
+      expect(starts).toContain(new Date('2025-12-01T10:00:00.000-05:00').toISOString());
+      expect(starts).toContain(new Date('2025-12-01T11:00:00.000-05:00').toISOString());
+      expect(starts).not.toContain(new Date('2025-12-01T12:00:00.000-05:00').toISOString());
+    });
+
+    test('clips results at planning horizon start, excluding slots before the horizon', async () => {
+      // fourDayWorkWeek on Mon Dec 1 2025 (EST) gives slots at 10:00, 11:00, 12:00.
+      // horizon start at 11:00 EST advances range.start forward, so the 10:00
+      // slot is excluded and only the 11:00 and 12:00 slots are returned.
+      const schedule = await makeSchedule([{ service: genericVisit, availability: fourDayWorkWeek, duration: 20 }], {
+        planningHorizon: { start: '2025-12-01T11:00:00-05:00' },
+      });
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+          end: new Date('2025-12-01T14:00:00.000-05:00').toISOString(),
+          'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        });
+      expect(response.status).toBe(200);
+      expect(response.body).not.toHaveProperty('issue');
+      const starts = (response.body as Bundle<Slot>).entry?.map((e) => e.resource?.start) ?? [];
+      expect(starts).not.toContain(new Date('2025-12-01T10:00:00.000-05:00').toISOString());
+      expect(starts).toContain(new Date('2025-12-01T11:00:00.000-05:00').toISOString());
+      expect(starts).toContain(new Date('2025-12-01T12:00:00.000-05:00').toISOString());
+    });
+  });
+
   test('when serviceType has no codes', async () => {
     // create a HealthcareService with no `type` attribute
     const emptyService = await systemRepo.createResource<HealthcareService>({
@@ -1200,7 +1285,7 @@ describe('Appointment/$find', () => {
 
   async function makeSchedule(
     availability: AvailabilityOptions[],
-    opts?: { actor?: Schedule['actor'] }
+    opts?: { actor?: Schedule['actor']; planningHorizon?: Schedule['planningHorizon'] }
   ): Promise<Schedule> {
     const serviceType = availability.flatMap((entry) => toCodeableReferenceLike(entry.service));
     return systemRepo.createResource<Schedule>({
@@ -1209,6 +1294,7 @@ describe('Appointment/$find', () => {
       actor: opts?.actor ?? [createReference(practitioner)],
       extension: makeSchedulingExtension(availability),
       serviceType,
+      planningHorizon: opts?.planningHorizon,
     });
   }
 
@@ -1730,6 +1816,32 @@ describe('Appointment/$find', () => {
     expect(starts).not.toContain(new Date('2026-03-16T14:00:00-04:00').toISOString());
     // 3pm EDT: OK on A; blocked on B directly by B's busy slot
     expect(starts).not.toContain(new Date('2026-03-16T15:00:00-04:00').toISOString());
+  });
+
+  test('errors when one schedule has a planning horizon that excludes the requested range', async () => {
+    const practitionerSchedule = await makeSchedule(
+      [{ service: genericVisit, duration: 30, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    // location schedule's horizon ends before the requested range starts
+    const locationSchedule = await makeSchedule(
+      [{ service: genericVisit, duration: 30, availability: tueWedAvailability }],
+      {
+        actor: [createReference(location)],
+        planningHorizon: { end: '2026-03-15T00:00:00Z' },
+      }
+    );
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${locationSchedule.id}`],
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe('Schedule planning horizon does not extend to requested range');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1]']);
   });
 
   test('_count is respected for multi-schedule results', async () => {
