@@ -94,6 +94,7 @@ The hiive-build CDK stack is defined across a small set of files. The top-level 
 	- Supplies the hiive-build account, region, stack name, domains, certificates, server sizing, and backend environment variables.
 	- Controls whether the patient and provider static apps are created by setting `patientAppDomainName` and `providerAppDomainName`.
 	- Supplies `MEDPLUM_ALLOWED_ORIGINS`, which is what currently drives the backend task definition replacement in `cdk diff`.
+	- This only takes effect at runtime when the backend container command loads config as `aws:/medplum/build/,env` rather than SSM-only config.
 
 ## What Was Installed
 
@@ -189,7 +190,7 @@ Patient and provider demo app logins:
 
 These accounts are project-scoped users in the `Ubix Data` Medplum project, not super-admin accounts. They were created without email invites because outbound invite email is not configured yet.
 
-For local development, the patient and provider Vite servers proxy Medplum API paths through their own origins to avoid browser CORS preflight failures. For deployed browser apps, the Medplum server config must include `MEDPLUM_ALLOWED_ORIGINS` for `https://patient.ehr.hiivehealth.net` and `https://provider.ehr.hiivehealth.net`.
+For local development, the patient and provider Vite servers proxy Medplum API paths through their own origins to avoid browser CORS preflight failures. For deployed browser apps, the Medplum server config must include `MEDPLUM_ALLOWED_ORIGINS` for `https://patient.ehr.hiivehealth.net` and `https://provider.ehr.hiivehealth.net`, and the ECS backend must start with `aws:/medplum/build/,env` so those environment overrides are actually loaded.
 
 The provider access policy also allows read/search/history/vread for `ClientApplication` so timeline cards can display importer authors such as `ubix-data` rather than `[Forbidden]`, and read/search/history/vread for `EpisodeOfCare` so clinicians can inspect RTW case containers. The provider demo membership profile points to the imported `Dr Alex Demo` practitioner so the Medplum Provider Tasks view has assigned workflow Tasks, including the curated RTW follow-up task.
 

@@ -1248,7 +1248,7 @@
     "ContainerDefinitions": [
      {
       "Command": [
-       "aws:/medplum/build/"
+       "aws:/medplum/build/,env"
       ],
       "Environment": [
        {
@@ -4202,7 +4202,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U23KbMBD9lr7LNHXrD/AlTj11W8bOpI+ZRaypYpAYXezJMPx7VwgETto+6ezRSnt2OWKezBd3yd0HuJoZz8+zUmRJc7TAz4yo56ZUhUmavSoetHI1W5/kgFuGfJ40TzX37FO6ZqnLSsGPLpNoPTeig3IWHyErceRHbmmM4gKsUDIme3C/S/3yA+wDWLzCK0u1uBAcL95Ji5rwkBCU9NHSUh+/K5SWbUt1JeF+f4BH5E4L+xob+z+xk4VGY97x9x3dMgFV0hxU6LBbU0XT6CQF1DKd0yxT0FAhyY51Nqt16Qwxb7Y2YCEDg/0uC21Pjk2JIZnE6TCbeG0IdtJYkBxbZroUU4GEAnXShJb8qbA8gi7QTqYXE97tBJqsUIKxghON4b5bqQesaQLdF47eoVFM9A1wSxXA+8KcN3gSUgyueMsoaUFI1BOuP3tEfRE8OC3AqK9UkGdQ0hiELC7k3mUdhYXeouRpOMna0w2r7oag+yae5glqR/Y5PW7ZFU6+KnG/MFuu9yyiyRsgn/gXsPhM8g7Ilc7DCD06+mEbU/k3qqmH6JjOZkNAKXR45fg5OKFHYRltOY1bRsNx+UnTXMnHaGolDX5FyFGb8cg/Nvx3H5Om4U8tCiGXnNMj2eVkGXo34XtTta2v9teMDY1Mi8wNX/8m/objGx0w6UdtxcmPH0dnj1xXdAzbllEvyulglO9Q1zTOlkmVY/JiPl7mX5JPC/oxvhghZtqRrAqTQ1j/AF8faVM1BQAA"
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31Uy27bMBD8lt5pNXCR3v2IU6NuK9hBeixW1EplLJECHzYCQf/epShRctL2xNnhkju7GmqZLO/vkrsPcDULnp8XlciS9mSBnxlRv9pKlSZpD6p81Mo1bFPIEXcM+TJpnxvu2ed0w1KXVYKfXCbRem5CR+UsPkFW4cRP3MoYxQVYoWRM9uBhn/rlO9hHsHiFV5ZqcSE4XbyXFjXhMSEoGaKVpT5+1ygt21XqSsL9/ghPyJ0W9jU29n9iL0uNxrzjH3q6YwLqpD2q0GG/poqm0UsKqGM6p1mmoKFGkh3rbNebyhli3mxtwUIGBoddFtqeHZsTYzKJ02E28doQ7KWxIDl2zPQppgYJJeqkDS35U2F5Al2inU0vJrzbCTRZoQJjBScaw323Uo/Y0AT6Lxy9Q6OY6RvhjiqA94U5b7EQUoyueMsoaUFI1DNuOHtCfRE8OC3AqK9SkGdQ0RiELC/k3lUThYXeouR5OMs60A3r/oag+yae5wlqRw45A+7YFQpflbifmK02BxbR7A2QT/wLuP9E8o7Ilc7DCD06+WEbU/s3qqmH6JjeZmNAKXR47fg5OGFAYZlsOY87RsNxeaFpruRjNI2SBr8g5KjNdOQfG/67T0nz8IcWpZArzumR7HOyDL2b8L2p2s5X+2vGlkamRebGr38Tf8XpjY6Y9KO2ovDjx8nZE9cXncKuY9SLcjoY5Rs0DY2zY1LlmLyYj5fl58T/F1+MEAvtSFWNyTGsfwB88xlCNAUAAA=="
    },
    "Metadata": {
     "aws:cdk:path": "MedplumBuild/CDKMetadata/Default"
