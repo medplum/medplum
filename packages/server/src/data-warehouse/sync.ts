@@ -104,6 +104,10 @@ async function runWarehouseTableSync(
 }
 
 export async function syncData(options: SyncOptions): Promise<SyncResult> {
+  if (!options.warehouseSources.length) {
+    throw new Error('warehouseSources must include at least one table.');
+  }
+
   const sourceConnectionString = getSyncSourceConnectionString(options);
   const namespace = options.namespace ?? DEFAULT_NAMESPACE;
 
@@ -117,10 +121,6 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
     connection = await instance.connect();
     for (const q of options.destination.getSetupQueries(sourceConnectionString)) {
       await connection.run(q);
-    }
-
-    if (!options.warehouseSources.length) {
-      throw new Error('warehouseSources must include at least one table.');
     }
 
     const resources = await runWarehouseTableSync(connection, options, namespace);
