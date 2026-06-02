@@ -49,6 +49,7 @@ export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
     subsystem: 'data-warehouse-sync',
     destination: syncConfig.destination,
     cron: syncConfig.cron,
+    resourceTypes: syncConfig.resourceTypes,
   });
 }
 
