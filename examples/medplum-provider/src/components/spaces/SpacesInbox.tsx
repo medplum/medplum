@@ -127,7 +127,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     if (viewport && hasStarted && isAtBottomRef.current) {
       viewport.scrollTo({
         top: viewport.scrollHeight,
-        behavior: 'smooth',
+        behavior: 'auto',
       });
     }
   }, [messages, hasStarted, streamingContent, loading, currentFhirRequest, streamingComponentCode]);
@@ -139,7 +139,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       const timer = setTimeout(() => {
         viewport.scrollTo({
           top: viewport.scrollHeight,
-          behavior: 'smooth',
+          behavior: 'auto',
         });
       }, 300);
       return () => clearTimeout(timer);
