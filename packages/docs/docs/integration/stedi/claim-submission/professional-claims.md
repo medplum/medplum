@@ -12,6 +12,19 @@ This workflow is handled by the **Stedi Professional Claims Bot**. Please [conta
 This integration supports **professional (837P) claims only**. Institutional (837I) and dental claims are not supported yet.
 :::
 
+## Project secrets
+
+Configure these secrets on the Medplum project that runs the bot:
+
+| Secret | Type | Required | Description |
+|--------|------|----------|-------------|
+| `STEDI_CLAIM_API_KEY` | string | Yes | Stedi API key with permission to submit professional claims |
+| `STEDI_CLAIM_TEST_MODE` | boolean | No | When `true`, sets Stedi `usageIndicator` to `T` (test). Default is `P` (production) |
+
+:::note[]
+Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) uses a **production** API key. It does not use Stedi test API keys (prefix `test_`) the same way eligibility sandbox checks do.
+:::
+
 ## Resource model
 
 The bot reads the `Claim` you submit and follows references to gather patient, provider, billing, coverage, payer, and encounter data.
@@ -73,151 +86,6 @@ The 837P always requires a **billing provider**. You can bill either way:
 - **As an individual provider**: omit the `PractitionerRole`/`Organization`. The bot then bills under the `Practitioner` directly, which means the practitioner must carry the billing data itself — NPI, a tax identifier (**EIN or SSN**), an address, and a phone.
 
 The required fields below note which apply to each case.
-
-## Project secrets
-
-Configure these secrets on the Medplum project that runs the bot:
-
-| Secret | Type | Required | Description |
-|--------|------|----------|-------------|
-| `STEDI_CLAIM_API_KEY` | string | Yes | Stedi API key with permission to submit professional claims |
-| `STEDI_CLAIM_TEST_MODE` | boolean | No | When `true`, sets Stedi `usageIndicator` to `T` (test). Default is `P` (production) |
-
-:::note[]
-Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) uses a **production** API key with `usageIndicator: T` and payer ID `STEDITEST`. It does not use Stedi test API keys (prefix `test_`) the same way eligibility sandbox checks do.
-:::
-
-## FHIR resource requirements
-
-### Claim
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `patient` | Reference to the patient on the claim | Yes |
-| `provider` or `careTeam[].provider` | Reference to the rendering `Practitioner` | Yes |
-| `insurance[0].coverage` | Reference to `Coverage` | Yes |
-| `item[0].encounter[0]` | Reference to `Encounter` (used for default service date) | Yes |
-| `item[]` | Service lines | Yes (at least one) |
-| `item[].productOrService.coding.code` | HCPCS/CPT procedure code | Yes |
-| `item[].unitPrice` or `item[].net` | Line charge (used for line and total amounts) | Yes |
-| `item[].quantity` | Units of service | No (defaults to `1`) |
-| `item[].modifier[].coding.code` | Procedure modifiers | No |
-| `item[].diagnosisSequence` | Pointers into `Claim.diagnosis` (1-based) | No (defaults to `['1']`) |
-| `item[].locationCodeableConcept.coding.code` | Place of service per line | No |
-| `item[].servicedDate` | Date of service | No (see [Service dates](#service-dates)) |
-| `diagnosis[].diagnosisCodeableConcept.coding.code` | ICD-10 diagnosis codes | Yes when using diagnosis pointers |
-
-### Patient (claim subject)
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name.given[0]`, `name.family` | Patient name | Yes |
-| `birthDate` | Date of birth | Yes when patient is the subscriber, or when patient is a dependent |
-| `gender` | Administrative gender | Yes when patient is a dependent |
-| `address` | Mailing address | Yes — used for the `subscriber`/`dependent` address, and as the **billing provider address fallback** when billing as an individual with no organization address (Stedi rejects claims missing `billing.address`) |
-
-### Practitioner (rendering provider)
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `identifier` | System `http://hl7.org/fhir/sid/us-npi` — must be a **valid 10-digit NPI** (passes the NPI checksum). The payer rejects invalid NPIs such as `1234567890`. | Yes |
-| `qualification.code.coding` | System `http://nucc.org/provider-taxonomy` (taxonomy code, read from `qualification[0]`) | Yes |
-| `name.given[0]`, `name.family` | Provider name | Yes |
-| `identifier` | Tax ID — system `http://hl7.org/fhir/sid/us-ein` (EIN) or `http://hl7.org/fhir/sid/us-ssn` (SSN) | Yes **when billing as an individual** (no billing org). EIN takes precedence; the 837P treats EIN and SSN as mutually exclusive |
-| `telecom` | Phone (`system: phone`) | Yes **when billing as an individual** — used as the submitter phone (see [phone format rules](#common-rejections-and-troubleshooting)) |
-| `address` | Provider address | Used as the billing address fallback when no org address is present |
-
-### PractitionerRole
-
-Only required when billing under an organization. Omit it to bill under the individual practitioner.
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `practitioner` | Reference to the rendering `Practitioner` | Yes (used to find billing org) |
-| `organization` | Reference to the billing `Organization` | Yes |
-
-### Organization (billing provider)
-
-Required when billing as an organization. The bot **throws if a billing `Organization` exists but has no EIN**.
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name` | Billing provider name | Yes |
-| `identifier` | System `http://hl7.org/fhir/sid/us-ein` (Tax ID / EIN) | Yes |
-| `identifier` | System `http://hl7.org/fhir/sid/us-npi` (valid 10-digit NPI) | No (falls back to practitioner NPI) |
-| `telecom` | Phone (`system: phone`) — submitter phone; must satisfy NANP rules (see [troubleshooting](#common-rejections-and-troubleshooting)) | Yes |
-| `address` | Billing address — Stedi **requires** `billing.address`; the bot uses the org address, then falls back to the patient address. 5-digit ZIPs are padded to 9 digits | Yes |
-
-### Coverage
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `subscriberId` | Member ID on the insurance card | Yes |
-| `payor` | Reference to payer `Organization` | Yes |
-| `subscriber` | Reference to subscriber `Patient` | No (if omitted, claim patient is treated as subscriber) |
-| `relationship.coding.code` | Relationship when subscriber ≠ patient (`spouse`, `child`, `self`) | Yes for dependents |
-| `type.coding.code` | Insurance type (`MEDICARE`/`MEDICA` → Medicare Part B, `MEDICAID` → Medicaid, otherwise commercial) | No |
-| `class` | `type.coding.code` = `group` with `value` = group number | No |
-
-### Organization (payer)
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name` | Payer name | Yes |
-| `identifier` | Stedi payer ID (see below) | Yes |
-
-Payer routing uses the first matching identifier on the payer `Organization`, in this order:
-
-1. `https://www.stedi.com/healthcare/network`
-2. `https://stedi.com/payerId`
-3. `https://www.joincandidhealth.com/chc-payerid`
-
-:::info[]
-If you use an `Organization` from the [Medplum Payer Directory](/docs/billing/insurance-eligibility-checks), it typically already includes the Stedi network identifier.
-:::
-
-### Encounter
-
-| Field | Description | Required |
-|-------|-------------|----------|
-| `period.start` | Default service date when not set on claim items | Recommended |
-
-## Subscriber and dependent claims
-
-When the patient on the claim is also the insurance subscriber, the bot sends subscriber demographics only.
-
-When the patient is a dependent (for example, a child on a parent's plan), set `Coverage.subscriber` to the subscriber `Patient` and `Coverage.beneficiary` to the claim patient. The bot adds a Stedi `dependent` block with name, date of birth, gender, and relationship code mapped from `Coverage.relationship`:
-
-| FHIR `relationship` code | Stedi relationship code |
-|---------------------------|-------------------------|
-| `spouse` | `01` |
-| `child` | `19` |
-| `self` | `18` |
-| (other) | `G8` |
-
-## Service dates
-
-For each `Claim.item`, the bot chooses a date of service in this order:
-
-1. `item.servicedDate`
-2. `Encounter.period.start` (date portion)
-3. `Claim.billablePeriod.start` (date portion)
-4. `Claim.created` (date portion)
-5. Today's date
-
-Dates are capped to **today in US Eastern time** so UTC midnight storage does not produce a service date after the payer's transaction date.
-
-Claim-level place of service defaults to `11` (Office) unless `item[0].locationCodeableConcept` specifies a code.
-
-## Example transaction Bundle
-
-The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the `PractitionerRole` that links them, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim`. The values are chosen to pass the validations described above — a checksum-valid NPI, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
-
-POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
-
-:::tip[Billing as an individual]
-To bill under the rendering provider instead, drop the billing `Organization` and `PractitionerRole`, and move the EIN/SSN, `telecom` (phone), and `address` onto the `Practitioner`.
-:::
 
 <details>
 <summary>Example transaction Bundle (organization billing, Stedi test payer)</summary>
@@ -449,9 +317,142 @@ To bill under the rendering provider instead, drop the billing `Organization` an
 
 </details>
 
+## FHIR resource requirements
+
+### Claim
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `patient` | Reference to the patient on the claim | Yes |
+| `provider` or `careTeam[].provider` | Reference to the rendering `Practitioner` | Yes |
+| `insurance[0].coverage` | Reference to `Coverage` | Yes |
+| `item[0].encounter[0]` | Reference to `Encounter` (used for default service date) | Yes |
+| `item[]` | Service lines | Yes (at least one) |
+| `item[].productOrService.coding.code` | HCPCS/CPT procedure code | Yes |
+| `item[].unitPrice` or `item[].net` | Line charge (used for line and total amounts) | Yes |
+| `item[].quantity` | Units of service | No (defaults to `1`) |
+| `item[].modifier[].coding.code` | Procedure modifiers | No |
+| `item[].diagnosisSequence` | Pointers into `Claim.diagnosis` (1-based) | No (defaults to `['1']`) |
+| `item[].locationCodeableConcept.coding.code` | Place of service per line | No |
+| `item[].servicedDate` | Date of service | No (see [Service dates](#service-dates)) |
+| `diagnosis[].diagnosisCodeableConcept.coding.code` | ICD-10 diagnosis codes | Yes when using diagnosis pointers |
+
+### Patient (claim subject)
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `name.given[0]`, `name.family` | Patient name | Yes |
+| `birthDate` | Date of birth | Yes when patient is the subscriber, or when patient is a dependent |
+| `gender` | Administrative gender | Yes when patient is a dependent |
+| `address` | Mailing address | Yes — used for the `subscriber`/`dependent` address, and as the **billing provider address fallback** when billing as an individual with no organization address (Stedi rejects claims missing `billing.address`) |
+
+### Practitioner (rendering provider)
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `identifier` | System `http://hl7.org/fhir/sid/us-npi` — must be a **valid 10-digit NPI** (passes the NPI checksum). The payer rejects invalid NPIs such as `1234567890`. | Yes |
+| `qualification.code.coding` | System `http://nucc.org/provider-taxonomy` (taxonomy code, read from `qualification[0]`) | Yes |
+| `name.given[0]`, `name.family` | Provider name | Yes |
+| `identifier` | Tax ID — system `http://hl7.org/fhir/sid/us-ein` (EIN) or `http://hl7.org/fhir/sid/us-ssn` (SSN) | Yes **when billing as an individual** (no billing org). EIN takes precedence; the 837P treats EIN and SSN as mutually exclusive |
+| `telecom` | Phone (`system: phone`) | Yes **when billing as an individual** — used as the submitter phone (see [phone format rules](#common-rejections-and-troubleshooting)) |
+| `address` | Provider address | Used as the billing address fallback when no org address is present |
+
+### PractitionerRole
+
+Only required when billing under an organization. Omit it to bill under the individual practitioner.
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `practitioner` | Reference to the rendering `Practitioner` | Yes (used to find billing org) |
+| `organization` | Reference to the billing `Organization` | Yes |
+
+### Organization (billing provider)
+
+Required when billing as an organization. The bot **throws if a billing `Organization` exists but has no EIN**.
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `name` | Billing provider name | Yes |
+| `identifier` | System `http://hl7.org/fhir/sid/us-ein` (Tax ID / EIN) | Yes |
+| `identifier` | System `http://hl7.org/fhir/sid/us-npi` (valid 10-digit NPI) | No (falls back to practitioner NPI) |
+| `telecom` | Phone (`system: phone`) — submitter phone; must satisfy NANP rules (see [troubleshooting](#common-rejections-and-troubleshooting)) | Yes |
+| `address` | Billing address — Stedi **requires** `billing.address`; the bot uses the org address, then falls back to the patient address. 5-digit ZIPs are padded to 9 digits | Yes |
+
+### Coverage
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `subscriberId` | Member ID on the insurance card | Yes |
+| `payor` | Reference to payer `Organization` | Yes |
+| `subscriber` | Reference to subscriber `Patient` | No (if omitted, claim patient is treated as subscriber) |
+| `relationship.coding.code` | Relationship when subscriber ≠ patient (`spouse`, `child`, `self`) | Yes for dependents |
+| `type.coding.code` | Insurance type (`MEDICARE`/`MEDICA` → Medicare Part B, `MEDICAID` → Medicaid, otherwise commercial) | No |
+| `class` | `type.coding.code` = `group` with `value` = group number | No |
+
+### Organization (payer)
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `name` | Payer name | Yes |
+| `identifier` | Stedi payer ID (see below) | Yes |
+
+Payer routing uses the first matching identifier on the payer `Organization`, in this order:
+
+1. `https://www.stedi.com/healthcare/network`
+2. `https://stedi.com/payerId`
+3. `https://www.joincandidhealth.com/chc-payerid`
+
+:::info[]
+If you use an `Organization` from the [Medplum Payer Directory](/docs/billing/insurance-eligibility-checks), it typically already includes the Stedi network identifier.
+:::
+
+### Encounter
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `period.start` | Default service date when not set on claim items | Recommended |
+
+## Subscriber and dependent claims
+
+When the patient on the claim is also the insurance subscriber, the bot sends subscriber demographics only.
+
+When the patient is a dependent (for example, a child on a parent's plan), set `Coverage.subscriber` to the subscriber `Patient` and `Coverage.beneficiary` to the claim patient. The bot adds a Stedi `dependent` block with name, date of birth, gender, and relationship code mapped from `Coverage.relationship`:
+
+| FHIR `relationship` code | Stedi relationship code |
+|---------------------------|-------------------------|
+| `spouse` | `01` |
+| `child` | `19` |
+| `self` | `18` |
+| (other) | `G8` |
+
+## Service dates
+
+For each `Claim.item`, the bot chooses a date of service in this order:
+
+1. `item.servicedDate`
+2. `Encounter.period.start` (date portion)
+3. `Claim.billablePeriod.start` (date portion)
+4. `Claim.created` (date portion)
+5. Today's date
+
+Dates are capped to **today in US Eastern time** so UTC midnight storage does not produce a service date after the payer's transaction date.
+
+Claim-level place of service defaults to `11` (Office) unless `item[0].locationCodeableConcept` specifies a code.
+
+## Example transaction Bundle
+
+The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the `PractitionerRole` that links them, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim`. The values are chosen to pass the validations described above — a checksum-valid NPI, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
+
+POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
+
+:::tip[Billing as an individual]
+To bill under the rendering provider instead, drop the billing `Organization` and `PractitionerRole`, and move the EIN/SSN, `telecom` (phone), and `address` onto the `Practitioner`.
+:::
+
+
 ## Executing the claim submission
 
-The **Stedi Professional Claims Bot** submits the claim and returns submission metadata. Invoke the `$stedi-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on `Claim` in either of these ways:
+The **Stedi Professional Claims Bot** submits the claim and creates a [ClaimResponse](/docs/api/fhir/resources/claimresponse) recording the submission. Invoke the `$stedi-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on `Claim` in either of these ways:
 
 - **Instance level** — on a stored claim: `POST {base}/fhir/R4/Claim/{id}/$stedi-submit-claim`
 - **Type level** — with a `Claim` in the request body: `POST {base}/fhir/R4/Claim/$stedi-submit-claim`
@@ -472,37 +473,74 @@ POST {base}/fhir/R4/Claim/{id}/$stedi-submit-claim
 
 ### Successful response
 
-On success, the operation returns parameters such as:
+On success, the operation **returns the created `ClaimResponse`** resource. The bot persists it (`POST ClaimResponse`) and returns the saved resource, so the `$execute` response body is the `ClaimResponse` itself.
 
-| Parameter | Description |
-|-----------|-------------|
-| `success` | `true` |
-| `medplumClaimId` | Medplum `Claim.id` |
-| `correlationId` | Stedi correlation ID for tracking |
-| `status` | Stedi response status |
-| `message` | Human-readable confirmation |
+```mermaid
+flowchart TD
+    Claim["<div style='text-align: center;'><strong>Claim</strong></div><u>status</u>: active<br><u>identifier</u>: stedi/claims = correlationId"]
 
-The bot also updates the `Claim` with an identifier:
+    ClaimResponse["<div style='text-align: center;'><strong>ClaimResponse</strong> (submission)</div><u>status</u>: active &middot; <u>outcome</u>: complete<br><u>identifier</u>: stedi/claims = correlationId<br><u>disposition</u>, <u>total</u>, <u>created</u>"]
+
+    Patient["<div style='text-align: center;'><strong>Patient</strong></div>"]
+
+    PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div>"]
+
+    Responses["<div style='text-align: center;'><strong>ClaimResponse</strong> (277CA / 835)</div><em>created later by the claim-response flow</em>"]
+
+    ClaimResponse -->|request| Claim
+    ClaimResponse -->|patient| Patient
+    ClaimResponse -->|insurer| PayerOrg
+    Responses -.->|request| Claim
+
+    classDef claim fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
+    classDef response fill:#90CAF9,stroke:#333,stroke-width:2px
+    classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
+    classDef patient fill:#D4BCF2,stroke:#333,stroke-width:2px
+
+    class Claim claim
+    class ClaimResponse,Responses response
+    class PayerOrg organization
+    class Patient patient
+```
+
+The submission `ClaimResponse` (solid) is created immediately by the bot. Acknowledgment (277CA) and remittance (835) responses (dashed) are created **later** by the [claim-response flow](/docs/integration/stedi/claim-submission/claim-responses) and also reference the same `Claim` via `request`.
+
+| `ClaimResponse` field | Value |
+|-----------------------|-------|
+| `status` | `active` |
+| `outcome` | `complete` |
+| `request` | Reference to the submitted `Claim` |
+| `patient` | The claim's patient |
+| `insurer` | The payer `Organization` (falls back to `Coverage.payor`, then the Stedi payer ID as `display`) |
+| `created` | Submission timestamp |
+| `disposition` | Human-readable summary, e.g. `Claim submitted to Stedi (correlationId …), status: …` |
+| `identifier` | `[{ system: "https://www.stedi.com/claims", value: <Stedi correlationId> }]` (when Stedi returns a correlation ID) |
+| `total` | The submitted charge total (from `Claim.total`, otherwise the sum of line charges) |
+
+The bot also stamps the same correlation identifier on the **`Claim`** and sets `Claim.status` to `active`:
 
 | Field | Value |
 |-------|-------|
 | `identifier.system` | `https://www.stedi.com/claims` |
 | `identifier.value` | Stedi `correlationId` |
 
-Use this identifier to correlate the Medplum claim with Stedi claim status, acknowledgments (277CA), and remittance (835) workflows. See [Stedi's guide to receiving claim responses](https://www.stedi.com/docs/healthcare/receive-claim-responses).
+Use this identifier to correlate the Medplum claim with Stedi claim status, acknowledgments (277CA), and remittance (835) workflows. See [Claim Responses (277 / 835)](/docs/integration/stedi/claim-submission/claim-responses) and [Stedi's guide to receiving claim responses](https://www.stedi.com/docs/healthcare/receive-claim-responses).
+
+:::note[Idempotent re-submission]
+Before submitting, the bot searches for an existing **active `ClaimResponse`** for the claim (`ClaimResponse?request=Claim/{id}&status=active`). If one already exists, the bot returns it **without re-submitting to Stedi**. To resubmit a claim, remove or deactivate the prior `ClaimResponse` first.
+:::
 
 ### Errors
 
-If submission fails, the bot sets `Claim.status` to `error` and appends two extensions to the `Claim`, then **re-throws** so the `$execute` operation also fails:
+If submission fails, the bot sets `Claim.status` to `error` and records an integration-status extension on the `Claim`, then **re-throws** so the `$execute` operation also fails:
 
 | Extension `url` | Value |
 |-----------------|-------|
 | `https://stedi.com/integration-status` | `valueString: error`, `valueDateTime`: timestamp |
-| `https://www.stedi.com/fhir/StructureDefinition/claim-submission-error` | `valueString`: Stedi's full JSON response body (or the error message when the failure is local), `valueDateTime`: timestamp |
 
-The prior submission-error extension is removed on each attempt, so a resubmission does not accumulate stale errors.
+The prior integration-status extension is replaced on each attempt, so a resubmission does not accumulate stale entries.
 
-When Stedi returns a non-2xx response, the thrown error and the persisted `claim-submission-error` extension include Stedi's complete response body — including the `errors[]` array with X12 status codes and human-readable descriptions — so you can see exactly which field the payer or clearinghouse rejected.
+When Stedi returns a non-2xx response, the thrown error message includes Stedi's response detail — including the `errors[]` entries with X12 status codes and human-readable descriptions — so you can see exactly which field the payer or clearinghouse rejected. Because no `ClaimResponse` is created on failure, the idempotency check above does not block a corrected resubmission.
 
 ## Common rejections and troubleshooting
 
