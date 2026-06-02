@@ -13,6 +13,7 @@ This is a living document, and we continually update our resources. We welcome f
 ## Compliance Resources
 
 - [ONC Certification](/docs/compliance/onc)
+- [HITRUST e1 Certification](/docs/compliance/hitrust)
 - [CLIA/CAP](/docs/compliance/clia-cap)
 - [SOC2 Type II](/docs/compliance/soc2)
 - [HIPAA compliance](/docs/compliance/hipaa)
@@ -20,7 +21,6 @@ This is a living document, and we continually update our resources. We welcome f
 - [ISO 9001](/docs/compliance/iso9001)
 - [HTI-4/CMS-0057-F](/docs/compliance/hti-4)
 - [Good Manufacturing Practices (GMP)](/docs/compliance/gmp)
-- [HITRUST](/docs/compliance/hitrust)
 - ISO 27001 Certification (coming soon)
 
 ## Materials and Usage

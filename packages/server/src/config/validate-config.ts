@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
+import isISO8601 from 'validator/lib/isISO8601.js';
 import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
@@ -37,6 +38,10 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     }
   } else {
     errors.push('dataWarehouse.destination must be "s3tables" or "local"');
+  }
+
+  if (dw.startDate && !isISO8601(dw.startDate)) {
+    errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
   }
 
   return errors;

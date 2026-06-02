@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient, WithId } from '@medplum/core';
-import { CPT, createReference } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { CPT, createReference, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
+  ClaimDiagnosis,
   ClaimItem,
+  Condition,
   Coverage,
   Encounter,
   Patient,
@@ -13,22 +15,28 @@ import type {
   Reference,
 } from '@medplum/fhirtypes';
 import { calculateTotalPrice } from './chargeitems';
-import { createSelfPayCoverage } from './coverage';
 
-export async function createClaimFromEncounter(
-  medplum: MedplumClient,
-  patient: WithId<Patient>,
-  encounter: WithId<Encounter>,
-  practitioner: WithId<Practitioner>,
-  chargeItems: WithId<ChargeItem>[]
-): Promise<WithId<Claim> | undefined> {
-  const coverageResults = await medplum.searchResources('Coverage', `patient=Patient/${patient.id}&status=active`);
-  let coverage: Coverage = coverageResults[0];
-  if (!coverage) {
-    coverage = await createSelfPayCoverage(medplum, patient);
-  }
+export interface BuildClaimArgs {
+  patient: WithId<Patient>;
+  encounter: WithId<Encounter>;
+  practitioner: WithId<Practitioner>;
+  chargeItems: ChargeItem[];
+  conditions?: Condition[];
+  insurance?: Reference<Coverage>[];
+}
 
-  const claim: Claim = {
+/**
+ * Builds a draft Claim from the current encounter state. This is a pure, in-memory
+ * transformation: it performs no server reads or writes. Persisting the Claim
+ * (create or update) is the caller's responsibility, and only happens at export or
+ * submit time.
+ *
+ * @param args - Patient, encounter, practitioner, charge items, conditions, and insurance references.
+ * @returns An unpersisted Claim resource.
+ */
+export function buildClaimFromEncounter(args: BuildClaimArgs): Claim {
+  const { patient, encounter, practitioner, chargeItems, conditions, insurance } = args;
+  return {
     resourceType: 'Claim',
     status: 'draft',
     type: { coding: [{ code: 'professional' }] },
@@ -37,17 +45,11 @@ export async function createClaimFromEncounter(
     patient: createReference(patient),
     provider: createReference(practitioner),
     priority: { coding: [{ code: 'normal' }] },
-    insurance: [
-      {
-        sequence: 1,
-        focal: true,
-        coverage: createReference(coverage),
-      },
-    ],
+    insurance: (insurance ?? []).map((coverage, index) => ({ sequence: index + 1, focal: index === 0, coverage })),
+    ...(conditions?.length ? { diagnosis: createDiagnosisArray(conditions) } : {}),
     item: getCptChargeItems(chargeItems, createReference(encounter)),
     total: { value: calculateTotalPrice(chargeItems) },
   };
-  return medplum.createResource(claim);
 }
 
 export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Reference<Encounter>): ClaimItem[] {
@@ -69,6 +71,26 @@ export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Referenc
       },
       net: chargeItem.priceOverride,
       ...(modifiers && modifiers.length > 0 ? { modifier: modifiers } : {}),
+    };
+  });
+}
+
+export function createDiagnosisArray(conditions: Condition[]): ClaimDiagnosis[] {
+  return conditions.map((condition, index) => {
+    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`);
+    return {
+      diagnosisCodeableConcept: {
+        coding: icd10Coding
+          ? [
+              {
+                ...icd10Coding,
+                system: `${HTTP_HL7_ORG}/fhir/sid/icd-10`,
+              },
+            ]
+          : [],
+      },
+      sequence: index + 1,
+      type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
     };
   });
 }
