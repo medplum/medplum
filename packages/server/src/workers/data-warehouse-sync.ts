@@ -62,7 +62,10 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
   if (!isDataWarehouseSyncOperational(config)) {
     const errors = getDataWarehouseConfigErrors(config);
     if (errors.length > 0) {
-      globalLogger.warn('Skipping data warehouse sync worker due to invalid configuration', { errors, subsystem: 'data-warehouse-sync' });
+      globalLogger.warn('Skipping data warehouse sync worker due to invalid configuration', {
+        errors,
+        subsystem: 'data-warehouse-sync',
+      });
     }
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
@@ -112,7 +115,10 @@ export async function refreshDataWarehouseSyncScheduler(
     try {
       await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
     } catch (err) {
-      globalLogger.warn('Failed removing disabled data warehouse sync scheduler', { err, subsystem: 'data-warehouse-sync' });
+      globalLogger.warn('Failed removing disabled data warehouse sync scheduler', {
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
     }
     return;
   }
@@ -123,7 +129,10 @@ export async function refreshDataWarehouseSyncScheduler(
     try {
       await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
     } catch (err) {
-      globalLogger.warn('Failed removing invalid data warehouse sync scheduler', { err, subsystem: 'data-warehouse-sync' });
+      globalLogger.warn('Failed removing invalid data warehouse sync scheduler', {
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
     }
     return;
   }
