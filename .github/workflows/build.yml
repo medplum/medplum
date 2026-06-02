@@ -116,6 +116,7 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+          VITE_MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838
         with:
@@ -132,6 +133,11 @@ jobs:
         run: './scripts/deploy-docs.sh'
         env:
           DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+      - name: Deploy provider app preview
+        run: './scripts/deploy-provider-app.sh'
+        env:
+          PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
       - name: Comment preview URLs
         uses: actions/github-script@v7
         with:
