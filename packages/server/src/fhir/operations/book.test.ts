@@ -123,13 +123,18 @@ describe('Appointment/$book', () => {
     return extension;
   }
 
-  async function makeSchedule(opts: { actor: Practitioner; extension?: Extension[] }): Promise<WithId<Schedule>> {
+  async function makeSchedule(opts: {
+    actor: Practitioner;
+    extension?: Extension[];
+    planningHorizon?: Schedule['planningHorizon'];
+  }): Promise<WithId<Schedule>> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(opts.actor)],
       serviceType: toCodeableReferenceLike(officeVisitService),
       extension: opts.extension ?? [makeSchedulingExtension({ service: officeVisitService })],
+      planningHorizon: opts.planningHorizon,
     });
   }
 
@@ -1710,6 +1715,45 @@ describe('Appointment/$book', () => {
       });
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
+  });
+
+  test('errors when appointment is outside schedule planning horizon', async () => {
+    const schedule = await makeSchedule({
+      actor: practitioner1,
+      planningHorizon: { end: '2026-01-14T00:00:00Z' },
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
 });
 

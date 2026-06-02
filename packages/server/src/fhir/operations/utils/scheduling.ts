@@ -588,6 +588,24 @@ export async function validateAllAvailability(
     const end = latest(slots.map((slot) => new Date(slot.end)));
     assert(start && end);
     const interval = { start, end };
+
+    if (schedule.planningHorizon?.start) {
+      const horizonStart = new Date(schedule.planningHorizon.start);
+      if (interval.start < horizonStart) {
+        throw new OperationOutcomeError(
+          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+        );
+      }
+    }
+    if (schedule.planningHorizon?.end) {
+      const horizonEnd = new Date(schedule.planningHorizon.end);
+      if (interval.end > horizonEnd) {
+        throw new OperationOutcomeError(
+          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+        );
+      }
+    }
+
     await validateAvailability(repo, healthcareService, schedule, parameters, interval);
   }
 
