@@ -537,6 +537,71 @@ describe('Subscription Worker', () => {
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
+  test('Reject insecure rest-hook URLs by default', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'http://example.com/subscription',
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('HTTPS is required');
+      expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Allow insecure rest-hook URLs when configured', () =>
+    withTestContext(async () => {
+      const url = 'http://example.com/subscription';
+      const savedConfig = getConfig().allowInsecureRestHookUrl;
+      getConfig().allowInsecureRestHookUrl = true;
+
+      try {
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: url,
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+        await findAndExecSubscriptionJob(patient, 'create');
+
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body: stringify(patient),
+          })
+        );
+      } finally {
+        getConfig().allowInsecureRestHookUrl = savedConfig;
+      }
+    }));
+
   // Skip test
   test.skip('Ignore subscriptions with missing criteria', () =>
     withTestContext(async () => {

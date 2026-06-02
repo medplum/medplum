@@ -3,11 +3,9 @@
 import {
   ActionIcon,
   Box,
-  Button,
   Divider,
   Flex,
   Group,
-  Loader,
   Modal,
   Pagination,
   Paper,
@@ -18,8 +16,8 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { hideNotification, showNotification, updateNotification } from '@mantine/notifications';
+import { getReferenceString } from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
@@ -27,7 +25,11 @@ import {
 } from '@medplum/dosespot-react';
 import type { MedicationRequest } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS, useScriptSureOrderMedication } from '@medplum/scriptsure-react';
+import {
+  SCRIPTSURE_IFRAME_BOT,
+  SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
+  useScriptSureOrderMedication,
+} from '@medplum/scriptsure-react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,7 +39,7 @@ import type { MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
 import { MedSelectEmpty } from '../../components/meds/MedSelectEmpty';
 import { PrescriptionIFrameModal } from '../../components/meds/PrescriptionIFrameModal';
-import { hasDoseSpotIdentifier } from '../../components/utils';
+import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../../components/utils';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderMedicationPage } from '../meds/OrderMedicationPage';
@@ -119,6 +121,14 @@ export function MedicationsPage(): JSX.Element {
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [iframeModalOpened, setIframeModalOpened] = useState(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>();
+  // Which ScriptSure surface the modal is showing:
+  // - 'widget': the single-order confirmation widget (`/widgets/prescription/...`),
+  //   used for the initial prescribing flow right after creating an order.
+  // - 'chart':  the full patient prescriptions/queue iframe (`/chart/.../prescriptions`),
+  //   used when re-opening an existing order. The single-order widget is only
+  //   designed for the initial flow and cannot approve/deny a queued order
+  //   (issue #9300), so re-opens must land on the chart/queue surface instead.
+  const [iframeMode, setIframeMode] = useState<'widget' | 'chart'>('widget');
   // refreshLaunchUrl reads this ref instead of closing over `iframeUrl`, so the
   // callback identity stays stable across URL changes. Without this the
   // PrescriptionIFrameModal effect that depends on `onRefreshLaunchUrl` would
@@ -145,7 +155,7 @@ export function MedicationsPage(): JSX.Element {
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
   const membership = medplum.getProjectMembership();
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
-  const [syncing, setSyncing] = useState(false);
+  const hasScriptSure = hasScriptSureIdentifier(membership);
 
   const fetchOrders = useCallback(async (): Promise<void> => {
     if (!patientReference) {
@@ -198,6 +208,9 @@ export function MedicationsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const getOrderUrl = useCallback(
@@ -224,40 +237,65 @@ export function MedicationsPage(): JSX.Element {
     };
   }, [medicationRequestId, orderFromList, medplum]);
 
-  const handleDoseSpotSync = useCallback(async (): Promise<void> => {
-    if (!patient?.id) {
-      return;
+  useEffect(() => {
+    if (!hasDoseSpot || !patient?.id) {
+      return undefined;
     }
-    setSyncing(true);
     const today = new Date().toISOString().split('T')[0];
-    try {
-      await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id });
-      await Promise.all([
-        medplum.executeBot(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, { patientId: patient.id, start: today, end: today }),
-        medplum.executeBot(DOSESPOT_MEDICATION_HISTORY_BOT, { patientId: patient.id, start: today, end: today }),
-      ]);
-      showNotification({
-        color: 'green',
-        icon: '✓',
-        title: 'Successfully synced prescriptions and medications with DoseSpot',
-        message: '',
-      });
-      medplum.invalidateSearches('MedicationRequest');
-      await fetchData();
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        title: 'Error syncing with DoseSpot',
-        message: normalizeErrorString(err),
-      });
-    } finally {
-      setSyncing(false);
-    }
-  }, [medplum, patient, fetchData]);
+    const notificationId = 'dosespot-sync';
+    let cancelled = false;
+    showNotification({
+      id: notificationId,
+      loading: true,
+      title: 'Syncing with DoseSpot',
+      message: '',
+      autoClose: false,
+      withCloseButton: false,
+    });
+    (async () => {
+      try {
+        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id });
+        await Promise.all([
+          medplum.executeBot(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, {
+            patientId: patient.id as string,
+            start: today,
+            end: today,
+          }),
+          medplum.executeBot(DOSESPOT_MEDICATION_HISTORY_BOT, {
+            patientId: patient.id as string,
+            start: today,
+            end: today,
+          }),
+        ]);
+        if (!cancelled) {
+          updateNotification({
+            id: notificationId,
+            loading: false,
+            color: 'green',
+            icon: '✓',
+            title: 'Successfully synced prescriptions and medications with DoseSpot',
+            message: '',
+            autoClose: 3000,
+          });
+          medplum.invalidateSearches('MedicationRequest');
+          await fetchDataRef.current();
+        }
+      } catch (err) {
+        if (!cancelled) {
+          hideNotification(notificationId);
+          showErrorNotification(err);
+        }
+      }
+    })().catch(showErrorNotification);
+    return () => {
+      cancelled = true;
+    };
+  }, [hasDoseSpot, medplum, patient?.id]);
 
   const handleOrderMedicationComplete = useCallback(
     async (result: { launchUrl: string; medicationRequestId?: string }): Promise<void> => {
       setNewOrderModalOpened(false);
+      setIframeMode('widget');
       setIframePollMrId(result.medicationRequestId);
       setIframeUrl(result.launchUrl);
       setIframeModalOpened(true);
@@ -277,24 +315,42 @@ export function MedicationsPage(): JSX.Element {
       return;
     }
     try {
-      const res = await orderMedication({ patientId, medicationRequestId: currentOrder.id });
+      // Re-opening an existing order from the list opens the full patient
+      // prescriptions/queue iframe rather than the single-order widget. The
+      // widget is only designed for the initial prescribing flow and cannot
+      // approve/deny an order that was added to the queue (issue #9300); the
+      // chart surface handles every state (queued, sent, etc.).
+      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
+      if (!res?.url) {
+        throw new Error('ScriptSure did not return a prescriptions URL');
+      }
+      setIframeMode('chart');
       setIframePollMrId(currentOrder.id);
-      setIframeUrl(res.launchUrl);
+      setIframeUrl(res.url);
       setIframeModalOpened(true);
       await fetchData();
     } catch (e) {
       showErrorNotification(e);
     }
-  }, [patientId, currentOrder, orderMedication, fetchData]);
+  }, [patientId, currentOrder, medplum, fetchData]);
 
   const refreshLaunchUrl = useCallback(async (): Promise<string | undefined> => {
+    if (!patientId) {
+      return iframeUrlRef.current;
+    }
+    // Refresh from whichever surface is currently shown so an expired session
+    // token is replaced with a matching URL (single-order widget vs chart).
+    if (iframeMode === 'chart') {
+      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
+      return res?.url ?? iframeUrlRef.current;
+    }
     const mrId = iframePollMrId ?? currentOrder?.id;
-    if (!patientId || !mrId) {
+    if (!mrId) {
       return iframeUrlRef.current;
     }
     const res = await orderMedication({ patientId, medicationRequestId: mrId });
     return res.launchUrl;
-  }, [patientId, currentOrder, iframePollMrId, orderMedication]);
+  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication]);
 
   const handleIframeFhirSynced = useCallback((): void => {
     setIframeModalOpened(false);
@@ -329,29 +385,20 @@ export function MedicationsPage(): JSX.Element {
                   </Tabs>
                 </Group>
                 <Group gap="xs">
-                  {hasDoseSpot && (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={syncing ? <Loader size={14} /> : undefined}
-                      disabled={syncing}
-                      onClick={() => handleDoseSpotSync().catch(showErrorNotification)}
-                    >
-                      {syncing ? 'Syncing…' : 'DoseSpot sync'}
-                    </Button>
+                  {hasScriptSure && (
+                    <Tooltip label="Order medication" position="bottom" openDelay={500}>
+                      <ActionIcon
+                        radius="xl"
+                        variant="filled"
+                        color="blue"
+                        size={32}
+                        aria-label="Order medication"
+                        onClick={() => setNewOrderModalOpened(true)}
+                      >
+                        <IconPlus size={16} />
+                      </ActionIcon>
+                    </Tooltip>
                   )}
-                  <Tooltip label="Order medication" position="bottom" openDelay={500}>
-                    <ActionIcon
-                      radius="xl"
-                      variant="filled"
-                      color="blue"
-                      size={32}
-                      aria-label="Order medication"
-                      onClick={() => setNewOrderModalOpened(true)}
-                    >
-                      <IconPlus size={16} />
-                    </ActionIcon>
-                  </Tooltip>
                 </Group>
               </Flex>
             </Paper>
@@ -434,7 +481,7 @@ export function MedicationsPage(): JSX.Element {
         onRefreshLaunchUrl={iframePollMrId || currentOrder?.id ? refreshLaunchUrl : undefined}
         medicationRequestIdToWatch={iframePollMrId ?? currentOrder?.id}
         onFhirSynced={handleIframeFhirSynced}
-        title="Complete prescription"
+        title={iframeMode === 'chart' ? 'ScriptSure prescriptions' : 'Complete prescription'}
       />
     </Box>
   );

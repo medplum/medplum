@@ -193,15 +193,16 @@ export class RepositoryConnection implements Disposable {
   ): Promise<TResult> {
     this.assertNotClosed();
     const isolationLevel = options?.serializable ? 'SERIALIZABLE' : 'REPEATABLE READ';
-    this.assertCompatibleTransactionIsolationLevel(isolationLevel);
 
     const config = getConfig();
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       const attemptStartTime = Date.now();
+      let transactionStarted = false;
       try {
         const client = await this.beginTransaction(isolationLevel);
+        transactionStarted = true;
         const result = await callback(client);
         await this.commitTransaction();
         if (attempt > 0) {
@@ -219,7 +220,9 @@ export class RepositoryConnection implements Disposable {
         error = operationOutcomeError;
 
         // Ensure transaction is rolled back before attempting any retry
-        await this.rollbackTransaction(operationOutcomeError);
+        if (transactionStarted) {
+          await this.rollbackTransaction(operationOutcomeError);
+        }
         if (this.transactionDepth || !isRetryableTransactionError(operationOutcomeError)) {
           break; // Fall through to throw statement outside of the loop
         }
@@ -261,100 +264,147 @@ export class RepositoryConnection implements Disposable {
     throw error;
   }
 
-  private async beginTransaction(isolationLevel: TransactionIsolationLevel): Promise<PoolClient> {
-    this.assertNotClosed();
-    const nextDepth = this.transactionDepth + 1;
-    const conn = await this.getConnection(DatabaseMode.WRITER);
+  /**
+   * tail of a FIFO queue for transaction state change requests.
+   */
+  private transactionStateLock: Promise<undefined> = Promise.resolve(undefined);
+
+  /**
+   * Serializes the small critical sections that reads/writes transaction
+   * state and issues the matching transaction SQL commands:
+   * - read/write transactionDepth
+   * - choose COMMIT vs RELEASE SAVEPOINT
+   * - clear/pop callback frames
+   * - release connection state
+   * @param callback - The callback to execute with the transaction state lock.
+   * @returns Passthrough result of the callback.
+   */
+  private async withTransactionStateLock<T>(callback: () => Promise<T>): Promise<T> {
+    // capture the current tail of the queue
+    const previous = this.transactionStateLock;
+
+    // create a new unresolved promise and make it the new queue tail immediately
+    const { promise, resolve } = Promise.withResolvers<undefined>();
+    this.transactionStateLock = promise;
+
+    // Wait previous request resolves
+    await previous;
+    // current request owns the lock.
+
     try {
-      if (nextDepth === 1) {
-        await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
-      } else {
-        await conn.query('SAVEPOINT sp' + nextDepth);
-      }
-    } catch (err) {
-      if (nextDepth === 1) {
-        // If BEGIN itself fails, no transaction exists to roll back. Drop the client
-        // with the original error so pg-pool does not return a questionable session.
-        this.releaseConnection(err instanceof Error ? err : true);
-      }
-      throw err;
+      return await callback();
+    } finally {
+      // release the lock
+      resolve(undefined);
     }
-    // Publish transaction state only after Postgres confirms BEGIN/SAVEPOINT.
-    if (nextDepth === 1) {
-      this.transactionIsolationLevel = isolationLevel;
-    }
-    this.transactionDepth = nextDepth;
-    this.pushCallbackFrame();
-    return conn;
+  }
+
+  private async beginTransaction(isolationLevel: TransactionIsolationLevel): Promise<PoolClient> {
+    return this.withTransactionStateLock(async () => {
+      this.assertNotClosed();
+      this.assertCompatibleTransactionIsolationLevel(isolationLevel);
+      const nextDepth = this.transactionDepth + 1;
+      const conn = await this.getConnection(DatabaseMode.WRITER);
+      try {
+        if (nextDepth === 1) {
+          await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
+        } else {
+          await conn.query('SAVEPOINT sp' + nextDepth);
+        }
+      } catch (err) {
+        if (nextDepth === 1) {
+          // If BEGIN itself fails, no transaction exists to roll back. Drop the client
+          // with the original error so pg-pool does not return a questionable session.
+          this.releaseConnection(err instanceof Error ? err : true);
+        }
+        throw err;
+      }
+      // Publish transaction state only after Postgres confirms BEGIN/SAVEPOINT.
+      if (nextDepth === 1) {
+        this.transactionIsolationLevel = isolationLevel;
+      }
+      this.transactionDepth = nextDepth;
+      this.pushCallbackFrame();
+      return conn;
+    });
   }
 
   private async commitTransaction(): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
+    const shouldProcessPreCommit = await this.withTransactionStateLock(async () => {
+      this.assertInTransaction();
+      return this.transactionDepth === 1;
+    });
+
+    // processPreCommit needs to be invoked outside of the transaction state lock to avoid deadlocks
+    // since it could involve transactions
+    if (shouldProcessPreCommit) {
       await this.processPreCommit();
-      await conn.query('COMMIT');
-      this.transactionDepth = 0;
-      this.transactionIsolationLevel = undefined;
-      this.releaseConnection();
-      this.clearCallbackStack();
+    }
+
+    const shouldProcessPostCommit = await this.withTransactionStateLock(async () => {
+      this.assertInTransaction();
+      const conn = await this.getConnection(DatabaseMode.WRITER);
+      if (this.transactionDepth === 1) {
+        await conn.query('COMMIT');
+        this.transactionDepth = 0;
+        this.transactionIsolationLevel = undefined;
+        this.releaseConnection();
+        this.clearCallbackStack();
+        return true;
+      } else {
+        // If RELEASE SAVEPOINT fails (e.g. transaction in aborted state), let the error propagate.
+        // withTransaction's catch will invoke rollbackTransaction, which can run ROLLBACK TO SAVEPOINT
+        // even against an aborted transaction to recover — aborting here would discard work the outer
+        // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
+        await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
+        this.transactionDepth--; // safe to decrement since assertInTransaction() ensures transactionDepth > 0
+        this.popCallbackFrame();
+        return false;
+      }
+    });
+
+    if (shouldProcessPostCommit) {
       await this.processPostCommit();
-    } else {
-      // If RELEASE SAVEPOINT fails (e.g. transaction in aborted state), let the error propagate.
-      // withTransaction's catch will invoke rollbackTransaction, which can run ROLLBACK TO SAVEPOINT
-      // even against an aborted transaction to recover — aborting here would discard work the outer
-      // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
-      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
-      this.transactionDepth--; // safe to decrement since assertInTransaction() ensures transactionDepth > 0
-      this.popCallbackFrame();
     }
   }
 
   private async rollbackTransaction(error: Error): Promise<void> {
-    // Tolerate being called after state has already been reset (e.g. when a prior
-    // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
-    if (this.transactionDepth === 0) {
-      return;
-    }
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    const isOuter = this.transactionDepth === 1;
-    try {
-      if (isOuter) {
-        await conn.query('ROLLBACK');
-      } else {
-        await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+    return this.withTransactionStateLock(async () => {
+      // Tolerate being called after state has already been reset (e.g. when a prior
+      // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
+      if (this.transactionDepth === 0) {
+        return;
       }
-    } catch (rollbackErr) {
-      // ROLLBACK itself failed — connection is almost certainly dead (e.g. killed by
-      // idle_in_transaction_session_timeout). Pass the original triggering error to
-      // abortTransaction so the client is released with the right root cause.
-      getLogger().warn('Error rolling back transaction', {
-        err: normalizeErrorString(rollbackErr),
-        originalErr: normalizeErrorString(error),
-      });
-      this.abortTransaction(error);
-      return;
-    }
-    this.transactionDepth--; // safe to decrement since early return if transactionDepth === 0
-    this.truncateCommitCallbacks();
-    if (isOuter) {
-      this.transactionIsolationLevel = undefined;
-      this.releaseConnection(error);
-    }
-  }
+      const conn = await this.getConnection(DatabaseMode.WRITER);
+      const isOuter = this.transactionDepth === 1;
+      try {
+        if (isOuter) {
+          await conn.query('ROLLBACK');
+        } else {
+          await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+        }
+      } catch (rollbackErr) {
+        // ROLLBACK itself failed — connection is effectively dead (e.g. killed by idle_in_transaction_session_timeout).
+        getLogger().warn('Error rolling back transaction', {
+          err: normalizeErrorString(rollbackErr),
+          originalErr: normalizeErrorString(error),
+        });
 
-  /**
-   * Fully abort the transaction hierarchy: reset depth, drop pending pre/post-commit
-   * callbacks, and release the connection with an error so pg-pool discards it.
-   * Invoked from commit/rollback error paths when further recovery on the current
-   * connection is not possible.
-   * @param err - The error that triggered the abort; forwarded to `release()`.
-   */
-  private abortTransaction(err: Error): void {
-    this.transactionDepth = 0;
-    this.transactionIsolationLevel = undefined;
-    this.clearCallbackStack();
-    this.releaseConnection(err);
+        // abort the transaction
+        this.transactionDepth = 0;
+        this.transactionIsolationLevel = undefined;
+        this.clearCallbackStack();
+        // Pass the original triggering error so the client is released with the right root cause.
+        this.releaseConnection(error);
+        return;
+      }
+      this.transactionDepth--; // safe to decrement since early return if transactionDepth === 0
+      this.truncateCommitCallbacks();
+      if (isOuter) {
+        this.transactionIsolationLevel = undefined;
+        this.releaseConnection(error);
+      }
+    });
   }
 
   private endTransaction(): void {

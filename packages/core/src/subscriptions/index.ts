@@ -419,6 +419,12 @@ export class SubscriptionManager {
     if (this.ws.readyState !== WebSocket.OPEN) {
       return;
     }
+    // If a user is not logged in, skip the rebind. Attempting it would 401 on
+    // $get-ws-binding-token. The entry stays idle and will be picked up by
+    // refreshAllSubscriptions once a connection is (re)established while authenticated.
+    if (!this.medplum.getProfile()) {
+      return;
+    }
     // Only subscribe idle entries — connecting/active/refreshing entries already have an operation in progress,
     // and removed entries are dead
     if (criteriaEntry.state !== 'idle') {
@@ -528,6 +534,10 @@ export class SubscriptionManager {
   }
 
   private checkTokenExpirations(): void {
+    // Don't attempt token refreshes while unauthenticated — they would 401 in a loop.
+    if (!this.medplum.getProfile()) {
+      return;
+    }
     const now = Date.now();
     for (const mapEntry of this.criteriaEntries.values()) {
       for (const criteriaEntry of getAllEntries(mapEntry)) {

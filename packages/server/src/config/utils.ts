@@ -93,6 +93,7 @@ type DefaultConfigKeys =
   | 'botLambdaLayerName'
   | 'bcryptHashSalt'
   | 'bullmq'
+  | 'dataWarehouse'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
@@ -159,6 +160,7 @@ export function isFloatConfig(_key: string): boolean {
 }
 
 const booleanKeys = new Set([
+  'allowInsecureRestHookUrl',
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -176,6 +178,7 @@ const booleanKeys = new Set([
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
   'redactAuditEvents',
+  'dataWarehouse.enabled',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
@@ -195,6 +198,7 @@ const objectKeys = new Set([
   'workers',
   'workers.enabled',
   'workers.bullmq',
+  'dataWarehouse',
 ]);
 
 export function isObjectConfig(key: string): boolean {

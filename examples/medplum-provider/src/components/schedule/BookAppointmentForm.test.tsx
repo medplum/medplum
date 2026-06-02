@@ -17,13 +17,15 @@ vi.mock('../../utils/notifications');
 describe('BookAppointmentForm', () => {
   let medplum: MockClient;
 
-  const slot: Slot = {
-    resourceType: 'Slot',
-    id: 'slot-1',
-    start: '2026-02-20T13:00:00Z',
-    end: '2026-02-20T13:30:00Z',
-    schedule: { reference: 'Schedule/schedule-1' },
-    status: 'free',
+  const start = '2026-02-20T13:00:00Z';
+  const end = '2026-02-20T13:30:00Z';
+  const appointment: Appointment = {
+    resourceType: 'Appointment',
+    id: 'appointment-1',
+    status: 'proposed',
+    start,
+    end,
+    participant: [],
   };
 
   beforeEach(() => {
@@ -43,7 +45,7 @@ describe('BookAppointmentForm', () => {
           <MedplumProvider medplum={medplum}>
             <MantineProvider>
               <Notifications />
-              <BookAppointmentForm slot={slot} onSuccess={onSuccess} />
+              <BookAppointmentForm appointment={appointment} onSuccess={onSuccess} />
             </MantineProvider>
           </MedplumProvider>
         </MemoryRouter>
@@ -58,7 +60,7 @@ describe('BookAppointmentForm', () => {
     expect(screen.getByRole('button', { name: 'Create Appointment' })).toBeInTheDocument();
   });
 
-  test('displays the slot time period', async () => {
+  test('displays the appointment time period', async () => {
     await setup();
 
     expect(screen.getByText(/2026/)).toBeInTheDocument();
@@ -90,8 +92,8 @@ describe('BookAppointmentForm', () => {
             resourceType: 'Appointment',
             id: 'appointment-1',
             status: 'booked',
-            start: slot.start,
-            end: slot.end,
+            start,
+            end,
             participant: [],
           },
         },
@@ -100,8 +102,8 @@ describe('BookAppointmentForm', () => {
             resourceType: 'Slot',
             id: 'slot-1',
             status: 'busy',
-            start: slot.start,
-            end: slot.end,
+            start,
+            end,
             schedule: { reference: 'Schedule/schedule-1' },
           },
         },
@@ -129,13 +131,21 @@ describe('BookAppointmentForm', () => {
       new URL('https://example.com/fhir/R4/Appointment/$book'),
       expect.objectContaining({
         resourceType: 'Parameters',
-        parameter: expect.arrayContaining([
-          { name: 'slot', resource: slot },
+        parameter: [
           {
-            name: 'patient-reference',
-            valueReference: expect.objectContaining({ reference: `Patient/${HomerSimpson.id}` }),
+            name: 'appointment',
+            resource: expect.objectContaining({
+              resourceType: 'Appointment',
+              participant: expect.arrayContaining([
+                expect.objectContaining({
+                  actor: expect.objectContaining({ reference: `Patient/${HomerSimpson.id}` }),
+                  status: 'needs-action',
+                  required: 'required',
+                }),
+              ]),
+            }),
           },
-        ]),
+        ],
       })
     );
   });
@@ -148,8 +158,8 @@ describe('BookAppointmentForm', () => {
       resourceType: 'Appointment',
       id: 'appointment-1',
       status: 'booked',
-      start: slot.start,
-      end: slot.end,
+      start,
+      end,
       participant: [],
     };
 
@@ -157,8 +167,8 @@ describe('BookAppointmentForm', () => {
       resourceType: 'Slot',
       id: 'slot-1',
       status: 'busy',
-      start: slot.start,
-      end: slot.end,
+      start,
+      end,
       schedule: { reference: 'Schedule/schedule-1' },
     };
 
@@ -166,7 +176,7 @@ describe('BookAppointmentForm', () => {
       resourceType: 'Slot',
       id: 'slot-2',
       status: 'busy-unavailable',
-      start: slot.end,
+      start,
       end: '2026-02-01T13:45:00Z',
       schedule: { reference: 'Schedule/schedule-1' },
     };

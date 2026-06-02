@@ -19,6 +19,7 @@ import type {
   Login,
   Project,
   ProjectMembership,
+  Reference,
   SmartAppLaunch,
 } from '@medplum/fhirtypes';
 import express from 'express';
@@ -85,6 +86,9 @@ describe('OAuth2 Token', () => {
   let accessToken: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
+  let gcipAuthClient: ClientApplication;
+  let gcipSubjectAuthClient: ClientApplication;
+  let gcipMissingKeyClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
   let systemRepo: SystemRepository;
 
@@ -154,6 +158,51 @@ describe('OAuth2 Token', () => {
         authorizeUrl: 'https://example.com/oauth2/authorize',
         tokenUrl: 'https://example.com/oauth2/token',
         userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+      },
+    });
+
+    gcipAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'GCIP Auth Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+        userInfoMode: 'gcip',
+        userInfoApiKey: 'test-api-key',
+        clientId: '123',
+        clientSecret: '456',
+      },
+    });
+
+    gcipSubjectAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'GCIP Subject Auth Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+        userInfoMode: 'gcip',
+        userInfoApiKey: 'test-api-key',
+        clientId: '123',
+        clientSecret: '456',
+        useSubject: true,
+      },
+    });
+
+    gcipMissingKeyClient = await createClient(systemRepo, {
+      project,
+      name: 'GCIP Missing Key Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+        userInfoMode: 'gcip',
         clientId: '123',
         clientSecret: '456',
       },
@@ -1075,6 +1124,61 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Token revoked');
   });
 
+  test('Refresh token membership inactive', async () => {
+    // Use a dedicated user so deactivating the membership does not affect other tests
+    const inactiveEmail = `test-${randomUUID()}@example.com`;
+    const inactivePassword = 'test-password';
+    await inviteUser({
+      project,
+      resourceType: 'Practitioner',
+      firstName: 'Test',
+      lastName: 'Test',
+      email: inactiveEmail,
+      password: inactivePassword,
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: inactiveEmail,
+      password: inactivePassword,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline_access',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.refresh_token).toBeDefined();
+
+    // Find the login
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
+    expect(loginBundle.entry).toHaveLength(1);
+
+    // Deactivate the membership
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    const membership = await systemRepo.readReference<ProjectMembership>(
+      login.membership as Reference<ProjectMembership>
+    );
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...membership,
+        active: false,
+      })
+    );
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body.error).toBe('access_denied');
+    expect(res3.body.error_description).toBe('Profile not active');
+  });
+
   test('Refresh token Basic auth success', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
@@ -1927,6 +2031,107 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange GCIP success', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [{ email, localId: 'firebase-user-id' }] }),
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'firebase-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Accept: ContentType.JSON,
+          'Content-Type': ContentType.JSON,
+        }),
+        body: JSON.stringify({ idToken: 'firebase-token' }),
+      })
+    );
+    expect(new URL((fetch as unknown as jest.Mock).mock.calls[0][0]).searchParams.get('key')).toBe('test-api-key');
+  });
+
+  test('Token exchange GCIP subject success', async () => {
+    const externalId = randomUUID();
+    await inviteUser({
+      project,
+      externalId,
+      resourceType: 'Patient',
+      firstName: 'GCIP',
+      lastName: 'User',
+    });
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [{ email: '', localId: externalId }] }),
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipSubjectAuthClient.id,
+      subject_token: 'firebase-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange GCIP invalid response', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [] }),
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'firebase-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error_description).toBe('Failed to verify code - invalid user info response');
+  });
+
+  test('Token exchange GCIP missing localId', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [{ email }] }),
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipAuthClient.id,
+      subject_token: 'firebase-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
+  });
+
+  test('Token exchange GCIP missing API key', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: gcipMissingKeyClient.id,
+      subject_token: 'firebase-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error_description).toBe('Missing user info API key - check your identity provider configuration');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('Token exchange unsupported content type', async () => {
