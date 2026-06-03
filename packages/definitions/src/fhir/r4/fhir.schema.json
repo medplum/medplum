@@ -62870,6 +62870,23 @@
         "useSubject": {
           "description": "Optional flag to use the subject field instead of the email field.",
           "$ref": "#/definitions/boolean"
+        },
+        "identitySource": {
+          "description": "External credential field used to identify the user.",
+          "enum": [
+            "email",
+            "subject",
+            "fhir-user"
+          ]
+        },
+        "identityMappingMode": {
+          "description": "Medplum identity mapping target.",
+          "enum": [
+            "user-email",
+            "user-external-id",
+            "project-membership-external-id",
+            "project-membership-profile"
+          ]
         }
       },
       "additionalProperties": false,

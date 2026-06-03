@@ -25,7 +25,11 @@ import {
 } from '@medplum/dosespot-react';
 import type { MedicationRequest } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS, useScriptSureOrderMedication } from '@medplum/scriptsure-react';
+import {
+  SCRIPTSURE_IFRAME_BOT,
+  SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
+  useScriptSureOrderMedication,
+} from '@medplum/scriptsure-react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -117,6 +121,14 @@ export function MedicationsPage(): JSX.Element {
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [iframeModalOpened, setIframeModalOpened] = useState(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>();
+  // Which ScriptSure surface the modal is showing:
+  // - 'widget': the single-order confirmation widget (`/widgets/prescription/...`),
+  //   used for the initial prescribing flow right after creating an order.
+  // - 'chart':  the full patient prescriptions/queue iframe (`/chart/.../prescriptions`),
+  //   used when re-opening an existing order. The single-order widget is only
+  //   designed for the initial flow and cannot approve/deny a queued order
+  //   (issue #9300), so re-opens must land on the chart/queue surface instead.
+  const [iframeMode, setIframeMode] = useState<'widget' | 'chart'>('widget');
   // refreshLaunchUrl reads this ref instead of closing over `iframeUrl`, so the
   // callback identity stays stable across URL changes. Without this the
   // PrescriptionIFrameModal effect that depends on `onRefreshLaunchUrl` would
@@ -283,6 +295,7 @@ export function MedicationsPage(): JSX.Element {
   const handleOrderMedicationComplete = useCallback(
     async (result: { launchUrl: string; medicationRequestId?: string }): Promise<void> => {
       setNewOrderModalOpened(false);
+      setIframeMode('widget');
       setIframePollMrId(result.medicationRequestId);
       setIframeUrl(result.launchUrl);
       setIframeModalOpened(true);
@@ -302,24 +315,42 @@ export function MedicationsPage(): JSX.Element {
       return;
     }
     try {
-      const res = await orderMedication({ patientId, medicationRequestId: currentOrder.id });
+      // Re-opening an existing order from the list opens the full patient
+      // prescriptions/queue iframe rather than the single-order widget. The
+      // widget is only designed for the initial prescribing flow and cannot
+      // approve/deny an order that was added to the queue (issue #9300); the
+      // chart surface handles every state (queued, sent, etc.).
+      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
+      if (!res?.url) {
+        throw new Error('ScriptSure did not return a prescriptions URL');
+      }
+      setIframeMode('chart');
       setIframePollMrId(currentOrder.id);
-      setIframeUrl(res.launchUrl);
+      setIframeUrl(res.url);
       setIframeModalOpened(true);
       await fetchData();
     } catch (e) {
       showErrorNotification(e);
     }
-  }, [patientId, currentOrder, orderMedication, fetchData]);
+  }, [patientId, currentOrder, medplum, fetchData]);
 
   const refreshLaunchUrl = useCallback(async (): Promise<string | undefined> => {
+    if (!patientId) {
+      return iframeUrlRef.current;
+    }
+    // Refresh from whichever surface is currently shown so an expired session
+    // token is replaced with a matching URL (single-order widget vs chart).
+    if (iframeMode === 'chart') {
+      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
+      return res?.url ?? iframeUrlRef.current;
+    }
     const mrId = iframePollMrId ?? currentOrder?.id;
-    if (!patientId || !mrId) {
+    if (!mrId) {
       return iframeUrlRef.current;
     }
     const res = await orderMedication({ patientId, medicationRequestId: mrId });
     return res.launchUrl;
-  }, [patientId, currentOrder, iframePollMrId, orderMedication]);
+  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication]);
 
   const handleIframeFhirSynced = useCallback((): void => {
     setIframeModalOpened(false);
@@ -450,7 +481,7 @@ export function MedicationsPage(): JSX.Element {
         onRefreshLaunchUrl={iframePollMrId || currentOrder?.id ? refreshLaunchUrl : undefined}
         medicationRequestIdToWatch={iframePollMrId ?? currentOrder?.id}
         onFhirSynced={handleIframeFhirSynced}
-        title="Complete prescription"
+        title={iframeMode === 'chart' ? 'ScriptSure prescriptions' : 'Complete prescription'}
       />
     </Box>
   );
