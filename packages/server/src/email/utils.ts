@@ -42,7 +42,7 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
       projectId: project.id,
       missing: [!port || port <= 0 ? 'smtpPort' : '', !username ? 'smtpUsername' : '', !password ? 'smtpPassword' : '']
         .filter(Boolean)
-        .join(','),
+        .join(', '),
     });
     throw new OperationOutcomeError(badRequest('Project SMTP configuration is incomplete or invalid'));
   }

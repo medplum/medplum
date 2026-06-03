@@ -16,6 +16,7 @@ import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
@@ -472,6 +473,30 @@ describe('Email', () => {
 
       expect(sendMail).not.toHaveBeenCalled();
       expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('Logs and rethrows on project SMTP send failure', async () => {
+      const loggerErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+      sendMail.mockRejectedValue(new Error('Connection refused'));
+      const project = makeProject(baseSecrets);
+
+      try {
+        await expect(
+          sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
+        ).rejects.toThrow('Connection refused');
+
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          'Project SMTP send failed',
+          expect.objectContaining({
+            projectId: project.id,
+            host: 'smtp.project.example.com',
+            port: 587,
+            err: 'Connection refused',
+          })
+        );
+      } finally {
+        loggerErrorSpy.mockRestore();
+      }
     });
 
     test('Kill-switch disables project SMTP', async () => {

@@ -17,7 +17,7 @@ import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
-import { getProjectSystemRepo } from '../repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
@@ -104,6 +104,16 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       const { id, secret } = await verifyEmail(user);
       const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 
+      // Use the target user's own project for project-level SMTP configuration.
+      // A super admin may be operating across projects, so the caller's project is not authoritative.
+      let emailProject: WithId<Project> | undefined;
+      if (user.project) {
+        emailProject =
+          user.project.reference === getReferenceString(project)
+            ? project
+            : await getGlobalSystemRepo().readReference<Project>(user.project);
+      }
+
       await sendEmail(
         systemRepo,
         {
@@ -123,7 +133,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
             '',
           ].join('\n'),
         },
-        project
+        emailProject
       );
     }
 

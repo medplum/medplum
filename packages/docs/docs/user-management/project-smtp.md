@@ -27,6 +27,8 @@ Project SMTP is configured by a Project Admin using [`Project.secret`](/docs/sel
 
 When project SMTP is active, the from address is resolved as follows. If the caller specifies a from address, it must appear in `smtpApprovedSenders` to be used. Otherwise, the email is sent from `smtpFromAddress`, falling back to the server support email if neither is set. The server-level approved sender list is only consulted when sending through the server transport.
 
+Setting `smtpFromAddress` is strongly recommended. If it is omitted, emails fall back to the server support address, which your relay's SPF/DKIM records likely do not cover, causing authentication failures or rejected mail.
+
 ## Failure behavior
 
 If `smtpHost` is set but any required entry is missing or invalid, email sending for the project fails with an error rather than silently falling back to the server transport. This prevents system emails from being sent through an unintended transport with the wrong sender domain.
