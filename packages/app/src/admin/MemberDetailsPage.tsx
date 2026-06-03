@@ -32,7 +32,7 @@ export function MemberDetailsPage(): JSX.Element {
           <Title mt="md">User Details</Title>
           {user?.project ? (
             <>
-              <MedplumLink to={`/User/${user.id}/email`}>Change login email</MedplumLink>
+              <MedplumLink to={`/User/${user.id}/email`}>Go to User (change login email)</MedplumLink>
               <ResourceTable value={user} ignoreMissingValues />
             </>
           ) : (
