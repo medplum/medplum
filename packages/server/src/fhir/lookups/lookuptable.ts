@@ -8,10 +8,10 @@ import {
   splitSearchOnComma,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { getLogger } from '../../logger';
 import type { LookupTableSearchParameterImplementation } from '../searchparameter';
-import type { Expression } from '../sql';
+import type { Expression, PgQueryable } from '../sql';
 import {
   Column,
   Condition,
@@ -81,7 +81,7 @@ export abstract class LookupTable {
    * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  indexResource(client: Pool | PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+  indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     return this.batchIndexResources(client, [resource], create);
   }
 
@@ -93,7 +93,7 @@ export abstract class LookupTable {
    * @param resourceBatchSize - (optional) The resource batch size to yield to the event loop between. Default is 200.
    */
   async batchIndexResources<T extends Resource>(
-    client: Pool | PoolClient,
+    client: PoolClient,
     resources: WithId<T>[],
     create: boolean,
     resourceBatchSize: number = 200
@@ -254,7 +254,7 @@ export abstract class LookupTable {
    * @param values - The values to insert.
    */
   protected async batchInsertRows(
-    client: Pool | PoolClient,
+    client: PgQueryable,
     resourceType: ResourceType,
     values: LookupTableRow[]
   ): Promise<void> {
@@ -274,12 +274,12 @@ export abstract class LookupTable {
    * @param client - The database client.
    * @param resource - The resource to delete.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: WithId<Resource>): Promise<void> {
+  async deleteValuesForResource(client: PgQueryable, resource: WithId<Resource>): Promise<void> {
     const tableName = this.getTableName(resource.resourceType);
     await new DeleteQuery(tableName).where('resourceId', '=', resource.id).execute(client);
   }
 
-  async batchDeleteValuesForResources<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<void> {
+  async batchDeleteValuesForResources<T extends Resource>(client: PgQueryable, resources: T[]): Promise<void> {
     const tableName = this.getTableName(resources[0].resourceType);
     const resourceIds = resources.map((r) => r.id);
     await new DeleteQuery(tableName).where('resourceId', 'IN', resourceIds).execute(client);
@@ -292,7 +292,7 @@ export abstract class LookupTable {
    * @param resourceType - The FHIR resource type.
    * @param before - The date before which resources should be purged.
    */
-  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+  async purgeValuesBefore(client: PgQueryable, resourceType: ResourceType, before: string): Promise<void> {
     const lookupTableName = this.getTableName(resourceType);
     await LookupTable.purge(client, lookupTableName, {
       tableName: resourceType,
@@ -303,11 +303,7 @@ export abstract class LookupTable {
     });
   }
 
-  protected static async purge(
-    client: Pool | PoolClient,
-    lookupTableName: string,
-    ...joins: TableJoin[]
-  ): Promise<void> {
+  protected static async purge(client: PgQueryable, lookupTableName: string, ...joins: TableJoin[]): Promise<void> {
     const deleteLookupRows = new DeleteQuery(lookupTableName);
     for (const join of joins) {
       deleteLookupRows.using(join.tableName).whereExpr(join.joinCondition);

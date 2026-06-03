@@ -11,11 +11,13 @@ import {
 } from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
-import type { Client, Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { getLogger, globalLogger } from '../logger';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
+
+export type PgQueryable = Pick<Pool, 'query'> & Pick<PoolClient, 'query'>;
 
 export function setSqlDebug(value: string | undefined): void {
   DEBUG = value;
@@ -234,7 +236,7 @@ abstract class Executable implements Expression {
     throw new Error('Method not implemented');
   }
 
-  async execute<T = any>(conn: Pool | PoolClient): Promise<T[]> {
+  async execute<T = any>(conn: PgQueryable): Promise<T[]> {
     const sql = new SqlBuilder();
     sql.appendExpression(this);
     return (await sql.execute(conn)).rows;
@@ -466,7 +468,7 @@ export class UnionAllBuilder {
     this.queryCount++;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  async execute(conn: PgQueryable): Promise<any[]> {
     return (await this.sql.execute(conn)).rows;
   }
 }
@@ -632,7 +634,7 @@ export class SqlBuilder {
     return this.values;
   }
 
-  async execute(conn: Client | Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
+  async execute(conn: PgQueryable): Promise<{ rowCount: number; rows: any[] }> {
     const sql = this.toString();
     let startTime = 0;
     if (this.debug) {
@@ -1224,7 +1226,7 @@ export class InsertQuery extends BaseQuery {
     }
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  async execute(conn: PgQueryable): Promise<any[]> {
     if (!this.values?.length) {
       return [];
     }

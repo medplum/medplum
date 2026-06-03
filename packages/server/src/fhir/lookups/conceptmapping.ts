@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { importConceptMap } from '../operations/conceptmapimport';
+import type { PgQueryable } from '../sql';
 import { Column, Condition, Conjunction } from '../sql';
 import { LookupTable } from './lookuptable';
 
@@ -52,7 +53,7 @@ export class ConceptMappingTable extends LookupTable {
    * @param client - The database client.
    * @param resource - The resource to delete.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  async deleteValuesForResource(client: PgQueryable, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     if (resourceType !== 'ConceptMap') {
       return;
@@ -90,7 +91,7 @@ export class ConceptMappingTable extends LookupTable {
    * @param resourceType - The FHIR resource type.
    * @param before - The date before which resources should be purged.
    */
-  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+  async purgeValuesBefore(client: PgQueryable, resourceType: ResourceType, before: string): Promise<void> {
     if (resourceType !== 'ConceptMap') {
       return;
     }

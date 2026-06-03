@@ -10,10 +10,11 @@ import type {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import type { Designation, ImportedProperty } from '../operations/codesystemimport';
 import { importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
+import type { PgQueryable } from '../sql';
 import { Column, Condition, Conjunction } from '../sql';
 import { LookupTable } from './lookuptable';
 
@@ -67,7 +68,7 @@ export class CodingTable extends LookupTable {
    * @param client - The database client.
    * @param resource - The resource to delete.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  async deleteValuesForResource(client: PgQueryable, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     if (resourceType !== 'CodeSystem') {
       return;
@@ -105,7 +106,7 @@ export class CodingTable extends LookupTable {
    * @param resourceType - The FHIR resource type.
    * @param before - The date before which resources should be purged.
    */
-  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+  async purgeValuesBefore(client: PgQueryable, resourceType: ResourceType, before: string): Promise<void> {
     if (resourceType !== 'CodeSystem') {
       return;
     }

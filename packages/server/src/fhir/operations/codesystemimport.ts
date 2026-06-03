@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
@@ -115,7 +115,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 }
 
 export async function importCodeSystem(
-  db: Pool | PoolClient,
+  db: PoolClient,
   codeSystem: WithId<CodeSystem>,
   concepts?: Coding[],
   properties?: ImportedProperty[],
@@ -167,7 +167,7 @@ export async function importCodeSystem(
 async function processProperties(
   importedProperties: ImportedProperty[],
   codeSystem: WithId<CodeSystem>,
-  db: Pool | PoolClient
+  db: PoolClient
 ): Promise<void> {
   const cache: Record<string, { id: number; property: CodeSystemProperty }> = Object.create(null);
   const lookupCodes = new Set<string>();
@@ -228,7 +228,7 @@ async function processProperties(
 async function resolveProperty(
   codeSystem: CodeSystem,
   code: string,
-  db: Pool | PoolClient
+  db: PoolClient
 ): Promise<[number, CodeSystemProperty]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
