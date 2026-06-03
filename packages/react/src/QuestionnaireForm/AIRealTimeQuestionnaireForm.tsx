@@ -339,7 +339,8 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
           <ActionIcon
             variant="subtle"
             color="gray"
-            size="md"
+            size="lg"
+            radius="xl"
             aria-label={expanded ? 'Collapse transcript' : 'Expand transcript'}
             aria-expanded={expanded}
             onClick={handleToggleExpanded}
