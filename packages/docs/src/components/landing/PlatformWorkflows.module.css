@@ -1,0 +1,565 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: 'Poppins', system-ui, sans-serif;
+  scroll-margin-top: 80px;
+  padding: 64px 0 80px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.sectionHeader {
+  margin-bottom: 36px;
+}
+
+.sectionHeadline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  margin: 0 0 16px;
+  color: #212529;
+}
+
+.sectionLead {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 19px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0;
+  max-width: 720px;
+}
+
+/* ---- sub-section structure ---- */
+
+.subSection {
+  margin-bottom: 0;
+}
+
+.subHeading {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: #212529;
+  margin-bottom: 8px;
+}
+
+.subLead {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0 0 20px;
+  max-width: 680px;
+}
+
+/* ---- Supporting layer: container + two columns ---- */
+
+.supportContainer {
+  position: relative;
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 38px 32px 32px;
+  margin: 60px -24px 0;
+  box-shadow: inset 0 8px 18px -8px rgba(0, 0, 0, 0.08);
+}
+
+/* White chevron tag overlapping the seam, pointing down into the slab */
+.seamLabel {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 22px 14px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.seamLabelShape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.seamLabelText {
+  position: relative;
+  z-index: 1;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--oc-grape-8);
+  letter-spacing: 0.015em;
+}
+
+.supportColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.supportColumn {
+  min-width: 0;
+}
+
+.colHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.colIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--oc-grape-0);
+  border: 1px solid var(--oc-grape-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oc-grape-8);
+  flex-shrink: 0;
+}
+
+.colName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: #212529;
+}
+
+.supportCardList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Denser grid for integrations: 2 cards per row, equal heights */
+.supportCardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.supportCardGrid .supportCard {
+  height: 100%;
+  align-items: center;
+}
+
+.supportCard {
+  display: flex;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.supportCard:hover {
+  border-color: #ced4da;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 14px -8px rgba(0, 0, 0, 0.08);
+}
+
+.supportCardIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--oc-grape-0);
+  border: 1px solid var(--oc-grape-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oc-grape-8);
+  flex-shrink: 0;
+}
+
+.supportCardText {
+  min-width: 0;
+}
+
+.supportCardName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: #212529;
+  margin-bottom: 3px;
+}
+
+.supportCardDesc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #495057;
+  margin: 0;
+}
+
+/* Inline chips within a card (e.g., terminology vocabs) */
+.cardChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.cardChip {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--oc-grape-8);
+  background: var(--oc-grape-0);
+  border: 1px solid var(--oc-grape-1);
+  border-radius: 9999px;
+  padding: 2px 9px;
+}
+
+.integrationsDocsLink {
+  margin: 20px 0 0;
+  font-size: 14px;
+}
+
+.integrationsDocsLink a {
+  color: var(--oc-grape-8);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.integrationsDocsLink a:hover {
+  text-decoration: underline;
+}
+
+/* ---- Compliance & Certification band (full-width, inside foundation panel) ---- */
+
+.complianceBand {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid #e9ecef;
+}
+
+.complianceBandHead {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.complianceBandTitle {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: #212529;
+  letter-spacing: -0.005em;
+  margin-bottom: 4px;
+}
+
+.complianceBandLead {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #495057;
+  margin: 0 auto;
+  max-width: 540px;
+}
+
+.complianceBand .complianceCard {
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+}
+
+.complianceBand .complianceGrid {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+/* ---- Workflows interactive list + panel ---- */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) 1fr;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.capabilityList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.capabilityButton {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  column-gap: 12px;
+  row-gap: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  transition: background 120ms ease;
+}
+
+.capabilityButton:hover {
+  background: var(--oc-grape-0);
+}
+
+.capabilityButtonActive {
+  background: var(--oc-grape-0);
+}
+
+.capabilityIcon {
+  margin-top: 2px;
+  grid-row: span 2;
+  color: #868e96;
+  display: flex;
+  align-items: flex-start;
+}
+
+.capabilityIconActive {
+  color: var(--oc-grape-8);
+}
+
+.capabilityName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #212529;
+  line-height: 1.3;
+}
+
+.capabilityNameActive {
+  color: var(--oc-grape-8);
+}
+
+.capabilityShort {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 13px;
+  color: #868e96;
+  line-height: 1.35;
+}
+
+.capabilityShortActive {
+  color: #6741a5;
+}
+
+.panelWrapper {
+  position: sticky;
+  top: 96px;
+}
+
+.screenshotPlaceholder {
+  background: #f8f9fa;
+  border: 2px dashed #ced4da;
+  border-radius: 14px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.012) 0 6px, transparent 6px 12px);
+}
+
+.placeholderChip {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 11px;
+  color: #868e96;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 4px 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.placeholderCaption {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #868e96;
+}
+
+/* ---- Compliance & Certification grid ---- */
+
+.complianceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 10px;
+}
+
+.complianceCard {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 12px 8px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.complianceLogoArea {
+  height: 38px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.complianceLogoImg {
+  max-height: 38px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.complianceName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: #212529;
+  line-height: 1.2;
+}
+
+.complianceSub {
+  font-size: 10.5px;
+  color: #868e96;
+  margin-top: 1px;
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .section {
+  border-bottom-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .sectionHeadline {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .sectionLead {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .subHeading {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .subLead {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .supportContainer {
+  background: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .seamLabelShape polygon {
+  fill: var(--ifm-background-color);
+  stroke: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .seamLabelText {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .complianceBand {
+  border-top-color: var(--oc-gray-7);
+}
+
+[data-theme='dark'] .complianceBandTitle {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .complianceBandLead {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .cardChip {
+  background: rgba(156, 54, 181, 0.15);
+  border-color: rgba(156, 54, 181, 0.3);
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .colIcon {
+  background: rgba(156, 54, 181, 0.18);
+  border-color: rgba(156, 54, 181, 0.35);
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .colName {
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .supportCard {
+  background: #1b1b1d;
+  border-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .supportCardIcon {
+  background: rgba(156, 54, 181, 0.15);
+  border-color: rgba(156, 54, 181, 0.3);
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .supportCardName {
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .supportCardDesc {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .capabilityButton:hover {
+  background: rgba(156, 54, 181, 0.15);
+}
+
+[data-theme='dark'] .capabilityButtonActive {
+  background: rgba(156, 54, 181, 0.15);
+}
+
+[data-theme='dark'] .capabilityName {
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .capabilityNameActive {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .capabilityShortActive {
+  color: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .screenshotPlaceholder {
+  background: var(--oc-gray-8);
+  border-color: var(--oc-gray-7);
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0 6px, transparent 6px 12px);
+}
+
+[data-theme='dark'] .placeholderChip {
+  background: var(--oc-gray-9);
+  border-color: var(--oc-gray-7);
+  color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .integrationsDocsLink a {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .complianceCard {
+  background: #1B1B1D;
+  border-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .complianceName {
+  color: var(--oc-gray-2);
+}
