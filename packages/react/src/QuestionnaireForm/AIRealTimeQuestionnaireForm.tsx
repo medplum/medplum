@@ -9,7 +9,7 @@ import { useMedplum, useWhisper } from '@medplum/react-hooks';
 import { IconChevronDown, IconChevronUp, IconCircleFilled, IconMicrophone } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import classes from './AIRealTimeQuestionnaireForm.module.css';
 import type { QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireForm } from './QuestionnaireForm';
@@ -18,6 +18,11 @@ const SILENCE_DEBOUNCE_MS = 3000;
 const DEFAULT_IDLE_LABEL = 'Start Dictation to complete this form with your voice';
 const TRANSCRIPT_PLACEHOLDER = 'Start speaking to see your transcribed words...';
 const VOICE_TRANSCRIPT_EXTENSION_URL = 'https://medplum.com/ai-voice-transcript';
+
+const botIdentifier: Identifier = {
+  system: 'https://www.medplum.com/bots',
+  value: 'ai-realtime-questionnaire',
+};
 
 const DEFAULT_INSTRUCTIONS = (
   <Stack gap="xs">
@@ -29,23 +34,13 @@ const DEFAULT_INSTRUCTIONS = (
 );
 
 export interface AIRealTimeQuestionnaireFormProps extends QuestionnaireFormProps {
-  /** Optional AI model override forwarded to the bot. */
   readonly aiModel?: string;
-  /** Optional callback invoked whenever a new transcript chunk arrives from the realtime API */
   readonly onTranscript?: (fullTranscript: string, chunk: string) => void;
-  /** Optional custom how-to instructions content shown in the dictation panel. */
   readonly voiceInstructions?: ReactNode;
 }
 
-export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element | null {
-  const botIdentifier = useMemo<Identifier>(
-    () => ({
-      system: 'https://www.medplum.com/bots',
-      value: 'ai-realtime-questionnaire',
-    }),
-    []
-  );
-
+export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element {
+ 
   const { aiModel, onTranscript, voiceInstructions, ...questionnaireFormProps } = props;
   const medplum = useMedplum();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(
@@ -92,7 +87,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     return () => {
       cancelled = true;
     };
-  }, [medplum, botIdentifier.system, botIdentifier.value]);
+  }, [medplum]);
 
   const isProjectVoiceEnabled = medplum.getProject()?.features?.includes('ai-realtime') ?? false;
   const isVoiceEnabled = isProjectVoiceEnabled && botAvailability === 'available';
@@ -135,10 +130,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
 
       setIsProcessing(true);
       try {
-        // Read the latest response via ref so back-to-back calls chain off the AI's previous output
-        // rather than a stale closure value.
         const existingResponse = responseRef.current;
-
         const parameter: Parameters['parameter'] = [
           { name: 'questionnaire', valueString: JSON.stringify(questionnaireRef.current) },
           { name: 'transcript', valueString: transcript },
@@ -159,8 +151,6 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
         if (responseParam?.valueString) {
           try {
             const aiQuestionnaireResponse = JSON.parse(responseParam.valueString) as QuestionnaireResponse;
-            // Preserve any non-voice extensions from the bot and replace our own with the
-            // current cumulative transcript for the session.
             const preservedExtensions = (aiQuestionnaireResponse.extension ?? []).filter(
               (e) => e.url !== VOICE_TRANSCRIPT_EXTENSION_URL
             );
@@ -168,13 +158,12 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
               ...preservedExtensions,
               { url: VOICE_TRANSCRIPT_EXTENSION_URL, valueString: fullTranscriptRef.current },
             ];
-            // Keep responseRef in lockstep so a chained drain reads this value, not the stale state.
             responseRef.current = aiQuestionnaireResponse;
             setQuestionnaireResponse(aiQuestionnaireResponse);
             setResponseVersion((v) => v + 1);
           } catch (parseError) {
             console.error('Failed to parse bot response as QuestionnaireResponse:', parseError);
-            console.error('Response text:', responseParam.valueString);
+            showNotification({ color: 'red', message: `Failed to parse bot response as QuestionnaireResponse: ${normalizeErrorString(parseError)}` });
           }
         }
       } catch (error) {
@@ -183,23 +172,18 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
         setIsProcessing(false);
       }
     },
-    [medplum, aiModel, botIdentifier]
+    [medplum, aiModel]
   );
 
-  // Latest-closure ref so the function can recurse for auto-drain and the debounced
-  // silence handler can fire it without depending on its identity.
   useEffect(() => {
     flushTranscriptRef.current = async (): Promise<void> => {
       if (inFlightRef.current) {
-        // Another $ai call is in flight. The auto-drain at the end of that call
-        // (or the next silence event) will pick up whatever queued up.
         return;
       }
       const pending = inputRef.current.trim();
       if (!pending) {
         return;
       }
-      // Snapshot + clear so further utterances queue cleanly into a fresh buffer.
       inputRef.current = '';
       setTranscript('');
       onTranscript?.('', '');
@@ -219,9 +203,6 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   }, [processTranscript, onTranscript]);
 
   const debouncedFlush = useDebouncedCallback(() => {
-    // The debounce may fire while the user is mid-utterance (we only reschedule on
-    // speech_stopped, not on speech_started). If they're still speaking, bail —
-    // the next speech_stopped will restart the debounce.
     if (statusRef.current === 'speech_started') {
       return;
     }
@@ -257,9 +238,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   const handleStopDictation = useCallback((): void => {
     setIsStopping(true);
     stop();
-    // Cancel any in-flight silence debounce and flush whatever's pending to the bot now,
-    // so users don't lose the last utterance just because they hit Stop before the
-    // silence window elapsed.
+
     debouncedFlush.cancel();
     flushTranscriptRef
       .current()
@@ -287,8 +266,6 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
 
   const isActive = isRecording && !isStopping;
   const isButtonLoading = isConnecting || isStopping;
-  // Keep the Stop button clickable while the bot is processing — interrupting a
-  // long-running job is more useful than blocking the user.
   const showStopButton = isActive && !isButtonLoading;
   const showButtonLoader = isButtonLoading;
 
@@ -300,11 +277,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   } else if (showStopButton) {
     dictationLabel = 'Stop Dictation';
   }
-
-  // Show "Processing…" whenever a bot call is in flight OR a Stop is in progress.
-  // The stop case covers the window where we're draining pending transcript chunks
-  // before the bot call kicks off — without this, the label snaps back to the idle
-  // copy mid-action and the user thinks the click did nothing.
+  
   let activeStatusLabel: string | undefined;
   if (isProcessing || isStopping) {
     activeStatusLabel = 'Processing…';
