@@ -163,7 +163,10 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
             setResponseVersion((v) => v + 1);
           } catch (parseError) {
             console.error('Failed to parse bot response as QuestionnaireResponse:', parseError);
-            showNotification({ color: 'red', message: `Failed to parse bot response as QuestionnaireResponse: ${normalizeErrorString(parseError)}` });
+            showNotification({
+              color: 'red',
+              message: `Failed to parse bot response as QuestionnaireResponse: ${normalizeErrorString(parseError)}`,
+            });
           }
         }
       } catch (error) {
@@ -315,7 +318,13 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
             {statusIcon}
           </span>
           <span className={classes.statusLabel} aria-live="polite">
-            {activeStatusLabel ? <span className={isFinishing ? classes.statusLabelFinishing : classes.statusLabelPrimary}>{activeStatusLabel}</span> : idleLabel}
+            {activeStatusLabel ? (
+              <span className={isFinishing ? classes.statusLabelFinishing : classes.statusLabelPrimary}>
+                {activeStatusLabel}
+              </span>
+            ) : (
+              idleLabel
+            )}
           </span>
         </div>
         <Flex align="center" gap="xs">
@@ -362,7 +371,9 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
               <div className={classes.transcriptWrapper}>
                 <div ref={transcriptViewportRef} className={classes.transcriptArea}>
                   <Text component="pre" className={classes.transcriptText}>
-                    {(displayTranscript && transcript ? `${displayTranscript} ${transcript}` : displayTranscript || transcript) || TRANSCRIPT_PLACEHOLDER}
+                    {(displayTranscript && transcript
+                      ? `${displayTranscript} ${transcript}`
+                      : displayTranscript || transcript) || TRANSCRIPT_PLACEHOLDER}
                   </Text>
                 </div>
               </div>
