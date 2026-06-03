@@ -4,7 +4,6 @@ import { SubscriptionEmitter, generateId } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-
 import type { JSX, ReactNode } from 'react';
 import { StrictMode, useCallback, useState } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -139,7 +138,7 @@ describe('useSubscription()', () => {
     const { rerender } = setup(<RenderToggleComponent render={true} />);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    const emitter = medplum.getSubscriptionManager().getEmitter('Communication') as typeof SubscriptionEmitter;
+    const emitter = medplum.getSubscriptionManager().getEmitter('Communication') as unknown as SubscriptionEmitter;
     expect(emitter).toBeInstanceOf(SubscriptionEmitter);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 

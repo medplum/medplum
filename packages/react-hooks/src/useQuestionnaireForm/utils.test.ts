@@ -1343,7 +1343,7 @@ describe('typedValueToResponseItem', () => {
   test('returns undefined for missing type', () => {
     const item: QuestionnaireItem = { linkId: '1', type: 'integer' };
     const value = { value: 'text' };
-    const result = typedValueToResponseItem(item, value);
+    const result = typedValueToResponseItem(item, value as TypedValue);
     expect(result).toBeUndefined();
   });
 

@@ -13,8 +13,9 @@ type WhisperHookResult = RenderHookResult<UseWhisperResult, unknown>['result'];
 
 /**
  * start() opens the socket asynchronously; keep act() open until onopen has flushed.
- * @param result
- * @param wsServer
+ * 
+ * @param result - The result of the useWhisper hook.
+ * @param wsServer - The WebSocket server.
  */
 async function startWhisperAndConnect(result: WhisperHookResult, wsServer: WS): Promise<void> {
   await act(async () => {
@@ -80,7 +81,7 @@ describe('useWhisper', () => {
     vi.stubGlobal('AudioContext', MockAudioContext);
     vi.stubGlobal('AudioWorkletNode', MockAudioWorkletNode);
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-worklet');
-    return { processor: new MockAudioWorkletNode({}, 'pcm-worklet') };
+    return { processor: new MockAudioWorkletNode() };
   }
 
   let medplum: MockClient;

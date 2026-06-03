@@ -61,7 +61,7 @@ export function useWhisper({
   const [error, setError] = useState<unknown>(undefined);
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
 
-  const websocketRef = useRef<typeof ReconnectingWebSocket | undefined>(undefined);
+  const websocketRef = useRef<ReconnectingWebSocket | undefined>(undefined);
   const audioStreamRef = useRef<MediaStream | undefined>(undefined);
   const audioContextRef = useRef<AudioContext | undefined>(undefined);
   const audioProcessorRef = useRef<AudioWorkletNode | undefined>(undefined);

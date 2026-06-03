@@ -7,6 +7,14 @@ import '@testing-library/jest-dom/vitest';
 import { TextDecoder, TextEncoder } from 'node:util';
 import { vi } from 'vitest';
 
+declare global {
+  // React Testing Library sets this on `self` in jsdom; React reads it from globalThis.
+  var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
+  interface Window {
+    IS_REACT_ACT_ENVIRONMENT?: boolean;
+  }
+}
+
 // Vitest's jsdom environment exposes `self` separately from `globalThis`. React reads
 // IS_REACT_ACT_ENVIRONMENT from globalThis while Testing Library toggles it on self, so
 // async RTL act() calls do not suppress spurious "not wrapped in act(...)" warnings.
