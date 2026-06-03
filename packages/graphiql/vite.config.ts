@@ -8,12 +8,16 @@ import { defineConfig } from 'vite';
 // The docs recommend the `vite-plugin-monaco-editor` package, but its exports aren't cleanly
 // compatible with ESM. See https://github.com/vdesjs/vite-plugin-monaco-editor/issues/21
 import monacoEditorEsmPlugin from 'vite-plugin-monaco-editor-esm';
+import { medplumAliases } from '../../vitest.config';
 
 if (!existsSync(path.join(__dirname, '.env'))) {
   copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
 }
 
 export default defineConfig({
+  resolve: {
+    alias: medplumAliases,
+  },
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
   plugins: [
     react(),

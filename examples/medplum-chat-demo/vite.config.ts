@@ -5,6 +5,7 @@ import dns from 'dns';
 import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
+import { medplumAliases } from '../../vitest.config';
 
 dns.setDefaultResultOrder('verbatim');
 
@@ -16,6 +17,9 @@ dns.setDefaultResultOrder('verbatim');
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: medplumAliases,
+  },
   envPrefix: ['MEDPLUM_', 'GOOGLE_'],
   plugins: [react()],
   server: {

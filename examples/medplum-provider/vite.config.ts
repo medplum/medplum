@@ -6,22 +6,26 @@ import { existsSync } from 'fs';
 import path from 'path';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { medplumAliases } from '../../vitest.config';
 
 dns.setDefaultResultOrder('verbatim');
 
 // Resolve aliases to local packages when working within the monorepo
-const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
-  Object.entries({
-    '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
-    '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
-    '@medplum/scriptsure-react': path.resolve(__dirname, '../../packages/scriptsure-react/src'),
-    '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
-    '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/esm/index.css'),
-    '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
-    '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
-    '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
-  }).filter(([, relPath]) => existsSync(relPath))
-);
+const alias: NonNullable<UserConfig['resolve']>['alias'] = {
+  ...medplumAliases,
+  ...Object.fromEntries(
+    Object.entries({
+      '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
+      '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
+      '@medplum/scriptsure-react': path.resolve(__dirname, '../../packages/scriptsure-react/src'),
+      '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
+      '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/esm/index.css'),
+      '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
+      '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
+      '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
+    }).filter(([, relPath]) => existsSync(relPath))
+  ),
+};
 
 // https://vitejs.dev/config/
 export default defineConfig({

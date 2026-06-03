@@ -7,6 +7,7 @@ import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
 import packageJson from './package.json' with { type: 'json' };
+import { medplumAliases } from '../../vitest.config';
 
 if (!existsSync(path.join(__dirname, '.env'))) {
   copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
@@ -38,6 +39,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      ...medplumAliases,
       '@medplum/core': path.resolve(__dirname, '../core/src'),
       '@medplum/react': path.resolve(__dirname, '../react/src'),
       '@medplum/react-hooks': path.resolve(__dirname, '../react-hooks/src'),

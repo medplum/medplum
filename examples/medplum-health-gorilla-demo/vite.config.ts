@@ -6,6 +6,7 @@ import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vite';
+import { medplumAliases } from '../../vitest.config';
 
 dns.setDefaultResultOrder('verbatim');
 
@@ -14,12 +15,15 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 }
 
 // Resolve aliases to local packages when working within the monorepo
-const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
-  Object.entries({
-    '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
-    '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
-  }).filter(([, relPath]) => existsSync(relPath))
-);
+const alias: NonNullable<UserConfig['resolve']>['alias'] = {
+  ...medplumAliases,
+  ...Object.fromEntries(
+    Object.entries({
+      '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
+      '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
+    }).filter(([, relPath]) => existsSync(relPath))
+  ),
+};
 // https://vitejs.dev/config/
 export default defineConfig({
   envPrefix: ['MEDPLUM_', 'GOOGLE_'],
