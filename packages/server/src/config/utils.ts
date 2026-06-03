@@ -206,6 +206,15 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
+const arrayKeys = new Set([
+  'dataWarehouse.resourceTypes.included',
+  'dataWarehouse.resourceTypes.excluded',
+]);
+
+export function isArrayConfig(key: string): boolean {
+  return arrayKeys.has(key);
+}
+
 export function setValue(config: Record<string, unknown>, key: string, value: string): void {
   const keySegments = key.split('.');
   let obj = config;

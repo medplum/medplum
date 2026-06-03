@@ -10,7 +10,7 @@ import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
-import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
+import { addDefaults, isArrayConfig, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
 import { warnInvalidDataWarehouseConfig } from './validate-config';
 
 let cachedConfig: ServerConfig | undefined = undefined;
@@ -240,6 +240,11 @@ function loadEnvConfig(): MedplumServerConfig {
       key = key.substring('DATA_WAREHOUSE_'.length);
       currConfig = config.dataWarehouse ??= {};
       section = 'dataWarehouse';
+      if (key.startsWith('RESOURCE_TYPES_')) {
+        key = key.substring('RESOURCE_TYPES_'.length);
+        currConfig = config.dataWarehouse.resourceTypes = config.dataWarehouse.resourceTypes ?? {};
+        section = 'dataWarehouse.resourceTypes';
+      }
     }
 
     // Convert key from CAPITAL_CASE to camelCase
@@ -257,6 +262,8 @@ function loadEnvConfig(): MedplumServerConfig {
       currConfig[key] = value === 'true';
     } else if (isObjectConfig(lookupKey) || isObjectConfig(key)) {
       currConfig[key] = JSON.parse(value ?? '');
+    } else if (isArrayConfig(lookupKey) || isArrayConfig(key)) {
+      currConfig[key] = value?.split(',').map((v) => v.trim());
     } else {
       currConfig[key] = value;
     }
