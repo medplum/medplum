@@ -26,10 +26,7 @@ function PrimitiveCard({
 }): JSX.Element {
   const Icon = FOUNDATION_ICONS[item.icon];
   return (
-    <button
-      onClick={onSelect}
-      className={`${styles.primitiveCard} ${selected ? styles.primitiveCardSelected : ''}`}
-    >
+    <button onClick={onSelect} className={`${styles.primitiveCard} ${selected ? styles.primitiveCardSelected : ''}`}>
       <div className={`${styles.iconTile} ${selected ? styles.iconTileSelected : ''}`}>
         {Icon && <Icon size={24} />}
       </div>
