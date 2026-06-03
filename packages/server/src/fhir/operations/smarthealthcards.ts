@@ -69,7 +69,7 @@ export const generateSmartHealthCardOperation = makeOperationDefinition(
       { use: 'in', name: 'exp', type: 'integer', min: 0, max: '1' },
       { use: 'in', name: 'includeQrCode', type: 'boolean', min: 0, max: '1' },
       { use: 'out', name: 'credential', type: 'string', min: 1, max: '1' },
-      { use: 'out', name: 'shcUri', type: 'uri', min: 1, max: '1' },
+      { use: 'out', name: 'shcUri', type: 'string', min: 1, max: '1' },
       { use: 'out', name: 'file', type: 'string', min: 1, max: '1' },
       { use: 'out', name: 'qrCodeDataUrl', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'issuer', type: 'uri', min: 1, max: '1' },

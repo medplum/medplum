@@ -70,7 +70,7 @@ export const generateSmartHealthLinkOperation = makeOperationDefinition(
       { use: 'in', name: 'passcode', type: 'string', min: 0, max: '1' },
       { use: 'in', name: 'includeQrCode', type: 'boolean', min: 0, max: '1' },
       { use: 'out', name: 'shlink', type: 'string', min: 1, max: '1' },
-      { use: 'out', name: 'manifestUrl', type: 'uri', min: 1, max: '1' },
+      { use: 'out', name: 'manifestUrl', type: 'string', min: 1, max: '1' },
       { use: 'out', name: 'qrCodeDataUrl', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'id', type: 'id', min: 1, max: '1' },
     ],

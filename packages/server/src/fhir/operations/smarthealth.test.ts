@@ -118,7 +118,7 @@ describe('SMART Health operations', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({});
-    expect(missingPatientResponse.status).toBe(400);
+    expect(missingPatientResponse.status).toBe(404);
   });
 
   test('Verifies external SMART Health Card signatures without trusting issuer', async () => {
@@ -341,7 +341,7 @@ describe('SMART Health operations', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({});
-    expect(missingPatientResponse.status).toBe(400);
+    expect(missingPatientResponse.status).toBe(404);
   });
 });
 
