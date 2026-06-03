@@ -199,6 +199,7 @@ const objectKeys = new Set([
   'workers.enabled',
   'workers.bullmq',
   'dataWarehouse',
+  'dataWarehouse.resourceTypes',
 ]);
 
 export function isObjectConfig(key: string): boolean {

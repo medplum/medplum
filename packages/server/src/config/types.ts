@@ -348,6 +348,11 @@ export interface MedplumDataWarehouseConfig {
    * History rows with `lastUpdated` before this value are excluded.
    */
   startDate?: string;
+  /**
+   * FHIR resource types to sync (e.g. `Patient`, `Observation`).
+   * When omitted, all indexed resource history tables are synced.
+   */
+  resourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {

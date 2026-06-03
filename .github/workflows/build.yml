@@ -78,7 +78,7 @@ jobs:
 
   preview:
     name: Deploy previews
-    if: github.event_name == 'pull_request'
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [build]
@@ -116,6 +116,7 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+          VITE_MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838
         with:
@@ -132,12 +133,17 @@ jobs:
         run: './scripts/deploy-docs.sh'
         env:
           DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+      - name: Deploy provider app preview
+        run: './scripts/deploy-provider-app.sh'
+        env:
+          PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
       - name: Comment preview URLs
         uses: actions/github-script@v7
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const body = `### 🚀 Preview Links
+            const body = `### Preview Links
 
             | Project   | URL  |
             | --------- | ---- |
@@ -149,12 +155,31 @@ jobs:
             **Build:** [See logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
             `;
 
-            await github.rest.issues.createComment({
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
             });
+
+            const existing = comments.find(
+              (c) => c.user.login === 'github-actions[bot]' && c.body.includes('### Preview Links')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            }
 
   eslint:
     name: Run eslint
@@ -341,7 +366,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
         if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
-        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

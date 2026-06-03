@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumServerConfig } from './types';
+
+jest.mock('../data-warehouse/config', () => ({
+  getWarehouseSyncPostgresTableNames: jest.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
+}));
+
 import {
   getDataWarehouseConfigErrors,
   isDataWarehouseSyncOperational,
@@ -62,6 +67,40 @@ describe('getDataWarehouseConfigErrors', () => {
         })
       )
     ).toStrictEqual([]);
+  });
+
+  describe('resourceTypes', () => {
+    test('returns error when resourceTypes contains unknown resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              resourceTypes: ['Patient', 'NotARealResourceType'],
+            },
+          })
+        )
+      ).toContain('dataWarehouse.resourceTypes contains unknown resource type(s): NotARealResourceType');
+    });
+
+    test('returns no errors when resourceTypes lists known resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              resourceTypes: ['Patient', 'Observation'],
+            },
+          })
+        )
+      ).toStrictEqual([]);
+    });
   });
 
   test('returns no errors when enabled is false even if destination fields are missing', () => {
