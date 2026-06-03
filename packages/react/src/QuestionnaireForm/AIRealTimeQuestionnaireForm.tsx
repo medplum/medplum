@@ -40,7 +40,6 @@ export interface AIRealTimeQuestionnaireFormProps extends QuestionnaireFormProps
 }
 
 export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element {
- 
   const { aiModel, onTranscript, voiceInstructions, ...questionnaireFormProps } = props;
   const medplum = useMedplum();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(
@@ -48,6 +47,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [displayTranscript, setDisplayTranscript] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   // Bumped only when the AI replaces the response, so QuestionnaireForm remounts
@@ -188,6 +188,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
       setTranscript('');
       onTranscript?.('', '');
       fullTranscriptRef.current = fullTranscriptRef.current ? `${fullTranscriptRef.current} ${pending}` : pending;
+      setDisplayTranscript(fullTranscriptRef.current);
       inFlightRef.current = true;
       try {
         await processTranscript(pending);
@@ -225,7 +226,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     if (viewport) {
       viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
     }
-  }, [transcript]);
+  }, [transcript, displayTranscript]);
 
   const isConnecting = status === 'requesting_microphone' || status === 'connecting' || status === 'connected';
   const isRecording = status === 'listening' || status === 'speech_started' || status === 'speech_stopped';
@@ -277,7 +278,12 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   } else if (showStopButton) {
     dictationLabel = 'Stop Dictation';
   }
-  
+
+  // Show "Processing…" whenever a bot call is in flight OR a Stop is in progress.
+  // The stop case covers the window where we're draining pending transcript chunks
+  // before the bot call kicks off — without this, the label snaps back to the idle
+  // copy mid-action and the user thinks the click did nothing.
+  const isFinishing = (isProcessing || isStopping) && !isRecording && !isConnecting;
   let activeStatusLabel: string | undefined;
   if (isProcessing || isStopping) {
     activeStatusLabel = 'Processing…';
@@ -285,15 +291,31 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     activeStatusLabel = 'Listening…';
   }
 
+  let statusState: 'finishing' | 'recording' | 'idle' = 'idle';
+  if (isFinishing) {
+    statusState = 'finishing';
+  } else if (activeStatusLabel) {
+    statusState = 'recording';
+  }
+
+  let statusIcon: JSX.Element;
+  if (isFinishing) {
+    statusIcon = <Loader size={16} color="blue" />;
+  } else if (activeStatusLabel) {
+    statusIcon = <IconCircleFilled size={16} />;
+  } else {
+    statusIcon = <IconMicrophone size={20} />;
+  }
+
   const afterHeader = (
     <Box className={classes.banner}>
       <Flex align="center" justify="space-between" gap="sm" p="md" className={classes.headerRow}>
-        <div className={classes.statusRow} data-state={activeStatusLabel ? 'recording' : 'idle'}>
+        <div className={classes.statusRow} data-state={statusState}>
           <span className={classes.iconWrapper} aria-hidden>
-            {activeStatusLabel ? <IconCircleFilled size={16} /> : <IconMicrophone size={20} />}
+            {statusIcon}
           </span>
           <span className={classes.statusLabel} aria-live="polite">
-            {activeStatusLabel ? <span className={classes.statusLabelPrimary}>{activeStatusLabel}</span> : idleLabel}
+            {activeStatusLabel ? <span className={isFinishing ? classes.statusLabelFinishing : classes.statusLabelPrimary}>{activeStatusLabel}</span> : idleLabel}
           </span>
         </div>
         <Flex align="center" gap="xs">
@@ -311,7 +333,8 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
           <ActionIcon
             variant="subtle"
             color="gray"
-            size="md"
+            size="lg"
+            radius="xl"
             aria-label={expanded ? 'Collapse transcript' : 'Expand transcript'}
             aria-expanded={expanded}
             onClick={handleToggleExpanded}
@@ -339,7 +362,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
               <div className={classes.transcriptWrapper}>
                 <div ref={transcriptViewportRef} className={classes.transcriptArea}>
                   <Text component="pre" className={classes.transcriptText}>
-                    {transcript || TRANSCRIPT_PLACEHOLDER}
+                    {(displayTranscript && transcript ? `${displayTranscript} ${transcript}` : displayTranscript || transcript) || TRANSCRIPT_PLACEHOLDER}
                   </Text>
                 </div>
               </div>

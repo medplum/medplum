@@ -72,6 +72,12 @@
   color: var(--mantine-color-red-6);
 }
 
+.statusLabelFinishing {
+  font-size: 14px;
+  font-weight: 450;
+  color: var(--mantine-color-gray-6);
+}
+
 .dictationButton {
   width: 10rem;
   flex-shrink: 0;
