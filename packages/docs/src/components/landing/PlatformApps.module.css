@@ -1,0 +1,170 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: 'Poppins', system-ui, sans-serif;
+  scroll-margin-top: 80px;
+  padding: 64px 0 80px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.sectionHeader {
+  margin-bottom: 48px;
+}
+
+.sectionHeadline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  margin: 0 0 16px;
+  color: #212529;
+}
+
+.sectionLead {
+  font-size: 19px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0;
+  max-width: 720px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+
+.appRow {
+  display: grid;
+  grid-template-columns: 0.85fr 1.45fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.appRowFlipped {
+  direction: rtl;
+}
+
+.appRowFlipped > * {
+  direction: ltr;
+}
+
+.appName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.018em;
+  margin: 0 0 8px;
+  color: #212529;
+}
+
+.appTagline {
+  font-size: 15px;
+  color: #868e96;
+  margin-bottom: 20px;
+}
+
+.appBody {
+  font-size: 16.5px;
+  color: #495057;
+  line-height: 1.6;
+  margin: 0 0 24px;
+  max-width: 460px;
+}
+
+.screenshotPlaceholder {
+  background: #f8f9fa;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 24px 40px -18px rgba(31, 21, 35, 0.14),
+    0 10px 16px -10px rgba(31, 21, 35, 0.06);
+  aspect-ratio: 8 / 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.012) 0 6px, transparent 6px 12px);
+}
+
+.placeholderChip {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 11px;
+  color: #868e96;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 4px 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.placeholderCaption {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #868e96;
+}
+
+/* ---- App hero image: zoomed-in, top-left-anchored crop ---- */
+
+.appHeroContainer {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  aspect-ratio: 8 / 5;
+  background-color: #fff;
+  background-size: 240% auto;
+  background-position: top left;
+  background-repeat: no-repeat;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 24px 40px -18px rgba(31, 21, 35, 0.14),
+    0 10px 16px -10px rgba(31, 21, 35, 0.06);
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .section {
+  border-bottom-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .sectionHeadline {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .sectionLead {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .appName {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .appBody {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .screenshotPlaceholder {
+  background: var(--oc-gray-8);
+  border-color: var(--oc-gray-7);
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0 6px, transparent 6px 12px);
+}
+
+[data-theme='dark'] .placeholderChip {
+  background: var(--oc-gray-9);
+  border-color: var(--oc-gray-7);
+  color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .appHeroContainer {
+  border-color: var(--oc-gray-7);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 16px 32px -12px rgba(0, 0, 0, 0.4);
+}
