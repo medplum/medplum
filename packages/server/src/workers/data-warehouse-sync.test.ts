@@ -38,8 +38,8 @@ import {
   refreshDataWarehouseSyncScheduler,
 } from './data-warehouse-sync';
 
-const TABLE_NAMES = ['Patient_history', 'Observation_history'];
-const FILTERABLE_TABLE_NAMES = ['Patient_History', 'Observation_History'];
+const TABLE_NAMES = ['Patient_History', 'Observation_History', 'Account_History', 'Encounter_History'];
+const FILTERED_HISTORY_TABLES = ['Patient_History', 'Observation_History'];
 
 jest.mock('../data-warehouse/config', () => {
   const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
@@ -50,7 +50,7 @@ jest.mock('../data-warehouse/config', () => {
         return TABLE_NAMES;
       }
       const selected = new Set(resourceTypes.included ?? []);
-      return FILTERABLE_TABLE_NAMES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
+      return FILTERED_HISTORY_TABLES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
     }),
   };
 });
@@ -140,7 +140,7 @@ describe('data-warehouse sync worker', () => {
     });
     expect(result.database).not.toBe(config);
     expect(result.destination.type).toStrictEqual('s3tables');
-    expect(result.warehouseSources).toHaveLength(2);
+    expect(result.warehouseSources).toHaveLength(TABLE_NAMES.length);
   });
 
   test('getDataWarehouseSyncOptions database is usable by buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
