@@ -1052,7 +1052,7 @@ describe('Schedule/:id/$find', () => {
           'service-type-reference': `HealthcareService/${genericVisit.id}`,
         });
       expect(response.status).toBe(400);
-      expect(response.body.issue[0].details.text).toBe('Schedule planning horizon does not extend to requested range');
+      expect(response.body.issue[0].details.text).toBe('Search range starts after schedule planning horizon ends');
     });
 
     test('errors when range ends before planning horizon start', async () => {
@@ -1069,7 +1069,7 @@ describe('Schedule/:id/$find', () => {
           'service-type-reference': `HealthcareService/${genericVisit.id}`,
         });
       expect(response.status).toBe(400);
-      expect(response.body.issue[0].details.text).toBe('Schedule planning horizon does not extend to requested range');
+      expect(response.body.issue[0].details.text).toBe('Search range ends before schedule planning horizon starts');
     });
 
     test('clips results at planning horizon end, excluding slots beyond the horizon', async () => {
@@ -1840,8 +1840,44 @@ describe('Appointment/$find', () => {
     });
 
     expect(response.status).toBe(400);
-    expect(response.body.issue[0].details.text).toBe('Schedule planning horizon does not extend to requested range');
+    expect(response.body.issue[0].details.text).toBe('Search range starts after schedule planning horizon ends');
     expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1]']);
+  });
+
+  test('clips search range to intersection of planning horizons across schedules', async () => {
+    // Both schedules cover Mon–Thu (fourDayWorkWeek).
+    // scheduleA horizon starts Tue Mar 17 → Mon slots excluded by A's horizon.
+    // scheduleB horizon ends Wed Mar 18 midnight → Wed/Thu slots excluded by B's horizon.
+    // Effective range is Tue Mar 17 only; Mon and Wed slots must be absent.
+    const scheduleA = await makeSchedule([{ service: genericVisit, duration: 60, availability: fourDayWorkWeek }], {
+      actor: [createReference(practitioner)],
+      planningHorizon: { start: '2026-03-17T00:00:00-04:00' },
+    });
+    const scheduleB = await makeSchedule([{ service: genericVisit, duration: 60, availability: fourDayWorkWeek }], {
+      actor: [createReference(location)],
+      planningHorizon: { end: '2026-03-18T00:00:00-04:00' },
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-19T17:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toHaveProperty('issue');
+
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+
+    expect(starts.length).toBeGreaterThan(0);
+    // No Monday slots — excluded by scheduleA's planningHorizon.start
+    // (fourDayWorkWeek with 60-min alignment produces slots at :00 — first is 10am)
+    expect(starts).not.toContain(new Date('2026-03-16T10:00:00-04:00').toISOString());
+    // Tuesday slots present — within both planning horizons
+    expect(starts).toContain(new Date('2026-03-17T10:00:00-04:00').toISOString());
+    // No Wednesday slots — excluded by scheduleB's planningHorizon.end
+    expect(starts).not.toContain(new Date('2026-03-18T10:00:00-04:00').toISOString());
   });
 
   test('_count is respected for multi-schedule results', async () => {

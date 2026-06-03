@@ -98,13 +98,12 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
   }
 
-  const range = { start: new Date(params.start), end: new Date(params.end) };
-
-  if (range.start >= range.end) {
+  const requestedRange = { start: new Date(params.start), end: new Date(params.end) };
+  if (requestedRange.start >= requestedRange.end) {
     throw new OperationOutcomeError(badRequest('Invalid search time range'));
   }
 
-  const diffMilliseconds = range.end.valueOf() - range.start.valueOf();
+  const diffMilliseconds = requestedRange.end.valueOf() - requestedRange.start.valueOf();
   const diffDays = diffMilliseconds / (24 * 60 * 60 * 1000);
   if (diffDays > 31) {
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
@@ -112,7 +111,7 @@ async function handler(params: {
 
   const [schedules, existingSlots, healthcareService] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
-    slotsOverlappingInterval(ctx.repo, params.schedules, range),
+    slotsOverlappingInterval(ctx.repo, params.schedules, requestedRange),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));
@@ -129,6 +128,7 @@ async function handler(params: {
     withPath(healthcareService, 'Parameters.service-type-reference')
   );
 
+  const effectiveRange = { start: requestedRange.start, end: requestedRange.end };
   schedules.forEach((schedule) => {
     if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
@@ -139,22 +139,22 @@ async function handler(params: {
     // If a schedule has a planning horizon, constrain search to values inside that horizon
     if (schedule.planningHorizon?.start) {
       const horizonStart = new Date(schedule.planningHorizon.start);
-      if (range.end < horizonStart) {
+      if (effectiveRange.end < horizonStart) {
         throw new OperationOutcomeError(
-          badRequest('Schedule planning horizon does not extend to requested range', getPath(schedule))
+          badRequest('Search range ends before schedule planning horizon starts', getPath(schedule))
         );
       }
-      range.start = latest([range.start, horizonStart]);
+      effectiveRange.start = latest([effectiveRange.start, horizonStart]);
     }
 
     if (schedule.planningHorizon?.end) {
       const horizonEnd = new Date(schedule.planningHorizon.end);
-      if (range.start > horizonEnd) {
+      if (effectiveRange.start > horizonEnd) {
         throw new OperationOutcomeError(
-          badRequest('Schedule planning horizon does not extend to requested range', getPath(schedule))
+          badRequest('Search range starts after schedule planning horizon ends', getPath(schedule))
         );
       }
-      range.end = earliest([range.end, horizonEnd]);
+      effectiveRange.end = earliest([effectiveRange.end, horizonEnd]);
     }
   });
 
@@ -166,11 +166,11 @@ async function handler(params: {
     assert(schedulingParameters);
 
     const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-    let availability = resolveAvailability(schedulingParameters, range, schedulingParameters.timezone);
+    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.timezone);
     availability = applyExistingSlots({
       availability,
       slots: scheduleSlots,
-      range,
+      range: effectiveRange,
       serviceType: healthcareService.type,
     });
 

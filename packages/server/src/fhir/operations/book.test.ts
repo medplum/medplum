@@ -1717,13 +1717,52 @@ describe('Appointment/$book', () => {
     expect(response.status).toEqual(201);
   });
 
-  test('errors when appointment is outside schedule planning horizon', async () => {
+  test('errors when appointment is after Schedule.planningHorizon.end', async () => {
     const schedule = await makeSchedule({
       actor: practitioner1,
       planningHorizon: { end: '2026-01-14T00:00:00Z' },
     });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
+  });
+
+  test('errors when appointment is before Schedule.planningHorizon.start', async () => {
+    const schedule = await makeSchedule({
+      actor: practitioner1,
+      planningHorizon: { start: '2026-01-15T00:00:00Z' },
+    });
+    const start = '2026-01-14T14:00:00Z';
+    const end = '2026-01-14T15:00:00Z';
     const response = await request
       .post('/fhir/R4/Appointment/$book')
       .set('Authorization', `Bearer ${project.accessToken}`)
