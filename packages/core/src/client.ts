@@ -3176,7 +3176,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.storage.setObject('activeLogin', updated);
     this.addLogin(updated);
   }
-  
+
   /**
    * Returns true if the client is waiting for initial authentication.
    * @returns True if the client is waiting for initial authentication.
