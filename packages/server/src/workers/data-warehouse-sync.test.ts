@@ -372,7 +372,7 @@ describe('data-warehouse sync worker', () => {
           tableNumber: 1,
           total: 1,
           icebergTable: 'patient_history',
-          postgresTable: 'Patient_history',
+          postgresTable: 'Patient_History',
           table: 'patient_history',
           count: 1,
         });
@@ -389,7 +389,7 @@ describe('data-warehouse sync worker', () => {
         tableNumber: 1,
         total: 1,
         icebergTable: 'patient_history',
-        postgresTable: 'Patient_history',
+        postgresTable: 'Patient_History',
         table: 'patient_history',
         count: 1,
       });
