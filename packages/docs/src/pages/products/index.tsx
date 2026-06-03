@@ -38,12 +38,7 @@ export default function ProductsPage(): JSX.Element {
           <div className={styles.container}>
             <div className={styles.anchorRow}>
               {SECTION_ANCHORS.map((s) => (
-                <a
-                  key={s.id}
-                  href={`#${s.id}`}
-                  className={styles.anchorLink}
-                  onClick={(e) => jumpTo(e, s.id)}
-                >
+                <a key={s.id} href={`#${s.id}`} className={styles.anchorLink} onClick={(e) => jumpTo(e, s.id)}>
                   {s.label}
                 </a>
               ))}
