@@ -3,11 +3,11 @@
 import type { OperationOutcomeError } from '@medplum/core';
 import { normalizeErrorString, sleep } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
-import type { TransactionIsolationLevel } from '../sql';
+import type { PgClientLike, TransactionIsolationLevel } from '../sql';
 import { isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 
 const defaultTransactionAttempts = 2;
@@ -90,7 +90,7 @@ export class RepositoryConnection implements Disposable {
    * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
+  getDatabaseClient(mode: DatabaseMode): PgClientLike {
     this.assertNotClosed();
     if (this.conn) {
       // A held client might be pinned outside a transaction, but it still has one physical

@@ -5,12 +5,84 @@ import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest
 import type { Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
+import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { createTestProject, withTestContext } from '../test.setup';
-import type { Repository, SystemRepository } from './repo';
+import type { SystemRepository } from './repo';
+import { Repository } from './repo';
+import type { PgClientLike } from './sql';
 import { PostgresError } from './sql';
+
+type RepositoryDatabaseClient = PgClientLike;
+type TransactionDatabaseClient = PoolClient;
+
+type IsAssignable<T, U> = [T] extends [U] ? true : false;
+type IsNotAssignable<T, U> = IsAssignable<T, U> extends true ? false : true;
+
+function assertType<_T extends true>(): undefined {
+  // Compile-time only.
+  return undefined;
+}
+
+class SpecializedRepository extends Repository {
+  getSubclassValue(): string {
+    return 'ok';
+  }
+}
+
+async function assertRepositoryDatabaseClientTypes(repo: Repository, systemRepo: SystemRepository): Promise<void> {
+  const topLevelClient = repo.getDatabaseClient(DatabaseMode.WRITER);
+  assert(topLevelClient);
+  assertType<IsAssignable<typeof topLevelClient, RepositoryDatabaseClient>>();
+  assertType<IsNotAssignable<typeof topLevelClient, TransactionDatabaseClient>>();
+
+  const specializedRepo = new SpecializedRepository(repo.getConfig());
+  try {
+    await specializedRepo.withTransaction(async (txRepo) => {
+      expect(txRepo.getSubclassValue()).toBe('ok');
+      const txClient = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+      assertType<IsAssignable<typeof txClient, TransactionDatabaseClient>>();
+      expect(txClient).toBeDefined();
+    });
+  } finally {
+    specializedRepo[Symbol.dispose]();
+  }
+
+  await repo.withTransaction(async (txRepo) => {
+    const txClient = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+    assert(txClient);
+    assertType<IsAssignable<typeof txClient, RepositoryDatabaseClient>>();
+    assertType<IsAssignable<typeof txClient, TransactionDatabaseClient>>();
+
+    await txRepo.withTransaction(async (nestedTxRepo) => {
+      const nestedTxClient = nestedTxRepo.getDatabaseClient(DatabaseMode.READER);
+      assert(nestedTxClient);
+      assertType<IsAssignable<typeof nestedTxClient, RepositoryDatabaseClient>>();
+      assertType<IsAssignable<typeof nestedTxClient, TransactionDatabaseClient>>();
+    });
+
+    await txRepo.ensureInTransaction(async (ensuredTxRepo) => {
+      const ensuredTxClient = ensuredTxRepo.getDatabaseClient(DatabaseMode.WRITER);
+      assert(ensuredTxClient);
+      assertType<IsAssignable<typeof ensuredTxClient, TransactionDatabaseClient>>();
+    });
+
+    const txSystemRepo = txRepo.getSystemRepo();
+    const txSystemClient = txSystemRepo.getDatabaseClient(DatabaseMode.WRITER);
+    assert(txSystemClient);
+    assertType<IsAssignable<typeof txSystemClient, RepositoryDatabaseClient>>();
+    assertType<IsAssignable<typeof txSystemClient, TransactionDatabaseClient>>();
+  });
+
+  await systemRepo.withTransaction(async (txSystemRepo) => {
+    const txSystemClient = txSystemRepo.getDatabaseClient(DatabaseMode.WRITER);
+    assert(txSystemClient);
+    assertType<IsAssignable<typeof txSystemClient, RepositoryDatabaseClient>>();
+    assertType<IsAssignable<typeof txSystemClient, TransactionDatabaseClient>>();
+  });
+}
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
@@ -27,6 +99,11 @@ describe('FHIR Repo Transactions', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  test('database client types distinguish repository and transaction scopes', () =>
+    withTestContext(async () => {
+      await assertRepositoryDatabaseClientTypes(repo, systemRepo);
+    }));
 
   test('Transaction commit', () =>
     withTestContext(async () => {

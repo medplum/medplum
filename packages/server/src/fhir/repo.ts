@@ -64,7 +64,7 @@ import type {
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
@@ -124,7 +124,7 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
-import type { Expression } from './sql';
+import type { Expression, PgClientLike } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
 export type { StatementTimeoutOptions } from './repository/repository-connection';
@@ -264,7 +264,7 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends FhirRepository implements Disposable {
+export class Repository<TClient extends PgClientLike = PgClientLike> extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly ownsConnection: boolean;
@@ -324,13 +324,17 @@ export class Repository extends FhirRepository implements Disposable {
     return new Repository(this.context);
   }
 
-  private createTransactionScopedRepo(): this {
+  private createTransactionScopedRepo(): TransactionRepository & this {
+    if (!this.connection.isInTransaction()) {
+      throw new Error('Not in transaction');
+    }
+
     // create the exact class, e.g. SystemRepository, of the current instance.
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
       connection?: RepositoryConnection
     ) => this;
-    return new RepositoryConstructor(this.context, this.connection);
+    return new RepositoryConstructor(this.context, this.connection) as TransactionRepository & this;
   }
 
   get shardId(): string {
@@ -342,15 +346,15 @@ export class Repository extends FhirRepository implements Disposable {
    * This reuses the same DB connection, if one exists, to stay within the same transaction.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getSystemRepo(): SystemRepository {
+  getSystemRepo(): SystemRepository<TClient> {
     this.assertUsable();
     const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
     if (this.connection.hasConnection()) {
-      return createSystemRepository(this.shardId, this.connection, contextDefaults);
+      return createSystemRepository<TClient>(this.shardId, this.connection, contextDefaults);
     }
-    return createSystemRepository(this.shardId, undefined, contextDefaults);
+    return createSystemRepository<TClient>(this.shardId, undefined, contextDefaults);
   }
 
   withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
@@ -1115,8 +1119,11 @@ export class Repository extends FhirRepository implements Disposable {
       }
     }
 
-    await this.batchWriteLookupTables(resources, false);
-    await this.batchWriteResources(resources);
+    await this.ensureInTransaction(async (txRepo) => {
+      const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+      await txRepo.batchWriteLookupTables(client, resources, false);
+      await txRepo.batchWriteResources(client, resources);
+    });
   }
 
   /**
@@ -1647,17 +1654,16 @@ export class Repository extends FhirRepository implements Disposable {
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  protected async writeResource(client: PoolClient, resource: Resource): Promise<void> {
     const row = buildResourceRow(resource, Repository.VERSION);
     await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
   }
 
-  private async batchWriteResources(resources: Resource[]): Promise<void> {
+  protected async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
     if (!resources.length) {
       return;
     }
 
-    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     await new InsertQuery(
       resources[0].resourceType,
       resources.map((r) => buildResourceRow(r, Repository.VERSION))
@@ -1671,7 +1677,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResourceVersion(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  protected async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
@@ -1746,18 +1752,17 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(
-    client: Pool | PoolClient,
-    resource: WithId<Resource>,
-    create: boolean
-  ): Promise<void> {
+  protected async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
     }
   }
 
-  private async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
-    const client = this.getDatabaseClient(DatabaseMode.WRITER);
+  protected async batchWriteLookupTables<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.batchIndexResources(client, resources, create);
     }
@@ -1768,7 +1773,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param client - The database client inside the transaction.
    * @param resource - The resource to delete.
    */
-  private async deleteFromLookupTables(client: Pool | PoolClient, resource: WithId<Resource>): Promise<void> {
+  protected async deleteFromLookupTables(client: PgClientLike, resource: WithId<Resource>): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteValuesForResource(client, resource);
     }
@@ -2181,29 +2186,33 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Returns a database client.
+   * Returns a query-capable database client.
    * Use this method when you don't care if you're in a transaction or not.
    * For example, use this method for "read by ID".
-   * The return value can either be a pool client or a pool.
-   * If in a transaction, then returns the transaction client (PoolClient).
-   * Otherwise, returns the pool (Pool).
+   * At runtime, this can be backed by a pool client or a pool, but the public type
+   * intentionally only exposes query operations.
    * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
+  getDatabaseClient(mode: DatabaseMode): TClient {
     this.assertUsable();
-    return this.connection.getDatabaseClient(mode);
+    return this.connection.getDatabaseClient(mode) as unknown as TClient;
   }
 
   override async withTransaction<TResult>(
-    callback: (repo: this) => Promise<TResult>,
+    callback: (repo: TransactionRepository & this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
-    const transactionRepo = this.createTransactionScopedRepo();
-    this.transactionChildRepo = transactionRepo;
     try {
-      return await this.connection.withTransaction(() => callback(transactionRepo), options);
+      return await this.connection.withTransaction(async () => {
+        // create transaction-scoped repository within RepositoryConnection.withTransaction callback
+        // since the callback is only invoked after a sticky PoolClient is established to begin the
+        // transaction.
+        const transactionRepo = this.createTransactionScopedRepo();
+        this.transactionChildRepo = transactionRepo;
+        return callback(transactionRepo);
+      }, options);
     } finally {
       this.transactionChildRepo = undefined;
     }
@@ -2308,10 +2317,12 @@ export class Repository extends FhirRepository implements Disposable {
     await deleteResourceCacheEntries(resourceType, ids);
   }
 
-  async ensureInTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
+  async ensureInTransaction<TResult>(
+    callback: (repo: TransactionRepository & this) => Promise<TResult>
+  ): Promise<TResult> {
     this.assertUsable();
     if (this.connection.isInTransaction()) {
-      return callback(this);
+      return callback(this as TransactionRepository & this);
     }
 
     return this.withTransaction(callback);
@@ -2329,7 +2340,7 @@ export class Repository extends FhirRepository implements Disposable {
     this.closed = true;
   }
 
-  private assertUsable(): void {
+  protected assertUsable(): void {
     if (this.closed) {
       throw new Error('Already closed');
     }
@@ -2341,7 +2352,8 @@ export class Repository extends FhirRepository implements Disposable {
   }
 }
 
-export class SystemRepository extends Repository {}
+export type TransactionRepository = Repository<PoolClient>;
+export class SystemRepository<TClient extends PgClientLike = PgClientLike> extends Repository<TClient> {}
 
 type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
 
@@ -2352,12 +2364,12 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
-function createSystemRepository(
+function createSystemRepository<TClient extends PgClientLike = PgClientLike>(
   shardId: string,
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
-): SystemRepository {
-  return new SystemRepository(
+): SystemRepository<TClient> {
+  return new SystemRepository<TClient>(
     {
       ...contextDefaults,
       shardId,

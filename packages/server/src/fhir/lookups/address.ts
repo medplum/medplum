@@ -3,7 +3,8 @@
 import type { WithId } from '@medplum/core';
 import { formatAddress } from '@medplum/core';
 import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
+import type { PgClientLike } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -193,7 +194,7 @@ export class AddressTable extends LookupTable {
    * @param client - The database client.
    * @param resource - The resource to delete.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  async deleteValuesForResource(client: PgClientLike, resource: Resource): Promise<void> {
     if (!AddressTable.hasAddress(resource.resourceType)) {
       return;
     }
@@ -210,7 +211,7 @@ export class AddressTable extends LookupTable {
    * @param resourceType - The FHIR resource type.
    * @param before - The date before which resources should be purged.
    */
-  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+  async purgeValuesBefore(client: PgClientLike, resourceType: ResourceType, before: string): Promise<void> {
     if (!AddressTable.hasAddress(resourceType)) {
       return;
     }

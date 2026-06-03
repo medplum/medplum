@@ -4,7 +4,7 @@ import type { TypedValue, WithId } from '@medplum/core';
 import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { InsertQuery, SelectQuery, Union } from '../sql';
@@ -127,7 +127,7 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
 }
 
 export async function importConceptMap(
-  db: Pool | PoolClient,
+  db: PoolClient,
   conceptMap: WithId<ConceptMap>,
   mappings: readonly ConceptMapping[] = EMPTY
 ): Promise<void> {
@@ -266,7 +266,7 @@ function addRowsForMapping(
 }
 
 async function prepareMappingRows(
-  db: Pool | PoolClient,
+  db: PoolClient,
   rows: MappingRow[]
 ): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
   if (!rows.length) {
@@ -314,7 +314,7 @@ async function prepareMappingRows(
 }
 
 async function writeMappingRows(
-  db: Pool | PoolClient,
+  db: PoolClient,
   mappings: MappingRow[],
   attributes: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<void> {
