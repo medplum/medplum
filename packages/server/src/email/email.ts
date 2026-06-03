@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY } from '@medplum/core';
-import type { Binary } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { EMPTY, normalizeErrorString } from '@medplum/core';
+import type { Binary, Project } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { sendEmailViaSes } from '../cloud/aws/email';
@@ -10,7 +11,7 @@ import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { getFromAddress } from './utils';
+import { getFromAddress, getProjectSmtpConfig } from './utils';
 
 /**
  * Sends an email using the AWS SES service.
@@ -18,10 +19,12 @@ import { getFromAddress } from './utils';
  * See options here: https://nodemailer.com/extras/mailcomposer/
  * @param repo - The user repository.
  * @param options - The MailComposer options.
+ * @param project - Optional project for project-level SMTP configuration.
  */
-export async function sendEmail(repo: Repository, options: Mail.Options): Promise<void> {
+export async function sendEmail(repo: Repository, options: Mail.Options, project?: WithId<Project>): Promise<void> {
   const config = getConfig();
-  const fromAddress = getFromAddress(options);
+  const projectSmtp = project ? getProjectSmtpConfig(project) : undefined;
+  const fromAddress = getFromAddress(options, projectSmtp);
 
   options.from = fromAddress;
   options.sender = fromAddress;
@@ -34,9 +37,11 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   // "if set to true then fails with an error when a node tries to load content from a file"
   options.disableFileAccess = true;
 
-  globalLogger.info('Sending email', { to: options.to, subject: options.subject });
+  globalLogger.info('Sending email', { to: options.to, subject: options.subject, projectId: project?.id });
 
-  if (config.smtp) {
+  if (projectSmtp) {
+    await sendEmailViaSmtp(projectSmtp, options, project);
+  } else if (config.smtp) {
     await sendEmailViaSmtp(config.smtp, options);
   } else if (config.emailProvider === 'awsses') {
     await sendEmailViaSes(options);
@@ -88,15 +93,33 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
  * Sends an email via SMTP.
  * @param smtpConfig - The SMTP configuration.
  * @param options - The nodemailer options.
+ * @param project - Optional project when using project-level SMTP configuration.
  */
-async function sendEmailViaSmtp(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
+async function sendEmailViaSmtp(
+  smtpConfig: MedplumSmtpConfig,
+  options: Mail.Options,
+  project?: WithId<Project>
+): Promise<void> {
   const transport = createTransport({
     host: smtpConfig.host,
     port: smtpConfig.port,
+    secure: smtpConfig.secure ?? smtpConfig.port === 465,
     auth: {
       user: smtpConfig.username,
       pass: smtpConfig.password,
     },
   });
-  await transport.sendMail(options);
+  try {
+    await transport.sendMail(options);
+  } catch (err) {
+    if (project) {
+      globalLogger.error('Project SMTP send failed', {
+        projectId: project.id,
+        host: smtpConfig.host,
+        port: smtpConfig.port,
+        err: normalizeErrorString(err),
+      });
+    }
+    throw err;
+  }
 }

@@ -55,3 +55,25 @@ The supported options that can be specified by a Super Admin in `Project.systemS
 | `enableFhirQuota`              | boolean | If true, the totalFhirQuota limit will be enforced, returning `429 Too Many Requests` errors when the limit is exceeded over a minute. Please note that as of `v4.1.6`, FHIR quotas are enabled by default.                               | true    |
 | `searchOnReader`               | boolean | If true, FHIR search requests (except in batch requests) are served by the reader database pool if available                                                                                                                              | false   |
 | `redactAuditEvents`            | boolean | If true, remove human-readable detail strings from AuditEvent resources saved to the database and logs                                                                                                                                    | false   |
+
+## Project SMTP
+
+Projects can send email through their own SMTP relay instead of the server-wide email provider. This applies to all project-scoped emails, both the [send email endpoint](/docs/sdk/core.medplumclient.sendemail) and system-generated emails (user invites, password resets, email verification, and MFA reset notifications) for users scoped to the project. The content of system-generated emails remains server-controlled; only the transport and sender address are project-configurable.
+
+Project SMTP is configured by a Project Admin with the following `Project.secret` entries:
+
+| Secret name           | Type    | Required | Description                                                                                     |
+| --------------------- | ------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `smtpHost`            | string  | yes      | SMTP relay hostname. Setting this activates project SMTP for all project-scoped emails.        |
+| `smtpPort`            | integer | yes      | SMTP relay port                                                                                  |
+| `smtpUsername`        | string  | yes      | SMTP username                                                                                    |
+| `smtpPassword`        | string  | yes      | SMTP password                                                                                    |
+| `smtpSecure`          | boolean | no       | Use TLS when connecting. If not specified, inferred from `smtpPort === 465`.                    |
+| `smtpFromAddress`     | string  | no       | Default from address for emails sent through this relay                                          |
+| `smtpApprovedSenders` | string  | no       | Comma-separated list of email addresses allowed as the from address                              |
+
+When project SMTP is active, the from address is resolved as follows. If the caller specifies a from address, it must appear in `smtpApprovedSenders` to be used. Otherwise, the email is sent from `smtpFromAddress`, falling back to the server `supportEmail` if neither is set. The server-level `approvedSenderEmails` list is only consulted when sending through the server transport.
+
+If `smtpHost` is set but any required entry is missing or invalid, email sending for the project fails with an error rather than silently falling back to the server transport. This prevents system emails from being sent through an unintended transport with the wrong sender domain.
+
+Operators can disable project SMTP fleet-wide by setting `allowProjectSmtp` to `false` in the server config. When disabled, all emails use the server-wide email provider regardless of project secrets.

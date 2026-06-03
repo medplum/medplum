@@ -104,23 +104,27 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       const { id, secret } = await verifyEmail(user);
       const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 
-      await sendEmail(systemRepo, {
-        to: params.email,
-        subject: 'Medplum Email Address Updated',
-        text: [
-          'We received a request to update the email address associated with your Medplum account.',
-          '',
-          'Please click on the following link to verify your ability to receive emails:',
-          '',
-          url,
-          '',
-          'If you received this in error, you can safely ignore it.',
-          '',
-          'Thank you,',
-          'Medplum',
-          '',
-        ].join('\n'),
-      });
+      await sendEmail(
+        systemRepo,
+        {
+          to: params.email,
+          subject: 'Medplum Email Address Updated',
+          text: [
+            'We received a request to update the email address associated with your Medplum account.',
+            '',
+            'Please click on the following link to verify your ability to receive emails:',
+            '',
+            url,
+            '',
+            'If you received this in error, you can safely ignore it.',
+            '',
+            'Thank you,',
+            'Medplum',
+            '',
+          ].join('\n'),
+        },
+        project
+      );
     }
 
     if (params.updateProfileTelecom && user.project?.reference) {

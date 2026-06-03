@@ -1,34 +1,91 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, badRequest } from '@medplum/core';
+import type { Project } from '@medplum/fhirtypes';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import type Mail from 'nodemailer/lib/mailer';
 import type { Address } from 'nodemailer/lib/mailer';
 import { getConfig } from '../config/loader';
+import type { MedplumSmtpConfig } from '../config/types';
 import { getLogger } from '../logger';
+
+export interface ProjectSmtpConfig extends MedplumSmtpConfig {
+  fromAddress?: string;
+  approvedSenderEmails?: string;
+}
+
+/**
+ * Returns the project-level SMTP configuration, if configured.
+ * Project SMTP is configured via Project.secret entries: smtpHost, smtpPort, smtpUsername, smtpPassword,
+ * and optionally smtpSecure, smtpFromAddress, and smtpApprovedSenders.
+ * @param project - The project to read SMTP configuration from.
+ * @returns The project SMTP configuration, or undefined if not configured or disabled by server config.
+ */
+export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfig | undefined {
+  if (getConfig().allowProjectSmtp === false) {
+    return undefined;
+  }
+
+  const secrets = project.secret;
+  const host = secrets?.find((s) => s.name === 'smtpHost')?.valueString;
+  if (!host) {
+    // Project SMTP not configured - caller falls back to server transport
+    return undefined;
+  }
+
+  const port = secrets?.find((s) => s.name === 'smtpPort')?.valueInteger;
+  const username = secrets?.find((s) => s.name === 'smtpUsername')?.valueString;
+  const password = secrets?.find((s) => s.name === 'smtpPassword')?.valueString;
+  if (!port || port <= 0 || !username || !password) {
+    getLogger().warn('Project SMTP is misconfigured', {
+      projectId: project.id,
+      missing: [!port || port <= 0 ? 'smtpPort' : '', !username ? 'smtpUsername' : '', !password ? 'smtpPassword' : '']
+        .filter(Boolean)
+        .join(','),
+    });
+    throw new OperationOutcomeError(badRequest('Project SMTP configuration is incomplete or invalid'));
+  }
+
+  return {
+    host,
+    port,
+    username,
+    password,
+    secure: secrets?.find((s) => s.name === 'smtpSecure')?.valueBoolean ?? port === 465,
+    fromAddress: secrets?.find((s) => s.name === 'smtpFromAddress')?.valueString,
+    approvedSenderEmails: secrets?.find((s) => s.name === 'smtpApprovedSenders')?.valueString,
+  };
+}
 
 /**
  * Returns the from address to use.
  * If the user specified a from address, it must be an approved sender.
- * Otherwise uses the support email address.
+ * When project SMTP is active, approval is validated only against the project's approved sender list,
+ * and the project's default from address is used as the fallback.
+ * Otherwise uses the server approved sender list and the support email address.
  * @param options - The user specified nodemailer options.
+ * @param projectSmtp - Optional project SMTP configuration.
  * @returns The from address to use.
  */
-export function getFromAddress(options: Mail.Options): string {
+export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpConfig): string {
   const config = getConfig();
+  const approvedSenderEmails = projectSmtp ? projectSmtp.approvedSenderEmails : config.approvedSenderEmails;
+  const defaultFrom = projectSmtp?.fromAddress ?? config.supportEmail;
 
   if (options.from) {
     const fromAddress = addressToString(options.from);
     const fromEmail = extractEmailFromAddress(fromAddress);
-    if (fromAddress && fromEmail && config.approvedSenderEmails?.split(',')?.includes(fromEmail)) {
+    if (fromAddress && fromEmail && approvedSenderEmails?.split(',')?.includes(fromEmail)) {
       return fromAddress;
     }
     getLogger().warn('Email from address is not an approved sender', {
       from: fromAddress,
-      approvedSenders: config.approvedSenderEmails,
+      usingProjectSmtp: Boolean(projectSmtp),
     });
   }
 
-  return config.supportEmail;
+  return defaultFrom;
 }
 
 /**
