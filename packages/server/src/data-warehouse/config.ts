@@ -101,9 +101,7 @@ function toHistoryPostgresTableName(resourceType: string): string {
  * @param resourceTypes - Optional include/exclude lists. When both are omitted or empty, all types are included.
  * @returns The list of Postgres table names.
  */
-export function getWarehouseSyncPostgresTableNames(
-  resourceTypes?: MedplumDataWarehouseResourceTypesConfig
-): string[] {
+export function getWarehouseSyncPostgresTableNames(resourceTypes?: MedplumDataWarehouseResourceTypesConfig): string[] {
   const included = resourceTypes?.included;
   const excluded = resourceTypes?.excluded;
   const hasIncluded = !!included?.length;

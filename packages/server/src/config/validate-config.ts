@@ -7,9 +7,7 @@ import { getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
 import { globalLogger } from '../logger';
 import type { MedplumDataWarehouseResourceTypesConfig, MedplumServerConfig } from './types';
 
-function getConfiguredDataWarehouseResourceTypes(
-  resourceTypes?: MedplumDataWarehouseResourceTypesConfig
-): string[] {
+function getConfiguredDataWarehouseResourceTypes(resourceTypes?: MedplumDataWarehouseResourceTypesConfig): string[] {
   if (!resourceTypes) {
     return [];
   }
