@@ -37,6 +37,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Author</Table.Th>
+          <Table.Th>On Behalf Of</Table.Th>
           <Table.Th>Date</Table.Th>
           <Table.Th>Version</Table.Th>
         </Table.Tr>
@@ -62,6 +63,9 @@ function HistoryRow(props: HistoryRowProps): JSX.Element {
         <Table.Td>
           <ResourceBadge value={resource.meta?.author} link={true} />
         </Table.Td>
+        <Table.Td>
+          {resource.meta?.onBehalfOf && <ResourceBadge value={resource.meta.onBehalfOf} link={true} />}
+        </Table.Td>
         <Table.Td>{formatDateTime(resource.meta?.lastUpdated)}</Table.Td>
         <Table.Td>
           <MedplumLink to={getVersionUrl(resource)}>{resource.meta?.versionId}</MedplumLink>
@@ -71,7 +75,7 @@ function HistoryRow(props: HistoryRowProps): JSX.Element {
   } else {
     return (
       <Table.Tr>
-        <Table.Td colSpan={3}>{normalizeErrorString(response?.outcome)}</Table.Td>
+        <Table.Td colSpan={4}>{normalizeErrorString(response?.outcome)}</Table.Td>
       </Table.Tr>
     );
   }

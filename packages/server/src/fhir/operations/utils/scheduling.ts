@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   badRequest,
+  createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   getExtensionValue,
@@ -15,6 +16,7 @@ import {
 } from '@medplum/core';
 import type {
   Appointment,
+  Bundle,
   CodeableConcept,
   HealthcareService,
   Reference,
@@ -496,8 +498,35 @@ async function validateAvailability(
   });
   const hasAvailability = availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
   if (!hasAvailability) {
-    // TODO: tie back to specific slot that has problem
-    throw new OperationOutcomeError(badRequest('Requested time slot is not available'));
+    // Include structured JSON in diagnostics so automated tooling can
+    // programmatically inspect which slots are blocking the request.
+    const blockingSlots = existingSlots
+      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .map((slot) => ({
+        reference: `Slot/${slot.id}`,
+        start: slot.start,
+        end: slot.end,
+        status: slot.status,
+      }));
+
+    const diagnostics = JSON.stringify({
+      schedule: `Schedule/${schedule.id}`,
+      blockingSlots,
+    });
+
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: 'Requested time slot is not available',
+          },
+          diagnostics,
+        },
+      ],
+    });
   }
 }
 
@@ -586,6 +615,24 @@ export async function validateAllAvailability(
     const end = latest(slots.map((slot) => new Date(slot.end)));
     assert(start && end);
     const interval = { start, end };
+
+    if (schedule.planningHorizon?.start) {
+      const horizonStart = new Date(schedule.planningHorizon.start);
+      if (interval.start < horizonStart) {
+        throw new OperationOutcomeError(
+          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+        );
+      }
+    }
+    if (schedule.planningHorizon?.end) {
+      const horizonEnd = new Date(schedule.planningHorizon.end);
+      if (interval.end > horizonEnd) {
+        throw new OperationOutcomeError(
+          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+        );
+      }
+    }
+
     await validateAvailability(repo, healthcareService, schedule, parameters, interval);
   }
 
@@ -599,4 +646,43 @@ export async function validateAllAvailability(
       )
     );
   }
+}
+
+export async function createProposedAppointment(
+  repo: Repository,
+  proposedAppointment: WithPath<Appointment>,
+  customizer: (appointment: Appointment, slots: Slot[]) => void
+): Promise<Bundle<Appointment | Slot>> {
+  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
+    repo,
+    proposedAppointment
+  );
+
+  // We will write this attribute later, check that we aren't clobbering something that was submitted
+  if (appointment.slot) {
+    throw new OperationOutcomeError(
+      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
+    );
+  }
+
+  customizer(appointment, slots);
+
+  const createdResources = await repo.withTransaction(
+    async () => {
+      await validateAllAvailability(repo, slots, healthcareService, schedulingParametersGroup);
+      const createdSlots = await Promise.all(slots.map((slot) => repo.createResource<Slot>(slot)));
+      const createdAppointment = await repo.createResource<Appointment>({
+        ...appointment,
+        slot: createdSlots.map((slot) => createReference(slot)),
+      });
+      return [createdAppointment, ...createdSlots];
+    },
+    { serializable: true }
+  );
+
+  return {
+    resourceType: 'Bundle',
+    type: 'transaction-response',
+    entry: createdResources.map((resource) => ({ resource })),
+  };
 }

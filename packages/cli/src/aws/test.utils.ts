@@ -3,7 +3,7 @@
 import type readline from 'node:readline';
 
 export function mockReadline(...answers: string[]): readline.Interface {
-  const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };
+  const result = { write: vi.fn(), question: vi.fn(), close: vi.fn() };
   const debug = false;
   for (const answer of answers) {
     result.question.mockImplementationOnce((q: string, cb: (answer: string) => void) => {

@@ -482,6 +482,30 @@ describe('useSubscription()', () => {
     expect(lastFromCb4?.id).toEqual(id4);
   });
 
+  test('Is a no-op when unauthenticated', async () => {
+    const profile = medplum.getProfile();
+    const getProfileSpy = jest.spyOn(medplum, 'getProfile').mockReturnValue(undefined);
+    const subscribeSpy = jest.spyOn(medplum, 'subscribeToCriteria');
+
+    setup(<TestComponent criteria="Communication" />);
+
+    // No subscription should be created while unauthenticated
+    expect(subscribeSpy).not.toHaveBeenCalled();
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+
+    // Once authenticated, the hook should subscribe
+    getProfileSpy.mockReturnValue(profile);
+    act(() => {
+      medplum.dispatchEvent({ type: 'change' });
+    });
+
+    expect(subscribeSpy).toHaveBeenCalledWith('Communication', undefined);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
+    getProfileSpy.mockRestore();
+    subscribeSpy.mockRestore();
+  });
+
   test('WebSocket disconnects and reconnects', async () => {
     let lastFromCb: Bundle | undefined;
     const id = generateId();

@@ -20,6 +20,7 @@ import {
 } from '@mantine/core';
 import type { MedicationOrderDrugInput, MedplumClient, WithId } from '@medplum/core';
 import {
+  buildMedicationRequestResponseLostStatusReason,
   createReference,
   getCodeBySystem,
   getExtensionValue,
@@ -27,7 +28,9 @@ import {
   getPreferredPharmaciesFromPatient,
   getReferenceString,
   isDefined,
+  isOk,
   NDC,
+  resolveId,
   RXNORM,
 } from '@medplum/core';
 import type {
@@ -42,6 +45,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete, Panel, ResourceInput, useMedplum } from '@medplum/react';
+import { useSearchResources } from '@medplum/react-hooks';
 import {
   loadScriptSureQuantityQualifiers,
   SCRIPTSURE_GENERIC_NAME_EXTENSION,
@@ -454,10 +458,47 @@ function medicationToOrderDrugInput(
   };
 }
 
-function medicationToCodeableConcept(m: Medication): MedicationRequest['medicationCodeableConcept'] {
+/**
+ * Compose the human-readable medication name for an order.
+ *
+ * The drug-name search result ({@link drug}) carries the actual product name
+ * (e.g. "Jentadueto" / "linagliptin-metformin"), whereas the routedMedId format
+ * lookup ({@link format}) carries only the strength/formulation (e.g.
+ * "12.5 mg-500 mg tablet"). The prescribed medication name is the combination —
+ * using the format's `code.text` alone produces a dose with no drug name (the
+ * draft title bug this fixes).
+ *
+ * @param drug - The drug picked from the name search (name source).
+ * @param format - The selected formulation/strength (coding source).
+ * @returns Combined "<name> <strength>" text, de-duplicated, or whichever is present.
+ */
+function composeMedicationName(drug: Medication | undefined, format: Medication | undefined): string | undefined {
+  const drugName = drug?.code?.text?.trim();
+  const formatText = format?.code?.text?.trim();
+  if (drugName && formatText) {
+    const dl = drugName.toLowerCase();
+    const fl = formatText.toLowerCase();
+    // Avoid duplication when one already contains the other (e.g. a name search
+    // that already includes the strength, or the no-format path where
+    // drug === format).
+    if (fl.includes(dl)) {
+      return formatText;
+    }
+    if (dl.includes(fl)) {
+      return drugName;
+    }
+    return `${drugName} ${formatText}`;
+  }
+  return drugName ?? formatText;
+}
+
+function medicationToCodeableConcept(
+  format: Medication,
+  drug?: Medication
+): MedicationRequest['medicationCodeableConcept'] {
   return {
-    coding: m.code?.coding,
-    text: m.code?.text,
+    coding: format.code?.coding,
+    text: composeMedicationName(drug, format),
   };
 }
 
@@ -874,7 +915,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         subject: createReference(patient),
         requester: createReference(requester),
         authoredOn: writtenDateYmd,
-        medicationCodeableConcept: medicationToCodeableConcept(selectedFormat),
+        medicationCodeableConcept: medicationToCodeableConcept(selectedFormat, termMedication),
         substitution: { allowedBoolean: useSubstitution },
         reasonReference: primaryCondition?.id ? [{ reference: `Condition/${primaryCondition.id}` }] : undefined,
         insurance: coverage?.id ? [{ reference: `Coverage/${coverage.id}` }] : undefined,
@@ -914,13 +955,22 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
 
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
     } catch (e) {
-      // The bot call (or downstream FHIR write) failed after the draft MR was created.
-      // Clean up the orphan draft so the MedicationsPage doesn't grow stale "draft" rows
-      // for every aborted attempt. We swallow delete failures so the original error
-      // is the one the user sees.
+      // The order-medication operation (or its downstream FHIR write) failed after
+      // the draft MR was created. We *soft*-delete instead of hard-deleting because
+      // the vendor side may have actually accepted (and even transmitted) the
+      // prescription before the response was lost — hard-deleting would leave us
+      // with a real-world Rx and no local record to reconcile against the vendor
+      // webhook. Mark the MR as `unknown` + statusReason so MedicationsPage filters
+      // can hide it from the active list while inbound reconciliation still has a
+      // resource to address. PUT is idempotent on retry. Failures here are
+      // swallowed so the original error is the one the user sees.
       if (createdMr?.id) {
         try {
-          await medplum.deleteResource('MedicationRequest', createdMr.id);
+          await medplum.updateResource<MedicationRequest>({
+            ...createdMr,
+            status: 'unknown',
+            statusReason: buildMedicationRequestResponseLostStatusReason(),
+          });
         } catch {
           // ignore - we still want to surface the original error
         }
@@ -1327,67 +1377,66 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
     setPharmacyOrg,
   } = props;
 
-  const [patientCoverages, setPatientCoverages] = useState<WithId<Coverage>[]>([]);
-  const [preferredPharmacies, setPreferredPharmacies] = useState<{ org: WithId<Organization>; isPrimary: boolean }[]>(
-    []
+  const patientId = patient?.id;
+
+  const [coverageSearchResult, , coveragesOutcome] = useSearchResources(
+    'Coverage',
+    patientId ? { patient: `Patient/${patientId}`, status: 'active', _count: '50' } : undefined,
+    { enabled: Boolean(patientId) }
   );
 
-  useEffect(() => {
-    if (!patient?.id) {
-      setPatientCoverages((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
+  const patientCoverages = useMemo(
+    () => (patientId ? (coverageSearchResult ?? []) : []),
+    [patientId, coverageSearchResult]
+  );
+
+  const preferredPharmacyRefs = useMemo(() => (patient ? getPreferredPharmaciesFromPatient(patient) : []), [patient]);
+
+  const preferredPharmacyOrgIds = useMemo(
+    () =>
+      preferredPharmacyRefs
+        .map((pref) => resolveId(pref.organizationRef))
+        .filter(isDefined)
+        .join(','),
+    [preferredPharmacyRefs]
+  );
+
+  const [organizations, , organizationsOutcome] = useSearchResources(
+    'Organization',
+    { _id: preferredPharmacyOrgIds, _count: String(Math.max(preferredPharmacyRefs.length, 1)) },
+    { enabled: preferredPharmacyOrgIds.length > 0 }
+  );
+
+  const preferredPharmacies = useMemo(() => {
+    if (!patient || preferredPharmacyOrgIds.length === 0) {
+      return [];
     }
-    let cancelled = false;
-    medplum
-      .searchResources('Coverage', `patient=Patient/${patient.id}&status=active&_count=50`)
-      .then((rows) => {
-        if (!cancelled) {
-          setPatientCoverages(rows.filter((c): c is WithId<Coverage> => Boolean(c.id)));
-        }
+    const orgById = new Map(
+      (organizations ?? []).filter((org): org is WithId<Organization> => Boolean(org.id)).map((org) => [org.id, org])
+    );
+    const rows = preferredPharmacyRefs
+      .map((pref) => {
+        const id = resolveId(pref.organizationRef);
+        const org = id ? orgById.get(id) : undefined;
+        return org ? { org, isPrimary: pref.isPrimary } : undefined;
       })
-      .catch((e) => {
-        if (!cancelled) {
-          showErrorNotification(e);
-        }
-      });
-    return (): void => {
-      cancelled = true;
-    };
-  }, [medplum, patient]);
+      .filter(isDefined);
+    // Surface the primary pharmacy first.
+    rows.sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+    return rows;
+  }, [patient, preferredPharmacyOrgIds, organizations, preferredPharmacyRefs]);
 
   useEffect(() => {
-    if (!patient) {
-      setPreferredPharmacies((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
+    if (coveragesOutcome && !isOk(coveragesOutcome)) {
+      showErrorNotification(coveragesOutcome);
     }
-    const refs = getPreferredPharmaciesFromPatient(patient);
-    if (refs.length === 0) {
-      setPreferredPharmacies((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
+  }, [coveragesOutcome]);
+
+  useEffect(() => {
+    if (organizationsOutcome && !isOk(organizationsOutcome)) {
+      showErrorNotification(organizationsOutcome);
     }
-    let cancelled = false;
-    Promise.all(
-      refs.map((p) =>
-        medplum
-          .readReference(p.organizationRef)
-          .then((org) => (org.id ? { org, isPrimary: p.isPrimary } : undefined))
-          .catch(() => undefined)
-      )
-    )
-      .then((rows) => {
-        if (cancelled) {
-          return;
-        }
-        const filtered = rows.filter(isDefined);
-        // Surface the primary pharmacy first.
-        filtered.sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
-        setPreferredPharmacies(filtered);
-      })
-      .catch(showErrorNotification);
-    return (): void => {
-      cancelled = true;
-    };
-  }, [medplum, patient]);
+  }, [organizationsOutcome]);
 
   // Auto-select primary pharmacy when nothing is chosen yet.
   useEffect(() => {
@@ -1425,7 +1474,6 @@ export function OptionalContextFields(props: Readonly<OptionalContextFieldsProps
     [preferredPharmacies]
   );
 
-  const patientId = patient?.id;
   const loadConditionOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<Condition[]> => {
       if (!patientId) {

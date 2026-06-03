@@ -99,7 +99,7 @@ describe('MemoryRepository', () => {
   test('Read invalid reference', async () => {
     try {
       await repo.readReference({});
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome).toMatchObject(badRequest('Invalid reference'));
@@ -115,7 +115,7 @@ describe('MemoryRepository', () => {
 
     try {
       await repo.readVersion<Patient>('Patient', patient.id, randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome).toMatchObject(notFound);

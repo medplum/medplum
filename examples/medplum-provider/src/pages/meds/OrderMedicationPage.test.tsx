@@ -3,7 +3,11 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { MedicationOrderRequest, MedicationOrderResponse } from '@medplum/core';
-import type { Medication } from '@medplum/fhirtypes';
+import {
+  MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
+  MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+} from '@medplum/core';
+import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
@@ -59,7 +63,7 @@ describe('OrderMedicationPage', () => {
     expect(screen.getByRole('tab', { name: 'Order set' })).toBeInTheDocument();
   });
 
-  test('deletes the draft MedicationRequest when the order bot fails', async () => {
+  test('soft-deletes the draft MedicationRequest (status=unknown + statusReason) when the order bot fails', async () => {
     const medplum = new MockClient();
     medplum.setProfile(DrAliceSmith);
 
@@ -73,12 +77,13 @@ describe('OrderMedicationPage', () => {
     };
     searchMedicationsMock.mockResolvedValue([searchHit]);
 
-    // Bot call rejects after the draft MR is created — exercise the cleanup branch.
+    // Bot call rejects after the draft MR is created — exercise the soft-delete branch.
     orderMedicationMock.mockImplementation(async (_input: MedicationOrderRequest): Promise<MedicationOrderResponse> => {
       throw ORDER_MEDICATION_REJECTION;
     });
 
     const createSpy = vi.spyOn(medplum, 'createResource');
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
     const deleteSpy = vi.spyOn(medplum, 'deleteResource');
 
     const user = userEvent.setup();
@@ -116,15 +121,99 @@ describe('OrderMedicationPage', () => {
       expect(orderMedicationMock).toHaveBeenCalledTimes(1);
     });
 
-    // The draft MedicationRequest should have been created, then deleted, with matching ids.
+    // The draft MedicationRequest should have been created with status='draft'.
     const createdMrCall = createSpy.mock.calls.find((c) => {
       const r = c[0] as { resourceType?: string; status?: string } | undefined;
       return r?.resourceType === 'MedicationRequest' && r?.status === 'draft';
     });
     expect(createdMrCall).toBeDefined();
 
+    // ...and then *soft*-deleted via updateResource — flipped to status='unknown' with the
+    // canonical 'response-not-received' statusReason so vendor webhooks can reconcile later.
+    // See wiki/medplum/medication-request-lifecycle.md.
     await waitFor(() => {
-      expect(deleteSpy).toHaveBeenCalledWith('MedicationRequest', expect.any(String));
+      const softDeleted = updateSpy.mock.calls
+        .map((c) => c[0] as MedicationRequest | undefined)
+        .find((r) => r?.resourceType === 'MedicationRequest' && r?.status === 'unknown');
+      expect(softDeleted).toBeDefined();
+      expect(softDeleted?.statusReason?.coding?.[0]).toMatchObject({
+        system: MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+        code: MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
+      });
+    });
+
+    // And the legacy hard-delete path must NOT fire — that would erase the orphan record
+    // and remove the only handle vendor reconciliation has.
+    expect(deleteSpy).not.toHaveBeenCalledWith('MedicationRequest', expect.any(String));
+  });
+
+  test('medication title combines the drug name with the selected formulation, not just the strength', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+
+    // Drug-name search row: carries the product name + a routed-med-id so the
+    // page expands to formulations (the path that previously dropped the name).
+    const drugHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-jentadueto',
+      code: { text: 'Jentadueto' },
+      identifier: [{ system: 'https://scriptsure.com/routed-med-id', value: '163396' }],
+    };
+    // Formulation row from the routedMedId lookup: only a strength/format string.
+    const formatHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-jentadueto-format',
+      code: {
+        text: '12.5 mg-500 mg tablet',
+        coding: [
+          { system: 'http://hl7.org/fhir/sid/ndc', code: '64764033560', display: '12.5 mg-500 mg tablet' },
+          { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '1368398', display: 'SBD' },
+        ],
+      },
+    };
+    searchMedicationsMock.mockImplementation(async (input: { term?: string; routedMedId?: number }) => {
+      return input?.routedMedId ? [formatHit] : [drugHit];
+    });
+    orderMedicationMock.mockResolvedValue({ launchUrl: 'https://ssu.example/widget', medicationRequestId: 'mr-1' });
+
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i);
+    await user.type(searchInput, 'jentadueto');
+    await user.click(await screen.findByText('Jentadueto'));
+
+    // Wait for the routedMedId formulation lookup to resolve and render.
+    await screen.findByText(/Formulation & directions/i);
+
+    await user.click(await screen.findByRole('button', { name: /^Prescribe$/ }));
+
+    await waitFor(() => {
+      const mrCall = createSpy.mock.calls.find(
+        (c) => (c[0] as { resourceType?: string })?.resourceType === 'MedicationRequest'
+      );
+      expect(mrCall).toBeDefined();
+      expect((mrCall?.[0] as MedicationRequest).medicationCodeableConcept?.text).toBe(
+        'Jentadueto 12.5 mg-500 mg tablet'
+      );
     });
   });
 });

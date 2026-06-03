@@ -109,7 +109,7 @@ describe('Mock Repo', () => {
 
     try {
       await client.readResource('Patient', resource1.id);
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.id).toStrictEqual('not-found');
