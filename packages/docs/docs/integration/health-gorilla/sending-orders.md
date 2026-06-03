@@ -327,7 +327,7 @@ Orders progress through several states:
    - Cannot be reactivated
    - Set by the client application
 
-::: caution
+:::caution
 
 Important: Once an order becomes `active`, it cannot be modified in the lab's system, even if updated in Medplum.
 
