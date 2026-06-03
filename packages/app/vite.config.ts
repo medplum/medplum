@@ -6,8 +6,8 @@ import { execSync } from 'child_process';
 import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
-import packageJson from './package.json' with { type: 'json' };
 import { medplumAliases } from '../../vitest.config';
+import packageJson from './package.json' with { type: 'json' };
 
 if (!existsSync(path.join(__dirname, '.env'))) {
   copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));

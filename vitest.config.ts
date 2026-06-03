@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { resolve } from 'path';
-import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
 import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'path';
+import { defineConfig } from 'vitest/config';
 
 const repoDir = dirname(fileURLToPath(import.meta.url));
 

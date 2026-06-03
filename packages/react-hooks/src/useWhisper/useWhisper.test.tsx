@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { act, renderHook, waitFor  } from '@testing-library/react';
-import type {RenderHookResult} from '@testing-library/react';
+import type { RenderHookResult } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { WS } from 'vitest-websocket-mock';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { convertToPCM16, useWhisper  } from './useWhisper';
-import type {UseWhisperResult} from './useWhisper';
+import type { UseWhisperResult } from './useWhisper';
+import { convertToPCM16, useWhisper } from './useWhisper';
 
 type WhisperHookResult = RenderHookResult<UseWhisperResult, unknown>['result'];
 
 /**
  * start() opens the socket asynchronously; keep act() open until onopen has flushed.
- * 
+ *
  * @param result - The result of the useWhisper hook.
  * @param wsServer - The WebSocket server.
  */
