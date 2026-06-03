@@ -305,6 +305,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   // The stop case covers the window where we're draining pending transcript chunks
   // before the bot call kicks off — without this, the label snaps back to the idle
   // copy mid-action and the user thinks the click did nothing.
+  const isFinishing = (isProcessing || isStopping) && !isRecording && !isConnecting;
   let activeStatusLabel: string | undefined;
   if (isProcessing || isStopping) {
     activeStatusLabel = 'Processing…';
@@ -315,12 +316,12 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   const afterHeader = (
     <Box className={classes.banner}>
       <Flex align="center" justify="space-between" gap="sm" p="md" className={classes.headerRow}>
-        <div className={classes.statusRow} data-state={activeStatusLabel ? 'recording' : 'idle'}>
+        <div className={classes.statusRow} data-state={isFinishing ? 'finishing' : activeStatusLabel ? 'recording' : 'idle'}>
           <span className={classes.iconWrapper} aria-hidden>
-            {activeStatusLabel ? <IconCircleFilled size={16} /> : <IconMicrophone size={20} />}
+            {isFinishing ? <Loader size={16} color="blue" /> : activeStatusLabel ? <IconCircleFilled size={16} /> : <IconMicrophone size={20} />}
           </span>
           <span className={classes.statusLabel} aria-live="polite">
-            {activeStatusLabel ? <span className={classes.statusLabelPrimary}>{activeStatusLabel}</span> : idleLabel}
+            {activeStatusLabel ? <span className={isFinishing ? classes.statusLabelFinishing : classes.statusLabelPrimary}>{activeStatusLabel}</span> : idleLabel}
           </span>
         </div>
         <Flex align="center" gap="xs">
