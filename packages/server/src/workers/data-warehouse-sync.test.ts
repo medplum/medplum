@@ -56,9 +56,19 @@ jest.mock('../data-warehouse/config', () => {
 });
 jest.mock('../data-warehouse/sync', () => ({
   syncData: jest.fn(async () => ({
-    resources: [
-      { icebergTable: 'patient_history', table: 'patient_history.parquet', count: 1 },
-      { icebergTable: 'observation_history', table: 'observation_history.parquet', count: 0 },
+    tables: [
+      {
+        icebergTable: 'patient_history',
+        postgresTable: 'Patient_History',
+        destination: 'patient_history.parquet',
+        rowsInserted: 1,
+      },
+      {
+        icebergTable: 'observation_history',
+        postgresTable: 'Observation_History',
+        destination: 'observation_history.parquet',
+        rowsInserted: 0,
+      },
     ],
   })),
 }));
@@ -368,15 +378,15 @@ describe('data-warehouse sync worker', () => {
     test('forwards syncData onProgress to job.updateProgress', async () => {
       const updateProgress = jest.fn().mockResolvedValue(undefined);
       mockedSyncData.mockImplementationOnce(async (options) => {
-        await options?.onProgress?.('Completed patient_history', {
-          tableNumber: 1,
-          total: 1,
+        await options?.onProgress?.('Completed patient_history (1 rows, table 1/1)', {
+          tablesCompleted: 1,
+          tablesTotal: 1,
           icebergTable: 'patient_history',
           postgresTable: 'Patient_History',
-          table: 'patient_history',
-          count: 1,
+          destination: 'patient_history',
+          rowsInserted: 1,
         });
-        return { resources: [] };
+        return { tables: [] };
       });
 
       await processDataWarehouseSyncJob(config, {
@@ -386,12 +396,12 @@ describe('data-warehouse sync worker', () => {
       } as any);
 
       expect(updateProgress).toHaveBeenCalledWith({
-        tableNumber: 1,
-        total: 1,
+        tablesCompleted: 1,
+        tablesTotal: 1,
         icebergTable: 'patient_history',
         postgresTable: 'Patient_History',
-        table: 'patient_history',
-        count: 1,
+        destination: 'patient_history',
+        rowsInserted: 1,
       });
     });
   });

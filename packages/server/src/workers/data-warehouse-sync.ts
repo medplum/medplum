@@ -183,15 +183,18 @@ export async function processDataWarehouseSyncJob(
         },
       });
 
-      const inserted = result.resources.filter((resource) => resource.count > 0).length;
-      const skipped = result.resources.length - inserted;
+      const tables = result.tables;
+      const tablesWithRows = tables.filter((t) => t.rowsInserted > 0).length;
+      const tablesEmpty = tables.length - tablesWithRows;
+      const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
-        inserted,
-        skipped,
-        total: result.resources.length,
-        resources: result.resources,
+        tablesSynced: tables.length,
+        tablesWithRows,
+        tablesEmpty,
+        rowsInserted,
+        tables,
         subsystem: 'data-warehouse-sync',
       });
     } catch (err) {
