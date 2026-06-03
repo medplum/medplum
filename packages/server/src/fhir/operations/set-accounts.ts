@@ -129,11 +129,13 @@ export async function setResourceAccounts(
     throw new OperationOutcomeError(forbidden);
   }
 
-  // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
+  // Use extended mode to read the resource, ensuring we get access to the full `meta.accounts`
   const systemRepo = repo.getSystemRepo();
+  const userRepo = repo.withOverrideConfig({ extendedMode: true });
+
   const target = await systemRepo.readResource(resourceType, id);
   // Ensure user's repo can read this resource as well
-  if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {
+  if (!userRepo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {
     throw new OperationOutcomeError(notFound);
   }
   const accounts = params.accounts;
@@ -145,7 +147,7 @@ export async function setResourceAccounts(
     accounts: accounts,
     account: accounts?.[0],
   };
-  if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, target)) {
+  if (!userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, target)) {
     throw new OperationOutcomeError(forbidden);
   }
   await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
@@ -162,7 +164,7 @@ export async function setResourceAccounts(
     const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
     const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
     while ((search.offset ?? 0) <= maxSearchOffset) {
-      const bundle = await searchPatientCompartment(repo, target, search);
+      const bundle = await searchPatientCompartment(userRepo, target, search);
       for (const entry of bundle.entry ?? EMPTY) {
         const resource = entry.resource;
         if (resource && resource.resourceType !== 'Patient') {

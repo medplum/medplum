@@ -1,36 +1,43 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, MedplumClient } from '@medplum/core';
+import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
+import type { Mock } from 'vitest';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('node:os');
-jest.mock('fast-glob', () => ({
-  sync: jest.fn(() => []),
-}));
-jest.mock('./util/client');
-jest.mock('node:fs', () => ({
-  ...jest.requireActual('node:fs'),
-  writeFile: jest.fn((path, data, callback) => {
-    callback();
-  }),
-}));
+vi.mock('node:os');
+vi.mock('fast-glob', () => {
+  const mock = { sync: vi.fn(() => []) };
+  return { default: mock, ...mock };
+});
+vi.mock('./util/client');
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof NodeFs>('node:fs');
+  const mock = {
+    ...actual,
+    writeFile: vi.fn((path, data, callback) => {
+      callback();
+    }),
+  };
+  return { default: mock, ...mock };
+});
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
 describe('Profiles', () => {
   beforeEach(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
   });
 
   let fetch: any;
   beforeEach(() => {
     let count = 0;
-    fetch = jest.fn(async (url) => {
+    fetch = vi.fn(async (url) => {
       if (url.includes('/$export?_since=200')) {
         return {
           status: 200,
@@ -41,7 +48,7 @@ describe('Profiles', () => {
               }[name];
             },
           },
-          json: jest.fn(async () => {
+          json: vi.fn(async () => {
             return {
               resourceType: 'OperationOutcome',
               id: 'accepted',
@@ -62,7 +69,7 @@ describe('Profiles', () => {
       if (url.includes('/$export')) {
         return {
           status: 202,
-          json: jest.fn(async () => {
+          json: vi.fn(async () => {
             return {
               resourceType: 'OperationOutcome',
               id: 'accepted',
@@ -100,7 +107,7 @@ describe('Profiles', () => {
                 }[name];
               },
             },
-            json: jest.fn(async () => {
+            json: vi.fn(async () => {
               return {};
             }),
           };
@@ -116,7 +123,7 @@ describe('Profiles', () => {
             }[name];
           },
         },
-        json: jest.fn(async () => ({
+        json: vi.fn(async () => ({
           transactionTime: '2023-05-18T22:55:31.280Z',
           request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
           requiresAccessToken: false,
@@ -137,7 +144,7 @@ describe('Profiles', () => {
   });
 
   beforeAll(async () => {
-    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+    (os.homedir as unknown as Mock).mockReturnValue(testHomeDir);
   });
 
   afterAll(async () => {
@@ -253,9 +260,9 @@ describe('Profiles', () => {
 
     const medplum = new MedplumClient({ fetch });
     medplum.setBasicAuth(obj.clientId, obj.clientSecret);
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
 
-    const medplumDownloadSpy = jest.spyOn(medplum, 'downloadResponse').mockImplementation(
+    const medplumDownloadSpy = vi.spyOn(medplum, 'downloadResponse').mockImplementation(
       async (): Promise<Response> =>
         ({
           ok: true,

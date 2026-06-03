@@ -12,6 +12,9 @@ import type {
 import {
   INVALID_MEDICATION_ORDER_RESPONSE,
   INVALID_MEDICATION_ORDER_SET_RESPONSE,
+  MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
+  MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+  buildMedicationRequestResponseLostStatusReason,
   getMedicationOrderIframeUrl,
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
@@ -149,6 +152,39 @@ describe('MedicationOrder getters', () => {
       subject: { reference: 'Patient/1' },
     } satisfies MedicationRequest;
     expect(getMedicationOrderIframeUrl(mr, TEST_EXT)).toBeUndefined();
+  });
+});
+
+describe('MedicationRequest soft-delete (response-not-received)', () => {
+  test('MEDICATION_REQUEST_STATUS_REASON_SYSTEM is a stable canonical URL', () => {
+    expect(MEDICATION_REQUEST_STATUS_REASON_SYSTEM).toBe(
+      'https://medplum.com/fhir/CodeSystem/medication-request-status-reason'
+    );
+  });
+
+  test('MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED is the canonical code', () => {
+    expect(MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED).toBe('response-not-received');
+  });
+
+  test('buildMedicationRequestResponseLostStatusReason emits canonical system + code with human-readable display + text', () => {
+    const reason = buildMedicationRequestResponseLostStatusReason();
+    expect(reason).toEqual({
+      coding: [
+        {
+          system: MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+          code: MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
+          display: 'Order-medication response not received',
+        },
+      ],
+      text: expect.stringMatching(/vendor-side state is unknown/),
+    });
+  });
+
+  test('buildMedicationRequestResponseLostStatusReason returns a fresh object each call (callers may mutate)', () => {
+    const a = buildMedicationRequestResponseLostStatusReason();
+    const b = buildMedicationRequestResponseLostStatusReason();
+    expect(a).not.toBe(b);
+    expect(a.coding).not.toBe(b.coding);
   });
 });
 

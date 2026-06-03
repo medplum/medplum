@@ -145,11 +145,11 @@ describe('FHIR Router', () => {
     );
     expect(res1).toMatchObject(created);
     if (!patient) {
-      fail('Expected patient to be defined');
+      expect.fail('Expected patient to be defined');
     }
     const expectedVersion = patient.meta?.versionId;
     if (!expectedVersion) {
-      fail('Expected version to be defined');
+      expect.fail('Expected version to be defined');
     }
 
     const [res2, updatedPatient] = await router.handleRequest(
@@ -181,7 +181,7 @@ describe('FHIR Router', () => {
     );
     expect(res1).toMatchObject(created);
     if (!patient) {
-      fail('Expected patient to be defined');
+      expect.fail('Expected patient to be defined');
     }
 
     const [res2] = await router.handleRequest(

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, formatPeriod, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, Patient, Resource, Slot } from '@medplum/fhirtypes';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
@@ -10,8 +11,8 @@ import { showErrorNotification } from '../../utils/notifications';
 import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
-  slot: Slot;
-  onSuccess?: (result: { appointments: Appointment[]; slots: Slot[] }) => void;
+  appointment: Appointment;
+  onSuccess?: (result: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
 };
 
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
@@ -19,31 +20,45 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
   const [patient, setPatient] = useState<Patient | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  const { slot, onSuccess } = props;
+  const { appointment, onSuccess } = props;
 
-  const bookSlot = useCallback(
+  const bookAppointment = useCallback(
     async (patient: Patient) => {
       setLoading(true);
 
+      // merge patient into participants list
+      const booking = {
+        ...appointment,
+        participant: [
+          ...appointment.participant,
+          {
+            actor: createReference(patient),
+            status: 'needs-action',
+            required: 'required',
+          },
+        ],
+      } satisfies Appointment;
+
       // Remove any transient identifiers we added for use in the UI before submitting
-      const bookSlot = { ...slot };
-      SchedulingTransientIdentifier.remove(bookSlot);
+      SchedulingTransientIdentifier.remove(booking);
 
       try {
-        const data = await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
-          resourceType: 'Parameters',
-          parameter: [
-            { name: 'slot', resource: bookSlot },
-            { name: 'patient-reference', valueReference: createReference(patient) },
-          ],
-        });
+        const data = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+          medplum.fhirUrl('Appointment', '$book'),
+          {
+            resourceType: 'Parameters',
+            parameter: [{ name: 'appointment', resource: booking }],
+          }
+        );
         medplum.invalidateSearches('Appointment');
         medplum.invalidateSearches('Slot');
 
         const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
-        const slots = resources.filter((obj: Slot | Appointment): obj is Slot => obj.resourceType === 'Slot');
+        const slots = resources.filter(
+          (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Slot> => obj.resourceType === 'Slot'
+        );
         const appointments = resources.filter(
-          (obj: Slot | Appointment): obj is Appointment => obj.resourceType === 'Appointment'
+          (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
         );
 
         onSuccess?.({ appointments, slots });
@@ -51,19 +66,20 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
         setLoading(false);
       }
     },
-    [medplum, slot, onSuccess]
+    [medplum, appointment, onSuccess]
   );
 
   const handleSubmit = useCallback(async () => {
     if (!patient) {
       return;
     }
+
     try {
-      await bookSlot(patient);
+      await bookAppointment(patient);
     } catch (error) {
       showErrorNotification(error);
     }
-  }, [patient, bookSlot]);
+  }, [patient, bookAppointment]);
 
   const choosePatient = useCallback((patient: Resource | undefined) => {
     if (patient && patient.resourceType !== 'Patient') {
@@ -75,7 +91,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
   return (
     <Form onSubmit={handleSubmit}>
       <Stack gap="md">
-        <Text size="lg">{formatPeriod({ start: props.slot.start, end: props.slot.end })}</Text>
+        <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
         <ResourceInput
           label="Patient"
           resourceType="Patient"

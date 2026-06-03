@@ -56,6 +56,10 @@ export function ChatInput({
     onSendRef.current = onSend;
   }, [onSend]);
 
+  // Stable handle to the debounced auto-send so onTranscript (defined before autoSend below) can
+  // arm it. Assigned in an effect once autoSend exists.
+  const autoSendRef = useRef<(() => void) | undefined>(undefined);
+
   const { start, stop, status } = useWhisper({
     model: 'gpt-4o-transcribe',
     onTranscript: (text) => {
@@ -67,6 +71,7 @@ export function ChatInput({
       const next = previous ? `${previous} ${trimmed}` : trimmed;
       inputRef.current = next;
       onInputChange(next);
+      autoSendRef.current?.();
     },
   });
 
@@ -79,9 +84,14 @@ export function ChatInput({
   }, SILENCE_AUTO_SEND_MS);
 
   useEffect(() => {
+    autoSendRef.current = autoSend;
+  }, [autoSend]);
+
+  useEffect(() => {
     if (status === 'speech_stopped') {
       autoSend();
-    } else {
+    } else if (status === 'speech_started' || status === 'listening') {
+      // User resumed talking: cancel the pending send; the next transcript or silence re-arms it.
       autoSend.cancel();
     }
   }, [status, autoSend]);
