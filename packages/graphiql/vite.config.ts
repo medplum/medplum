@@ -16,7 +16,11 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 
 export default defineConfig({
   resolve: {
-    alias: medplumAliases,
+    alias: {
+      // necessary because styles.css is a side effect of the react package, so we can't use an alias
+      '@medplum/react/styles.css': path.resolve(__dirname, '../react/dist/esm/index.css'),
+      ...medplumAliases,
+    },
   },
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
   plugins: [
