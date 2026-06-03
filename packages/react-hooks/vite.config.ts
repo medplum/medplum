@@ -12,8 +12,5 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test.setup.ts'],
     testTimeout: 120_000,
-    alias: {
-      '\\.css$': 'identity-obj-proxy',
-    },
   },
 });
