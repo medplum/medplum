@@ -1,12 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { resolve } from 'path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { dirname } from 'node:path';
 
+const repoDir = dirname(fileURLToPath(import.meta.url));
+
+// resolve to the submodules for much easier testing
 export const medplumAliases = {
-  '@medplum/core': fileURLToPath(new URL('./packages/core/src', import.meta.url)),
-  '@medplum/fhir-router': fileURLToPath(new URL('./packages/fhir-router/src', import.meta.url)),
-  '@medplum/mock': fileURLToPath(new URL('./packages/mock/src', import.meta.url)),
+  '@medplum/ccda': resolve(repoDir, 'packages/ccda/src'),
+  '@medplum/core': resolve(repoDir, 'packages/core/src'),
+  '@medplum/definitions': resolve(repoDir, 'packages/definitions/src'),
+  '@medplum/dosespot-core': resolve(repoDir, 'packages/dosespot-core/src'),
+  '@medplum/fhir-router': resolve(repoDir, 'packages/fhir-router/src'),
+  '@medplum/health-gorilla-core': resolve(repoDir, 'packages/health-gorilla-core/src'),
+  '@medplum/hl7': resolve(repoDir, 'packages/hl7/src'),
+  '@medplum/mock': resolve(repoDir, 'packages/mock/src'),
+  '@medplum/react': resolve(repoDir, 'packages/react/src'),
+  '@medplum/react-hooks': resolve(repoDir, 'packages/react-hooks/src'),
 };
 
 export default defineConfig({
