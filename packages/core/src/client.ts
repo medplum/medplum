@@ -3139,6 +3139,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
           this.sessionDetails = result;
+          this.syncStoredLoginProject();
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
@@ -3150,6 +3151,33 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.dispatchEvent({ type: 'profileRefreshing' });
     return this.profilePromise;
+  }
+
+  /**
+   * Updates the persisted login state for the active login with the live project name.
+   *
+   * The `display` on a stored {@link LoginState} is a snapshot captured at login time, so it goes
+   * stale if the project is later renamed. After `auth/me` resolves we have the current `Project`
+   * resource, so we write its name back into both the active login and the logins list. Because the
+   * active token is scoped to a single project, this is the only project whose name we can refresh;
+   * each login's display therefore self-heals the next time that login is used (e.g. the account
+   * switcher in HeaderDropdown).
+   */
+  private syncStoredLoginProject(): void {
+    const activeLogin = this.getActiveLogin();
+    const projectName = this.sessionDetails?.project?.name;
+    if (!activeLogin || !projectName || activeLogin.project.display === projectName) {
+      return;
+    }
+    const updated: LoginState = {
+      ...activeLogin,
+      project: { ...activeLogin.project, display: projectName },
+    };
+    this.storage.setObject('activeLogin', updated);
+    this.storage.setObject(
+      'logins',
+      this.getLogins().map((login) => (login.profile?.reference === updated.profile?.reference ? updated : login))
+    );
   }
 
   /**
