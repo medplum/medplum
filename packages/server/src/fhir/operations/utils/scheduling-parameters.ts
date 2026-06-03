@@ -98,6 +98,9 @@ export type SchedulingParameters = {
   timezone?: string;
 };
 
+// FHIR Convention: when end <= start, the end time is interpreted as being in
+// the following day.  So 00:00:00 -> 00:00:00 on all 7 days means 24/7
+// availability.
 const alwaysAvailable: SchedulingParametersAvailability = {
   dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
   availableStartTime: '00:00:00',
@@ -391,6 +394,9 @@ export function parseSchedulingParametersExtensions(
   // each extension on the resource
   const resourceParameters: Partial<SchedulingParameters> = {};
   if (resource.resourceType === 'HealthcareService') {
+    // Note: `resource.availableTime` could be explicitly set to `[]`, in which
+    // case we interpret this as "no availability" instead of falling back to
+    // the default "always available"
     if (resource.availableTime) {
       resourceParameters.availability = resource.availableTime.map(extractAvailability).filter(isDefined);
     } else {
