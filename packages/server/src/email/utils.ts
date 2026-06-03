@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, badRequest } from '@medplum/core';
+import { OperationOutcomeError, serverError } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import type Mail from 'nodemailer/lib/mailer';
@@ -44,7 +44,7 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
         .filter(Boolean)
         .join(', '),
     });
-    throw new OperationOutcomeError(badRequest('Project SMTP configuration is incomplete or invalid'));
+    throw new OperationOutcomeError(serverError(new Error('Project SMTP configuration is incomplete or invalid')));
   }
 
   return {
