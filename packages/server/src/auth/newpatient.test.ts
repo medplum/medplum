@@ -201,9 +201,7 @@ describe('New patient', () => {
 
     // Remove the default patient access policy from the project
     await withTestContext(() =>
-      systemRepo.patchResource('Project', projectId, [
-        { op: 'remove', path: '/defaultPatientAccessPolicy' },
-      ])
+      systemRepo.patchResource('Project', projectId, [{ op: 'remove', path: '/defaultPatientAccessPolicy' }])
     );
 
     // Register a new user in the project
