@@ -8,23 +8,77 @@ OpenID Implementer's Guide: https://openid.net/specs/openid-connect-basic-1_0.ht
 
 For both local and production testing, setup your Practitioner profile with all of the OpenID user info properties:
 
-| User info property    | Practitioner property | Example value |
-| --------------------- | --------------------- | ------------- |
-| name                  | name[0]               | Alice         |
-| given_name            | name[0].given[0]      |               |
-| middle_name           | name[0].given[0]      |               |
-| family_name           | name[0].family        |               |
-| gender                | name[0].gender        |               |
-| picture               | photo[0].url          |               |
-| preferred_username    |                       |               |
-| nickname              |                       |               |
-| website               |                       |               |
-| zoneinfo              |                       |               |
-| email                 | telecom               |               |
-| email_verified        |                       |               |
-| phone_number          | telecom               |               |
-| phone_number_verified |                       |               |
-| address               | address               |               |
+| User info property    | Practitioner property       | Example value |
+| --------------------- | --------------------------- | ------------- |
+| name                  | name[0]                     | Alice         |
+| given_name            | name[0].given[0]            |               |
+| middle_name           | name[0].given[0]            |               |
+| family_name           | name[0].family              |               |
+| gender                | name[0].gender              |               |
+| picture               | photo[0].url                |               |
+| preferred_username    | telecom                     |               |
+| nickname              | name.where(use='nickname')  |               |
+| website               | telecom.where(system='url') |               |
+| zoneinfo              | extension                   |               |
+| email                 | telecom                     |               |
+| email_verified        |                             |               |
+| phone_number          | telecom                     |               |
+| phone_number_verified |                             |               |
+| address               | address                     |               |
+
+For example:
+
+```json
+{
+  "resourceType": "Practitioner",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/timezone",
+      "valueCode": "US/Pacific"
+    }
+  ],
+  "birthDate": "1970-01-01",
+  "gender": "male",
+  "name": [
+    {
+      "use": "official",
+      "given": ["Homer", "J"],
+      "family": "Simpson"
+    },
+    {
+      "use": "nickname",
+      "given": ["Homer"]
+    }
+  ],
+  "telecom": [
+    {
+      "system": "email",
+      "use": "work",
+      "value": "homer.simpson@example.com"
+    },
+    {
+      "system": "url",
+      "use": "work",
+      "value": "https://www.example.com/"
+    }
+  ],
+  "address": [
+    {
+      "line": ["742 Evergreen Terrace"],
+      "city": "Springfield",
+      "state": "IL",
+      "postalCode": "12345"
+    }
+  ],
+  "photo": [
+    {
+      "contentType": "image/webp",
+      "url": "Binary/123",
+      "title": "homer-simpson.webp"
+    }
+  ]
+}
+```
 
 ## Test against OpenID Conformance Suite locally
 
@@ -33,90 +87,59 @@ Follow these instructions to setup your local dev environment with the Conforman
 Requirements:
 
 - The Conformance Suite running in Docker must be able to access the Medplum API server
-  - That means that the Medplum API server cannot simply use "localhost"
-  - Instead, we will use `host.docker.internal`
 - The Medplum API server cookies require HTTPS
-  - That means we cannot simply use `vite` and `tsx`
-  - Instead, we will use [Caddy](https://caddyserver.com/) for an easy localhost HTTPS proxy
+- That means that the Medplum API server cannot simply use "localhost"
+- Instead, we will use ngrok to create a public URL that tunnels to our local dev environment, and configure the Medplum API server to use that URL as its base URL
 
-The Medplum OpenID configuration requires HTTPS. We recommend using .
+The Medplum OpenID configuration requires HTTPS. We recommend using ngrok for this purpose. We recommend using multiple tunnels: one for the API server and one for the app server. This allows the Conformance Suite to access the API server directly, without going through the app server.
 
-| Service | HTTP address                     | HTTPS address                     |
-| ------- | -------------------------------- | --------------------------------- |
-| api     | http://host.docker.internal/8103 | https://host.docker.internal/8104 |
-| app     | http://localhost:3000            | https://localhost:8106            |
+For the purposes of this example, we will use the following ngrok URLs:
+
+- API server: https://api.ngrok.medplum.dev
+- App server: https://app.ngrok.medplum.dev
 
 ### Update the app config
 
 Open `packages/app/.env`
 
-Add or replace the `MEDPLUM_BASE_URL` environment variable with `https://host.docker.internal:8104/`
+Add or replace the `MEDPLUM_BASE_URL` environment variable with `https://api.ngrok.medplum.dev/`
 
 ```
-MEDPLUM_BASE_URL=https://host.docker.internal:8104/
+MEDPLUM_BASE_URL=https://api.ngrok.medplum.dev/
 ```
 
 ### Update the server config
 
 Open `packages/server/medplum.config.json`
 
-Replace all instances of `http://localhost:8103/` with `https://host.docker.internal:8104/`
+Replace all instances of `http://localhost:8103/` with `https://api.ngrok.medplum.dev/`
 
-Replace all instances of `http://localhost:3000/` with `https://localhost:8106/`
+Replace all instances of `http://localhost:3000/` with `https://app.ngrok.medplum.dev/`
 
-The result should look something like this:
+### Setup ngrok
 
-```json
-{
-  "port": 8103,
-  "baseUrl": "https://host.docker.internal:8104/",
-  "issuer": "https://host.docker.internal:8104/",
-  "audience": "https://host.docker.internal:8104/",
-  "jwksUrl": "https://host.docker.internal:8104/.well-known/jwks.json",
-  "authorizeUrl": "https://host.docker.internal:8104/oauth2/authorize",
-  "tokenUrl": "https://host.docker.internal:8104/oauth2/token",
-  "userInfoUrl": "https://host.docker.internal:8104/oauth2/userinfo",
-  "appBaseUrl": "https://localhost:8106",
-  "binaryStorage": "file:./binary/",
-  "storageBaseUrl": "https://host.docker.internal:8104/storage/",
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "medplum",
-    "username": "medplum",
-    "password": "medplum"
-  },
-  "redis": {
-    "host": "localhost",
-    "port": 6379,
-    "password": "medplum"
-  }
-}
+For example:
+
+```yaml
+# ~/.config/ngrok/ngrok.yml
+version: 3
+
+agent:
+  authtoken: YOUR_NGROK_AUTH_TOKEN
+
+endpoints:
+  - name: app
+    url: https://app.ngrok.medplum.dev
+    upstream:
+      url: http://localhost:3000
+
+  - name: api
+    url: https://api.ngrok.medplum.dev
+    upstream:
+      url: http://localhost:8103
 ```
 
-### Setup Caddy
-
-First, download and install Caddy: https://caddyserver.com/download
-
-Next, create a `Caddyfile` with the following contents:
-
-```
-localhost:8104 {
-  reverse_proxy 127.0.0.1:8103
-  tls internal
-}
-
-localhost:8106 {
-  reverse_proxy 127.0.0.1:8105
-  tls internal
-}
-```
-
-Now you can run Caddy with `caddy run`
-
-Test the Medplum API server URL: <https://host.docker.internal:8104/>
-
-Test the Medplum app URL: <https://localhost:8106/>
+Then run `ngrok start --all` to start the tunnels.
 
 ### Setup the OpenID project
 
@@ -132,18 +155,23 @@ Make note of the client IDs and client secrets
 
 https://gitlab.com/openid/conformance-suite/-/wikis/Developers/Build-&-Run
 
+Download docker-compose-prebuilt.yml into an empty directory:
+
 ```bash
-git clone git@gitlab.com:openid/conformance-suite.git
-cd conformance-suite
-mvn clean package
-docker-compose up
+curl -O https://gitlab.com/openid/conformance-suite/-/raw/master/docker-compose-prebuilt.yml
+```
+
+Start the stack:
+
+```bash
+docker compose -f docker-compose-prebuilt.yml up
 ```
 
 Open browser to <https://localhost.emobix.co.uk:8443/>
 
 Test the Docker localhost URL: <http://host.docker.internal:8103/>
 
-Be sure to logout between each test by visiting <http://host.docker.internal:8103/oauth2/logout>
+Be sure to logout between each test by visiting <https://api.ngrok.medplum.dev/oauth2/logout>
 
 ### OpenID notes
 
@@ -159,7 +187,7 @@ Set the "Redirect URI" to "https://localhost.emobix.co.uk:8443/test/a/medplum/ca
   - description: medplum
   - publish: No
 - Server
-  - discoveryUrl: http://host.docker.internal:8103/.well-known/openid-configuration
+  - discoveryUrl: https://api.ngrok.medplum.dev/.well-known/openid-configuration
   - login_hint:
 - Client:
   - client_id: CLIENT_ID_1
@@ -195,7 +223,11 @@ Be sure to logout between each test by visiting <http://host.docker.internal:810
 
 In "EHR Launch Sequence":
 
-Make sure "Scopes" includes "fhirUser launch launch/patient offline_access openid profile user/*._ patient/_.\_"
+Make sure "Scopes" includes:
+
+```
+fhirUser launch launch/patient offline_access openid profile user/*.* patient/*.*
+```
 
 Launch URL's:
 
@@ -213,4 +245,4 @@ http://localhost:4567/inferno/oauth2/static/launch?iss=http%3A%2F%2Fhost.docker.
 Launch URI: https://inferno.healthit.gov/suites/custom/smart/launch
 Redirect URI: https://inferno.healthit.gov/suites/custom/smart/redirect
 
-https://inferno.healthit.gov/suites/custom/smart/launch?iss=https%3A%2F%2Fcody.medplum.dev%2Ffhir%2FR4&launch=xyz1234
+https://inferno.healthit.gov/suites/custom/smart/launch?iss=https%3A%2F%2Fngrok.medplum.dev%2Ffhir%2FR4&launch=xyz1234

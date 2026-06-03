@@ -19,7 +19,7 @@ The `$hold` operation places a hold on one or more schedules by atomically creat
 
 1. **[`$find`](/docs/scheduling/appointment-find)** — Query available time slots. Returns virtual `Appointment` resources with `contained` Slot resources.
 2. **`$hold`** — Submit one of those virtual Appointments to reserve the time. Creates a real `Appointment` (status: `pending`) and `Slot` (status: `busy-tentative`).
-3. **[`$book`](/docs/scheduling/appointment-book)** — Confirm the hold, attach a patient, and transition the `Appointment` to `booked`. *Not yet implemented.*
+3. **[`$confirm`](/docs/scheduling/appointment-confirm)** — Confirm the hold and transition the `Appointment` to `booked`.
 
 ## Use Cases
 
@@ -347,7 +347,8 @@ Returned when the requested time overlaps an existing busy Slot or falls outside
 ## Related
 
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots
-- [Appointment `$book`](/docs/scheduling/appointment-book) - Transition Appointment.status from "pending" to "booked" with `$book`
+- [Appointment `$confirm`](/docs/scheduling/appointment-confirm) - Transition Appointment.status from "pending" to "booked"
+- [Appointment `$book`](/docs/scheduling/appointment-book) - Book an appointment in a single step (without a hold)
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)

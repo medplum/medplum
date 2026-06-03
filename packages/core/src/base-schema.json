@@ -4291,6 +4291,20 @@
             "code": "boolean"
           }
         ]
+      },
+      "identitySource": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "identityMappingMode": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
       }
     }
   }
