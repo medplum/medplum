@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
+import isISO8601 from 'validator/lib/isISO8601.js';
+import { getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
 import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
@@ -37,6 +39,24 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     }
   } else {
     errors.push('dataWarehouse.destination must be "s3tables" or "local"');
+  }
+
+  if (dw.startDate && !isISO8601(dw.startDate)) {
+    errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
+  }
+
+  if (dw.resourceTypes?.length) {
+    const knownTableNames = new Set(getWarehouseSyncPostgresTableNames());
+    if (knownTableNames.size > 0) {
+      const unknownResourceTypes = dw.resourceTypes.filter(
+        (resourceType) => !knownTableNames.has(`${resourceType}_History`)
+      );
+      if (unknownResourceTypes.length > 0) {
+        errors.push(
+          `dataWarehouse.resourceTypes contains unknown resource type(s): ${unknownResourceTypes.join(', ')}`
+        );
+      }
+    }
   }
 
   return errors;

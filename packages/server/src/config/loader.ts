@@ -186,6 +186,20 @@ function loadEnvConfig(): MedplumServerConfig {
       key = key.substring('DATABASE_'.length);
       currConfig = config.database ??= {};
       section = 'database';
+      if (key.startsWith('SSL_')) {
+        key = key.substring('SSL_'.length);
+        currConfig = config.database.ssl = config.database.ssl ?? {};
+        section = 'database.ssl';
+      }
+    } else if (key.startsWith('READONLY_DATABASE_')) {
+      key = key.substring('READONLY_DATABASE_'.length);
+      currConfig = config.readonlyDatabase ??= {};
+      section = 'readonlyDatabase';
+      if (key.startsWith('SSL_')) {
+        key = key.substring('SSL_'.length);
+        currConfig = config.readonlyDatabase.ssl = config.readonlyDatabase.ssl ?? {};
+        section = 'readonlyDatabase.ssl';
+      }
     } else if (key.startsWith('CACHE_REDIS_')) {
       key = key.substring('CACHE_REDIS_'.length);
       currConfig = config.cacheRedis ??= {};

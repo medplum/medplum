@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumServerConfig } from './types';
+
+jest.mock('../data-warehouse/config', () => ({
+  getWarehouseSyncPostgresTableNames: jest.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
+}));
+
 import {
   getDataWarehouseConfigErrors,
   isDataWarehouseSyncOperational,
@@ -30,6 +35,72 @@ describe('getDataWarehouseConfigErrors', () => {
         })
       )
     ).toStrictEqual([]);
+  });
+
+  test('returns error when startDate is not a valid timestamp', () => {
+    expect(
+      getDataWarehouseConfigErrors(
+        baseServerConfig({
+          dataWarehouse: {
+            enabled: true,
+            cron: '0 * * * *',
+            destination: 'local',
+            localBasePath: '/tmp/out',
+            startDate: 'not-a-date',
+          },
+        })
+      )
+    ).toContain('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
+  });
+
+  test('returns no error when startDate is empty string', () => {
+    expect(
+      getDataWarehouseConfigErrors(
+        baseServerConfig({
+          dataWarehouse: {
+            enabled: true,
+            cron: '0 * * * *',
+            destination: 'local',
+            localBasePath: '/tmp/out',
+            startDate: '',
+          },
+        })
+      )
+    ).toStrictEqual([]);
+  });
+
+  describe('resourceTypes', () => {
+    test('returns error when resourceTypes contains unknown resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              resourceTypes: ['Patient', 'NotARealResourceType'],
+            },
+          })
+        )
+      ).toContain('dataWarehouse.resourceTypes contains unknown resource type(s): NotARealResourceType');
+    });
+
+    test('returns no errors when resourceTypes lists known resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              resourceTypes: ['Patient', 'Observation'],
+            },
+          })
+        )
+      ).toStrictEqual([]);
+    });
   });
 
   test('returns no errors when enabled is false even if destination fields are missing', () => {

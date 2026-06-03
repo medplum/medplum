@@ -37,7 +37,7 @@ export function useResource<T extends Resource>(
     const newValue = getInitialResource(medplum, value);
     if (!newValue && isReference(value)) {
       medplum
-        .readReference(value as Reference<T>)
+        .readReference(value)
         .then((r) => {
           if (subscribed) {
             setResourceIfChanged(r);
@@ -80,7 +80,7 @@ function getInitialResource<T extends Resource>(
     }
 
     if (isReference(value)) {
-      return medplum.getCachedReference(value as Reference<T>);
+      return medplum.getCachedReference(value);
     }
   }
 

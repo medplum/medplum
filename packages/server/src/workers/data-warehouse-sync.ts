@@ -41,13 +41,16 @@ export const DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS = 5 * 60 * 1000;
 export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
   const syncConfig = config.dataWarehouse;
   if (!syncConfig?.enabled) {
-    globalLogger.info('Data warehouse sync is disabled');
+    globalLogger.info('Data warehouse sync is disabled', { subsystem: 'data-warehouse-sync' });
     return;
   }
 
   globalLogger.info('Data warehouse sync is enabled', {
+    subsystem: 'data-warehouse-sync',
     destination: syncConfig.destination,
     cron: syncConfig.cron,
+    resourceTypes: syncConfig.resourceTypes,
+    startDate: syncConfig.startDate,
   });
 }
 
@@ -61,7 +64,10 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
   if (!isDataWarehouseSyncOperational(config)) {
     const errors = getDataWarehouseConfigErrors(config);
     if (errors.length > 0) {
-      globalLogger.warn('Skipping data warehouse sync worker due to invalid configuration', { errors });
+      globalLogger.warn('Skipping data warehouse sync worker due to invalid configuration', {
+        errors,
+        subsystem: 'data-warehouse-sync',
+      });
     }
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
@@ -92,7 +98,7 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
   }));
 
   refreshDataWarehouseSyncScheduler(config, queue).catch((err) => {
-    globalLogger.error('Failed to refresh data warehouse sync scheduler', { err });
+    globalLogger.error('Failed to refresh data warehouse sync scheduler', { err, subsystem: 'data-warehouse-sync' });
   });
 
   return { queue, worker, name: DataWarehouseSyncQueueName };
@@ -111,7 +117,10 @@ export async function refreshDataWarehouseSyncScheduler(
     try {
       await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
     } catch (err) {
-      globalLogger.warn('Failed removing disabled data warehouse sync scheduler', { err });
+      globalLogger.warn('Failed removing disabled data warehouse sync scheduler', {
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
     }
     return;
   }
@@ -122,7 +131,10 @@ export async function refreshDataWarehouseSyncScheduler(
     try {
       await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
     } catch (err) {
-      globalLogger.warn('Failed removing invalid data warehouse sync scheduler', { err });
+      globalLogger.warn('Failed removing invalid data warehouse sync scheduler', {
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
     }
     return;
   }
@@ -157,6 +169,7 @@ export async function processDataWarehouseSyncJob(
         globalLogger.info('Skipping data warehouse sync; another sync is in progress', {
           jobId: job.id,
           trigger: job.data.trigger,
+          subsystem: 'data-warehouse-sync',
         });
         return;
       }
@@ -165,15 +178,22 @@ export async function processDataWarehouseSyncJob(
 
       const result = await syncData({
         ...syncOptions,
-        onProgress: async (message, metadata) => {
-          globalLogger.info(message, metadata);
-          await job.updateProgress({ message, ...metadata });
+        onProgress: async (_message, metadata) => {
+          await job.updateProgress(metadata ?? {});
         },
       });
 
       const inserted = result.resources.filter((resource) => resource.count > 0).length;
       const skipped = result.resources.length - inserted;
-      globalLogger.info('Data warehouse sync completed', { inserted, skipped, total: result.resources.length });
+      globalLogger.info('Data warehouse sync completed', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        inserted,
+        skipped,
+        total: result.resources.length,
+        resources: result.resources,
+        subsystem: 'data-warehouse-sync',
+      });
     } catch (err) {
       globalLogger.error('Data warehouse sync failed', {
         jobId: job.id,
@@ -181,6 +201,7 @@ export async function processDataWarehouseSyncJob(
         destination: syncConfig?.destination,
         namespace: syncConfig?.namespace,
         err,
+        subsystem: 'data-warehouse-sync',
       });
       throw err;
     } finally {
@@ -206,7 +227,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     throw new Error(errors.join('; '));
   }
 
-  const { namespace } = syncConfig;
+  const { namespace, startDate, resourceTypes } = syncConfig;
 
   // Fallback to the writer database when readonly is not configured.
   // For RDS Proxy, set host and ssl.require on the database config directly.
@@ -217,7 +238,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
       ? new LocalParquetWarehouseDestination(syncConfig.localBasePath as string)
       : new S3TablesWarehouseDestination(config.awsRegion, syncConfig.awsS3TableArn as string);
 
-  const warehouseSources = getWarehouseSyncPostgresTableNames()
+  const warehouseSources = getWarehouseSyncPostgresTableNames(resourceTypes)
     .map((postgresTable) => ({
       postgresTable,
       icebergTable: toIcebergTableName(postgresTable),
@@ -227,6 +248,8 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     database,
     destination,
     namespace,
+    startDate,
+    resourceTypes,
     warehouseSources,
   };
 }

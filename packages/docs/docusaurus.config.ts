@@ -81,6 +81,14 @@ const config: Config = {
             from: '/docs/questionnaires/structured-data-capture',
             to: '/docs/questionnaires/parsing-questionnaire-responses',
           },
+          {
+            from: '/docs/integration/stedi/eligibility-checks',
+            to: '/docs/integration/stedi/insurance-eligibility/eligibility-checks',
+          },
+          {
+            from: '/docs/integration/stedi/professional-claims',
+            to: '/docs/integration/stedi/claim-submission/professional-claims',
+          },
         ],
       },
     ],

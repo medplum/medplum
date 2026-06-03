@@ -432,6 +432,42 @@ export function getElementDefinitionFromElements(
   return undefined;
 }
 
+export function getElementDefinitionForPath(
+  typeName: string,
+  path: string,
+  profileUrl?: string
+): InternalSchemaElement | undefined {
+  const pathParts = path.split(/[.[\]]/g);
+  const baseSchema = tryGetDataType(typeName, profileUrl);
+  if (!baseSchema) {
+    return undefined;
+  }
+
+  let currentType = baseSchema;
+  let currentElement: InternalSchemaElement | undefined;
+  for (const segment of pathParts) {
+    let next: InternalTypeSchema | undefined;
+    if (segment.match(/^[a-z]/)) {
+      const element = getElementDefinitionFromElements(currentType.elements, segment);
+      if (!element) {
+        return undefined;
+      }
+      if (element.type.length > 1) {
+        throw new Error('Multiple matching types in path ' + path);
+      }
+
+      next = tryGetDataType(element.type[0].code);
+      currentElement = element;
+    }
+
+    if (next) {
+      currentType = next;
+    }
+  }
+
+  return currentElement;
+}
+
 /**
  * Returns true if the value is a TypedValue.
  * @param value - The unknown value to check.

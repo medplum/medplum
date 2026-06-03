@@ -160,6 +160,7 @@ export function isFloatConfig(_key: string): boolean {
 }
 
 const booleanKeys = new Set([
+  'allowInsecureRestHookUrl',
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -198,6 +199,7 @@ const objectKeys = new Set([
   'workers.enabled',
   'workers.bullmq',
   'dataWarehouse',
+  'dataWarehouse.resourceTypes',
 ]);
 
 export function isObjectConfig(key: string): boolean {

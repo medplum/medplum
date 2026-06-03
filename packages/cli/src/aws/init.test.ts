@@ -13,11 +13,12 @@ import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
+import type { Mock } from 'vitest';
 import { main } from '../index';
 import { mockReadline } from './test.utils';
 
-jest.mock('node:readline');
-jest.mock('node-fetch');
+vi.mock('node:readline');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 describe('init command', () => {
   const configFiles = new Set<string>();
@@ -49,9 +50,9 @@ describe('init command', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockResolvedValueOnce({
-      json: jest.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
+    (fetch as unknown as Mock).mockClear();
+    (fetch as unknown as Mock).mockResolvedValueOnce({
+      json: vi.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
     });
 
     const cloudFrontClient = mockClient(CloudFrontClient);
@@ -92,7 +93,7 @@ describe('init command', () => {
   test('Init tool success', async () => {
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -154,7 +155,7 @@ describe('init command', () => {
     const filename = refConfigFile(`test-${randomUUID()}.json`);
     writeFileSync(filename, '{}', 'utf8');
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -223,9 +224,9 @@ describe('init command', () => {
 
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    console.log = jest.fn();
+    console.log = vi.fn();
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'y', // Do you want to continue without AWS credentials?
         'foo',
@@ -289,7 +290,7 @@ describe('init command', () => {
   test('Bring your own database', async () => {
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -349,7 +350,7 @@ describe('init command', () => {
   test('Do not request SSL certs', async () => {
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -407,7 +408,7 @@ describe('init command', () => {
   test('Existing SSL certificates', async () => {
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -468,7 +469,7 @@ describe('init command', () => {
   test('Handle empty support email', async () => {
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -537,7 +538,7 @@ describe('init command', () => {
 
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'foo',
         filename,
@@ -613,7 +614,7 @@ describe('init command', () => {
 
     const filename = refConfigFile(`test-${randomUUID()}.json`);
 
-    readline.createInterface = jest.fn(() =>
+    readline.createInterface = vi.fn(() =>
       mockReadline(
         'y', // Yes, proceed without AWS credentials
         'foo',

@@ -22,6 +22,17 @@ function createDoseSpotMembership(): ReturnType<MockClient['getProjectMembership
   };
 }
 
+function createScriptSureMembership(): ReturnType<MockClient['getProjectMembership']> {
+  return {
+    resourceType: 'ProjectMembership',
+    id: 'test-membership',
+    project: { reference: 'Project/test' },
+    user: { reference: 'User/test' },
+    profile: { reference: 'Practitioner/test' },
+    identifier: [{ system: 'https://scriptsure.com', value: '12345' }],
+  };
+}
+
 /**
  * Build an empty MedicationRequest search Bundle so the new server-side search path
  * (`medplum.search('MedicationRequest', ...)` returning a Bundle with `total`) is
@@ -95,7 +106,10 @@ describe('MedicationsPage', () => {
   });
 
   test('Renders medication tabs and order action', async () => {
-    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`);
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
     expect(await screen.findByText('Active')).toBeInTheDocument();
     expect(await screen.findByText('Draft')).toBeInTheDocument();
     expect(await screen.findByText('Completed')).toBeInTheDocument();
@@ -192,37 +206,62 @@ describe('MedicationsPage', () => {
     });
   });
 
-  test('Does not show DoseSpot sync button without DoseSpot identifier', async () => {
-    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`);
-    expect(await screen.findByText('Active')).toBeInTheDocument();
-    expect(screen.queryByText('DoseSpot sync')).not.toBeInTheDocument();
-  });
-
-  test('Shows DoseSpot sync button with DoseSpot identifier', async () => {
+  test('Does not trigger DoseSpot sync without DoseSpot identifier', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
-    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
+    const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
 
     await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
-    expect(await screen.findByText('DoseSpot sync')).toBeInTheDocument();
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    expect(executeBotSpy).not.toHaveBeenCalled();
   });
 
-  test('DoseSpot sync button triggers bot execution', async () => {
+  test('DoseSpot sync calls all three bots automatically on mount', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
     vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
     const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
 
     await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
-    expect(await screen.findByText('DoseSpot sync')).toBeInTheDocument();
-
-    const syncButton = screen.getByText('DoseSpot sync');
-    await act(async () => {
-      fireEvent.click(syncButton);
-    });
 
     await waitFor(() => {
       expect(executeBotSpy).toHaveBeenCalledTimes(3);
     });
+  });
+
+  test('Re-opening a pending order from the details panel opens the full chart/queue iframe (issue #9300)', async () => {
+    const medplum = new MockClient();
+    const draftOrder: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'mr-queued',
+      status: 'draft',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Crestor 10 mg tablet' },
+      identifier: [{ system: 'https://scriptsure.com/pending-order-id', value: '8888' }],
+      extension: [{ url: 'https://scriptsure.com/pending-order-status', valueCode: 'queued' }],
+    };
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, [draftOrder]));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+      url: 'https://ssu.scriptsure.com/chart/253312/prescriptions?sessiontoken=abc',
+    });
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-queued?status=draft`, medplum);
+
+    const openButton = await screen.findByRole('button', { name: /Open in ScriptSure/i });
+    await act(async () => {
+      fireEvent.click(openButton);
+    });
+
+    // Re-open must hit the ScriptSure iframe (chart/queue) bot, NOT re-invoke the
+    // single-order widget via the $order-medication operation.
+    await waitFor(() => {
+      expect(executeBotSpy).toHaveBeenCalledWith(
+        { system: 'https://www.medplum.com/bots', value: 'scriptsure-iframe-bot' },
+        { patientId: HomerSimpson.id }
+      );
+    });
+    expect(await screen.findByText('ScriptSure prescriptions')).toBeInTheDocument();
   });
 });

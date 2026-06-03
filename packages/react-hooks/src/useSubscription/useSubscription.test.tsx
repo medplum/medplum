@@ -139,7 +139,7 @@ describe('useSubscription()', () => {
     const { rerender } = setup(<RenderToggleComponent render={true} />);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    const emitter = medplum.getSubscriptionManager().getEmitter('Communication') as SubscriptionEmitter;
+    const emitter = medplum.getSubscriptionManager().getEmitter('Communication') as typeof SubscriptionEmitter;
     expect(emitter).toBeInstanceOf(SubscriptionEmitter);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
@@ -528,6 +528,30 @@ describe('useSubscription()', () => {
     expect(lastFromCb4?.resourceType).toEqual('Bundle');
     expect(lastFromCb4?.type).toEqual('history');
     expect(lastFromCb4?.id).toEqual(id4);
+  });
+
+  test('Is a no-op when unauthenticated', async () => {
+    const profile = medplum.getProfile();
+    const getProfileSpy = vi.spyOn(medplum, 'getProfile').mockReturnValue(undefined);
+    const subscribeSpy = vi.spyOn(medplum, 'subscribeToCriteria');
+
+    setup(<TestComponent criteria="Communication" />);
+
+    // No subscription should be created while unauthenticated
+    expect(subscribeSpy).not.toHaveBeenCalled();
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+
+    // Once authenticated, the hook should subscribe
+    getProfileSpy.mockReturnValue(profile);
+    act(() => {
+      medplum.dispatchEvent({ type: 'change' });
+    });
+
+    expect(subscribeSpy).toHaveBeenCalledWith('Communication', undefined);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
+    getProfileSpy.mockRestore();
+    subscribeSpy.mockRestore();
   });
 
   test('WebSocket disconnects and reconnects', async () => {
