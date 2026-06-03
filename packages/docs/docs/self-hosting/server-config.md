@@ -324,7 +324,7 @@ Optional email provider setting. Can be one of: `'none'`, `'awsses'`, `'smtp'`.
 
 ### allowProjectSmtp
 
-Optional flag to allow projects to send email through their own SMTP relay, configured via `Project.secret` entries. See [Project SMTP](/docs/self-hosting/project-settings#project-smtp) for more details. Set to `false` to force all emails through the server-wide email provider.
+Optional flag to allow projects to send email through their own SMTP relay, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for more details. Set to `false` to force all emails through the server-wide email provider.
 
 **Default:** `true`
 
