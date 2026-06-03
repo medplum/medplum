@@ -17,37 +17,34 @@ function CodeSnippetCard(): JSX.Element {
       </div>
       <pre className={styles.codeBody}>
         {/* prettier-ignore */}
-        <span className={styles.cKeyword}>import</span>{' {'}{' '}
-        <span className={styles.cClass}>MedplumClient</span>
+        <span className={styles.cKeyword}>import</span>
+        {' {'} <span className={styles.cClass}>MedplumClient</span>
         {' }'} <span className={styles.cKeyword}>from</span>{' '}
         <span className={styles.cString}>&apos;@medplum/core&apos;</span>;{'\n'}
         {'\n'}
         <span className={styles.cKeyword}>const</span> medplum {'= '}
-        <span className={styles.cKeyword}>new</span>{' '}
-        <span className={styles.cClass}>MedplumClient</span>();{'\n'}
+        <span className={styles.cKeyword}>new</span> <span className={styles.cClass}>MedplumClient</span>();{'\n'}
         {'\n'}
         <span className={styles.cKeyword}>const</span> patient {'= '}
         <span className={styles.cKeyword}>await</span> medplum.
-        <span className={styles.cMethod}>searchOne</span>(
-        <span className={styles.cString}>&apos;Patient&apos;</span>, {'{'}
+        <span className={styles.cMethod}>searchOne</span>(<span className={styles.cString}>&apos;Patient&apos;</span>,{' '}
+        {'{'}
         {'\n'}
         {'  '}identifier: <span className={styles.cString}>&apos;mrn-44218&apos;</span>,{'\n'}
         {'}'});{'\n'}
         {'\n'}
         <span className={styles.cKeyword}>await</span> medplum.
-        <span className={styles.cMethod}>createResource</span>({'({'}{'\n'}
+        <span className={styles.cMethod}>createResource</span>({'({'}
+        {'\n'}
         {'  '}resourceType: <span className={styles.cString}>&apos;Observation&apos;</span>,{'\n'}
         {'  '}subject: {'{ '}reference: <span className={styles.cString}>`Patient/${'{'}</span>
-        patient.id<span className={styles.cString}>{'}'}`</span>{' }'},
-        {'\n'}
+        patient.id<span className={styles.cString}>{'}'}`</span>
+        {' }'},{'\n'}
         {'  '}code: {'{ '}text: <span className={styles.cString}>&apos;Systolic BP&apos;</span>
-        {' }'},
-        {'\n'}
-        {'  '}valueQuantity: {'{ '}value:{' '}
-        <span className={styles.cNumber}>120</span>, unit:{' '}
+        {' }'},{'\n'}
+        {'  '}valueQuantity: {'{ '}value: <span className={styles.cNumber}>120</span>, unit:{' '}
         <span className={styles.cString}>&apos;mmHg&apos;</span>
-        {' }'},
-        {'\n'}
+        {' }'},{'\n'}
         {'}'});
       </pre>
     </div>
