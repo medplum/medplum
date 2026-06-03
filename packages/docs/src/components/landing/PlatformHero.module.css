@@ -1,0 +1,374 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: 'Poppins', system-ui, sans-serif;
+  background: #fff;
+  padding: 72px 0 80px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 64px;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.headline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 60px;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  margin: 0 0 24px;
+  color: #212529;
+}
+
+.lead {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 19px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0;
+  max-width: 540px;
+}
+
+.cta {
+  margin-top: 28px;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 26px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: var(--oc-grape-8);
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: background 120ms ease;
+}
+
+.primaryButton:hover {
+  background: var(--oc-grape-9);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ---- layered hero stack ---- */
+
+.stack {
+  position: relative;
+  min-height: 400px;
+}
+
+.glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(ellipse at 60% 55%, rgba(156, 54, 181, 0.1), transparent 65%);
+  pointer-events: none;
+}
+
+.codeEditorWrapper {
+  position: absolute;
+  inset: 0;
+  padding-right: 72px;
+  padding-bottom: 68px;
+}
+
+.patientCardWrapper {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 332px;
+}
+
+/* ---- code editor card ---- */
+
+.codeCard {
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 18px 28px -10px rgba(0, 0, 0, 0.18);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.codeTitleBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #343a40;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dotRed {
+  background: #ff6b6b;
+}
+
+.dotYellow {
+  background: #fcc419;
+}
+
+.dotGreen {
+  background: #51cf66;
+}
+
+.codeFilename {
+  margin-left: 10px;
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 12px;
+  color: #adb5bd;
+}
+
+.codeBody {
+  margin: 0;
+  padding: 14px 18px;
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #dee2e6;
+  overflow: auto;
+  white-space: pre;
+  flex: 1;
+  background: transparent;
+}
+
+.cImport { color: #e599f7; }
+.cKeyword { color: #5c7cfa; }
+.cClass { color: #fcc419; }
+.cMethod { color: #74c0fc; }
+.cString { color: #e599f7; }
+.cNumber { color: #fcc419; }
+
+/* ---- patient header card ---- */
+
+.patientCard {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 30px 50px -18px rgba(31, 21, 35, 0.22),
+    0 12px 18px -10px rgba(31, 21, 35, 0.1);
+  min-width: 320px;
+}
+
+.patientHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.patientAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9c36b5, #c8479c);
+  color: #fff;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.patientMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.patientName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #212529;
+  line-height: 1.2;
+}
+
+.patientMrn {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  color: #868e96;
+  margin-top: 3px;
+}
+
+.allergyPill {
+  font-size: 10.5px;
+  font-weight: 600;
+  background: #fff5f5;
+  color: #c92a2a;
+  padding: 4px 9px;
+  border-radius: 9999px;
+  border: 1px solid #ffe3e3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.patientFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f3f5;
+}
+
+.fieldLabel {
+  font-size: 10.5px;
+  color: #868e96;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+.fieldValue {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #212529;
+  margin-top: 2px;
+}
+
+.vitalsBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--oc-grape-0);
+  border-radius: 8px;
+  border: 1px solid var(--oc-grape-1);
+}
+
+.vitalsDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--oc-grape-8);
+  flex-shrink: 0;
+}
+
+.vitalsLabel {
+  font-size: 12px;
+  color: #495057;
+  font-weight: 500;
+}
+
+.vitalsReading {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.vitalsValue {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #212529;
+}
+
+.vitalsMeta {
+  font-size: 11px;
+  color: #868e96;
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .section {
+  background: var(--ifm-background-color);
+}
+
+/* ---- code card inverts to light in dark mode ---- */
+
+[data-theme='dark'] .codeCard {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 18px 28px -10px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .codeTitleBar {
+  border-bottom-color: #e9ecef;
+}
+
+[data-theme='dark'] .codeFilename {
+  color: #868e96;
+}
+
+[data-theme='dark'] .codeBody {
+  color: #343a40;
+}
+
+[data-theme='dark'] .cImport { color: #7048e8; }
+[data-theme='dark'] .cKeyword { color: #1971c2; }
+[data-theme='dark'] .cClass  { color: #e67700; }
+[data-theme='dark'] .cMethod { color: #1864ab; }
+[data-theme='dark'] .cString { color: #862e9c; }
+[data-theme='dark'] .cNumber { color: #e67700; }
+
+[data-theme='dark'] .headline {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .lead {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .patientCard {
+  background: #1B1B1D;
+  border-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .patientName {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .patientFields {
+  border-top-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .fieldValue {
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .allergyPill {
+  background: rgba(240, 62, 62, 0.15);
+  color: #fa5252;
+  border-color: rgba(240, 62, 62, 0.3);
+}
+
+[data-theme='dark'] .vitalsBar {
+  background: rgba(156, 54, 181, 0.18);
+  border-color: rgba(156, 54, 181, 0.3);
+}
+
+[data-theme='dark'] .vitalsLabel {
+  color: var(--oc-gray-3);
+}
+
+[data-theme='dark'] .vitalsValue {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .vitalsMeta {
+  color: var(--oc-gray-5);
+}

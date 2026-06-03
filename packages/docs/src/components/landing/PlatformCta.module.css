@@ -1,0 +1,122 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: 'Poppins', system-ui, sans-serif;
+  background: var(--oc-grape-0);
+  color: #212529;
+  padding: 96px 0 88px;
+  position: relative;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 120px;
+  background: linear-gradient(to bottom, transparent, var(--oc-grape-0));
+  pointer-events: none;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 64px;
+  text-align: left;
+}
+
+.headline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 1.15;
+  letter-spacing: -0.022em;
+  margin: 0 0 16px;
+  color: #212529;
+  text-wrap: balance;
+}
+
+.body {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0 0 32px;
+  max-width: 640px;
+}
+
+.buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.whiteButton,
+.purpleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.whiteButton {
+  background: #fff;
+  color: var(--oc-gray-8);
+  box-shadow: 0 8px 16px rgba(var(--oc-violet-1-rgb), 0.5), 0 -1px 16px rgba(var(--oc-violet-1-rgb), 0.75);
+}
+
+.whiteButton:hover {
+  background: #fff;
+  color: var(--oc-grape-8);
+  text-decoration: none;
+}
+
+.purpleButton {
+  background: var(--oc-grape-8);
+  color: #fff;
+}
+
+.purpleButton:hover {
+  background: var(--oc-grape-9);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .section {
+  background: var(--oc-gray-9);
+}
+
+[data-theme='dark'] .section::before {
+  background: linear-gradient(to bottom, transparent, var(--oc-gray-9));
+}
+
+[data-theme='dark'] .headline {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .body {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .whiteButton {
+  background: #1b1b1d;
+  color: var(--oc-gray-2);
+  box-shadow: 0 8px 16px rgba(var(--oc-grape-8-rgb), 0.25), 0 -1px 16px rgba(var(--oc-grape-8-rgb), 0.5);
+}
+
+[data-theme='dark'] .whiteButton:hover {
+  background: #1b1b1d;
+  color: var(--oc-grape-5);
+}

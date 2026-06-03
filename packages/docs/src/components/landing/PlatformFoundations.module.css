@@ -1,0 +1,288 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: 'Poppins', system-ui, sans-serif;
+  scroll-margin-top: 80px;
+  padding: 64px 0 96px;
+}
+
+.sectionHeader {
+  margin-bottom: 36px;
+}
+
+.sectionHeadline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  margin: 0 0 16px;
+  color: #212529;
+}
+
+.sectionLead {
+  font-size: 19px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0;
+  max-width: 760px;
+}
+
+/* ---- card grid ---- */
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.primitiveCard {
+  text-align: left;
+  cursor: pointer;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 22px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: none;
+  transform: none;
+  transition: all 160ms ease;
+  min-height: 168px;
+}
+
+.primitiveCardSelected {
+  background: #fff;
+  border-color: var(--oc-grape-8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 12px 24px -12px rgba(156, 54, 181, 0.35);
+  transform: translateY(-4px);
+}
+
+.iconTile {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+  transition: all 160ms ease;
+}
+
+.iconTileSelected {
+  background: var(--oc-grape-0);
+  border-color: var(--oc-grape-1);
+  color: var(--oc-grape-8);
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cardName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 16.5px;
+  color: #212529;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.cardShort {
+  font-size: 13.5px;
+  color: #495057;
+  line-height: 1.5;
+}
+
+/* ---- caret indicator row ---- */
+
+.caretRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  height: 14px;
+  margin-top: 0;
+}
+
+.caretCell {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.caret {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 10px solid var(--oc-grape-8);
+}
+
+/* ---- detail panel ---- */
+
+.detailPanel {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-top: 3px solid var(--oc-grape-8);
+  border-radius: 12px;
+  padding: 24px 28px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.detailContent {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.detailIconTile {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--oc-grape-0);
+  border: 1px solid var(--oc-grape-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--oc-grape-8);
+}
+
+.detailMeta {
+  min-width: 0;
+}
+
+.detailNameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.detailName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #212529;
+}
+
+.detailId {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 12px;
+  color: var(--oc-grape-8);
+  background: var(--oc-grape-0);
+  padding: 2px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--oc-grape-1);
+}
+
+.detailProtocol {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 11px;
+  color: #868e96;
+}
+
+.detailBody {
+  font-size: 14.5px;
+  color: #495057;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 720px;
+}
+
+/* ---- prev/next ---- */
+
+.navButtons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.navButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+  font-size: 16px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.navButton:hover {
+  background: #f8f9fa;
+  border-color: #ced4da;
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .sectionHeadline {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .sectionLead {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .primitiveCard {
+  background: var(--oc-gray-8);
+  border-color: var(--oc-gray-7);
+}
+
+[data-theme='dark'] .primitiveCardSelected {
+  background: #1B1B1D;
+  border-color: var(--oc-grape-6);
+}
+
+[data-theme='dark'] .iconTile {
+  background: var(--oc-gray-9);
+  border-color: var(--oc-gray-7);
+  color: var(--oc-gray-3);
+}
+
+[data-theme='dark'] .cardName {
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .cardShort {
+  color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .detailPanel {
+  background: #1B1B1D;
+  border-color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .detailName {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .detailBody {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .navButton {
+  background: var(--oc-gray-8);
+  border-color: var(--oc-gray-7);
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .navButton:hover {
+  background: var(--oc-gray-7);
+  border-color: var(--oc-gray-6);
+}
