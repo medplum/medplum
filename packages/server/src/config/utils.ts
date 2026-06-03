@@ -206,10 +206,7 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set([
-  'dataWarehouse.resourceTypes.included',
-  'dataWarehouse.resourceTypes.excluded',
-]);
+const arrayKeys = new Set(['dataWarehouse.resourceTypes.included', 'dataWarehouse.resourceTypes.excluded']);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);
