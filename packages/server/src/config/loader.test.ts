@@ -437,11 +437,11 @@ describe('Config', () => {
 
   test('Env config dataWarehouse resourceTypes', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
-    setEnv('MEDPLUM_DATA_WAREHOUSE_RESOURCE_TYPES', '["Patient","Observation"]');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_RESOURCE_TYPES', '{"included":["Patient","Observation"]}');
 
     const config = await loadConfig('env');
 
-    expect(config.dataWarehouse?.resourceTypes).toStrictEqual(['Patient', 'Observation']);
+    expect(config.dataWarehouse?.resourceTypes).toStrictEqual({ included: ['Patient', 'Observation'] });
   });
 
   test('Multi-source: file then env overlay', async () => {

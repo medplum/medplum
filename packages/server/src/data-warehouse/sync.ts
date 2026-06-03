@@ -5,7 +5,7 @@ import { DuckDBInstance } from '@duckdb/node-api';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { MedplumDatabaseConfig } from '../config/types';
+import type { MedplumDatabaseConfig, MedplumDataWarehouseResourceTypesConfig } from '../config/types';
 import type { Expression } from '../fhir/sql';
 import { Conjunction } from '../fhir/sql';
 import { globalLogger } from '../logger';
@@ -22,8 +22,8 @@ export interface SyncOptions {
   namespace?: string;
   /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
   startDate?: string;
-  /** FHIR resource types to sync; omitted means all types (see `warehouseSources`). */
-  resourceTypes?: string[];
+  /** FHIR resource types to include/exclude; omitted means all types (see `warehouseSources`). */
+  resourceTypes?: MedplumDataWarehouseResourceTypesConfig;
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 

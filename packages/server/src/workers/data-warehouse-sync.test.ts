@@ -45,11 +45,11 @@ jest.mock('../data-warehouse/config', () => {
   const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
   return {
     ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn((resourceTypes?: string[]) => {
-      if (!resourceTypes?.length) {
+    getWarehouseSyncPostgresTableNames: jest.fn((resourceTypes?: { included?: string[]; excluded?: string[] }) => {
+      if (!resourceTypes?.included?.length && !resourceTypes?.excluded?.length) {
         return TABLE_NAMES;
       }
-      const selected = new Set(resourceTypes);
+      const selected = new Set(resourceTypes.included ?? []);
       return FILTERABLE_TABLE_NAMES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
     }),
   };
@@ -102,13 +102,13 @@ describe('data-warehouse sync worker', () => {
     await initConfig({
       dataWarehouse: {
         ...enabledDataWarehouse,
-        resourceTypes: ['Patient'],
+        resourceTypes: { included: ['Patient'] },
       },
     });
     const result = getDataWarehouseSyncOptions(config);
 
-    expect(result.resourceTypes).toStrictEqual(['Patient']);
-    expect(getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient']);
+    expect(result.resourceTypes).toStrictEqual({ included: ['Patient'] });
+    expect(getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith({ included: ['Patient'] });
     expect(result.warehouseSources).toHaveLength(1);
     expect(result.warehouseSources[0]).toMatchObject({
       postgresTable: 'Patient_History',

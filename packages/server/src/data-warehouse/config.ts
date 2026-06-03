@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getResourceTypes } from '@medplum/core';
-import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from '../config/types';
+import type {
+  MedplumDatabaseConfig,
+  MedplumDatabaseSslConfig,
+  MedplumDataWarehouseResourceTypesConfig,
+} from '../config/types';
 
 /** Default Postgres `statement_timeout` applied to DuckDB-attached connections (milliseconds). */
 export const DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT = 60_000 * 5; // 5 minutes
@@ -94,18 +98,32 @@ function toHistoryPostgresTableName(resourceType: string): string {
  * matching migrations (`resourceType + '_History'`).
  * Used by the scheduled data warehouse sync worker.
  *
- * @param resourceTypes - Optional FHIR resource types to include. When omitted or empty, all types are included.
+ * @param resourceTypes - Optional include/exclude lists. When both are omitted or empty, all types are included.
  * @returns The list of Postgres table names.
  */
-export function getWarehouseSyncPostgresTableNames(resourceTypes?: string[]): string[] {
-  if (!resourceTypes?.length) {
+export function getWarehouseSyncPostgresTableNames(
+  resourceTypes?: MedplumDataWarehouseResourceTypesConfig
+): string[] {
+  const included = resourceTypes?.included;
+  const excluded = resourceTypes?.excluded;
+  const hasIncluded = !!included?.length;
+  const hasExcluded = !!excluded?.length;
+
+  if (!hasIncluded && !hasExcluded) {
     return getResourceTypes().map(toHistoryPostgresTableName);
   }
 
-  const selectedTypes = new Set(resourceTypes);
-  return getResourceTypes()
-    .filter((resourceType) => selectedTypes.has(resourceType))
-    .map(toHistoryPostgresTableName);
+  let types = getResourceTypes();
+  if (hasIncluded) {
+    const includedSet = new Set(included);
+    types = types.filter((resourceType) => includedSet.has(resourceType));
+  }
+  if (hasExcluded) {
+    const excludedSet = new Set(excluded);
+    types = types.filter((resourceType) => !excludedSet.has(resourceType));
+  }
+
+  return types.map(toHistoryPostgresTableName);
 }
 
 /**

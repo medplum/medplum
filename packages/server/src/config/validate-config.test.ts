@@ -79,7 +79,7 @@ describe('getDataWarehouseConfigErrors', () => {
               cron: '0 * * * *',
               destination: 'local',
               localBasePath: '/tmp/out',
-              resourceTypes: ['Patient', 'NotARealResourceType'],
+              resourceTypes: { included: ['Patient', 'NotARealResourceType'] },
             },
           })
         )
@@ -95,7 +95,7 @@ describe('getDataWarehouseConfigErrors', () => {
               cron: '0 * * * *',
               destination: 'local',
               localBasePath: '/tmp/out',
-              resourceTypes: ['Patient', 'Observation'],
+              resourceTypes: { included: ['Patient', 'Observation'] },
             },
           })
         )

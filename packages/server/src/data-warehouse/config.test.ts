@@ -112,14 +112,33 @@ describe('appendMedplumDatabaseSslSearchParams', () => {
 describe('getWarehouseSyncPostgresTableNames', () => {
   test('returns all history tables when resourceTypes is omitted', () => {
     const all = getWarehouseSyncPostgresTableNames();
-    const filtered = getWarehouseSyncPostgresTableNames(['Patient', 'Observation']);
+    const filtered = getWarehouseSyncPostgresTableNames({ included: ['Patient', 'Observation'] });
 
     expect(all).toStrictEqual(['Patient_History', 'Observation_History', 'Account_History']);
     expect(filtered).toStrictEqual(['Patient_History', 'Observation_History']);
   });
 
-  test('returns all history tables when resourceTypes is empty', () => {
-    expect(getWarehouseSyncPostgresTableNames([])).toStrictEqual(getWarehouseSyncPostgresTableNames());
+  test('returns all history tables when resourceTypes lists are empty', () => {
+    expect(getWarehouseSyncPostgresTableNames({})).toStrictEqual(getWarehouseSyncPostgresTableNames());
+    expect(getWarehouseSyncPostgresTableNames({ included: [], excluded: [] })).toStrictEqual(
+      getWarehouseSyncPostgresTableNames()
+    );
+  });
+
+  test('excludes resource types from sync', () => {
+    expect(getWarehouseSyncPostgresTableNames({ excluded: ['Account'] })).toStrictEqual([
+      'Patient_History',
+      'Observation_History',
+    ]);
+  });
+
+  test('applies excluded after included', () => {
+    expect(
+      getWarehouseSyncPostgresTableNames({
+        included: ['Patient', 'Observation', 'Account'],
+        excluded: ['Account'],
+      })
+    ).toStrictEqual(['Patient_History', 'Observation_History']);
   });
 });
 

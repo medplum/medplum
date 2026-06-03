@@ -5,7 +5,16 @@ import type { ILogger } from '@medplum/core';
 import isISO8601 from 'validator/lib/isISO8601.js';
 import { getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
 import { globalLogger } from '../logger';
-import type { MedplumServerConfig } from './types';
+import type { MedplumDataWarehouseResourceTypesConfig, MedplumServerConfig } from './types';
+
+function getConfiguredDataWarehouseResourceTypes(
+  resourceTypes?: MedplumDataWarehouseResourceTypesConfig
+): string[] {
+  if (!resourceTypes) {
+    return [];
+  }
+  return [...(resourceTypes.included ?? []), ...(resourceTypes.excluded ?? [])];
+}
 
 /**
  * Returns configuration errors for data warehouse sync when `dataWarehouse.enabled` is true.
@@ -45,10 +54,11 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
   }
 
-  if (dw.resourceTypes?.length) {
+  const configuredResourceTypes = getConfiguredDataWarehouseResourceTypes(dw.resourceTypes);
+  if (configuredResourceTypes.length > 0) {
     const knownTableNames = new Set(getWarehouseSyncPostgresTableNames());
     if (knownTableNames.size > 0) {
-      const unknownResourceTypes = dw.resourceTypes.filter(
+      const unknownResourceTypes = configuredResourceTypes.filter(
         (resourceType) => !knownTableNames.has(`${resourceType}_History`)
       );
       if (unknownResourceTypes.length > 0) {
