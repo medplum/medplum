@@ -29,7 +29,13 @@ When project SMTP is active, the from address is resolved as follows. If the cal
 
 ## Failure behavior
 
-If `smtpHost` is set but any required entry is missing or invalid, email sending for the project fails with an error rather than silently falling back to the server transport. This prevents system emails from being sent through an unintended transport with the wrong sender domain. Make sure all four required entries are present and valid before relying on project SMTP.
+If `smtpHost` is set but any required entry is missing or invalid, email sending for the project fails with an error rather than silently falling back to the server transport. This prevents system emails from being sent through an unintended transport with the wrong sender domain.
+
+:::warning
+
+A misconfigured project SMTP setup blocks **all** project-scoped emails, including password reset and email verification, until the secrets are corrected. Users who request a password reset during that window will not receive an email. After adding or changing the secrets, verify the configuration with a test send via the [`sendEmail`](/docs/sdk/core.medplumclient.sendemail) API before relying on it.
+
+:::
 
 ## Self-hosting
 

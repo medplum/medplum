@@ -40,7 +40,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options, project
   globalLogger.info('Sending email', { to: options.to, subject: options.subject, projectId: project?.id });
 
   if (projectSmtp) {
-    await sendEmailViaSmtp(projectSmtp, options, project);
+    await sendEmailViaSmtp(projectSmtp, options, project?.id);
   } else if (config.smtp) {
     await sendEmailViaSmtp(config.smtp, options);
   } else if (config.emailProvider === 'awsses') {
@@ -93,17 +93,13 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
  * Sends an email via SMTP.
  * @param smtpConfig - The SMTP configuration.
  * @param options - The nodemailer options.
- * @param project - Optional project when using project-level SMTP configuration.
+ * @param projectId - Optional project ID when using project-level SMTP configuration.
  */
-async function sendEmailViaSmtp(
-  smtpConfig: MedplumSmtpConfig,
-  options: Mail.Options,
-  project?: WithId<Project>
-): Promise<void> {
+async function sendEmailViaSmtp(smtpConfig: MedplumSmtpConfig, options: Mail.Options, projectId?: string): Promise<void> {
   const transport = createTransport({
     host: smtpConfig.host,
     port: smtpConfig.port,
-    secure: smtpConfig.secure ?? smtpConfig.port === 465,
+    secure: smtpConfig.secure,
     auth: {
       user: smtpConfig.username,
       pass: smtpConfig.password,
@@ -112,9 +108,9 @@ async function sendEmailViaSmtp(
   try {
     await transport.sendMail(options);
   } catch (err) {
-    if (project) {
+    if (projectId) {
       globalLogger.error('Project SMTP send failed', {
-        projectId: project.id,
+        projectId,
         host: smtpConfig.host,
         port: smtpConfig.port,
         err: normalizeErrorString(err),

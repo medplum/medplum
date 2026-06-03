@@ -81,6 +81,7 @@ export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpC
     }
     getLogger().warn('Email from address is not an approved sender', {
       from: fromAddress,
+      approvedSenders: approvedSenderEmails,
       usingProjectSmtp: Boolean(projectSmtp),
     });
   }
