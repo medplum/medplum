@@ -53,6 +53,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [displayTranscript, setDisplayTranscript] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   // Bumped only when the AI replaces the response, so QuestionnaireForm remounts
@@ -204,6 +205,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
       setTranscript('');
       onTranscript?.('', '');
       fullTranscriptRef.current = fullTranscriptRef.current ? `${fullTranscriptRef.current} ${pending}` : pending;
+      setDisplayTranscript(fullTranscriptRef.current);
       inFlightRef.current = true;
       try {
         await processTranscript(pending);
@@ -244,7 +246,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     if (viewport) {
       viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
     }
-  }, [transcript]);
+  }, [transcript, displayTranscript]);
 
   const isConnecting = status === 'requesting_microphone' || status === 'connecting' || status === 'connected';
   const isRecording = status === 'listening' || status === 'speech_started' || status === 'speech_stopped';
@@ -368,7 +370,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
               <div className={classes.transcriptWrapper}>
                 <div ref={transcriptViewportRef} className={classes.transcriptArea}>
                   <Text component="pre" className={classes.transcriptText}>
-                    {transcript || TRANSCRIPT_PLACEHOLDER}
+                    {(displayTranscript && transcript ? `${displayTranscript} ${transcript}` : displayTranscript || transcript) || TRANSCRIPT_PLACEHOLDER}
                   </Text>
                 </div>
               </div>
