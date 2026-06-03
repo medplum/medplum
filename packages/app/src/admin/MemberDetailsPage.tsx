@@ -32,8 +32,8 @@ export function MemberDetailsPage(): JSX.Element {
           <Title mt="md">User Details</Title>
           {user?.project ? (
             <>
-              <MedplumLink to={user}>Go to User (change login email)</MedplumLink>
-              <ResourceTable value={profile} ignoreMissingValues />
+              <MedplumLink to={`/User/${user.id}/email`}>Change login email</MedplumLink>
+              <ResourceTable value={user} ignoreMissingValues />
             </>
           ) : (
             <Alert color="yellow">This User is server-scoped and cannot be viewed in this project.</Alert>
