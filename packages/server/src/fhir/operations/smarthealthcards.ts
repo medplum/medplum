@@ -1,24 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
+import { allOk, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
 import type { JWK, KeyLike, ProtectedHeaderParameters } from 'jose';
 import { CompactSign, compactVerify, decodeProtectedHeader, importJWK } from 'jose';
 import { isIP } from 'node:net';
-import { deflateRawSync, inflateRawSync } from 'node:zlib';
+import { promisify } from 'node:util';
+import { deflateRaw as deflateRawCb, inflateRaw as inflateRawCb } from 'node:zlib';
 import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getJwks, getSigningKey } from '../../oauth/keys';
-import { makeOperationDefinition, makeParameters } from './definitions';
+import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
-import { parseInputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const SHC_VC_TYPE = ['https://smarthealth.cards#health-card'];
 const FHIR_VERSION = '4.0.1';
 const SHC_SIGNING_ALG = OAuthSigningAlgorithm.ES256;
+
+// Upper bound on the decompressed size of a SMART Health Card payload. Guards against decompression bombs in
+// attacker-supplied credentials, since the payload is inflated before its signature can be verified.
+const SHC_MAX_DECOMPRESSED_SIZE = 8 * 1024 * 1024;
+
+const deflateRaw = promisify(deflateRawCb);
+const inflateRaw = promisify(inflateRawCb);
 
 interface SmartHealthCardSigningKey {
   privateKey: KeyLike;
@@ -101,37 +109,33 @@ export const verifySmartHealthCardOperation = makeOperationDefinition(
  * @returns FHIR response containing the generated SMART Health Card credential in multiple formats and related metadata.
  */
 export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<FhirResponse> {
-  try {
-    const ctx = getAuthenticatedContext();
-    const patient = await ctx.repo.readResource<Patient>('Patient', req.params.id);
-    const params = parseInputParameters<GenerateSmartHealthCardParams>(generateSmartHealthCardOperation, req);
-    const bundle = await getPatientEverything(ctx.repo, patient, {
-      _count: 1000,
-      _type: params._type
-        ?.split(',')
-        .map((s) => s.trim() as Resource['resourceType'])
-        .filter(Boolean),
-    });
-    const issuer = getConfig().issuer;
-    const { credential, keyId } = await createSmartHealthCardCredential(bundle, issuer, params.exp);
-    const shcUri = encodeSmartHealthCardUri(credential);
-    const file = JSON.stringify(writeSmartHealthCardFile(credential));
-    const qrCodeDataUrl = params.includeQrCode ? await QRCode.toDataURL(shcUri) : undefined;
+  const ctx = getAuthenticatedContext();
+  const patient = await ctx.repo.readResource<Patient>('Patient', req.params.id);
+  const params = parseInputParameters<GenerateSmartHealthCardParams>(generateSmartHealthCardOperation, req);
+  const bundle = await getPatientEverything(ctx.repo, patient, {
+    _count: 1000,
+    _type: params._type
+      ?.split(',')
+      .map((s) => s.trim() as Resource['resourceType'])
+      .filter(Boolean),
+  });
+  const issuer = getConfig().issuer;
+  const { credential, keyId } = await createSmartHealthCardCredential(bundle, issuer, params.exp);
+  const shcUri = encodeSmartHealthCardUri(credential);
+  const file = JSON.stringify(writeSmartHealthCardFile(credential));
+  const qrCodeDataUrl = params.includeQrCode ? await QRCode.toDataURL(shcUri) : undefined;
 
-    return [
-      allOk,
-      makeParameters({
-        credential,
-        shcUri,
-        file,
-        qrCodeDataUrl,
-        issuer,
-        keyId,
-      }),
-    ];
-  } catch (err) {
-    return [badRequest(normalizeErrorString(err))];
-  }
+  return [
+    allOk,
+    buildOutputParameters(generateSmartHealthCardOperation, {
+      credential,
+      shcUri,
+      file,
+      qrCodeDataUrl,
+      issuer,
+      keyId,
+    }),
+  ];
 }
 
 /**
@@ -146,24 +150,24 @@ export async function generateSmartHealthCardHandler(req: FhirRequest): Promise<
 export async function verifySmartHealthCardHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<VerifySmartHealthCardParams>(verifySmartHealthCardOperation, req);
   const credential = readSmartHealthCardCredential(params);
-  const unverifiedPayload = decodeSmartHealthCardPayload(credential);
+  const unverifiedPayload = await decodeSmartHealthCardPayload(credential);
   let issuerTrusted: boolean | undefined = undefined;
   let header: ProtectedHeaderParameters | undefined = undefined;
-  let valid = true;
+  let valid = false;
   let error: string | undefined = undefined;
 
   try {
     ({ issuerTrusted } = await verifySmartHealthCardCredential(credential));
     header = decodeProtectedHeader(credential);
+    valid = true;
   } catch (err) {
     getLogger().warn('SMART Health Card validation failed', { err });
-    valid = false;
     error = normalizeErrorString(err);
   }
 
   return [
     allOk,
-    makeParameters({
+    buildOutputParameters(verifySmartHealthCardOperation, {
       valid,
       issuerTrusted,
       verified: issuerTrusted,
@@ -201,7 +205,7 @@ async function createSmartHealthCardCredential(
       },
     },
   };
-  const compressedPayload = deflateRawSync(Buffer.from(JSON.stringify(payload)));
+  const compressedPayload = await deflateRaw(Buffer.from(JSON.stringify(payload)));
   const credential = await new CompactSign(compressedPayload)
     .setProtectedHeader({ alg: SHC_SIGNING_ALG, kid: key.kid, zip: 'DEF' })
     .sign(key.privateKey);
@@ -217,13 +221,16 @@ async function createSmartHealthCardCredential(
 async function verifySmartHealthCardCredential(
   credential: string
 ): Promise<{ payload: SmartHealthCardJwt; issuerTrusted: boolean }> {
-  const unverifiedPayload = decodeSmartHealthCardPayload(credential);
+  const unverifiedPayload = await decodeSmartHealthCardPayload(credential);
   const { publicKey, issuerTrusted } = await getSmartHealthCardPublicKey(credential, unverifiedPayload.iss);
   const { payload, protectedHeader } = await compactVerify(credential, publicKey);
   if (protectedHeader.alg !== SHC_SIGNING_ALG) {
     throw new Error('Unsupported SMART Health Card signing algorithm');
   }
-  const bytes = protectedHeader.zip === 'DEF' ? inflateRawSync(payload) : payload;
+  const bytes =
+    protectedHeader.zip === 'DEF'
+      ? await inflateRaw(payload, { maxOutputLength: SHC_MAX_DECOMPRESSED_SIZE })
+      : payload;
   const jwt = JSON.parse(Buffer.from(bytes).toString('utf8')) as SmartHealthCardJwt;
   validateSmartHealthCardPayload(jwt, { requireTrustedIssuer: issuerTrusted });
   return { payload: jwt, issuerTrusted };
@@ -366,14 +373,15 @@ function getSmartHealthCardSigningJwk(): JWK {
  * @param credential - Compact JWS credential to decode.
  * @returns Decoded SMART Health Card JWT payload.
  */
-function decodeSmartHealthCardPayload(credential: string): SmartHealthCardJwt {
+async function decodeSmartHealthCardPayload(credential: string): Promise<SmartHealthCardJwt> {
   const [headerPart, payloadPart] = credential.split('.');
   if (!headerPart || !payloadPart) {
     throw new Error('Invalid SMART Health Card credential');
   }
   const header = decodeProtectedHeader(credential);
   const payload = Buffer.from(payloadPart, 'base64url');
-  const bytes = header.zip === 'DEF' ? inflateRawSync(payload) : payload;
+  const bytes =
+    header.zip === 'DEF' ? await inflateRaw(payload, { maxOutputLength: SHC_MAX_DECOMPRESSED_SIZE }) : payload;
   return JSON.parse(Buffer.from(bytes).toString('utf8')) as SmartHealthCardJwt;
 }
 

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, concatUrls, ContentType, isString, normalizeErrorString } from '@medplum/core';
+import { allOk, concatUrls, ContentType, isString, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
@@ -10,9 +10,9 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { makeOperationDefinition, makeParameters } from './definitions';
+import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
-import { parseInputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const SHL_CONTENT_TYPE_FHIR_JSON = 'application/fhir+json';
 const SHL_PASSCODE_BCRYPT_ROUNDS = 10;
@@ -96,49 +96,45 @@ export const resolveSmartHealthLinkOperation = makeOperationDefinition(
 );
 
 export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<FhirResponse> {
-  try {
-    const ctx = getAuthenticatedContext();
-    const patient = await ctx.repo.readResource<Patient>('Patient', req.params.id);
-    const params = parseInputParameters<GenerateSmartHealthLinkParams>(generateSmartHealthLinkOperation, req);
-    const bundle = await getPatientEverything(ctx.repo, patient, {
-      _count: 1000,
-      _type: params._type
-        ?.split(',')
-        .map((s) => s.trim() as Resource['resourceType'])
-        .filter(Boolean),
-    });
-    const key = base64url.encode(randomBytes(32));
-    const id = randomUUID();
-    const manifestUrl = concatUrls(getConfig().baseUrl, `/fhir/R4/.well-known/smart-health-links/${id}/manifest.json`);
-    const payload: SmartHealthLinkPayload = {
-      url: manifestUrl,
-      key,
-      exp: params.exp,
-      flag: params.passcode ? 'P' : undefined,
-      label: params.label,
-      v: 1,
-    };
-    const encryptedBundle = await encryptSmartHealthLinkFile(bundle, key);
-    smartHealthLinkRecords.set(id, {
-      id,
-      projectId: ctx.project.id,
-      patientReference: `Patient/${patient.id}`,
-      payload,
-      passcodeHash: params.passcode ? await hashPasscode(params.passcode) : undefined,
-      files: [
-        {
-          contentType: SHL_CONTENT_TYPE_FHIR_JSON,
-          embedded: encryptedBundle,
-          lastUpdated: new Date().toISOString(),
-        },
-      ],
-    });
-    const shlink = encodeSmartHealthLink(payload);
-    const qrCodeDataUrl = params.includeQrCode ? await QRCode.toDataURL(shlink) : undefined;
-    return [allOk, makeParameters({ shlink, manifestUrl, qrCodeDataUrl, id })];
-  } catch (err) {
-    return [badRequest(normalizeErrorString(err))];
-  }
+  const ctx = getAuthenticatedContext();
+  const patient = await ctx.repo.readResource<Patient>('Patient', req.params.id);
+  const params = parseInputParameters<GenerateSmartHealthLinkParams>(generateSmartHealthLinkOperation, req);
+  const bundle = await getPatientEverything(ctx.repo, patient, {
+    _count: 1000,
+    _type: params._type
+      ?.split(',')
+      .map((s) => s.trim() as Resource['resourceType'])
+      .filter(Boolean),
+  });
+  const key = base64url.encode(randomBytes(32));
+  const id = randomUUID();
+  const manifestUrl = concatUrls(getConfig().baseUrl, `/fhir/R4/.well-known/smart-health-links/${id}/manifest.json`);
+  const payload: SmartHealthLinkPayload = {
+    url: manifestUrl,
+    key,
+    exp: params.exp,
+    flag: params.passcode ? 'P' : undefined,
+    label: params.label,
+    v: 1,
+  };
+  const encryptedBundle = await encryptSmartHealthLinkFile(bundle, key);
+  smartHealthLinkRecords.set(id, {
+    id,
+    projectId: ctx.project.id,
+    patientReference: `Patient/${patient.id}`,
+    payload,
+    passcodeHash: params.passcode ? await hashPasscode(params.passcode) : undefined,
+    files: [
+      {
+        contentType: SHL_CONTENT_TYPE_FHIR_JSON,
+        embedded: encryptedBundle,
+        lastUpdated: new Date().toISOString(),
+      },
+    ],
+  });
+  const shlink = encodeSmartHealthLink(payload);
+  const qrCodeDataUrl = params.includeQrCode ? await QRCode.toDataURL(shlink) : undefined;
+  return [allOk, buildOutputParameters(generateSmartHealthLinkOperation, { shlink, manifestUrl, qrCodeDataUrl, id })];
 }
 
 export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -150,14 +146,14 @@ export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<F
     const result = await resolveGeneratedSmartHealthLink(params.shlink, params.passcode);
     return [
       allOk,
-      makeParameters({
+      buildOutputParameters(resolveSmartHealthLinkOperation, {
         valid: true,
         manifest: JSON.stringify(result.manifest),
         fhirResources: JSON.stringify(result.fhirResources),
       }),
     ];
   } catch (err) {
-    return [allOk, makeParameters({ valid: false, error: normalizeErrorString(err) })];
+    return [allOk, buildOutputParameters(resolveSmartHealthLinkOperation, { valid: false, error: normalizeErrorString(err) })];
   }
 }
 
@@ -245,7 +241,8 @@ function encodeSmartHealthLink(payload: SmartHealthLinkPayload): string {
 }
 
 function parseSmartHealthLink(input: string): SmartHealthLinkPayload {
-  const raw = input.includes('#shlink:/') ? input.substring(input.indexOf('#shlink:/') + 1) : input;
+  const fragmentIndex = input.indexOf('#shlink:/');
+  const raw = fragmentIndex === -1 ? input : input.substring(fragmentIndex + 1);
   if (!raw.startsWith('shlink:/')) {
     throw new Error('Invalid SMART Health Link URI');
   }
