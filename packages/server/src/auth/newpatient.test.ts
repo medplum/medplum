@@ -10,7 +10,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -164,5 +164,69 @@ describe('New patient', () => {
     expect(res12.status).toBe(200);
     expect(res12.body.entry).toHaveLength(1);
     expect(res12.body.entry[0].resource.id).toStrictEqual(res9.body.id);
+  });
+
+  test('Fails when defaultPatientAccessPolicy is removed', async () => {
+    const systemRepo = getGlobalSystemRepo();
+
+    // Register as Christina
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Christina',
+        lastName: 'Smith',
+        email: `christina${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res1.status).toBe(200);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Christina Project',
+    });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res2.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res3.status).toBe(200);
+
+    const projectId = resolveId(res3.body.project) as string;
+
+    // Remove the default patient access policy from the project
+    await withTestContext(() =>
+      systemRepo.patchResource('Project', projectId, [
+        { op: 'remove', path: '/defaultPatientAccessPolicy' },
+      ])
+    );
+
+    // Register a new user in the project
+    const res4 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId,
+        firstName: 'Peggy',
+        lastName: 'Patient',
+        email: `peggy${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res4.status).toBe(200);
+
+    // Patient registration should fail without a default policy
+    const res5 = await request(app).post('/auth/newpatient').type('json').send({
+      login: res4.body.login,
+      projectId,
+    });
+    expect(res5.status).toBe(400);
   });
 });

@@ -143,10 +143,9 @@ export async function createProject(
   });
 
   const accessPolicy = await createDefaultPatientAccessPolicy(systemRepo, project);
-  project = await systemRepo.updateResource<Project>({
-    ...project,
-    defaultPatientAccessPolicy: createReference(accessPolicy),
-  });
+  project = await systemRepo.patchResource<Project>('Project', project.id, [
+    { op: 'add', path: '/defaultPatientAccessPolicy', value: createReference(accessPolicy) },
+  ]);
 
   if (admin) {
     const profile = await createProfile(
@@ -174,27 +173,27 @@ async function createDefaultPatientAccessPolicy(
     compartment: { reference: '%patient' },
     resource: [
       { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
-      { resourceType: 'AllergyIntolerance', criteria: 'AllergyIntolerance?patient=%patient' },
-      { resourceType: 'Appointment', criteria: 'Appointment?actor=%patient' },
-      { resourceType: 'CarePlan', criteria: 'CarePlan?subject=%patient' },
-      { resourceType: 'CareTeam', criteria: 'CareTeam?subject=%patient' },
+      { resourceType: 'AllergyIntolerance', criteria: 'AllergyIntolerance?_compartment=%patient' },
+      { resourceType: 'Appointment', criteria: 'Appointment?_compartment=%patient' },
+      { resourceType: 'CarePlan', criteria: 'CarePlan?_compartment=%patient' },
+      { resourceType: 'CareTeam', criteria: 'CareTeam?_compartment=%patient' },
       { resourceType: 'Communication', criteria: 'Communication?sender=%patient' },
       { resourceType: 'Communication', criteria: 'Communication?recipient=%patient' },
-      { resourceType: 'Condition', criteria: 'Condition?subject=%patient' },
-      { resourceType: 'Coverage', criteria: 'Coverage?beneficiary=%patient' },
-      { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?subject=%patient' },
-      { resourceType: 'DocumentReference', criteria: 'DocumentReference?subject=%patient' },
-      { resourceType: 'Encounter', criteria: 'Encounter?subject=%patient' },
-      { resourceType: 'Goal', criteria: 'Goal?subject=%patient' },
-      { resourceType: 'Immunization', criteria: 'Immunization?patient=%patient' },
-      { resourceType: 'MedicationRequest', criteria: 'MedicationRequest?subject=%patient' },
-      { resourceType: 'MedicationStatement', criteria: 'MedicationStatement?subject=%patient' },
-      { resourceType: 'Observation', criteria: 'Observation?subject=%patient' },
-      { resourceType: 'Procedure', criteria: 'Procedure?subject=%patient' },
-      { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?subject=%patient' },
-      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' },
-      { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?subject=%patient' },
-      { resourceType: 'Task', criteria: 'Task?owner=%patient' },
+      { resourceType: 'Condition', criteria: 'Condition?_compartment=%patient' },
+      { resourceType: 'Coverage', criteria: 'Coverage?_compartment=%patient' },
+      { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?_compartment=%patient' },
+      { resourceType: 'DocumentReference', criteria: 'DocumentReference?_compartment=%patient' },
+      { resourceType: 'Encounter', criteria: 'Encounter?_compartment=%patient' },
+      { resourceType: 'Goal', criteria: 'Goal?_compartment=%patient' },
+      { resourceType: 'Immunization', criteria: 'Immunization?_compartment=%patient' },
+      { resourceType: 'MedicationRequest', criteria: 'MedicationRequest?_compartment=%patient' },
+      { resourceType: 'MedicationStatement', criteria: 'MedicationStatement?_compartment=%patient' },
+      { resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' },
+      { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
+      { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
+      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
+      { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
+      { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
     ],
   });
 }
