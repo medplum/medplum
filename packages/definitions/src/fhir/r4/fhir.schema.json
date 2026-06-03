@@ -61789,7 +61789,7 @@
           "$ref": "#/definitions/string"
         },
         "accessPolicy": {
-          "description": "The access policy for the user within the project memebership.",
+          "description": "The access policy for the user within the project membership.",
           "$ref": "#/definitions/Reference"
         },
         "access": {
@@ -61800,7 +61800,7 @@
           "type": "array"
         },
         "userConfiguration": {
-          "description": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+          "description": "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
           "$ref": "#/definitions/Reference"
         },
         "admin": {
