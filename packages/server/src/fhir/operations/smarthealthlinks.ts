@@ -153,7 +153,10 @@ export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<F
       }),
     ];
   } catch (err) {
-    return [allOk, buildOutputParameters(resolveSmartHealthLinkOperation, { valid: false, error: normalizeErrorString(err) })];
+    return [
+      allOk,
+      buildOutputParameters(resolveSmartHealthLinkOperation, { valid: false, error: normalizeErrorString(err) }),
+    ];
   }
 }
 

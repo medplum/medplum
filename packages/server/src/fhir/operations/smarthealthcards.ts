@@ -228,9 +228,7 @@ async function verifySmartHealthCardCredential(
     throw new Error('Unsupported SMART Health Card signing algorithm');
   }
   const bytes =
-    protectedHeader.zip === 'DEF'
-      ? await inflateRaw(payload, { maxOutputLength: SHC_MAX_DECOMPRESSED_SIZE })
-      : payload;
+    protectedHeader.zip === 'DEF' ? await inflateRaw(payload, { maxOutputLength: SHC_MAX_DECOMPRESSED_SIZE }) : payload;
   const jwt = JSON.parse(Buffer.from(bytes).toString('utf8')) as SmartHealthCardJwt;
   validateSmartHealthCardPayload(jwt, { requireTrustedIssuer: issuerTrusted });
   return { payload: jwt, issuerTrusted };

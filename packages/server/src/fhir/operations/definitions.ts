@@ -74,4 +74,3 @@ function getOperationScopeFlags(
 ): Pick<OperationDefinition, 'system' | 'type' | 'instance'> {
   return operationScopeFlags[scope];
 }
-
