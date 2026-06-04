@@ -267,9 +267,7 @@ describe('AIRealTimeQuestionnaireForm', () => {
 
   test('Includes the AI model parameter when aiModel prop is provided', async () => {
     const { executeBotSpy } = await setup({ aiModel: 'gpt-4o' });
-    executeBotSpy.mockResolvedValue(
-      buildBotResponse({ resourceType: 'QuestionnaireResponse', status: 'in-progress' })
-    );
+    executeBotSpy.mockResolvedValue(buildBotResponse({ resourceType: 'QuestionnaireResponse', status: 'in-progress' }));
 
     await dictate('hello');
 
@@ -303,9 +301,7 @@ describe('AIRealTimeQuestionnaireForm', () => {
 
   test('Stopping dictation calls stop and flushes the pending transcript', async () => {
     const { executeBotSpy } = await setup();
-    executeBotSpy.mockResolvedValue(
-      buildBotResponse({ resourceType: 'QuestionnaireResponse', status: 'in-progress' })
-    );
+    executeBotSpy.mockResolvedValue(buildBotResponse({ resourceType: 'QuestionnaireResponse', status: 'in-progress' }));
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Start Dictation' }));
@@ -348,7 +344,7 @@ describe('AIRealTimeQuestionnaireForm', () => {
     await act(async () => {
       whisper.emitTranscript('still talking');
     });
-    
+
     await act(async () => {
       whisper.setStatus('speech_stopped');
     });
