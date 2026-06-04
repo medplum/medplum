@@ -84,9 +84,7 @@ describe('getDataWarehouseConfigErrors', () => {
             },
           })
         )
-      ).toContain(
-        'dataWarehouse.includeResourceTypes and dataWarehouse.excludeResourceTypes cannot both be set'
-      );
+      ).toContain('dataWarehouse.includeResourceTypes and dataWarehouse.excludeResourceTypes cannot both be set');
     });
 
     test('returns error when resource type filter contains unknown resource types', () => {

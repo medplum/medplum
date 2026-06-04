@@ -54,9 +54,7 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
   }
 
   if (hasDataWarehouseIncludeAndExclude(dw)) {
-    errors.push(
-      'dataWarehouse.includeResourceTypes and dataWarehouse.excludeResourceTypes cannot both be set'
-    );
+    errors.push('dataWarehouse.includeResourceTypes and dataWarehouse.excludeResourceTypes cannot both be set');
   }
 
   const configuredResourceTypes = getConfiguredDataWarehouseResourceTypes(dw);

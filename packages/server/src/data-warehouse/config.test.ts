@@ -114,12 +114,7 @@ describe('getWarehouseSyncPostgresTableNames', () => {
     const all = getWarehouseSyncPostgresTableNames();
     const filtered = getWarehouseSyncPostgresTableNames(['Patient', 'Observation']);
 
-    expect(all).toStrictEqual([
-      'Patient_History',
-      'Observation_History',
-      'Account_History',
-      'AuditEvent_History',
-    ]);
+    expect(all).toStrictEqual(['Patient_History', 'Observation_History', 'Account_History', 'AuditEvent_History']);
     expect(filtered).toStrictEqual(['Patient_History', 'Observation_History']);
   });
 
