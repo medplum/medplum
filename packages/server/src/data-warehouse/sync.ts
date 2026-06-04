@@ -22,7 +22,7 @@ export interface SyncOptions {
   namespace?: string;
   /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
   startDate?: string;
-  /** FHIR resource types to include; omitted means all types (see `warehouseSources`). */
+  /** FHIR resource types to include; omitted means all types. */
   includeResourceTypes?: string[];
   /** FHIR resource types to exclude from sync. */
   excludeResourceTypes?: string[];
