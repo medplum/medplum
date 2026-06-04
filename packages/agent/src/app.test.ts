@@ -2554,7 +2554,9 @@ describe('App', () => {
       // No upgrade should have been spawned for the no-op
       expect(spawnSpy).not.toHaveBeenCalled();
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(`Attempted to upgrade to version ${currentVersion}, but agent is already on that version`)
+        expect.stringContaining(
+          `Attempted to upgrade to version ${currentVersion}, but agent is already on that version`
+        )
       );
 
       // Phase 2: upstream publishes a new release, changing what `latest.json` returns.
