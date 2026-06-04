@@ -1,19 +1,51 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
+import { Button, Divider, Group, Loader, Stack, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, EMPTY, formatHumanName, formatPeriod, isReference, isResource } from '@medplum/core';
-import type { Appointment, Bundle, Coding, Patient, PlanDefinition, Practitioner, Slot } from '@medplum/fhirtypes';
-import { CodingInput, Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
-import { useResource } from '@medplum/react-hooks';
-import { IconAlertSquareRounded, IconFileCheck, IconTrash } from '@tabler/icons-react';
+import {
+  createReference,
+  EMPTY,
+  formatDateTime,
+  formatHumanName,
+  getExtension,
+  getReferenceString,
+  isOk,
+  isReference,
+  isResource,
+} from '@medplum/core';
+import type { Appointment, Bundle, CodeableConcept, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import {
+  CodeableConceptDisplay,
+  Form,
+  MedplumLink,
+  OperationOutcomeAlert,
+  ResourceAvatar,
+  ResourceInput,
+  useMedplum,
+} from '@medplum/react';
+import { useResource, useSearchOne } from '@medplum/react-hooks';
+import { IconFileCheck, IconNotes, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { createEncounter } from '../../utils/encounter';
+import { Link } from 'react-router';
+import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
+import { ServiceTypeReferenceURI } from '../../utils/servicetype';
+import classes from './AppointmentDetails.module.css';
+import { CreateEncounterForm } from './CreateEncounterForm';
+
+// Medplum `serviceType` values may include an extension linking to a
+// HealthcareService; if present, use that as our display name first.
+// Fall back to normal CodeableConcept display otherwise.
+function ServiceTypeDisplay(props: { value: CodeableConcept }): JSX.Element {
+  const { value } = props;
+
+  const ext = getExtension(value, ServiceTypeReferenceURI);
+  if (ext?.valueReference?.display) {
+    return <>{ext.valueReference.display}</>;
+  }
+  return <CodeableConceptDisplay value={value} />;
+}
 
 type UpdateAppointmentFormProps = {
   appointment: WithId<Appointment>;
@@ -69,20 +101,17 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   );
 }
 
-// This component is used when an appointment does not have a related Encounter
-// that we can direct the viewer to. It allows us to show some details for
-// appointments that are not fully configured and offer UI to complete set up.
-//
-// As one example, this can be used after a patient has scheduled an appointment
-// via $find/$hold to set up an Encounter and apply a plan definition to it.
 export function AppointmentDetails(props: {
   appointment: WithId<Appointment>;
   onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
   onSlotUpdate: (slot: WithId<Slot>) => void;
 }): JSX.Element {
+  const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
   const medplum = useMedplum();
-  const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
-  const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
+
+  const [encounter, encounterLoading, encounterOutcome] = useSearchOne('Encounter', {
+    appointment: getReferenceString(appointment),
+  });
 
   // Extract references to a Patient and a Practitioner from `Appointment.participants`; we expect
   // one of each.
@@ -91,55 +120,6 @@ export function AppointmentDetails(props: {
   const practitionerRef = participants.find((r) => isReference<Practitioner>(r, 'Practitioner'));
 
   const patient = useResource(patientRef);
-  const navigate = useNavigate();
-  const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
-
-  const handleSubmit = useCallback(async () => {
-    if (!patient) {
-      showNotification({
-        color: 'yellow',
-        icon: <IconAlertSquareRounded />,
-        title: 'Error',
-        message: 'Patient not loaded',
-      });
-      return;
-    }
-
-    if (!practitionerRef) {
-      showNotification({
-        color: 'yellow',
-        icon: <IconAlertSquareRounded />,
-        title: 'Error',
-        message: 'Appointment has no Practitioner participant',
-      });
-      return;
-    }
-
-    if (!encounterClass || !planDefinition) {
-      showNotification({
-        color: 'yellow',
-        icon: <IconAlertSquareRounded />,
-        title: 'Error',
-        message: 'Please fill out required fields.',
-      });
-      return;
-    }
-
-    try {
-      const encounter = await createEncounter(
-        medplum,
-        encounterClass,
-        patient,
-        planDefinition,
-        props.appointment,
-        practitionerRef
-      );
-
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
-    } catch (err) {
-      showErrorNotification(err);
-    }
-  }, [medplum, patient, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
 
   const cancellable =
     appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
@@ -193,61 +173,70 @@ export function AppointmentDetails(props: {
   }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
 
   return (
-    <Stack gap="md">
-      <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
+    <Stack gap="md" className={classes.AppointmentDetails}>
+      <Divider />
+
       {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
 
       {!!patient && (
-        <>
-          <Group align="center" gap="sm">
-            <MedplumLink to={patient}>
-              <ResourceAvatar value={patient} size={48} radius={48} />
-            </MedplumLink>
-            <MedplumLink to={patient} fw={800} size="lg">
-              {formatHumanName(patient.name?.[0])}
-            </MedplumLink>
-          </Group>
-          <div>
-            <h3>Set Up Encounter</h3>
-            <Form onSubmit={handleSubmit}>
-              <Stack gap="md">
-                <ResourceInput<Practitioner>
-                  name="practitioner"
-                  resourceType="Practitioner"
-                  label="Practitioner"
-                  defaultValue={practitionerRef}
-                  disabled={true}
-                  required={true}
-                />
-
-                <CodingInput
-                  name="class"
-                  label="Encounter Class"
-                  binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
-                  required={true}
-                  onChange={setEncounterClass}
-                  path="Encounter.class"
-                />
-
-                <ResourceInput<PlanDefinition>
-                  name="plandefinition"
-                  resourceType="PlanDefinition"
-                  label="Care template"
-                  onChange={setPlanDefinition}
-                  required={true}
-                />
-
-                <PlanDefinitionSummary planDefinition={planDefinition} />
-
-                <Button fullWidth type="submit" disabled={!planDefinition || !encounterClass}>
-                  Apply
-                </Button>
-              </Stack>
-            </Form>
-          </div>
-        </>
+        <Group align="center" gap="sm">
+          <MedplumLink to={patient}>
+            <ResourceAvatar value={patient} size={48} radius={48} />
+          </MedplumLink>
+          <MedplumLink to={patient} fw={800} size="lg">
+            {formatHumanName(patient.name?.[0])}
+          </MedplumLink>
+        </Group>
       )}
-      <Divider my="md" />
+
+      <Divider />
+
+      <dl className={classes.metadata}>
+        <dt>Appointment Start</dt>
+        <dd>{formatDateTime(props.appointment.start)}</dd>
+
+        <dt>Appointment End</dt>
+        <dd>{formatDateTime(props.appointment.end)}</dd>
+
+        {(props.appointment.serviceType ?? EMPTY).length > 0 && (
+          <>
+            <dt>Service Type</dt>
+            {(props.appointment.serviceType ?? EMPTY).map((serviceType, index) => (
+              <dd key={index}>
+                <ServiceTypeDisplay value={serviceType} />
+              </dd>
+            ))}
+          </>
+        )}
+      </dl>
+
+      <Divider />
+
+      {encounterLoading && (
+        <Group justify="center">
+          <Loader size="sm" />
+        </Group>
+      )}
+      {encounterOutcome && !isOk(encounterOutcome) && (
+        <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
+      )}
+      {patientRef && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
+        <CreateEncounterForm appointment={appointment} patientRef={patientRef} practitionerRef={practitionerRef} />
+      )}
+
+      <Divider />
+
+      {encounter && (
+        <Button
+          component={Link}
+          to={encounterUrl(encounter)}
+          leftSection={<IconNotes size={16} />}
+          variant="outline"
+          color="dark"
+        >
+          View Encounter
+        </Button>
+      )}
       {confirmable && (
         <Button
           loading={confirmLoading}

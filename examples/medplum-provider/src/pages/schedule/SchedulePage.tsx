@@ -167,30 +167,12 @@ export function SchedulePage(): JSX.Element | null {
   // When an appointment is selected, navigate to the detail page
   const handleSelectAppointment = useCallback(
     async (appointment: Appointment) => {
-      if (!isResourceWithId(appointment)) {
-        showErrorNotification("Can't navigate to unsaved appointment");
-        return;
-      }
-      const reference = getReferenceString(appointment);
-
-      try {
-        const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
-
-        if (!encounter) {
-          setAppointmentDetails(appointment);
-          appointmentDetailsHandlers.open();
-          return;
-        }
-
-        const patient = encounter.subject;
-        if (patient?.reference) {
-          await navigate(`/${patient.reference}/Encounter/${encounter.id}`);
-        }
-      } catch (error) {
-        showErrorNotification(error);
+      if (isResourceWithId(appointment)) {
+        setAppointmentDetails(appointment);
+        appointmentDetailsHandlers.open();
       }
     },
-    [medplum, navigate, appointmentDetailsHandlers]
+    [appointmentDetailsHandlers]
   );
 
   const handleAppointmentUpdate = useCallback(
