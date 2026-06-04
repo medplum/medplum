@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type * as MockSocketModule from 'mock-socket';
 import type * as NodeChildProcess from 'node:child_process';
 import type * as NodeFs from 'node:fs';
 import type * as NodeOs from 'node:os';
 import type * as NodeProcess from 'node:process';
-import type * as MockSocketModule from 'mock-socket';
 import type * as WsModule from 'ws';
 
 const mockSocketServers: { stop: (cb?: () => void) => void }[] = [];

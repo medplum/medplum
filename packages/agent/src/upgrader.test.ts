@@ -10,7 +10,6 @@ import { upgraderMain } from './upgrader';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 import { getReleaseBinPath } from './upgrader-utils';
 
-
 describe('Upgrader', () => {
   describe('Unsupported platforms', () => {
     test.each(['darwin', 'linux'])('platform() === %s -- should error', async (_platform) => {

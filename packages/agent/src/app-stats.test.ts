@@ -15,7 +15,7 @@ vi.mock('./constants', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentConstants>();
   return {
     ...actual,
-  RETRY_WAIT_DURATION_MS: 200,
+    RETRY_WAIT_DURATION_MS: 200,
   };
 });
 

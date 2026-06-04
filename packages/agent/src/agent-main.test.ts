@@ -5,8 +5,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { Mock } from 'vitest';
 import { agentMain } from './agent-main';
 import { App } from './app';
-import * as loggerModule from './logger';
 import type * as AgentConstants from './constants';
+import * as loggerModule from './logger';
 import { createMockLogger } from './test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
@@ -109,14 +109,14 @@ describe('Main', () => {
   test('Properties file success', async () => {
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readFileSync).mockReturnValueOnce(
-        [
-          'baseUrl=http://example.com',
-          'clientId=clientId',
-          'clientSecret=clientSecret',
-          'agentId=agentId',
-          'logLevel=DEBUG',
-        ].join('\n')
-      );
+      [
+        'baseUrl=http://example.com',
+        'clientId=clientId',
+        'clientSecret=clientSecret',
+        'agentId=agentId',
+        'logLevel=DEBUG',
+      ].join('\n')
+    );
     const app = await agentMain(['node', 'index.js']);
     expect(app.log.level).toStrictEqual(LogLevel.DEBUG);
     await app.stop();
@@ -235,14 +235,14 @@ describe('Main', () => {
 
     // Mock readFileSync to return properties with DEBUG log level
     vi.mocked(readFileSync).mockReturnValue(
-        [
-          'baseUrl=http://example.com',
-          'clientId=clientId',
-          'clientSecret=clientSecret',
-          'agentId=agentId',
-          'logger.main.logLevel=DEBUG',
-        ].join('\n')
-      );
+      [
+        'baseUrl=http://example.com',
+        'clientId=clientId',
+        'clientSecret=clientSecret',
+        'agentId=agentId',
+        'logger.main.logLevel=DEBUG',
+      ].join('\n')
+    );
 
     // Create a mock logger to capture the config
     let capturedMainLoggerConfig!: loggerModule.AgentLoggerConfig;

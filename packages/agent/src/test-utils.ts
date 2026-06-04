@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger, MedplumClient, WithId } from '@medplum/core';
-import type { Mock } from 'vitest';
 import { LogLevel, TypedEventTarget } from '@medplum/core';
 import type { Endpoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
@@ -9,6 +8,7 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import type { Mock } from 'vitest';
 import type { ExtendedHl7ClientOptions } from './enhanced-hl7-client';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
 import type { Hl7ClientPoolOptions } from './hl7-client-pool';

@@ -36,20 +36,20 @@ import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentByteStreamChannel } from './bytestream';
+import type * as AgentConstants from './constants';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort } from './test-utils';
-import type * as AgentConstants from './constants';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentConstants>();
   return {
     ...actual,
-  RETRY_WAIT_DURATION_MS: 200,
-  // We don't care about how fast the clients release in these tests
-  CLIENT_RELEASE_COUNTDOWN_MS: 0,
+    RETRY_WAIT_DURATION_MS: 200,
+    // We don't care about how fast the clients release in these tests
+    CLIENT_RELEASE_COUNTDOWN_MS: 0,
   };
 });
 
@@ -61,7 +61,6 @@ vi.mock('./pid', () => ({
   isAppRunning: vi.fn(() => false),
   forceKillApp: vi.fn(),
 }));
-
 
 const HL7_ENDPOINT = {
   resourceType: 'Endpoint',
@@ -1934,8 +1933,6 @@ describe('App', () => {
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
-
-      
     });
 
     test('Upgrade -- No version specified', async () => {
@@ -1956,12 +1953,12 @@ describe('App', () => {
       const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
       const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
       const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        });
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2091,12 +2088,12 @@ describe('App', () => {
       const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
       const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
       const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        });
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2298,7 +2295,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
@@ -2398,7 +2394,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
@@ -2422,12 +2417,12 @@ describe('App', () => {
       const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
       const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
       const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        });
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2638,7 +2633,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
@@ -2662,12 +2656,12 @@ describe('App', () => {
       const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
       const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
       const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        });
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2875,7 +2869,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      
       fetchSpy.mockRestore();
       openSyncSpy.mockRestore();
       console.log = originalConsoleLog;
@@ -3529,7 +3522,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      
       fetchSpy.mockRestore();
     });
 

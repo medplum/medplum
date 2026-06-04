@@ -23,10 +23,11 @@ import type { Hl7Connection } from '@medplum/hl7';
 import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
-import type { Mock } from 'vitest';
 import { Server } from 'mock-socket';
 import { randomUUID } from 'node:crypto';
+import type { Mock } from 'vitest';
 import { App } from './app';
+import type * as AgentConstants from './constants';
 import type { AppLevelAckMode } from './hl7';
 import {
   AgentHl7Channel,
@@ -37,7 +38,6 @@ import {
   parseEnhancedMode,
   shouldSendAppLevelAck,
 } from './hl7';
-import type * as AgentConstants from './constants';
 import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
 
 vi.mock('./constants', async (importOriginal) => {

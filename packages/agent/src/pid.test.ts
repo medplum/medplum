@@ -4,8 +4,8 @@ import { sleep } from '@medplum/core';
 import type { PathOrFileDescriptor } from 'node:fs';
 import fs from 'node:fs';
 import { platform, tmpdir } from 'node:os';
-import process from 'node:process';
 import { dirname, join } from 'node:path';
+import process from 'node:process';
 import type { MockInstance } from 'vitest';
 import {
   createPidFile,

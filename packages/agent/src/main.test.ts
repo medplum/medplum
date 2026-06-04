@@ -9,8 +9,8 @@ import * as agentMainFile from './agent-main';
 import { App } from './app';
 import { main } from './main';
 import * as pidFile from './pid';
-import { UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 import * as upgraderFile from './upgrader';
+import { UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 describe('Main', () => {
   beforeEach(() => {
@@ -61,11 +61,13 @@ describe('Main', () => {
     vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
     vi.spyOn(pidFile, 'registerAgentCleanup');
     vi.mocked(existsSync).mockReturnValue(true);
-    const execSyncSpy = vi.mocked(execSync).mockReturnValue(
-      Buffer.from(
-        `SERVICE_NAME: MedplumAgent_${versions[0]}\nSERVICE_NAME: MedplumAgent_${versions[1]}\nSERVICE_NAME: MedplumAgent_${versions[2]}\n`
-      )
-    );
+    const execSyncSpy = vi
+      .mocked(execSync)
+      .mockReturnValue(
+        Buffer.from(
+          `SERVICE_NAME: MedplumAgent_${versions[0]}\nSERVICE_NAME: MedplumAgent_${versions[1]}\nSERVICE_NAME: MedplumAgent_${versions[2]}\n`
+        )
+      );
     vi.mocked(appendFileSync).mockImplementation(() => undefined);
 
     await expect(main(['node', 'main.ts', '--remove-old-services'])).resolves.toBeUndefined();
@@ -79,11 +81,13 @@ describe('Main', () => {
     vi.spyOn(agentMainFile, 'agentMain');
     vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
     vi.mocked(existsSync).mockReturnValue(true);
-    const execSyncSpy = vi.mocked(execSync).mockReturnValue(
-      Buffer.from(
-        `SERVICE_NAME: MedplumAgent_${versions[0]}\nSERVICE_NAME: MedplumAgent_${versions[1]}\nSERVICE_NAME: MedplumAgent_${versions[2]}\n`
-      )
-    );
+    const execSyncSpy = vi
+      .mocked(execSync)
+      .mockReturnValue(
+        Buffer.from(
+          `SERVICE_NAME: MedplumAgent_${versions[0]}\nSERVICE_NAME: MedplumAgent_${versions[1]}\nSERVICE_NAME: MedplumAgent_${versions[2]}\n`
+        )
+      );
     vi.mocked(appendFileSync).mockImplementation(() => undefined);
 
     await expect(main(['node', 'main.ts', '--remove-old-services', '--all'])).resolves.toBeUndefined();
