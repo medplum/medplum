@@ -1,13 +1,89 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
+import type { RenderHookResult } from '@testing-library/react';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { WS } from 'jest-websocket-mock';
 import type { JSX } from 'react';
+import { WS } from 'vitest-websocket-mock';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import type { UseWhisperResult } from './useWhisper';
 import { convertToPCM16, useWhisper } from './useWhisper';
 
+type WhisperHookResult = RenderHookResult<UseWhisperResult, unknown>['result'];
+
+/**
+ * start() opens the socket asynchronously; keep act() open until onopen has flushed.
+ *
+ * @param result - The result of the useWhisper hook.
+ * @param wsServer - The WebSocket server.
+ */
+async function startWhisperAndConnect(result: WhisperHookResult, wsServer: WS): Promise<void> {
+  await act(async () => {
+    await result.current.start();
+    await wsServer.connected;
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+async function completeRealtimeHandshake(result: WhisperHookResult, wsServer: WS): Promise<void> {
+  await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
+  await act(async () => {
+    wsServer.send({ type: 'session.created' });
+  });
+  await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
+  await act(async () => {
+    wsServer.send({ type: 'session.updated' });
+  });
+  await waitFor(() => {
+    expect(result.current.status).toBe('listening');
+  });
+}
+
+async function startListening(result: WhisperHookResult, wsServer: WS): Promise<void> {
+  await startWhisperAndConnect(result, wsServer);
+  await completeRealtimeHandshake(result, wsServer);
+}
+
+async function restartListening(result: WhisperHookResult): Promise<void> {
+  await act(async () => {
+    await result.current.start();
+  });
+  await waitFor(() => expect(result.current.status).toBe('listening'));
+}
+
+async function closeWebSocket(wsServer: WS): Promise<void> {
+  await act(async () => {
+    wsServer.close();
+    await wsServer.closed;
+  });
+}
+
 describe('useWhisper', () => {
+  function mockAudioContext(): {
+    processor: {
+      port: { onmessage: ((event: MessageEvent<Float32Array>) => void) | null };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    };
+  } {
+    class MockAudioWorkletNode {
+      port = { onmessage: null as ((event: MessageEvent<Float32Array>) => void) | null };
+      connect = vi.fn();
+      disconnect = vi.fn();
+    }
+    class MockAudioContext {
+      destination = {};
+      audioWorklet = { addModule: vi.fn().mockResolvedValue(undefined) };
+      createMediaStreamSource = vi.fn().mockReturnValue({ connect: vi.fn() });
+      close = vi.fn().mockResolvedValue(undefined);
+    }
+    vi.stubGlobal('AudioContext', MockAudioContext);
+    vi.stubGlobal('AudioWorkletNode', MockAudioWorkletNode);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-worklet');
+    return { processor: new MockAudioWorkletNode() };
+  }
+
   let medplum: MockClient;
 
   beforeEach(() => {
@@ -16,7 +92,7 @@ describe('useWhisper', () => {
 
   afterEach(() => {
     WS.clean();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }): JSX.Element => (
@@ -42,10 +118,11 @@ describe('useWhisper', () => {
   });
 
   test('start() records error when microphone access fails', async () => {
+    const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
     const mediaError = new Error('Permission denied');
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockRejectedValue(mediaError) },
+      value: { getUserMedia: vi.fn().mockRejectedValue(mediaError) },
     });
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
@@ -58,59 +135,35 @@ describe('useWhisper', () => {
       expect(result.current.error).toBe(mediaError);
     });
     expect(result.current.isListening).toBe(false);
+
+    // start() opens the socket before mic acquisition fails; flush any onopen update.
+    await act(async () => {
+      await wsServer.connected;
+    });
   });
 
   test('records transcript end-to-end', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = {
-      port: { onmessage: null as ((event: MessageEvent) => void) | null },
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    };
-    const sourceNode = { connect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      audioWorklet: { addModule: jest.fn().mockResolvedValue(undefined) },
-      createMediaStreamSource: jest.fn().mockReturnValue(sourceNode),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    (globalThis as any).AudioContext = jest.fn().mockImplementation(() => audioContext);
-    (globalThis as any).AudioWorkletNode = jest.fn().mockImplementation(() => processor);
-    (globalThis as any).URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-worklet');
+    mockAudioContext();
 
-    const onTranscript = jest.fn();
+    const onTranscript = vi.fn();
     const { result } = renderHook(() => useWhisper({ onTranscript }), { wrapper });
 
+    await startListening(result, wsServer);
+
     await act(async () => {
-      await result.current.start();
-    });
-
-    await wsServer.connected;
-    await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
-
-    act(() => wsServer.send({ type: 'session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
-
-    act(() => wsServer.send({ type: 'session.updated' }));
-
-    await waitFor(() => {
-      expect(result.current.status).toBe('listening');
-      expect(result.current.isListening).toBe(true);
-    });
-
-    act(() =>
       wsServer.send({
         type: 'conversation.item.input_audio_transcription.completed',
         transcript: 'hello world',
-      })
-    );
+      });
+    });
 
     await waitFor(() => {
       expect(result.current.transcripts).toHaveLength(1);
@@ -122,46 +175,29 @@ describe('useWhisper', () => {
   test('handles speech_started and speech_stopped messages', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = { port: { onmessage: null }, connect: jest.fn(), disconnect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      audioWorklet: { addModule: jest.fn().mockResolvedValue(undefined) },
-      createMediaStreamSource: jest.fn().mockReturnValue({ connect: jest.fn() }),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    globalThis.AudioContext = jest.fn().mockImplementation(() => audioContext);
-    (globalThis as any).AudioWorkletNode = jest.fn().mockImplementation(() => processor);
-    (globalThis as any).URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-worklet');
+    mockAudioContext();
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
 
+    await startListening(result, wsServer);
+
     await act(async () => {
-      await result.current.start();
+      wsServer.send({ type: 'input_audio_buffer.speech_started' });
     });
-
-    await wsServer.connected;
-    await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
-    act(() => wsServer.send({ type: 'session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
-    act(() => wsServer.send({ type: 'session.updated' }));
-
-    await waitFor(() => {
-      expect(result.current.status).toBe('listening');
-    });
-
-    act(() => wsServer.send({ type: 'input_audio_buffer.speech_started' }));
     await waitFor(() => {
       expect(result.current.status).toBe('speech_started');
     });
     expect(result.current.isListening).toBe(true);
 
-    act(() => wsServer.send({ type: 'input_audio_buffer.speech_stopped' }));
+    await act(async () => {
+      wsServer.send({ type: 'input_audio_buffer.speech_stopped' });
+    });
     await waitFor(() => {
       expect(result.current.status).toBe('speech_stopped');
     });
@@ -170,25 +206,23 @@ describe('useWhisper', () => {
 
   test('handles ai-realtime:error message from server', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
 
-    await act(async () => {
-      await result.current.start();
-    });
-
-    await wsServer.connected;
+    await startWhisperAndConnect(result, wsServer);
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
 
     const errorMessage = { type: 'ai-realtime:error', message: 'upstream failed' };
-    act(() => wsServer.send(errorMessage));
+    await act(async () => {
+      wsServer.send(errorMessage);
+    });
 
     await waitFor(() => {
       expect(result.current.status).toBe('error');
@@ -200,45 +234,25 @@ describe('useWhisper', () => {
   test('reuses the warm connection across stop/start', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = { port: { onmessage: null }, connect: jest.fn(), disconnect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      audioWorklet: { addModule: jest.fn().mockResolvedValue(undefined) },
-      createMediaStreamSource: jest.fn().mockReturnValue({ connect: jest.fn() }),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    globalThis.AudioContext = jest.fn().mockImplementation(() => audioContext);
-    (globalThis as any).AudioWorkletNode = jest.fn().mockImplementation(() => processor);
-    (globalThis as any).URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-worklet');
+    mockAudioContext();
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
 
     // First dictation pays the full handshake.
-    await act(async () => {
-      await result.current.start();
-    });
-    await wsServer.connected;
-    await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
-    act(() => wsServer.send({ type: 'session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
-    act(() => wsServer.send({ type: 'session.updated' }));
-    await waitFor(() => expect(result.current.status).toBe('listening'));
+    await startListening(result, wsServer);
 
     // Stopping keeps the connection warm and returns to idle (not disconnected).
     act(() => result.current.stop());
     expect(result.current.status).toBe('idle');
 
     // Second dictation reaches listening from the warm session, with no new handshake.
-    await act(async () => {
-      await result.current.start();
-    });
-    await waitFor(() => expect(result.current.status).toBe('listening'));
+    await restartListening(result);
 
     expect(wsServer.messages.filter((m: any) => m?.type === 'ai-realtime:connect')).toHaveLength(1);
   });
@@ -246,42 +260,38 @@ describe('useWhisper', () => {
   test('stop keeps the socket open; unmount closes it', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
     const { result, unmount } = renderHook(() => useWhisper({}), { wrapper });
 
-    await act(async () => {
-      await result.current.start();
-    });
-    await wsServer.connected;
+    await startWhisperAndConnect(result, wsServer);
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
 
     act(() => result.current.stop());
     expect(result.current.status).toBe('idle');
 
-    unmount();
-    await wsServer.closed; // resolves only once the client closes the socket
+    await act(async () => {
+      unmount();
+      await wsServer.closed; // resolves only once the client closes the socket
+    });
   });
 
   test('closes the warm socket after the idle timeout', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
     const { result } = renderHook(() => useWhisper({ idleTimeoutMs: 50 }), { wrapper });
 
-    await act(async () => {
-      await result.current.start();
-    });
-    await wsServer.connected;
+    await startWhisperAndConnect(result, wsServer);
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
 
     // Stopping leaves the socket warm-idle...
@@ -290,51 +300,33 @@ describe('useWhisper', () => {
 
     // ...but the idle timeout fully closes it.
     await waitFor(() => expect(result.current.status).toBe('disconnected'));
-    await wsServer.closed; // resolves only once the client closes the socket
+    await act(async () => {
+      await wsServer.closed; // resolves only once the client closes the socket
+    });
   });
 
   test('start() within the idle window cancels the pending close', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = { port: { onmessage: null }, connect: jest.fn(), disconnect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      audioWorklet: { addModule: jest.fn().mockResolvedValue(undefined) },
-      createMediaStreamSource: jest.fn().mockReturnValue({ connect: jest.fn() }),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    globalThis.AudioContext = jest.fn().mockImplementation(() => audioContext);
-    (globalThis as any).AudioWorkletNode = jest.fn().mockImplementation(() => processor);
-    (globalThis as any).URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-worklet');
+    mockAudioContext();
 
     // Long enough that the restart below completes well within the window.
     const { result } = renderHook(() => useWhisper({ idleTimeoutMs: 1000 }), { wrapper });
 
-    await act(async () => {
-      await result.current.start();
-    });
-    await wsServer.connected;
-    await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
-    act(() => wsServer.send({ type: 'session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
-    act(() => wsServer.send({ type: 'session.updated' }));
-    await waitFor(() => expect(result.current.status).toBe('listening'));
+    await startListening(result, wsServer);
 
     // Stop -> warm idle, which arms the idle-close timer.
     act(() => result.current.stop());
     expect(result.current.status).toBe('idle');
 
     // Restarting before the timeout cancels the pending close and reuses the warm socket.
-    await act(async () => {
-      await result.current.start();
-    });
-    await waitFor(() => expect(result.current.status).toBe('listening'));
+    await restartListening(result);
 
     // The socket was never closed: still active, and only the original handshake ever ran
     // (a fresh socket would have produced a second ai-realtime:connect).
@@ -345,42 +337,24 @@ describe('useWhisper', () => {
   test('a background drop while idle does not get stuck in a connecting state', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: jest.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
-      value: { getUserMedia: jest.fn().mockResolvedValue(stream) },
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const processor = { port: { onmessage: null }, connect: jest.fn(), disconnect: jest.fn() };
-    const audioContext = {
-      destination: {},
-      audioWorklet: { addModule: jest.fn().mockResolvedValue(undefined) },
-      createMediaStreamSource: jest.fn().mockReturnValue({ connect: jest.fn() }),
-      close: jest.fn().mockResolvedValue(undefined),
-    };
-    globalThis.AudioContext = jest.fn().mockImplementation(() => audioContext);
-    (globalThis as any).AudioWorkletNode = jest.fn().mockImplementation(() => processor);
-    (globalThis as any).URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-worklet');
+    mockAudioContext();
 
     const { result } = renderHook(() => useWhisper({}), { wrapper });
 
-    await act(async () => {
-      await result.current.start();
-    });
-    await wsServer.connected;
-    await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
-    act(() => wsServer.send({ type: 'session.created' }));
-    await expect(wsServer).toReceiveMessage(expect.objectContaining({ type: 'session.update' }));
-    act(() => wsServer.send({ type: 'session.updated' }));
-    await waitFor(() => expect(result.current.status).toBe('listening'));
+    await startListening(result, wsServer);
 
     // User submits -> connection goes warm-idle.
     act(() => result.current.stop());
     expect(result.current.status).toBe('idle');
 
     // Server drops the idle connection in the background (e.g. OpenAI session expiry).
-    act(() => wsServer.close());
-    await wsServer.closed;
+    await closeWebSocket(wsServer);
 
     // The mic button must remain usable: status must not be left in a connecting-class state.
     await waitFor(() => {

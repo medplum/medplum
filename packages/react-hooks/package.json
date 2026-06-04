@@ -57,7 +57,7 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "jest"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@medplum/core": "5.1.15",
@@ -71,7 +71,6 @@
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "dotenv": "17.4.2",
-    "jest-websocket-mock": "2.5.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "typescript": "6.0.3"
