@@ -3,7 +3,13 @@ sidebar_label: Defining Availability (Alpha)
 sidebar_position: 10
 ---
 
-# Defining Availability (Alpha)
+# Defining Availability
+
+:::info[Alpha]
+
+Medplum Scheduling APIs are currently in [alpha](/docs/compliance/alpha-beta).
+
+:::
 
 This guide covers how to configure availability using the `SchedulingParameters` extension — at both the actor level (per Schedule) and the service type level (via HealthcareService). It covers scheduling constraints, override behavior, timezone handling, and multi-resource scheduling patterns.
 
