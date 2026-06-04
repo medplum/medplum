@@ -71,19 +71,22 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   const [botAvailability, setBotAvailability] = useState<'loading' | 'available' | 'unavailable'>('loading');
   useEffect(() => {
     let cancelled = false;
-    medplum
-      .searchOne('Bot', { identifier: `${botIdentifier.system ?? ''}|${botIdentifier.value ?? ''}` })
-      .then((bot) => {
+    async function checkBotAvailability(): Promise<void> {
+      try {
+        const bot = await medplum.searchOne('Bot', {
+          identifier: `${botIdentifier.system ?? ''}|${botIdentifier.value ?? ''}`,
+        });
         if (!cancelled) {
           setBotAvailability(bot ? 'available' : 'unavailable');
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error checking bot availability:', err);
         if (!cancelled) {
           setBotAvailability('unavailable');
         }
-      });
+      }
+    }
+    checkBotAvailability().catch(console.error);
     return () => {
       cancelled = true;
     };
