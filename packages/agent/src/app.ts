@@ -1053,8 +1053,13 @@ export class App {
         // Remove PID file
         removePidFile('medplum-agent-upgrader');
       }
-      // Clean up upgrade.json
-      unlinkSync(UPGRADE_MANIFEST_PATH);
+      // Clean up upgrade.json if it exists
+      // The upgrade could be considered "in progress" due to a running upgrader process
+      // even when the manifest was never written (or was already cleaned up),
+      // so we must not assume the file exists here
+      if (existsSync(UPGRADE_MANIFEST_PATH)) {
+        unlinkSync(UPGRADE_MANIFEST_PATH);
+      }
     }
 
     // Pre-check: verify artifact exists for this OS before spawning upgrader
