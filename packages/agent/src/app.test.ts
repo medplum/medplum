@@ -3934,6 +3934,159 @@ describe('App', () => {
     console.log = originalConsoleLog;
   });
 
+  test('Upgrading -- Upgrade in progress (force) with no manifest file, should not throw', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentUpgradeResponse: false,
+      agentError: undefined as AgentError | undefined,
+      disconnectCalled: false,
+    };
+
+    let child!: MockChildProcess;
+
+    const manifestPath = resolve(__dirname, 'upgrade.json');
+    const originalExistsSync = fs.existsSync.bind(fs);
+    // Manifest does not exist on disk; the upgrade is only "in progress" because an upgrader process is running
+    const existsSyncSpy = jest
+      .spyOn(fs, 'existsSync')
+      .mockImplementation((path) => (path === manifestPath ? false : originalExistsSync(path)));
+    // Mimic the real fs behavior: unlinking a non-existent file throws ENOENT.
+    // The fix must guard with existsSync so this is never reached for the missing manifest.
+    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+      throw Object.assign(new Error(`ENOENT: no such file or directory, unlink '${String(path)}'`), {
+        code: 'ENOENT',
+      });
+    });
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    const fetchSpy = mockFetchForUpgrader();
+    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
+    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
+      jest.fn(() => {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      })
+    );
+    // Report the upgrader process as running so the agent considers an upgrade "in progress",
+    // even though the manifest file does not exist (existsSync mocked to false above)
+    const isAppRunningSpy = jest
+      .spyOn(pidModule, 'isAppRunning')
+      .mockImplementation(
+        (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
+      );
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:upgrade:response':
+            if (command.statusCode !== 200) {
+              throw new Error('Invalid status code. Expected 200');
+            }
+            state.gotAgentUpgradeResponse = true;
+            break;
+
+          case 'agent:error':
+            state.agentError = command;
+            break;
+
+          default:
+            throw new Error('Unhandled message type');
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for the WebSocket to reconnect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    const callback = getReferenceString(agent) + '-' + randomUUID();
+
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:upgrade:request',
+        callback,
+        force: true,
+      } satisfies AgentUpgradeRequest)
+    );
+
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!child) {
+      if (shouldThrow) {
+        throw new Error('Timeout while waiting for child to spawn');
+      }
+      await sleep(100);
+    }
+
+    await sleep(100);
+    child.emit('message', { type: 'STARTED' });
+    while (!state.disconnectCalled) {
+      if (shouldThrow) {
+        throw new Error('Timeout while waiting for disconnect');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // The upgrade should proceed without ever attempting to unlink the (non-existent) manifest
+    expect(unlinkSyncSpy).not.toHaveBeenCalledWith(manifestPath);
+    expect(state.agentError).toBeUndefined();
+    expect(spawnSpy).toHaveBeenCalled();
+    expect(child.disconnect).toHaveBeenCalled();
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    for (const spy of [
+      existsSyncSpy,
+      unlinkSyncSpy,
+      createPidFileSpy,
+      openSyncSpy,
+      platformSpy,
+      fetchSpy,
+      writeFileSyncSpy,
+      isAppRunningSpy,
+    ]) {
+      spy.mockReset();
+    }
+    console.log = originalConsoleLog;
+  });
+
   test('App#stop should close all persistent HL7 clients', async () => {
     const originalConsoleLog = console.log;
     console.log = vi.fn();

@@ -21,6 +21,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const context = useMedplumContext();
   const { medplum, profile, navigate } = context;
   const logins = medplum.getLogins();
+  const project = medplum.getProject();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [layoutVersion] = useState((localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1');
   const showLayoutToggle = props.showLayoutVersionToggle ?? true;
@@ -36,7 +37,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         <ResourceAvatar size="xl" radius={100} value={context.profile} />
         <HumanNameDisplay value={context.profile?.name?.[0]} />
         <Text c="dimmed" size="xs">
-          {medplum.getActiveLogin()?.project.display}
+          {project?.name ?? medplum.getActiveLogin()?.project.display}
         </Text>
       </Stack>
       {logins.length > 1 && <Menu.Divider />}
