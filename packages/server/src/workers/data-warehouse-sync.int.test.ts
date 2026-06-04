@@ -130,7 +130,6 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
         tablesCompleted: 1,
         tablesTotal: 1,
         icebergTable,
-        postgresTable: HISTORY_TABLE,
         destination: expectedParquetPath,
         rowsInserted: 1,
       })
