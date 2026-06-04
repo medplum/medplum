@@ -435,13 +435,22 @@ describe('Config', () => {
     expect(config.dataWarehouse?.localBasePath).toStrictEqual('/tmp/warehouse');
   });
 
-  test('Env config dataWarehouse resourceTypes', async () => {
+  test('Env config dataWarehouse includeResourceTypes', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
-    setEnv('MEDPLUM_DATA_WAREHOUSE_RESOURCE_TYPES', '["Patient","Observation"]');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_INCLUDE_RESOURCE_TYPES', 'Patient,Observation');
 
     const config = await loadConfig('env');
 
-    expect(config.dataWarehouse?.resourceTypes).toStrictEqual(['Patient', 'Observation']);
+    expect(config.dataWarehouse?.includeResourceTypes).toStrictEqual(['Patient', 'Observation']);
+  });
+
+  test('Env config dataWarehouse excludeResourceTypes', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_EXCLUDE_RESOURCE_TYPES', 'Binary');
+
+    const config = await loadConfig('env');
+
+    expect(config.dataWarehouse?.excludeResourceTypes).toStrictEqual(['Binary']);
   });
 
   test('Multi-source: file then env overlay', async () => {

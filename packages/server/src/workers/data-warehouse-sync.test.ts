@@ -38,27 +38,37 @@ import {
   refreshDataWarehouseSyncScheduler,
 } from './data-warehouse-sync';
 
-const TABLE_NAMES = ['Patient_history', 'Observation_history'];
-const FILTERABLE_TABLE_NAMES = ['Patient_History', 'Observation_History'];
+const TABLE_NAMES = ['Patient_History', 'Observation_History', 'Account_History', 'Encounter_History'];
+const FILTERED_HISTORY_TABLES = ['Patient_History', 'Observation_History'];
 
 jest.mock('../data-warehouse/config', () => {
   const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
   return {
     ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn((resourceTypes?: string[]) => {
-      if (!resourceTypes?.length) {
+    getWarehouseSyncPostgresTableNames: jest.fn((includeResourceTypes?: string[], _excludeResourceTypes?: string[]) => {
+      if (!includeResourceTypes?.length) {
         return TABLE_NAMES;
       }
-      const selected = new Set(resourceTypes);
-      return FILTERABLE_TABLE_NAMES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
+      const selected = new Set(includeResourceTypes);
+      return FILTERED_HISTORY_TABLES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
     }),
   };
 });
 jest.mock('../data-warehouse/sync', () => ({
   syncData: jest.fn(async () => ({
-    resources: [
-      { icebergTable: 'patient_history', table: 'patient_history.parquet', count: 1 },
-      { icebergTable: 'observation_history', table: 'observation_history.parquet', count: 0 },
+    tables: [
+      {
+        icebergTable: 'patient_history',
+        postgresTable: 'Patient_History',
+        destination: 'patient_history.parquet',
+        rowsInserted: 1,
+      },
+      {
+        icebergTable: 'observation_history',
+        postgresTable: 'Observation_History',
+        destination: 'observation_history.parquet',
+        rowsInserted: 0,
+      },
     ],
   })),
 }));
@@ -96,19 +106,19 @@ describe('data-warehouse sync worker', () => {
     await initConfig();
   });
 
-  test('getDataWarehouseSyncOptions passes resourceTypes and filters warehouse sources', async () => {
+  test('getDataWarehouseSyncOptions passes includeResourceTypes and filters warehouse sources', async () => {
     jest.spyOn(validateConfig, 'getDataWarehouseConfigErrors').mockReturnValue([]);
 
     await initConfig({
       dataWarehouse: {
         ...enabledDataWarehouse,
-        resourceTypes: ['Patient'],
+        includeResourceTypes: ['Patient'],
       },
     });
     const result = getDataWarehouseSyncOptions(config);
 
-    expect(result.resourceTypes).toStrictEqual(['Patient']);
-    expect(getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient']);
+    expect(result.includeResourceTypes).toStrictEqual(['Patient']);
+    expect(getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient'], undefined);
     expect(result.warehouseSources).toHaveLength(1);
     expect(result.warehouseSources[0]).toMatchObject({
       postgresTable: 'Patient_History',
@@ -140,7 +150,7 @@ describe('data-warehouse sync worker', () => {
     });
     expect(result.database).not.toBe(config);
     expect(result.destination.type).toStrictEqual('s3tables');
-    expect(result.warehouseSources).toHaveLength(2);
+    expect(result.warehouseSources).toHaveLength(TABLE_NAMES.length);
   });
 
   test('getDataWarehouseSyncOptions database is usable by buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
@@ -368,15 +378,15 @@ describe('data-warehouse sync worker', () => {
     test('forwards syncData onProgress to job.updateProgress', async () => {
       const updateProgress = jest.fn().mockResolvedValue(undefined);
       mockedSyncData.mockImplementationOnce(async (options) => {
-        await options?.onProgress?.('Completed patient_history', {
-          tableNumber: 1,
-          total: 1,
+        await options?.onProgress?.('Completed patient_history (1 rows, table 1/1)', {
+          tablesCompleted: 1,
+          tablesTotal: 1,
           icebergTable: 'patient_history',
-          postgresTable: 'Patient_history',
-          table: 'patient_history',
-          count: 1,
+          postgresTable: 'Patient_History',
+          destination: 'patient_history',
+          rowsInserted: 1,
         });
-        return { resources: [] };
+        return { tables: [] };
       });
 
       await processDataWarehouseSyncJob(config, {
@@ -386,12 +396,12 @@ describe('data-warehouse sync worker', () => {
       } as any);
 
       expect(updateProgress).toHaveBeenCalledWith({
-        tableNumber: 1,
-        total: 1,
+        tablesCompleted: 1,
+        tablesTotal: 1,
         icebergTable: 'patient_history',
-        postgresTable: 'Patient_history',
-        table: 'patient_history',
-        count: 1,
+        postgresTable: 'Patient_History',
+        destination: 'patient_history',
+        rowsInserted: 1,
       });
     });
   });

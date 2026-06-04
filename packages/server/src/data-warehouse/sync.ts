@@ -22,22 +22,23 @@ export interface SyncOptions {
   namespace?: string;
   /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
   startDate?: string;
-  /** FHIR resource types to sync; omitted means all types (see `warehouseSources`). */
-  resourceTypes?: string[];
+  /** FHIR resource types to include; omitted means all types. */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. */
+  excludeResourceTypes?: string[];
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
-export interface SyncResourceResult {
+export interface SyncTableResult {
   icebergTable: string;
-  table: string;
-  count: number;
+  postgresTable: string;
+  destination: string;
+  rowsInserted: number;
 }
 
 export interface SyncResult {
-  resources: SyncResourceResult[];
+  tables: SyncTableResult[];
 }
-
-export type SyncAction = 'skip-empty' | 'insert';
 
 function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
@@ -65,53 +66,73 @@ async function runWarehouseTableSync(
   connection: WarehouseSyncDuckdbConnection,
   options: SyncOptions,
   namespace: string
-): Promise<SyncResourceResult[]> {
-  const results: SyncResourceResult[] = [];
+): Promise<SyncTableResult[]> {
+  const tables: SyncTableResult[] = [];
 
-  const total = options.warehouseSources.length;
+  const tablesTotal = options.warehouseSources.length;
 
-  globalLogger.info('Starting warehouse sync', {
-    total,
+  globalLogger.info('Starting data warehouse sync', {
+    tablesTotal,
     startDate: options.startDate,
-    resourceTypes: options.resourceTypes,
-    warehouseSources: options.warehouseSources.map((spec) => ({
-      icebergTable: spec.icebergTable,
-    })),
+    includeResourceTypes: options.includeResourceTypes,
+    excludeResourceTypes: options.excludeResourceTypes,
     subsystem: 'data-warehouse-sync',
   });
 
   for (const [index, spec] of options.warehouseSources.entries()) {
     const { icebergTable, postgresTable } = spec;
-    const tableNumber = index + 1;
+    const tablesCompleted = index + 1;
     const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
-    const resultTableName = options.destination.getDestinationName(spec);
+    const destination = options.destination.getDestinationName(spec);
     await options.destination.ensureTargetExists(spec, namespace);
 
-    const count = await options.destination.writeRows(connection, {
+    const rowsInserted = await options.destination.writeRows(connection, {
       tableSpec: spec,
       namespace,
       sourcePredicate,
     });
 
+    globalLogger.debug(`Data warehouse table sync completed for table=${icebergTable}`, {
+      tablesCompleted,
+      tablesTotal,
+      icebergTable,
+      destination,
+      rowsInserted,
+      subsystem: 'data-warehouse-sync',
+    });
+
     if (options.onProgress) {
-      await options.onProgress(`Completed ${icebergTable}`, {
-        tableNumber,
-        total,
-        icebergTable,
-        postgresTable,
-        table: resultTableName,
-        count,
-      });
+      await options.onProgress(
+        `Completed ${icebergTable} (${rowsInserted} rows, table ${tablesCompleted}/${tablesTotal})`,
+        {
+          tablesCompleted,
+          tablesTotal,
+          icebergTable,
+          destination,
+          rowsInserted,
+        }
+      );
     }
 
-    results.push({
+    tables.push({
       icebergTable,
-      table: resultTableName,
-      count,
+      postgresTable,
+      destination,
+      rowsInserted,
     });
   }
 
-  return results;
+  const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
+  globalLogger.info('Data warehouse sync completed', {
+    tablesSynced: tables.length,
+    tablesWithRows: tables.filter((t) => t.rowsInserted > 0).length,
+    tablesEmpty: tables.filter((t) => t.rowsInserted === 0).length,
+    rowsInserted,
+    tables,
+    subsystem: 'data-warehouse-sync',
+  });
+
+  return tables;
 }
 
 export async function syncData(options: SyncOptions): Promise<SyncResult> {
@@ -134,8 +155,8 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
       await connection.run(q);
     }
 
-    const resources = await runWarehouseTableSync(connection, options, namespace);
-    return { resources };
+    const tables = await runWarehouseTableSync(connection, options, namespace);
+    return { tables };
   } finally {
     // close the DuckDB connection
     connection?.closeSync();
