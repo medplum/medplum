@@ -71,14 +71,11 @@ async function runWarehouseTableSync(
 
   const tablesTotal = options.warehouseSources.length;
 
-  globalLogger.info('Starting warehouse sync', {
+  globalLogger.info('Starting data warehouse sync', {
     tablesTotal,
     startDate: options.startDate,
     includeResourceTypes: options.includeResourceTypes,
     excludeResourceTypes: options.excludeResourceTypes,
-    warehouseSources: options.warehouseSources.map((spec) => ({
-      icebergTable: spec.icebergTable,
-    })),
     subsystem: 'data-warehouse-sync',
   });
 
@@ -95,11 +92,10 @@ async function runWarehouseTableSync(
       sourcePredicate,
     });
 
-    globalLogger.info('Warehouse table sync completed', {
+    globalLogger.debug(`Data warehouse table sync completed for table=${icebergTable}`, {
       tablesCompleted,
       tablesTotal,
       icebergTable,
-      postgresTable,
       destination,
       rowsInserted,
       subsystem: 'data-warehouse-sync',
@@ -112,7 +108,6 @@ async function runWarehouseTableSync(
           tablesCompleted,
           tablesTotal,
           icebergTable,
-          postgresTable,
           destination,
           rowsInserted,
         }
@@ -128,7 +123,7 @@ async function runWarehouseTableSync(
   }
 
   const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
-  globalLogger.info('Warehouse sync completed', {
+  globalLogger.info('Data warehouse sync completed', {
     tablesSynced: tables.length,
     tablesWithRows: tables.filter((t) => t.rowsInserted > 0).length,
     tablesEmpty: tables.filter((t) => t.rowsInserted === 0).length,
