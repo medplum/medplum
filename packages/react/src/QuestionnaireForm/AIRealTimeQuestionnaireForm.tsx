@@ -102,16 +102,24 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
 
   const isProjectVoiceEnabled = medplum.getProject()?.features?.includes('ai-realtime') ?? false;
   const isVoiceEnabled = isProjectVoiceEnabled && botAvailability === 'available';
-  const idleLabel: ReactNode =
-    botAvailability === 'unavailable' ? (
+  let idleLabel: ReactNode = DEFAULT_IDLE_LABEL;
+  if (!isProjectVoiceEnabled) {
+    idleLabel = (
+      <>
+        Voice dictation is not enabled for this project
+        <br />
+        Please contact support
+      </>
+    );
+  } else if (botAvailability === 'unavailable') {
+    idleLabel = (
       <>
         Voice dictation unavailable: bot '{botIdentifier.value ?? ''}' is not deployed
         <br />
         Please contact support
       </>
-    ) : (
-      DEFAULT_IDLE_LABEL
     );
+  }
 
   const { start, stop, status } = useWhisper({
     model: 'gpt-4o-transcribe',
@@ -323,19 +331,13 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   }
 
   let statusState: 'finishing' | 'recording' | 'idle' = 'idle';
+  let statusIcon: JSX.Element = <IconMicrophone size={20} />;
   if (isFinishing) {
     statusState = 'finishing';
-  } else if (activeStatusLabel) {
-    statusState = 'recording';
-  }
-
-  let statusIcon: JSX.Element;
-  if (isFinishing) {
     statusIcon = <Loader size={16} color="blue" />;
   } else if (activeStatusLabel) {
+    statusState = 'recording';
     statusIcon = <IconCircleFilled size={16} />;
-  } else {
-    statusIcon = <IconMicrophone size={20} />;
   }
 
   const afterHeader = (

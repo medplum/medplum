@@ -185,9 +185,11 @@ describe('AIRealTimeQuestionnaireForm', () => {
     consoleError.mockRestore();
   });
 
-  test('Disables button when project voice feature is not enabled', async () => {
+  test('Disables button and shows not-enabled message when project voice feature is off', async () => {
     await setup({}, { voiceFeatureEnabled: false });
     expect(screen.getByRole('button', { name: 'Start Dictation' })).toBeDisabled();
+    expect(screen.getByText(/Voice dictation is not enabled for this project/)).toBeInTheDocument();
+    expect(screen.queryByText('Start Dictation to complete this form with your voice')).not.toBeInTheDocument();
   });
 
   test('Starting dictation calls whisper.start and expands the panel', async () => {
