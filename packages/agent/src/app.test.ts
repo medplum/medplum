@@ -3945,37 +3945,35 @@ describe('App', () => {
     let child!: MockChildProcess;
 
     const manifestPath = resolve(__dirname, 'upgrade.json');
-    const originalExistsSync = fs.existsSync.bind(fs);
+    const { existsSync: realExistsSync } = await vi.importActual<typeof NodeFs>('node:fs');
     // Manifest does not exist on disk; the upgrade is only "in progress" because an upgrader process is running
-    const existsSyncSpy = jest
-      .spyOn(fs, 'existsSync')
-      .mockImplementation((path) => (path === manifestPath ? false : originalExistsSync(path)));
+    const existsSyncSpy = vi.mocked(existsSync).mockImplementation((path) =>
+      path === manifestPath ? false : realExistsSync(path)
+    );
     // Mimic the real fs behavior: unlinking a non-existent file throws ENOENT.
     // The fix must guard with existsSync so this is never reached for the missing manifest.
-    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+    const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation((path) => {
       throw Object.assign(new Error(`ENOENT: no such file or directory, unlink '${String(path)}'`), {
         code: 'ENOENT',
       });
     });
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
-    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
-    const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
     const fetchSpy = mockFetchForUpgrader();
-    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-      jest.fn(() => {
-        child = new MockChildProcess();
-        child.onDisconnect = () => {
-          state.disconnectCalled = true;
-        };
-        return child;
-      })
-    );
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
     // Report the upgrader process as running so the agent considers an upgrade "in progress",
     // even though the manifest file does not exist (existsSync mocked to false above)
-    const isAppRunningSpy = jest
+    const isAppRunningSpy = vi
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation(
         (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
