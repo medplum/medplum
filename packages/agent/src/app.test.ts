@@ -3947,9 +3947,9 @@ describe('App', () => {
     const manifestPath = resolve(__dirname, 'upgrade.json');
     const { existsSync: realExistsSync } = await vi.importActual<typeof NodeFs>('node:fs');
     // Manifest does not exist on disk; the upgrade is only "in progress" because an upgrader process is running
-    const existsSyncSpy = vi.mocked(existsSync).mockImplementation((path) =>
-      path === manifestPath ? false : realExistsSync(path)
-    );
+    const existsSyncSpy = vi
+      .mocked(existsSync)
+      .mockImplementation((path) => (path === manifestPath ? false : realExistsSync(path)));
     // Mimic the real fs behavior: unlinking a non-existent file throws ENOENT.
     // The fix must guard with existsSync so this is never reached for the missing manifest.
     const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation((path) => {
