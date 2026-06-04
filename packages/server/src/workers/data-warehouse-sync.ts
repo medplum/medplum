@@ -49,7 +49,8 @@ export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
     subsystem: 'data-warehouse-sync',
     destination: syncConfig.destination,
     cron: syncConfig.cron,
-    resourceTypes: syncConfig.resourceTypes,
+    includeResourceTypes: syncConfig.includeResourceTypes,
+    excludeResourceTypes: syncConfig.excludeResourceTypes,
     startDate: syncConfig.startDate,
   });
 }
@@ -230,7 +231,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     throw new Error(errors.join('; '));
   }
 
-  const { namespace, startDate, resourceTypes } = syncConfig;
+  const { namespace, startDate, includeResourceTypes, excludeResourceTypes } = syncConfig;
 
   // Fallback to the writer database when readonly is not configured.
   // For RDS Proxy, set host and ssl.require on the database config directly.
@@ -241,7 +242,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
       ? new LocalParquetWarehouseDestination(syncConfig.localBasePath as string)
       : new S3TablesWarehouseDestination(config.awsRegion, syncConfig.awsS3TableArn as string);
 
-  const warehouseSources = getWarehouseSyncPostgresTableNames(resourceTypes)
+  const warehouseSources = getWarehouseSyncPostgresTableNames(includeResourceTypes, excludeResourceTypes)
     .map((postgresTable) => ({
       postgresTable,
       icebergTable: toIcebergTableName(postgresTable),
@@ -252,7 +253,8 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     destination,
     namespace,
     startDate,
-    resourceTypes,
+    includeResourceTypes,
+    excludeResourceTypes,
     warehouseSources,
   };
 }

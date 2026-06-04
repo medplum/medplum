@@ -5,13 +5,14 @@ import type { ILogger } from '@medplum/core';
 import isISO8601 from 'validator/lib/isISO8601.js';
 import { getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
 import { globalLogger } from '../logger';
-import type { MedplumDataWarehouseResourceTypesConfig, MedplumServerConfig } from './types';
+import type { MedplumDataWarehouseConfig, MedplumServerConfig } from './types';
 
-function getConfiguredDataWarehouseResourceTypes(resourceTypes?: MedplumDataWarehouseResourceTypesConfig): string[] {
-  if (!resourceTypes) {
-    return [];
-  }
-  return [...(resourceTypes.included ?? []), ...(resourceTypes.excluded ?? [])];
+function getConfiguredDataWarehouseResourceTypes(dw: MedplumDataWarehouseConfig): string[] {
+  return [...(dw.includeResourceTypes ?? []), ...(dw.excludeResourceTypes ?? [])];
+}
+
+function hasDataWarehouseIncludeAndExclude(dw: MedplumDataWarehouseConfig): boolean {
+  return !!dw.includeResourceTypes?.length && !!dw.excludeResourceTypes?.length;
 }
 
 /**
@@ -52,7 +53,13 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
     errors.push('dataWarehouse.startDate must be a valid ISO 8601 timestamp');
   }
 
-  const configuredResourceTypes = getConfiguredDataWarehouseResourceTypes(dw.resourceTypes);
+  if (hasDataWarehouseIncludeAndExclude(dw)) {
+    errors.push(
+      'dataWarehouse.includeResourceTypes and dataWarehouse.excludeResourceTypes cannot both be set'
+    );
+  }
+
+  const configuredResourceTypes = getConfiguredDataWarehouseResourceTypes(dw);
   if (configuredResourceTypes.length > 0) {
     const knownTableNames = new Set(getWarehouseSyncPostgresTableNames());
     if (knownTableNames.size > 0) {
@@ -61,7 +68,7 @@ export function getDataWarehouseConfigErrors(config: MedplumServerConfig): strin
       );
       if (unknownResourceTypes.length > 0) {
         errors.push(
-          `dataWarehouse.resourceTypes contains unknown resource type(s): ${unknownResourceTypes.join(', ')}`
+          `dataWarehouse resource type filter contains unknown resource type(s): ${unknownResourceTypes.join(', ')}`
         );
       }
     }

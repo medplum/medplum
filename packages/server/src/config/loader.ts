@@ -240,11 +240,6 @@ function loadEnvConfig(): MedplumServerConfig {
       key = key.substring('DATA_WAREHOUSE_'.length);
       currConfig = config.dataWarehouse ??= {};
       section = 'dataWarehouse';
-      if (key.startsWith('RESOURCE_TYPES_')) {
-        key = key.substring('RESOURCE_TYPES_'.length);
-        currConfig = config.dataWarehouse.resourceTypes = config.dataWarehouse.resourceTypes ?? {};
-        section = 'dataWarehouse.resourceTypes';
-      }
     }
 
     // Convert key from CAPITAL_CASE to camelCase

@@ -5,7 +5,7 @@ import { DuckDBInstance } from '@duckdb/node-api';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { MedplumDatabaseConfig, MedplumDataWarehouseResourceTypesConfig } from '../config/types';
+import type { MedplumDatabaseConfig } from '../config/types';
 import type { Expression } from '../fhir/sql';
 import { Conjunction } from '../fhir/sql';
 import { globalLogger } from '../logger';
@@ -22,8 +22,10 @@ export interface SyncOptions {
   namespace?: string;
   /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
   startDate?: string;
-  /** FHIR resource types to include/exclude; omitted means all types (see `warehouseSources`). */
-  resourceTypes?: MedplumDataWarehouseResourceTypesConfig;
+  /** FHIR resource types to include; omitted means all types (see `warehouseSources`). */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. */
+  excludeResourceTypes?: string[];
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
@@ -72,7 +74,8 @@ async function runWarehouseTableSync(
   globalLogger.info('Starting warehouse sync', {
     tablesTotal,
     startDate: options.startDate,
-    resourceTypes: options.resourceTypes,
+    includeResourceTypes: options.includeResourceTypes,
+    excludeResourceTypes: options.excludeResourceTypes,
     warehouseSources: options.warehouseSources.map((spec) => ({
       icebergTable: spec.icebergTable,
     })),

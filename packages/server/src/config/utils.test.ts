@@ -74,12 +74,12 @@ describe('utils', () => {
     });
   });
 
-  test('setValue parses dataWarehouse.resourceTypes as JSON object', () => {
+  test('setValue stores dataWarehouse.includeResourceTypes as comma-separated list', () => {
     const config = {};
-    setValue(config, 'dataWarehouse.resourceTypes', '{"included":["Patient"],"excluded":["Binary"]}');
+    setValue(config, 'dataWarehouse.includeResourceTypes', 'Patient,Observation');
     expect(config).toEqual({
       dataWarehouse: {
-        resourceTypes: { included: ['Patient'], excluded: ['Binary'] },
+        includeResourceTypes: ['Patient', 'Observation'],
       },
     });
   });

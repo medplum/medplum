@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getResourceTypes } from '@medplum/core';
-import type {
-  MedplumDatabaseConfig,
-  MedplumDatabaseSslConfig,
-  MedplumDataWarehouseResourceTypesConfig,
-} from '../config/types';
+import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from '../config/types';
 
 /** Default Postgres `statement_timeout` applied to DuckDB-attached connections (milliseconds). */
 export const DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT = 60_000 * 5; // 5 minutes
@@ -98,14 +94,16 @@ function toHistoryPostgresTableName(resourceType: string): string {
  * matching migrations (`resourceType + '_History'`).
  * Used by the scheduled data warehouse sync worker.
  *
- * @param resourceTypes - Optional include/exclude lists. When both are omitted or empty, all types are included.
+ * @param includeResourceTypes - FHIR types to sync. When omitted or empty (and exclude is too), all types are included.
+ * @param excludeResourceTypes - FHIR types to omit from sync. Cannot be combined with a non-empty include list.
  * @returns The list of Postgres table names.
  */
-export function getWarehouseSyncPostgresTableNames(resourceTypes?: MedplumDataWarehouseResourceTypesConfig): string[] {
-  const included = resourceTypes?.included;
-  const excluded = resourceTypes?.excluded;
-  const hasIncluded = !!included?.length;
-  const hasExcluded = !!excluded?.length;
+export function getWarehouseSyncPostgresTableNames(
+  includeResourceTypes?: string[],
+  excludeResourceTypes?: string[]
+): string[] {
+  const hasIncluded = !!includeResourceTypes?.length;
+  const hasExcluded = !!excludeResourceTypes?.length;
 
   if (!hasIncluded && !hasExcluded) {
     return getResourceTypes().map(toHistoryPostgresTableName);
@@ -113,11 +111,10 @@ export function getWarehouseSyncPostgresTableNames(resourceTypes?: MedplumDataWa
 
   let types = getResourceTypes();
   if (hasIncluded) {
-    const includedSet = new Set(included);
+    const includedSet = new Set(includeResourceTypes);
     types = types.filter((resourceType) => includedSet.has(resourceType));
-  }
-  if (hasExcluded) {
-    const excludedSet = new Set(excluded);
+  } else if (hasExcluded) {
+    const excludedSet = new Set(excludeResourceTypes);
     types = types.filter((resourceType) => !excludedSet.has(resourceType));
   }
 

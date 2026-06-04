@@ -8,7 +8,7 @@ jest.mock('@medplum/core', () => {
   const actual = jest.requireActual('@medplum/core');
   return {
     ...actual,
-    getResourceTypes: jest.fn((): ResourceType[] => ['Patient', 'Observation', 'Account']),
+    getResourceTypes: jest.fn((): ResourceType[] => ['Patient', 'Observation', 'Account', 'AuditEvent']),
   };
 });
 
@@ -110,35 +110,38 @@ describe('appendMedplumDatabaseSslSearchParams', () => {
 });
 
 describe('getWarehouseSyncPostgresTableNames', () => {
-  test('returns all history tables when resourceTypes is omitted', () => {
+  test('returns all history tables when include and exclude are omitted', () => {
     const all = getWarehouseSyncPostgresTableNames();
-    const filtered = getWarehouseSyncPostgresTableNames({ included: ['Patient', 'Observation'] });
+    const filtered = getWarehouseSyncPostgresTableNames(['Patient', 'Observation']);
 
-    expect(all).toStrictEqual(['Patient_History', 'Observation_History', 'Account_History']);
+    expect(all).toStrictEqual([
+      'Patient_History',
+      'Observation_History',
+      'Account_History',
+      'AuditEvent_History',
+    ]);
     expect(filtered).toStrictEqual(['Patient_History', 'Observation_History']);
   });
 
-  test('returns all history tables when resourceTypes lists are empty', () => {
-    expect(getWarehouseSyncPostgresTableNames({})).toStrictEqual(getWarehouseSyncPostgresTableNames());
-    expect(getWarehouseSyncPostgresTableNames({ included: [], excluded: [] })).toStrictEqual(
-      getWarehouseSyncPostgresTableNames()
-    );
+  test('returns all history tables when include and exclude lists are empty', () => {
+    expect(getWarehouseSyncPostgresTableNames([], [])).toStrictEqual(getWarehouseSyncPostgresTableNames());
+    expect(getWarehouseSyncPostgresTableNames([], undefined)).toStrictEqual(getWarehouseSyncPostgresTableNames());
   });
 
   test('excludes resource types from sync', () => {
-    expect(getWarehouseSyncPostgresTableNames({ excluded: ['Account'] })).toStrictEqual([
+    expect(getWarehouseSyncPostgresTableNames(undefined, ['Account'])).toStrictEqual([
       'Patient_History',
       'Observation_History',
+      'AuditEvent_History',
     ]);
   });
 
-  test('applies excluded after included', () => {
-    expect(
-      getWarehouseSyncPostgresTableNames({
-        included: ['Patient', 'Observation', 'Account'],
-        excluded: ['Account'],
-      })
-    ).toStrictEqual(['Patient_History', 'Observation_History']);
+  test('includes all resource types except excluded when include is empty', () => {
+    expect(getWarehouseSyncPostgresTableNames([], ['AuditEvent'])).toStrictEqual([
+      'Patient_History',
+      'Observation_History',
+      'Account_History',
+    ]);
   });
 });
 

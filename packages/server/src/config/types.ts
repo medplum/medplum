@@ -326,13 +326,6 @@ export interface MedplumWorkersConfig {
 
 export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
 
-export interface MedplumDataWarehouseResourceTypesConfig {
-  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
-  included?: string[];
-  /** FHIR resource types to exclude from sync. Applied after `included`, if set. */
-  excluded?: string[];
-}
-
 export interface MedplumDataWarehouseConfig {
   /**
    * Enables/disables the scheduled sync worker. Defaults to false.
@@ -355,11 +348,10 @@ export interface MedplumDataWarehouseConfig {
    * History rows with `lastUpdated` before this value are excluded.
    */
   startDate?: string;
-  /**
-   * FHIR resource types to include and/or exclude from sync.
-   * When omitted, all resource history tables are synced.
-   */
-  resourceTypes?: MedplumDataWarehouseResourceTypesConfig;
+  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
+  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {
