@@ -6,7 +6,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Identifier, Parameters, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { useMedplum, useWhisper } from '@medplum/react-hooks';
-import { IconChevronDown, IconChevronUp, IconCircleFilled, IconMicrophone } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronUp, IconCircleFilled, IconMicrophone, IconTrash } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -23,6 +23,10 @@ const botIdentifier: Identifier = {
   system: 'https://www.medplum.com/bots',
   value: 'ai-realtime-questionnaire',
 };
+
+function getStoredTranscript(response: QuestionnaireResponse | undefined): string {
+  return response?.extension?.find((e) => e.url === VOICE_TRANSCRIPT_EXTENSION_URL)?.valueString ?? '';
+}
 
 const DEFAULT_INSTRUCTIONS = (
   <Stack gap="xs">
@@ -47,7 +51,9 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [displayTranscript, setDisplayTranscript] = useState('');
+  const [displayTranscript, setDisplayTranscript] = useState(() =>
+    getStoredTranscript(props.questionnaireResponse as QuestionnaireResponse | undefined)
+  );
   const [expanded, setExpanded] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   // Bumped only when the AI replaces the response, so QuestionnaireForm remounts
@@ -62,7 +68,9 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
   const transcriptViewportRef = useRef<HTMLDivElement>(null);
   // Cumulative transcript across all flushes in this session, written to the
   // QuestionnaireResponse as a custom extension each time the bot returns.
-  const fullTranscriptRef = useRef('');
+  // Seeded from the incoming response so a previously captured transcript is
+  // preserved and appended to rather than overwritten.
+  const fullTranscriptRef = useRef(getStoredTranscript(questionnaireResponse));
 
   useEffect(() => {
     responseRef.current = questionnaireResponse;
@@ -258,6 +266,23 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
     setExpanded((prev) => !prev);
   }, []);
 
+  const handleClearTranscript = useCallback((): void => {
+    inputRef.current = '';
+    fullTranscriptRef.current = '';
+    setTranscript('');
+    setDisplayTranscript('');
+    onTranscript?.('', '');
+    const existing = responseRef.current;
+    if (existing?.extension?.some((e) => e.url === VOICE_TRANSCRIPT_EXTENSION_URL)) {
+      const next: QuestionnaireResponse = {
+        ...existing,
+        extension: existing.extension.filter((e) => e.url !== VOICE_TRANSCRIPT_EXTENSION_URL),
+      };
+      responseRef.current = next;
+      setQuestionnaireResponse(next);
+    }
+  }, [onTranscript]);
+
   useEffect(() => {
     if (isStopping && !isConnecting && !isRecording) {
       setIsStopping(false);
@@ -368,9 +393,21 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
               <div className={classes.instructions}>{voiceInstructions ?? DEFAULT_INSTRUCTIONS}</div>
             </div>
             <div className={classes.panelColumn}>
-              <Text size="sm" fw={700}>
-                Transcript
-              </Text>
+              <Flex align="center" justify="space-between" gap="xs">
+                <Text size="sm" fw={700}>
+                  Transcript
+                </Text>
+                <Button
+                  variant="subtle"
+                  color="red"
+                  size="compact-xs"
+                  leftSection={<IconTrash size={14} />}
+                  disabled={!displayTranscript && !transcript}
+                  onClick={handleClearTranscript}
+                >
+                  Clear
+                </Button>
+              </Flex>
               <div className={classes.transcriptWrapper}>
                 <div ref={transcriptViewportRef} className={classes.transcriptArea}>
                   <Text component="pre" className={classes.transcriptText}>

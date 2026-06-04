@@ -23,6 +23,7 @@ jest.mock('@medplum/react-hooks', () => {
 
 const SILENCE_DEBOUNCE_MS = 3000;
 const BOT_IDENTIFIER_STRING = 'https://www.medplum.com/bots|ai-realtime-questionnaire';
+const VOICE_TRANSCRIPT_EXTENSION_URL = 'https://medplum.com/ai-voice-transcript';
 
 const mockUseWhisper = useWhisper as unknown as jest.Mock;
 
@@ -364,6 +365,78 @@ describe('AIRealTimeQuestionnaireForm', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Expand transcript' }));
     });
     expect(screen.getByText('Custom dictation guidance')).toBeInTheDocument();
+  });
+
+  test('Populates the transcript section from an existing questionnaireResponse', async () => {
+    const questionnaireResponse: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      item: [{ linkId: 'q1', answer: [{ valueString: 'Homer' }] }],
+      extension: [{ url: VOICE_TRANSCRIPT_EXTENSION_URL, valueString: 'previously dictated transcript' }],
+    };
+    await setup({ questionnaireResponse });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand transcript' }));
+    });
+    expect(screen.getByText('previously dictated transcript')).toBeInTheDocument();
+  });
+
+  test('Appends new dictation onto the stored transcript and writes it back', async () => {
+    const questionnaireResponse: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      item: [{ linkId: 'q1', answer: [{ valueString: 'Homer' }] }],
+      extension: [{ url: VOICE_TRANSCRIPT_EXTENSION_URL, valueString: 'earlier words' }],
+    };
+    const { executeBotSpy } = await setup({ questionnaireResponse });
+    executeBotSpy.mockResolvedValue(
+      buildBotResponse({
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [{ linkId: 'q1', answer: [{ valueString: 'Homer' }] }],
+      })
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand transcript' }));
+    });
+    await dictate('new words');
+
+    // The transcript section now shows the stored transcript with the new dictation appended.
+    expect(screen.getByText('earlier words new words')).toBeInTheDocument();
+  });
+
+  // The transcript panel lives inside a Mantine Collapse, whose content stays in a
+  // display:none wrapper in jsdom (the open transition never completes without a real
+  // browser), so getByRole must opt into hidden elements to reach the Clear button.
+  test('Clear button removes the transcript and its extension', async () => {
+    const questionnaireResponse: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      item: [{ linkId: 'q1', answer: [{ valueString: 'Homer' }] }],
+      extension: [{ url: VOICE_TRANSCRIPT_EXTENSION_URL, valueString: 'previously dictated transcript' }],
+    };
+    await setup({ questionnaireResponse });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand transcript' }));
+    });
+    expect(screen.getByText('previously dictated transcript')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Clear', hidden: true }));
+    });
+
+    expect(screen.queryByText('previously dictated transcript')).not.toBeInTheDocument();
+    expect(screen.getByText('Start speaking to see your transcribed words...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear', hidden: true })).toBeDisabled();
+  });
+
+  test('Clear button is disabled when there is no transcript', async () => {
+    await setup();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand transcript' }));
+    });
+    expect(screen.getByRole('button', { name: 'Clear', hidden: true })).toBeDisabled();
   });
 
   test('Forwards onChange edits from the underlying QuestionnaireForm', async () => {
