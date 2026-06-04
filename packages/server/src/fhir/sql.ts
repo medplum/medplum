@@ -1439,3 +1439,7 @@ export function truncateTextColumn(value: string | null | undefined): string | u
   const { written } = truncationEncoder.encodeInto(value, truncationBuffer);
   return truncationDecoder.decode(truncationBuffer.subarray(0, written));
 }
+
+export function isPoolClient(client: PgQueryable): client is PoolClient {
+  return 'release' in client && typeof client.release === 'function';
+}

@@ -125,7 +125,7 @@ import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './sear
 import { lookupTables } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, PgQueryable } from './sql';
-import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
+import { Condition, DeleteQuery, Disjunction, InsertQuery, isPoolClient, SelectQuery } from './sql';
 
 export type { StatementTimeoutOptions } from './repository/repository-connection';
 
@@ -268,7 +268,16 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly ownsConnection: boolean;
+  /**
+   * The active child transaction repository, if any, created by this repo. Used to determine if the
+   * current repository is usable.
+   */
   private transactionChildRepo?: this;
+  /**
+    The PoolClient the current (transaction-scoped) repository is bound to, if any. Used to prevent
+    the repository from being improperly used after its related transaction has ended.
+   */
+  private transactionClient?: PoolClient;
   private closed = false;
 
   /**
@@ -329,12 +338,19 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
       throw new Error('Not in transaction');
     }
 
-    // create the exact class, e.g. SystemRepository, of the current instance.
+    const client = this.connection.getDatabaseClient(DatabaseMode.WRITER);
+    if (!isPoolClient(client)) {
+      throw new Error('Transaction-scoped repository is not pinned to a PoolClient');
+    }
+
+    // use this.constructor to create the exact class, e.g. SystemRepository vs Repository, of the current instance.
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
       connection?: RepositoryConnection
     ) => this;
-    return new RepositoryConstructor(this.context, this.connection) as TransactionRepository & this;
+    const txnScopedRepo = new RepositoryConstructor(this.context, this.connection) as TransactionRepository & this;
+    txnScopedRepo.transactionClient = client;
+    return txnScopedRepo;
   }
 
   get shardId(): string {
@@ -351,19 +367,27 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
+
+    let systemRepo: SystemRepository<TClient>;
     if (this.connection.hasConnection()) {
-      return createSystemRepository<TClient>(this.shardId, this.connection, contextDefaults);
+      systemRepo = createSystemRepository<TClient>(this.shardId, this.connection, contextDefaults);
+    } else {
+      systemRepo = createSystemRepository<TClient>(this.shardId, undefined, contextDefaults);
     }
-    return createSystemRepository<TClient>(this.shardId, undefined, contextDefaults);
+    systemRepo.transactionClient = this.transactionClient;
+    return systemRepo;
   }
 
-  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
+  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository<TClient> {
+    this.assertUsable();
+    let repo: Repository<TClient>;
     if (this.connection.hasConnection()) {
-      this.assertUsable();
-      return new Repository({ ...this.context, ...config }, this.connection);
+      repo = new Repository({ ...this.context, ...config }, this.connection);
     } else {
-      return new Repository({ ...this.context, ...config });
+      repo = new Repository({ ...this.context, ...config });
     }
+    repo.transactionClient = this.transactionClient;
+    return repo;
   }
 
   setMode(mode: RepositoryMode): void {
@@ -2196,7 +2220,13 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    */
   getDatabaseClient(mode: DatabaseMode): TClient {
     this.assertUsable();
-    return this.connection.getDatabaseClient(mode) as unknown as TClient;
+    const client = this.connection.getDatabaseClient(mode);
+
+    if (this.transactionClient && client !== this.transactionClient) {
+      throw new Error('Transaction-scoped repository is no longer pinned to initial PoolClient');
+    }
+
+    return client as TClient;
   }
 
   override async withTransaction<TResult>(
@@ -2204,14 +2234,15 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
+    let txnScopedRepo: (TransactionRepository & this) | undefined;
     try {
       return await this.connection.withTransaction(async () => {
         // create transaction-scoped repository within RepositoryConnection.withTransaction callback
         // since the callback is only invoked after a sticky PoolClient is established to begin the
         // transaction.
-        const transactionRepo = this.createTransactionScopedRepo();
-        this.transactionChildRepo = transactionRepo;
-        return callback(transactionRepo);
+        txnScopedRepo = this.createTransactionScopedRepo();
+        this.transactionChildRepo = txnScopedRepo;
+        return callback(txnScopedRepo);
       }, options);
     } finally {
       this.transactionChildRepo = undefined;

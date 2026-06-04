@@ -1696,6 +1696,75 @@ describe('FHIR Repo', () => {
     ]);
   });
 
+  test('transaction-scoped repo is pinned to the sticky PoolClient', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    let escaped: Repository | undefined;
+    await repo.withTransaction(async (txRepo) => {
+      // Inside the transaction the pinned client is the sticky PoolClient and is returned freely.
+      const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+      expect(client).toBeDefined();
+      expect('release' in client).toBe(true);
+      escaped = txRepo;
+    });
+
+    // After the transaction commits the sticky client is released back to the pool, so the
+    // captured transaction-scoped repo must refuse to hand out a different client.
+    expect(() => (escaped as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
+      'no longer pinned to initial PoolClient'
+    );
+  });
+
+  test('getSystemRepo propagates the transaction-scoped client pin', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    let escapedSystemRepo: Repository | undefined;
+    await repo.withTransaction(async (txRepo) => {
+      const systemRepo = txRepo.getSystemRepo();
+      // The derived system repo shares the same sticky PoolClient.
+      expect(systemRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(txRepo.getDatabaseClient(DatabaseMode.WRITER));
+      escapedSystemRepo = systemRepo;
+    });
+
+    expect(() => (escapedSystemRepo as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
+      'no longer pinned to initial PoolClient'
+    );
+  });
+
+  test('withOverrideConfig propagates the transaction-scoped client pin', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    let escapedOverrideRepo: Repository | undefined;
+    await repo.withTransaction(async (txRepo) => {
+      const overrideRepo = txRepo.withOverrideConfig({ extendedMode: false });
+      // The override repo shares the same sticky PoolClient.
+      expect(overrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(txRepo.getDatabaseClient(DatabaseMode.WRITER));
+      escapedOverrideRepo = overrideRepo;
+    });
+
+    expect(() => (escapedOverrideRepo as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
+      'no longer pinned to initial PoolClient'
+    );
+  });
+
+  test('createTransactionScopedRepo rejects a writer client that is not a PoolClient', async () => {
+    // Borrow a connection whose writer client is Pool-like: it answers queries but has no
+    // release(), so it does not satisfy isPoolClient and cannot be safely pinned.
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const poolLikeClient = { query } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(poolLikeClient, { mode: DatabaseMode.WRITER })
+    );
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('not pinned to a PoolClient');
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   test('withTransactionStateLock serializes concurrent transaction begins', async () => {
     const savepointIssued = Promise.withResolvers<undefined>();
     const allowSavepoint = Promise.withResolvers<undefined>();
