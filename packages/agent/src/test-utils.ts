@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger, MedplumClient, WithId } from '@medplum/core';
+import type { Mock } from 'vitest';
 import { LogLevel, TypedEventTarget } from '@medplum/core';
 import type { Endpoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
@@ -28,7 +29,7 @@ export function createTestWinstonLogger(
   loggerType: LoggerType = LoggerType.MAIN
 ): [WinstonWrapperLogger, () => void] {
   const uniqueId = randomUUID();
-  const testDir = path.join(os.tmpdir(), `jest-test-${uniqueId}`);
+  const testDir = path.join(os.tmpdir(), `vitest-test-${uniqueId}`);
   mkdirSync(testDir, { recursive: true });
 
   const config = {
@@ -44,17 +45,17 @@ export function createTestWinstonLogger(
   return [new WinstonWrapperLogger(config, loggerType), cleanup];
 }
 
-export function createMockLogger(logLevel: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock; clone: jest.Mock } {
+export function createMockLogger(logLevel: LogLevel = LogLevel.INFO): ILogger & { log: Mock; clone: Mock } {
   const logger: Record<string, any> = {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    log: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    log: vi.fn(),
   };
   logger.level = logLevel;
-  logger.clone = jest.fn(() => logger);
-  return logger as ILogger & { log: jest.Mock; clone: jest.Mock };
+  logger.clone = vi.fn(() => logger);
+  return logger as ILogger & { log: Mock; clone: Mock };
 }
 
 /**

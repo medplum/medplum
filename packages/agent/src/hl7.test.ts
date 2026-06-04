@@ -23,6 +23,7 @@ import type { Hl7Connection } from '@medplum/hl7';
 import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
+import type { Mock } from 'vitest';
 import { Server } from 'mock-socket';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
@@ -36,13 +37,18 @@ import {
   parseEnhancedMode,
   shouldSendAppLevelAck,
 } from './hl7';
+import type * as AgentConstants from './constants';
 import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
-  // We don't care about how fast the clients release in these tests
-  CLIENT_RELEASE_COUNTDOWN_MS: 0,
-}));
+vi.mock('./constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentConstants>();
+  return {
+    ...actual,
+    RETRY_WAIT_DURATION_MS: 200,
+    // We don't care about how fast the clients release in these tests
+    CLIENT_RELEASE_COUNTDOWN_MS: 0,
+  };
+});
 
 const medplum = new MockClient();
 const BASE_ENDPOINT: Endpoint = {
@@ -57,7 +63,7 @@ let bot: Bot;
 
 describe('HL7', () => {
   beforeAll(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -70,10 +76,6 @@ describe('HL7', () => {
   beforeEach(() => {
     mockServer = new Server('wss://example.com/ws/agent');
   });
-  afterEach(() => {
-    mockServer.stop();
-  });
-
   test('Send and receive', async () => {
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -159,7 +161,7 @@ describe('HL7', () => {
 
   test('Send and receive -- error', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -247,7 +249,7 @@ describe('HL7', () => {
 
   test('Send and receive -- no callback in response', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -528,7 +530,7 @@ describe('HL7', () => {
 
   test('Invalid messagesPerMin logs warning', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -939,7 +941,7 @@ describe('HL7', () => {
 
   test('keepAlive: Remote closes connection', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const state = {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -1047,7 +1049,7 @@ describe('HL7', () => {
 
   test('keepAlive: Error occurs', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const state = {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -2669,11 +2671,11 @@ describe('AgentHl7Channel application-level ACK gating', () => {
       log: createMockLogger(),
       channelLog: createMockLogger(),
       heartbeatEmitter: {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
       },
-      getAgentConfig: jest.fn(),
+      getAgentConfig: vi.fn(),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -2688,12 +2690,12 @@ describe('AgentHl7Channel application-level ACK gating', () => {
     return channel;
   }
 
-  function attachMockConnection(channel: AgentHl7Channel): jest.Mock {
-    const sendMock = jest.fn();
+  function attachMockConnection(channel: AgentHl7Channel): Mock<() => void> {
+    const sendMock = vi.fn();
     const hl7Connection = {
-      setEncoding: jest.fn(),
-      setEnhancedMode: jest.fn(),
-      setMessagesPerMin: jest.fn(),
+      setEncoding: vi.fn(),
+      setEnhancedMode: vi.fn(),
+      setMessagesPerMin: vi.fn(),
       send: sendMock,
     };
     const connection = {
@@ -2933,21 +2935,21 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
         remoteAddress: '127.0.0.1',
         remotePort: 12345,
       },
-      addEventListener: jest.fn((event: string, listener: (...args: any[]) => void) => {
+      addEventListener: vi.fn((event: string, listener: (...args: any[]) => void) => {
         const listeners = eventListeners.get(event) ?? [];
         listeners.push(listener);
         eventListeners.set(event, listeners);
       }),
-      dispatchEvent: jest.fn((event: Event) => {
+      dispatchEvent: vi.fn((event: Event) => {
         for (const listener of eventListeners.get(event.type) ?? EMPTY) {
           listener(event);
         }
       }),
-      setEncoding: jest.fn(),
-      setEnhancedMode: jest.fn(),
-      setMessagesPerMin: jest.fn(),
-      send: jest.fn(),
-      close: jest.fn(),
+      setEncoding: vi.fn(),
+      setEnhancedMode: vi.fn(),
+      setMessagesPerMin: vi.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     } as unknown as Hl7Connection;
   }
 
@@ -2960,12 +2962,12 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
       log: createMockLogger(),
       channelLog,
       heartbeatEmitter: {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
       },
-      getAgentConfig: jest.fn(),
-      addToWebSocketQueue: jest.fn(),
+      getAgentConfig: vi.fn(),
+      addToWebSocketQueue: vi.fn(),
       agentId: 'test-agent',
     } as unknown as App;
 

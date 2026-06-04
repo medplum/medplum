@@ -9,19 +9,23 @@ import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
+import type * as AgentConstants from './constants';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
+vi.mock('./constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentConstants>();
+  return {
+    ...actual,
   RETRY_WAIT_DURATION_MS: 200,
-}));
+  };
+});
 
-jest.mock('./pid', () => ({
-  createPidFile: jest.fn(),
-  getPidFilePath: jest.fn(() => 'pid/file/path'),
-  waitForPidFile: jest.fn(async () => undefined),
-  removePidFile: jest.fn(),
-  isAppRunning: jest.fn(() => false),
-  forceKillApp: jest.fn(),
+vi.mock('./pid', () => ({
+  createPidFile: vi.fn(),
+  getPidFilePath: vi.fn(() => 'pid/file/path'),
+  waitForPidFile: vi.fn(async () => undefined),
+  removePidFile: vi.fn(),
+  isAppRunning: vi.fn(() => false),
+  forceKillApp: vi.fn(),
 }));
 
 describe('Stats Request', () => {
@@ -42,7 +46,7 @@ describe('Stats Request', () => {
   });
 
   beforeEach(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -196,7 +200,7 @@ describe('Stats Request', () => {
       await sleep(100);
     }
 
-    const getStatsSpy = jest.spyOn(app, 'getStats').mockImplementation(() => {
+    const getStatsSpy = vi.spyOn(app, 'getStats').mockImplementation(() => {
       throw new Error('Something bad happened');
     });
 

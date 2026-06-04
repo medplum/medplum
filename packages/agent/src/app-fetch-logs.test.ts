@@ -9,21 +9,25 @@ import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
+import type * as AgentConstants from './constants';
 import { MAX_LOG_LIMIT } from './constants';
 import { createTestWinstonLogger, generateTestLogs } from './test-utils';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
+vi.mock('./constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentConstants>();
+  return {
+    ...actual,
   RETRY_WAIT_DURATION_MS: 200,
-}));
+  };
+});
 
-jest.mock('./pid', () => ({
-  createPidFile: jest.fn(),
-  getPidFilePath: jest.fn(() => 'pid/file/path'),
-  waitForPidFile: jest.fn(async () => undefined),
-  removePidFile: jest.fn(),
-  isAppRunning: jest.fn(() => false),
-  forceKillApp: jest.fn(),
+vi.mock('./pid', () => ({
+  createPidFile: vi.fn(),
+  getPidFilePath: vi.fn(() => 'pid/file/path'),
+  waitForPidFile: vi.fn(async () => undefined),
+  removePidFile: vi.fn(),
+  isAppRunning: vi.fn(() => false),
+  forceKillApp: vi.fn(),
 }));
 
 describe('Fetch Logs', () => {
@@ -53,7 +57,7 @@ describe('Fetch Logs', () => {
   });
 
   beforeEach(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -490,7 +494,7 @@ describe('Fetch Logs', () => {
     cleanupFns.push(cleanupLogFile);
     generateTestLogs(winstonLogger, 5);
 
-    const fetchLogsSpy = jest.spyOn(winstonLogger, 'fetchLogs').mockImplementation(async () => {
+    const fetchLogsSpy = vi.spyOn(winstonLogger, 'fetchLogs').mockImplementation(async () => {
       throw new Error('Something bad happened');
     });
 

@@ -23,7 +23,7 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "jest --runInBand"
+    "test": "vitest run"
   },
   "dependencies": {
     "@medplum/core": "5.1.15",

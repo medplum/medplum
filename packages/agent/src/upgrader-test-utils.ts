@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { ReleaseManifest } from '@medplum/core';
+import type { MockInstance } from 'vitest';
 
-export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
+export function mockFetchForUpgrader(version?: string): MockInstance<typeof fetch> {
   let count = 0;
 
   const manifest = {
@@ -19,9 +22,9 @@ export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
     ],
   } satisfies ReleaseManifest;
 
-  return jest.spyOn(globalThis, 'fetch').mockImplementation(
-    jest.fn(async () => {
-      return new Promise((resolve) => {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(
+    vi.fn(async (): Promise<Response> => {
+      return new Promise<Response>((resolve) => {
         switch (count) {
           case 0:
             count++;
