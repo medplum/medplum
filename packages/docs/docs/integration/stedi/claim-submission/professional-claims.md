@@ -27,7 +27,16 @@ Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims
 
 ## Resource model
 
-The bot reads the `Claim` you submit and follows references to gather patient, provider, billing, coverage, payer, and encounter data.
+The bot reads the `Claim` you submit and follows references to gather patient, billing provider, rendering/supervising practitioners, coverage, payer, and encounter data.
+
+The claim links its providers directly:
+
+- **`Claim.provider`** references the **billing provider** — an `Organization` for organization billing (the common case), or a `Practitioner` for individual billing.
+- **`Claim.careTeam`** references the **practitioners who delivered care**, disambiguated by `role.coding.code` (system `http://terminology.hl7.org/CodeSystem/claimcareteamrole`):
+  - **`primary`** → the **rendering** provider (the practitioner who performed the service). Required.
+  - **`supervisor`** → the **supervising** provider (e.g. an MD overseeing a coach or nurse practitioner). Optional.
+
+This separates the billing relationship (`Claim.provider`) from the clinical relationship (`Claim.careTeam`), so the billing `Organization` does not need to match any `PractitionerRole.organization` your application uses for other purposes.
 
 ```mermaid
 flowchart TD
@@ -35,11 +44,11 @@ flowchart TD
 
     Patient["<div style='text-align: center;'><strong>Patient</strong></div><u>name</u>, <u>birthDate</u>, <u>gender</u><br><u>address</u>"]
 
-    Practitioner["<div style='text-align: center;'><strong>Practitioner</strong> (rendering)</div><u>identifier</u>: NPI<br><u>qualification</u>: taxonomy<br><u>identifier</u>: EIN/SSN*<br><u>telecom</u>: phone*, <u>address</u>*"]
+    BillingOrg["<div style='text-align: center;'><strong>Organization (Billing)</strong></div><u>name</u>, <u>identifier</u>: EIN<br><u>identifier</u>: NPI<br><u>telecom</u>: phone, <u>address</u>"]
 
-    PractitionerRole["<div style='text-align: center;'><strong>PractitionerRole</strong></div><em>(optional — org billing)</em>"]
+    Rendering["<div style='text-align: center;'><strong>Practitioner</strong> (rendering)</div><em>careTeam role: primary</em><br><u>identifier</u>: NPI<br><u>qualification</u>: taxonomy"]
 
-    BillingOrg["<div style='text-align: center;'><strong>Organization (Billing)</strong></div><em>(optional — org billing)</em><br><u>name</u>, <u>identifier</u>: EIN<br><u>identifier</u>: NPI<br><u>telecom</u>: phone, <u>address</u>"]
+    Supervising["<div style='text-align: center;'><strong>Practitioner</strong> (supervising)</div><em>careTeam role: supervisor (optional)</em><br><u>identifier</u>: NPI"]
 
     Coverage["<div style='text-align: center;'><strong>Coverage</strong></div><u>subscriberId</u>, <u>relationship</u>"]
 
@@ -50,12 +59,11 @@ flowchart TD
     Encounter["<div style='text-align: center;'><strong>Encounter</strong></div><u>period.start</u>"]
 
     Claim -->|patient| Patient
-    Claim -->|provider| Practitioner
+    Claim -->|provider| BillingOrg
+    Claim -->|"careTeam (primary)"| Rendering
+    Claim -.->|"careTeam (supervisor)"| Supervising
     Claim -->|insurance.coverage| Coverage
     Claim -->|item.encounter| Encounter
-
-    PractitionerRole -.->|practitioner| Practitioner
-    PractitionerRole -.->|organization| BillingOrg
 
     Coverage -->|payor| PayerOrg
     Coverage -->|subscriber| Subscriber
@@ -71,28 +79,30 @@ flowchart TD
     class BillingOrg,PayerOrg organization
     class Patient,Subscriber patient
     class Coverage coverage
-    class Practitioner,PractitionerRole,Encounter provider
+    class Rendering,Supervising,Encounter provider
 ```
 
-\* On the rendering `Practitioner`, the EIN/SSN, phone, and address are required **only when billing as an individual** (no billing `Organization`). The dashed `PractitionerRole` → `Organization (Billing)` path is used only for organization billing.
-
-The bot resolves the billing organization by searching for a `PractitionerRole` where `practitioner` matches the rendering provider and reading `organization` from the **first** result. If the practitioner has multiple roles, make sure the billing one is returned first (or is the only role). When no such role exists, the bot bills under the rendering practitioner directly.
+The dashed `Claim` → `Practitioner (supervising)` path is optional. The bot resolves the rendering provider from the `Claim.careTeam` member with role code `primary` (falling back to the first care team member that references a `Practitioner`), and the supervising provider from the member with role code `supervisor`.
 
 ### Billing as an organization vs. an individual
 
-The 837P always requires a **billing provider**. You can bill either way:
+The 837P always requires a **billing provider**, taken from `Claim.provider`. You can bill either way:
 
-- **As an organization** (most common for clinics): create an `Organization` with an NPI, Tax ID (EIN), address, and phone, and link it to the rendering `Practitioner` via a `PractitionerRole`. The claim is billed under the organization.
-- **As an individual provider**: omit the `PractitionerRole`/`Organization`. The bot then bills under the `Practitioner` directly, which means the practitioner must carry the billing data itself — NPI, a tax identifier (**EIN or SSN**), an address, and a phone.
+- **As an organization** (most common for clinics): set `Claim.provider` to an `Organization` with an NPI, Tax ID (EIN), address, and phone. The claim is billed under the organization, and the rendering practitioner comes from `Claim.careTeam`.
+- **As an individual provider**: set `Claim.provider` to the `Practitioner` directly. The bot then bills under the practitioner, which means the practitioner must carry the billing data itself — NPI, a tax identifier (**EIN or SSN**), an address, and a phone. When no `careTeam` member is present, that same practitioner is also used as the rendering provider.
 
 The required fields below note which apply to each case.
 
-The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the `PractitionerRole` that links them, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim`. The values are chosen to pass the validations described above — a checksum-valid NPI, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
+:::tip[Contained billing organization]
+`Claim.provider` may also reference a [contained](https://www.hl7.org/fhir/references.html#contained) resource (e.g. `"reference": "#billing-org"`). This is useful when you want to snapshot the exact billing `Organization` onto the claim instead of pointing at a shared, stored `Organization`.
+:::
+
+The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the supervising `Practitioner`, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim` (whose `provider` points at the billing `Organization` and whose `careTeam` references the two practitioners). The values are chosen to pass the validations described above — checksum-valid NPIs, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
 
 POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
 
 :::tip[Billing as an individual]
-To bill under the rendering provider instead, drop the billing `Organization` and `PractitionerRole`, and move the EIN/SSN, `telecom` (phone), and `address` onto the `Practitioner`.
+To bill under the rendering provider instead, point `Claim.provider` at the `Practitioner` and move the EIN/SSN, `telecom` (phone), and `address` onto that `Practitioner`.
 :::
 
 <details>
@@ -167,17 +177,24 @@ To bill under the rendering provider instead, drop the billing `Organization` an
     {
       "fullUrl": "urn:uuid:44444444-4444-4444-8444-444444444444",
       "resource": {
-        "resourceType": "PractitionerRole",
-        "practitioner": {
-          "reference": "urn:uuid:33333333-3333-4333-8333-333333333333",
-          "display": "Dr. Alice Smith"
-        },
-        "organization": {
-          "reference": "urn:uuid:22222222-2222-4222-8222-222222222222",
-          "display": "Example Family Practice"
-        }
+        "resourceType": "Practitioner",
+        "name": [{ "family": "Jones", "given": ["Robert"], "prefix": ["Dr."] }],
+        "identifier": [{ "system": "http://hl7.org/fhir/sid/us-npi", "value": "1999999984" }],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://nucc.org/provider-taxonomy",
+                  "code": "207R00000X",
+                  "display": "Internal Medicine"
+                }
+              ]
+            }
+          }
+        ]
       },
-      "request": { "method": "POST", "url": "PractitionerRole" }
+      "request": { "method": "POST", "url": "Practitioner" }
     },
     {
       "fullUrl": "urn:uuid:55555555-5555-4555-8555-555555555555",
@@ -270,9 +287,41 @@ To bill under the rendering provider instead, drop the billing `Organization` an
         },
         "created": "2026-04-01",
         "provider": {
-          "reference": "urn:uuid:33333333-3333-4333-8333-333333333333",
-          "display": "Dr. Alice Smith"
+          "reference": "urn:uuid:22222222-2222-4222-8222-222222222222",
+          "display": "Example Family Practice"
         },
+        "careTeam": [
+          {
+            "sequence": 1,
+            "provider": {
+              "reference": "urn:uuid:33333333-3333-4333-8333-333333333333",
+              "display": "Dr. Alice Smith"
+            },
+            "role": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/claimcareteamrole",
+                  "code": "primary"
+                }
+              ]
+            }
+          },
+          {
+            "sequence": 2,
+            "provider": {
+              "reference": "urn:uuid:44444444-4444-4444-8444-444444444444",
+              "display": "Dr. Robert Jones"
+            },
+            "role": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/claimcareteamrole",
+                  "code": "supervisor"
+                }
+              ]
+            }
+          }
+        ],
         "priority": { "coding": [{ "code": "normal" }] },
         "insurance": [
           {
@@ -332,7 +381,9 @@ To bill under the rendering provider instead, drop the billing `Organization` an
 | Field | Description | Required |
 |-------|-------------|----------|
 | `patient` | Reference to the patient on the claim | Yes |
-| `provider` or `careTeam[].provider` | Reference to the rendering `Practitioner` | Yes |
+| `provider` | Reference to the **billing provider** — an `Organization` (org billing) or `Practitioner` (individual billing). Contained references (`#id`) are supported | Yes |
+| `careTeam[]` with `role.coding.code` = `primary` | Reference to the **rendering** `Practitioner`. Falls back to the first `careTeam` member, then to `provider` when it is a `Practitioner` | Yes |
+| `careTeam[]` with `role.coding.code` = `supervisor` | Reference to the **supervising** `Practitioner` | No |
 | `insurance[0].coverage` | Reference to `Coverage` | Yes |
 | `item[0].encounter[0]` | Reference to `Encounter` (used for default service date) | Yes |
 | `item[]` | Service lines | Yes (at least one) |
@@ -356,33 +407,35 @@ To bill under the rendering provider instead, drop the billing `Organization` an
 
 ### Practitioner (rendering provider)
 
+Referenced from the `Claim.careTeam` member with role code `primary`.
+
 | Field | Description | Required |
 |-------|-------------|----------|
 | `identifier` | System `http://hl7.org/fhir/sid/us-npi` — must be a **valid 10-digit NPI** (passes the NPI checksum). The payer rejects invalid NPIs such as `1234567890`. | Yes |
 | `qualification.code.coding` | System `http://nucc.org/provider-taxonomy` (taxonomy code, read from `qualification[0]`) | Yes |
 | `name.given[0]`, `name.family` | Provider name | Yes |
-| `identifier` | Tax ID — system `http://hl7.org/fhir/sid/us-ein` (EIN) or `http://hl7.org/fhir/sid/us-ssn` (SSN) | Yes **when billing as an individual** (no billing org). EIN takes precedence; the 837P treats EIN and SSN as mutually exclusive |
+| `identifier` | Tax ID — system `http://hl7.org/fhir/sid/us-ein` (EIN) or `http://hl7.org/fhir/sid/us-ssn` (SSN) | Yes **when billing as an individual** (`Claim.provider` is this `Practitioner`). EIN takes precedence; the 837P treats EIN and SSN as mutually exclusive |
 | `telecom` | Phone (`system: phone`) | Yes **when billing as an individual** — used as the submitter phone (see [phone format rules](#common-rejections-and-troubleshooting)) |
 | `address` | Provider address | Used as the billing address fallback when no org address is present |
 
-### PractitionerRole
+### Practitioner (supervising provider)
 
-Only required when billing under an organization. Omit it to bill under the individual practitioner.
+Optional. Referenced from the `Claim.careTeam` member with role code `supervisor` — for example, an MD overseeing a coach or nurse practitioner.
 
 | Field | Description | Required |
 |-------|-------------|----------|
-| `practitioner` | Reference to the rendering `Practitioner` | Yes (used to find billing org) |
-| `organization` | Reference to the billing `Organization` | Yes |
+| `identifier` | System `http://hl7.org/fhir/sid/us-npi` (valid 10-digit NPI) | Yes (when a supervising provider is present) |
+| `name.given[0]`, `name.family` | Provider name | Yes (when a supervising provider is present) |
 
 ### Organization (billing provider)
 
-Required when billing as an organization. The bot **throws if a billing `Organization` exists but has no EIN**.
+Used when `Claim.provider` references an `Organization`. The bot **throws if the billing `Organization` has no EIN**.
 
 | Field | Description | Required |
 |-------|-------------|----------|
 | `name` | Billing provider name | Yes |
 | `identifier` | System `http://hl7.org/fhir/sid/us-ein` (Tax ID / EIN) | Yes |
-| `identifier` | System `http://hl7.org/fhir/sid/us-npi` (valid 10-digit NPI) | No (falls back to practitioner NPI) |
+| `identifier` | System `http://hl7.org/fhir/sid/us-npi` (valid 10-digit NPI) | No (falls back to the rendering practitioner NPI) |
 | `telecom` | Phone (`system: phone`) — submitter phone; must satisfy NANP rules (see [troubleshooting](#common-rejections-and-troubleshooting)) | Yes |
 | `address` | Billing address — Stedi **requires** `billing.address`; the bot uses the org address, then falls back to the patient address. 5-digit ZIPs are padded to 9 digits | Yes |
 
@@ -545,10 +598,13 @@ Most failures are caused by missing or malformed FHIR data. The bot validates so
 
 | Error / message | Cause | Fix |
 |-----------------|-------|-----|
-| `Missing NPI on both billing organization and practitioner` | No `us-npi` identifier on the billing org or rendering practitioner | Add a valid 10-digit NPI identifier |
+| `Claim missing provider reference …` | `Claim.provider` is not set | Set `Claim.provider` to the billing `Organization` (or a `Practitioner` for individual billing) |
+| `Claim.provider must reference an Organization … or Practitioner …` | `Claim.provider` points at a different resource type | Point `Claim.provider` at the billing `Organization` or `Practitioner` |
+| `Claim missing rendering provider …` | No `Claim.careTeam` member references a `Practitioner` (and `Claim.provider` is not a `Practitioner`) | Add a `careTeam` member with role code `primary` referencing the rendering `Practitioner` |
+| `Missing NPI on both billing organization and rendering practitioner` | No `us-npi` identifier on the billing org or rendering practitioner | Add a valid 10-digit NPI identifier |
 | `Provider … missing required taxonomy code` | No `http://nucc.org/provider-taxonomy` coding on `Practitioner.qualification[0]` | Add a qualification with the provider's NUCC taxonomy code (e.g. `207Q00000X` for Family Medicine) |
 | `Missing required field: billing.address` | No address resolvable for the billing provider | Add an `address` to the billing `Organization`, or to the `Patient` (used as fallback when billing as an individual) |
-| `Missing required field: ssn or employerId required for billing provider` | Billing as an individual without a tax identifier | Add an EIN (`us-ein`) or SSN (`us-ssn`) identifier to the `Practitioner`, or bill under an `Organization` with an EIN |
+| `Missing required field: ssn or employerId required for billing provider` | Billing as an individual without a tax identifier | Add an EIN (`us-ein`) or SSN (`us-ssn`) identifier to the `Practitioner` referenced by `Claim.provider`, or bill under an `Organization` with an EIN |
 | `Billing organization … is missing a Tax ID (EIN)` | A billing `Organization` exists but has no `us-ein` identifier | Add a `us-ein` identifier to the org |
 | `Invalid NPI. The Billing Provider NPI of … is invalid` | NPI fails the NPI checksum (e.g. `1234567890`) | Use a real, valid 10-digit NPI |
 | `Invalid Telephone number … must not begin with 0 or 1` | Submitter phone violates NANP rules | Provide a 10-digit phone where **both** the area code (1st digit) **and** the exchange (4th digit) are `2`–`9` (e.g. `6175550100`). The bot validates this when present |
