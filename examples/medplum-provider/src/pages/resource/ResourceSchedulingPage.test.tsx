@@ -3,6 +3,7 @@
 import type { HealthcareService, PlanDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent, waitFor } from '../../test-utils/render';
@@ -147,5 +148,58 @@ describe('ResourceSchedulingPage', () => {
         valueReference: expect.objectContaining({ reference: `PlanDefinition/${planDef.id}` }),
       })
     );
+  });
+
+  test('Unchanged extensions are not mutated', async () => {
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+
+    const planDef = await medplum.createResource<PlanDefinition>({
+      resourceType: 'PlanDefinition',
+      id: 'pd-2',
+      title: 'Routine Visit',
+      status: 'active',
+    });
+    const ref = { reference: `PlanDefinition/${planDef.id}`, display: planDef.title };
+
+    const originalExtensions = [
+      { url: SchedulingPlanDefinitionURI, valueReference: ref },
+      { url: SchedulingEncounterCodingURI, valueCoding: AMB_CODING },
+      { url: 'http://example.com/fhir/foo', valueString: 'Hello World' },
+    ];
+
+    await medplum.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      id: 'svc-2',
+      name: 'Office Visit',
+      extension: originalExtensions,
+    });
+    setup('/HealthcareService/svc-2/scheduling');
+    await screen.findByText('Office Visit - Scheduling Configuration');
+
+    // CodingInput hides the search input when at capacity (maxValues=1 with a value selected).
+    // Click "Clear all" first to remove the "ambulatory" pill, then the searchbox becomes visible.
+    // Scope to the PillsInput wrapper (parentElement of the testid node) to avoid ambiguity with
+    // the ReferenceInput's own "Clear all" button.
+    const encounterWrapper = screen.getByTestId('encounterClass').parentElement as HTMLElement;
+    await userEvent.click(within(encounterWrapper).getByTitle('Clear all'));
+
+    // Update the Encouner Class using one of the fixed test codes that MockClient returns
+    const encounterInput = screen.getByRole('searchbox');
+    await userEvent.type(encounterInput, 'test');
+    await userEvent.click(await screen.findByText('Test Display 2'));
+
+    // Submit update
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(updateSpy).toHaveBeenCalled();
+
+    const updated = updateSpy.mock.calls[0][0] as HealthcareService;
+    expect(updated.extension).toEqual([
+      originalExtensions[0],
+      {
+        url: SchedulingEncounterCodingURI,
+        valueCoding: { system: 'x', code: 'test-code-2', display: 'Test Display 2' },
+      },
+      originalExtensions[2],
+    ]);
   });
 });

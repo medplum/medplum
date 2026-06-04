@@ -2,9 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Group, Input, Loader, Stack, Title } from '@mantine/core';
 import { EMPTY, getExtensionValue, isOk, normalizeErrorString } from '@medplum/core';
-import type { Coding, HealthcareService, OperationOutcome, PlanDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import type {
+  Coding,
+  Extension,
+  HealthcareService,
+  OperationOutcome,
+  PlanDefinition,
+  Reference,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { CodingInput, Form, ReferenceInput, SubmitButton } from '@medplum/react';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -27,26 +35,34 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
   );
 
   const handleSubmit = async (): Promise<void> => {
-    const updated = {
-      ...service,
-      extension: (service.extension ?? EMPTY).filter(
-        (ext) => ext.url !== SchedulingEncounterCodingURI && ext.url !== SchedulingPlanDefinitionURI
-      ),
-    };
+    // This implementation is slightly tricky in order to try to update any existing extensions in
+    // place in the `extensions` array. This helps keep the history diff easy to read.
+    const nextExts: [string, Extension | undefined][] = [
+      [
+        SchedulingEncounterCodingURI,
+        encounterClass ? { url: SchedulingEncounterCodingURI, valueCoding: encounterClass } : undefined,
+      ],
+      [
+        SchedulingPlanDefinitionURI,
+        planDefinition ? { url: SchedulingPlanDefinitionURI, valueReference: planDefinition } : undefined,
+      ],
+    ];
 
-    if (encounterClass) {
-      updated.extension.push({
-        url: SchedulingEncounterCodingURI,
-        valueCoding: encounterClass,
-      });
+    const extensions = [...(service.extension ?? EMPTY)];
+    for (const [url, next] of nextExts) {
+      const idx = extensions.findIndex((e) => e.url === url);
+      if (next !== undefined) {
+        if (idx >= 0) {
+          extensions[idx] = next;
+        } else {
+          extensions.push(next);
+        }
+      } else if (idx >= 0) {
+        extensions.splice(idx, 1);
+      }
     }
 
-    if (planDefinition) {
-      updated.extension.push({
-        url: SchedulingPlanDefinitionURI,
-        valueReference: planDefinition,
-      });
-    }
+    const updated = { ...service, extension: extensions };
 
     try {
       await medplum.updateResource(updated);
@@ -69,6 +85,7 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
           description="The classification to apply to encounters created when scheduling this HealthcareService"
           defaultValue={encounterClass}
           onChange={setEncounterClass}
+          data-testid="encounterClass"
         />
         <Input.Wrapper
           label="Plan Definition"
