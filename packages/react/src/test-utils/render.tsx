@@ -8,8 +8,8 @@ import { act, fireEvent, screen, render as testingLibraryRender, waitFor, within
 import userEvent from '@testing-library/user-event';
 import type { JSX, ReactNode } from 'react';
 
-export { act, fireEvent, screen, userEvent, waitFor, within };
 export { clickAutocompleteOption, selectAutocompleteOption, typeInAutocomplete } from './asyncAutocomplete';
+export { act, fireEvent, screen, userEvent, waitFor, within };
 
 const theme = {};
 

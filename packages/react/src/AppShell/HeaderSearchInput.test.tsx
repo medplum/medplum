@@ -4,14 +4,7 @@ import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router';
-import {
-  act,
-  clickAutocompleteOption,
-  fireEvent,
-  render,
-  screen,
-  typeInAutocomplete,
-} from '../test-utils/render';
+import { act, clickAutocompleteOption, fireEvent, render, screen, typeInAutocomplete } from '../test-utils/render';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 const medplum = new MockClient();

@@ -6,14 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { forwardRef } from 'react';
 import type { AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import {
-  act,
-  clickAutocompleteOption,
-  fireEvent,
-  render,
-  screen,
-  typeInAutocomplete,
-} from '../test-utils/render';
+import { act, clickAutocompleteOption, fireEvent, render, screen, typeInAutocomplete } from '../test-utils/render';
 import type { ResourceInputProps } from './ResourceInput';
 import { ResourceInput } from './ResourceInput';
 

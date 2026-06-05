@@ -4,7 +4,15 @@ import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
-import { act, fireEvent, render, screen, selectAutocompleteOption, typeInAutocomplete, within } from '../test-utils/render';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  selectAutocompleteOption,
+  typeInAutocomplete,
+  within,
+} from '../test-utils/render';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 describe('AsyncAutocomplete', () => {
