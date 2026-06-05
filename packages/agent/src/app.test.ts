@@ -26,48 +26,41 @@ import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import type { ChildProcess } from 'node:child_process';
-import child_process from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
+import type * as NodeFs from 'node:fs';
+import { existsSync, openSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
-import os from 'node:os';
+import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentByteStreamChannel } from './bytestream';
+import type * as AgentConstants from './constants';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort } from './test-utils';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
-  RETRY_WAIT_DURATION_MS: 200,
-  // We don't care about how fast the clients release in these tests
-  CLIENT_RELEASE_COUNTDOWN_MS: 0,
-}));
-
-jest.mock('./pid', () => ({
-  createPidFile: jest.fn(),
-  getPidFilePath: jest.fn(() => 'pid/file/path'),
-  waitForPidFile: jest.fn(async () => undefined),
-  removePidFile: jest.fn(),
-  isAppRunning: jest.fn(() => false),
-  forceKillApp: jest.fn(),
-}));
-
-jest.mock('node:process', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return new (class MockProcess extends require('node:events') {
-    send = jest.fn().mockImplementation((msg) => {
-      this.emit('childSend', msg);
-    });
-    exit = jest.fn(() => {
-      throw new Error('process.exit');
-    });
-  })();
+vi.mock('./constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentConstants>();
+  return {
+    ...actual,
+    RETRY_WAIT_DURATION_MS: 200,
+    // We don't care about how fast the clients release in these tests
+    CLIENT_RELEASE_COUNTDOWN_MS: 0,
+  };
 });
+
+vi.mock('./pid', () => ({
+  createPidFile: vi.fn(),
+  getPidFilePath: vi.fn(() => 'pid/file/path'),
+  waitForPidFile: vi.fn(async () => undefined),
+  removePidFile: vi.fn(),
+  isAppRunning: vi.fn(() => false),
+  forceKillApp: vi.fn(),
+}));
 
 const HL7_ENDPOINT = {
   resourceType: 'Endpoint',
@@ -95,7 +88,7 @@ describe('App', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -104,7 +97,7 @@ describe('App', () => {
 
   test('Runs successfully', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
     const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
@@ -174,15 +167,15 @@ describe('App', () => {
 
   test('Keeps trying to connect on startup', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
     const state = {
       maxReconnectAttempts: 2,
       shouldConnect: false,
     };
 
     const originalDispatchEvent = ReconnectingWebSocket.prototype.dispatchEvent;
-    const reconnectSpy = jest.spyOn(ReconnectingWebSocket.prototype, 'reconnect');
-    const mockDispatchEvent = jest.spyOn(ReconnectingWebSocket.prototype, 'dispatchEvent').mockImplementation(function (
+    const reconnectSpy = vi.spyOn(ReconnectingWebSocket.prototype, 'reconnect');
+    const mockDispatchEvent = vi.spyOn(ReconnectingWebSocket.prototype, 'dispatchEvent').mockImplementation(function (
       this: ReconnectingWebSocket,
       event: Event
     ) {
@@ -404,7 +397,7 @@ describe('App', () => {
 
   test('Unknown endpoint protocol', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1050,7 +1043,7 @@ describe('App', () => {
 
   test('Enable stats logging', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Create agent with an HL7 channel
     const state = {
@@ -1164,7 +1157,7 @@ describe('App', () => {
     };
 
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1455,7 +1448,7 @@ describe('App', () => {
     };
 
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1743,7 +1736,7 @@ describe('App', () => {
     await app.start();
 
     // Spy on the app.log.warn method
-    const warnSpy = jest.spyOn(app.log, 'warn');
+    const warnSpy = vi.spyOn(app.log, 'warn');
 
     while (!state.mySocket) {
       await sleep(100);
@@ -1859,7 +1852,7 @@ describe('App', () => {
     });
 
     test('Upgrade -- Not on Windows', async () => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'linux'));
+      vi.mocked(platform).mockReturnValue('linux');
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -1940,13 +1933,11 @@ describe('App', () => {
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
-
-      platformSpy.mockRestore();
     });
 
     test('Upgrade -- No version specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child!: MockChildProcess;
 
@@ -1957,19 +1948,17 @@ describe('App', () => {
         disconnectCalled: false,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2082,7 +2071,7 @@ describe('App', () => {
 
     test('Upgrade -- Version specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child!: MockChildProcess;
 
@@ -2093,20 +2082,18 @@ describe('App', () => {
         disconnectCalled: false,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2221,7 +2208,7 @@ describe('App', () => {
 
     test('Upgrade -- Invalid version', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2229,7 +2216,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
 
       function mockConnectionHandler(socket: Client): void {
@@ -2308,14 +2295,13 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Already on specified version', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2323,7 +2309,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
 
       function mockConnectionHandler(socket: Client): void {
@@ -2408,14 +2394,13 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Already on specified version (force upgrade)', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2426,20 +2411,18 @@ describe('App', () => {
 
       let child!: MockChildProcess;
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2560,7 +2543,7 @@ describe('App', () => {
 
     test('Upgrade -- Pre-4.2.4', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2568,7 +2551,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
 
       function mockConnectionHandler(socket: Client): void {
@@ -2650,14 +2633,13 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Pre-4.2.4, force = true', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child!: MockChildProcess;
 
@@ -2668,20 +2650,18 @@ describe('App', () => {
         disconnectCalled: false,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2799,7 +2779,7 @@ describe('App', () => {
 
     test('Upgrade -- Error while starting upgrader', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2807,10 +2787,10 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(
-        jest.fn(() => {
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(
+        vi.fn(() => {
           throw new Error('Unable to open file');
         })
       );
@@ -2889,17 +2869,16 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       openSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+      const unlinkSyncSpy = vi.mocked(unlinkSync);
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
+      console.log = vi.fn();
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2986,15 +2965,14 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is correct (Success)', async () => {
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+      const unlinkSyncSpy = vi.mocked(unlinkSync);
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -3079,15 +3057,14 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, failed to create agent PID', async () => {
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+      const unlinkSyncSpy = vi.mocked(unlinkSync);
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation(() => {
+      console.log = vi.fn();
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile').mockImplementation(() => {
         throw new Error('Unable to create PID');
       });
 
@@ -3148,7 +3125,7 @@ describe('App', () => {
       });
 
       const app = new App(medplum, agent.id, LogLevel.INFO);
-      const infoSpy = jest.spyOn(app.log, 'info');
+      const infoSpy = vi.spyOn(app.log, 'info');
       const appStartPromise = app.start();
       appStartPromise.catch(console.error);
 
@@ -3195,7 +3172,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       infoSpy.mockRestore();
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
@@ -3203,12 +3179,12 @@ describe('App', () => {
 
     test('Upgrading -- Ignores transmit requests until it becomes primary', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID until
       // we flip this flag, simulating the outgoing agent still owning the PID during the overlap.
       let allowPrimary = false;
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
         if (appName === 'medplum-agent' && !allowPrimary) {
           throw new Error('Unable to create PID');
         }
@@ -3340,11 +3316,11 @@ describe('App', () => {
 
     test('Upgrading -- Ignores transmit responses until it becomes primary', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID, simulating
       // the outgoing agent still owning the PID during the overlap.
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
         if (appName === 'medplum-agent') {
           throw new Error('Unable to create PID');
         }
@@ -3404,8 +3380,8 @@ describe('App', () => {
         await sleep(100);
       }
 
-      const debugSpy = jest.spyOn(app.log, 'debug');
-      const addToHl7QueueSpy = jest.spyOn(app, 'addToHl7Queue');
+      const debugSpy = vi.spyOn(app.log, 'debug');
+      const addToHl7QueueSpy = vi.spyOn(app, 'addToHl7Queue');
 
       // While non-primary, an inbound transmit response should be dropped before any handling: it is
       // not queued for a channel and produces no disabled/error response back to the server.
@@ -3452,7 +3428,7 @@ describe('App', () => {
     });
 
     test('Upgrade -- Missing artifact for platform', async () => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
 
       // Manifest only has a Linux asset, no Windows asset
       const manifest = {
@@ -3465,8 +3441,8 @@ describe('App', () => {
         ],
       };
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async () => {
           return new Response(JSON.stringify(manifest), {
             headers: { 'content-type': 'application/json' },
             status: 200,
@@ -3543,7 +3519,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
     });
 
@@ -3561,7 +3536,7 @@ describe('App', () => {
       // the installer stopping the old agent). If start() deferred manifest deletion until after the
       // listeners bound, this test would deadlock and trip the timeout below.
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const manifestPath = resolve(__dirname, 'upgrade.json');
 
@@ -3644,8 +3619,8 @@ describe('App', () => {
 
       const app = new App(medplum, agent.id, LogLevel.INFO);
 
-      const realUnlinkSync = fs.unlinkSync.bind(fs);
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+      const { unlinkSync: realUnlinkSync } = await vi.importActual<typeof NodeFs>('node:fs');
+      const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation((path) => {
         if (path === manifestPath) {
           // A channel only registers in `app.channels` once it has successfully bound, so this
           // proves the manifest is deleted while the listener is still (re)trying to bind.
@@ -3658,7 +3633,7 @@ describe('App', () => {
       });
 
       // If the manifest-deletion / bind ordering regresses, start() never resolves; fail with a
-      // clear message instead of hanging until the jest timeout.
+      // clear message instead of hanging until the vitest timeout.
       let timeoutHandle: NodeJS.Timeout | undefined;
       const deadlockTimeout = new Promise<never>((_resolve, reject) => {
         timeoutHandle = setTimeout(
@@ -3697,7 +3672,6 @@ describe('App', () => {
           blocker.close(() => res());
         });
       }
-      unlinkSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
   });
@@ -3712,23 +3686,21 @@ describe('App', () => {
 
     let child!: MockChildProcess;
 
-    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+    const unlinkSyncSpy = vi.mocked(unlinkSync);
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
-    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
-    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
     const fetchSpy = mockFetchForUpgrader();
-    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-      jest.fn(() => {
-        child = new MockChildProcess();
-        child.onDisconnect = () => {
-          state.disconnectCalled = true;
-        };
-        return child;
-      })
-    );
-    const isAppRunningSpy = jest
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
+    const isAppRunningSpy = vi
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation((appName: string) => appName === 'medplum-upgrading-agent');
 
@@ -3825,24 +3797,22 @@ describe('App', () => {
 
     let child!: MockChildProcess;
 
-    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation();
+    const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation(vi.fn());
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
-    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
-    const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
     const fetchSpy = mockFetchForUpgrader();
-    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-      jest.fn(() => {
-        child = new MockChildProcess();
-        child.onDisconnect = () => {
-          state.disconnectCalled = true;
-        };
-        return child;
-      })
-    );
-    const isAppRunningSpy = jest
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
+    const isAppRunningSpy = vi
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation(
         (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
@@ -3971,37 +3941,35 @@ describe('App', () => {
     let child!: MockChildProcess;
 
     const manifestPath = resolve(__dirname, 'upgrade.json');
-    const originalExistsSync = fs.existsSync.bind(fs);
+    const { existsSync: realExistsSync } = await vi.importActual<typeof NodeFs>('node:fs');
     // Manifest does not exist on disk; the upgrade is only "in progress" because an upgrader process is running
-    const existsSyncSpy = jest
-      .spyOn(fs, 'existsSync')
-      .mockImplementation((path) => (path === manifestPath ? false : originalExistsSync(path)));
+    const existsSyncSpy = vi
+      .mocked(existsSync)
+      .mockImplementation((path) => (path === manifestPath ? false : realExistsSync(path)));
     // Mimic the real fs behavior: unlinking a non-existent file throws ENOENT.
     // The fix must guard with existsSync so this is never reached for the missing manifest.
-    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+    const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation((path) => {
       throw Object.assign(new Error(`ENOENT: no such file or directory, unlink '${String(path)}'`), {
         code: 'ENOENT',
       });
     });
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
-    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
-    const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
     const fetchSpy = mockFetchForUpgrader();
-    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-      jest.fn(() => {
-        child = new MockChildProcess();
-        child.onDisconnect = () => {
-          state.disconnectCalled = true;
-        };
-        return child;
-      })
-    );
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
     // Report the upgrader process as running so the agent considers an upgrade "in progress",
     // even though the manifest file does not exist (existsSync mocked to false above)
-    const isAppRunningSpy = jest
+    const isAppRunningSpy = vi
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation(
         (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
@@ -4115,7 +4083,7 @@ describe('App', () => {
 
   test('App#stop should close all persistent HL7 clients', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const state = {
       mySocket: undefined as Client | undefined,
@@ -4213,7 +4181,7 @@ describe('App', () => {
     expect(app.hl7Clients.size).toStrictEqual(2);
 
     // Spy on pool.closeAll() to verify it's called
-    const closeAllSpies = Array.from(app.hl7Clients.values()).map((pool) => jest.spyOn(pool, 'closeAll'));
+    const closeAllSpies = Array.from(app.hl7Clients.values()).map((pool) => vi.spyOn(pool, 'closeAll'));
 
     // Stop the app
     await app.stop();
@@ -4237,7 +4205,7 @@ describe('App', () => {
 
   test('Pool persists in hl7Clients after client error — only cleared on keepAlive change', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const state = {
       mySocket: undefined as Client | undefined,
@@ -4360,12 +4328,12 @@ describe('App', () => {
     });
 
     console.log = originalConsoleLog;
-  });
+  }, 15_000);
 
   describe('Stats tracking for HL7 clients', () => {
     test('When keepAlive is off, clients should not track stats', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4456,7 +4424,7 @@ describe('App', () => {
 
     test('When keepAlive is on, clients should track stats as messages are sent', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4551,7 +4519,7 @@ describe('App', () => {
 
     test('When keepAlive goes from on to off, cleanup stats for all open clients', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4692,7 +4660,7 @@ describe('App', () => {
 
     test('When logStatsFreqSecs goes from on to off, pool keeps tracking stats (default-on)', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4804,7 +4772,7 @@ describe('App', () => {
 
     test('Pool tracks stats by default when keepAlive is on, regardless of logStatsFreqSecs', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4947,7 +4915,7 @@ describe('App', () => {
   describe('returnAck handling in pushMessage', () => {
     test('Uses default of FIRST when no returnAck options are specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5036,7 +5004,7 @@ describe('App', () => {
 
     test('Uses per-message returnAck when specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5126,7 +5094,7 @@ describe('App', () => {
 
     test('Uses defaultReturnAck from Device URL when per-message returnAck is not specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5215,7 +5183,7 @@ describe('App', () => {
 
     test('Per-message returnAck takes priority over defaultReturnAck from Device URL', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5304,7 +5272,7 @@ describe('App', () => {
 
     test('Invalid defaultReturnAck in Device URL logs warning and falls back to FIRST', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5402,7 +5370,7 @@ describe('App', () => {
 
     test('Invalid per-message returnAck returns 400 error', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5493,7 +5461,7 @@ describe('App', () => {
 
     test('parseReturnAck is case-insensitive for APPLICATION', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5581,7 +5549,7 @@ describe('App', () => {
 
     test('parseReturnAck is case-insensitive for FIRST', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5911,10 +5879,10 @@ describe('App', () => {
 });
 
 class MockChildProcess extends EventEmitter implements ChildProcess {
-  send = jest.fn();
-  unref = jest.fn();
-  ref = jest.fn();
-  disconnect = jest.fn(() => {
+  send = vi.fn();
+  unref = vi.fn();
+  ref = vi.fn();
+  disconnect = vi.fn(() => {
     this.onDisconnect?.();
   });
   stdin = new Writable();

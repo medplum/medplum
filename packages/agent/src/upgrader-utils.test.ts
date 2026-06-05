@@ -3,7 +3,7 @@
 import type { ReleaseManifest } from '@medplum/core';
 import { MEDPLUM_RELEASES_URL, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import os from 'node:os';
+import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { downloadRelease, getReleaseBinPath, parseDownloadUrl } from './upgrader-utils';
 
@@ -11,15 +11,8 @@ const ALL_PLATFORMS_LIST = ['win32', 'linux', 'darwin'];
 const VALID_PLATFORMS_LIST = ['win32', 'linux'];
 
 describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_platform) => {
-  let platformSpy: jest.SpyInstance;
-
   beforeEach(() => {
-    // @ts-expect-error Platform type is not exported
-    platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
-  });
-
-  afterEach(() => {
-    platformSpy.mockRestore();
+    vi.mocked(platform).mockReturnValue(_platform as NodeJS.Platform);
   });
 
   test('parseDownloadUrl', () => {
@@ -91,15 +84,8 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 });
 
 describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (_platform) => {
-  let platformSpy: jest.SpyInstance;
-
   beforeEach(() => {
-    // @ts-expect-error Platform type is not exported
-    platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
-  });
-
-  afterEach(() => {
-    platformSpy.mockRestore();
+    vi.mocked(platform).mockReturnValue(_platform as NodeJS.Platform);
   });
 
   describe('downloadRelease', () => {
@@ -134,9 +120,9 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
       let count = 0;
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return new Promise((resolve) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (): Promise<Response> => {
+          return new Promise<Response>((resolve) => {
             switch (count) {
               case 0:
                 count++;
@@ -217,9 +203,9 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
       let count = 0;
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return new Promise((resolve) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (): Promise<Response> => {
+          return new Promise<Response>((resolve) => {
             switch (count) {
               case 0:
                 count++;
@@ -282,9 +268,9 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
       let count = 0;
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return new Promise((resolve) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (): Promise<Response> => {
+          return new Promise<Response>((resolve) => {
             switch (count) {
               case 0:
                 count++;
