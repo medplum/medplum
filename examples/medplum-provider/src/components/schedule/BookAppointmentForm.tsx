@@ -3,7 +3,7 @@
 import { Button, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, formatPeriod, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, Patient, Resource, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -13,21 +13,21 @@ import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 type BookAppointmentFormProps = {
   appointment: Appointment;
   onSuccess?: (result: {
-    appointments: WithId<Appointment>[];
+    appointment: WithId<Appointment>;
     slots: WithId<Slot>[];
-    patient: Patient;
+    patient: WithId<Patient>;
   }) => void | Promise<void>;
 };
 
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
-  const [patient, setPatient] = useState<Patient | undefined>(undefined);
+  const [patient, setPatient] = useState<WithId<Patient> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
   const { appointment, onSuccess } = props;
 
   const bookAppointment = useCallback(
-    async (patient: Patient) => {
+    async (patient: WithId<Patient>) => {
       setLoading(true);
 
       // merge patient into participants list
@@ -61,11 +61,13 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
         const slots = resources.filter(
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Slot> => obj.resourceType === 'Slot'
         );
-        const appointments = resources.filter(
+        const appointment = resources.find(
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
         );
 
-        await onSuccess?.({ appointments, slots, patient });
+        if (appointment) {
+          await onSuccess?.({ appointment, slots, patient });
+        }
       } finally {
         setLoading(false);
       }
@@ -85,10 +87,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
     }
   }, [patient, bookAppointment]);
 
-  const choosePatient = useCallback((patient: Resource | undefined) => {
-    if (patient && patient.resourceType !== 'Patient') {
-      throw new Error(`Got unexpected resource type; expected 'Patient', got '${patient.resourceType}'`);
-    }
+  const choosePatient = useCallback((patient: WithId<Patient> | undefined) => {
     setPatient(patient);
   }, []);
 
@@ -96,7 +95,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
     <Form onSubmit={handleSubmit}>
       <Stack gap="md">
         <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
-        <ResourceInput
+        <ResourceInput<WithId<Patient>>
           label="Patient"
           resourceType="Patient"
           name="Patient-id"

@@ -38,7 +38,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
-  onSuccess: (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
+  onSuccess: (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[] }) => void;
   className?: string;
 };
 
@@ -165,7 +165,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, []);
 
   const handleBookSuccess = useCallback(
-    async (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[]; patient: Patient }) => {
+    async (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[]; patient: WithId<Patient> }) => {
       try {
         const planDefinitionRef = getExtensionValue(selectedHealthcareService, SchedulingPlanDefinitionURI);
         const encounterClass = getExtensionValue(selectedHealthcareService, SchedulingEncounterCodingURI);
@@ -179,7 +179,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
             encounterClass as Coding,
             results.patient,
             planDefinition,
-            results.appointments[0],
+            results.appointment,
             practitioners[0]
           );
 

@@ -105,7 +105,7 @@ describe('FindPane', () => {
   type SetupOptions = {
     schedule?: WithId<Schedule>;
     range?: { start: Date; end: Date };
-    onSuccess?: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
+    onSuccess?: (results: { appointment: Appointment; slots: Slot[] }) => void;
   };
 
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {

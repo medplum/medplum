@@ -34,7 +34,7 @@ describe('BookAppointmentForm', () => {
   });
 
   type SetupOptions = {
-    onSuccess?: (result: { appointments: Appointment[]; slots: Slot[] }) => void;
+    onSuccess?: (result: { appointment: Appointment; slots: Slot[] }) => void;
   };
 
   const setup = async (options: SetupOptions = {}): Promise<void> => {
@@ -150,7 +150,7 @@ describe('BookAppointmentForm', () => {
     );
   });
 
-  test('calls onSuccess with appointments and slots from the response', async () => {
+  test('calls onSuccess with appointment and slots from the response', async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
 
@@ -203,7 +203,7 @@ describe('BookAppointmentForm', () => {
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalledWith({
-        appointments: [bookedAppointment],
+        appointment: bookedAppointment,
         slots: [busySlot, bufferAfterSlot],
         patient: HomerSimpson,
       });
