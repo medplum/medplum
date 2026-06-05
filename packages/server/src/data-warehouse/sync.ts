@@ -34,6 +34,8 @@ export interface SyncTableResult {
   postgresTable: string;
   destination: string;
   rowsInserted: number;
+  watermarkDurationMs: number;
+  syncDurationMs: number;
 }
 
 export interface SyncResult {
@@ -82,7 +84,10 @@ async function runWarehouseTableSync(
   for (const [index, spec] of options.warehouseSources.entries()) {
     const { icebergTable, postgresTable } = spec;
     const tablesCompleted = index + 1;
+    const watermarkStartTime = Date.now();
     const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
+    const watermarkEndTime = Date.now();
+    const syncStartTime = Date.now();
     const destination = options.destination.getDestinationName(spec);
     await options.destination.ensureTargetExists(spec, namespace);
 
@@ -91,6 +96,8 @@ async function runWarehouseTableSync(
       namespace,
       sourcePredicate,
     });
+
+    const syncEndTime = Date.now();
 
     globalLogger.debug(`Data warehouse table sync completed for table=${icebergTable}`, {
       tablesCompleted,
@@ -119,18 +126,10 @@ async function runWarehouseTableSync(
       postgresTable,
       destination,
       rowsInserted,
+      watermarkDurationMs: watermarkEndTime - watermarkStartTime,
+      syncDurationMs: syncEndTime - syncStartTime,
     });
   }
-
-  const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
-  globalLogger.info('Data warehouse sync completed', {
-    tablesSynced: tables.length,
-    tablesWithRows: tables.filter((t) => t.rowsInserted > 0).length,
-    tablesEmpty: tables.filter((t) => t.rowsInserted === 0).length,
-    rowsInserted,
-    tables,
-    subsystem: 'data-warehouse-sync',
-  });
 
   return tables;
 }
