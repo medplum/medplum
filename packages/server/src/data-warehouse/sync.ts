@@ -34,6 +34,8 @@ export interface SyncTableResult {
   postgresTable: string;
   destination: string;
   rowsInserted: number;
+  watermarkDurationMs: number;
+  syncDurationMs: number;
 }
 
 export interface SyncResult {
@@ -82,7 +84,10 @@ async function runWarehouseTableSync(
   for (const [index, spec] of options.warehouseSources.entries()) {
     const { icebergTable, postgresTable } = spec;
     const tablesCompleted = index + 1;
+    const watermarkStartTime = new Date();
     const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
+    const watermarkEndTime = new Date();
+    const syncStartTime = new Date();
     const destination = options.destination.getDestinationName(spec);
     await options.destination.ensureTargetExists(spec, namespace);
 
@@ -91,6 +96,8 @@ async function runWarehouseTableSync(
       namespace,
       sourcePredicate,
     });
+
+    const syncEndTime = new Date();
 
     globalLogger.debug(`Data warehouse table sync completed for table=${icebergTable}`, {
       tablesCompleted,
@@ -119,6 +126,8 @@ async function runWarehouseTableSync(
       postgresTable,
       destination,
       rowsInserted,
+      watermarkDurationMs: watermarkEndTime.getTime() - watermarkStartTime.getTime(),
+      syncDurationMs: syncEndTime.getTime() - syncStartTime.getTime(),
     });
   }
 

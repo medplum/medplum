@@ -156,6 +156,7 @@ export async function processDataWarehouseSyncJob(
   job: Job<DataWarehouseSyncJobData>
 ): Promise<void> {
   const syncConfig = config.dataWarehouse;
+  const jobStartTime = new Date();
 
   await withPoolClient(async (client) => {
     let hasLock = false;
@@ -184,11 +185,19 @@ export async function processDataWarehouseSyncJob(
         },
       });
 
+      let watermarkDurationSeconds = 0;
+      let syncDurationSeconds = 0;
+      for (const table of result.tables) {
+        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
+        syncDurationSeconds += table.syncDurationMs / 1000;
+      }
+
       const tables = result.tables;
-      const tableNames = tables.map((t) => t.icebergTable);
       const tablesWithRows = tables.filter((t) => t.rowsInserted > 0).length;
       const tablesEmpty = tables.length - tablesWithRows;
       const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
+      const jobEndTime = new Date();
+      const durationSeconds = (jobEndTime.getTime() - jobStartTime.getTime()) / 1000;
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
@@ -196,7 +205,12 @@ export async function processDataWarehouseSyncJob(
         tablesWithRows,
         tablesEmpty,
         rowsInserted,
-        tableNames,
+        tableCounts: Object.fromEntries(tables.map((t) => [t.icebergTable, t.rowsInserted])),
+        watermarkDurationSeconds,
+        syncDurationSeconds,
+        jobStartTime: jobStartTime.toISOString(),
+        jobEndTime: jobEndTime.toISOString(),
+        durationSeconds,
         subsystem: 'data-warehouse-sync',
       });
     } catch (err) {
