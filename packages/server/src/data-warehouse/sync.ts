@@ -84,10 +84,10 @@ async function runWarehouseTableSync(
   for (const [index, spec] of options.warehouseSources.entries()) {
     const { icebergTable, postgresTable } = spec;
     const tablesCompleted = index + 1;
-    const watermarkStartTime = new Date();
+    const watermarkStartTime = Date.now();
     const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
-    const watermarkEndTime = new Date();
-    const syncStartTime = new Date();
+    const watermarkEndTime = Date.now();
+    const syncStartTime = Date.now();
     const destination = options.destination.getDestinationName(spec);
     await options.destination.ensureTargetExists(spec, namespace);
 
@@ -97,7 +97,7 @@ async function runWarehouseTableSync(
       sourcePredicate,
     });
 
-    const syncEndTime = new Date();
+    const syncEndTime = Date.now();
 
     globalLogger.debug(`Data warehouse table sync completed for table=${icebergTable}`, {
       tablesCompleted,
@@ -126,8 +126,8 @@ async function runWarehouseTableSync(
       postgresTable,
       destination,
       rowsInserted,
-      watermarkDurationMs: watermarkEndTime.getTime() - watermarkStartTime.getTime(),
-      syncDurationMs: syncEndTime.getTime() - syncStartTime.getTime(),
+      watermarkDurationMs: watermarkEndTime - watermarkStartTime,
+      syncDurationMs: syncEndTime - syncStartTime,
     });
   }
 
