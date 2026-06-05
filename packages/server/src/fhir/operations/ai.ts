@@ -43,6 +43,14 @@ const operation = makeOperationDefinition(
         documentation: 'JSON string containing the tools array (optional)',
       },
       {
+        name: 'temperature',
+        use: 'in',
+        min: 0,
+        max: '1',
+        type: 'decimal',
+        documentation: 'Sampling temperature (optional)',
+      },
+      {
         name: 'content',
         use: 'out',
         min: 0,
@@ -66,6 +74,11 @@ type AIOperationParameters = {
   messages: string;
   model: string;
   tools?: string;
+  temperature?: number;
+};
+
+type AICallOptions = {
+  temperature?: number;
 };
 
 export const aiOperationHandler = async (req: Request, res: ExpressResponse): Promise<void> => {
@@ -153,7 +166,9 @@ export async function aiOperation(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    await streamAIToClient(messages, apiKey, params.model, tools, res);
+    await streamAIToClient(messages, apiKey, params.model, tools, res, {
+      temperature: params.temperature,
+    });
     res.end();
 
     // Return undefined for streaming - response already sent
@@ -161,7 +176,9 @@ export async function aiOperation(
   }
 
   try {
-    const result = (await callAI(messages, apiKey, params.model, tools)) as {
+    const result = (await callAI(messages, apiKey, params.model, tools, false, {
+      temperature: params.temperature,
+    })) as {
       content: string | null;
       tool_calls: any[];
     };
@@ -180,16 +197,18 @@ export async function aiOperation(
  * @param model - Model to use
  * @param tools - Optional tools array (ignored in streaming mode)
  * @param res - Express response to write SSE data to
+ * @param options - Optional OpenAI parameters (temperature)
  */
 export async function streamAIToClient(
   messages: any[],
   apiKey: string,
   model: string,
   tools: any[] | undefined,
-  res: ExpressResponse
+  res: ExpressResponse,
+  options?: AICallOptions
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const response = (await callAI(messages, apiKey, model, tools, true)) as Response;
+  const response = (await callAI(messages, apiKey, model, tools, true, options)) as Response;
   if (!response.body) {
     throw new Error('No response body available for streaming');
   }
@@ -291,6 +310,7 @@ function buildParametersResponse(result: { content: string | null; tool_calls: a
  * @param model - Model to use
  * @param tools - Optional tools array
  * @param stream - Whether to enable streaming
+ * @param options - Optional OpenAI parameters (temperature)
  * @returns For non-streaming: parsed response with content and tool calls. For streaming: raw Response object.
  */
 export async function callAI(
@@ -298,12 +318,17 @@ export async function callAI(
   apiKey: string,
   model: string,
   tools?: any[],
-  stream = false
+  stream = false,
+  options?: AICallOptions
 ): Promise<{ content: string | null; tool_calls: any[] } | Response> {
   const requestBody: any = {
     model: model,
     messages: messages,
   };
+
+  if (options?.temperature !== undefined) {
+    requestBody.temperature = options.temperature;
+  }
 
   if (stream) {
     requestBody.stream = true;
