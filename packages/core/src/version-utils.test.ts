@@ -37,13 +37,13 @@ test('assertReleaseManifest', () => {
     assertReleaseManifest({
       assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
     })
-  ).toThrow('Manifest missing valid tag_name (eg. v1.2.3)');
+  ).toThrow("Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)");
   expect(() =>
     assertReleaseManifest({
       tag_name: '3.1.6',
       assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
     })
-  ).toThrow('Manifest missing valid tag_name (eg. v1.2.3)');
+  ).toThrow("Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)");
   expect(() =>
     assertReleaseManifest({
       tag_name: 'v3.1.6',
@@ -296,7 +296,7 @@ describe('fetchLatestVersionString', () => {
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchLatestVersionString('test')).rejects.toThrow(
-      "Invalid release name found. Release tag 'canary' did not start with 'v'"
+      "Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)"
     );
     fetchSpy.mockRestore();
   });
