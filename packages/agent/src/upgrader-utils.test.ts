@@ -5,6 +5,7 @@ import { MEDPLUM_RELEASES_URL, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
+import { buildManifest } from './upgrader-test-utils';
 import { downloadRelease, getReleaseBinPath, parseDownloadUrl } from './upgrader-utils';
 
 const ALL_PLATFORMS_LIST = ['win32', 'linux', 'darwin'];
@@ -16,19 +17,7 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
   });
 
   test('parseDownloadUrl', () => {
-    const manifest = {
-      tag_name: 'v4.2.4',
-      assets: [
-        {
-          name: 'medplum-agent-4.2.4-linux',
-          browser_download_url: 'https://example.com/linux',
-        },
-        {
-          name: 'medplum-agent-installer-4.2.4-windows.exe',
-          browser_download_url: 'https://example.com/win32',
-        },
-      ],
-    } satisfies ReleaseManifest;
+    const manifest = buildManifest('4.2.4');
     expect(parseDownloadUrl(manifest, 'win32')).toStrictEqual('https://example.com/win32');
     expect(parseDownloadUrl(manifest, 'linux')).toStrictEqual('https://example.com/linux');
     expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
@@ -104,19 +93,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     test('Happy path', async () => {
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      } satisfies ReleaseManifest;
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
 
@@ -187,19 +164,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     test('Cleans up file when stream errors', async () => {
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      } satisfies ReleaseManifest;
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
 
@@ -252,19 +217,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     test('Download returns 404', async () => {
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      } satisfies ReleaseManifest;
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
 
