@@ -2965,7 +2965,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
@@ -3058,7 +3057,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
@@ -3174,7 +3172,6 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       infoSpy.mockRestore();
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
@@ -3675,7 +3672,6 @@ describe('App', () => {
           blocker.close(() => res());
         });
       }
-      unlinkSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
   });
