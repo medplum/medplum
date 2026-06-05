@@ -23,7 +23,7 @@ export function clearReleaseCache(): void {
 export function assertReleaseManifest(candidate: unknown): asserts candidate is ReleaseManifest {
   const manifest = candidate as ReleaseManifest;
   if (!manifest.tag_name?.startsWith('v')) {
-    throw new Error('Manifest missing tag_name');
+    throw new Error('Manifest missing valid tag_name (eg. v1.2.3)');
   }
   const assets = manifest.assets;
   if (!assets?.length) {
