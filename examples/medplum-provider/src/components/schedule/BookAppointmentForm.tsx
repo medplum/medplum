@@ -85,7 +85,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
       // single patient in the `subject` parameter at this time. If there is
       // not exactly one patient in the appointment, skip encounter creation.
       const patient = patients[0];
-      if (!patients || patients.length > 1) {
+      if (!patient || patients.length > 1) {
         return undefined;
       }
 
