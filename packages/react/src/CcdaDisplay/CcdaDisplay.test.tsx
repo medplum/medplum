@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mock, MockInstance } from 'vitest';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -142,8 +143,8 @@ describe('CcdaDisplay', () => {
         (call) => call[0].toString().includes(VALIDATION_URL_PATTERN) && call[1]?.method === 'POST'
       );
       expect(validationCall).toBeTruthy();
-      expect(validationCall[1].credentials).toBe('omit');
-      expect(validationCall[1].body).toBeInstanceOf(FormData);
+      expect(validationCall![1].credentials).toBe('omit');
+      expect(validationCall![1].body).toBeInstanceOf(FormData);
     });
 
     // Should display validation results with 9 errors (5 + 4)

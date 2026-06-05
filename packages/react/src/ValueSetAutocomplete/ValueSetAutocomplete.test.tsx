@@ -63,7 +63,7 @@ describe('AsyncAutocomplete', () => {
     expect(selected.queryByText('Test Display 3')).not.toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
+    expect(onChange.mock.lastCall![0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
   });
 
   test('select multiple values', async () => {
@@ -83,7 +83,7 @@ describe('AsyncAutocomplete', () => {
     expect(selected.queryByText('Test Display 3')).not.toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
+    expect(onChange.mock.lastCall![0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -95,7 +95,7 @@ describe('AsyncAutocomplete', () => {
     expect(selected.queryByText('Test Display 3')).toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(2);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([
+    expect(onChange.mock.lastCall![0].map((c: ValueSetExpansionContains) => c.code)).toEqual([
       'test-code',
       'test-code-3',
     ]);
@@ -112,7 +112,7 @@ describe('AsyncAutocomplete', () => {
     });
 
     expect(onChange).toHaveBeenCalledTimes(3);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
+    expect(onChange.mock.lastCall![0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
     // Remove Test Display
     await act(async () => {
@@ -120,7 +120,7 @@ describe('AsyncAutocomplete', () => {
     });
 
     expect(onChange).toHaveBeenCalledTimes(4);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([]);
+    expect(onChange.mock.lastCall![0].map((c: ValueSetExpansionContains) => c.code)).toEqual([]);
   });
 
   test('expandParams.count overrides default count', async () => {

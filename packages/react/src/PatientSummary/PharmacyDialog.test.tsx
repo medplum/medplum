@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Mock } from 'vitest';
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
@@ -78,13 +79,13 @@ describe('PharmacyDialog', () => {
     },
   ];
 
-  let mockOnSearch: Mock<Promise<Organization[]>, [PharmacySearchParams]>;
-  let mockOnAddToFavorites: Mock<Promise<AddPharmacyResponse>, [AddFavoriteParams]>;
+  let mockOnSearch: Mock<(params: PharmacySearchParams) => Promise<Organization[]>>;
+  let mockOnAddToFavorites: Mock<(params: AddFavoriteParams) => Promise<AddPharmacyResponse>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockOnSearch = vi.fn<Promise<Organization[]>, [PharmacySearchParams]>();
-    mockOnAddToFavorites = vi.fn<Promise<AddPharmacyResponse>, [AddFavoriteParams]>();
+    mockOnSearch = vi.fn<(params: PharmacySearchParams) => Promise<Organization[]>>();
+    mockOnAddToFavorites = vi.fn<(params: AddFavoriteParams) => Promise<AddPharmacyResponse>>();
   });
 
   test('Renders search form', async () => {

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Communication, UserConfiguration } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconMail, IconStar } from '@tabler/icons-react';
@@ -17,7 +18,7 @@ const closeMock = vi.fn();
 
 async function setup(initial = '/'): Promise<void> {
   const initialUrl = new URL(initial, 'http://localhost');
-  medplum.getUserConfiguration = vi.fn(() => {
+  medplum.getUserConfiguration = vi.fn((): WithId<UserConfiguration> | undefined => {
     return {
       resourceType: 'UserConfiguration',
       id: 'test-user-config-id',

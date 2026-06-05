@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mock, MockInstance } from 'vitest';
 import type { Project, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, useWhisper } from '@medplum/react-hooks';
