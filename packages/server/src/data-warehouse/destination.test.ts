@@ -12,7 +12,7 @@ describe('data warehouse destinations', () => {
     try {
       const destination = new LocalParquetWarehouseDestination(basePath);
       const table = destination.getDestinationName({
-        postgresTable: 'Patient_history',
+        postgresTable: 'Patient_History',
         icebergTable: 'patient_history',
       });
       expect(table).toContain('patient_history.parquet');
