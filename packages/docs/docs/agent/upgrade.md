@@ -38,11 +38,15 @@ For example:
 medplum get 'Agent/$upgrade?status=active'
 ```
 
+Here, `status=active` is an `Agent` search parameter used to select which agents to upgrade. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+
 ## Parameters
 
 - `version` (optional; default: latest published version): The version to upgrade the agent(s) to. When omitted, the agent upgrades to the latest available version.
 - `timeout` (optional; default: `45000`, max: `56000`): How long, in milliseconds, the server waits for the agent to acknowledge the upgrade request before returning an error. Values above the maximum are clamped to `56000`.
 - `force` (optional; default: `false`): When `true`, instructs the agent to upgrade even if it is already running the requested version.
+
+> The parameters above configure _how_ the upgrade runs. To select _which_ agents to upgrade when using the multi-agent endpoint, use `Agent` search parameters — see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
 
 ## Single Agent Response
 
@@ -202,6 +206,12 @@ Some useful search parameters are:
 - `status`
 - `_count` and `_offset`
 
+:::note[Default page size]
+
+When `_count` is omitted, the operation upgrades at most the **default page of 20 agents** — it does _not_ automatically run against every matching agent. The maximum allowed `_count` is `100`. To upgrade more agents than fit on one page, use `_count` and `_offset` to page through the results (see [Paging Through Agents](#paging-through-agents)).
+
+:::
+
 ## Recipes
 
 ### Single Agent by ID
@@ -230,7 +240,7 @@ medplum get 'Agent/$upgrade?identifier=agent-007'
 
 ### Multiple Agents by Name
 
-Upgrade all agents with a specific name prefix:
+Upgrade agents with a specific name prefix (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$upgrade?name=Production+Agent'
@@ -238,7 +248,7 @@ medplum get 'Agent/$upgrade?name=Production+Agent'
 
 ### Multiple Agents by Status
 
-Upgrade all active agents:
+Upgrade active agents (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$upgrade?status=active'
