@@ -7,7 +7,7 @@ import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { upgraderMain } from './upgrader';
-import { mockFetchForUpgrader } from './upgrader-test-utils';
+import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 import { getReleaseBinPath } from './upgrader-utils';
 
 describe('Upgrader', () => {
@@ -193,19 +193,7 @@ describe('Upgrader', () => {
       const originalConsoleLog = console.log;
       console.log = vi.fn();
 
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      };
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(

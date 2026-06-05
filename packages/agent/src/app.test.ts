@@ -8,7 +8,6 @@ import type {
   AgentTransmitResponse,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
-  ReleaseManifest,
 } from '@medplum/core';
 import {
   ContentType,
@@ -43,7 +42,7 @@ import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort } from './test-utils';
-import { mockFetchForUpgrader } from './upgrader-test-utils';
+import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentConstants>();
@@ -2426,19 +2425,6 @@ describe('App', () => {
       const newVersion = '100.0.0';
       // Mutable -- flipped to `newVersion` to simulate upstream publishing a new release.
       let latestVersion = currentVersion;
-
-      function buildManifest(version: string): ReleaseManifest {
-        return {
-          tag_name: `v${version}`,
-          assets: [
-            { name: `medplum-agent-${version}-linux`, browser_download_url: 'https://example.com/linux' },
-            {
-              name: `medplum-agent-installer-${version}-windows.exe`,
-              browser_download_url: 'https://example.com/win32',
-            },
-          ],
-        };
-      }
 
       vi.mocked(platform).mockReturnValue('win32');
       // `latest.json` resolves to whatever `latestVersion` currently points at; concrete version
