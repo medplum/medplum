@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Mock } from 'vitest';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
+import type { Mock } from 'vitest';
 import { act, fireEvent, render } from '../test-utils/render';
 import { ScrollToTop } from './ScrollToTop';
 

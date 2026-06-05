@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
-import type { Communication, UserConfiguration } from '@medplum/fhirtypes';
 import type { WithId } from '@medplum/core';
+import type { Communication, UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconMail, IconStar } from '@tabler/icons-react';

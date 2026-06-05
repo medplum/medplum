@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Mocked } from 'vitest';
 import type * as MedplumCore from '@medplum/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
+import type { Mocked } from 'vitest';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { LinkTabs } from './LinkTabs';
 

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Mock } from 'vitest';
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
+import type { Mock } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { PharmacyDialog } from './PharmacyDialog';
 

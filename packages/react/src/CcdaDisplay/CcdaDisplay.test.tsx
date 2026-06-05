@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Mock, MockInstance } from 'vitest';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { Mock, MockInstance } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import * as domUtils from '../utils/dom';
 import { CcdaDisplay } from './CcdaDisplay';
