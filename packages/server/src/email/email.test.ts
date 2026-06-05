@@ -348,6 +348,7 @@ describe('Email', () => {
       { name: 'smtpPort', valueInteger: 587 },
       { name: 'smtpUsername', valueString: 'projectuser' },
       { name: 'smtpPassword', valueString: 'projectpass' },
+      { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
     ];
 
     beforeEach(() => {
@@ -386,6 +387,7 @@ describe('Email', () => {
         { name: 'smtpPort', valueInteger: 465 },
         { name: 'smtpUsername', valueString: 'projectuser' },
         { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
       ]);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
@@ -398,6 +400,7 @@ describe('Email', () => {
         { name: 'smtpPort', valueInteger: 465 },
         { name: 'smtpUsername', valueString: 'projectuser' },
         { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
         { name: 'smtpSecure', valueBoolean: false },
       ]);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
@@ -407,7 +410,10 @@ describe('Email', () => {
 
     test('From address approved by project sender list', async () => {
       const project = makeProject([
-        ...baseSecrets,
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
         { name: 'smtpFromAddress', valueString: 'default@project.example.com' },
         { name: 'smtpApprovedSenders', valueString: 'sender@project.example.com' },
       ]);
@@ -423,7 +429,10 @@ describe('Email', () => {
 
     test('Server-approved sender not accepted under project list', async () => {
       const project = makeProject([
-        ...baseSecrets,
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
         { name: 'smtpFromAddress', valueString: 'default@project.example.com' },
         { name: 'smtpApprovedSenders', valueString: 'sender@project.example.com' },
       ]);
@@ -438,12 +447,19 @@ describe('Email', () => {
       expect(sendMail.mock.calls[0][0].from).toBe('default@project.example.com');
     });
 
-    test('Falls back to support email when project has no from address', async () => {
-      const project = makeProject(baseSecrets);
-      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+    test('Missing smtpFromAddress fails loudly', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+      ]);
+      await expect(
+        sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
+      ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
 
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail.mock.calls[0][0].from).toBe(getConfig().supportEmail);
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(mockSESv2Client.send.callCount).toBe(0);
     });
 
     test('Falls back to server transport when project SMTP not configured', async () => {
@@ -465,6 +481,7 @@ describe('Email', () => {
         { name: 'smtpHost', valueString: 'smtp.project.example.com' },
         { name: 'smtpPort', valueInteger: 587 },
         { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
         // Missing smtpPassword
       ]);
       await expect(

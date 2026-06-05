@@ -20,14 +20,12 @@ Project SMTP is configured by a Project Admin using [`Project.secret`](/docs/sel
 | `smtpUsername`        | string  | yes      | SMTP username                                                                             |
 | `smtpPassword`        | string  | yes      | SMTP password                                                                             |
 | `smtpSecure`          | boolean | no       | Use TLS when connecting. If not specified, inferred from `smtpPort === 465`.             |
-| `smtpFromAddress`     | string  | no       | Default from address for emails sent through this relay                                   |
+| `smtpFromAddress`     | string  | yes      | Default from address for emails sent through this relay                                   |
 | `smtpApprovedSenders` | string  | no       | Comma-separated list of email addresses allowed as the from address                       |
 
 ## From address resolution
 
-When project SMTP is active, the from address is resolved as follows. If the caller specifies a from address, it must appear in `smtpApprovedSenders` to be used. Otherwise, the email is sent from `smtpFromAddress`, falling back to the server support email if neither is set. The server-level approved sender list is only consulted when sending through the server transport.
-
-Setting `smtpFromAddress` is strongly recommended. If it is omitted, emails fall back to the server support address, which your relay's SPF/DKIM records likely do not cover, causing authentication failures or rejected mail.
+When project SMTP is active, emails are sent from `smtpFromAddress` by default. If the caller specifies a from address, it must appear in `smtpApprovedSenders` to be used; otherwise the project's default from address is used instead. The server-level approved sender list is only consulted when sending through the server transport.
 
 ## Failure behavior
 

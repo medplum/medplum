@@ -11,14 +11,14 @@ import type { MedplumSmtpConfig } from '../config/types';
 import { getLogger } from '../logger';
 
 export interface ProjectSmtpConfig extends MedplumSmtpConfig {
-  fromAddress?: string;
+  fromAddress: string;
   approvedSenderEmails?: string;
 }
 
 /**
  * Returns the project-level SMTP configuration, if configured.
  * Project SMTP is configured via Project.secret entries: smtpHost, smtpPort, smtpUsername, smtpPassword,
- * and optionally smtpSecure, smtpFromAddress, and smtpApprovedSenders.
+ * smtpFromAddress, and optionally smtpSecure and smtpApprovedSenders.
  * @param project - The project to read SMTP configuration from.
  * @returns The project SMTP configuration, or undefined if not configured or disabled by server config.
  */
@@ -30,17 +30,22 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
   const secrets = project.secret;
   const host = secrets?.find((s) => s.name === 'smtpHost')?.valueString;
   if (!host) {
-    // Project SMTP not configured - caller falls back to server transport
     return undefined;
   }
 
   const port = secrets?.find((s) => s.name === 'smtpPort')?.valueInteger;
   const username = secrets?.find((s) => s.name === 'smtpUsername')?.valueString;
   const password = secrets?.find((s) => s.name === 'smtpPassword')?.valueString;
-  if (!port || port <= 0 || !username || !password) {
+  const fromAddress = secrets?.find((s) => s.name === 'smtpFromAddress')?.valueString;
+  if (!port || port <= 0 || !username || !password || !fromAddress) {
     getLogger().warn('Project SMTP is misconfigured', {
       projectId: project.id,
-      missing: [!port || port <= 0 ? 'smtpPort' : '', !username ? 'smtpUsername' : '', !password ? 'smtpPassword' : '']
+      missing: [
+        !port || port <= 0 ? 'smtpPort' : '',
+        !username ? 'smtpUsername' : '',
+        !password ? 'smtpPassword' : '',
+        !fromAddress ? 'smtpFromAddress' : '',
+      ]
         .filter(Boolean)
         .join(', '),
     });
@@ -53,7 +58,7 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
     username,
     password,
     secure: secrets?.find((s) => s.name === 'smtpSecure')?.valueBoolean ?? port === 465,
-    fromAddress: secrets?.find((s) => s.name === 'smtpFromAddress')?.valueString,
+    fromAddress,
     approvedSenderEmails: secrets?.find((s) => s.name === 'smtpApprovedSenders')?.valueString,
   };
 }
@@ -62,7 +67,7 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
  * Returns the from address to use.
  * If the user specified a from address, it must be an approved sender.
  * When project SMTP is active, approval is validated only against the project's approved sender list,
- * and the project's default from address is used as the fallback.
+ * and the project's `fromAddress` is used as the default (guaranteed to be set).
  * Otherwise uses the server approved sender list and the support email address.
  * @param options - The user specified nodemailer options.
  * @param projectSmtp - Optional project SMTP configuration.
@@ -71,7 +76,7 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
 export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpConfig): string {
   const config = getConfig();
   const approvedSenderEmails = projectSmtp ? projectSmtp.approvedSenderEmails : config.approvedSenderEmails;
-  const defaultFrom = projectSmtp?.fromAddress ?? config.supportEmail;
+  const defaultFrom = projectSmtp ? projectSmtp.fromAddress : config.supportEmail;
 
   if (options.from) {
     const fromAddress = addressToString(options.from);
