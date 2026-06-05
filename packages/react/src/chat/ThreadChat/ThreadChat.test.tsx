@@ -4,6 +4,7 @@ import type { ProfileResource, TypedEventTarget } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import type { Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
+import type * as MedplumReactHooks from '@medplum/react-hooks';
 // @ts-expect-error _subscriptionController is not exported from module normally
 // eslint-disable-next-line import/named
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
@@ -21,7 +22,7 @@ vi.mock('@medplum/react-hooks', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { TypedEventTarget } = require('@medplum/core');
   const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
-  const original = await importOriginal();
+  const original = await importOriginal<typeof MedplumReactHooks>();
   return {
     ...original,
     useSubscription: vi.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
