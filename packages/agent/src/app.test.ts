@@ -2445,6 +2445,9 @@ describe('App', () => {
       // URLs (e.g. the pre-spawn artifact check) return that same version's manifest.
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
         vi.fn(async (input: string | URL | Request) => {
+          if (!(typeof input === 'string' || input instanceof URL)) {
+            throw new Error('input must be string or URL object');
+          }
           const url = input.toString();
           const version = url.includes('/latest.json') ? latestVersion : newVersion;
           return new Response(JSON.stringify(buildManifest(version)), {
