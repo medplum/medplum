@@ -7,6 +7,8 @@ const AUTOCOMPLETE_DEBOUNCE_MS = 1000;
 
 /**
  * Types into an autocomplete input and advances fake timers until async search results resolve.
+ * @param input - The autocomplete input element.
+ * @param text - The search text to type.
  */
 export async function typeInAutocomplete(input: HTMLInputElement, text: string): Promise<void> {
   await act(async () => {
@@ -20,6 +22,7 @@ export async function typeInAutocomplete(input: HTMLInputElement, text: string):
 
 /**
  * Clicks an autocomplete dropdown option after waiting for it to appear.
+ * @param text - The option label text or regular expression to match.
  */
 export async function clickAutocompleteOption(text: string | RegExp): Promise<void> {
   const option = await screen.findByText(text);
@@ -31,6 +34,10 @@ export async function clickAutocompleteOption(text: string | RegExp): Promise<vo
 /**
  * Types a search string, optionally waits for a dropdown option, then selects with ArrowDown + Enter.
  * Omit optionText for creatable inputs or when the option label is not known ahead of time.
+ * @param input - The autocomplete input element.
+ * @param searchText - The search text to type.
+ * @param optionText - Optional option label to wait for before selecting.
+ * @param downCount - Number of ArrowDown presses before Enter.
  */
 export async function selectAutocompleteOption(
   input: HTMLInputElement,

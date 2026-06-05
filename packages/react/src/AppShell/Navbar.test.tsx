@@ -176,7 +176,7 @@ describe('Navbar', () => {
   test('Resource Type Search', async () => {
     await setup();
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Resource Type');
     await selectAutocompleteOption(input, 'Test');
 
     expect(navigateMock).toHaveBeenCalledWith('/test-code');

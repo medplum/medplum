@@ -96,7 +96,7 @@ describe('AppShell v1', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Resource Type');
 
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });

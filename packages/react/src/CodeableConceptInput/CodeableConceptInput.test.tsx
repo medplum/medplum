@@ -57,7 +57,7 @@ describe('CodeableConceptInput', () => {
   test('Searches for results', async () => {
     await setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));

@@ -1305,7 +1305,7 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     expect(input).toBeInTheDocument();
 
     await selectAutocompleteOption(input, 'Test', 'Test Display');
@@ -1725,7 +1725,7 @@ describe('QuestionnaireForm', () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    const searchInput = screen.getByPlaceholderText('Select items') as HTMLInputElement;
+    const searchInput = screen.getByPlaceholderText('Select items');
     expect(searchInput).toBeInTheDocument();
 
     await selectAutocompleteOption(searchInput, 'Test Display 0', 'Test Display 0');
@@ -2536,7 +2536,7 @@ describe('QuestionnaireForm', () => {
     // Add a spy on medplum.searchResources
     const searchResources = vi.spyOn(medplum, 'searchResources');
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     await typeInAutocomplete(input, 'Test');
 
     expect(await screen.findByText('Test 1')).toBeInTheDocument();

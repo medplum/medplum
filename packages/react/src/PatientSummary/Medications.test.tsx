@@ -65,7 +65,7 @@ describe('PatientSummary - Medications', () => {
       fireEvent.click(screen.getByLabelText('Add item'));
     });
 
-    const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
+    const input = (await screen.findByRole('searchbox'));
     await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     expect(screen.getByText('Test Display')).toBeDefined();
@@ -92,7 +92,7 @@ describe('PatientSummary - Medications', () => {
       fireEvent.click(screen.getByText('Tylenol'));
     });
 
-    const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
+    const input = (await screen.findByRole('searchbox'));
     await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     expect(screen.getByText('Test Display')).toBeDefined();

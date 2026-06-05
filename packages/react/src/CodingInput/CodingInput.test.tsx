@@ -43,7 +43,7 @@ describe('CodingInput', () => {
   test('Searches for results', async () => {
     await setup(<CodingInput path="" binding={binding} name="test" />);
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     expect(screen.getByText('Test Display')).toBeDefined();
@@ -52,7 +52,7 @@ describe('CodingInput', () => {
   test('Renders with empty binding property', async () => {
     await setup(<CodingInput path="" binding={undefined} name="test" />);
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     await selectAutocompleteOption(input, 'Test Empty');
 
     // Despite an undefined binding value, the app still renders and functions
