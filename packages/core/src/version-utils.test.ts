@@ -40,6 +40,12 @@ test('assertReleaseManifest', () => {
   ).toThrow('Manifest missing tag_name');
   expect(() =>
     assertReleaseManifest({
+      tag_name: '3.1.6',
+      assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
+    })
+  ).toThrow('Manifest missing tag_name');
+  expect(() =>
+    assertReleaseManifest({
       tag_name: 'v3.1.6',
     })
   ).toThrow('Manifest missing assets');
