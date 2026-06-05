@@ -143,8 +143,11 @@ describe('CcdaDisplay', () => {
         (call) => call[0].toString().includes(VALIDATION_URL_PATTERN) && call[1]?.method === 'POST'
       );
       expect(validationCall).toBeTruthy();
-      expect(validationCall![1].credentials).toBe('omit');
-      expect(validationCall![1].body).toBeInstanceOf(FormData);
+      if (!validationCall) {
+        throw new Error('Expected validation fetch call');
+      }
+      expect(validationCall[1]?.credentials).toBe('omit');
+      expect(validationCall[1]?.body).toBeInstanceOf(FormData);
     });
 
     // Should display validation results with 9 errors (5 + 4)

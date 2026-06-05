@@ -254,7 +254,7 @@ describe('DiagnosticReportDisplay', () => {
       status: 'final',
       code: { text: 'test' },
       subject: createReference(HomerSimpson),
-      result: [createReference(obs) as Reference<Observation>],
+      result: [createReference(obs)],
     };
 
     await act(async () => {

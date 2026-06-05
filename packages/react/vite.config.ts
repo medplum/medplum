@@ -15,6 +15,7 @@ export default defineConfig({
         if (source.endsWith('.module.css')) {
           return resolve(import.meta.dirname, 'src/test-mocks/cssModuleProxy.ts');
         }
+        return undefined;
       },
     },
   ],

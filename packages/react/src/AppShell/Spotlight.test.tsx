@@ -7,6 +7,7 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type * as MedplumReactHooks from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Spotlight } from './Spotlight';
@@ -23,7 +24,7 @@ const { mockNavigate } = vi.hoisted(() => ({
 }));
 
 vi.mock('@medplum/react-hooks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@medplum/react-hooks')>();
+  const actual = await importOriginal<typeof MedplumReactHooks>();
   return {
     ...actual,
     useMedplumNavigate: () => mockNavigate,
