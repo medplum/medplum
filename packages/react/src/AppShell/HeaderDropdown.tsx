@@ -79,7 +79,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   );
   const showLayoutToggle = props.showLayoutVersionToggle ?? true;
 
-  const projectDisplay = project?.name ?? medplum.getActiveLogin()?.project.display
+  const projectDisplay = project?.name ?? medplum.getActiveLogin()?.project.display;
   const profileDisplay = activeLogin?.profile.display ?? (profile ? formatHumanName(profile.name?.[0]) : undefined);
 
   function switchLogin(login: LoginState): void {
