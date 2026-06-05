@@ -776,9 +776,7 @@ describe('FHIR Repo', () => {
     });
 
     try {
-      await repo.withTransaction(async (txRepo) => {
-        await txRepo.reindexResources([patient]);
-      });
+      await repo.reindexResources([patient]);
       fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
@@ -808,11 +806,7 @@ describe('FHIR Repo', () => {
     const logger = getLogger();
     const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
 
-    await expect(
-      systemRepo.withTransaction(async (txRepo) => {
-        await txRepo.reindexResources([patient1]);
-      })
-    ).rejects.toThrow('test error');
+    await expect(systemRepo.reindexResources([patient1])).rejects.toThrow('test error');
     expect(errorSpy).toHaveBeenCalledWith('Error building row for resource', {
       resource: 'Patient/' + patient1.id,
       err: expect.any(Error),
