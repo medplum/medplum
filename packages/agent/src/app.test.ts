@@ -2409,7 +2409,7 @@ describe('App', () => {
       clearReleaseCache();
 
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child: MockChildProcess | undefined;
 
@@ -2440,30 +2440,28 @@ describe('App', () => {
         };
       }
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       // `latest.json` resolves to whatever `latestVersion` currently points at; concrete version
       // URLs (e.g. the pre-spawn artifact check) return that same version's manifest.
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async (input: string) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (input: string | URL | Request) => {
           const url = input.toString();
           const version = url.includes('/latest.json') ? latestVersion : newVersion;
           return new Response(JSON.stringify(buildManifest(version)), {
             headers: { 'content-type': 'application/json' },
             status: 200,
           });
-        }) as unknown as typeof globalThis.fetch
-      );
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
         })
       );
+      vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2584,9 +2582,7 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, spawnSpy]) {
-        spy.mockRestore();
-      }
+      fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
