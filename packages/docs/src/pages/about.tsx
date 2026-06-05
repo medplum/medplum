@@ -96,7 +96,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Matt Willer"
               title="Founding Engineer"
-              imgUrl="/img/people/mattwiller.webp"
+              imgUrl="/img/people/matt.webp"
               linkedInUrl="https://www.linkedin.com/in/matt-willer-0b779463/"
               githubUrl="https://github.com/mattwiller"
             />
@@ -110,7 +110,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Matt Long"
               title="Founding Engineer"
-              imgUrl="/img/people/mattlong.webp"
+              imgUrl="/img/people/ml.webp"
               linkedInUrl="https://www.linkedin.com/in/mateolargo/"
               githubUrl="https://github.com/mattlong"
             />
