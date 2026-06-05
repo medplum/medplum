@@ -111,12 +111,12 @@ describe('syncData local destination (integration)', () => {
     });
 
     // Then: sync reports an inserted parquet artifact for the expected table
-    expect(result.resources).toHaveLength(1);
-    expect(result.resources[0]?.count).toBe(1);
-    expect(result.resources[0]?.table).toContain(`${warehouseSources[0]?.icebergTable}.parquet`);
+    expect(result.tables).toHaveLength(1);
+    expect(result.tables[0]?.rowsInserted).toBe(1);
+    expect(result.tables[0]?.destination).toContain(`${warehouseSources[0]?.icebergTable}.parquet`);
 
     // Then: the written file is a valid parquet payload
-    const parquetPath = result.resources[0]?.table;
+    const parquetPath = result.tables[0]?.destination;
     assertParquetMagic(readFileSync(parquetPath));
 
     // Then: projected row values are readable and match source content
