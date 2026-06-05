@@ -24,14 +24,14 @@ async function setup(args: PlanDefinitionBuilderProps): Promise<void> {
 
 describe('PlanDefinitionBuilder', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -39,7 +39,7 @@ describe('PlanDefinitionBuilder', () => {
       value: {
         resourceType: 'PlanDefinition',
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
     expect(screen.getByTestId('questionnaire-form')).toBeDefined();
   });
@@ -47,7 +47,7 @@ describe('PlanDefinitionBuilder', () => {
   test('Render existing', async () => {
     await setup({
       value: ExampleWorkflowPlanDefinition,
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(await screen.findByDisplayValue('Example Plan Definition')).toBeDefined();
@@ -65,7 +65,7 @@ describe('PlanDefinitionBuilder', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByTestId('action1')).not.toHaveClass('hovering');
@@ -82,7 +82,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Handles submit', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       value: ExampleWorkflowPlanDefinition,
@@ -99,7 +99,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Change plan title', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       value: {
@@ -127,7 +127,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Change action title', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       value: {
@@ -162,7 +162,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Add activity definition action', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
     await setup({
       value: {
         resourceType: 'PlanDefinition',
@@ -203,7 +203,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Add questionnaire action', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       value: {
@@ -243,7 +243,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Add task action', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       value: {
@@ -283,7 +283,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Remove action', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       value: {
@@ -315,7 +315,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Validate activity definition action', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await medplum.createResource<ActivityDefinition>({
       resourceType: 'ActivityDefinition',
@@ -355,7 +355,7 @@ describe('PlanDefinitionBuilder', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(screen.getByText('Comprehensive Metabolic Panel')).toBeInTheDocument();
@@ -386,7 +386,7 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Validate previously selected activity definition action', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await medplum.createResource<ActivityDefinition>({
       resourceType: 'ActivityDefinition',
@@ -396,7 +396,7 @@ describe('PlanDefinitionBuilder', () => {
       url: 'https://example.com/ActivityDefinition/activity-definition-1',
     });
 
-    medplum.readCanonical = jest.fn().mockResolvedValue({
+    medplum.readCanonical = vi.fn().mockResolvedValue({
       resourceType: 'ActivityDefinition',
       id: 'activity-definition-1',
       name: 'Comprehensive Metabolic Panel',

@@ -9,26 +9,26 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 import { LinkTabs } from './LinkTabs';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
-jest.mock('@medplum/core', () => ({
-  ...jest.requireActual('@medplum/core'),
+vi.mock('@medplum/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medplum/core')>()),
   locationUtils: {
-    getPathname: jest.fn(),
+    getPathname: vi.fn(),
   },
 }));
 
-const mockLocationUtils = locationUtils as jest.Mocked<typeof locationUtils>;
+const mockLocationUtils = locationUtils as Mocked<typeof locationUtils>;
 
 describe('LinkTabs', () => {
   beforeEach(() => {
     navigateMock.mockClear();
     mockLocationUtils.getPathname.mockReturnValue('/patient/123/overview');
-    jest.spyOn(window, 'open').mockImplementation(() => null);
+    vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   const defaultProps = {
@@ -109,7 +109,7 @@ describe('LinkTabs', () => {
   });
 
   test('allows middle click', async () => {
-    console.error = jest.fn(); // Suppress warning for "navigation not implemented" warning
+    console.error = vi.fn(); // Suppress warning for "navigation not implemented" warning
 
     setup();
 

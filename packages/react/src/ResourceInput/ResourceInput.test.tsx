@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { forwardRef } from 'react';
 import type { AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { ResourceInputProps } from './ResourceInput';
 import { ResourceInput } from './ResourceInput';
 
@@ -22,14 +22,14 @@ function setup(args: ResourceInputProps): void {
 
 describe('ResourceInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', () => {
@@ -72,14 +72,14 @@ describe('ResourceInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Call onChange', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       resourceType: 'Patient',
@@ -97,20 +97,17 @@ describe('ResourceInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
-    // Press the down arrow
+    await waitFor(() => {
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    });
+
     await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.click(screen.getByText('Homer Simpson'));
     });
 
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(onChange).toHaveBeenCalled();
   });
 
@@ -131,7 +128,7 @@ describe('ResourceInput', () => {
   });
 
   test('Clear button calls onChange', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await act(async () => {
       setup({
@@ -158,7 +155,7 @@ describe('ResourceInput', () => {
   });
 
   test('Clear all button calls onChange', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await act(async () => {
       setup({
@@ -202,7 +199,7 @@ describe('ResourceInput', () => {
       name: 'foo',
       placeholder: 'Test',
       itemComponent: MyTestItemComponent,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
 
     const input = screen.getByPlaceholderText('Test');
@@ -214,7 +211,7 @@ describe('ResourceInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();

@@ -18,19 +18,19 @@ async function setup(child: ReactNode): Promise<void> {
 
 describe('SearchFilterEditor', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Not visible', async () => {
     await setup(
-      <SearchFilterEditor search={{ resourceType: 'Patient' }} visible={false} onOk={jest.fn()} onCancel={jest.fn()} />
+      <SearchFilterEditor search={{ resourceType: 'Patient' }} visible={false} onOk={vi.fn()} onCancel={vi.fn()} />
     );
 
     expect(screen.queryByTestId('filter-field')).toBeNull();
@@ -115,7 +115,7 @@ describe('SearchFilterEditor', () => {
     );
 
     await act(async () => {
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
     });
 
     // Wait for the resource to load
@@ -134,7 +134,7 @@ describe('SearchFilterEditor', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
     });
 
     expect(screen.getByText('Different')).toBeInTheDocument();

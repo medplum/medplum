@@ -18,10 +18,12 @@ for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
   indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
 }
 
-const mockNavigate = jest.fn();
+const { mockNavigate } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+}));
 
-jest.mock('@medplum/react-hooks', () => {
-  const actual = jest.requireActual('@medplum/react-hooks');
+vi.mock('@medplum/react-hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@medplum/react-hooks')>();
   return {
     ...actual,
     useMedplumNavigate: () => mockNavigate,
@@ -53,7 +55,7 @@ describe('Spotlight', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockNavigate.mockReset();
     medplum = new MockClient();
 
@@ -104,7 +106,7 @@ describe('Spotlight', () => {
     });
 
     test('performs search and shows results', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -119,7 +121,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: {
@@ -205,7 +207,7 @@ describe('Spotlight', () => {
 
   describe('patientsOnly mode', () => {
     test('searches only patients when patientsOnly is true', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -250,7 +252,7 @@ describe('Spotlight', () => {
 
   describe('Action clicks and navigation', () => {
     test('clicking search result patient navigates to patient page', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -265,7 +267,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },
@@ -297,7 +299,7 @@ describe('Spotlight', () => {
     });
 
     test('clicking search result service request navigates to service request page', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: undefined,
           Patients2: undefined,
@@ -311,7 +313,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },
@@ -343,7 +345,7 @@ describe('Spotlight', () => {
     });
 
     test('clicking resource type navigates to resource type page', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: undefined,
           Patients2: undefined,
@@ -351,7 +353,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: {
@@ -388,7 +390,7 @@ describe('Spotlight', () => {
 
   describe('Resource display', () => {
     test('displays patient name when available', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -403,7 +405,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },
@@ -431,7 +433,7 @@ describe('Spotlight', () => {
     });
 
     test('displays patient ID when name is not available', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -445,7 +447,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },
@@ -471,7 +473,7 @@ describe('Spotlight', () => {
     });
 
     test('displays birthDate as description for patients', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -486,7 +488,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },
@@ -511,7 +513,7 @@ describe('Spotlight', () => {
     });
 
     test('displays "Resource Type" as description for resource type actions', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: undefined,
           Patients2: undefined,
@@ -519,7 +521,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: {
@@ -547,7 +549,7 @@ describe('Spotlight', () => {
     });
 
     test('displays service request subject display', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: undefined,
           Patients2: undefined,
@@ -561,7 +563,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },
@@ -588,7 +590,7 @@ describe('Spotlight', () => {
 
   describe('Deduplication', () => {
     test('deduplicates patients from multiple search results', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+      const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
         data: {
           Patients1: [
             {
@@ -608,7 +610,7 @@ describe('Spotlight', () => {
         },
       });
 
-      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+      const valueSetSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
         resourceType: 'ValueSet',
         status: 'active',
         expansion: { timestamp: new Date().toISOString(), contains: [] },

@@ -17,18 +17,18 @@ function setup(child: ReactNode): void {
 
 describe('SearchFilterValueInput', () => {
   beforeEach(async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Text input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -46,7 +46,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Boolean input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -72,7 +72,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Date input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -92,7 +92,7 @@ describe('SearchFilterValueInput', () => {
   test('Date/Time input', async () => {
     const isoString = '2020-01-01T00:00:00.000Z';
     const localString = convertIsoToLocal(isoString);
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -110,7 +110,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Quantity input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -131,7 +131,7 @@ describe('SearchFilterValueInput', () => {
     // Warm up the default value
     await medplum.readResource('Organization', '123');
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -158,7 +158,7 @@ describe('SearchFilterValueInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow

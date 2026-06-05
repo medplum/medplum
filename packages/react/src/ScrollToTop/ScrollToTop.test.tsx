@@ -6,7 +6,7 @@ import { ScrollToTop } from './ScrollToTop';
 
 describe('ScrollToTop', () => {
   beforeEach(() => {
-    window.scrollTo = jest.fn();
+    window.scrollTo = vi.fn();
   });
 
   test('scrolls to top on route change', async () => {
@@ -22,7 +22,7 @@ describe('ScrollToTop', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
 
     // Clear mock calls
-    (window.scrollTo as jest.Mock).mockClear();
+    (window.scrollTo as Mock).mockClear();
 
     // Simulate navigation
     await act(() => fireEvent.click(container.querySelector('a') as HTMLAnchorElement));

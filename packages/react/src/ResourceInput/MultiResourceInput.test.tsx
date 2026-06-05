@@ -3,7 +3,7 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MargeSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { MultiResourceInputProps } from './MultiResourceInput';
 import { MultiResourceInput } from './MultiResourceInput';
 
@@ -19,14 +19,14 @@ function setup(args: MultiResourceInputProps): void {
 
 describe('MultiResourceInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', () => {
@@ -89,14 +89,14 @@ describe('MultiResourceInput', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Call onChange with array when item is selected', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       resourceType: 'Patient',
@@ -112,15 +112,15 @@ describe('MultiResourceInput', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     });
 
     await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(screen.getByText('Homer Simpson'));
     });
 
     expect(onChange).toHaveBeenCalled();
@@ -144,7 +144,7 @@ describe('MultiResourceInput', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await act(async () => {
@@ -160,7 +160,7 @@ describe('MultiResourceInput', () => {
   });
 
   test('Clear all button calls onChange with empty array', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await act(async () => {
       setup({
@@ -210,7 +210,7 @@ describe('MultiResourceInput', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await act(async () => {

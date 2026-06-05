@@ -557,7 +557,7 @@ describe('ResourcePropertyDisplay', () => {
 
       // Mock clipboard API
       const mockClipboard = {
-        writeText: jest.fn().mockResolvedValue(undefined),
+        writeText: vi.fn().mockResolvedValue(undefined),
       };
       Object.defineProperty(navigator, 'clipboard', {
         value: mockClipboard,
@@ -583,7 +583,7 @@ describe('ResourcePropertyDisplay', () => {
 
       // Mock clipboard API
       const mockClipboard = {
-        writeText: jest.fn().mockResolvedValue(undefined),
+        writeText: vi.fn().mockResolvedValue(undefined),
       };
       Object.defineProperty(navigator, 'clipboard', {
         value: mockClipboard,

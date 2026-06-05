@@ -56,7 +56,7 @@ describe('SetPasswordForm', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders form', async () => {
@@ -68,7 +68,7 @@ describe('SetPasswordForm', () => {
   });
 
   test('Submit success', async () => {
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
     await setup({ id: '123', secret: '456', onSuccess });
 
     await act(async () => {
@@ -108,7 +108,7 @@ describe('SetPasswordForm', () => {
   });
 
   test('Invalid password error from server', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     await setup({ id: '123', secret: '456' });
 
     await act(async () => {
@@ -125,15 +125,15 @@ describe('SetPasswordForm', () => {
     });
 
     await act(async () => {
-      await jest.runAllTimersAsync();
+      await vi.runAllTimersAsync();
     });
 
     expect(screen.getByText('Invalid password')).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Shows sign in link when onSignIn provided', async () => {
-    const onSignIn = jest.fn();
+    const onSignIn = vi.fn();
     await setup({ id: '123', secret: '456', onSignIn });
 
     await act(async () => {

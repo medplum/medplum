@@ -85,7 +85,7 @@ describe('ResourceTable', () => {
     }
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
+    const fakeRequestProfileSchema = vi.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
     const value = HomerSimpsonUSCorePatient;

@@ -23,14 +23,14 @@ describe('PatientSummary - Allergies', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -72,7 +72,7 @@ describe('PatientSummary - Allergies', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -116,7 +116,7 @@ describe('PatientSummary - Allergies', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow

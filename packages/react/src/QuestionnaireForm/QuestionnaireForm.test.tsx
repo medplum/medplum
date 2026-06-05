@@ -5,23 +5,12 @@ import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/f
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
-import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireForm } from './QuestionnaireForm';
 
 const medplum = new MockClient();
-
-jest.mock('signature_pad', () => {
-  return jest.fn().mockImplementation(() => ({
-    fromDataURL: jest.fn().mockResolvedValue(undefined),
-    clear: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    toDataURL: jest.fn(() => 'data:image/png;base64,signature-data'),
-  }));
-});
 
 const pageExtension: Extension[] = [
   {
@@ -51,14 +40,14 @@ async function setup(args: QuestionnaireFormProps): Promise<void> {
 
 describe('QuestionnaireForm', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -67,7 +56,7 @@ describe('QuestionnaireForm', () => {
         resourceType: 'Questionnaire',
         status: 'active',
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
   });
@@ -85,14 +74,14 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
     expect(screen.getByText('Hello world')).toBeInTheDocument();
   });
 
   test('Groups', async () => {
-    const onChange = jest.fn();
-    const onSubmit = jest.fn();
+    const onChange = vi.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -195,7 +184,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Groups with QuestionnaireResponse', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -373,7 +362,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Handles submit', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -472,7 +461,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Handles submit (empty)', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -499,7 +488,7 @@ describe('QuestionnaireForm', () => {
     expect(response.source).toBeDefined();
   });
 
-  each([
+  test.each([
     [QuestionnaireItemType.decimal, 'number', '123.456'],
     [QuestionnaireItemType.integer, 'number', '123'],
     [QuestionnaireItemType.date, 'date', '2020-01-01'],
@@ -509,7 +498,7 @@ describe('QuestionnaireForm', () => {
     [QuestionnaireItemType.text, 'textarea', 'lorem ipsum'],
     [QuestionnaireItemType.url, 'text', 'https://example.com/'],
     [QuestionnaireItemType.quantity, 'number', '123'],
-  ]).test('%s question', async (propertyType: QuestionnaireItemType, inputType: string, value: string) => {
+  ])('%s question', async (propertyType: QuestionnaireItemType, inputType: string, value: string) => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -522,7 +511,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     const input = screen.getByLabelText<HTMLInputElement>('q1');
@@ -552,7 +541,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     const input = screen.getByLabelText<HTMLInputElement>('q1');
@@ -566,7 +555,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice input', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -621,7 +610,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice valueReference default value', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -673,7 +662,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice valueCoding default value', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -745,7 +734,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByText('q1')).toBeInTheDocument();
@@ -792,7 +781,7 @@ describe('QuestionnaireForm', () => {
       ],
     };
 
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({ questionnaire, onSubmit });
 
@@ -820,7 +809,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Reference input', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -848,7 +837,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Drop down choice input', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -932,7 +921,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('referenceResource extension with valueCodeableConcept', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -975,7 +964,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('referenceResource extension with valueCode', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -1001,7 +990,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Drop down choice input default value', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -1055,7 +1044,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Drop down choice input default reference value', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -1158,7 +1147,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     const visibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *');
@@ -1258,7 +1247,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
     // The form should render
     expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
@@ -1289,7 +1278,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Value Set Choice', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -1317,7 +1306,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -1373,14 +1362,14 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
   });
 
   test('Value Set Checkbox', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     // Mock the value set expansion to return more than 30 items
     const mockValueSet = {
@@ -1395,7 +1384,7 @@ describe('QuestionnaireForm', () => {
     };
 
     // Mock the medplum client's valueSetExpand method
-    medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
+    medplum.valueSetExpand = vi.fn().mockResolvedValue(mockValueSet);
 
     await setup({
       questionnaire: {
@@ -1431,7 +1420,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for value set to load
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Check that checkboxes are rendered
@@ -1474,7 +1463,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Value Set Radio Button', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -1509,7 +1498,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for value set to load
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Check that radio buttons are rendered
@@ -1534,7 +1523,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Non-Value Set Checkbox', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -1601,7 +1590,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Checkbox Selection and Deselection', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -1690,7 +1679,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Multi-Select Dropdown Value Set', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     // Mock the value set expansion to return multiple items
     const mockValueSet = {
@@ -1705,7 +1694,7 @@ describe('QuestionnaireForm', () => {
     };
 
     // Mock the medplum client's valueSetExpand method
-    medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
+    medplum.valueSetExpand = vi.fn().mockResolvedValue(mockValueSet);
 
     await setup({
       questionnaire: {
@@ -1742,7 +1731,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for value set to load
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     const searchInput = screen.getByPlaceholderText('Select items');
@@ -1755,7 +1744,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for options to load
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Select the first option
@@ -1776,7 +1765,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for options to load
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Select the second option (press ArrowDown twice to get to the third option)
@@ -1842,7 +1831,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     const dropDown = screen.getByText('choice');
@@ -1895,7 +1884,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     // The form should render
@@ -1922,7 +1911,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Disabled enableWhen items excluded from submitted response', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -2004,7 +1993,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     // Visible questions should be rendered
@@ -2056,7 +2045,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     // Trigger question should be visible
@@ -2134,7 +2123,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByText('q1')).toBeInTheDocument();
@@ -2189,7 +2178,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByText('q1')).toBeInTheDocument();
@@ -2238,7 +2227,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     await act(async () => {
@@ -2282,7 +2271,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByText('q1')).toBeInTheDocument();
@@ -2293,7 +2282,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Nested repeat', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -2388,7 +2377,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     await act(async () => {
@@ -2406,7 +2395,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Repeating string items maintain values when typing', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -2488,7 +2477,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
@@ -2525,7 +2514,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
@@ -2547,7 +2536,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
@@ -2578,11 +2567,11 @@ describe('QuestionnaireForm', () => {
         ],
       },
       subject: { reference: 'Patient/123' },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     // Add a spy on medplum.searchResources
-    const searchResources = jest.spyOn(medplum, 'searchResources');
+    const searchResources = vi.spyOn(medplum, 'searchResources');
 
     // Get the search input
     const input = screen.getByRole('searchbox');
@@ -2594,7 +2583,7 @@ describe('QuestionnaireForm', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(screen.getByText('Test 1')).toBeDefined();
@@ -2608,7 +2597,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Questionnaire CalculatedExpression with boolean field', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -2690,7 +2679,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Questionnaire CalculatedExpression failed to evaluate expression', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -2735,7 +2724,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Questionnaire CalculatedExpression with nested groups', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -2814,7 +2803,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Questionnaire CalculatedExpression with nested groups and QuestionnaireResponse', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -2913,7 +2902,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Required radio button choice validation', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -2956,7 +2945,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Required dropdown choice validation', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -3012,7 +3001,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Required value set dropdown validation', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -3063,7 +3052,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Required value set radio button validation', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -3096,7 +3085,7 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     const radioButtons = screen.getAllByRole('radio');
@@ -3120,7 +3109,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Required boolean field validation', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -3193,7 +3182,7 @@ describe('QuestionnaireForm', () => {
     test('Renders signature input when signature is required', async () => {
       await setup({
         questionnaire: signatureRequiredQuestionnaire,
-        onSubmit: jest.fn(),
+        onSubmit: vi.fn(),
       });
 
       expect(screen.getByLabelText('Signature input area')).toBeInTheDocument();
@@ -3213,14 +3202,14 @@ describe('QuestionnaireForm', () => {
             },
           ],
         },
-        onSubmit: jest.fn(),
+        onSubmit: vi.fn(),
       });
 
       expect(screen.queryByLabelText('Signature input area')).not.toBeInTheDocument();
     });
 
     test('Shows error message when submit is attempted without signature', async () => {
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
 
       await setup({
         questionnaire: signatureRequiredQuestionnaire,

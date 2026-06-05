@@ -17,14 +17,13 @@ type SubscriptionControllerEvents = {
   subscription: { type: 'subscription'; criteria: string; bundle: Bundle };
 };
 
-jest.mock('@medplum/react-hooks', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { TypedEventTarget } = require('@medplum/core');
+vi.mock('@medplum/react-hooks', async (importOriginal) => {
+  const { TypedEventTarget } = await import('@medplum/core');
   const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
-  const original = jest.requireActual('@medplum/react-hooks');
+  const original = await importOriginal<typeof import('@medplum/react-hooks')>();
   return {
     ...original,
-    useSubscription: jest.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
+    useSubscription: vi.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
       _subscriptionController.addEventListener('subscription', (event) => {
         if (criteria === event.criteria) {
           callback(event.bundle);
@@ -393,7 +392,7 @@ describe('ThreadChat', () => {
 
   test('Sending message', async () => {
     const thread = await createThreadHeader(defaultMedplum);
-    const onMessageSent = jest.fn();
+    const onMessageSent = vi.fn();
 
     const threadProps = {
       title: 'Test Chat',
@@ -489,7 +488,7 @@ describe('ThreadChat', () => {
       content: [{ attachment: { title: 'report.pdf', url: 'https://example.com/report.pdf' } }],
     });
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     await setup({ thread, uploadEnabled: true });
 
@@ -498,13 +497,13 @@ describe('ThreadChat', () => {
 
     // Wait for debounced fetch and document to appear
     await act(async () => {
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
     });
 
     const docButton = await screen.findByText('Attached report');
     await act(() => fireEvent.click(docButton));
 
-    jest.useRealTimers();
+    vi.useRealTimers();
 
     // Send message
     act(() => {
@@ -536,7 +535,7 @@ describe('ThreadChat', () => {
       status: 'current',
       content: [{ attachment: { title: 'scan.pdf', url: 'https://example.com/scan.pdf' } }],
     };
-    const createDocRefSpy = jest.spyOn(defaultMedplum, 'createDocumentReference').mockResolvedValue(createdDocRef);
+    const createDocRefSpy = vi.spyOn(defaultMedplum, 'createDocumentReference').mockResolvedValue(createdDocRef);
 
     await setup({ thread, uploadEnabled: true });
 
@@ -580,7 +579,7 @@ describe('ThreadChat', () => {
       status: 'current',
       content: [{ attachment: { title: 'doc.pdf', url: 'https://example.com/doc.pdf' } }],
     };
-    const createDocRefSpy = jest.spyOn(defaultMedplum, 'createDocumentReference').mockResolvedValue(createdDocRef);
+    const createDocRefSpy = vi.spyOn(defaultMedplum, 'createDocumentReference').mockResolvedValue(createdDocRef);
 
     await setup({ thread, uploadEnabled: true });
 

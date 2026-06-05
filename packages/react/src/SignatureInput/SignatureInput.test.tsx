@@ -7,16 +7,6 @@ import SignaturePad from 'signature_pad';
 import { act, render, screen } from '../test-utils/render';
 import { SignatureInput } from './SignatureInput';
 
-jest.mock('signature_pad', () => {
-  return jest.fn().mockImplementation(() => ({
-    fromDataURL: jest.fn(),
-    clear: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    toDataURL: jest.fn(() => 'data:image/png;base64,signature-data'),
-  }));
-});
-
 describe('SignatureInput', () => {
   const medplum = new MockClient();
 
@@ -27,17 +17,17 @@ describe('SignatureInput', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders', async () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
 
     await setup(<SignatureInput onChange={handleChange} />);
     expect(screen.getByLabelText('Signature input area')).toBeInTheDocument();
     expect(SignaturePad).toHaveBeenCalledTimes(1);
 
-    const signaturePadConstructor = SignaturePad as jest.Mock;
+    const signaturePadConstructor = SignaturePad as Mock;
     expect(signaturePadConstructor).toBeDefined();
 
     const signaturePadInstance = signaturePadConstructor.mock.results[0].value;
@@ -50,7 +40,7 @@ describe('SignatureInput', () => {
       clearButton.click();
     });
 
-    const handler = (signaturePadInstance.addEventListener as jest.Mock).mock.calls[0][1];
+    const handler = (signaturePadInstance.addEventListener as Mock).mock.calls[0][1];
     expect(handler).toBeDefined();
     expect(typeof handler).toBe('function');
 
@@ -72,28 +62,30 @@ describe('SignatureInput', () => {
   });
 
   test('Signature data is raw binary (base64)', async () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
 
     // Mock a realistic base64-encoded PNG signature data
     const mockBase64Data =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
     const mockDataURL = `data:image/png;base64,${mockBase64Data}`;
 
-    const signaturePadMock = jest.fn().mockImplementation(() => ({
-      fromDataURL: jest.fn(),
-      clear: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      toDataURL: jest.fn(() => mockDataURL),
-    }));
+    const signaturePadMock = vi.fn(function () {
+      return {
+        fromDataURL: vi.fn(),
+        clear: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        toDataURL: vi.fn(() => mockDataURL),
+      };
+    });
 
     // Override the mock for this test
-    (SignaturePad as jest.Mock).mockImplementation(signaturePadMock);
+    (SignaturePad as Mock).mockImplementation(signaturePadMock);
 
     await setup(<SignatureInput onChange={handleChange} />);
 
-    const signaturePadInstance = (SignaturePad as jest.Mock).mock.results[0].value;
-    const handler = (signaturePadInstance.addEventListener as jest.Mock).mock.calls[0][1];
+    const signaturePadInstance = (SignaturePad as Mock).mock.results[0].value;
+    const handler = (signaturePadInstance.addEventListener as Mock).mock.calls[0][1];
 
     act(() => {
       handler();
@@ -120,7 +112,7 @@ describe('SignatureInput', () => {
   });
 
   test('Signature data extraction from data URL', async () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
 
     // Test with different data URL formats
     const testCases = [
@@ -139,22 +131,24 @@ describe('SignatureInput', () => {
     ];
 
     for (const testCase of testCases) {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
-      const signaturePadMock = jest.fn().mockImplementation(() => ({
-        fromDataURL: jest.fn(),
-        clear: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        toDataURL: jest.fn(() => testCase.dataURL),
-      }));
+      const signaturePadMock = vi.fn(function () {
+        return {
+          fromDataURL: vi.fn(),
+          clear: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          toDataURL: vi.fn(() => testCase.dataURL),
+        };
+      });
 
-      (SignaturePad as jest.Mock).mockImplementation(signaturePadMock);
+      (SignaturePad as Mock).mockImplementation(signaturePadMock);
 
       await setup(<SignatureInput onChange={handleChange} />);
 
-      const signaturePadInstance = (SignaturePad as jest.Mock).mock.results[0].value;
-      const handler = (signaturePadInstance.addEventListener as jest.Mock).mock.calls[0][1];
+      const signaturePadInstance = (SignaturePad as Mock).mock.results[0].value;
+      const handler = (signaturePadInstance.addEventListener as Mock).mock.calls[0][1];
 
       act(() => {
         handler();
@@ -175,27 +169,29 @@ describe('SignatureInput', () => {
   });
 
   test('Signature data is binary content, not text', async () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
 
     // Create a mock that simulates binary PNG data
     const binaryData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]);
     const base64Data = btoa(String.fromCodePoint(...binaryData));
     const dataURL = `data:image/png;base64,${base64Data}`;
 
-    const signaturePadMock = jest.fn().mockImplementation(() => ({
-      fromDataURL: jest.fn(),
-      clear: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      toDataURL: jest.fn(() => dataURL),
-    }));
+    const signaturePadMock = vi.fn(function () {
+      return {
+        fromDataURL: vi.fn(),
+        clear: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        toDataURL: vi.fn(() => dataURL),
+      };
+    });
 
-    (SignaturePad as jest.Mock).mockImplementation(signaturePadMock);
+    (SignaturePad as Mock).mockImplementation(signaturePadMock);
 
     await setup(<SignatureInput onChange={handleChange} />);
 
-    const signaturePadInstance = (SignaturePad as jest.Mock).mock.results[0].value;
-    const handler = (signaturePadInstance.addEventListener as jest.Mock).mock.calls[0][1];
+    const signaturePadInstance = (SignaturePad as Mock).mock.results[0].value;
+    const handler = (signaturePadInstance.addEventListener as Mock).mock.calls[0][1];
 
     act(() => {
       handler();

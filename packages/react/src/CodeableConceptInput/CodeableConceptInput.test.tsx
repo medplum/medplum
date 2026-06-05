@@ -13,14 +13,14 @@ const binding = 'https://example.com/test';
 
 describe('CodeableConceptInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   async function setup(props?: Partial<CodeableConceptInputProps>): Promise<void> {
@@ -29,7 +29,7 @@ describe('CodeableConceptInput', () => {
       name: 'test',
       path: 'Resource.test',
       outcome: undefined,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
       ...props,
     };
     await act(async () => {
@@ -66,7 +66,7 @@ describe('CodeableConceptInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow

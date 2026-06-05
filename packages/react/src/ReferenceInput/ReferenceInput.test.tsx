@@ -19,14 +19,14 @@ function setup(args: ReferenceInputProps): void {
 
 describe('ReferenceInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty property', () => {
@@ -107,7 +107,7 @@ describe('ReferenceInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -124,7 +124,7 @@ describe('ReferenceInput', () => {
   });
 
   test('Call onChange', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       name: 'foo',
@@ -147,7 +147,7 @@ describe('ReferenceInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -212,7 +212,7 @@ describe('ReferenceInput', () => {
 
     // Wait for the autocomplete timeout
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Blinky is a fish, Bart is not
@@ -231,7 +231,7 @@ describe('ReferenceInput', () => {
 
     // Wait for the autocomplete timeout
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Now that Patient is selected, both fish and non-fish are shown

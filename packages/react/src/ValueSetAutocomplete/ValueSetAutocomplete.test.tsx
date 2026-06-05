@@ -9,14 +9,14 @@ import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomple
 
 describe('AsyncAutocomplete', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   async function enterSearchString(input: HTMLInputElement, text: string): Promise<void> {
@@ -26,7 +26,7 @@ describe('AsyncAutocomplete', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
   }
 
@@ -47,7 +47,7 @@ describe('AsyncAutocomplete', () => {
   }
 
   test('select one value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <MedplumProvider medplum={new MockClient()}>
         <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={1} />
@@ -67,7 +67,7 @@ describe('AsyncAutocomplete', () => {
   });
 
   test('select multiple values', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <MedplumProvider medplum={new MockClient()}>
         <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={5} />
@@ -125,13 +125,13 @@ describe('AsyncAutocomplete', () => {
 
   test('expandParams.count overrides default count', async () => {
     const medplum = new MockClient();
-    const spy = jest.spyOn(medplum, 'valueSetExpand');
+    const spy = vi.spyOn(medplum, 'valueSetExpand');
 
     render(
       <MedplumProvider medplum={medplum}>
         <ValueSetAutocomplete
           binding="x"
-          onChange={jest.fn()}
+          onChange={vi.fn()}
           placeholder="Test"
           maxValues={1}
           expandParams={{ count: 25 }}
@@ -148,11 +148,11 @@ describe('AsyncAutocomplete', () => {
 
   test('uses default count of 10 when expandParams omits count', async () => {
     const medplum = new MockClient();
-    const spy = jest.spyOn(medplum, 'valueSetExpand');
+    const spy = vi.spyOn(medplum, 'valueSetExpand');
 
     render(
       <MedplumProvider medplum={medplum}>
-        <ValueSetAutocomplete binding="x" onChange={jest.fn()} placeholder="Test" maxValues={1} />
+        <ValueSetAutocomplete binding="x" onChange={vi.fn()} placeholder="Test" maxValues={1} />
       </MedplumProvider>
     );
 
@@ -164,7 +164,7 @@ describe('AsyncAutocomplete', () => {
   });
 
   test('empty search', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <MedplumProvider medplum={new MockClient()}>
         <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={1} />

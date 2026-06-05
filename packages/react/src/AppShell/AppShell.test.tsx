@@ -8,7 +8,7 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
 async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
   // Reset localStorage before each test
@@ -51,15 +51,15 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
 
 describe('AppShell v1', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
@@ -109,7 +109,7 @@ describe('AppShell v1', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -128,15 +128,15 @@ describe('AppShell v1', () => {
 
 describe('AppShell v2', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders v2', async () => {

@@ -4,11 +4,11 @@ import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 const medplum = new MockClient();
-medplum.graphql = jest.fn((query: string) => {
+medplum.graphql = vi.fn((query: string) => {
   const data: Record<string, unknown> = {};
   if (query.includes('"Simpson"')) {
     data.Patients1 = [HomerSimpson];
@@ -78,7 +78,7 @@ medplum.graphql = jest.fn((query: string) => {
   return Promise.resolve({ data });
 });
 
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
 function setup(): void {
   render(
@@ -92,15 +92,15 @@ function setup(): void {
 
 describe('HeaderSearchInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', () => {
@@ -120,19 +120,15 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    await waitFor(() => {
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     });
 
-    // Press "Enter"
     await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(screen.getByText('Homer Simpson'));
     });
 
     expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
@@ -150,19 +146,15 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    await waitFor(() => {
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     });
 
-    // Press "Enter"
     await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(screen.getByText('Homer Simpson'));
     });
 
     expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
@@ -181,7 +173,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -209,7 +201,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -234,7 +226,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow
@@ -259,7 +251,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     // Press the down arrow

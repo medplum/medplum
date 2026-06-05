@@ -78,18 +78,18 @@ describe('PharmacyDialog', () => {
     },
   ];
 
-  let mockOnSearch: jest.Mock<Promise<Organization[]>, [PharmacySearchParams]>;
-  let mockOnAddToFavorites: jest.Mock<Promise<AddPharmacyResponse>, [AddFavoriteParams]>;
+  let mockOnSearch: Mock<Promise<Organization[]>, [PharmacySearchParams]>;
+  let mockOnAddToFavorites: Mock<Promise<AddPharmacyResponse>, [AddFavoriteParams]>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockOnSearch = jest.fn<Promise<Organization[]>, [PharmacySearchParams]>();
-    mockOnAddToFavorites = jest.fn<Promise<AddPharmacyResponse>, [AddFavoriteParams]>();
+    vi.clearAllMocks();
+    mockOnSearch = vi.fn<Promise<Organization[]>, [PharmacySearchParams]>();
+    mockOnAddToFavorites = vi.fn<Promise<AddPharmacyResponse>, [AddFavoriteParams]>();
   });
 
   test('Renders search form', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     await setup(
       <PharmacyDialog
@@ -112,8 +112,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Shows warning when searching without criteria', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     await setup(
       <PharmacyDialog
@@ -134,8 +134,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Performs search with valid criteria', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
 
@@ -171,8 +171,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Displays search results', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
 
@@ -201,8 +201,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Shows no results message', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue([]);
 
@@ -228,8 +228,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Selects pharmacy from results', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
 
@@ -264,8 +264,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Adds pharmacy to favorites', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
     mockOnAddToFavorites.mockResolvedValue({
@@ -315,8 +315,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Adds pharmacy as primary', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
     mockOnAddToFavorites.mockResolvedValue({
@@ -370,8 +370,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Handles search error', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockRejectedValue(new Error('Search failed'));
 
@@ -397,8 +397,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Handles add pharmacy error', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
     mockOnAddToFavorites.mockRejectedValue(new Error('Failed to add pharmacy'));
@@ -436,8 +436,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Closes dialog on cancel', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
 
@@ -470,8 +470,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Disables add button when no pharmacy selected', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
 
@@ -503,8 +503,8 @@ describe('PharmacyDialog', () => {
   });
 
   test('Handles non-success response', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
 
     mockOnSearch.mockResolvedValue(mockPharmacies);
     mockOnAddToFavorites.mockResolvedValue({
