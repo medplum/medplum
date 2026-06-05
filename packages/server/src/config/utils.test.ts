@@ -74,6 +74,16 @@ describe('utils', () => {
     });
   });
 
+  test('setValue stores dataWarehouse.includeResourceTypes as comma-separated list', () => {
+    const config = {};
+    setValue(config, 'dataWarehouse.includeResourceTypes', 'Patient,Observation');
+    expect(config).toEqual({
+      dataWarehouse: {
+        includeResourceTypes: ['Patient', 'Observation'],
+      },
+    });
+  });
+
   test('setValue parses objects', () => {
     const config = {};
     const jsonData = '{"host":"smtp.example.com","port":587,"username":"username","password":"p@ssw0rd"}';

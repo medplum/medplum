@@ -18,7 +18,7 @@ function wrapper(medplum: MockClient) {
 describe('useSyncOrderSet', () => {
   test('POSTs planDefinitionId to $sync-orderset', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters', parameter: [] });
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters', parameter: [] });
 
     const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
 
@@ -34,7 +34,7 @@ describe('useSyncOrderSet', () => {
 
   test('silently no-ops when operation is not deployed (not-found)', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockRejectedValue(
+    vi.spyOn(medplum, 'post').mockRejectedValue(
       new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Operation not found' }],
@@ -50,7 +50,7 @@ describe('useSyncOrderSet', () => {
 
   test('re-throws non-not-found errors', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockRejectedValue(
+    vi.spyOn(medplum, 'post').mockRejectedValue(
       new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: [{ severity: 'error', code: 'exception', diagnostics: 'Internal server error' }],

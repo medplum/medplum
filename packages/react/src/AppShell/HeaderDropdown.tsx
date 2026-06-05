@@ -72,13 +72,14 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const activeLogin = medplum.getActiveLogin();
   const logins = medplum.getLogins();
   const recentLogins = logins.filter((login) => !isSameLogin(login, activeLogin));
+  const project = medplum.getProject();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [layoutVersion] = useState(
     () => (localStorage['appShellLayoutVersion'] as AppShellLayoutVersion | undefined) ?? 'v1'
   );
   const showLayoutToggle = props.showLayoutVersionToggle ?? true;
 
-  const projectDisplay = activeLogin?.project.display;
+  const projectDisplay = project?.name ?? medplum.getActiveLogin()?.project.display
   const profileDisplay = activeLogin?.profile.display ?? (profile ? formatHumanName(profile.name?.[0]) : undefined);
 
   function switchLogin(login: LoginState): void {

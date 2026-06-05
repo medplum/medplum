@@ -458,6 +458,42 @@ describe('Client', () => {
     expect(client.isProjectAdmin()).toBe(true);
   });
 
+  test('syncStoredLoginProject updates stale project name after refresh', async () => {
+    // Stored login captured the project name at login time; it has since been renamed.
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
+        refreshToken: '456',
+        project: { reference: 'Project/123', display: 'Old Project Name' },
+        profile: { reference: 'Practitioner/123' },
+      })
+    );
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('auth/me')) {
+        return {
+          project: { resourceType: 'Project', id: '123', name: 'New Project Name' },
+          membership: { resourceType: 'ProjectMembership', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
+          config: { resourceType: 'UserConfiguration', id: '123' },
+          accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
+    expect(client.getActiveLogin()?.project.display).toBe('Old Project Name');
+
+    // refreshProfile() resolves auth/me and then syncs the live project name back to storage.
+    await client.getProfileAsync();
+
+    expect(client.getActiveLogin()?.project.display).toBe('New Project Name');
+    const updatedLogin = client.getLogins().find((login) => login.profile.reference === 'Practitioner/123');
+    expect(updatedLogin?.project.display).toBe('New Project Name');
+  });
+
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();

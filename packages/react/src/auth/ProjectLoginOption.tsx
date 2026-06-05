@@ -18,7 +18,7 @@ export function ProjectLoginOption(props: ProjectLoginOptionProps): JSX.Element 
   const projectTitle = label ? `${projectDisplay} - ${label}` : projectDisplay;
 
   return (
-    <Group gap="xs" align="center" wrap="nowrap">
+    <Group gap="xs" align="center" wrap="nowrap" style={{ width: '100%', minWidth: 0 }}>
       <Box className={classes.iconBox}>
         <IconBriefcase size={16} stroke={2} />
       </Box>
