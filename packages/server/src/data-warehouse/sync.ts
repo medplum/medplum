@@ -122,16 +122,6 @@ async function runWarehouseTableSync(
     });
   }
 
-  const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
-  globalLogger.info('Data warehouse sync completed', {
-    tablesSynced: tables.length,
-    tablesWithRows: tables.filter((t) => t.rowsInserted > 0).length,
-    tablesEmpty: tables.filter((t) => t.rowsInserted === 0).length,
-    rowsInserted,
-    tables,
-    subsystem: 'data-warehouse-sync',
-  });
-
   return tables;
 }
 

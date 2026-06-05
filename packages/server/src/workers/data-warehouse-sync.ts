@@ -185,6 +185,7 @@ export async function processDataWarehouseSyncJob(
       });
 
       const tables = result.tables;
+      const tableNames = tables.map((t) => t.icebergTable);
       const tablesWithRows = tables.filter((t) => t.rowsInserted > 0).length;
       const tablesEmpty = tables.length - tablesWithRows;
       const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
@@ -195,7 +196,7 @@ export async function processDataWarehouseSyncJob(
         tablesWithRows,
         tablesEmpty,
         rowsInserted,
-        tables,
+        tableNames,
         subsystem: 'data-warehouse-sync',
       });
     } catch (err) {
