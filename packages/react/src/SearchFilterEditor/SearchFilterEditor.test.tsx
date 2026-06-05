@@ -5,7 +5,7 @@ import { Operator } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen, typeInAutocomplete, waitFor } from '../test-utils/render';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
 const medplum = new MockClient();
@@ -128,24 +128,10 @@ describe('SearchFilterEditor', () => {
     });
 
     const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Different' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(200);
-    });
-
-    expect(screen.getByText('Different')).toBeInTheDocument();
-
-    // Press the down arrow
+    await typeInAutocomplete(input, 'Different');
+    expect(await screen.findByText('Different')).toBeInTheDocument();
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 

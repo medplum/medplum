@@ -4,7 +4,7 @@ import type { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption, within } from '../test-utils/render';
 import type { CodeableConceptInputProps } from './CodeableConceptInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
 
@@ -57,27 +57,8 @@ describe('CodeableConceptInput', () => {
   test('Searches for results', async () => {
     await setup();
 
-    const input = screen.getByRole('searchbox');
-
-    // Enter random text
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.getByText('Test Display')).toBeDefined();

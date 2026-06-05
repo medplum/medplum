@@ -4,7 +4,7 @@ import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption, typeInAutocomplete, within } from '../test-utils/render';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 describe('AsyncAutocomplete', () => {
@@ -19,33 +19,6 @@ describe('AsyncAutocomplete', () => {
     vi.useRealTimers();
   });
 
-  async function enterSearchString(input: HTMLInputElement, text: string): Promise<void> {
-    await act(async () => {
-      fireEvent.change(input, { target: { value: text } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-  }
-
-  async function selectOption(input: HTMLInputElement, text: string, downCount: number): Promise<void> {
-    await enterSearchString(input, text);
-
-    // Press the down arrow
-    await act(async () => {
-      for (let i = 0; i < downCount; i++) {
-        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-      }
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-  }
-
   test('select one value', async () => {
     const onChange = vi.fn();
     render(
@@ -56,7 +29,7 @@ describe('AsyncAutocomplete', () => {
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
-    await selectOption(input, 'Display', 1);
+    await selectAutocompleteOption(input, 'Display', 'Test Display');
     const selected = within(screen.getByTestId('selected-items'));
     expect(selected.queryByText('Test Display')).toBeInTheDocument();
     expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
@@ -76,7 +49,7 @@ describe('AsyncAutocomplete', () => {
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
-    await selectOption(input, 'Display', 1);
+    await selectAutocompleteOption(input, 'Display', 'Test Display');
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.queryByText('Test Display')).toBeInTheDocument();
     expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
@@ -140,7 +113,7 @@ describe('AsyncAutocomplete', () => {
     );
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
-    await enterSearchString(input, 'test');
+    await typeInAutocomplete(input, 'test');
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 25 }), expect.anything());
     spy.mockRestore();
@@ -157,7 +130,7 @@ describe('AsyncAutocomplete', () => {
     );
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
-    await enterSearchString(input, 'test');
+    await typeInAutocomplete(input, 'test');
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 10 }), expect.anything());
     spy.mockRestore();
@@ -173,7 +146,7 @@ describe('AsyncAutocomplete', () => {
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
-    await enterSearchString(input, '');
+    await typeInAutocomplete(input, '');
     const options = screen.getByTestId(AsyncAutocompleteTestIds.options);
     expect(options).not.toHaveAttribute('hidden');
     expect(onChange).toHaveBeenCalledTimes(0);

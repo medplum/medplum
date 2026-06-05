@@ -4,7 +4,14 @@ import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import {
+  act,
+  clickAutocompleteOption,
+  fireEvent,
+  render,
+  screen,
+  typeInAutocomplete,
+} from '../test-utils/render';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 const medplum = new MockClient();
@@ -113,23 +120,8 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByRole('searchbox');
 
-    // Enter "Simpson"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Homer Simpson'));
-    });
+    await typeInAutocomplete(input, 'Simpson');
+    await clickAutocompleteOption('Homer Simpson');
 
     expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
   });
@@ -139,23 +131,8 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByRole('searchbox');
 
-    // Enter "00000000-0000-0000-0000-000000000000"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: '00000000-0000-0000-0000-000000000000' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Homer Simpson'));
-    });
+    await typeInAutocomplete(input, '00000000-0000-0000-0000-000000000000');
+    await clickAutocompleteOption('Homer Simpson');
 
     expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
   });
@@ -165,28 +142,12 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByRole('searchbox');
 
-    // Enter the search term
     // Can be patient name, patient identifier, or service request identifier
-    await act(async () => {
-      fireEvent.change(input, { target: { value: query } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
+    await typeInAutocomplete(input, query);
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
-
-    // expect(onChange).toHaveBeenCalled();
   });
 
   test('Sort by relevance', async () => {
@@ -194,23 +155,10 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByRole('searchbox');
 
-    // Enter "Simpson"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'many' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
+    await typeInAutocomplete(input, 'many');
 
     // There should only be 5 results displayed
-    const elements = screen.getAllByText('__Many__', { exact: false });
+    const elements = await screen.findAllByText('__Many__', { exact: false });
     expect(elements.length).toBe(5);
   });
 
@@ -219,23 +167,10 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByRole('searchbox');
 
-    // Enter "many"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'many' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
+    await typeInAutocomplete(input, 'many');
 
     // There should only be 5 results displayed
-    const elements = screen.getAllByText('__Many__', { exact: false });
+    const elements = await screen.findAllByText('__Many__', { exact: false });
     expect(elements.length).toBe(5);
   });
 
@@ -244,22 +179,9 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByRole('searchbox');
 
-    // Enter "empty"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'empty' } });
-    });
+    await typeInAutocomplete(input, 'empty');
 
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    expect(screen.getByText('Patient/emptyPatient')).toBeInTheDocument();
+    expect(await screen.findByText('Patient/emptyPatient')).toBeInTheDocument();
     expect(screen.getByText('ServiceRequest/emptyServiceRequest')).toBeInTheDocument();
   });
 });

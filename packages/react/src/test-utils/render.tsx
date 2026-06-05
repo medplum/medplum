@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import type { JSX, ReactNode } from 'react';
 
 export { act, fireEvent, screen, userEvent, waitFor, within };
+export { clickAutocompleteOption, selectAutocompleteOption, typeInAutocomplete } from './asyncAutocomplete';
 
 const theme = {};
 

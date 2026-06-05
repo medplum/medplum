@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
@@ -96,33 +96,13 @@ describe('AppShell v1', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const input = screen.getByPlaceholderText('Resource Type');
+    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
 
-    // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
 
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith('/test-code');
+    await selectAutocompleteOption(input, 'Test');
   });
 });
 

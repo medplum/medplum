@@ -4,7 +4,7 @@ import type { ActivityDefinition } from '@medplum/fhirtypes';
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, clickAutocompleteOption, fireEvent, render, screen, typeInAutocomplete } from '../test-utils/render';
 import type { PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 import { PlanDefinitionBuilder } from './PlanDefinitionBuilder';
 
@@ -347,22 +347,9 @@ describe('PlanDefinitionBuilder', () => {
 
     expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
 
-    const input = screen.getByPlaceholderText('Search for activity definition');
-
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Comprehensive' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    expect(screen.getByText('Comprehensive Metabolic Panel')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Comprehensive Metabolic Panel'));
-    });
+    const input = screen.getByPlaceholderText('Search for activity definition') as HTMLInputElement;
+    await typeInAutocomplete(input, 'Comprehensive');
+    await clickAutocompleteOption('Comprehensive Metabolic Panel');
 
     expect(screen.getByText('Save')).toBeDefined();
 

@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();
@@ -152,24 +152,7 @@ describe('SearchFilterValueInput', () => {
     });
 
     const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Different' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Different', 'Different');
 
     // Expect new organization selected
     expect(onChange).toHaveBeenCalledWith('Organization/456');

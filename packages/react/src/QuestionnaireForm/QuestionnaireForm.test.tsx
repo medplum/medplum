@@ -6,7 +6,15 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import {
+  act,
+  clickAutocompleteOption,
+  fireEvent,
+  render,
+  screen,
+  selectAutocompleteOption,
+  typeInAutocomplete,
+} from '../test-utils/render';
 import type { QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireForm } from './QuestionnaireForm';
 
@@ -1297,27 +1305,10 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByRole('searchbox');
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
     expect(input).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    });
+    await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     await act(async () => {
       fireEvent.click(screen.getByText('Submit'));
@@ -1420,11 +1411,11 @@ describe('QuestionnaireForm', () => {
 
     // Wait for value set to load
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Check that checkboxes are rendered
-    const checkboxes = screen.getAllByRole('checkbox');
+    const checkboxes = await screen.findAllByRole('checkbox');
     expect(checkboxes.length).toBeGreaterThan(0);
 
     // Verify that the cutoff message is shown
@@ -1498,11 +1489,11 @@ describe('QuestionnaireForm', () => {
 
     // Wait for value set to load
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Check that radio buttons are rendered
-    const radioButtons = screen.getAllByRole('radio');
+    const radioButtons = await screen.findAllByRole('radio');
     expect(radioButtons.length).toBeGreaterThan(0);
 
     // Click the first radio button
@@ -1731,49 +1722,21 @@ describe('QuestionnaireForm', () => {
 
     // Wait for value set to load
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
-    const searchInput = screen.getByPlaceholderText('Select items');
+    const searchInput = screen.getByPlaceholderText('Select items') as HTMLInputElement;
     expect(searchInput).toBeInTheDocument();
 
-    // Select first option
-    await act(async () => {
-      fireEvent.change(searchInput, { target: { value: 'Test Display 0' } });
-    });
-
-    // Wait for options to load
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Select the first option
-    await act(async () => {
-      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(searchInput, 'Test Display 0', 'Test Display 0');
 
     // Clear input for second selection
     await act(async () => {
       fireEvent.change(searchInput, { target: { value: '' } });
     });
 
-    // Select second option
-    await act(async () => {
-      fireEvent.change(searchInput, { target: { value: 'Test Display 2' } });
-    });
-
-    // Wait for options to load
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Select the second option (press ArrowDown twice to get to the third option)
-    await act(async () => {
-      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
-    });
+    await typeInAutocomplete(searchInput, 'Test Display 2');
+    await clickAutocompleteOption('Test Display 2');
 
     // Submit the form
     await act(async () => {
@@ -2573,20 +2536,10 @@ describe('QuestionnaireForm', () => {
     // Add a spy on medplum.searchResources
     const searchResources = vi.spyOn(medplum, 'searchResources');
 
-    // Get the search input
-    const input = screen.getByRole('searchbox');
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    await typeInAutocomplete(input, 'Test');
 
-    // Enter "Simpson"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    expect(screen.getByText('Test 1')).toBeDefined();
+    expect(await screen.findByText('Test 1')).toBeInTheDocument();
     expect(searchResources).toHaveBeenCalledTimes(1);
     expect(searchResources.mock.calls[0][0]).toBe('Observation');
     expect(searchResources.mock.calls[0][1]).toBeInstanceOf(URLSearchParams);
