@@ -1759,7 +1759,7 @@
           {
             "id" : "ProjectMembership.accessPolicy",
             "path" : "ProjectMembership.accessPolicy",
-            "definition" : "The access policy for the user within the project memebership.",
+            "definition" : "The access policy for the user within the project membership.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1858,7 +1858,7 @@
           {
             "id" : "ProjectMembership.userConfiguration",
             "path" : "ProjectMembership.userConfiguration",
-            "definition" : "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+            "definition" : "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -5464,6 +5464,46 @@
               "path" : "IdentityProvider.useSubject",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.identitySource",
+            "path" : "IdentityProvider.identitySource",
+            "short" : "External credential field used to identify the user.",
+            "definition" : "External credential field used to identify the user.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.identitySource",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-identity-source|4.0.1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.identityMappingMode",
+            "path" : "IdentityProvider.identityMappingMode",
+            "short" : "Medplum identity mapping target.",
+            "definition" : "Medplum identity mapping target.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.identityMappingMode",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-identity-mapping-mode|4.0.1"
             }
           }
         ]

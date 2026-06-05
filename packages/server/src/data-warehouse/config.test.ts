@@ -1,11 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { ResourceType } from '@medplum/fhirtypes';
 import pgConnectionString from 'pg-connection-string';
+
+jest.mock('@medplum/core', () => {
+  const actual = jest.requireActual('@medplum/core');
+  return {
+    ...actual,
+    getResourceTypes: jest.fn((): ResourceType[] => ['Patient', 'Observation', 'Account', 'AuditEvent']),
+  };
+});
+
 import {
   DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
   appendMedplumDatabaseSslSearchParams,
   buildPgConnectionURI,
+  getWarehouseSyncPostgresTableNames,
   toIcebergTableName,
 } from './config';
 
@@ -95,6 +106,37 @@ describe('appendMedplumDatabaseSslSearchParams', () => {
     const parsed = new URL(uri);
     expect(parsed.searchParams.get('sslcert')).toBe('/path/with spaces/client.crt');
     expect(uri).toContain('sslcert=%2Fpath%2Fwith%20spaces%2Fclient.crt');
+  });
+});
+
+describe('getWarehouseSyncPostgresTableNames', () => {
+  test('returns all history tables when include and exclude are omitted', () => {
+    const all = getWarehouseSyncPostgresTableNames();
+    const filtered = getWarehouseSyncPostgresTableNames(['Patient', 'Observation']);
+
+    expect(all).toStrictEqual(['Patient_History', 'Observation_History', 'Account_History', 'AuditEvent_History']);
+    expect(filtered).toStrictEqual(['Patient_History', 'Observation_History']);
+  });
+
+  test('returns all history tables when include and exclude lists are empty', () => {
+    expect(getWarehouseSyncPostgresTableNames([], [])).toStrictEqual(getWarehouseSyncPostgresTableNames());
+    expect(getWarehouseSyncPostgresTableNames([], undefined)).toStrictEqual(getWarehouseSyncPostgresTableNames());
+  });
+
+  test('excludes resource types from sync', () => {
+    expect(getWarehouseSyncPostgresTableNames(undefined, ['Account'])).toStrictEqual([
+      'Patient_History',
+      'Observation_History',
+      'AuditEvent_History',
+    ]);
+  });
+
+  test('includes all resource types except excluded when include is empty', () => {
+    expect(getWarehouseSyncPostgresTableNames([], ['AuditEvent'])).toStrictEqual([
+      'Patient_History',
+      'Observation_History',
+      'Account_History',
+    ]);
   });
 });
 

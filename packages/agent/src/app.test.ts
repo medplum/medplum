@@ -29,6 +29,7 @@ import type { ChildProcess } from 'node:child_process';
 import child_process from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
+import net from 'node:net';
 import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
@@ -1779,6 +1780,76 @@ describe('App', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
   }, 5000);
 
+  test('Agent transmit response while status is off returns disabled error', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      agentError: undefined as AgentError | undefined,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:error') {
+          state.agentError = command;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      status: 'off',
+      name: 'Test Agent',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // The agent is primary (no upgrade in progress) but disabled, so an inbound transmit response
+    // should be rejected with a disabled error rather than handed off to a channel.
+    const callback = getReferenceString(agent) + '-' + randomUUID();
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:response',
+          channel: 'test',
+          remote: 'mllp://localhost:9999',
+          contentType: ContentType.HL7_V2,
+          body: 'ACK',
+          callback,
+        } satisfies AgentTransmitResponse)
+      )
+    );
+
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+    while (!state.agentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.agentError.callback).toStrictEqual(callback);
+    expect(state.agentError.body).toContain('Agent.status is currently set to off');
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  }, 5000);
+
   describe('Upgrade', () => {
     beforeEach(() => {
       const upgradeFilePath = resolve(__dirname, 'upgrade.json');
@@ -3130,6 +3201,256 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
+    test('Upgrading -- Ignores transmit requests until it becomes primary', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID until
+      // we flip this flag, simulating the outgoing agent still owning the PID during the overlap.
+      let allowPrimary = false;
+      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+        if (appName === 'medplum-agent' && !allowPrimary) {
+          throw new Error('Unable to create PID');
+        }
+        return '/tmp/test.pid';
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:transmit:response':
+              state.transmitResponses.push(command);
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const listenerPort = await getFreePort();
+      const hl7Messages: Hl7Message[] = [];
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          hl7Messages.push(message);
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(listenerPort);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const appStartPromise = app.start();
+      appStartPromise.catch(console.error);
+
+      // Wait for the WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const transmitRequest = {
+        type: 'agent:transmit:request',
+        contentType: ContentType.HL7_V2,
+        body:
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r',
+        remote: `mllp://localhost:${listenerPort}`,
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentTransmitRequest;
+
+      // While non-primary, the transmit request should be dropped: the remote receives nothing and
+      // no response comes back. (The outgoing agent is still primary and handles it during overlap.)
+      state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
+      await sleep(500);
+      expect(hl7Messages).toHaveLength(0);
+      expect(state.transmitResponses).toHaveLength(0);
+
+      // Now let the agent win the PID and become primary. Wait until the PID is actually acquired
+      // (which sets isPrimary) before sending again, since dropped requests are not queued/replayed.
+      allowPrimary = true;
+      let shouldThrow = false;
+      let timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (!createPidFileSpy.mock.results.some((result) => result.type === 'return')) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for agent to become primary');
+        }
+        await sleep(50);
+      }
+      clearTimeout(timeout);
+
+      // The same request should now be forwarded to the remote and acknowledged.
+      state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
+
+      shouldThrow = false;
+      timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (hl7Messages.length === 0 || state.transmitResponses.length === 0) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for transmit to be forwarded after becoming primary');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(hl7Messages).toHaveLength(1);
+      expect(state.transmitResponses).toHaveLength(1);
+
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      createPidFileSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrading -- Ignores transmit responses until it becomes primary', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID, simulating
+      // the outgoing agent still owning the PID during the overlap.
+      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+        if (appName === 'medplum-agent') {
+          throw new Error('Unable to create PID');
+        }
+        return '/tmp/test.pid';
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.DEBUG);
+      const appStartPromise = app.start();
+      appStartPromise.catch(console.error);
+
+      // Wait for the WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const debugSpy = jest.spyOn(app.log, 'debug');
+      const addToHl7QueueSpy = jest.spyOn(app, 'addToHl7Queue');
+
+      // While non-primary, an inbound transmit response should be dropped before any handling: it is
+      // not queued for a channel and produces no disabled/error response back to the server.
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: 'test',
+            remote: 'mllp://localhost:9999',
+            contentType: ContentType.HL7_V2,
+            body: 'ACK',
+            callback: getReferenceString(agent) + '-' + randomUUID(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+
+      // Wait for the debug log indicating the response was ignored
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (
+        !debugSpy.mock.calls.some((call) => String(call[0]).includes('Ignoring transmit response while not primary'))
+      ) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for transmit response to be ignored');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(addToHl7QueueSpy).not.toHaveBeenCalled();
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      debugSpy.mockRestore();
+      addToHl7QueueSpy.mockRestore();
+      createPidFileSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
     test('Upgrade -- Missing artifact for platform', async () => {
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
 
@@ -3224,6 +3545,160 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
+    });
+
+    test('Upgrading -- deletes manifest before channel listeners finish binding (zero-downtime, no deadlock)', async () => {
+      // Regression test for the zero-downtime upgrade deadlock.
+      //
+      // During a real upgrade, the previous agent keeps listening on the channel ports until the
+      // installer stops it -- and the installer only stops it once this (new) agent deletes
+      // upgrade.json. So the new agent MUST delete the manifest while its listeners are still
+      // trying to bind; if it waited for the binds to finish first, it would deadlock: the ports
+      // never free, the manifest is never deleted, and both services run forever.
+      //
+      // We simulate that here: a blocker server holds the channel's port (standing in for the old
+      // agent still listening), and we only release it when upgrade.json is deleted (standing in for
+      // the installer stopping the old agent). If start() deferred manifest deletion until after the
+      // listeners bound, this test would deadlock and trip the timeout below.
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const manifestPath = resolve(__dirname, 'upgrade.json');
+
+      // Occupy the channel's port to mimic the previous agent still listening on it.
+      const port = await getFreePort();
+      const blocker = net.createServer();
+      await new Promise<void>((res) => {
+        blocker.listen(port, res);
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+      // How many channels had bound (and thus registered themselves in `app.channels`) at the moment
+      // the manifest was deleted. The fix guarantees this is 0 -- the bind is deferred past deletion.
+      let channelsBoundAtManifestDeletion = -1;
+
+      writeFileSync(
+        manifestPath,
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: `mllp://0.0.0.0:${port}`,
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+
+      const realUnlinkSync = fs.unlinkSync.bind(fs);
+      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+        if (path === manifestPath) {
+          // A channel only registers in `app.channels` once it has successfully bound, so this
+          // proves the manifest is deleted while the listener is still (re)trying to bind.
+          channelsBoundAtManifestDeletion = app.channels.size;
+          // Release the port, mimicking the installer stopping the old agent -- this is what finally
+          // lets the new agent's listener win the bind.
+          blocker.close();
+        }
+        realUnlinkSync(path);
+      });
+
+      // If the manifest-deletion / bind ordering regresses, start() never resolves; fail with a
+      // clear message instead of hanging until the jest timeout.
+      let timeoutHandle: NodeJS.Timeout | undefined;
+      const deadlockTimeout = new Promise<never>((_resolve, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error('app.start() deadlocked: manifest not deleted before listeners bound')),
+          5000
+        );
+      });
+      try {
+        await expect(Promise.race([app.start(), deadlockTimeout])).resolves.toBeUndefined();
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
+
+      // The manifest was deleted while the listener was still unbound (deferred bind worked)...
+      expect(channelsBoundAtManifestDeletion).toBe(0);
+      expect(unlinkSyncSpy).toHaveBeenCalledWith(manifestPath);
+      // ...and once the port freed, the listener bound...
+      expect(app.channels.size).toBe(1);
+
+      // ...and the upgrade was finalized successfully (the response is delivered asynchronously
+      // over the mock WebSocket, so poll for it).
+      let waited = 0;
+      while (!state.gotAgentUpgradeResponse && waited < 3000) {
+        await sleep(50);
+        waited += 50;
+      }
+      expect(state.gotAgentUpgradeResponse).toBe(true);
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((res) => {
+        mockServer.stop(res);
+      });
+      if (blocker.listening) {
+        await new Promise<void>((res) => {
+          blocker.close(() => res());
+        });
+      }
+      unlinkSyncSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
   });
 
@@ -3480,6 +3955,159 @@ describe('App', () => {
     });
 
     for (const spy of [unlinkSyncSpy, createPidFileSpy, platformSpy, fetchSpy, writeFileSyncSpy, isAppRunningSpy]) {
+      spy.mockReset();
+    }
+    console.log = originalConsoleLog;
+  });
+
+  test('Upgrading -- Upgrade in progress (force) with no manifest file, should not throw', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentUpgradeResponse: false,
+      agentError: undefined as AgentError | undefined,
+      disconnectCalled: false,
+    };
+
+    let child!: MockChildProcess;
+
+    const manifestPath = resolve(__dirname, 'upgrade.json');
+    const originalExistsSync = fs.existsSync.bind(fs);
+    // Manifest does not exist on disk; the upgrade is only "in progress" because an upgrader process is running
+    const existsSyncSpy = jest
+      .spyOn(fs, 'existsSync')
+      .mockImplementation((path) => (path === manifestPath ? false : originalExistsSync(path)));
+    // Mimic the real fs behavior: unlinking a non-existent file throws ENOENT.
+    // The fix must guard with existsSync so this is never reached for the missing manifest.
+    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation((path) => {
+      throw Object.assign(new Error(`ENOENT: no such file or directory, unlink '${String(path)}'`), {
+        code: 'ENOENT',
+      });
+    });
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    const fetchSpy = mockFetchForUpgrader();
+    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
+    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
+      jest.fn(() => {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      })
+    );
+    // Report the upgrader process as running so the agent considers an upgrade "in progress",
+    // even though the manifest file does not exist (existsSync mocked to false above)
+    const isAppRunningSpy = jest
+      .spyOn(pidModule, 'isAppRunning')
+      .mockImplementation(
+        (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
+      );
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:upgrade:response':
+            if (command.statusCode !== 200) {
+              throw new Error('Invalid status code. Expected 200');
+            }
+            state.gotAgentUpgradeResponse = true;
+            break;
+
+          case 'agent:error':
+            state.agentError = command;
+            break;
+
+          default:
+            throw new Error('Unhandled message type');
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for the WebSocket to reconnect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    const callback = getReferenceString(agent) + '-' + randomUUID();
+
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:upgrade:request',
+        callback,
+        force: true,
+      } satisfies AgentUpgradeRequest)
+    );
+
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!child) {
+      if (shouldThrow) {
+        throw new Error('Timeout while waiting for child to spawn');
+      }
+      await sleep(100);
+    }
+
+    await sleep(100);
+    child.emit('message', { type: 'STARTED' });
+    while (!state.disconnectCalled) {
+      if (shouldThrow) {
+        throw new Error('Timeout while waiting for disconnect');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // The upgrade should proceed without ever attempting to unlink the (non-existent) manifest
+    expect(unlinkSyncSpy).not.toHaveBeenCalledWith(manifestPath);
+    expect(state.agentError).toBeUndefined();
+    expect(spawnSpy).toHaveBeenCalled();
+    expect(child.disconnect).toHaveBeenCalled();
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    for (const spy of [
+      existsSyncSpy,
+      unlinkSyncSpy,
+      createPidFileSpy,
+      openSyncSpy,
+      platformSpy,
+      fetchSpy,
+      writeFileSyncSpy,
+      isAppRunningSpy,
+    ]) {
       spy.mockReset();
     }
     console.log = originalConsoleLog;

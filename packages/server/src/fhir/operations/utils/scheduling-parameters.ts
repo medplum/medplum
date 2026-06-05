@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, EMPTY, isDefined, OperationOutcomeError } from '@medplum/core';
+import { badRequest, createReference, isDefined, OperationOutcomeError } from '@medplum/core';
 import type {
   Extension,
   HealthcareService,
@@ -98,6 +98,15 @@ export type SchedulingParameters = {
   timezone?: string;
 };
 
+// FHIR Convention: when end <= start, the end time is interpreted as being in
+// the following day.  So 00:00:00 -> 00:00:00 on all 7 days means 24/7
+// availability.
+const alwaysAvailable: SchedulingParametersAvailability = {
+  dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+  availableStartTime: '00:00:00',
+  availableEndTime: '00:00:00',
+};
+
 function isReferenceTo<T extends Resource>(reference: Reference<T>, resource: WithId<T>): boolean {
   if (!reference.reference) {
     return false;
@@ -141,15 +150,6 @@ function atMostOne<T extends object>(arr: WithPath<T>[], attribute: string): Wit
     );
   }
   return arr[0];
-}
-
-function atLeastOne<T>(arr: T[], attribute: string, options: { path?: string }): T[] {
-  if (arr.length < 1) {
-    throw new OperationOutcomeError(
-      badRequest(`Required scheduling parameter attribute '${attribute}' is missing`, options.path)
-    );
-  }
-  return arr;
 }
 
 function exactlyOne<T extends object>(arr: WithPath<T>[], attribute: string, options: { path?: string }): WithPath<T> {
@@ -394,23 +394,34 @@ export function parseSchedulingParametersExtensions(
   // each extension on the resource
   const resourceParameters: Partial<SchedulingParameters> = {};
   if (resource.resourceType === 'HealthcareService') {
-    resourceParameters.availability = (resource.availableTime ?? EMPTY).map(extractAvailability).filter(isDefined);
+    // Note: `resource.availableTime` could be explicitly set to `[]`, in which
+    // case we interpret this as "no availability" instead of falling back to
+    // the default "always available"
+    if (resource.availableTime) {
+      resourceParameters.availability = resource.availableTime.map(extractAvailability).filter(isDefined);
+    } else {
+      // if no availability constraint exists, default to "always available"
+      resourceParameters.availability = [alwaysAvailable];
+    }
   }
 
   return extensions.map((extension) => {
     const path = getPath(extension);
     const duration = exactlyOne(getExtensions(extension, 'duration'), 'duration', { path });
 
-    // `availability` is required in Schedule, and not allowed in
-    // HealthcareService (where we read from availableTime instead).
+    let availability: SchedulingParametersAvailability[];
     const rawAvailability = getExtensions(extension, 'availability');
     if (resource.resourceType === 'Schedule') {
-      atLeastOne(rawAvailability, 'availability', { path });
+      if (rawAvailability.length) {
+        availability = rawAvailability.flatMap(extractAvailabilityR4);
+      } else {
+        // if no availability constraint exists, default to "always available"
+        availability = [alwaysAvailable];
+      }
     } else {
       exactlyZero(rawAvailability, 'availability', resource.resourceType);
+      availability = resourceParameters.availability ?? [];
     }
-
-    const availability = resourceParameters.availability ?? rawAvailability.flatMap(extractAvailabilityR4);
 
     const bufferBefore = atMostOne(getExtensions(extension, 'bufferBefore'), 'bufferBefore');
     const bufferAfter = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');

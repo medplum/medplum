@@ -159,6 +159,76 @@ describe('Expunge', () => {
     }
   });
 
+  test('Project admin can expunge patient everything within own project', async () => {
+    const { project, accessToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+    });
+
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: project.id },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    const obs = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta: { project: project.id },
+      status: 'final',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      subject: { reference: 'Patient/' + patient.id },
+    });
+
+    expect(await existsInDatabase('Patient', patient.id)).toBe(true);
+    expect(await existsInDatabase('Observation', obs.id)).toBe(true);
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$expunge?everything=true`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({});
+    expect(res.status).toBe(202);
+
+    const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+    // The job must complete cleanly: the Expunger iterates every resource type, and
+    // must skip the ones a project admin cannot search rather than erroring out.
+    expect(asyncJob.status).toBe('completed');
+
+    // Both the patient and its compartment resources should be expunged
+    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
+    expect(await existsInDatabase('Observation', obs.id)).toBe(false);
+  });
+
+  test('Project admin cannot expunge patient everything in another project', async () => {
+    // Patient belongs to an unrelated project
+    const { project: otherProject } = await createTestProject({});
+    const otherPatient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: otherProject.id },
+      name: [{ given: ['Bob'], family: 'Jones' }],
+    });
+
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${otherPatient.id}/$expunge?everything=true`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({});
+    // The async job is accepted, but the project-scoped repo never finds the
+    // foreign patient, so it is left untouched.
+    expect(res.status).toBe(202);
+
+    await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+
+    expect(await existsInDatabase('Patient', otherPatient.id)).toBe(true);
+  });
+
   test('Expunger.expunge() expunges all resource types', async () => {
     //setup
     const { project, client, membership } = await createTestProject({ withClient: true });
