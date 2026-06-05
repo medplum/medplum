@@ -10,7 +10,7 @@ const AUTOCOMPLETE_DEBOUNCE_MS = 1000;
  * @param input - The autocomplete input element.
  * @param text - The search text to type.
  */
-export async function typeInAutocomplete(input: HTMLInputElement, text: string): Promise<void> {
+export async function typeInAutocomplete(input: HTMLElement, text: string): Promise<void> {
   await act(async () => {
     fireEvent.change(input, { target: { value: text } });
   });
@@ -40,7 +40,7 @@ export async function clickAutocompleteOption(text: string | RegExp): Promise<vo
  * @param downCount - Number of ArrowDown presses before Enter.
  */
 export async function selectAutocompleteOption(
-  input: HTMLInputElement,
+  input: HTMLElement,
   searchText: string,
   optionText?: string | RegExp,
   downCount = 1
