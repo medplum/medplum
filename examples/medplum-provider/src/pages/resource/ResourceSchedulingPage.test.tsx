@@ -12,6 +12,7 @@ import { ResourceSchedulingPage } from './ResourceSchedulingPage';
 
 vi.mock('../../utils/notifications', () => ({
   showErrorNotification: vi.fn(),
+  showSuccessNotification: vi.fn(),
 }));
 
 const AMB_CODING = {
