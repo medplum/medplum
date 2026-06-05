@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { createReference, Operator, parseSearchRequest } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { NIL } from 'uuid';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -352,6 +353,19 @@ describe('Repository transaction-scoped guarded methods', () => {
         expect((observedError as Error).message).toContain('transaction-scoped repository');
       })
     );
+  });
+
+  test('withTransaction double calls', async () => {
+    const cloned = repo.clone();
+    const promise1 = cloned.withTransaction(async () => 'first success');
+    const promise2 = cloned.withTransaction(async () => 'second success');
+
+    const [result1, result2] = await Promise.allSettled([promise1, promise2]);
+    assert(result1.status === 'fulfilled');
+    expect(result1.value).toBe('first success');
+
+    assert(result2.status === 'rejected');
+    expect((result2.reason as Error).message).toContain('transaction-scoped repository');
   });
 
   test('closed repository rejects guarded operations', () =>

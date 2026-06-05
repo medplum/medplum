@@ -268,6 +268,8 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly ownsConnection: boolean;
+  /** Whether this repository is currently starting a transaction. */
+  private startingTxn = false;
   /**
    * The active child transaction repository, if any, created by this repo. Used to determine if the
    * current repository is usable.
@@ -2234,6 +2236,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
+    this.startingTxn = true;
     let txnScopedRepo: (TransactionRepository & this) | undefined;
     try {
       return await this.connection.withTransaction(async () => {
@@ -2242,9 +2245,11 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
         // transaction.
         txnScopedRepo = this.createTransactionScopedRepo();
         this.transactionChildRepo = txnScopedRepo;
+        this.startingTxn = false;
         return callback(txnScopedRepo);
       }, options);
     } finally {
+      this.startingTxn = false;
       this.transactionChildRepo = undefined;
     }
   }
@@ -2375,7 +2380,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     if (this.closed) {
       throw new Error('Already closed');
     }
-    if (this.transactionChildRepo) {
+    if (this.startingTxn || this.transactionChildRepo) {
       throw new Error(
         'Repository is in an active transaction callback; use the transaction-scoped repository passed to the callback'
       );
