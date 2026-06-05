@@ -157,6 +157,8 @@ vi.mock('ws', async (importOriginal) => {
     }
   }
 
+  // mock-socket's WebSocket lacks ws static members (CONNECTING, OPEN, etc.). Vitest ESM
+  // mocking does not apply mock-socket's Jest-era patch, so copy them from the real ws class.
   Object.assign(WebSocket, actual.WebSocket);
 
   return {

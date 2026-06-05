@@ -30,14 +30,15 @@ describe('Main', () => {
     const agentMainSpy = vi.spyOn(agentMainFile, 'agentMain');
     const upgradeMainSpy = vi.spyOn(upgraderFile, 'upgraderMain');
     const createPidSpy = vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
-    vi.spyOn(pidFile, 'registerAgentCleanup');
+    const registerCleanupSpy = vi.spyOn(pidFile, 'registerAgentCleanup');
     vi.mocked(existsSync).mockReturnValue(false);
 
     await expect(main(['node', 'main.ts', 'https://example.com/', randomUUID()])).rejects.toThrow('process.exit');
 
     expect(createPidSpy).toHaveBeenCalledWith('medplum-agent');
+    expect(registerCleanupSpy).toHaveBeenCalledWith();
     expect(upgradeMainSpy).not.toHaveBeenCalled();
-    expect(agentMainSpy).toHaveBeenCalled();
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', expect.any(String)]);
   });
 
   test('Calling main with --upgrade', async () => {
@@ -45,21 +46,25 @@ describe('Main', () => {
     const agentMainSpy = vi.spyOn(agentMainFile, 'agentMain');
     const upgradeMainSpy = vi.spyOn(upgraderFile, 'upgraderMain');
     const createPidSpy = vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
+    const registerCleanupSpy = vi.spyOn(pidFile, 'registerAgentCleanup');
 
     await expect(main(['node', 'main.ts', '--upgrade'])).rejects.toThrow(
       'Unsupported platform: linux. Agent upgrader currently only supports Windows'
     );
 
     expect(createPidSpy).toHaveBeenCalledWith('medplum-agent-upgrader');
+    expect(registerCleanupSpy).toHaveBeenCalledWith();
     expect(agentMainSpy).not.toHaveBeenCalled();
-    expect(upgradeMainSpy).toHaveBeenCalled();
+    expect(upgradeMainSpy).toHaveBeenCalledWith(['node', 'main.ts', '--upgrade']);
   });
 
   test('Calling main with --remove-old-services', async () => {
     const versions = ['123', '456', MEDPLUM_VERSION];
-    vi.spyOn(agentMainFile, 'agentMain');
+    const agentMainSpy = vi
+      .spyOn(agentMainFile, 'agentMain')
+      .mockImplementation((_argv: string[]) => Promise.resolve() as unknown as Promise<App>);
     vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
-    vi.spyOn(pidFile, 'registerAgentCleanup');
+    const registerCleanupSpy = vi.spyOn(pidFile, 'registerAgentCleanup');
     vi.mocked(existsSync).mockReturnValue(true);
     const execSyncSpy = vi
       .mocked(execSync)
@@ -72,14 +77,23 @@ describe('Main', () => {
 
     await expect(main(['node', 'main.ts', '--remove-old-services'])).resolves.toBeUndefined();
 
+    expect(agentMainSpy).not.toHaveBeenCalled();
+    expect(registerCleanupSpy).toHaveBeenCalled();
     expect(execSyncSpy).toHaveBeenCalledWith(`net stop MedplumAgent_${versions[0]}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`sc.exe delete MedplumAgent_${versions[0]}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`net stop MedplumAgent_${versions[1]}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`sc.exe delete MedplumAgent_${versions[1]}`);
     expect(execSyncSpy).not.toHaveBeenCalledWith(`net stop MedplumAgent_${MEDPLUM_VERSION}`);
+    expect(execSyncSpy).not.toHaveBeenCalledWith(`sc.exe delete MedplumAgent_${MEDPLUM_VERSION}`);
   });
 
   test('Calling main with --remove-old-services and --all', async () => {
     const versions = ['123', '456', MEDPLUM_VERSION];
-    vi.spyOn(agentMainFile, 'agentMain');
+    const agentMainSpy = vi
+      .spyOn(agentMainFile, 'agentMain')
+      .mockImplementation((_argv: string[]) => Promise.resolve() as unknown as Promise<App>);
     vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
+    const registerCleanupSpy = vi.spyOn(pidFile, 'registerAgentCleanup');
     vi.mocked(existsSync).mockReturnValue(true);
     const execSyncSpy = vi
       .mocked(execSync)
@@ -92,26 +106,43 @@ describe('Main', () => {
 
     await expect(main(['node', 'main.ts', '--remove-old-services', '--all'])).resolves.toBeUndefined();
 
+    expect(agentMainSpy).not.toHaveBeenCalled();
+    expect(registerCleanupSpy).toHaveBeenCalled();
+    expect(execSyncSpy).toHaveBeenCalledWith(`net stop MedplumAgent_${versions[0]}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`sc.exe delete MedplumAgent_${versions[0]}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`net stop MedplumAgent_${versions[1]}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`sc.exe delete MedplumAgent_${versions[1]}`);
     expect(execSyncSpy).toHaveBeenCalledWith(`net stop MedplumAgent_${MEDPLUM_VERSION}`);
+    expect(execSyncSpy).toHaveBeenCalledWith(`sc.exe delete MedplumAgent_${MEDPLUM_VERSION}`);
   });
 
   test('main creates "medplum-upgrading-agent" PID if upgrade manifest exists', async () => {
-    vi.spyOn(agentMainFile, 'agentMain').mockImplementation(() => Promise.resolve() as unknown as Promise<App>);
+    const agentMainSpy = vi
+      .spyOn(agentMainFile, 'agentMain')
+      .mockImplementation(() => Promise.resolve() as unknown as Promise<App>);
     const createPidSpy = vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
+    const registerCleanupSpy = vi.spyOn(pidFile, 'registerAgentCleanup');
     vi.mocked(existsSync).mockImplementation((path) => path === UPGRADE_MANIFEST_PATH);
 
     await expect(main(['node', 'main.ts', 'https://example.com/', 'foo'])).resolves.toBeUndefined();
 
     expect(createPidSpy).toHaveBeenCalledWith('medplum-upgrading-agent');
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', 'foo']);
+    expect(registerCleanupSpy).toHaveBeenCalled();
   });
 
   test('main creates "medplum-agent" PID if upgrade manifest does not exist', async () => {
-    vi.spyOn(agentMainFile, 'agentMain').mockImplementation(() => Promise.resolve() as unknown as Promise<App>);
+    const agentMainSpy = vi
+      .spyOn(agentMainFile, 'agentMain')
+      .mockImplementation(() => Promise.resolve() as unknown as Promise<App>);
     const createPidSpy = vi.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
+    const registerCleanupSpy = vi.spyOn(pidFile, 'registerAgentCleanup');
     vi.mocked(existsSync).mockReturnValue(false);
 
     await expect(main(['node', 'main.ts', 'https://example.com/', 'foo'])).resolves.toBeUndefined();
 
     expect(createPidSpy).toHaveBeenCalledWith('medplum-agent');
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', 'foo']);
+    expect(registerCleanupSpy).toHaveBeenCalled();
   });
 });
