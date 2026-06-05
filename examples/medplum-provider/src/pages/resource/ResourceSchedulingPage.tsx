@@ -81,7 +81,7 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
           name="encounterClass"
           label="Encounter Class"
           binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
-          path="Encounter.type"
+          path="Encounter.class"
           description="The classification to apply to encounters created when scheduling this HealthcareService"
           defaultValue={encounterClass}
           onChange={setEncounterClass}
