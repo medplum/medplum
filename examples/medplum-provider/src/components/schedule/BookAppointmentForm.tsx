@@ -2,20 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, EMPTY, formatPeriod, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
+import {
+  createReference,
+  EMPTY,
+  formatPeriod,
+  getExtensionValue,
+  isCoding,
+  isDefined,
+  isReference,
+} from '@medplum/core';
+import type {
+  Appointment,
+  Bundle,
+  Encounter,
+  HealthcareService,
+  Patient,
+  PlanDefinition,
+  Practitioner,
+  Slot,
+} from '@medplum/fhirtypes';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { SchedulingTransientIdentifier } from '../../utils/scheduling';
+import {
+  SchedulingEncounterCodingURI,
+  SchedulingPlanDefinitionURI,
+  SchedulingTransientIdentifier,
+} from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
   appointment: Appointment;
+  healthcareService: HealthcareService;
   onSuccess?: (result: {
     appointment: WithId<Appointment>;
     slots: WithId<Slot>[];
     patient: WithId<Patient>;
+    encounter: WithId<Encounter> | undefined;
   }) => void | Promise<void>;
 };
 
@@ -24,7 +48,53 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  const { appointment, onSuccess } = props;
+  const { appointment, healthcareService, onSuccess } = props;
+
+  const bookEncounter = useCallback(
+    async (appointment: WithId<Appointment>): Promise<WithId<Encounter> | undefined> => {
+      // If the HealthcareService we are booking with respect to has extensions holding the
+      // configuration needed to create an Encounter for this booking, we try to create the
+      // encounter now.
+      const planDefinitionRef = getExtensionValue(healthcareService, SchedulingPlanDefinitionURI);
+      const encounterClass = getExtensionValue(healthcareService, SchedulingEncounterCodingURI);
+      const practitioners = appointment.participant
+        .map((p) => p.actor)
+        .filter((actor) => isReference<Practitioner>(actor, 'Practitioner'));
+      const patients = appointment.participant
+        .map((p) => p.actor)
+        .filter((actor) => isReference<Patient>(actor, 'Patient'));
+
+      if (!isReference<PlanDefinition>(planDefinitionRef, 'PlanDefinition')) {
+        return undefined;
+      }
+
+      if (!isCoding(encounterClass)) {
+        return undefined;
+      }
+
+      // When creating an encounter, we want to call `PlanDefinition/:id/$apply`
+      // with exactly one practitioner. If we don't have an unambiguous choice
+      // here, instead of guessing we skip encounter creation. The viewer can
+      // set up the encounter themselves later.
+      const practitioner = practitioners[0];
+      if (!practitioner || practitioners.length > 1) {
+        return undefined;
+      }
+
+      // Medplum Server's `PlanDefinition/:id/$apply` operation only handles a
+      // single patient in the `subject` parameter at this time. If there is
+      // not exactly one patient in the appointment, skip encounter creation.
+      const patient = patients[0];
+      if (!patients || patients.length > 1) {
+        return undefined;
+      }
+
+      const planDefinition = await medplum.readReference(planDefinitionRef);
+
+      return createEncounter(medplum, encounterClass, patient, planDefinition, appointment, practitioner);
+    },
+    [medplum, healthcareService]
+  );
 
   const bookAppointment = useCallback(
     async (patient: WithId<Patient>) => {
@@ -66,13 +136,22 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
         );
 
         if (appointment) {
-          await onSuccess?.({ appointment, slots, patient });
+          let encounter: WithId<Encounter> | undefined;
+          try {
+            encounter = await bookEncounter(appointment);
+          } catch (err) {
+            // If we couldn't load the plan definition or create the encounter for
+            // some reason, we log the error but ignore it. The viewer can decide how
+            // to proceed and manually create the encounter.
+            console.error(err);
+          }
+          await onSuccess?.({ appointment, slots, patient, encounter });
         }
       } finally {
         setLoading(false);
       }
     },
-    [medplum, appointment, onSuccess]
+    [medplum, appointment, bookEncounter, onSuccess]
   );
 
   const handleSubmit = useCallback(async () => {

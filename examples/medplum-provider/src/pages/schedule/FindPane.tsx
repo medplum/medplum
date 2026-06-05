@@ -2,19 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatDateTime, getExtensionValue, getReferenceString, isDefined, isReference } from '@medplum/core';
-import type {
-  Appointment,
-  Bundle,
-  Coding,
-  HealthcareService,
-  Patient,
-  PlanDefinition,
-  Practitioner,
-  Reference,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
+import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
+import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -23,14 +12,8 @@ import { useNavigate } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
-import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import {
-  hasSchedulingParameters,
-  SchedulingEncounterCodingURI,
-  SchedulingPlanDefinitionURI,
-  SchedulingTransientIdentifier,
-} from '../../utils/scheduling';
+import { hasSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
 import { extractReferencesFromCodeableReferenceLike } from '../../utils/servicetype';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -165,31 +148,16 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, []);
 
   const handleBookSuccess = useCallback(
-    async (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[]; patient: WithId<Patient> }) => {
-      try {
-        const planDefinitionRef = getExtensionValue(selectedHealthcareService, SchedulingPlanDefinitionURI);
-        const encounterClass = getExtensionValue(selectedHealthcareService, SchedulingEncounterCodingURI);
-        const practitioners = schedule.actor.filter((actor) => isReference<Practitioner>(actor, 'Practitioner'));
-
-        if (practitioners.length === 1 && planDefinitionRef && encounterClass) {
-          const planDefinition = await medplum.readReference(planDefinitionRef as Reference<PlanDefinition>);
-
-          const encounter = await createEncounter(
-            medplum,
-            encounterClass as Coding,
-            results.patient,
-            planDefinition,
-            results.appointment,
-            practitioners[0]
-          );
-
-          await navigate(`/Patient/${results.patient.id}/Encounter/${encounter.id}`);
-        }
-      } catch (err) {
-        // If we couldn't load the plan definition or create the encounter for
-        // some reason, we log the error but ignore it. The viewer can decide how
-        // to proceed and manually create the encounter.
-        console.error(err);
+    async (results: {
+      appointment: WithId<Appointment>;
+      slots: WithId<Slot>[];
+      patient: WithId<Patient>;
+      encounter?: WithId<Encounter>;
+    }) => {
+      const { patient, encounter } = results;
+      if (encounter) {
+        await navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
+        return;
       }
 
       setSelectedHealthcareService(undefined);
@@ -197,7 +165,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
       setChosenAppointment(undefined);
       onSuccess(results);
     },
-    [medplum, onSuccess, schedule.actor, selectedHealthcareService, navigate]
+    [onSuccess, navigate]
   );
 
   if (!scheduleableServices?.length) {
@@ -215,7 +183,11 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
             </Button>
           </Group>
         </Title>
-        <BookAppointmentForm appointment={chosenAppointment} onSuccess={handleBookSuccess} />
+        <BookAppointmentForm
+          appointment={chosenAppointment}
+          healthcareService={selectedHealthcareService}
+          onSuccess={handleBookSuccess}
+        />
       </Stack>
     );
   }
