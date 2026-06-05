@@ -8,6 +8,11 @@ import { medplumAliases } from '../../vitest.config';
 export default defineConfig({
   plugins: [
     react(),
+    /*
+     * Replace CSS module imports with an identity proxy (see test-mocks/cssModuleProxy.ts).
+     * Jest used identity-obj-proxy for the same purpose: `styles.foo` resolves to "foo"
+     * so components render without parsing or applying real CSS in jsdom.
+     */
     {
       name: 'css-module-identity-proxy',
       enforce: 'pre',
@@ -30,14 +35,23 @@ export default defineConfig({
     environment: 'jsdom',
     environmentOptions: {
       jsdom: {
+        /* Base URL for relative links and window.location in component tests. */
         url: 'http://localhost/',
       },
     },
     setupFiles: ['./src/test.setup.ts'],
     testTimeout: 10_000,
     fakeTimers: {
+      /*
+       * Advance mocked timers automatically (e.g. debounced search inputs) instead of
+       * requiring manual vi.advanceTimersByTime in every test.
+       */
       shouldAdvanceTime: true,
     },
+    /*
+     * Run test files sequentially in isolated fork processes. React tests share global
+     * FHIR indexes and jsdom polyfills from test.setup.ts; parallel file runs cause flaky tests
+     */
     pool: 'forks',
     fileParallelism: false,
   },

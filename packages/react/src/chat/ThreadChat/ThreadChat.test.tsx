@@ -1,36 +1,37 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString  } from '@medplum/core';
-import type {ProfileResource} from '@medplum/core';
+import type { ProfileResource, TypedEventTarget } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import type { Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
-import type * as MedplumReactHooks from '@medplum/react-hooks';
-import { MedplumProvider } from '@medplum/react-hooks';
+// @ts-expect-error _subscriptionController is not exported from module normally
+// eslint-disable-next-line import/named
+import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import type { ThreadChatProps } from './ThreadChat';
 import { ThreadChat } from './ThreadChat';
 
-const subscriptionController = vi.hoisted(() => {
-  const { TypedEventTarget } =
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('@medplum/core');
-  return new TypedEventTarget();
-});
+type SubscriptionControllerEvents = {
+  subscription: { type: 'subscription'; criteria: string; bundle: Bundle };
+};
 
 vi.mock('@medplum/react-hooks', async (importOriginal) => {
-  const original = await importOriginal<typeof MedplumReactHooks>();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { TypedEventTarget } = require('@medplum/core');
+  const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
+  const original = await importOriginal();
   return {
     ...original,
     useSubscription: vi.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
-      subscriptionController.addEventListener('subscription', (event) => {
+      _subscriptionController.addEventListener('subscription', (event) => {
         if (criteria === event.criteria) {
           callback(event.bundle);
         }
       });
     }),
-    _subscriptionController: subscriptionController,
+    _subscriptionController,
   };
 });
 
@@ -137,7 +138,7 @@ describe('ThreadChat', () => {
   });
 
   afterEach(() => {
-    subscriptionController.removeAllListeners();
+    (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).removeAllListeners();
   });
 
   async function setup(
@@ -175,7 +176,7 @@ describe('ThreadChat', () => {
     const bundle = await createThreadMessageSubBundle(defaultMedplum, defaultThreadRef, message);
 
     act(() => {
-      subscriptionController.dispatchEvent({
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?part-of=${getReferenceString(defaultThread)}`,
         bundle,
@@ -225,7 +226,7 @@ describe('ThreadChat', () => {
     const subBundle1 = await createThreadMessageSubBundle(defaultMedplum, threadRef, message);
 
     act(() => {
-      subscriptionController.dispatchEvent({
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?part-of=${getReferenceString(thread)}`,
         bundle: subBundle1,
@@ -238,7 +239,7 @@ describe('ThreadChat', () => {
 
     const subBundle2 = await createThreadMessageSubBundle(defaultMedplum, threadRef, updatedMessage);
     act(() => {
-      subscriptionController.dispatchEvent({
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?part-of=${getReferenceString(thread)}`,
         bundle: subBundle2,
@@ -291,7 +292,7 @@ describe('ThreadChat', () => {
 
     const bundle = await createThreadMessageSubBundle(defaultMedplum, threadRef, message);
     act(() => {
-      subscriptionController.dispatchEvent({
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?part-of=${getReferenceString(thread)}`,
         bundle,
