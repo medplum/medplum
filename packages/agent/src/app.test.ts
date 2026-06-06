@@ -16,6 +16,7 @@ import {
   MEDPLUM_VERSION,
   ReconnectingWebSocket,
   allOk,
+  clearReleaseCache,
   createReference,
   getReferenceString,
   sleep,
@@ -41,7 +42,7 @@ import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort } from './test-utils';
-import { mockFetchForUpgrader } from './upgrader-test-utils';
+import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentConstants>();
@@ -2388,6 +2389,182 @@ describe('App', () => {
           `Attempted to upgrade to version ${targetVersion}, but agent is already on that version`
         )
       );
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      fetchSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrade -- Picks up a newer `latest` after upstream manifest changes', async () => {
+      // Regression test: `latest` must never be cached. The agent first issues an upgrade while
+      // already on the latest version (a no-op), then upstream publishes a new release that changes
+      // `latest.json`. A subsequent upgrade must re-fetch `latest`, observe the new version, and
+      // actually upgrade -- if `latest` were cached, the second request would still see the old
+      // version and incorrectly no-op until the process restarted.
+      clearReleaseCache();
+
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      let child: MockChildProcess | undefined;
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        upgradeResponseCount: 0,
+        agentError: undefined as AgentError | undefined,
+        disconnectCalled: false,
+      };
+
+      // The semver portion of the agent's current version -- `latest` initially resolves to this.
+      const currentVersion = MEDPLUM_VERSION.split('-')[0];
+      // The newer version that upstream will publish partway through the test.
+      const newVersion = '100.0.0';
+      // Mutable -- flipped to `newVersion` to simulate upstream publishing a new release.
+      let latestVersion = currentVersion;
+
+      vi.mocked(platform).mockReturnValue('win32');
+      // `latest.json` resolves to whatever `latestVersion` currently points at; concrete version
+      // URLs (e.g. the pre-spawn artifact check) return that same version's manifest.
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (input: string | URL | Request) => {
+          if (!(typeof input === 'string' || input instanceof URL)) {
+            throw new Error('input must be string or URL object');
+          }
+          const url = input.toString();
+          const version = url.includes('/latest.json') ? latestVersion : newVersion;
+          return new Response(JSON.stringify(buildManifest(version)), {
+            headers: { 'content-type': 'application/json' },
+            status: 200,
+          });
+        })
+      );
+      vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.upgradeResponseCount++;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Each phase gets its own deadline; surfaces any agent error to aid debugging.
+      async function waitFor(predicate: () => boolean, description: string): Promise<void> {
+        for (let i = 0; i < 25; i++) {
+          if (predicate()) {
+            return;
+          }
+          if (state.agentError) {
+            throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
+          }
+          await sleep(100);
+        }
+        throw new Error(`Timeout while waiting for ${description}`);
+      }
+
+      // Phase 1: agent is already on the latest version, so this upgrade is a no-op.
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentUpgradeRequest)
+      );
+
+      await waitFor(() => state.upgradeResponseCount >= 1, 'no-op upgrade response');
+
+      // No upgrade should have been spawned for the no-op
+      expect(spawnSpy).not.toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Attempted to upgrade to version ${currentVersion}, but agent is already on that version`
+        )
+      );
+
+      // Phase 2: upstream publishes a new release, changing what `latest.json` returns.
+      latestVersion = newVersion;
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback,
+        } satisfies AgentUpgradeRequest)
+      );
+
+      await waitFor(() => Boolean(child), 'child to spawn');
+
+      await sleep(100);
+      (child as MockChildProcess).emit('message', { type: 'STARTED' });
+      await waitFor(() => state.disconnectCalled, 'disconnect');
+
+      // The second request must re-fetch `latest`, see the new version, and actually upgrade
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
+        detached: true,
+        stdio: ['ignore', 42, 42, 'ipc'],
+      });
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: newVersion,
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
+      // Only the phase 1 no-op produced an upgrade response; phase 2 finalizes after restart
+      expect(state.upgradeResponseCount).toStrictEqual(1);
+      expect(state.agentError).toBeUndefined();
 
       await app.stop();
       await new Promise<void>((resolve) => {

@@ -48,10 +48,10 @@ describe('update-server command', () => {
       json: vi
         .fn()
         .mockResolvedValue([
-          { tag_name: finalVersion },
-          { tag_name: nextVersion },
-          { tag_name: patchVersion },
-          { tag_name: currentVersion },
+          { tag_name: `v${finalVersion}` },
+          { tag_name: `v${nextVersion}` },
+          { tag_name: `v${patchVersion}` },
+          { tag_name: `v${currentVersion}` },
         ]),
     });
 

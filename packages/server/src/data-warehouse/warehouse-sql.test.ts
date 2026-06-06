@@ -19,7 +19,7 @@ describe('warehouse SQL query builders', () => {
     sql.appendExpression(query);
 
     expect(sql.toString()).toBe(
-      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE ("pg_db"."Patient_History"."content" IS NOT NULL AND "pg_db"."Patient_History"."content" <> $1 AND "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') ORDER BY "pg_db"."Patient_History"."lastUpdated") AS "src"`
+      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE ("pg_db"."Patient_History"."content" IS NOT NULL AND "pg_db"."Patient_History"."content" <> $1 AND "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z')) AS "src"`
     );
     expect(sql.getValues()).toStrictEqual(['']);
   });
@@ -28,7 +28,7 @@ describe('warehouse SQL query builders', () => {
     const projectedSelectQuery = buildSelectFromHistoryTableQuery('Patient_History');
     const insertQuery = buildInsertIntoSelectQuery('iceberg_catalog.default.patient_history', projectedSelectQuery);
     expect(insertQuery.toString()).toBe(
-      `INSERT INTO "iceberg_catalog"."default"."patient_history" ("id", "version_id", "content", "last_updated", "project_id") SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE ("pg_db"."Patient_History"."content" IS NOT NULL AND "pg_db"."Patient_History"."content" <> $1) ORDER BY "pg_db"."Patient_History"."lastUpdated") AS "src"`
+      `INSERT INTO "iceberg_catalog"."default"."patient_history" ("id", "version_id", "content", "last_updated", "project_id") SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE ("pg_db"."Patient_History"."content" IS NOT NULL AND "pg_db"."Patient_History"."content" <> $1)) AS "src"`
     );
     expect(insertQuery.getValues()).toStrictEqual(['']);
   });
