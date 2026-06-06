@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DuckDBInstance } from '@duckdb/node-api';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
@@ -143,12 +143,13 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
   const namespace = options.namespace ?? DEFAULT_NAMESPACE;
 
   let connection: WarehouseSyncDuckdbConnection | undefined;
+  let instance: DuckDBInstance | undefined;
   let duckdbTempDir: string | undefined;
   try {
     // create a temporary directory for the DuckDB database
-    duckdbTempDir = mkdtempSync(join(tmpdir(), `medplum-dw-sync-`));
+    duckdbTempDir = await mkdtemp(join(tmpdir(), `medplum-dw-sync-`));
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
-    const instance = await DuckDBInstance.create(duckdbDatabasePath);
+    instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
     for (const q of options.destination.getSetupQueries(sourceConnectionString)) {
       await connection.run(q);
@@ -157,14 +158,31 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
     const tables = await runWarehouseTableSync(connection, options, namespace);
     return { tables };
   } finally {
-    // close the DuckDB connection
-    connection?.closeSync();
+    try {
+      connection?.closeSync();
+    } catch (err) {
+      globalLogger.warn('Failed closing data warehouse DuckDB connection', { err, subsystem: 'data-warehouse-sync' });
+    }
+
+    try {
+      instance?.closeSync();
+    } catch (err) {
+      globalLogger.warn('Failed closing data warehouse DuckDB instance', { err, subsystem: 'data-warehouse-sync' });
+    }
+
     /*
      * DuckDB often creates companion files next to the database, so
      * we're gonna delete the whole directory.
      */
     if (duckdbTempDir) {
-      rmSync(duckdbTempDir, { recursive: true, force: true });
+      try {
+        await rm(duckdbTempDir, { recursive: true, force: true });
+      } catch (err) {
+        globalLogger.warn('Failed deleting data warehouse DuckDB temp dir', {
+          err,
+          subsystem: 'data-warehouse-sync',
+        });
+      }
     }
   }
 }
