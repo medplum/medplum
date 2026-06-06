@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DuckDBInstance } from '@duckdb/node-api';
-import { mkdtempSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
@@ -148,7 +147,7 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
   let duckdbTempDir: string | undefined;
   try {
     // create a temporary directory for the DuckDB database
-    duckdbTempDir = mkdtempSync(join(tmpdir(), `medplum-dw-sync-`));
+    duckdbTempDir = await mkdtemp(join(tmpdir(), `medplum-dw-sync-`));
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
     instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
@@ -176,7 +175,14 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
      * we're gonna delete the whole directory.
      */
     if (duckdbTempDir) {
-      await rm(duckdbTempDir, { recursive: true, force: true });
+      try {
+        await rm(duckdbTempDir, { recursive: true, force: true });
+      } catch (err) {
+        globalLogger.warn('Failed deleting data warehouse DuckDB temp dir', {
+          err,
+          subsystem: 'data-warehouse-sync',
+        });
+      }
     }
   }
 }
