@@ -310,11 +310,14 @@ export function assertAllLoaded<T extends Resource>(
   }
 }
 
+// Gets SchedulingParameters information for a list of Schedule resources with
+// respect to a specific HealthcareService. Loads `Schedule.actor` references
+// to look for timezone information.
 export async function getSchedulingParametersGroup(
   repo: Repository,
   schedules: WithPath<WithId<Schedule>>[],
   healthcareService: WithPath<WithId<HealthcareService>>
-): Promise<Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>> {
+): Promise<Map<WithPath<WithId<Schedule>>, SchedulingParameters & { timezone: string }>> {
   schedules.forEach((schedule) => {
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(
@@ -538,7 +541,7 @@ export async function validateProposedAppointment(
     Appointment,
     WithPath<Slot>[],
     HealthcareService,
-    Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>,
+    Map<WithPath<WithId<Schedule>>, SchedulingParameters & { timezone: string }>,
   ]
 > {
   const { contained, ...appointment } = proposedAppointment;
@@ -603,7 +606,7 @@ export async function validateAllAvailability(
   repo: Repository,
   allSlots: WithPath<Slot>[],
   healthcareService: HealthcareService,
-  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>
+  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, SchedulingParameters & { timezone: string }>
 ): Promise<void> {
   const groupedSlots = Object.groupBy(allSlots, (slot) => slot.schedule.reference ?? 'unknown');
   for (const [schedule, parameters] of schedulingParameterGroup.entries()) {
