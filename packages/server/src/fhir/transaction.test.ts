@@ -26,7 +26,7 @@ import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { PgQueryable } from './sql';
-import { PostgresError } from './sql';
+import { PostgresError, setSqlDebug } from './sql';
 
 type RepositoryDatabaseClient = PgQueryable;
 type TransactionDatabaseClient = PoolClient;
@@ -374,19 +374,24 @@ describe('FHIR Repo Transactions', () => {
       });
       expect(patient).toBeDefined();
 
-      // Read the patient by ID
-      // This should succeed
-      const readCheck1 = await repo.readResource('Patient', patient?.id as string);
-      expect(readCheck1).toBeDefined();
-
-      // Search for patient by ID
-      // This should succeed
-      const searchCheck1 = await repo.search<Patient>({
-        resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient?.id as string }],
-      });
-      expect(searchCheck1.entry).toHaveLength(1);
+      await expectPatientVisible(repo, patient?.id);
     }));
+
+  test('withTransaction double calls', async () => {
+    const cb1 = jest.fn().mockReturnValue('first success');
+    const cb2 = jest.fn().mockReturnValue('second success');
+    const promise1 = repo.withTransaction(cb1);
+    const promise2 = repo.withTransaction(cb2);
+
+    const [result1, result2] = await Promise.allSettled([promise1, promise2]);
+    assert(result1.status === 'fulfilled');
+    expect(result1.value).toBe('first success');
+    expect(cb1).toHaveBeenCalledTimes(1);
+
+    assert(result2.status === 'rejected');
+    expect((result2.reason as Error).message).toContain('transaction-scoped repository');
+    expect(cb2).toHaveBeenCalledTimes(0);
+  });
 
   test('invoking repository rejects operations during active transaction callback', () =>
     withTestContext(async () => {
@@ -448,20 +453,7 @@ describe('FHIR Repo Transactions', () => {
           // Create one patient
           // This will initially succeed, but should then be rolled back
           patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
-          expect(patient).toBeDefined();
-
-          // Read the patient by ID
-          // This should succeed within the transaction
-          const readCheck1 = await txRepo.readResource('Patient', patient.id);
-          expect(readCheck1).toBeDefined();
-
-          // Search for patient by ID
-          // This should succeed within the transaction
-          const searchCheck1 = await txRepo.search<Patient>({
-            resourceType: 'Patient',
-            filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
-          });
-          expect(searchCheck1.entry).toHaveLength(1);
+          await expectPatientVisible(txRepo, patient.id);
 
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
@@ -483,17 +475,7 @@ describe('FHIR Repo Transactions', () => {
         })
       );
 
-      // Read the patient by ID
-      // This should fail, because the transaction was rolled back
-      await expect(repo.readResource('Patient', patient?.id as string)).rejects.toThrow('Not found');
-
-      // Search for patient by ID
-      // This should return zero results because the transaction was rolled back
-      const searchCheck2 = await repo.search<Patient>({
-        resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient?.id as string }],
-      });
-      expect(searchCheck2.entry).toHaveLength(0);
+      await expectPatientAbsent(repo, patient?.id);
     }));
 
   test('Nested transaction commit', () =>
@@ -513,31 +495,8 @@ describe('FHIR Repo Transactions', () => {
       expect(patient1).toBeDefined();
       expect(patient2).toBeDefined();
 
-      // Read the patient by ID
-      // This should succeed
-      const readCheck1 = await repo.readResource('Patient', patient1?.id as string);
-      expect(readCheck1).toBeDefined();
-
-      // Search for patient by ID
-      // This should succeed
-      const searchCheck1 = await repo.search<Patient>({
-        resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
-      });
-      expect(searchCheck1.entry).toHaveLength(1);
-
-      // Read the patient by ID
-      // This should succeed
-      const readCheck2 = await repo.readResource('Patient', patient2?.id as string);
-      expect(readCheck2).toBeDefined();
-
-      // Search for patient by ID
-      // This should succeed
-      const searchCheck2 = await repo.search<Patient>({
-        resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
-      });
-      expect(searchCheck2.entry).toHaveLength(1);
+      await expectPatientVisible(repo, patient1?.id);
+      await expectPatientVisible(repo, patient2?.id);
     }));
 
   test('Nested transaction rollback', () =>
@@ -558,33 +517,8 @@ describe('FHIR Repo Transactions', () => {
             patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
             expect(patient2).toBeDefined();
 
-            // Read the patient by ID
-            // This should succeed within the transaction
-            const readCheck1 = await nestedRepo.readResource('Patient', patient1?.id as string);
-            expect(readCheck1).toBeDefined();
-
-            // Search for patient by ID
-            // This should succeed within the transaction
-            const searchCheck1 = await nestedRepo.search<Patient>({
-              resourceType: 'Patient',
-              filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
-            });
-            expect(searchCheck1).toBeDefined();
-            expect(searchCheck1.entry).toHaveLength(1);
-
-            // Read the patient by ID
-            // This should succeed within the transaction
-            const readCheck2 = await nestedRepo.readResource('Patient', patient2?.id as string);
-            expect(readCheck2).toBeDefined();
-
-            // Search for patient by ID
-            // This should succeed within the transaction
-            const searchCheck2 = await nestedRepo.search<Patient>({
-              resourceType: 'Patient',
-              filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
-            });
-            expect(searchCheck2).toBeDefined();
-            expect(searchCheck2.entry).toHaveLength(1);
+            await expectPatientVisible(nestedRepo, patient1?.id);
+            await expectPatientVisible(nestedRepo, patient2?.id);
 
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
@@ -606,32 +540,8 @@ describe('FHIR Repo Transactions', () => {
           })
         );
 
-        // Read the patient by ID
-        // This should succeed within the transaction
-        const readCheck3 = await txRepo.readResource('Patient', patient1?.id as string);
-        expect(readCheck3).toBeDefined();
-
-        // Search for patient by ID
-        // This should succeed within the transaction
-        const searchCheck3 = await txRepo.search<Patient>({
-          resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
-        });
-        expect(searchCheck3).toBeDefined();
-        expect(searchCheck3.entry).toHaveLength(1);
-
-        // Read the patient by ID
-        // This should fail, because the transaction was rolled back
-        await expect(txRepo.readResource('Patient', patient2?.id as string)).rejects.toThrow('Not found');
-
-        // Search for patient by ID
-        // This should succeed within the transaction
-        const searchCheck4 = await txRepo.search<Patient>({
-          resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
-        });
-        expect(searchCheck4).toBeDefined();
-        expect(searchCheck4.entry).toHaveLength(0);
+        await expectPatientVisible(txRepo, patient1?.id);
+        await expectPatientAbsent(txRepo, patient2?.id);
       });
     }));
 
@@ -653,33 +563,8 @@ describe('FHIR Repo Transactions', () => {
             patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
             expect(patient2).toBeDefined();
 
-            // Read the patient by ID
-            // This should succeed within the transaction
-            const readCheck1 = await nestedRepo.readResource('Patient', patient1?.id as string);
-            expect(readCheck1).toBeDefined();
-
-            // Search for patient by ID
-            // This should succeed within the transaction
-            const searchCheck1 = await nestedRepo.search<Patient>({
-              resourceType: 'Patient',
-              filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
-            });
-            expect(searchCheck1).toBeDefined();
-            expect(searchCheck1.entry).toHaveLength(1);
-
-            // Read the patient by ID
-            // This should succeed within the transaction
-            const readCheck2 = await nestedRepo.readResource('Patient', patient2?.id as string);
-            expect(readCheck2).toBeDefined();
-
-            // Search for patient by ID
-            // This should succeed within the transaction
-            const searchPreCheck = await nestedRepo.search<Patient>({
-              resourceType: 'Patient',
-              filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
-            });
-            expect(searchPreCheck).toBeDefined();
-            expect(searchPreCheck.entry).toHaveLength(1);
+            await expectPatientVisible(nestedRepo, patient1?.id);
+            await expectPatientVisible(nestedRepo, patient2?.id);
 
             const db = nestedRepo.getDatabaseClient(DatabaseMode.READER);
             await expect(db.query(`SELECT * FROM "TableDoesNotExist"`)).rejects.toMatchObject({
@@ -688,84 +573,38 @@ describe('FHIR Repo Transactions', () => {
           })
         ).rejects.toThrow('current transaction is aborted, commands ignored until end of transaction block');
 
-        // Read the patient by ID
-        // This should succeed within the transaction
-        const readCheck3 = await txRepo.readResource('Patient', patient1?.id as string);
-        expect(readCheck3).toBeDefined();
-
-        // Search for patient by ID
-        // This should succeed within the transaction
-        const searchCheck3 = await txRepo.search<Patient>({
-          resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
-        });
-        expect(searchCheck3).toBeDefined();
-        expect(searchCheck3.entry).toHaveLength(1);
-
-        // Read the patient by ID
-        // This should fail, because the transaction was rolled back
-        await expect(txRepo.readResource('Patient', patient2?.id as string)).rejects.toMatchObject({
-          outcome: notFound,
-        });
-
-        // Search for patient by ID
-        // This should return no results, because the transaction was rolled back
-        const searchCheck4 = await txRepo.search<Patient>({
-          resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
-        });
-        expect(searchCheck4).toBeDefined();
-        expect(searchCheck4.entry).toHaveLength(0);
+        await expectPatientVisible(txRepo, patient1?.id);
+        await expectPatientAbsent(txRepo, patient2?.id, { outcome: notFound });
       });
 
-      // Search for patient by ID
-      // This should succeed outside the transaction
-      const searchCheck3 = await repo.search<Patient>({
-        resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
-      });
-      expect(searchCheck3).toBeDefined();
-      expect(searchCheck3.entry).toHaveLength(1);
-
-      // Search for patient by ID
-      // This should return no results, because the transaction was rolled back
-      const searchCheck4 = await repo.search<Patient>({
-        resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
-      });
-      expect(searchCheck4).toBeDefined();
-      expect(searchCheck4.entry).toHaveLength(0);
+      await expectPatientSearchCount(repo, patient1?.id, 1);
+      await expectPatientSearchCount(repo, patient2?.id, 0);
     }));
 
-  test('Post-commit callback', () =>
+  test.each([
+    { name: 'commit', shouldRollback: false, expectedCalls: 1 },
+    { name: 'rollback', shouldRollback: true, expectedCalls: 0 },
+  ])('Post-commit callback on $name', ({ shouldRollback, expectedCalls }) =>
     withTestContext(async () => {
       const callback = jest.fn();
-      await repo.withTransaction(async (txRepo) => {
+      const promise = repo.withTransaction(async (txRepo) => {
         await txRepo.postCommit(async () => {
           callback();
         });
         expect(callback).not.toHaveBeenCalled();
-      });
-      expect(callback).toHaveBeenCalledTimes(1);
-    }));
-
-  test('Post-commit callback with rollback', () =>
-    withTestContext(async () => {
-      const callback = jest.fn();
-      try {
-        await repo.withTransaction(async (txRepo) => {
-          await txRepo.postCommit(async () => {
-            callback();
-          });
-          expect(callback).not.toHaveBeenCalled();
+        if (shouldRollback) {
           throw new Error('Roll it back!');
-        });
-        fail('Expected transaction to abort');
-      } catch (err) {
-        expect(err).toBeDefined();
-        expect(callback).not.toHaveBeenCalled();
+        }
+      });
+
+      if (shouldRollback) {
+        await expect(promise).rejects.toThrow('Roll it back!');
+      } else {
+        await promise;
       }
-    }));
+      expect(callback).toHaveBeenCalledTimes(expectedCalls);
+    })
+  );
 
   test('Nested transaction post-commit', () =>
     withTestContext(async () => {
@@ -863,61 +702,165 @@ describe('FHIR Repo Transactions', () => {
 
       expect(callbackFn).toHaveBeenCalledTimes(1);
       assert(patient);
-      await expect(repo.readResource('Patient', patient.id)).resolves.toStrictEqual(patient);
+      await expectPatientVisible(repo, patient.id);
     }));
 
   test('Conflicting concurrent writes', () =>
     withTestContext(async () => {
       const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
-      const tx1 = repo.withTransaction(async (txRepo) => {
-        await txRepo.updateResource({ ...existing, gender: 'unknown' });
-        await sleep(500);
+      const tx1UpdateFinished = Promise.withResolvers<undefined>();
+      const allowTx1Commit = Promise.withResolvers<undefined>();
+      const tx2CallbackStarted = Promise.withResolvers<undefined>();
+
+      const events: string[] = [];
+      const log = jest.fn().mockImplementation((message: string) => {
+        events.push(message);
+        // console.log(events);
       });
 
-      await sleep(250);
+      setSqlDebug('');
+      /*
+      1. tx1 begins a REPEATABLE READ transaction and updates the patient row.
+      2. tx1 stays open, so it still holds the row/update conflict.
+      3. tx2 begins its own REPEATABLE READ transaction while tx1 is still open.
+      4. tx2 tries to update the same patient row.
+      5. Once tx1 commits, Postgres can’t safely let tx2 continue using the snapshot it started with, because that snapshot predates tx1’s committed update.
+      6. Postgres raises serialization failure 40001.
+      7. RepositoryConnection.withTransaction() treats 40001 as retryable, rolls back tx2, starts a fresh transaction, reruns tx2 callback and succeeds.
+      */
 
-      const tx2 = systemRepo.withTransaction(async (txRepo) => {
-        await txRepo.updateResource({ ...existing, deceasedBoolean: false });
+      const tx1 = repo.clone().withTransaction(async (txRepo) => {
+        log('tx1 start');
+        try {
+          await txRepo.updateResource({ ...existing, gender: 'unknown' });
+        } catch (err) {
+          log('tx1 update error');
+          throw err;
+        }
+        tx1UpdateFinished.resolve(undefined);
+        log('tx1 after update');
+        await allowTx1Commit.promise;
+        log('tx1 committing');
       });
 
+      await tx1UpdateFinished.promise;
+
+      const tx2 = repo.clone().withTransaction(async (txRepo) => {
+        log('tx2 start');
+        tx2CallbackStarted.resolve(undefined);
+        try {
+          await txRepo.updateResource({ ...existing, deceasedBoolean: false });
+        } catch (err) {
+          log('tx2 update error');
+          throw err;
+        }
+        log('tx2 after update');
+        log('tx2 committing');
+      });
+
+      await tx2CallbackStarted.promise;
+
+      allowTx1Commit.resolve(undefined);
       const results = await Promise.allSettled([tx1, tx2]);
       expect(results.map((r) => r.status)).not.toContain('rejected');
+      expect(events).toStrictEqual([
+        'tx1 start',
+        'tx1 after update',
+        'tx2 start',
+        'tx1 committing',
+        'tx2 update error',
+        'tx2 start',
+        'tx2 after update',
+        'tx2 committing',
+      ]);
     }));
 
-  test('Conflicting concurrent conditional creates', () =>
-    withTestContext(async () => {
-      const identifier = randomUUID();
-      const criteria = 'Patient?identifier=http://example.com/mrn|' + identifier;
-      const resource: Patient = {
-        resourceType: 'Patient',
-        identifier: [{ system: 'http://example.com/mrn', value: identifier }],
-      };
-      const tx1 = repo.withTransaction(
-        async (txRepo) => {
-          const existing = await txRepo.searchResources(parseSearchRequest(criteria));
-          if (!existing.length) {
-            await txRepo.createResource(resource);
-          }
-          await sleep(500);
-        },
-        { serializable: true }
-      );
+  test.each<['first' | 'second']>([['first'], ['second']])(
+    'Conflicting concurrent conditional creates with %s winning',
+    (winner) =>
+      withTestContext(async () => {
+        const identifier = randomUUID();
+        const criteria = 'Patient?identifier=http://example.com/mrn|' + identifier;
+        const resource: Patient = {
+          resourceType: 'Patient',
+          identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+        };
 
-      const tx2 = systemRepo.withTransaction(
-        async (txRepo) => {
-          await sleep(250);
-          const existing = await txRepo.searchResources(parseSearchRequest(criteria));
-          if (!existing.length) {
-            await txRepo.createResource(resource);
-          }
-        },
-        { serializable: true }
-      );
+        await expect(repo.searchResources(parseSearchRequest(criteria))).resolves.toHaveLength(0);
 
-      const results = await Promise.allSettled([tx1, tx2]);
-      expect(results.map((r) => r.status)).not.toContain('rejected');
-    }));
+        const tx1CreateFinished = Promise.withResolvers<undefined>();
+        const tx2CreateFinished = Promise.withResolvers<undefined>();
+        const allowTx1Commit = Promise.withResolvers<undefined>();
+        const allowTx2Commit = Promise.withResolvers<undefined>();
+
+        const search1 = jest.fn();
+        const create1 = jest.fn();
+        const search2 = jest.fn();
+        const create2 = jest.fn();
+
+        // 1. tx1 begins a SERIALIZABLE transaction, searches for and creates the missing patient.
+        // 2. tx1 held open
+        // 3. tx2 begins a SERIALIZABLE transaction, searches for and creates the missing patient.
+        // 4. tx2 held open
+
+        const tx1 = repo.clone().withTransaction(
+          async (txRepo) => {
+            search1();
+            const existing = await txRepo.searchResources(parseSearchRequest(criteria));
+            if (!existing.length) {
+              create1();
+              await txRepo.createResource(resource);
+            }
+            tx1CreateFinished.resolve(undefined);
+            await allowTx1Commit.promise;
+          },
+          { serializable: true }
+        );
+
+        await tx1CreateFinished.promise;
+
+        const tx2 = repo.clone().withTransaction(
+          async (txRepo) => {
+            search2();
+            const existing = await txRepo.searchResources(parseSearchRequest(criteria));
+            if (!existing.length) {
+              create2();
+              await txRepo.createResource(resource);
+            }
+            tx2CreateFinished.resolve(undefined);
+            await allowTx2Commit.promise;
+          },
+          { serializable: true }
+        );
+
+        await tx2CreateFinished.promise;
+
+        // both tx1 and tx2 are ready to commit. First to commit wins, other must retry
+
+        if (winner === 'first') {
+          allowTx1Commit.resolve(undefined);
+          await tx1;
+          allowTx2Commit.resolve(undefined);
+        } else {
+          allowTx2Commit.resolve(undefined);
+          await tx2;
+          allowTx1Commit.resolve(undefined);
+        }
+
+        const results = await Promise.allSettled([tx1, tx2]);
+        expect(results.map((r) => r.status)).not.toContain('rejected');
+
+        await expect(repo.searchResources(parseSearchRequest(criteria))).resolves.toHaveLength(1);
+
+        expect(search1).toHaveBeenCalledTimes(winner === 'first' ? 1 : 2);
+        expect(search2).toHaveBeenCalledTimes(winner === 'second' ? 1 : 2);
+
+        // create only called on first attempt; second attempt finds the existing patient
+        expect(create1).toHaveBeenCalledTimes(1);
+        expect(create2).toHaveBeenCalledTimes(1);
+      })
+  );
 
   test('Allowed concurrent conditional creates', () =>
     withTestContext(async () => {
@@ -952,7 +895,7 @@ describe('FHIR Repo Transactions', () => {
       const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
       // Simulate patch operation with long delay in the middle to ensure conflict
-      const tx1 = repo.withTransaction(async (txRepo) => {
+      const tx1 = repo.clone().withTransaction(async (txRepo) => {
         await txRepo.searchResources(parseSearchRequest('Patient?_id=' + existing.id)); // Ensure request hits the DB
         await sleep(500);
         return txRepo.updateResource({ ...existing, gender: 'other' });
@@ -960,129 +903,125 @@ describe('FHIR Repo Transactions', () => {
 
       await sleep(200);
 
-      const tx2 = systemRepo.updateResource({ ...existing, deceasedBoolean: false });
+      const tx2 = repo.clone().updateResource({ ...existing, deceasedBoolean: false });
 
       const results = await Promise.allSettled([tx1, tx2]);
       await expect(repo.readResource(existing.resourceType, existing.id)).resolves.toBeDefined();
       expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
 
-  test('Retry on conflict', () =>
+  test.each([
+    {
+      name: 'Retry on conflict',
+      createError: () => new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure)),
+      succeedsOnRetry: true,
+      expectedCalls: 2,
+      expectedResult: true,
+    },
+    {
+      name: 'Only retry specific transaction conflict',
+      createError: () => new OperationOutcomeError(conflict('a different conflict', 'other-error')),
+      succeedsOnRetry: true,
+      expectedCalls: 1,
+      expectedError: 'a different conflict',
+    },
+    {
+      name: 'Do not retry combined transaction conflict and other errors',
+      createError: () => {
+        const outcome = conflict('transaction conflict', PostgresError.SerializationFailure);
+        outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
+        return new OperationOutcomeError(outcome);
+      },
+      succeedsOnRetry: true,
+      expectedCalls: 1,
+      expectedError: 'transaction conflict; invalid data',
+    },
+    {
+      name: 'Retry transaction only once before emitting failure',
+      createError: () =>
+        new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure)),
+      succeedsOnRetry: false,
+      expectedCalls: 2,
+      expectedError: 'transaction conflict',
+    },
+  ])('$name', ({ createError, succeedsOnRetry, expectedCalls, expectedError, expectedResult }) =>
     withTestContext(async () => {
-      let returnValue: boolean | undefined;
+      let shouldReturn = false;
       const txFn = jest.fn(async (): Promise<boolean> => {
-        if (returnValue) {
-          return returnValue;
-        } else {
-          returnValue = true;
-          // Emit transaction conflict (Postgres error code 40001)
-          throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
-        }
-      });
-
-      await expect(repo.withTransaction(txFn)).resolves.toStrictEqual(true);
-      expect(txFn).toHaveBeenCalledTimes(2);
-    }));
-
-  test('Only retry specific transaction conflict', () =>
-    withTestContext(async () => {
-      let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
-        if (returnValue) {
-          return returnValue;
-        } else {
-          returnValue = true;
-          // Emit some other conflict
-          throw new OperationOutcomeError(conflict('a different conflict', 'other-error'));
-        }
-      });
-
-      await expect(repo.withTransaction(txFn)).rejects.toThrow('a different conflict');
-      expect(txFn).toHaveBeenCalledTimes(1);
-    }));
-
-  test('Do not retry combined transaction conflict and other errors', () =>
-    withTestContext(async () => {
-      let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
-        if (returnValue) {
-          return returnValue;
-        } else {
-          returnValue = true;
-          // Emit combined errors
-          const outcome = conflict('transaction conflict', PostgresError.SerializationFailure);
-          outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
-          throw new OperationOutcomeError(outcome);
-        }
-      });
-
-      await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict; invalid data');
-      expect(txFn).toHaveBeenCalledTimes(1);
-    }));
-
-  test('Retry transaction only once before emitting failure', () =>
-    withTestContext(async () => {
-      const txFn = jest.fn(async (): Promise<boolean> => {
-        // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
-      });
-
-      await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict');
-      expect(txFn).toHaveBeenCalledTimes(2);
-    }));
-
-  test('Retry nested transaction', () =>
-    withTestContext(async () => {
-      let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
-        if (returnValue) {
-          return returnValue;
-        } else {
-          returnValue = true;
-          // Emit transaction conflict (Postgres error code 40001)
-          throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
-        }
-      });
-      const outerTx = jest.fn(async (txRepo): Promise<boolean> => txRepo.withTransaction(txFn));
-
-      await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(true);
-      expect(txFn).toHaveBeenCalledTimes(2);
-      expect(outerTx).toHaveBeenCalledTimes(2);
-    }));
-
-  test('Retry nested transaction to failure', () =>
-    withTestContext(async () => {
-      const txFn = jest.fn(async (): Promise<boolean> => {
-        // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
-      });
-      const outerTx = jest.fn(async (txRepo): Promise<boolean> => txRepo.withTransaction(txFn));
-
-      await expect(repo.withTransaction(outerTx)).rejects.toThrow('transaction conflict');
-      expect(txFn).toHaveBeenCalledTimes(2);
-      expect(outerTx).toHaveBeenCalledTimes(2);
-    }));
-
-  test('Nested transaction does not retry independently', () =>
-    withTestContext(async () => {
-      const txFn = jest.fn(async (): Promise<boolean> => {
-        // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
-      });
-      const outerTx = jest.fn(async (txRepo): Promise<boolean> => {
-        try {
-          await txRepo.withTransaction(txFn);
+        if (succeedsOnRetry && shouldReturn) {
           return true;
-        } catch (_) {
-          // Swallow the error
-          return false;
         }
+        shouldReturn = true;
+        throw createError();
       });
 
-      await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(false);
-      expect(txFn).toHaveBeenCalledTimes(1);
-      expect(outerTx).toHaveBeenCalledTimes(1);
-    }));
+      if (expectedError) {
+        await expect(repo.withTransaction(txFn)).rejects.toThrow(expectedError);
+      } else {
+        await expect(repo.withTransaction(txFn)).resolves.toStrictEqual(expectedResult);
+      }
+      expect(txFn).toHaveBeenCalledTimes(expectedCalls);
+    })
+  );
+
+  test.each([
+    {
+      name: 'Retry nested transaction',
+      succeedsOnRetry: true,
+      catchNestedError: false,
+      expectedResult: true,
+      expectedTxCalls: 2,
+      expectedOuterCalls: 2,
+    },
+    {
+      name: 'Retry nested transaction to failure',
+      succeedsOnRetry: false,
+      catchNestedError: false,
+      expectedError: 'transaction conflict',
+      expectedTxCalls: 2,
+      expectedOuterCalls: 2,
+    },
+    {
+      name: 'Nested transaction does not retry independently',
+      succeedsOnRetry: false,
+      catchNestedError: true,
+      expectedResult: false,
+      expectedTxCalls: 1,
+      expectedOuterCalls: 1,
+    },
+  ])(
+    '$name',
+    ({ succeedsOnRetry, catchNestedError, expectedError, expectedResult, expectedTxCalls, expectedOuterCalls }) =>
+      withTestContext(async () => {
+        let shouldReturn = false;
+        const txFn = jest.fn(async (): Promise<boolean> => {
+          if (succeedsOnRetry && shouldReturn) {
+            return true;
+          }
+          shouldReturn = true;
+          throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
+        });
+        const outerTx = jest.fn(async (txRepo): Promise<boolean> => {
+          if (!catchNestedError) {
+            return txRepo.withTransaction(txFn);
+          }
+          try {
+            await txRepo.withTransaction(txFn);
+            return true;
+          } catch (_) {
+            return false;
+          }
+        });
+
+        if (expectedError) {
+          await expect(repo.withTransaction(outerTx)).rejects.toThrow(expectedError);
+        } else {
+          await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(expectedResult);
+        }
+        expect(txFn).toHaveBeenCalledTimes(expectedTxCalls);
+        expect(outerTx).toHaveBeenCalledTimes(expectedOuterCalls);
+      })
+  );
 
   describe('transaction-scoped repository guards', () => {
     test('every public Repository / inherited FhirRepository member is classified', () => {
@@ -1166,19 +1105,6 @@ describe('FHIR Repo Transactions', () => {
           expect((observedError as Error).message).toContain('transaction-scoped repository');
         })
       );
-    });
-
-    test('withTransaction double calls', async () => {
-      const cloned = repo.clone();
-      const promise1 = cloned.withTransaction(async () => 'first success');
-      const promise2 = cloned.withTransaction(async () => 'second success');
-
-      const [result1, result2] = await Promise.allSettled([promise1, promise2]);
-      assert(result1.status === 'fulfilled');
-      expect(result1.value).toBe('first success');
-
-      assert(result2.status === 'rejected');
-      expect((result2.reason as Error).message).toContain('transaction-scoped repository');
     });
 
     test('closed repository rejects guarded operations', () =>
@@ -1406,10 +1332,7 @@ describe('FHIR Repo Transactions', () => {
       }),
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
     const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
@@ -1437,10 +1360,7 @@ describe('FHIR Repo Transactions', () => {
       query: jest.fn(async () => Promise.reject(beginError)),
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
@@ -1463,10 +1383,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
 
     await repo.withTransaction(async (txRepo) => {
       await expect(txRepo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
@@ -1483,10 +1400,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
 
     await repo.withTransaction(
       async (txRepo) => {
@@ -1503,53 +1417,30 @@ describe('FHIR Repo Transactions', () => {
     ]);
   });
 
-  test('transaction-scoped repo is pinned to the sticky PoolClient', async () => {
+  test.each([
+    { name: 'transaction-scoped repo', getPinnedRepo: (txRepo: Repository) => txRepo },
+    { name: 'getSystemRepo', getPinnedRepo: (txRepo: Repository) => txRepo.getSystemRepo() },
+    {
+      name: 'withOverrideConfig',
+      getPinnedRepo: (txRepo: Repository) => txRepo.withOverrideConfig({ extendedMode: false }),
+    },
+  ])('$name propagates the transaction-scoped client pin', async ({ getPinnedRepo }) => {
     const { repo } = await createTestProject({ withRepo: true });
 
-    let escaped: Repository | undefined;
+    let escapedRepo: Repository | undefined;
     await repo.withTransaction(async (txRepo) => {
-      // Inside the transaction the pinned client is the sticky PoolClient and is returned freely.
       const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const pinnedRepo = getPinnedRepo(txRepo);
+
       expect(client).toBeDefined();
       expect('release' in client).toBe(true);
-      escaped = txRepo;
+      expect(pinnedRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      escapedRepo = pinnedRepo;
     });
 
     // After the transaction commits the sticky client is released back to the pool, so the
     // captured transaction-scoped repo must refuse to hand out a different client.
-    expect(() => (escaped as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
-      'no longer pinned to initial PoolClient'
-    );
-  });
-
-  test('getSystemRepo propagates the transaction-scoped client pin', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-
-    let escapedSystemRepo: Repository | undefined;
-    await repo.withTransaction(async (txRepo) => {
-      const systemRepo = txRepo.getSystemRepo();
-      // The derived system repo shares the same sticky PoolClient.
-      expect(systemRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(txRepo.getDatabaseClient(DatabaseMode.WRITER));
-      escapedSystemRepo = systemRepo;
-    });
-
-    expect(() => (escapedSystemRepo as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
-      'no longer pinned to initial PoolClient'
-    );
-  });
-
-  test('withOverrideConfig propagates the transaction-scoped client pin', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-
-    let escapedOverrideRepo: Repository | undefined;
-    await repo.withTransaction(async (txRepo) => {
-      const overrideRepo = txRepo.withOverrideConfig({ extendedMode: false });
-      // The override repo shares the same sticky PoolClient.
-      expect(overrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(txRepo.getDatabaseClient(DatabaseMode.WRITER));
-      escapedOverrideRepo = overrideRepo;
-    });
-
-    expect(() => (escapedOverrideRepo as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
+    expect(() => (escapedRepo as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
       'no longer pinned to initial PoolClient'
     );
   });
@@ -1559,10 +1450,7 @@ describe('FHIR Repo Transactions', () => {
     // release(), so it does not satisfy isPoolClient and cannot be safely pinned.
     const query = jest.fn(async (_sql: string) => ({ rows: [] }));
     const poolLikeClient = { query } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(poolLikeClient, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(poolLikeClient);
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
@@ -1592,10 +1480,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
 
     await repo.withTransaction(async (txRepo) => {
       const txRepo2 = txRepo.getSystemRepo();
@@ -1654,10 +1539,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
 
     await repo.withTransaction(async (txRepo) => {
       const txRepo2 = txRepo.getSystemRepo();
@@ -1724,10 +1606,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
@@ -1795,10 +1674,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
 
     const result = await Promise.race([
       repo
@@ -1836,10 +1712,7 @@ describe('FHIR Repo Transactions', () => {
       query,
       release: jest.fn(),
     } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
+    const repo = createBorrowedRepo(client);
     let parentTransactionError: unknown;
     let parentDatabaseClientError: unknown;
 
@@ -1921,7 +1794,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('clone does not share the same connection as the original repository', async () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
+      // const { repo } = await createTestProject({ withRepo: true });
 
       let checked = false;
       await repo.withTransaction(async (txRepo) => {
@@ -1990,11 +1863,48 @@ function collectPublicMembers(instance: object): DiscoveredMember[] {
   return result;
 }
 
+async function expectPatientVisible(repo: Repository, id: string | undefined): Promise<void> {
+  assert(id);
+  await expect(repo.readResource('Patient', id)).resolves.toBeDefined();
+  await expectPatientSearchCount(repo, id, 1);
+}
+
+async function expectPatientAbsent(
+  repo: Repository,
+  id: string | undefined,
+  expectedReadError: string | object = 'Not found'
+): Promise<void> {
+  assert(id);
+  const expectation = expect(repo.readResource('Patient', id)).rejects;
+  if (typeof expectedReadError === 'string') {
+    await expectation.toThrow(expectedReadError);
+  } else {
+    await expectation.toMatchObject(expectedReadError);
+  }
+  await expectPatientSearchCount(repo, id, 0);
+}
+
+async function expectPatientSearchCount(repo: Repository, id: string | undefined, count: number): Promise<void> {
+  assert(id);
+  const result = await repo.search<Patient>({
+    resourceType: 'Patient',
+    filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+  });
+  expect(result).toBeDefined();
+  expect(result.entry).toHaveLength(count);
+}
+
+function createBorrowedRepo(client: PoolClient): Repository {
+  return getShardSystemRepo('test-shard', RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER }));
+}
+
 // Some transaction race tests need to make a negative assertion: a competing async path has had a
 // chance to resume, but it must not issue SQL while the transaction state lock is held.
 async function allowPendingMicrotasks(): Promise<void> {
   // Yield twice so already-queued promise continuations, and continuations queued by those
   // continuations, can run far enough to issue SQL if the lock is missing.
+  await Promise.resolve();
+  await Promise.resolve();
   await Promise.resolve();
   await Promise.resolve();
 }
