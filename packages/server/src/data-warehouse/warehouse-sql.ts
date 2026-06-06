@@ -153,8 +153,6 @@ export function buildSelectFromHistoryTableQuery(
   if (sourcePredicate) {
     inner.whereExpr(sourcePredicate);
   }
-  inner.orderBy('lastUpdated');
-
   return new SelectQuery('src', inner)
     .column('id')
     .column('version_id')
