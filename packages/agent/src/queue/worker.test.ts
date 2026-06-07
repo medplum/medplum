@@ -78,7 +78,7 @@ describe('ChannelQueueWorker', () => {
   test('processes queued rows in FIFO order with successful end-to-end ACK', async () => {
     const rows = ['M1', 'M2', 'M3', 'M4', 'M5'].map((id) => enqueueOne(queue, id));
     const { app, sent } = makeStubApp();
-    const sendAck = jest.fn(() => true);
+    const sendAck = vi.fn(() => true);
 
     const worker = new ChannelQueueWorker({
       channelName: 'ch1',

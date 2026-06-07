@@ -49,7 +49,7 @@ describe('QueueLeaseManager', () => {
       heartbeatMs: 60_000,
       acquireRetryMs: 50,
     });
-    const onLeader = jest.fn();
+    const onLeader = vi.fn();
     mgr.start(onLeader);
 
     await waitFor(() => mgr.isLeader());
@@ -75,8 +75,8 @@ describe('QueueLeaseManager', () => {
       acquireRetryMs: 25,
     });
 
-    const cb1 = jest.fn();
-    const cb2 = jest.fn();
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
 
     mgr1.start(cb1);
     await waitFor(() => mgr1.isLeader());
@@ -118,10 +118,10 @@ describe('QueueLeaseManager', () => {
       heartbeatMs: 60_000,
       acquireRetryMs: 25,
     });
-    mgr1.start(jest.fn());
+    mgr1.start(vi.fn());
     await waitFor(() => mgr1.isLeader());
 
-    mgr2.start(jest.fn());
+    mgr2.start(vi.fn());
     // Wait until mgr2 takes over (mgr1's TTL expires).
     await waitFor(() => mgr2.isLeader(), 2000);
     expect(queue.getCurrentLease()?.holder).toBe(mgr2.getHolderId());
@@ -140,7 +140,7 @@ describe('QueueLeaseManager', () => {
       heartbeatMs: 50,
       acquireRetryMs: 25,
     });
-    mgr.start(jest.fn());
+    mgr.start(vi.fn());
     await waitFor(() => mgr.isLeader());
     const initialExpiry = queue.getCurrentLease()?.expiresAt as number;
 
@@ -170,10 +170,10 @@ describe('QueueLeaseManager', () => {
       heartbeatMs: 60_000,
       acquireRetryMs: 25,
     });
-    mgr1.start(jest.fn());
+    mgr1.start(vi.fn());
     await waitFor(() => mgr1.isLeader());
 
-    mgr2.start(jest.fn());
+    mgr2.start(vi.fn());
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 75);
     });
@@ -200,7 +200,7 @@ describe('QueueLeaseManager', () => {
       heartbeatMs: 30,
       acquireRetryMs: 50,
     });
-    mgr.start(jest.fn());
+    mgr.start(vi.fn());
     await waitFor(() => mgr.isLeader());
 
     // Force a peer to steal: set the lease to an expired one, then acquire as a peer.

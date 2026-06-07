@@ -45,7 +45,7 @@ let bot: Bot;
 
 describe('Durable queue integration', () => {
   beforeAll(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => [allOk, {} as Resource]);
     bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
   });
