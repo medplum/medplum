@@ -13,11 +13,11 @@ describe('ChannelStatsTracker', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockHeartbeatEmitter = new TypedEventTarget();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('getSampleCount', () => {
@@ -91,7 +91,7 @@ describe('ChannelStatsTracker', () => {
       });
 
       tracker.recordMessageSent('msg1');
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       const rtt = tracker.recordAckReceived('msg1');
 
       expect(rtt).toBeGreaterThanOrEqual(100);
@@ -116,9 +116,9 @@ describe('ChannelStatsTracker', () => {
       });
 
       tracker.recordMessageSent('msg1');
-      jest.advanceTimersByTime(50);
+      vi.advanceTimersByTime(50);
       tracker.recordMessageSent('msg2');
-      jest.advanceTimersByTime(50);
+      vi.advanceTimersByTime(50);
 
       const rtt1 = tracker.recordAckReceived('msg1');
       const rtt2 = tracker.recordAckReceived('msg2');
@@ -139,7 +139,7 @@ describe('ChannelStatsTracker', () => {
       // Add 3 samples
       for (let i = 0; i < 3; i++) {
         tracker.recordMessageSent(`msg${i}`);
-        jest.advanceTimersByTime(10 * (i + 1));
+        vi.advanceTimersByTime(10 * (i + 1));
         tracker.recordAckReceived(`msg${i}`);
       }
 
@@ -151,7 +151,7 @@ describe('ChannelStatsTracker', () => {
 
       // Add a 4th sample, should evict the oldest
       tracker.recordMessageSent('msg3');
-      jest.advanceTimersByTime(50);
+      vi.advanceTimersByTime(50);
       tracker.recordAckReceived('msg3');
 
       expect(tracker.getSampleCount()).toBe(3);
@@ -186,7 +186,7 @@ describe('ChannelStatsTracker', () => {
       });
 
       tracker.recordMessageSent('msg1');
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       tracker.recordAckReceived('msg1');
 
       const stats = tracker.getRttStats();
@@ -210,7 +210,7 @@ describe('ChannelStatsTracker', () => {
       const expectedRtts = [100, 200, 300, 400, 500];
       for (let i = 0; i < expectedRtts.length; i++) {
         tracker.recordMessageSent(`msg${i}`);
-        jest.advanceTimersByTime(expectedRtts[i]);
+        vi.advanceTimersByTime(expectedRtts[i]);
         tracker.recordAckReceived(`msg${i}`);
       }
 
@@ -255,7 +255,7 @@ describe('ChannelStatsTracker', () => {
       expect(tracker.getPendingCount()).toBe(1);
 
       // Advance time past maxPendingAge but not past gcIntervalMs
-      jest.advanceTimersByTime(maxPendingAge + 1000);
+      vi.advanceTimersByTime(maxPendingAge + 1000);
 
       // Heartbeat should not trigger cleanup yet (hasn't been gcIntervalMs since last GC)
       mockHeartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
@@ -263,7 +263,7 @@ describe('ChannelStatsTracker', () => {
       expect(mockLogger.warn).not.toHaveBeenCalled();
 
       // Advance time past gcIntervalMs
-      jest.advanceTimersByTime(gcIntervalMs);
+      vi.advanceTimersByTime(gcIntervalMs);
 
       // Now heartbeat should trigger cleanup
       mockHeartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
@@ -320,7 +320,7 @@ describe('ChannelStatsTracker', () => {
       });
 
       tracker.recordMessageSent('msg1');
-      jest.advanceTimersByTime(maxPendingAge + gcIntervalMs + 1000);
+      vi.advanceTimersByTime(maxPendingAge + gcIntervalMs + 1000);
 
       tracker.cleanup();
 
@@ -362,7 +362,7 @@ describe('ChannelStatsTracker', () => {
       });
 
       tracker.recordMessageSent('msg1');
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       tracker.recordAckReceived('msg1');
 
       const stats = tracker.getStats();

@@ -514,6 +514,39 @@ describe('AI Operation', () => {
     expect(bodyParam.tool_choice).toBeUndefined();
   });
 
+  test('Passes through temperature', async () => {
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'ok', tool_calls: null } }],
+      }),
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'hi' }]),
+          },
+          { name: 'model', valueString: 'gpt-4' },
+          { name: 'temperature', valueDecimal: 0.3 },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const bodyParam = JSON.parse(fetchCall[1].body);
+    expect(bodyParam.temperature).toBe(0.3);
+  });
+
   test('Unsupported content type', async () => {
     const res = await request(app)
       .post(`/fhir/R4/$ai`)

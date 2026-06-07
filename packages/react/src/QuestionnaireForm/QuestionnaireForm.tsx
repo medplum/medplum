@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack, Text, Title } from '@mantine/core';
+import { Divider, Group, Stack, Text, Title } from '@mantine/core';
 import { createReference, getExtension, getReferenceString } from '@medplum/core';
 import type { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
@@ -9,7 +9,7 @@ import {
   useMedplum,
   useQuestionnaireForm,
 } from '@medplum/react-hooks';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -26,6 +26,8 @@ export interface QuestionnaireFormProps {
   readonly disablePagination?: boolean;
   readonly excludeButtons?: boolean;
   readonly submitButtonText?: string;
+  /** Optional content rendered immediately below the header row, before the form items. */
+  readonly afterHeader?: ReactNode;
   readonly onChange?: (response: QuestionnaireResponse) => void;
   readonly onSubmit?: (response: QuestionnaireResponse) => void;
 }
@@ -142,7 +144,17 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   return (
     <Form testid="questionnaire-form" onSubmit={handleSubmit}>
-      {formState.questionnaire.title && <Title>{formState.questionnaire.title}</Title>}
+      {formState.questionnaire.title && (
+        <Title order={1} fz="1.625rem" fw={700} lh={1.3} mb="xl">
+          {formState.questionnaire.title}
+        </Title>
+      )}
+      {props.afterHeader && (
+        <Stack gap="xl" mb="xl">
+          {props.afterHeader}
+          <Divider color="var(--mantine-color-gray-2)" />
+        </Stack>
+      )}
       {formState.pagination ? (
         <QuestionnaireFormStepper
           formState={formState}

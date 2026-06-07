@@ -158,7 +158,7 @@ describe('App', () => {
       const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
       expect(logLines).toHaveLength(1);
       const logObj = JSON.parse(logLines[0][0]);
-      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
+      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201, fhirQuota: 100 });
     });
 
     test('Authenticated request with On-Behalf-Of', async () => {

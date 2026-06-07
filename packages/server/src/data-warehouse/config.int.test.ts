@@ -79,6 +79,7 @@ describe('config (integration)', () => {
       expect(row.t).toBe('3s');
     } finally {
       connection.closeSync();
+      instance.closeSync();
     }
   }, 30_000);
 });

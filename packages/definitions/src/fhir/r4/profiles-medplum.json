@@ -1759,7 +1759,7 @@
           {
             "id" : "ProjectMembership.accessPolicy",
             "path" : "ProjectMembership.accessPolicy",
-            "definition" : "The access policy for the user within the project memebership.",
+            "definition" : "The access policy for the user within the project membership.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1858,7 +1858,7 @@
           {
             "id" : "ProjectMembership.userConfiguration",
             "path" : "ProjectMembership.userConfiguration",
-            "definition" : "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+            "definition" : "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
             "min" : 0,
             "max" : "1",
             "type" : [{

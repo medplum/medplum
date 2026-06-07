@@ -205,6 +205,12 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
+const arrayKeys = new Set(['dataWarehouse.includeResourceTypes', 'dataWarehouse.excludeResourceTypes']);
+
+export function isArrayConfig(key: string): boolean {
+  return arrayKeys.has(key);
+}
+
 export function setValue(config: Record<string, unknown>, key: string, value: string): void {
   const keySegments = key.split('.');
   let obj = config;
@@ -224,6 +230,8 @@ export function setValue(config: Record<string, unknown>, key: string, value: st
     parsedValue = value === 'true';
   } else if (isObjectConfig(key)) {
     parsedValue = JSON.parse(value);
+  } else if (isArrayConfig(key)) {
+    parsedValue = value.split(',').map((v) => v.trim());
   }
 
   obj[keySegments[0]] = parsedValue;

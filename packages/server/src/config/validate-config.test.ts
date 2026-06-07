@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumServerConfig } from './types';
+
+jest.mock('../data-warehouse/config', () => ({
+  getWarehouseSyncPostgresTableNames: jest.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
+}));
+
 import {
   getDataWarehouseConfigErrors,
   isDataWarehouseSyncOperational,
@@ -62,6 +67,74 @@ describe('getDataWarehouseConfigErrors', () => {
         })
       )
     ).toStrictEqual([]);
+  });
+
+  describe('resource type filters', () => {
+    test('returns error when include and exclude are both set', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              includeResourceTypes: ['Patient'],
+              excludeResourceTypes: ['Binary'],
+            },
+          })
+        )
+      ).toContain('dataWarehouse.includeResourceTypes and dataWarehouse.excludeResourceTypes cannot both be set');
+    });
+
+    test('returns error when resource type filter contains unknown resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              includeResourceTypes: ['Patient', 'NotARealResourceType'],
+            },
+          })
+        )
+      ).toContain('dataWarehouse resource type filter contains unknown resource type(s): NotARealResourceType');
+    });
+
+    test('returns no errors when includeResourceTypes lists known resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              includeResourceTypes: ['Patient', 'Observation'],
+            },
+          })
+        )
+      ).toStrictEqual([]);
+    });
+
+    test('returns no errors when include is empty and exclude lists known resource types', () => {
+      expect(
+        getDataWarehouseConfigErrors(
+          baseServerConfig({
+            dataWarehouse: {
+              enabled: true,
+              cron: '0 * * * *',
+              destination: 'local',
+              localBasePath: '/tmp/out',
+              includeResourceTypes: [],
+              excludeResourceTypes: ['Account'],
+            },
+          })
+        )
+      ).toStrictEqual([]);
+    });
   });
 
   test('returns no errors when enabled is false even if destination fields are missing', () => {
