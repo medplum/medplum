@@ -127,12 +127,11 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
 
     expect(updateProgress).toHaveBeenCalledWith(
       expect.objectContaining({
-        tableNumber: 1,
-        total: 1,
+        tablesCompleted: 1,
+        tablesTotal: 1,
         icebergTable,
-        postgresTable: HISTORY_TABLE,
-        table: expectedParquetPath,
-        count: 1,
+        destination: expectedParquetPath,
+        rowsInserted: 1,
       })
     );
 

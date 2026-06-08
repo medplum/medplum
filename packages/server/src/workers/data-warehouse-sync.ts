@@ -49,7 +49,8 @@ export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
     subsystem: 'data-warehouse-sync',
     destination: syncConfig.destination,
     cron: syncConfig.cron,
-    resourceTypes: syncConfig.resourceTypes,
+    includeResourceTypes: syncConfig.includeResourceTypes,
+    excludeResourceTypes: syncConfig.excludeResourceTypes,
     startDate: syncConfig.startDate,
   });
 }
@@ -155,6 +156,7 @@ export async function processDataWarehouseSyncJob(
   job: Job<DataWarehouseSyncJobData>
 ): Promise<void> {
   const syncConfig = config.dataWarehouse;
+  const jobStartTime = new Date();
 
   await withPoolClient(async (client) => {
     let hasLock = false;
@@ -183,15 +185,32 @@ export async function processDataWarehouseSyncJob(
         },
       });
 
-      const inserted = result.resources.filter((resource) => resource.count > 0).length;
-      const skipped = result.resources.length - inserted;
+      let watermarkDurationSeconds = 0;
+      let syncDurationSeconds = 0;
+      for (const table of result.tables) {
+        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
+        syncDurationSeconds += table.syncDurationMs / 1000;
+      }
+
+      const tables = result.tables;
+      const tablesWithRows = tables.filter((t) => t.rowsInserted > 0).length;
+      const tablesEmpty = tables.length - tablesWithRows;
+      const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
+      const jobEndTime = new Date();
+      const durationSeconds = (jobEndTime.getTime() - jobStartTime.getTime()) / 1000;
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
-        inserted,
-        skipped,
-        total: result.resources.length,
-        resources: result.resources,
+        tablesSynced: tables.length,
+        tablesWithRows,
+        tablesEmpty,
+        rowsInserted,
+        tableCounts: Object.fromEntries(tables.map((t) => [t.icebergTable, t.rowsInserted])),
+        watermarkDurationSeconds,
+        syncDurationSeconds,
+        jobStartTime: jobStartTime.toISOString(),
+        jobEndTime: jobEndTime.toISOString(),
+        durationSeconds,
         subsystem: 'data-warehouse-sync',
       });
     } catch (err) {
@@ -227,7 +246,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     throw new Error(errors.join('; '));
   }
 
-  const { namespace, startDate, resourceTypes } = syncConfig;
+  const { namespace, startDate, includeResourceTypes, excludeResourceTypes } = syncConfig;
 
   // Fallback to the writer database when readonly is not configured.
   // For RDS Proxy, set host and ssl.require on the database config directly.
@@ -238,7 +257,7 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
       ? new LocalParquetWarehouseDestination(syncConfig.localBasePath as string)
       : new S3TablesWarehouseDestination(config.awsRegion, syncConfig.awsS3TableArn as string);
 
-  const warehouseSources = getWarehouseSyncPostgresTableNames(resourceTypes)
+  const warehouseSources = getWarehouseSyncPostgresTableNames(includeResourceTypes, excludeResourceTypes)
     .map((postgresTable) => ({
       postgresTable,
       icebergTable: toIcebergTableName(postgresTable),
@@ -249,7 +268,8 @@ export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOp
     destination,
     namespace,
     startDate,
-    resourceTypes,
+    includeResourceTypes,
+    excludeResourceTypes,
     warehouseSources,
   };
 }
