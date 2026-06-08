@@ -1,0 +1,48 @@
+---
+slug: building-on-medplum-with-ai
+title: 'Vibe Coding on Medplum'
+authors: everett
+tags: [ai]
+---
+
+# Vibe Coding on Medplum
+
+More and more of the people building on Medplum are doing it with an AI coding assistant — Cursor, Claude, Copilot, and others. We have been watching how that goes, talking to users about what works, and we wrote up what we have learned in a new guide: [Building on Medplum with AI Coding Assistants](/docs/building-with-ai-coding-assistants). This post is the short version of what is in there.
+
+{/* truncate */}
+
+The single biggest lever we have found is this: **make your AI tools learn from Medplum's open-source code and docs rather than from generic FHIR knowledge on the open internet.** Everything below follows from that.
+
+## Give your tools access to Medplum
+
+Why go out of your way to make the LLM familiar with Medplum specifically, beyond its base training on FHIR? Medplum is open-source, with extensive documentation on common patterns for healthcare software implementation — and we have had users tell us they first discovered Medplum because an LLM prompt natively linked them to our docs. When the model can index directly on Medplum, or is prompted to lean on Medplum's docs and code, we have noticed the results are significantly better. It gets valid code snippets, real example implementations, and guidance on the tradeoffs between approaches, instead of guessing.
+
+The simplest way to set this up, and the one we reach for first, is to clone the [Medplum repo](https://github.com/medplum/medplum) and symlink it into your project:
+
+```bash
+ln -s /absolute/path/to/medplum medplum-link
+```
+
+Then tell the model it can read `medplum-link/`. If you would rather not clone, you can give the agent docs and GitHub search instead, or connect Medplum's MCP server — the guide covers both.
+
+## Plan and prompt with Medplum as the source of truth
+
+The setup only pays off if your prompts push the model toward it. The pattern that has worked best, in our experience, is to **plan before you build**: ask the model to read the relevant docs and code, explain the common design patterns and their tradeoffs, and only then implement. It is far cheaper to catch a wrong architectural turn while it is still a paragraph than after it is a few hundred lines. Where you can, point the agent at the closest existing implementation to adapt rather than asking it to start from a blank file.
+
+## Keep conversations short
+
+One thing that surprises people: **long conversations decay.** An agent that started with the right context drifts as the thread grows and earlier details get summarized away — strong answers early, subtle regressions later. We have had the best luck keeping a conversation scoped to a single task, starting fresh often, and re-pointing the model at the docs at checkpoints, for instance right after it generates a resource.
+
+## Verify the output
+
+An agent's confidence is not a measure of correctness, so build verification in. The cheapest check we know of — and one the agent can run itself if it has terminal access — is to **compile the generated code against Medplum's TypeScript types.** The types are strict, so a hallucinated field on a typed FHIR resource is a compile error rather than a production surprise. Tests and linting catch more, and when you want the real thing, Medplum's server-side validation will check resources against the actual FHIR and profile definitions.
+
+And the part we would never skip, because this is healthcare: **review the output, especially the sensitive parts.** LLMs make mistakes, and a wrong access policy does not throw an error — it quietly exposes data. Anything touching access control, auth scopes, or PHI deserves a careful human read before it ships.
+
+## The controversial one: direct data access
+
+Finally, an aspect that is genuinely controversial and may not be right for your use case: giving your AI tool direct access to your Medplum data, through an API token or the MCP server. It can speed things up, but the caveats are real. If the tool can reach live PII or PHI, you **must** have a BAA with your LLM vendor; if you do not, scope an access policy so the token only ever reaches non-PII/PHI data. We treat this as advanced territory rather than a default.
+
+---
+
+None of this is exotic, but together it changes how much you can trust what your agent hands back. The full write-up — setup options, prompting patterns, the validation tiers, and the data-access caveats — lives in [Building on Medplum with AI Coding Assistants](/docs/building-with-ai-coding-assistants). Give your tools the source of truth, plan before you build, verify the output, and keep a human in the loop. Then go build something, and let us know what you make.
