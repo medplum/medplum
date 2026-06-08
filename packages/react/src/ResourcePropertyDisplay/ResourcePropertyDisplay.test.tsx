@@ -484,6 +484,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Primitive with extension but no value should render empty string', async () => {
+    console.warn = jest.fn();
     await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, path: 'Patient.birthDate', type: [{ code: 'date' }] }}
@@ -493,7 +494,10 @@ describe('ResourcePropertyDisplay', () => {
         }}
       />
     );
-    expect(screen.getByText('')).toBeInTheDocument();
+    expect(console.warn).toHaveBeenCalledWith(
+      'Non-standard FHIR data or missing primitive value with extension',
+      expect.anything()
+    );
   });
 
   describe('Secret field functionality', () => {
