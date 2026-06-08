@@ -483,6 +483,19 @@ describe('ResourcePropertyDisplay', () => {
     ).rejects.toThrow('Displaying property of type BackboneElement requires element schema');
   });
 
+  test('Primitive with extension but no value should render empty string', async () => {
+    await setup(
+      <ResourcePropertyDisplay
+        property={{ ...baseProperty, path: 'Patient.birthDate', type: [{ code: 'date' }] }}
+        propertyType={PropertyType.date}
+        value={{
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason', valueCode: 'unknown' }],
+        }}
+      />
+    );
+    expect(screen.getByText('')).toBeInTheDocument();
+  });
+
   describe('Secret field functionality', () => {
     test('Renders secret field with masked value by default', async () => {
       await setup(
