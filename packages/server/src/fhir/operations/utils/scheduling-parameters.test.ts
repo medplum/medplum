@@ -21,12 +21,42 @@ describe('getHealthcareServiceSchedulingParameters', () => {
 
   test('with no extension returns default values', () => {
     const service = withPath(baseService, 'Path.HealthcareService');
-    expect(getHealthcareServiceSchedulingParameters(service)).toMatchObject({
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
       availability: [
         {
           dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
           availableStartTime: '00:00:00',
           availableEndTime: '00:00:00',
+        },
+      ],
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      service: { reference: 'HealthcareService/hs-12345' },
+    });
+  });
+
+  test('can set `availableTime` without an extension', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        availableTime: [
+          {
+            daysOfWeek: ['sat', 'sun'],
+            availableStartTime: '10:00:00',
+            availableEndTime: '16:00:00',
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
+      availability: [
+        {
+          dayOfWeek: ['sat', 'sun'],
+          availableStartTime: '10:00:00',
+          availableEndTime: '16:00:00',
         },
       ],
       bufferBefore: 0,
@@ -51,7 +81,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       'Path.HealthcareService'
     );
 
-    expect(getHealthcareServiceSchedulingParameters(service)).toMatchObject({
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
       availability: [
         {
           dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
@@ -65,7 +95,6 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       alignmentOffset: 0,
       duration: 120,
       service: { reference: 'HealthcareService/hs-12345' },
-      timezone: undefined,
     });
   });
 
@@ -101,7 +130,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       'Path.HealthcareService'
     );
 
-    expect(getHealthcareServiceSchedulingParameters(service)).toMatchObject({
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
       availability: [
         {
           dayOfWeek: ['mon', 'tue'],
@@ -194,7 +223,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       } satisfies HealthcareService,
       'Path.HealthcareService'
     );
-    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingEnd).availability).toMatchObject([
+    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingEnd).flatten().availability).toMatchObject([
       { dayOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
 
@@ -209,7 +238,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       } satisfies HealthcareService,
       'Path.HealthcareService'
     );
-    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingStart).availability).toMatchObject([
+    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingStart).flatten().availability).toMatchObject([
       { dayOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
 
@@ -221,7 +250,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       } satisfies HealthcareService,
       'Path.HealthcareService'
     );
-    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingDays).availability).toMatchObject([
+    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingDays).flatten().availability).toMatchObject([
       { dayOfWeek: [], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
   });
@@ -309,7 +338,7 @@ describe('getScheduleSchedulingParameters', () => {
     );
     const schedule = withPath(baseSchedule, 'Path.Schedule');
 
-    expect(getScheduleSchedulingParameters(schedule, service)).toMatchObject({
+    expect(getScheduleSchedulingParameters(schedule, service).flatten()).toMatchObject({
       availability: [
         {
           dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
@@ -323,7 +352,6 @@ describe('getScheduleSchedulingParameters', () => {
       alignmentOffset: 0,
       duration: 120,
       service: { reference: 'HealthcareService/hs-12345' },
-      timezone: undefined,
     });
   });
 
@@ -356,7 +384,7 @@ describe('getScheduleSchedulingParameters', () => {
     );
     const schedule = withPath(baseSchedule, 'Path.Schedule');
 
-    expect(getScheduleSchedulingParameters(schedule, service)).toMatchObject({
+    expect(getScheduleSchedulingParameters(schedule, service).flatten()).toMatchObject({
       availability: [
         {
           dayOfWeek: ['mon', 'tue'],
@@ -448,7 +476,7 @@ describe('getScheduleSchedulingParameters', () => {
       'Path.Schedule'
     );
 
-    expect(getScheduleSchedulingParameters(schedule, service)).toMatchObject({
+    expect(getScheduleSchedulingParameters(schedule, service).flatten()).toMatchObject({
       availability: [
         {
           dayOfWeek: ['wed'],

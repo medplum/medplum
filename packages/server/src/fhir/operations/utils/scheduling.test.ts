@@ -4,6 +4,8 @@ import type { WithId } from '@medplum/core';
 import { createReference, DEFAULT_MAX_SEARCH_COUNT, generateId } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule, Slot } from '@medplum/fhirtypes';
 import type { Interval } from '../../../util/date';
+import { LayeredDict } from '../../../util/layereddict';
+import { withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import {
   applyExistingSlots,
@@ -39,8 +41,11 @@ const service: WithId<HealthcareService> = {
 };
 
 describe('resolveAvailability', () => {
+  const layered = (sp: SchedulingParameters): LayeredDict<SchedulingParameters> =>
+    LayeredDict.empty().addLayer(withPath(sp, 'test'));
+
   test('having multiple days and times', async () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['mon', 'wed', 'thu'],
@@ -59,7 +64,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     const range = {
       start: new Date('2025-11-30T00:00:00.000-05:00'), // Start of Oct 30
@@ -78,7 +83,7 @@ describe('resolveAvailability', () => {
   });
 
   test('for an availability entry crossing midnight', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['mon'],
@@ -92,7 +97,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     const range = {
       start: new Date('2025-11-30T00:00:00.000-05:00'), // Start of Oct 30
@@ -106,7 +111,7 @@ describe('resolveAvailability', () => {
   });
 
   test('all day availability', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['mon', 'tue'],
@@ -120,7 +125,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     const range = {
       start: new Date('2025-11-30T00:00:00.000-05:00'), // Start of Oct 30
@@ -136,7 +141,7 @@ describe('resolveAvailability', () => {
   });
 
   test('availabilities crossing the start of the query range are clamped', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['tue'],
@@ -150,7 +155,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     const range = {
       start: new Date('2025-12-02T12:00:00.000-05:00'), // Tue Oct 2, noon ET
@@ -164,7 +169,7 @@ describe('resolveAvailability', () => {
   });
 
   test('availabilities crossing the end of the query range are clamped', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['tue'],
@@ -178,7 +183,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     const range = {
       start: new Date('2025-12-02T04:00:00.000-05:00'), // Tue Oct 2, 4am ET
@@ -193,7 +198,7 @@ describe('resolveAvailability', () => {
 
   // regression test for https://github.com/medplum/medplum/issues/8417
   test('when the request starts early in a UTC day', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['tue', 'wed', 'thu'],
@@ -207,7 +212,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     const range = {
       start: new Date('2026-01-14T19:00:00.000-05:00'), // Wed Jan 14, 7pm ET (which is Jan 15, 12am UTC)
@@ -221,7 +226,7 @@ describe('resolveAvailability', () => {
   });
 
   test('on days with DST transitions', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['sun'],
@@ -235,7 +240,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     // NY has a DST "spring forward" on March 8 2026
     const springRange = {
@@ -259,7 +264,7 @@ describe('resolveAvailability', () => {
   });
 
   test('availability spanning a DST change', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['sun'],
@@ -273,7 +278,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     // NY has a DST "spring forward" on March 8 2026
     const range = {
@@ -301,7 +306,7 @@ describe('resolveAvailability', () => {
   });
 
   test('availability on an ambiguous DST fall back time chooses the earlier option', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['sun'],
@@ -315,7 +320,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     // NY has a DST "fall back" on Nov 2 2025: 1:30am: happens twice
     const range = {
@@ -331,7 +336,7 @@ describe('resolveAvailability', () => {
   });
 
   test('availability on an ambiguous DST spring forward time starts late', () => {
-    const schedulingParameters: SchedulingParameters = {
+    const schedulingParameters = layered({
       availability: [
         {
           dayOfWeek: ['sun'],
@@ -345,7 +350,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       service: createReference(service),
-    };
+    });
 
     // NY has a DST "spring forward" on March 8 2026; 2:30am never happens
     const range = {

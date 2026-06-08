@@ -19,8 +19,9 @@ import {
   assertExtensionTime,
   getExtensions,
 } from '../../../util/extension';
+import { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
-import { getPath } from '../../../util/withpath';
+import { getPath, withPath } from '../../../util/withpath';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -185,44 +186,34 @@ function exactlyZero(arr: WithPath<object>[], attribute: string, resourceType: s
 // work on complex types like `Availability`. We restrict this to a subset of
 // keys from SchedulingParameters that we know contain primitive types.
 function assertAllMatch(
-  values: SchedulingParameters[],
+  values: LayeredDict<SchedulingParameters>[],
   attribute: 'duration' | 'alignmentInterval' | 'alignmentOffset'
 ): void {
   if (values.length <= 1) {
     return;
   }
-  const mismatched = values.find((value) => value[attribute] !== values[0][attribute]);
+  const mismatched = values.find((value) => value.get(attribute) !== values[0].get(attribute));
   if (mismatched) {
-    throw new OperationOutcomeError(badRequest(`Scheduling parameters attribute '${attribute}' does not match`));
+    throw new OperationOutcomeError(
+      badRequest(`Scheduling parameters attribute '${attribute}' does not match`, [
+        values[0].getPath(attribute),
+        mismatched.getPath(attribute),
+      ])
+    );
   }
-}
-
-export function chooseSchedulingParameterGroup(
-  schedules: WithPath<WithId<Schedule>>[],
-  healthcareService: WithPath<WithId<HealthcareService>>
-): Map<WithPath<WithId<Schedule>>, SchedulingParameters> {
-  const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
-  const result = new Map<WithPath<WithId<Schedule>>, SchedulingParameters>();
-
-  for (const schedule of schedules) {
-    const params = getScheduleSchedulingParameters(schedule, healthcareService, serviceParams);
-    result.set(schedule, params);
-  }
-
-  return result;
 }
 
 export function extractCommonParameters(
-  schedulingParameters: SchedulingParameters[]
+  schedulingParameters: LayeredDict<SchedulingParameters>[]
 ): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset'> {
   assertAllMatch(schedulingParameters, 'duration');
   assertAllMatch(schedulingParameters, 'alignmentInterval');
   assertAllMatch(schedulingParameters, 'alignmentOffset');
 
   return {
-    duration: schedulingParameters[0].duration,
-    alignmentInterval: schedulingParameters[0].alignmentInterval,
-    alignmentOffset: schedulingParameters[0].alignmentOffset,
+    duration: schedulingParameters[0].get('duration'),
+    alignmentInterval: schedulingParameters[0].get('alignmentInterval'),
+    alignmentOffset: schedulingParameters[0].get('alignmentOffset'),
   };
 }
 
@@ -324,18 +315,51 @@ function extractAvailability(
   return undefined;
 }
 
+// In the SchedulingParameters extension, `alignmentInterval: 0` means "align
+// to the start of the hour". In our in-memory representation, we want to
+// convert this to a value that can be used as a modulus.
+function toHourlyModulus(value: number): number {
+  if (value === 0) {
+    return 60;
+  }
+  return value;
+}
+
 // Get SchedulingParameters from a HealthcareService or throw
 export function getHealthcareServiceSchedulingParameters(
   healthcareService: WithPath<HealthcareService>
-): ServiceSchedulingParameters {
-  const extensions = getExtensions(healthcareService, SchedulingParametersURI);
-  if (extensions.length === 0) {
-    // Q: Should this be an error?
-    getLogger().warn('HealthcareService used for scheduling operation without SchedulingParameters extension');
-    return {
+): LayeredDict<ServiceSchedulingParameters> {
+  const defaultsLayer = withPath(
+    {
       service: createReference(healthcareService),
       ...SERVICE_DEFAULTS,
-    };
+    },
+    getPath(healthcareService)
+  );
+
+  let result: LayeredDict<ServiceSchedulingParameters> = LayeredDict.empty().addLayer(defaultsLayer);
+
+  // HealthcareService stores availability in a native field, read it from there.
+  // Note: explicitly setting this field to an empty array makes this default to "never" available.
+  if (healthcareService.availableTime) {
+    result = result.addLayer(
+      withPath(
+        {
+          availability: healthcareService.availableTime.map(extractAvailability).filter(isDefined),
+        },
+        getPath(healthcareService)
+      )
+    );
+  }
+
+  const extensions = getExtensions(healthcareService, SchedulingParametersURI);
+  if (extensions.length === 0) {
+    // Proposal: make this an error before scheduling GA launch. Consider
+    // making `duration` a required field at the same time. This would simplify
+    // the type logic (`duration` could always be guaranteed, removing the
+    // difference between ServiceSchedulingParameters and SchedulingParameters.
+    getLogger().warn('HealthcareService used for scheduling operation without SchedulingParameters extension');
+    return result;
   }
   if (extensions.length > 1) {
     throw new OperationOutcomeError(
@@ -344,15 +368,6 @@ export function getHealthcareServiceSchedulingParameters(
   }
   const extension = extensions[0];
 
-  // Default: 24/7 availability
-  let availability: SchedulingParametersAvailability[] = SERVICE_DEFAULTS.availability;
-  // HealthcareService stores availability in a native field, read it from there.
-  // Note: explicitly setting this field to an empty array makes this default to "never" available.
-  if (healthcareService.availableTime) {
-    availability = healthcareService.availableTime.map(extractAvailability).filter(isDefined);
-  }
-
-  // Q: Should `duration` be required on HealthcareService scheduling parameters?
   const durationExt = atMostOne(getExtensions(extension, 'duration'), 'duration');
   const bufferBeforeExt = atMostOne(getExtensions(extension, 'bufferBefore'), 'bufferBefore');
   const bufferAfterExt = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
@@ -363,39 +378,34 @@ export function getHealthcareServiceSchedulingParameters(
   // `service` sub-extension not allowed in HealthcareService; implied by resource
   exactlyZero(getExtensions(extension, 'service'), 'service', healthcareService.resourceType);
 
-  // `availablity` sub-extension not allowed in HealthcareService; use `HealthcareService.availableTime` instead
+  // `availability` sub-extension not allowed in HealthcareService; use `HealthcareService.availableTime` instead
   exactlyZero(getExtensions(extension, 'availability'), 'availability', healthcareService.resourceType);
 
-  // Convert "on the hour" alignment from the stored representation (0) to value usable as a modulus (60)
-  let alignmentInterval = alignmentIntervalExt
-    ? durationToMinutes(alignmentIntervalExt)
-    : SERVICE_DEFAULTS.alignmentInterval;
-  alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
-
-  let timezone: string | undefined = undefined;
   if (timezoneExt) {
     assertExtensionCode(timezoneExt);
-    timezone = timezoneExt.valueCode;
   }
 
-  return {
-    service: createReference(healthcareService),
-    availability,
-    alignmentInterval,
-    duration: durationExt ? durationToMinutes(durationExt) : undefined,
-    bufferBefore: bufferBeforeExt ? durationToMinutes(bufferBeforeExt) : SERVICE_DEFAULTS.bufferBefore,
-    bufferAfter: bufferAfterExt ? durationToMinutes(bufferAfterExt) : SERVICE_DEFAULTS.bufferAfter,
-    alignmentOffset: alignmentOffsetExt ? durationToMinutes(alignmentOffsetExt) : SERVICE_DEFAULTS.alignmentOffset,
-    timezone,
-  };
+  return result.patchLayer(
+    withPath(
+      {
+        ...(durationExt && { duration: durationToMinutes(durationExt) }),
+        ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
+        ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
+        ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+        ...(alignmentIntervalExt && { alignmentInterval: toHourlyModulus(durationToMinutes(alignmentIntervalExt)) }),
+        ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+      },
+      getPath(extension)
+    )
+  );
 }
 
 // Get SchedulingParameters for a Schedule/HealthcareService pairing.
 export function getScheduleSchedulingParameters(
   schedule: WithPath<Schedule>,
   healthcareService: WithPath<WithId<HealthcareService>>,
-  serviceParameters?: ServiceSchedulingParameters
-): SchedulingParameters {
+  serviceParameters?: LayeredDict<ServiceSchedulingParameters>
+): LayeredDict<SchedulingParameters> {
   // Parameters not set at the Schedule level get inherited from the Service level.
   // We accept parsed serviceParameters as an optional input so that multi-scheduling
   // endpoints can perform that parsing once and have the value be reused.
@@ -409,17 +419,18 @@ export function getScheduleSchedulingParameters(
   // If we didn't find an extension on the schedule for this service, use the
   // service-derived values directly.
   if (extensions.length === 0) {
-    // The only value we don't have a default for is `duration`, ensure that it
-    // was set in the service layer or fail.
-    if (defaultParameters.duration === undefined) {
-      throw new OperationOutcomeError(
-        badRequest("Scheduling parameter attribute 'duration' is missing", [getPath(schedule)])
-      );
-    }
-    return defaultParameters as SchedulingParameters;
+    // The only value we don't have a default for is `duration`, ensure it was
+    // set in the service layer or fail.
+    return defaultParameters.refine((p): asserts p is SchedulingParameters => {
+      if (p.duration === undefined) {
+        throw new OperationOutcomeError(
+          badRequest("Scheduling parameter attribute 'duration' is missing", [getPath(schedule)])
+        );
+      }
+    });
   }
 
-  // If there are multiple matches, the intention is unclear; abort.
+  // If there are multiple matching extensions, the intention is unclear; abort.
   if (extensions.length > 1) {
     throw new OperationOutcomeError(
       badRequest('Schedule has too many scheduling parameters extensions', getPath(schedule))
@@ -433,44 +444,33 @@ export function getScheduleSchedulingParameters(
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
 
-  let timezone: string | undefined = undefined;
   if (timezoneExt) {
     assertExtensionCode(timezoneExt);
-    timezone = timezoneExt.valueCode;
   }
 
   // The "availability" sub-extension uses format that mirrors
-  // `HealthcareService.availableTime` attribute.  When Medplum moves to FHIR
+  // `HealthcareService.availableTime` attribute. When Medplum moves to FHIR
   // R5+, this can use the native `Availability` Metadata type instead.
   const availabilityExt = getExtensions(extension, 'availability');
-  const availability = availabilityExt.length
-    ? availabilityExt.flatMap(extractAvailabilityR4)
-    : defaultParameters.availability;
 
-  // Convert "on the hour" alignment from the stored representation (0) to
-  // value usable as a modulus (60)
-  let alignmentInterval = alignmentIntervalExt
-    ? durationToMinutes(alignmentIntervalExt)
-    : defaultParameters.alignmentInterval;
-  alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
+  const layer = withPath(
+    {
+      ...(availabilityExt.length && { availability: availabilityExt.flatMap(extractAvailabilityR4) }),
+      ...(durationExt && { duration: durationToMinutes(durationExt) }),
+      ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
+      ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
+      ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+      ...(alignmentIntervalExt && { alignmentInterval: toHourlyModulus(durationToMinutes(alignmentIntervalExt)) }),
+      ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+    },
+    getPath(extension)
+  );
 
-  // Use extension from schedule when present, fall back to service-defined
-  // value otherwise. Fail if no value set.
-  const duration = durationExt ? durationToMinutes(durationExt) : defaultParameters.duration;
-  if (duration === undefined) {
-    throw new OperationOutcomeError(
-      badRequest("Scheduling parameter attribute 'duration' is missing", [getPath(schedule)])
-    );
-  }
-
-  return {
-    service: defaultParameters.service,
-    availability,
-    alignmentInterval,
-    duration,
-    bufferBefore: bufferBeforeExt ? durationToMinutes(bufferBeforeExt) : defaultParameters.bufferBefore,
-    bufferAfter: bufferAfterExt ? durationToMinutes(bufferAfterExt) : defaultParameters.bufferAfter,
-    alignmentOffset: alignmentOffsetExt ? durationToMinutes(alignmentOffsetExt) : defaultParameters.alignmentOffset,
-    timezone: timezone ?? defaultParameters.timezone,
-  };
+  return defaultParameters.patchLayer(layer).refine((p): asserts p is SchedulingParameters => {
+    if (p.duration === undefined) {
+      throw new OperationOutcomeError(
+        badRequest("Scheduling parameter attribute 'duration' is missing", [getPath(schedule)])
+      );
+    }
+  });
 }
