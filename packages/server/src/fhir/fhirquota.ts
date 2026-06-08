@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
-import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, OperationOutcomeError, tooManyRequests } from '@medplum/core';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -18,6 +18,11 @@ export interface FhirQuotaConfig {
   userLimit: number;
   projectLimit: number;
 }
+
+export const READ_QUOTA_COST = 1;
+export const HISTORY_QUOTA_COST = 10;
+export const SEARCH_QUOTA_COST = 20;
+export const WRITE_QUOTA_COST = 100;
 
 export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
   const { project, userConfig } = authState;
@@ -53,18 +58,10 @@ export class FhirRateLimiter {
   private delta: number;
   private logThreshold: number;
   private readonly enabled: boolean;
-  private readonly async: boolean;
 
   private readonly logger: Logger;
 
-  constructor(
-    redis: Redis,
-    authState: AuthState,
-    userLimit: number,
-    projectLimit: number,
-    logger: Logger,
-    async?: boolean
-  ) {
+  constructor(redis: Redis, authState: AuthState, userLimit: number, projectLimit: number, logger: Logger) {
     this.redis = redis;
     this.limiter = new RateLimiterRedis({
       keyPrefix: FHIR_RATE_LIMIT_MEMBERSHIP_PREFIX,
@@ -87,7 +84,6 @@ export class FhirRateLimiter {
     this.logger = logger;
     this.logThreshold = Math.floor(userLimit * 0.1); // Log requests that consume at least 10% of the user's total limit
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableFhirQuota')?.valueBoolean !== false;
-    this.async = async ?? false;
   }
 
   private setState(result: RateLimiterRes, ...others: RateLimiterRes[]): void {
@@ -121,13 +117,6 @@ export class FhirRateLimiter {
    * @param points - Number of rate limit points to consume
    */
   async consume(points: number): Promise<void> {
-    if (this.async) {
-      // Do not enforce rate limits in async context; instead, slow down the consumer
-      // in proportion to the weight of the operation being performed
-      await sleep(points * (getConfig().asyncDelayScaling ?? 1));
-      return;
-    }
-
     // If user is already over the limit, just block
     if (this.current && this.current.remainingPoints <= 0) {
       await this.block(points, this.current);
