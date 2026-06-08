@@ -114,6 +114,10 @@ export class AgentHl7Channel extends BaseChannel {
             ackCode ?? 'unknown'
           }]`
         );
+
+        if (msgControlId) {
+          this.stats.recordAckReceived(msgControlId);
+        }
         return;
       }
 
