@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { EMPTY, Operator } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import type { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import { processBaseDefinitions, TERMINOLOGY_BUNDLE_FILES } from '@medplum/definitions';
+import type { CodeSystem, ValueSet } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
 import type { Repository } from '../fhir/repo';
 
@@ -12,29 +12,19 @@ import type { Repository } from '../fhir/repo';
  * @param systemRepo - The system repository to use
  */
 export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> {
-  const files = [
-    'v2-tables.json',
-    'v3-codesystems.json',
-    'valuesets.json',
-    'valuesets-medplum.json',
-    'valuesets-medplum-generated.json',
-  ];
-  for (const file of files) {
-    const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
-    for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
-      const resource = entry.resource as CodeSystem | ValueSet;
-      await deleteExisting(systemRepo, resource, r4ProjectId);
-      await systemRepo.createResource({
-        ...resource,
-        meta: {
-          ...resource.meta,
-          project: r4ProjectId,
-          lastUpdated: undefined,
-          versionId: undefined,
-        },
-      });
-    }
-  }
+  await processBaseDefinitions(TERMINOLOGY_BUNDLE_FILES, async (entry) => {
+    const resource = entry.resource as CodeSystem | ValueSet;
+    await deleteExisting(systemRepo, resource, r4ProjectId);
+    await systemRepo.createResource({
+      ...resource,
+      meta: {
+        ...resource.meta,
+        project: r4ProjectId,
+        lastUpdated: undefined,
+        versionId: undefined,
+      },
+    });
+  });
 }
 
 async function deleteExisting(

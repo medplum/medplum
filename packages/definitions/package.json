@@ -58,5 +58,8 @@
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
+  },
+  "devDependencies": {
+    "@medplum/fhirtypes": "5.1.15"
   }
 }

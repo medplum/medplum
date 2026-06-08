@@ -1,13 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { BundleEntry } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export function readJson(filename: string): any {
   const filenamePath = resolve(getDataDir(), filename);
   return JSON.parse(readFileSync(filenamePath, 'utf8'));
+}
+
+export async function readJsonAsync(filename: string): Promise<any> {
+  const filenamePath = resolve(getDataDir(), filename);
+  const data = await readFile(filenamePath, 'utf8');
+  return JSON.parse(data);
 }
 
 let cachedDataDir: string | undefined = undefined;
@@ -45,6 +53,17 @@ function getCurrentDir(): string {
   }
 }
 
+export async function processBaseDefinitions(
+  files: string[],
+  callback: (entry: BundleEntry) => Promise<void>
+): Promise<void> {
+  for (const filename of files) {
+    for (const entry of (await readJsonAsync(filename)).entry as BundleEntry[]) {
+      await callback(entry);
+    }
+  }
+}
+
 /**
  * The list of all known search parameter definition bundle file paths relative to the
  * `@medplum/definitions` package. Typically used in conjunction with `readJson`.
@@ -53,4 +72,19 @@ export const SEARCH_PARAMETER_BUNDLE_FILES = [
   'fhir/r4/search-parameters.json',
   'fhir/r4/search-parameters-medplum.json',
   'fhir/r4/search-parameters-uscore.json',
+];
+
+export const STRUCTURE_DEFINITION_BUNDLE_FILES = [
+  'fhir/r4/profiles-types.json',
+  'fhir/r4/profiles-resources.json',
+  'fhir/r4/profiles-medplum.json',
+  'fhir/r4/profiles-others.json',
+];
+
+export const TERMINOLOGY_BUNDLE_FILES = [
+  'fhir/r4/v2-tables.json',
+  'fhir/r4/v3-codesystems.json',
+  'fhir/r4/valuesets.json',
+  'fhir/r4/valuesets-medplum.json',
+  'fhir/r4/valuesets-medplum-generated.json',
 ];
