@@ -26,10 +26,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@aws-sdk/types": "3.973.9",
+    "@aws-sdk/types": "3.973.10",
     "@medplum/core": "5.1.15",
-    "aws-cdk-lib": "2.257.0",
-    "cdk": "2.1125.0",
+    "aws-cdk-lib": "2.258.0",
+    "cdk": "2.1126.0",
     "cdk-nag": "2.38.2",
     "cdk-serverless-clamscan": "2.13.46",
     "constructs": "10.6.0",
