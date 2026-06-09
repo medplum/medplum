@@ -351,7 +351,7 @@ export function DemoPage(): JSX.Element {
 
       <Group justify="space-between" align="center">
         <div>
-          <Title order={2}>Multi-lingual FHIR Demo</Title>
+          <Title order={2}>Multilingual FHIR Demo</Title>
           <Text size="sm" c="dimmed" mt={2}>
             Demonstrating the <Code>http://hl7.org/fhir/StructureDefinition/translation</Code> extension
           </Text>

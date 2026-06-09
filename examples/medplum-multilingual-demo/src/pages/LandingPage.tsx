@@ -9,13 +9,13 @@ export function LandingPage(): JSX.Element {
   return (
     <Document width={540}>
       <Stack align="center" gap="md">
-        <Title order={2}>Multi-lingual FHIR Demo</Title>
+        <Title order={2}>Multilingual FHIR Demo</Title>
         <Text ta="center">
           This demo shows how to use the FHIR{' '}
           <Anchor href="http://hl7.org/fhir/StructureDefinition/translation" target="_blank">
             translation extension
           </Anchor>{' '}
-          to store and display multi-lingual content in FHIR resources — covering Questionnaire items, Coding display
+          to store and display multilingual content in FHIR resources — covering Questionnaire items, Coding display
           strings, and patient preferred language.
         </Text>
         <Text ta="center" c="dimmed" size="sm">

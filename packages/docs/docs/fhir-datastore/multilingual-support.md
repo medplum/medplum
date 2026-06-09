@@ -1,4 +1,4 @@
-# Multi-lingual Support
+# Multilingual Support
 
 FHIR provides a standard mechanism for attaching translations to any string field in a resource: the
 [`translation` extension](http://hl7.org/fhir/StructureDefinition/translation). This lets you store the primary
@@ -286,10 +286,15 @@ patient, and your application can use it to select the right translation at rend
 The `translation` extension and [`CodeSystem.designation`](/docs/terminology/medplum-terminology-services#internationalizing-codings)
 serve different purposes and are complementary:
 
-| Mechanism | Where it lives | Best for |
-|---|---|---|
-| `translation` extension | On individual resource fields (via `_fieldName`) | Translating free text, notes, questionnaire items, narrative, and `Coding.display` in a specific resource |
-| `CodeSystem.designation` + `ValueSet/$expand` | In the terminology server | Translating standardized code display names across the system; powering language-aware code searches |
+| Mechanism | Where it lives | Searchable? | Best for |
+|---|---|---|---|
+| `translation` extension | On individual resource fields (via `_fieldName`) | No — for display only | Translating free text, notes, questionnaire items, narrative, and `Coding.display` in a specific resource |
+| `CodeSystem.designation` + `ValueSet/$expand` | In the terminology server | Yes — `ValueSet/$expand?filter=...&displayLanguage=es` returns matching codes in the requested language | Translating standardized code display names system-wide; powering language-aware code lookups and typeaheads |
+
+**Key difference:** translations attached via the `translation` extension are invisible to FHIR search — they exist
+solely for rendering. If you need to search or match codes by their name in a given language (e.g. letting a
+clinician type "Diabetes" in Spanish to find the right SNOMED code), store those translations as
+`CodeSystem.designation` entries instead.
 
 For coded values, prefer managing translations centrally in `CodeSystem` designations so they are automatically
 available anywhere that code is used. Use the `translation` extension for free-text fields and for overriding or
