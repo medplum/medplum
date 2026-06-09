@@ -59,6 +59,12 @@ export class LayeredDict<const T extends Record<string, unknown> = {}> {
     return new LayeredDict<T>([...this.layers, layer], index);
   }
 
+  /**
+   * Gets the path annotation from the topmost layer defining the key
+   *
+   * @param key - the key to get path information for
+   * @returns string - the path annotation from the topmost layer defining the key
+   */
   getPath<K extends keyof T & string>(key: K): string {
     for (let i = this.layers.length - 1; i >= 0; i--) {
       const layer = this.layers[i];
@@ -69,6 +75,12 @@ export class LayeredDict<const T extends Record<string, unknown> = {}> {
     throw new Error(`Key "${key}" not present`);
   }
 
+  /**
+   * Get the value of the key from the topmost layer defining it
+   *
+   * @param key - the key to get the value of
+   * @returns The value associated with the input key in the topmost defining layer.
+   */
   get<K extends keyof T & string>(key: K): T[K] {
     return this.index[key];
   }
@@ -85,7 +97,12 @@ export class LayeredDict<const T extends Record<string, unknown> = {}> {
     return this as unknown as LayeredDict<U>;
   }
 
-  flatten(): T {
+  /**
+   * Return a read-only view of the dictionary, flattened into a JS object.
+   *
+   * @returns Object - The result of merging all the layers in this dictionary
+   */
+  flatten(): Readonly<T> {
     return this.index;
   }
 }

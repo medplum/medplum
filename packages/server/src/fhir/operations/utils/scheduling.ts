@@ -343,9 +343,10 @@ export async function getSchedulingParametersGroup(
 
       const timezone = getTimeZone(actor);
       if (timezone) {
-        // Tricky: `timezone` is defined to prefer shared scheduling parameter
-        // definition over per-actor configuration, so we put the actor-based
-        // layer at the bottom of the stack with `prepend`.
+        // Tricky: `timezone` is defined to prefer scheduling-parameter
+        // definitions coming from HealthcareService or Schedule extensions
+        // over per-actor configuration. We put the actor-based layer at the
+        // bottom of the stack with `prepend` to give it lowest priority.
         parameters = parameters.prependLayer(withPath({ timezone }, getPath(actor)));
       }
 

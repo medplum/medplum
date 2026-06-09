@@ -424,7 +424,10 @@ export function getScheduleSchedulingParameters(
     return defaultParameters.refine((p): asserts p is SchedulingParameters => {
       if (p.duration === undefined) {
         throw new OperationOutcomeError(
-          badRequest("Scheduling parameter attribute 'duration' is missing", [getPath(schedule)])
+          badRequest("Scheduling parameter attribute 'duration' is missing", [
+            getPath(healthcareService),
+            getPath(schedule),
+          ])
         );
       }
     });
