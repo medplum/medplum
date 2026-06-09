@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "5.1.15",
+  "version": "5.1.16",
   "description": "Shared ESLint configuration for Medplum projects",
   "keywords": [
     "eslint",
@@ -33,7 +33,7 @@
     "eslint": "^9",
     "eslint-plugin-header": "^3",
     "eslint-plugin-import": "^2",
-    "eslint-plugin-jsdoc": "^62",
+    "eslint-plugin-jsdoc": "^63",
     "eslint-plugin-no-only-tests": "^3",
     "eslint-plugin-react-hooks": "^7",
     "eslint-plugin-react-refresh": "^0",
