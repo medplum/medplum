@@ -88,7 +88,9 @@ export function CustomBranding(): JSX.Element {
             scope="openid patient/Condition.* patient/Observation.*"
             handleAuthResponse={console.log}
             logo={
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--mantine-color-blue-6)', letterSpacing: '-0.5px' }}>
+              <div
+                style={{ fontSize: 20, fontWeight: 800, color: 'var(--mantine-color-blue-6)', letterSpacing: '-0.5px' }}
+              >
                 MyApp
               </div>
             }

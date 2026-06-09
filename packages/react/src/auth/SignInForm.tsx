@@ -10,8 +10,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Document } from '../Document/Document';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
-import { ChooseScopeForm } from './ChooseScopeForm';
 import type { ChooseScopeFormProps } from './ChooseScopeForm';
+import { ChooseScopeForm } from './ChooseScopeForm';
 import { MfaForm } from './MfaForm';
 import { NewProjectForm } from './NewProjectForm';
 
