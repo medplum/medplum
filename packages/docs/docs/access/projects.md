@@ -21,18 +21,63 @@ Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own u
 
 Sometimes it is useful to share a common set of resources with multiple projects.
 
-Medplum super administrators can create shared projects and _link_ them into multiple target projects. Users of those target projects get a a _read-only_ view of all resources in the shared projects.
+Medplum super administrators can create shared projects and _link_ them into multiple target projects. Users of those target projects get a _read-only_ view of all resources in the shared projects.
 
 When a project is linked, all resources from the linked project appear alongside the target project's resources in search results and queries.
 
 ### Common Use Cases
 
 - Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Medplum UMLS integration](/pricing): [ICD-10](/docs/charting/chart-data-model#diagnoses-and-problem-list), [RxNORM](/docs/medications/medication-codes#rxnorm), [LOINC](/docs/careplans/loinc), SNOMED
-- Sharing [FHIR profiles](/docs/fhir-datastore/profiles) (`StructureDefinition` resources) for a specific clincal domain
+- Sharing [FHIR profiles](/docs/fhir-datastore/profiles) (`StructureDefinition` resources) for a specific clinical domain
 - Sharing common data sets (e.g. Medplum Payor Directory, Medplum Lab Directory)
 - Sharing [Bots](/docs/bots)
 
 Certain Medplum features, including first-party integrations, require access to shared sets of resources, such as [`CodeSystem`](/docs/api/fhir/resources/codesystem), [`ValueSet`](/docs/api/fhir/resources/valueset), and [`Organization`](/docs/api/fhir/resources/organization).
+
+### Setting Up a Shared Project
+
+Configuring project linking is a two-step process that requires super-admin access:
+
+**Step 1: Create the shared project**
+
+Create a new [`Project`](/docs/api/fhir/medplum/project) that will hold the shared resources. This project will not be used directly by end users — it exists solely as a container for shared content.
+
+It is **highly recommended** to set `exportedResourceType` on the shared project to restrict which resource types are visible to linked projects. If `exportedResourceType` is omitted, all resource types in the shared project are accessible.
+
+```json
+{
+  "resourceType": "Project",
+  "name": "Shared Terminology",
+  "exportedResourceType": ["CodeSystem", "ValueSet"]
+}
+```
+
+**Step 2: Link the shared project into target projects**
+
+Add a `link` entry to each target [`Project`](/docs/api/fhir/medplum/project) that should have access to the shared resources. This must be done by a super admin.
+
+```json
+{
+  "resourceType": "Project",
+  "name": "My App - Production",
+  "link": [
+    {
+      "project": {
+        "reference": "Project/<shared-project-id>"
+      }
+    }
+  ]
+}
+```
+
+A project can link to multiple shared projects by adding multiple entries to the `link` array.
+
+### Access Control for Linked Projects
+
+- **Read-only**: Users in a target project can read and search resources from linked projects, but cannot create, update, or delete them.
+- **Transparent**: Linked resources appear seamlessly in search results alongside local resources — no special handling is required in queries.
+- **Scoped by `exportedResourceType`**: If the shared project specifies `exportedResourceType`, only those resource types are visible to linked projects. If `exportedResourceType` is empty or omitted, all resource types are exported.
+- **Project-admin resources are excluded**: Administrative resource types (e.g., `ProjectMembership`, `ClientApplication`) from a linked project are never visible to users in the target project, regardless of `exportedResourceType`.
 
 ### Viewing Linked Projects
 
@@ -42,12 +87,48 @@ You can see linked Projects in the Medplum App by:
 - Selecting your Project
 - Selecting the "Details" tab
 
+### Distinguishing Local vs. Linked Resources
+
+Because linked resources are returned alongside local resources in search results, you may need to tell them apart. The `_compartment` search parameter filters results to resources that belong to a specific project compartment:
+
+```typescript
+// Search only within the current project (exclude linked projects)
+const localOnly = await medplum.searchResources('ValueSet', {
+  _compartment: 'Project/<current-project-id>',
+});
+
+// Search only within the shared project
+const sharedOnly = await medplum.searchResources('ValueSet', {
+  _compartment: 'Project/<shared-project-id>',
+});
+```
+
+You can also inspect `resource.meta.project` on any returned resource to determine which project it belongs to.
+
 ### Best Practices
 
-When working with linked projects:
+:::warning[Always set `exportedResourceType`]
 
-- Be aware that queries like `medplum.searchresources()` will return the first matching resource across all accessible projects (both local and linked)
-- If you need to distinguish between local and linked resources, consider adding additional search parameters, such as the `_compartment` search parameter.
+**Always specify `exportedResourceType` on shared projects.** If this field is omitted, _every_ resource type in the shared project is visible to all linked projects — including any resource types added in the future. This is an easy source of unintended data exposure.
+
+Define the exact set of resource types that linked projects need and nothing more:
+
+```json
+{
+  "resourceType": "Project",
+  "name": "Shared Terminology",
+  "exportedResourceType": ["CodeSystem", "ValueSet"]
+}
+```
+
+If you later add a new resource type to the shared project (e.g. `Organization` for a payor directory), update `exportedResourceType` explicitly rather than removing the restriction.
+
+:::
+
+- **Principle of least privilege**: treat `exportedResourceType` the same way you would treat access policy resource restrictions — grant access only to what is needed, and review the list whenever the shared project's contents change.
+- **Separate shared projects by domain**: rather than one large shared project with a broad `exportedResourceType` list, consider splitting into focused projects (e.g. one for terminology, one for profiles). This makes it easier to link only the relevant project into each target and limits blast radius if a project is misconfigured.
+- Populate shared projects with read-only reference data (terminology, profiles, directories) rather than patient or clinical data.
+- Be aware that queries like `medplum.searchResources()` will return the first matching resource across all accessible projects (both local and linked). Use `_compartment` if you need deterministic project-scoped results.
 
 ## The SuperAdmin `Project` {/* #superadmin */}
 
