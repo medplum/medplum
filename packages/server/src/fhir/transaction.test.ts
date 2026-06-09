@@ -68,6 +68,7 @@ const unguardedMembers = new Set<PropertyKey>([
   'generateId',
   'addDeletedFilter',
   'addSecurityFilters',
+  'isClosed',
 ]);
 
 /**
@@ -581,20 +582,52 @@ describe('FHIR Repo Transactions', () => {
 
   test('Nested transaction post-commit', () =>
     withTestContext(async () => {
-      const cb1 = jest.fn();
-      const cb2 = jest.fn();
-      await repo.withTransaction(async (txRepo) => {
-        await txRepo.postCommit(cb1);
-        await txRepo.withTransaction(async (nestedRepo) => {
-          await nestedRepo.postCommit(cb2);
-          expect(cb1).not.toHaveBeenCalled();
-          expect(cb2).not.toHaveBeenCalled();
+      const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      const postCommitCb = jest.fn();
+      try {
+        await repo.withTransaction(async (txRepo) => {
+          await txRepo.postCommit(() => postCommitCb('first'));
+          await txRepo.withTransaction(async (nestedRepo) => {
+            await nestedRepo.postCommit(async () => {
+              postCommitCb('second');
+              // fails silents besides logging
+              await nestedRepo.postCommit(() => {
+                postCommitCb('failing third');
+              });
+            });
+            expect(postCommitCb).not.toHaveBeenCalled();
+          });
+          expect(postCommitCb).not.toHaveBeenCalled();
+          await txRepo.postCommit(async () => {
+            postCommitCb('fourth');
+            // fails silently besides logging
+            await txRepo.postCommit(() => postCommitCb('failing fifth'));
+          });
         });
-        expect(cb1).not.toHaveBeenCalled();
-        expect(cb2).not.toHaveBeenCalled();
-      });
-      expect(cb1).toHaveBeenCalledTimes(1);
-      expect(cb2).toHaveBeenCalledTimes(1);
+        expect(postCommitCb.mock.calls.map(([arg]) => arg)).toStrictEqual(['first', 'second', 'fourth']);
+        expect(errorSpy).toHaveBeenCalledTimes(2);
+        expect(
+          errorSpy.mock.calls.map((values) => {
+            const [msg, err] = values;
+            return { msg, errMessage: (err as Error).message };
+          })
+        ).toStrictEqual([
+          {
+            msg: 'Error processing post-commit callback',
+            errMessage: expect.stringContaining(
+              'Cannot add post-commit callback while processing post-commit callbacks'
+            ),
+          },
+          {
+            msg: 'Error processing post-commit callback',
+            errMessage: expect.stringContaining(
+              'Cannot add post-commit callback while processing post-commit callbacks'
+            ),
+          },
+        ]);
+      } finally {
+        errorSpy.mockRestore();
+      }
     }));
 
   test('Retry executes post-commit hook once from outer transaction', async () => {
@@ -991,6 +1024,7 @@ describe('FHIR Repo Transactions', () => {
     '$name',
     ({ succeedsOnRetry, catchNestedError, expectedError, expectedResult, expectedTxCalls, expectedOuterCalls }) =>
       withTestContext(async () => {
+        const outerRepos: Repository[] = [];
         let shouldReturn = false;
         const txFn = jest.fn(async (): Promise<boolean> => {
           if (succeedsOnRetry && shouldReturn) {
@@ -1000,6 +1034,7 @@ describe('FHIR Repo Transactions', () => {
           throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
         });
         const outerTx = jest.fn(async (txRepo): Promise<boolean> => {
+          outerRepos.push(txRepo);
           if (!catchNestedError) {
             return txRepo.withTransaction(txFn);
           }
@@ -1018,6 +1053,8 @@ describe('FHIR Repo Transactions', () => {
         }
         expect(txFn).toHaveBeenCalledTimes(expectedTxCalls);
         expect(outerTx).toHaveBeenCalledTimes(expectedOuterCalls);
+        expect(outerRepos).toHaveLength(expectedOuterCalls);
+        expect(outerRepos.map((r) => r.isClosed())).toStrictEqual(Array(expectedOuterCalls).fill(true));
       })
   );
 
@@ -1272,30 +1309,48 @@ describe('FHIR Repo Transactions', () => {
     ]);
   });
 
-  test.each([
-    { name: 'transaction-scoped repo', getPinnedRepo: (txRepo: Repository) => txRepo },
-    { name: 'getSystemRepo', getPinnedRepo: (txRepo: Repository) => txRepo.getSystemRepo() },
-    {
-      name: 'withOverrideConfig',
-      getPinnedRepo: (txRepo: Repository) => txRepo.withOverrideConfig({ extendedMode: false }),
-    },
-  ])('$name propagates the transaction-scoped client pin', async ({ getPinnedRepo }) => {
-    let escapedPinnedRepo: Repository | undefined;
-    await repo.withTransaction(async (txRepo) => {
-      const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      const pinnedRepo = getPinnedRepo(txRepo);
-      expect(client).toBeDefined();
-      expect('release' in client).toBe(true);
-      expect(pinnedRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
-      escapedPinnedRepo = pinnedRepo;
+  test('Derived transaction-scoped repos share transaction scope', async () => {
+    let escapedTxnRepo: Repository | undefined;
+    let escapedTxnSystemRepo: Repository | undefined;
+    let escapedTxnOverrideRepo: Repository | undefined;
+    await repo.withTransaction(async (txnRepo) => {
+      // disposing a derived transaction repo does not dispose the main txnRepo
+      const derivedTxnRepo = txnRepo.withOverrideConfig({ extendedMode: false });
+      derivedTxnRepo[Symbol.dispose]();
+      expect(() => derivedTxnRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+
+      const client = txnRepo.getDatabaseClient(DatabaseMode.WRITER);
+      assert(client);
+
+      const systemRepo = txnRepo.getSystemRepo();
+      const overrideRepo = txnRepo.withOverrideConfig({ extendedMode: false });
+
+      expect(systemRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      expect(overrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+
+      // disposing the main txnRepo does not close derived repos
+      txnRepo[Symbol.dispose]();
+      expect(() => txnRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+      expect(systemRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      expect(overrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+
+      escapedTxnRepo = txnRepo;
+      escapedTxnSystemRepo = systemRepo;
+      escapedTxnOverrideRepo = overrideRepo;
     });
 
-    // After the transaction commits the sticky client is released back to the pool, so the
-    // captured transaction-scoped repo must refuse to hand out a different client.
-    assert(escapedPinnedRepo);
-    expect(() => (escapedPinnedRepo as Repository).getDatabaseClient(DatabaseMode.WRITER)).toThrow(
-      'no longer pinned to initial PoolClient'
-    );
+    assert(escapedTxnRepo);
+    assert(escapedTxnSystemRepo);
+    assert(escapedTxnOverrideRepo);
+
+    const closedTxnRepo = escapedTxnRepo;
+    const closedTxnSystemRepo = escapedTxnSystemRepo;
+    const closedTxnOverrideRepo = escapedTxnOverrideRepo;
+
+    // After the transaction commits, both the txnRepo and derived repos are all closed.
+    expect(() => closedTxnRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+    expect(() => closedTxnSystemRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+    expect(() => closedTxnOverrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
   });
 
   test('createTransactionScopedRepo rejects a writer client that is not a PoolClient', async () => {
@@ -1606,6 +1661,21 @@ describe('FHIR Repo Transactions', () => {
     ]);
   });
 
+  test('pre-commit callbacks can add additional pre-commit callbacks', async () => {
+    const preCommitEntries: string[] = [];
+
+    await repo.withTransaction(async (txRepo) => {
+      await txRepo.preCommit(async () => {
+        preCommitEntries.push('first');
+        await txRepo.preCommit(async () => {
+          preCommitEntries.push('second');
+        });
+      });
+    });
+
+    expect(preCommitEntries).toStrictEqual(['first', 'second']);
+  });
+
   test('parent repository cannot start a transaction during scoped pre-commit', async () => {
     const queries: string[] = [];
     const query = jest.fn(async (sql: string) => {
@@ -1777,13 +1847,18 @@ describe('FHIR Repo Transactions', () => {
     });
 
     describe('guarded methods reject the parent repo inside withTransaction', () => {
-      test.each(guardedInvocations.map((entry) => [String(entry.name), entry] as const))('%s', (_label, entry) =>
+      test.each(
+        guardedInvocations
+          // .filter((entry) => entry.name.toString().includes('dispose'))
+          .map((entry) => [String(entry.name), entry] as const)
+      )('%s', (_label, entry) =>
         withTestContext(async () => {
+          const cloned = repo.clone();
           let observedError: unknown;
-          await repo.withTransaction(async () => {
+          await cloned.withTransaction(async () => {
             try {
               // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-              const result = entry.invoke(repo);
+              const result = entry.invoke(cloned);
               if (result instanceof Promise) {
                 await result;
               }
@@ -1791,6 +1866,7 @@ describe('FHIR Repo Transactions', () => {
               observedError = err;
             }
           });
+          // console.log('observedError', observedError);
           expect(observedError).toBeInstanceOf(Error);
           expect((observedError as Error).message).toContain('transaction-scoped repository');
         })
@@ -1800,6 +1876,7 @@ describe('FHIR Repo Transactions', () => {
     test('closed repository rejects guarded operations', () =>
       withTestContext(async () => {
         const cloned = repo.clone();
+        // console.log('cloned', cloned, cloned.isClosed());
         cloned[Symbol.dispose]();
 
         expect(() => cloned.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');

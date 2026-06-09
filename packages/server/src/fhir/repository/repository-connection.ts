@@ -507,15 +507,27 @@ export class RepositoryConnection implements Disposable {
   }
 
   private async processPreCommit(): Promise<void> {
-    const callbacks = this.preCommitCallbacks;
-    this.preCommitCallbacks = [];
-    for (const cb of callbacks) {
+    while (this.preCommitCallbacks.length > 0) {
+      const cb = this.preCommitCallbacks.shift();
+      if (!cb) {
+        throw new Error('Pre-commit callback is undefined');
+      }
       // rely on thrown errors bubbling up from here to halt the transaction
       await cb();
     }
   }
 
+  private processingPostCommit = false;
+
   async postCommit(fn: () => Promise<void>): Promise<void> {
+    if (this.processingPostCommit) {
+      // this constraint could be relaxed if we wanted to allow post-commit callbacks
+      // to add additional post-commit callbacks if there is a compelling reason to do so
+      // But from the lifecycle of a transaction, it's not clear why that would be sensible
+      // since post-commit callbacks are invoked after definitionally executed after committing
+      // the transaction.
+      throw new Error('Cannot add post-commit callback while processing post-commit callbacks');
+    }
     if (this.transactionDepth) {
       this.postCommitCallbacks.push(fn);
     } else {
@@ -524,13 +536,24 @@ export class RepositoryConnection implements Disposable {
   }
 
   private async processPostCommit(): Promise<void> {
+    // capture a snapshot of the post-commit callbacks to invoke ad defense in depth
+    // against processing callbacks added while processing callbacks
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
-    for (const cb of callbacks) {
-      await this.invokePostCommitCallback(cb);
+    this.processingPostCommit = true;
+    try {
+      for (const cb of callbacks) {
+        await this.invokePostCommitCallback(cb);
+      }
+    } finally {
+      this.processingPostCommit = false;
     }
   }
 
+  /**
+   * Invokes a post-commit callback and suppresses/logs any errors that occur
+   * @param fn - The post-commit callback to invoke.
+   */
   private async invokePostCommitCallback(fn: () => Promise<void>): Promise<void> {
     try {
       await fn();
