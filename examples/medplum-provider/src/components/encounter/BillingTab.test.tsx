@@ -1006,7 +1006,7 @@ describe('BillingTab', () => {
     const mockSearchOneWithClaimResponse = (claimResponse: WithId<ClaimResponse>): void => {
       vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) =>
         Promise.resolve(
-          resourceType === 'Claim' && mockClaim || resourceType === 'Bot' && candidUrlBot || claimResponse
+          (resourceType === 'Claim' && mockClaim) || (resourceType === 'Bot' && candidUrlBot) || claimResponse
         )) as (
         resourceType: string
       ) => ReadablePromise<WithId<Claim> | WithId<ClaimResponse> | WithId<Bot> | undefined>);
