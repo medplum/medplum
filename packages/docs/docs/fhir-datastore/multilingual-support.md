@@ -183,8 +183,9 @@ translated for patient-facing portals:
 
 ### Extracting a Translation for a Known Language
 
-To display a translated value, walk the shadow element's extensions and find the `translation` entry whose `lang`
-matches the desired locale:
+To display a translated value, pass the parent resource object and the field name. The function reads both
+`parent[elementName]` (the primary value) and `parent['_' + elementName]` (the shadow element) and returns the
+matching translation:
 
 ```ts
 import { Extension } from '@medplum/fhirtypes';
@@ -193,16 +194,19 @@ import { Extension } from '@medplum/fhirtypes';
  * Returns the translation of a primitive string field for the given BCP-47 language tag,
  * falling back to the primary value if no translation is found.
  *
- * @param primaryValue - The primary (default) string value of the field.
- * @param shadowElement - The `_fieldName` shadow element from the FHIR resource.
+ * @param parent - The parent FHIR object containing the field (e.g. a QuestionnaireItem).
+ * @param elementName - The name of the string field (e.g. 'text', 'display').
  * @param lang - BCP-47 language tag to look up (e.g. 'es', 'fr', 'zh-CN').
  */
 function getTranslation(
-  primaryValue: string | undefined,
-  shadowElement: { extension?: Extension[] } | undefined,
+  parent: Record<string, any>,
+  elementName: string,
   lang: string
 ): string | undefined {
-  const translations = shadowElement?.extension?.filter(
+  const primaryValue = parent[elementName] as string | undefined;
+  const shadow = parent['_' + elementName] as { extension?: Extension[] } | undefined;
+
+  const translations = shadow?.extension?.filter(
     (ext) => ext.url === 'http://hl7.org/fhir/StructureDefinition/translation'
   );
 
@@ -224,7 +228,7 @@ function getTranslation(
 const item = questionnaire.item?.[0];
 const userLang = 'es';
 
-const label = getTranslation(item?.text, item?._text, userLang);
+const label = getTranslation(item, 'text', userLang);
 // → "¿Cómo se llama?" (falls back to "What is your name?" if no Spanish translation exists)
 ```
 
@@ -236,18 +240,20 @@ match first, then fall back to the base language if a region-specific variant is
 
 ```ts
 function getBestTranslation(
-  primaryValue: string | undefined,
-  shadowElement: { extension?: Extension[] } | undefined,
+  parent: Record<string, any>,
+  elementName: string,
   lang: string
 ): string | undefined {
+  const primaryValue = parent[elementName] as string | undefined;
+
   // Try exact match first (e.g. 'pt-BR')
-  const exact = getTranslation(primaryValue, shadowElement, lang);
+  const exact = getTranslation(parent, elementName, lang);
   if (exact !== primaryValue) return exact;
 
   // Fall back to base language tag (e.g. 'pt')
   const baseLang = lang.split('-')[0];
   if (baseLang !== lang) {
-    return getTranslation(primaryValue, shadowElement, baseLang);
+    return getTranslation(parent, elementName, baseLang);
   }
 
   return primaryValue;
