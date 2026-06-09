@@ -223,7 +223,7 @@ export class SubscriptionManager {
               details: {
                 text: 'WebSocket connection closed due to an error',
               },
-              diagnostics: event.error?.toString(),
+              diagnostics: event.error ? normalizeErrorString(event.error) : event.message,
             },
           ],
         }),
