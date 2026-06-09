@@ -434,6 +434,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
+        # Skip on fork PRs (SONAR_TOKEN is unavailable to forks). Still runs on push to
+        # main and merge_group; for pull_request events, only runs when the PR head is on
+        # this repo rather than a fork.
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:
