@@ -3,8 +3,8 @@
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
 import { sleep } from '../utils';
-import { assert, normalizeErrorEvent, ReconnectingWebSocket } from './reconnecting-websocket';
 import type { ErrorEvent, WebSocketEventMap } from './reconnecting-websocket';
+import { assert, normalizeErrorEvent, ReconnectingWebSocket } from './reconnecting-websocket';
 
 describe('ReconnectingWebSocket', () => {
   let wsServer: WS;
