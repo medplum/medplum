@@ -37,4 +37,4 @@ ADD ./medplum-server-runtime.tar.gz ./
 
 EXPOSE 5000 8103
 
-ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]
+ENTRYPOINT [ "node", "--experimental-loader=@opentelemetry/instrumentation/hook.mjs", "--import", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]

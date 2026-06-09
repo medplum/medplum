@@ -18,11 +18,11 @@
     "build": "npm run clean && tsc && node build.mjs",
     "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
-    "dev": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts",
+    "dev": "tsx watch --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "migrate": "tsx src/migrations/migrate-main.ts",
-    "start": "node --import ./dist/otel/instrumentation.js dist/index.js",
+    "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
     "test:seed": "jest seed.test.ts --testTimeout=400000"
   },
