@@ -77,3 +77,30 @@ export function WithMultipleScopes(): JSX.Element {
     </div>
   );
 }
+
+export function CustomBranding(): JSX.Element {
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <Document width={500} px="xl" py="xl" bdrs="md">
+        <MedplumProvider medplum={medplum}>
+          <ChooseScopeForm
+            login="test@example.com"
+            scope="openid patient/Condition.* patient/Observation.*"
+            handleAuthResponse={console.log}
+            logo={
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--mantine-color-blue-6)', letterSpacing: '-0.5px' }}>
+                MyApp
+              </div>
+            }
+            title="Grant Access"
+            submitLabel="Allow"
+          >
+            <p style={{ fontSize: '0.875rem', color: 'var(--mantine-color-dimmed)', textAlign: 'center' }}>
+              This app would like to access the following data from your health record.
+            </p>
+          </ChooseScopeForm>
+        </MedplumProvider>
+      </Document>
+    </div>
+  );
+}
