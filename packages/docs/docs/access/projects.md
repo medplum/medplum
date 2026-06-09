@@ -42,7 +42,7 @@ Configuring project linking is a two-step process that requires super-admin acce
 
 Create a new [`Project`](/docs/api/fhir/medplum/project) that will hold the shared resources. This project will not be used directly by end users — it exists solely as a container for shared content.
 
-It is **highly recommended** to set `exportedResourceType` on the shared project to restrict which resource types are visible to linked projects. If `exportedResourceType` is omitted, all resource types in the shared project are accessible.
+**Always set `exportedResourceType`** on the shared project to restrict which resource types are visible to linked projects. If `exportedResourceType` is omitted, **all resource types in the shared project are accessible**.
 
 ```json
 {
