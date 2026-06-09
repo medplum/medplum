@@ -8701,6 +8701,7 @@
     "fullUrl": "https://medplum.com/fhir/OperationDefinition/rebuild-base-definitions",
     "resource": {
       "resourceType": "OperationDefinition",
+      "url": "https://medplum.com/fhir/OperationDefinition/rebuild-base-definitions",
       "name": "rebuild-base-definitions",
       "title": "Rebuild Base Definitions",
       "status": "active",

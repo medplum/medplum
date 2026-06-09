@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BundleEntry } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const EMPTY: readonly [] = Object.freeze([]);
 
 export function readJson(filename: string): any {
   const filenamePath = resolve(getDataDir(), filename);
@@ -88,3 +90,18 @@ export const TERMINOLOGY_BUNDLE_FILES = [
   'fhir/r4/valuesets-medplum.json',
   'fhir/r4/valuesets-medplum-generated.json',
 ];
+
+export function getDefinitionResource<T extends Resource & { url?: string }>(
+  file: string,
+  resourceType: T['resourceType'],
+  url: string
+): T {
+  const bundle = readJson(file) as Bundle;
+  for (const entry of bundle.entry ?? EMPTY) {
+    const resource = entry.resource as Resource & { url: string };
+    if (resource?.resourceType === resourceType && resource.url === url) {
+      return resource as T;
+    }
+  }
+  throw new Error(`Missing definition resource: ${resourceType}?url=${url}`);
+}
