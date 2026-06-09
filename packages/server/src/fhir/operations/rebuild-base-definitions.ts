@@ -45,6 +45,7 @@ export async function rebuildBaseDefinitionsOperation(req: FhirRequest): Promise
   }
 
   const params = parseInputParameters<InputParams>(op, req);
+  console.log(params);
   await rebuildBaseDefinitions(repo, params.resourceType);
 
   return [allOk];
