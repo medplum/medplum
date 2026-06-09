@@ -171,24 +171,31 @@ export class RepositoryConnection implements Disposable {
     options: StatementTimeoutOptions,
     callback: (client: PoolClient) => Promise<TResult>
   ): Promise<TResult> {
-    this.assertNotClosed();
-    this.assertOwnsClient();
-    if (this.transactionDepth > 0) {
-      throw new Error('Cannot set statement timeout during an active transaction');
-    }
+    const client = await this.withConnectionStateLock(async () => {
+      this.assertNotClosed();
+      this.assertOwnsClient();
+      if (this.transactionDepth > 0) {
+        throw new Error('Cannot set statement timeout during an active transaction');
+      }
 
-    const client = await this.getConnection(options.mode ?? DatabaseMode.WRITER);
-    this.pinDepth++;
-    this.discardOnRelease = true;
+      const client = await this.getConnection(options.mode ?? DatabaseMode.WRITER);
+      this.pinDepth++;
+      this.discardOnRelease = true;
+
+      await client.query(`SELECT set_config('statement_timeout', $1, false)`, [String(options.timeoutMs)]);
+      return client;
+    });
 
     try {
-      await client.query(`SELECT set_config('statement_timeout', $1, false)`, [String(options.timeoutMs)]);
+      // invoking the callback must happen outside of the connection state lock to avoid deadlocks
       return await callback(client);
     } finally {
-      this.pinDepth--;
-      if (this.pinDepth === 0) {
-        this.releaseConnection();
-      }
+      await this.withConnectionStateLock(async () => {
+        this.pinDepth--;
+        if (this.pinDepth === 0) {
+          this.releaseConnection();
+        }
+      });
     }
   }
 
@@ -278,27 +285,28 @@ export class RepositoryConnection implements Disposable {
   }
 
   /**
-   * tail of a FIFO queue for transaction state change requests.
+   * tail of a FIFO queue for connection state change requests.
    */
-  private transactionStateLock: Promise<undefined> = Promise.resolve(undefined);
+  private connectionStateLock: Promise<undefined> = Promise.resolve(undefined);
 
   /**
-   * Serializes the small critical sections that reads/writes transaction
-   * state and issues the matching transaction SQL commands:
+   * Serializes the small critical sections that reads/writes connection
+   * state and issues the matching connection SQL commands:
    * - read/write transactionDepth
    * - choose COMMIT vs RELEASE SAVEPOINT
    * - clear/pop callback frames
    * - release connection state
+   * - set statement_timeout or other connection-level config
    * @param callback - The callback to execute with the transaction state lock.
    * @returns Passthrough result of the callback.
    */
-  private async withTransactionStateLock<T>(callback: () => Promise<T>): Promise<T> {
+  private async withConnectionStateLock<T>(callback: () => Promise<T>): Promise<T> {
     // capture the current tail of the queue
-    const previous = this.transactionStateLock;
+    const previous = this.connectionStateLock;
 
     // create a new unresolved promise and make it the new queue tail immediately
     const { promise, resolve } = Promise.withResolvers<undefined>();
-    this.transactionStateLock = promise;
+    this.connectionStateLock = promise;
 
     // Wait previous request resolves
     await previous;
@@ -313,7 +321,7 @@ export class RepositoryConnection implements Disposable {
   }
 
   private async beginTransaction(isolationLevel: TransactionIsolationLevel): Promise<PoolClient> {
-    return this.withTransactionStateLock(async () => {
+    return this.withConnectionStateLock(async () => {
       this.assertNotClosed();
       this.assertCompatibleTransactionIsolationLevel(isolationLevel);
       const nextDepth = this.transactionDepth + 1;
@@ -343,7 +351,7 @@ export class RepositoryConnection implements Disposable {
   }
 
   private async commitTransaction(): Promise<void> {
-    const shouldProcessPreCommit = await this.withTransactionStateLock(async () => {
+    const shouldProcessPreCommit = await this.withConnectionStateLock(async () => {
       this.assertInTransaction();
       return this.transactionDepth === 1;
     });
@@ -355,7 +363,7 @@ export class RepositoryConnection implements Disposable {
       await this.processPreCommit();
     }
 
-    const shouldProcessPostCommit = await this.withTransactionStateLock(async () => {
+    const shouldProcessPostCommit = await this.withConnectionStateLock(async () => {
       this.assertInTransaction();
       const conn = await this.getConnection(DatabaseMode.WRITER);
       if (this.transactionDepth === 1) {
@@ -384,7 +392,7 @@ export class RepositoryConnection implements Disposable {
   }
 
   private async rollbackTransaction(error: Error): Promise<void> {
-    return this.withTransactionStateLock(async () => {
+    return this.withConnectionStateLock(async () => {
       // Tolerate being called after state has already been reset (e.g. when a prior
       // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
       if (this.transactionDepth === 0) {

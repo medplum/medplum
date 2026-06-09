@@ -1370,7 +1370,7 @@ describe('FHIR Repo Transactions', () => {
     }
   });
 
-  test('withTransactionStateLock serializes concurrent transaction begins', async () => {
+  test('withConnectionStateLock serializes concurrent transaction begins', async () => {
     const savepointIssued = Promise.withResolvers<undefined>();
     const allowSavepoint = Promise.withResolvers<undefined>();
     const finishFirstNestedTransaction = Promise.withResolvers<undefined>();
@@ -1392,10 +1392,10 @@ describe('FHIR Repo Transactions', () => {
     } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
     const connection = (borrowedClientRepo as unknown as { connection: RepositoryConnection }).connection;
-    const originalWithTransactionStateLock = (connection as any).withTransactionStateLock.bind(connection);
+    const originalWithConnectionStateLock = (connection as any).withConnectionStateLock.bind(connection);
     let observeNextLockRequest = false;
-    const lockSpy = jest.spyOn(connection as any, 'withTransactionStateLock').mockImplementation((...args) => {
-      const result = originalWithTransactionStateLock(...args);
+    const lockSpy = jest.spyOn(connection as any, 'withConnectionStateLock').mockImplementation((...args) => {
+      const result = originalWithConnectionStateLock(...args);
       if (observeNextLockRequest) {
         observeNextLockRequest = false;
         secondBeginQueued.resolve(undefined);
@@ -1444,7 +1444,7 @@ describe('FHIR Repo Transactions', () => {
     lockSpy.mockRestore();
   });
 
-  test('withTransactionStateLock serializes concurrent transaction commits', async () => {
+  test('withConnectionStateLock serializes concurrent transaction commits', async () => {
     const firstStarted = Promise.withResolvers<undefined>();
     const secondStarted = Promise.withResolvers<undefined>();
     const bothNestedCommitsStarted = Promise.withResolvers<undefined>();
@@ -1526,7 +1526,7 @@ describe('FHIR Repo Transactions', () => {
     }
   });
 
-  test('withTransactionStateLock serializes concurrent transaction rollbacks', async () => {
+  test('withConnectionStateLock serializes concurrent transaction rollbacks', async () => {
     const firstStarted = Promise.withResolvers<undefined>();
     const secondStarted = Promise.withResolvers<undefined>();
     const failTransactions = Promise.withResolvers<undefined>();
@@ -1639,7 +1639,7 @@ describe('FHIR Repo Transactions', () => {
       repo.withTransaction(async (txRepo) => {
         await txRepo.preCommit(async (commitRepo) => {
           // Pre-commit callbacks are allowed to start their own nested transaction.
-          // If the outer commit held transactionStateLock while running callbacks, this nested
+          // If the outer commit held connectionStateLock while running callbacks, this nested
           // transaction would wait for the lock while the outer commit waited for the callback.
           await commitRepo.withTransaction(precommit);
         });
