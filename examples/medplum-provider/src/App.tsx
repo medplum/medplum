@@ -88,7 +88,7 @@ export function App(): JSX.Element | null {
 
   return (
     <AppShell
-      logo={<Logo size={24} />}
+      logo={<Logo size={28} wordmark />}
       pathname={location.pathname}
       searchParams={searchParams}
       layoutVersion="v2"

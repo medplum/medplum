@@ -9,6 +9,11 @@ describe('Logo', () => {
     expect(screen.getByTitle('Medplum Logo')).toBeDefined();
   });
 
+  test('Renders with wordmark', () => {
+    render(<Logo size={100} wordmark />);
+    expect(screen.getByTitle('Medplum Logo')).toBeDefined();
+  });
+
   test('Renders with overrideUrl', async () => {
     (import.meta.env as any).MEDPLUM_LOGO_URL = 'https://example.com/custom-logo.png';
 

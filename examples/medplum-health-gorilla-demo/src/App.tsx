@@ -15,7 +15,7 @@ export function App(): JSX.Element {
   }
 
   return (
-    <AppShell logo={<Logo size={24} />}>
+    <AppShell logo={<Logo size={28} wordmark />}>
       <Routes>
         <Route path="/" element={profile ? <HomePage /> : <SignInPage />} />
         <Route path="/signin" element={<SignInPage />} />
