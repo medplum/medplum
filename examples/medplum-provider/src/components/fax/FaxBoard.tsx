@@ -112,7 +112,7 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
     if (!loading && faxes.length > 0 && !faxId && faxQueryRef.current === query) {
       const firstFax = faxes[0];
       if (firstFax?.id) {
-        navigate(getFaxUri(firstFax))?.catch(console.error);
+        navigate(getFaxUri(firstFax), { replace: true })?.catch(console.error);
       }
     }
   }, [loading, faxes, faxId, navigate, getFaxUri, query]);
