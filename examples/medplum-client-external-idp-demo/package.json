@@ -1,6 +1,6 @@
 {
   "name": "medplum-client-external-idp-demo",
-  "version": "5.1.16",
+  "version": "5.1.17",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,10 +19,10 @@
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@mantine/spotlight": "8.3.18",
-    "@medplum/core": "5.1.16",
-    "@medplum/eslint-config": "5.1.16",
-    "@medplum/fhirtypes": "5.1.16",
-    "@medplum/react": "5.1.16",
+    "@medplum/core": "5.1.17",
+    "@medplum/eslint-config": "5.1.17",
+    "@medplum/fhirtypes": "5.1.17",
+    "@medplum/react": "5.1.17",
     "@tabler/icons-react": "3.44.0",
     "@types/node": "22.19.19",
     "@types/react": "19.2.16",
